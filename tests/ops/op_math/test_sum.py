@@ -126,8 +126,8 @@ class TestInitialization:
         if sum_method.__name__ == sum.__name__:
             assert sum_op.id == id
 
-        assert sum_op.data == [[], [0.23]]
-        assert sum_op.parameters == [[], [0.23]]
+        assert sum_op.data == [0.23]
+        assert sum_op.parameters == [0.23]
         assert sum_op.num_params == 1
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
@@ -142,8 +142,8 @@ class TestInitialization:
         assert sum_op.name == "Sum"
         assert sum_op.id is None
 
-        assert sum_op.data == [[[], [0.23]], [9.87]]
-        assert sum_op.parameters == [[[], [0.23]], [9.87]]
+        assert sum_op.data == [0.23, 9.87]
+        assert sum_op.parameters == [0.23, 9.87]
         assert sum_op.num_params == 2
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -473,6 +473,15 @@ class TestMatrix:
 
 class TestProperties:
     """Test class properties."""
+
+    def test_hash(self):
+        """Test the hash property is independent of order."""
+        op1 = Sum(qml.PauliX("a"), qml.PauliY("b"))
+        op2 = Sum(qml.PauliY("b"), qml.PauliX("a"))
+        assert op1.hash == op2.hash
+
+        op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
+        assert op3.hash != op1.hash
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
@@ -1066,6 +1075,18 @@ class TestIntegration:
 
         with pytest.warns(UserWarning, match="Sum might not be hermitian."):
             my_circ()
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Sum are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(Sum(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 0)))
+
+        with pytest.warns(UserWarning):
+            circuit()
+        assert circuit.tape.trainable_params == [1]
 
 
 # pylint: disable=too-few-public-methods

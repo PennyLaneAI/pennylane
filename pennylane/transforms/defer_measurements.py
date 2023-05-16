@@ -67,7 +67,7 @@ def defer_measurements(tape):
             qml.RY(0.123, wires=0)
             qml.Hadamard(wires=1)
             m_0 = qml.measure(1)
-            qml.cond(m_0, qml.RY(par, wires=0))
+            qml.cond(m_0, qml.RY)(par, wires=0)
             return qml.expval(qml.PauliZ(0))
 
     The ``defer_measurements`` transform allows executing such quantum
@@ -78,12 +78,12 @@ def defer_measurements(tape):
     >>> qnode = qml.QNode(transformed_qfunc, dev)
     >>> par = np.array(np.pi/2, requires_grad=True)
     >>> qnode(par)
-    tensor(-0.12269009, requires_grad=True)
+    tensor(0.43487747, requires_grad=True)
 
     We can also differentiate parameters passed to conditional operations:
 
     >>> qml.grad(qnode)(par)
-    -0.9924450321351936
+    tensor(-0.49622252, requires_grad=True)
     """
     measured_wires = {}
 

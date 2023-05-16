@@ -16,7 +16,7 @@ Contains the CommutingEvolution template.
 """
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation, AnyWires
 
 
 class CommutingEvolution(Operation):
@@ -48,7 +48,7 @@ class CommutingEvolution(Operation):
 
     .. warning::
 
-       This template uses the :func:`pennylane.evolve` function with ``num_steps=1`` in order to
+       This template uses the :class:`~.ApproxTimeEvolution` operation with ``n=1`` in order to
        implement the time evolution, as a single-step Trotterization is exact for a commuting
        Hamiltonian.
 
@@ -108,7 +108,9 @@ class CommutingEvolution(Operation):
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
         # pylint: disable=import-outside-toplevel
-        from pennylane.gradients.general_shift_rules import generate_shift_rule
+        from pennylane.gradients.general_shift_rules import (
+            generate_shift_rule,
+        )
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             type_name = type(hamiltonian).__name__
@@ -154,9 +156,9 @@ class CommutingEvolution(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        # uses standard PauliRot decomposition through `qml.evolve`.
+        # uses standard PauliRot decomposition through ApproxTimeEvolution.
         hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
-        return qml.evolve(hamiltonian, coeff=time, num_steps=1)
+        return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
 
     def adjoint(self):
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)

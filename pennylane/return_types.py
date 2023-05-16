@@ -15,7 +15,7 @@
 Class and functions for activating, deactivating and checking the new return types system
 """
 # pylint: disable=global-statement
-__activated = False
+__activated = True
 
 
 def enable_return():
@@ -62,33 +62,11 @@ def enable_return():
     >>> qnode(0.5)
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
 
-    .. note::
-
-        This is an experimental feature and may not support every feature in PennyLane. The list of supported features
-        from PennyLane include:
-
-        * :func:`~.pennylane.execute`
-        * Gradient transforms
-
-          #. :func:`~.pennylane.gradients.param_shift`;
-          #. :func:`~.pennylane.gradients.finite_diff`;
-          #. :class:`~.pennylane.gradients.hessian_transform`;
-          #. :func:`~.pennylane.gradients.param_shift_hessian`.
-
-        * Interfaces
-
-          #. Autograd;
-          #. TensorFlow;
-          #. JAX (without jitting);
-
-        * PennyLane optimizers
-        * :meth:`~.pennylane.tape.QuantumTape.shape`
-
-    Note that this is an experimental feature and may not support every feature in PennyLane. See the ``Usage Details``
-    section for more details.
+    .. _return-autograd-tf-gotcha:
 
     .. details::
         :title: Usage Details
+        :href: return-autograd-tf-gotcha
 
         **Gotcha: Autograd and TensorFlow can only compute gradients of tensor-valued functions**
 
@@ -181,6 +159,9 @@ def enable_return():
 
             AttributeError: 'tuple' object has no attribute 'shape'
 
+    .. details::
+        :title: JAX Usage Details
+
         **JAX interface upgrades: higher-order derivatives and mixing measurements**
 
         Higher-order derivatives can now be computed with the JAX interface:
@@ -244,7 +225,7 @@ def enable_return():
             ValueError: All input arrays must have the same shape.
 
         The new return types system also unlocks the use of shot vectors with all the previous features. For example you
-        can take the second derivative and multiple measurement with with JAX:
+        can take the second derivative and multiple measurement with JAX:
 
         .. code-block:: python
 

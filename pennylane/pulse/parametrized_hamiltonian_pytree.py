@@ -23,6 +23,7 @@ from jax.tree_util import register_pytree_node_class
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .hardware_hamiltonian import HardwareHamiltonian
 
 
 @register_pytree_node_class
@@ -33,6 +34,7 @@ class ParametrizedHamiltonianPytree:
     mat_fixed: Optional[Union[jnp.ndarray, sparse.CSR]]
     mats_parametrized: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
     coeffs_parametrized: Tuple[Callable]
+    reorder_fn: Callable
 
     @staticmethod
     def from_hamiltonian(H: ParametrizedHamiltonian, *, dense: bool = False, wire_order=None):
@@ -57,7 +59,18 @@ class ParametrizedHamiltonianPytree:
         mats_parametrized = tuple(
             make_array(qml.matrix(op, wire_order=wire_order)) for op in H.ops_parametrized
         )
-        return ParametrizedHamiltonianPytree(mat_fixed, mats_parametrized, H.coeffs_parametrized)
+
+        if isinstance(H, HardwareHamiltonian):
+            return ParametrizedHamiltonianPytree(
+                mat_fixed,
+                mats_parametrized,
+                H.coeffs_parametrized,
+                reorder_fn=H.reorder_fn,
+            )
+
+        return ParametrizedHamiltonianPytree(
+            mat_fixed, mats_parametrized, H.coeffs_parametrized, reorder_fn=None
+        )
 
     def __call__(self, pars, t):
         if self.mat_fixed is not None:
@@ -66,6 +79,9 @@ class ParametrizedHamiltonianPytree:
         else:
             ops = ()
             coeffs = ()
+
+        if self.reorder_fn:
+            pars = self.reorder_fn(pars, self.coeffs_parametrized)
         coeffs = coeffs + tuple(f(p, t) for f, p in zip(self.coeffs_parametrized, pars))
         return LazyDotPytree(coeffs, ops + self.mats_parametrized)
 
@@ -77,20 +93,23 @@ class ParametrizedHamiltonianPytree:
         """
         matrices = (self.mat_fixed, self.mats_parametrized)
         param_coeffs = self.coeffs_parametrized
-        return (matrices, param_coeffs)
+        reorder_fn = self.reorder_fn
+        return (matrices, param_coeffs, reorder_fn)
 
     @classmethod
-    def tree_unflatten(cls, param_coeffs: tuple, matrices: tuple):
+    def tree_unflatten(cls, param_coeffs: tuple, matrices: tuple, reorder_fn: callable):
         """Function used by ``jax`` to unflatten the JaxParametrizedOperator.
 
         Args:
             param_coeffs (tuple): tuple containing the parametrized coefficients of the class
             matrices (tuple): tuple containing the matrices of the class
+            reorder_fn(callable): callable or None indicating how parameters should be
+                re-orderd to pass to the __call__ method
 
         Returns:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
-        return cls(*matrices, param_coeffs)
+        return cls(*matrices, param_coeffs, reorder_fn)
 
 
 @register_pytree_node_class

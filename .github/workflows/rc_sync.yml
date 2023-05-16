@@ -70,7 +70,7 @@ jobs:
           source_branch: "${{ env.tmp_branch }}"
           destination_branch: "master"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
-          pr_title: "Daily rc sync to master $(date +'%Y-%m-%d')"
+          pr_title: "Daily rc sync to master"
           pr_body: "Automatic sync from the release candidate to master during a feature freeze."
           pr_allow_empty: false
           pr_draft: false

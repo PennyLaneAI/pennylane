@@ -23,6 +23,8 @@ KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
+# pylint: disable=unnecessary-dunder-call
+
 
 @pytest.fixture
 def model(get_circuit, n_qubits, output_dim):
@@ -32,7 +34,7 @@ def model(get_circuit, n_qubits, output_dim):
     layer1 = KerasLayer(c, w, output_dim)
     layer2 = KerasLayer(c, w, output_dim)
 
-    model = tf.keras.models.Sequential(
+    m = tf.keras.models.Sequential(
         [
             tf.keras.layers.Dense(n_qubits),
             layer1,
@@ -42,32 +44,33 @@ def model(get_circuit, n_qubits, output_dim):
         ]
     )
 
-    return model
+    return m
 
 
 @pytest.fixture
 def model_dm(get_circuit_dm, n_qubits, output_dim):
+    """The Keras NN model."""
     c, w = get_circuit_dm
     layer1 = KerasLayer(c, w, output_dim)
     layer2 = KerasLayer(c, w, output_dim)
 
-    model = tf.keras.models.Sequential(
+    m = tf.keras.models.Sequential(
         [
             tf.keras.layers.Dense(n_qubits),
             layer1,
             # Adding a lambda layer to take only the real values from density matrix
-            tf.keras.layers.Lambda(lambda x: tf.abs(x)),
+            tf.keras.layers.Lambda(lambda x: tf.abs(x)),  # pylint: disable=unnecessary-lambda
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(n_qubits),
             layer2,
             # Adding a lambda layer to take only the real values from density matrix
-            tf.keras.layers.Lambda(lambda x: tf.abs(x)),
+            tf.keras.layers.Lambda(lambda x: tf.abs(x)),  # pylint: disable=unnecessary-lambda
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(output_dim[0] * output_dim[1]),
         ]
     )
 
-    return model
+    return m
 
 
 def indices_up_to(n_max):
@@ -98,7 +101,9 @@ class TestKerasLayer:
     """Unit tests for the pennylane.qnn.keras.KerasLayer class."""
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_bad_tf_version(self, get_circuit, output_dim, monkeypatch):
+    def test_bad_tf_version(
+        self, get_circuit, output_dim, monkeypatch
+    ):  # pylint: disable=no-self-use
         """Test if an ImportError is raised when instantiated with an incorrect version of
         TensorFlow"""
         c, w = get_circuit
@@ -108,34 +113,36 @@ class TestKerasLayer:
                 KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_input(self):
+    def test_no_input(self):  # pylint: disable=no-self-use
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of KerasLayer"""
         dev = qml.device("default.qubit", wires=1)
         weight_shapes = {"w1": (3, 3), "w2": 1}
 
         @qml.qnode(dev, interface="tf")
-        def circuit(w1, w2):
+        def circuit(w1, w2):  # pylint: disable=unused-argument
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
             KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_input_in_weight_shapes(self, get_circuit, n_qubits, output_dim):
+    def test_input_in_weight_shapes(
+        self, get_circuit, n_qubits, output_dim
+    ):  # pylint: disable=no-self-use
         """Test if a ValueError is raised when instantiated with a weight_shapes dictionary that
         contains the shape of the input argument given by the input_arg class attribute of
         KerasLayer"""
         c, w = get_circuit
-        w[qml.qnn.keras.KerasLayer._input_arg] = n_qubits
+        w[qml.qnn.keras.KerasLayer._input_arg] = n_qubits  # pylint: disable=protected-access
         with pytest.raises(
             ValueError,
-            match=f"{qml.qnn.keras.KerasLayer._input_arg} argument should not have its dimension",
+            match=f"{qml.qnn.keras.KerasLayer._input_arg} argument should not have its dimension",  # pylint: disable=protected-access
         ):
             KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_weight_shape_unspecified(self, get_circuit, output_dim):
+    def test_weight_shape_unspecified(self, get_circuit, output_dim):  # pylint: disable=no-self-use
         """Test if a ValueError is raised when instantiated with a weight missing from the
         weight_shapes dictionary"""
         c, w = get_circuit
@@ -144,21 +151,21 @@ class TestKerasLayer:
             KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_pos(self):
+    def test_var_pos(self):  # pylint: disable=no-self-use
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
         dev = qml.device("default.qubit", wires=1)
         weight_shapes = {"w1": (3, 3), "w2": 1}
 
         @qml.qnode(dev, interface="tf")
-        def circuit(inputs, w1, w2, *args):
+        def circuit(inputs, w1, w2, *args):  # pylint: disable=unused-argument
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
             KerasLayer(circuit, weight_shapes, output_dim=1)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self):
+    def test_var_keyword(self):  # pylint: disable=no-self-use
         """Test that variable number of keyword arguments works"""
         n_qubits = 2
         output_dim = 2
@@ -193,16 +200,17 @@ class TestKerasLayer:
         x = tf.ones((2, n_qubits))
 
         layer_out = layer(x)
+
         circ_weights = layer.qnode_weights.copy()
         circ_weights["w4"] = tf.convert_to_tensor(circ_weights["w4"])  # To allow for slicing
         circ_weights["w6"] = tf.convert_to_tensor(circ_weights["w6"])
-        circuit_out = c(x[0], **circ_weights)
+        circuit_out = tf.stack(c(x[0], **circ_weights))
 
         assert np.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits", [1])
     @pytest.mark.parametrize("output_dim", zip(*[[[1], (1,), 1], [1, 1, 1]]))
-    def test_output_dim(self, get_circuit, output_dim):
+    def test_output_dim(self, get_circuit, output_dim):  # pylint: disable=no-self-use
         """Test if the output_dim is correctly processed, i.e., that an iterable is mapped to
         its first element while an int is left unchanged."""
         c, w = get_circuit
@@ -210,7 +218,7 @@ class TestKerasLayer:
         assert layer.output_dim == output_dim[1]
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_weight_shapes(self, get_circuit, output_dim, n_qubits):
+    def test_weight_shapes(self, get_circuit, output_dim, n_qubits):  # pylint: disable=no-self-use
         """Test if the weight_shapes input argument is correctly processed to be a dictionary
         with values that are tuples."""
         c, w = get_circuit
@@ -226,7 +234,7 @@ class TestKerasLayer:
         }
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self):
+    def test_non_input_defaults(self):  # pylint: disable=no-self-use
         """Test that everything works when default arguments that are not the input argument are
         present in the QNode"""
 
@@ -245,7 +253,7 @@ class TestKerasLayer:
         }
 
         @qml.qnode(dev, interface="tf")
-        def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):
+        def c(inputs, w1, w2, w4, w5, w6, w7, w3=0.5):  # pylint: disable=too-many-arguments
             """A circuit that embeds data using the AngleEmbedding and then performs a variety of
             operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
             parameters, w5, are specified as non-trainable."""
@@ -271,7 +279,7 @@ class TestKerasLayer:
         assert np.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_qnode_weights(self, get_circuit, n_qubits, output_dim):
+    def test_qnode_weights(self, get_circuit, n_qubits, output_dim):  # pylint: disable=no-self-use
         """Test if the build() method correctly initializes the weights in the qnode_weights
         dictionary, i.e., that each value of the dictionary has correct shape and name."""
         c, w = get_circuit
@@ -283,14 +291,16 @@ class TestKerasLayer:
             assert layer.qnode_weights[weight].name[:-2] == weight
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_qnode_weights_with_spec(self, get_circuit, monkeypatch, output_dim, n_qubits):
+    def test_qnode_weights_with_spec(
+        self, get_circuit, monkeypatch, output_dim, n_qubits
+    ):  # pylint: disable=no-self-use
         """Test if the build() method correctly passes on user specified weight_specs to the
         inherited add_weight() method. This is done by monkeypatching add_weight() so that it
         simply returns its input keyword arguments. The qnode_weights dictionary should then have
         values that are the input keyword arguments, and we check that the specified weight_specs
         keywords are there."""
 
-        def add_weight_dummy(*args, **kwargs):
+        def add_weight_dummy(*args, **kwargs):  # pylint: disable=unused-argument
             """Dummy function for mocking out the add_weight method to simply return the input
             keyword arguments"""
             return kwargs
@@ -319,7 +329,9 @@ class TestKerasLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
     @pytest.mark.parametrize("input_shape", [(10, 4), (8, 3)])
-    def test_compute_output_shape(self, get_circuit, output_dim, input_shape):
+    def test_compute_output_shape(
+        self, get_circuit, output_dim, input_shape
+    ):  # pylint: disable=no-self-use
         """Test if the compute_output_shape() method performs correctly, i.e., that it replaces
         the last element in the input_shape tuple with the specified output_dim and that the
         output shape is of type tf.TensorShape"""
@@ -331,7 +343,9 @@ class TestKerasLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_call(self, get_circuit, output_dim, batch_size, n_qubits):
+    def test_call(
+        self, get_circuit, output_dim, batch_size, n_qubits
+    ):  # pylint: disable=no-self-use
         """Test if the call() method performs correctly, i.e., that it outputs with shape
         (batch_size, output_dim) with results that agree with directly calling the QNode"""
         c, w = get_circuit
@@ -345,14 +359,16 @@ class TestKerasLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_call_shuffled_args(self, get_circuit, output_dim, batch_size, n_qubits):
+    def test_call_shuffled_args(
+        self, get_circuit, output_dim, batch_size, n_qubits
+    ):  # pylint: disable=no-self-use
         """Test if the call() method performs correctly when the inputs argument is not the first
         positional argument, i.e., that it outputs with shape (batch_size, output_dim) with
         results that agree with directly calling the QNode"""
         c, w = get_circuit
 
         @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="tf")
-        def c_shuffled(w1, inputs, w2, w3, w4, w5, w6, w7):
+        def c_shuffled(w1, inputs, w2, w3, w4, w5, w6, w7):  # pylint: disable=too-many-arguments
             """Version of the circuit with a shuffled signature"""
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -375,14 +391,18 @@ class TestKerasLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_call_default_input(self, get_circuit, output_dim, batch_size, n_qubits):
+    def test_call_default_input(
+        self, get_circuit, output_dim, batch_size, n_qubits
+    ):  # pylint: disable=no-self-use
         """Test if the call() method performs correctly when the inputs argument is a default
         argument, i.e., that it outputs with shape (batch_size, output_dim) with results that
         agree with directly calling the QNode"""
         c, w = get_circuit
 
         @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="tf")
-        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):
+        def c_default(
+            w1, w2, w3, w4, w5, w6, w7, inputs=None
+        ):  # pylint: disable=too-many-arguments
             """Version of the circuit with inputs as a default argument"""
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -407,7 +427,9 @@ class TestKerasLayer:
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2, 4, 6])
     @pytest.mark.parametrize("middle_dim", [2, 5, 8])
-    def test_call_broadcast(self, get_circuit, output_dim, middle_dim, batch_size, n_qubits):
+    def test_call_broadcast(
+        self, get_circuit, output_dim, middle_dim, batch_size, n_qubits
+    ):  # pylint: disable=no-self-use,too-many-arguments
         """Test if the call() method performs correctly when the inputs argument has an arbitrary shape (that can
         correctly be broadcast over), i.e., for input of shape (batch_size, dn, ... , d0) it outputs with shape
         (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly.
@@ -427,7 +449,7 @@ class TestKerasLayer:
         assert layer_out.shape == (batch_size, middle_dim, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_str_repr(self, get_circuit, output_dim):
+    def test_str_repr(self, get_circuit, output_dim):  # pylint: disable=no-self-use
         """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
@@ -436,7 +458,7 @@ class TestKerasLayer:
         assert layer.__repr__() == "<Quantum Keras Layer: func=circuit>"
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_gradients(self, get_circuit, output_dim, n_qubits):
+    def test_gradients(self, get_circuit, output_dim, n_qubits):  # pylint: disable=no-self-use
         """Test if the gradients of the KerasLayer are equal to the gradients of the circuit when
         taken with respect to the trainable variables"""
         c, w = get_circuit
@@ -461,7 +483,7 @@ class TestKerasLayer:
             assert np.allclose(g_layer[i], g_circuit[i])
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_backprop_gradients(self, mocker):
+    def test_backprop_gradients(self, mocker):  # pylint: disable=no-self-use
         """Test if KerasLayer is compatible with the backprop diff method."""
 
         dev = qml.device("default.qubit.tf", wires=2)
@@ -488,7 +510,7 @@ class TestKerasLayer:
         spy.assert_not_called()
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_compute_output_shape(self, get_circuit, output_dim):
+    def test_compute_output_shape_2(self, get_circuit, output_dim):  # pylint: disable=no-self-use
         """Test that the compute_output_shape method returns the expected shape"""
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
@@ -520,7 +542,9 @@ class TestKerasLayerIntegration:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_train_model(self, model, batch_size, n_qubits, output_dim):
+    def test_train_model(
+        self, model, batch_size, n_qubits, output_dim
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a model can train using the KerasLayer. The model is composed of two
         KerasLayers sandwiched between Dense neural network layers, and the dataset is simply
         input and output vectors of zeros."""
@@ -533,7 +557,9 @@ class TestKerasLayerIntegration:
         model.fit(x, y, batch_size=batch_size, verbose=0)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_gradients(self, model, output_dim, n_qubits):
+    def test_model_gradients(
+        self, model, output_dim, n_qubits
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model"""
         x = tf.zeros((2, n_qubits))
@@ -544,10 +570,12 @@ class TestKerasLayerIntegration:
             loss = tf.keras.losses.mean_squared_error(out, y)
 
         gradients = tape.gradient(loss, model.trainable_variables)
-        assert all([g.dtype == tf.keras.backend.floatx() for g in gradients])
+        assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_save_weights(self, model, n_qubits, tmpdir):
+    def test_model_save_weights(
+        self, model, n_qubits, tmpdir
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
         prediction = model.predict(np.ones((1, n_qubits)))
@@ -572,7 +600,9 @@ class TestKerasLayerIntegrationDM:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(3))
     @pytest.mark.parametrize("batch_size", [2])
-    def test_train_model_dm(self, model_dm, batch_size, n_qubits, output_dim):
+    def test_train_model_dm(
+        self, model_dm, batch_size, n_qubits, output_dim
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
@@ -584,7 +614,9 @@ class TestKerasLayerIntegrationDM:
         model_dm.fit(x, y, batch_size=batch_size, verbose=0)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_model_gradients_dm(self, model_dm, output_dim, n_qubits):
+    def test_model_gradients_dm(
+        self, model_dm, output_dim, n_qubits
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model."""
         x = tf.zeros((2, n_qubits))
@@ -595,10 +627,12 @@ class TestKerasLayerIntegrationDM:
             loss = tf.keras.losses.mean_squared_error(out, y)
 
         gradients = tape.gradient(loss, model_dm.trainable_variables)
-        assert all([g.dtype == tf.keras.backend.floatx() for g in gradients])
+        assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_model_save_weights_dm(self, model_dm, n_qubits, tmpdir):
+    def test_model_save_weights_dm(
+        self, model_dm, n_qubits, tmpdir
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
 
@@ -619,7 +653,7 @@ class TestKerasLayerIntegrationDM:
 def test_no_attribute():
     """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
     with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
-        qml.qnn.random
+        qml.qnn.random  # pylint: disable=pointless-statement
 
 
 @pytest.mark.tf
@@ -636,6 +670,5 @@ def test_batch_input():
 
     KerasLayer.set_input_argument("x")
     layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
-    conf = layer.get_config()
     layer.build((None, 2))
     assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)

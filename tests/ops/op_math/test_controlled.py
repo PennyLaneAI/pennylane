@@ -39,6 +39,15 @@ from pennylane.wires import Wires
 # pylint: disable=pointless-statement
 # pylint: disable=expression-not-assigned
 
+
+def equal_list(lhs, rhs):
+    if not isinstance(lhs, list):
+        lhs = [lhs]
+    if not isinstance(rhs, list):
+        rhs = [rhs]
+    return len(lhs) == len(rhs) and all(qml.equal(l, r) for l, r in zip(lhs, rhs))
+
+
 base_num_control_mats = [
     (qml.PauliX("a"), 1, CNOT),
     (qml.PauliZ("a"), 1, CZ),
@@ -408,6 +417,20 @@ class TestMiscMethods:
 
         assert qml.math.allclose(mat_eigvals, sort_eigs)
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Controlled(base, ("b", "c"))
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Controlled(base, ("b", "c"))
+
+        assert op.has_generator is False
+
     def test_generator(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
@@ -682,7 +705,7 @@ class TestMatrix:
         """Check that an op that defines a sparse matrix has it used in the controlled
         sparse matrix."""
 
-        Hmat = qml.utils.sparse_hamiltonian(1.0 * qml.PauliX(0))
+        Hmat = (1.0 * qml.PauliX(0)).sparse_matrix()
         H_sparse = qml.SparseHamiltonian(Hmat, wires="0")
         op = Controlled(H_sparse, "a")
 
@@ -746,7 +769,7 @@ class TestHelperMethod:
         op = Controlled(qml.PauliX("c"), ("a", 2))
         decomp = _decompose_no_control_values(op)
         assert len(decomp) == 1
-        assert qml.equal(decomp[0], qml.Toffoli(("a", 2, "c")))
+        assert equal_list(decomp, qml.MultiControlledX(wires=("a", 2, "c")))
 
     def test_multicontrolledx(self):
         """Test case when PauliX has many controls."""
@@ -807,9 +830,8 @@ class TestDecomposition:
         op = Controlled(base, (0, 1), (True, False))
 
         decomp = op.expand().circuit if test_expand else op.decomposition()
-        expected = [qml.PauliX(1), qml.Toffoli((0, 1, 2)), qml.PauliX(1)]
-        for op1, op2 in zip(decomp, expected):
-            assert qml.equal(op1, op2)
+        expected = [qml.PauliX(1), qml.MultiControlledX(wires=(0, 1, 2)), qml.PauliX(1)]
+        assert equal_list(decomp, expected)
 
     def test_no_control_values_special_decomp(self, test_expand):
         """Test a case with no control values but a special decomposition."""
@@ -841,36 +863,6 @@ class TestDecomposition:
         with pytest.raises(DecompositionUndefinedError):
             # pylint: disable=unused-variable
             decomp = op.expand().circuit if test_expand else op.decomposition()
-
-    def test_zyz_decomp_no_control_values(self, test_expand):
-        """Test that the ZYZ decomposition is used for single qubit target operations
-        when other decompositions aren't available."""
-
-        base = qml.RX(0.123, wires="a")
-        op = Controlled(base, (0, 1, 2))
-
-        assert op.has_decomposition
-        decomp = op.expand().circuit if test_expand else op.decomposition()
-        expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
-        for op, exp_op in zip(decomp, expected):
-            assert qml.equal(op, exp_op)
-
-    def test_zyz_decomp_control_values(self, test_expand):
-        """Test that the ZYZ decomposition is used for single qubit target operations
-        when other decompositions aren't available and control values are present."""
-
-        base = qml.RX(0.123, wires="a")
-        op = Controlled(base, (0, 1, 2), control_values=[True, False, False])
-
-        assert op.has_decomposition
-        decomp = op.expand().circuit if test_expand else op.decomposition()
-        assert qml.equal(qml.PauliX(1), decomp[0])
-        assert qml.equal(qml.PauliX(2), decomp[1])
-        assert qml.equal(qml.PauliX(1), decomp[-2])
-        assert qml.equal(qml.PauliX(2), decomp[-1])
-        expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
-        for op, exp_op in zip(decomp[2:-2], expected):
-            assert qml.equal(op, exp_op)
 
 
 class TestArithmetic:
@@ -1426,7 +1418,7 @@ def test_multi_ctrl():
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=1)
-    assert qml.equal(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
+    assert qml.equal(new_tape[0], qml.MultiControlledX(wires=[3, 7, 0]))
 
 
 def test_ctrl_with_qnode():
@@ -1498,31 +1490,64 @@ def test_diagonal_ctrl():
     )
 
 
-def test_qubit_unitary():
+@pytest.mark.parametrize(
+    "M",
+    [
+        qml.PauliX.compute_matrix(),
+        qml.PauliY.compute_matrix(),
+        qml.PauliZ.compute_matrix(),
+        qml.Hadamard.compute_matrix(),
+        np.array(
+            [
+                [1 + 2j, -3 + 4j],
+                [3 + 4j, 1 - 2j],
+            ]
+        )
+        * 30**-0.5,
+    ],
+)
+def test_qubit_unitary(M):
     """Test ctrl on QubitUnitary and ControlledQubitUnitary"""
-    M = np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0)
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
     tape = QuantumScript.from_queue(q_tape)
-    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
-
     expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
+    assert equal_list(list(tape), expected)
 
-    assert qml.equal(tape[0], expected)
+    # causes decomposition into more basic operators
+    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+    assert not equal_list(list(tape), expected)
 
 
-def test_controlledqubitunitary():
+@pytest.mark.xfail
+@pytest.mark.parametrize(
+    "M",
+    [
+        qml.PauliX.compute_matrix(),
+        qml.PauliY.compute_matrix(),
+        qml.PauliZ.compute_matrix(),
+        qml.Hadamard.compute_matrix(),
+        np.array(
+            [
+                [1 + 2j, -3 + 4j],
+                [3 + 4j, 1 - 2j],
+            ]
+        )
+        * 30**-0.5,
+    ],
+)
+def test_controlledqubitunitary(M):
     """Test ctrl on ControlledQubitUnitary."""
-    M = np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0)
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
 
     tape = QuantumScript.from_queue(q_tape)
+    # will immediately decompose according to selected decomposition algorithm
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
 
-    expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0)
-    qml.equal(tape[0], expected)
+    expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0).decomposition()
+    assert equal_list(list(tape), expected)
 
 
 def test_no_control_defined():
@@ -1728,7 +1753,7 @@ def test_multi_ctrl_values(ctrl_values):
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
-        exp_op.append(qml.Toffoli(wires=[3, 7, 0]))
+        exp_op.append(qml.MultiControlledX(wires=[3, 7, 0]))
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
@@ -1743,5 +1768,4 @@ def test_multi_ctrl_values(ctrl_values):
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = expand_tape(tape, 1)
-    for op1, op2 in zip(new_tape, expected_ops(ctrl_values)):
-        assert qml.equal(op1, op2)
+    assert equal_list(list(new_tape), expected_ops(ctrl_values))

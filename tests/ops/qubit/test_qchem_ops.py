@@ -60,9 +60,7 @@ class TestParameterFrequencies:
         try:
             mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
-            if isinstance(gen, qml.Hamiltonian):
-                mat = qml.utils.sparse_hamiltonian(gen).toarray()
-            elif isinstance(gen, qml.SparseHamiltonian):
+            if isinstance(gen, (qml.Hamiltonian, qml.SparseHamiltonian)):
                 mat = gen.sparse_matrix().toarray()
             else:
                 pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
@@ -173,32 +171,18 @@ class TestSingleExcitation:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
-        """Tests that the SingleExcitation operation calculates the correct decomposition.
+        """Tests that the SingleExcitation operation calculates the correct decomposition."""
+        exp = SingleExcitation(phi)
 
-        Need to consider the matrix of CRY separately, as the control is wire 1
-        and the target is wire 0 in the decomposition."""
         decomp1 = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
         decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
-            mats = []
-            for i in reversed(decomp):
-                if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                    new_mat = np.array(
-                        [
-                            [1, 0, 0, 0],
-                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                            [0, 0, 1, 0],
-                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                        ]
-                    )
-                    mats.append(new_mat)
-                else:
-                    mats.append(i.matrix())
+            with qml.tape.QuantumTape() as tape:
+                for op in decomp:
+                    qml.apply(op)
 
-            decomposed_matrix = np.linalg.multi_dot(mats)
-            exp = SingleExcitation(phi)
-
+            decomposed_matrix = qml.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
@@ -729,7 +713,8 @@ class TestOrbitalRotation:
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(3))
 
     def expected_grad_fn(self, phi):
-        return -0.55 * np.sin(3 * phi / 2) * 3 / 2 - 0.7 * np.sin(phi) + 0.55 / 2 * np.sin(phi / 2)
+        # The following expression is obtained using the eight-parameter shift rule mentioned in arXiv:2107.12390.
+        return 1.1 * (3 * np.sin(3 * phi / 2) - np.sin(phi / 2)) * 0.25 - 0.7 * np.sin(phi)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_matrix(self, phi):
@@ -767,14 +752,17 @@ class TestOrbitalRotation:
     def test_orbital_rotation_decomp(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct decomposition.
 
-        The decomposition is expressed in terms of two SingleExcitation gates.
+        The decomposition is expressed in terms of two SingleExcitation gates sandwiched between FermionicExcitations gates.
         """
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
         decomposed_matrix = qml.matrix(
-            qml.SingleExcitation(phi, [0, 2]) @ qml.SingleExcitation(phi, [1, 3]),
+            qml.FermionicSWAP(np.pi, wires=[1, 2])
+            @ qml.SingleExcitation(phi, [0, 1])
+            @ qml.SingleExcitation(phi, [2, 3])
+            @ qml.FermionicSWAP(np.pi, wires=[1, 2]),
             wire_order=[0, 1, 2, 3],
         )
-        assert np.array_equal(decomposed_matrix, op.matrix())
+        assert np.allclose(decomposed_matrix, op.matrix())
 
     def test_adjoint(self):
         """Test adjoint method for adjoint op decomposition."""
@@ -806,6 +794,27 @@ class TestOrbitalRotation:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.parametrize("ref_state", [np.array([1, 1, 0, 0]), np.array([0, 1, 1, 0])])
+    @pytest.mark.parametrize("op", [qml.qchem.particle_number(4), qml.qchem.spin2(2, 4)])
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_spin_particle_conservation(self, ref_state, op, phi):
+        """Test that the total spin and particle are conserved after orbital rotation operation"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.BasisState(ref_state, wires=[0, 1, 2, 3])
+            return qml.expval(op)
+
+        @qml.qnode(dev)
+        def circuit2(phi):
+            qml.BasisState(ref_state, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+            return qml.expval(op)
+
+        assert np.allclose(circuit1(), circuit2(phi))
+
     @pytest.mark.autograd
     def test_autograd(self):
         """Tests that operations are computed correctly using the
@@ -820,7 +829,7 @@ class TestOrbitalRotation:
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 -0.5 + 0.0j,
@@ -857,7 +866,7 @@ class TestOrbitalRotation:
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 -0.5 + 0.0j,
@@ -896,7 +905,7 @@ class TestOrbitalRotation:
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 -0.5 + 0.0j,
@@ -935,7 +944,7 @@ class TestOrbitalRotation:
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 -0.5 + 0.0j,

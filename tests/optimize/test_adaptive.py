@@ -215,3 +215,24 @@ def test_qubit_rotation(circuit):
     #  rotation around X with np.pi gives expval(Z) = -1
     assert np.allclose(expval, -1)
     assert qml.equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
+
+
+@pytest.mark.parametrize(
+    "interface, diff_method",
+    [
+        ("autograd", "parameter-shift"),
+    ],
+)
+def test_circuit_args(interface, diff_method):
+    """Test that step_and_cost function uses the correct arguments of the initial circuit."""
+
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
+    def circuit():
+        qml.BasisState(np.array([1, 1, 0, 0]), wires=range(4))
+        return qml.expval(qml.PauliZ(0))
+
+    opt = qml.AdaptiveOptimizer()
+    circuit, _, _ = opt.step_and_cost(circuit, pool)
+
+    assert circuit.interface == interface
+    assert circuit.diff_method == diff_method

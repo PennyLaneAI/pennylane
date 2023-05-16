@@ -15,10 +15,10 @@
 Tests for the CommutingEvolution template.
 """
 import pytest
-from scipy.linalg import expm
-
-import pennylane as qml
 from pennylane import numpy as np
+import pennylane as qml
+
+from scipy.linalg import expm
 
 
 def test_adjoint():
@@ -61,15 +61,15 @@ def test_decomposition_expand():
 
     op = qml.CommutingEvolution(hamiltonian, time)
 
-    decomp = op.decomposition()
+    decomp = op.decomposition()[0]
 
-    assert isinstance(decomp, qml.ops.Exp)
-    assert decomp.base.coeffs == hamiltonian.coeffs
-    assert decomp.num_steps == 1
+    assert isinstance(decomp, qml.ApproxTimeEvolution)
+    assert all(decomp.hyperparameters["hamiltonian"].coeffs == hamiltonian.coeffs)
+    assert decomp.hyperparameters["n"] == 1
 
     tape = op.expand()
     assert len(tape) == 1
-    assert isinstance(tape[0], qml.ops.Exp)
+    assert isinstance(tape[0], qml.ApproxTimeEvolution)
 
 
 def test_matrix():

@@ -206,6 +206,46 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             "Unsupported return type specified for observable mutual information"
         )
 
+    def classical_shadow(self, obs, circuit):
+        """
+        Returns the measured trits and recipes in the classical shadow protocol.
+
+        Please refer to :func:`~.pennylane.classical_shadow` for detailed documentation.
+
+        .. seealso:: :func:`~pennylane.classical_shadow`
+
+        Args:
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Raises:
+            QuantumFunctionError: Classical shadow is currently unsupported on :class:`~.QutritDevice`
+        """
+        # TODO: Add support for ClassicalShadowMP
+        raise qml.QuantumFunctionError(
+            "Qutrit devices don't support classical shadow measurements."
+        )
+
+    def shadow_expval(self, obs, circuit):
+        r"""Compute expectation values using classical shadows in a differentiable manner.
+
+        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+
+        .. seealso:: :func:`~pennylane.shadow_expval`
+
+        Args:
+            obs (~.pennylane.measurements.ShadowExpvalMP): The classical shadow expectation
+                value measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Raises:
+            QuantumFunctionError: Shadow Expectation values are currently unsupported on :class:`~.QutritDevice`
+        """
+        # TODO: Add support for ShadowExpvalMP
+        raise qml.QuantumFunctionError(
+            "Qutrit devices don't support shadow expectation value measurements."
+        )
+
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
         """Return the estimated probability of each computational basis state
         using the generated samples.

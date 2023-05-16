@@ -153,7 +153,7 @@ def generator(op, format="prefactor"):
     be altered:
 
     >>> op = qml.RX(0.2, wires=0)
-    >>> qml.generator(op, format="prefactor")  # output will always be (prefactor, obs)
+    >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (PauliX(wires=[0]), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
     <Hamiltonian: terms=1, wires=[0]>

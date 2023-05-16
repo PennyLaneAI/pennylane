@@ -357,8 +357,8 @@ def cut_circuit_mc(
         ... )
         array(-4.)
 
-        Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
-        `cut_circuit_mc` transform also supports returning sample-based expectation values of
+        Using the Monte Carlo approach of `Peng et. al <https://arxiv.org/abs/1904.00102>`_, the
+        ``cut_circuit_mc`` transform also supports returning sample-based expectation values of
         observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
         on wires `0` and `2`:
 
@@ -516,6 +516,17 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
             gradient_fn = None
 
         execute_kwargs["cache"] = False
+
+        if "mode" in execute_kwargs:
+            mode = execute_kwargs.pop("mode")
+            if not qml.active_return():
+                if mode == "forward":  # pragma: no cover
+                    grad_on_execution = True
+                elif mode == "backward":  # pragma: no cover
+                    grad_on_execution = False
+                else:
+                    grad_on_execution = "best"
+                execute_kwargs["grad_on_execution"] = grad_on_execution
 
         res = qml.execute(
             tapes,

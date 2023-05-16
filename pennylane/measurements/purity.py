@@ -16,14 +16,14 @@
 This module contains the qml.purity measurement.
 """
 
-from typing import Sequence
+from typing import Sequence, Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement
+from .measurements import StateMeasurement, Purity
 
 
-def purity(wires):
+def purity(wires) -> "PurityMP":
     r"""The purity of the system prior to measurement.
 
     .. math::
@@ -68,33 +68,34 @@ class PurityMP(StateMeasurement):
     Please refer to :func:`purity` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some
             applications where the instance has to be identified
     """
+
+    def __init__(self, wires: Wires, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
+
+    @property
+    def return_type(self):
+        return Purity
 
     @property
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
+    def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
+        if not shots.has_partitioned_shots:
             return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, device, shots):
+        if not qml.active_return():
+            return self._shape_legacy(device, shots)
+        if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):

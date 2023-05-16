@@ -22,8 +22,9 @@ The operations are divided into the following files:
 * ``non_parameteric_ops.py``: All operations with no parameters.
 * ``observables.py``: Qubit observables excluding the Pauli gates, which are
   located in ``non_parameteric_ops.py`` instead.
-* ``parametric_ops.py``: Core parametric operations that don't fall into
-  any of the more specific categories.
+* ``parametric_ops_single_qubit.py``: Core parametric operations of one qubit.
+* ``parametric_ops_multi_qubit.py``: Core parametric operations of multiple qubits.
+* ``parametric_ops_controlled.py``: Controlled parametric operations.
 * ``qchem_ops.py``: Operations for quantum chemistry applications.
 * ``state_preparation.py``: Operations that initialize the state.
 * ``special_unitary.py``: The ``SpecialUnitary`` operation.
@@ -33,7 +34,9 @@ from .arithmetic_ops import *
 from .matrix_ops import *
 from .non_parametric_ops import *
 from .observables import *
-from .parametric_ops import *
+from .parametric_ops_single_qubit import *
+from .parametric_ops_multi_qubit import *
+from .parametric_ops_controlled import *
 from .qchem_ops import *
 from .state_preparation import *
 from .special_unitary import SpecialUnitary
@@ -70,6 +73,7 @@ ops = {
     "RY",
     "RZ",
     "PhaseShift",
+    "PCPhase",
     "ControlledPhaseShift",
     "CPhaseShift00",
     "CPhaseShift01",
@@ -91,6 +95,7 @@ ops = {
     "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
+    "BlockEncode",
     "SpecialUnitary",
     "MultiControlledX",
     "IntegerComparator",

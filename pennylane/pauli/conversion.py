@@ -43,7 +43,7 @@ def pauli_decompose(
 
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-            of Pauli operators, either as a :class:``~.Hamiltonian`` or :class:``~.PauliSentence`` instance.
+        of Pauli operators, either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence` instance.
 
     **Example:**
 
@@ -65,7 +65,7 @@ def pauli_decompose(
     + (-0.5) [Z0 Y1]
     + (1.0) [Y0 Y1]
 
-    We can return a ``~.PauliSentence`` instance by using the keyword argument ``pauli=True``:
+    We can return a :class:`~.PauliSentence` instance by using the keyword argument ``pauli=True``:
 
     >>> ps = qml.pauli_decompose(A, pauli=True)
     >>> print(ps)

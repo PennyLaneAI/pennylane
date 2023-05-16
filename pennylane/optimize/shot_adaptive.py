@@ -242,15 +242,23 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 continue
 
             # set the QNode device shots
-            h.device.shots = [(1, s)]
+            h.device.shots = [(1, int(s))]
 
             jacs = []
             for i in argnums:
-                j = qml.jacobian(h, argnum=i)(*args, **kwargs)
+                if qml.active_return():
 
-                if s == 1:
+                    def cost(*args, **kwargs):
+                        # pylint: disable=cell-var-from-loop
+                        return qml.math.stack(h(*args, **kwargs))
+
+                else:
+                    cost = h
+
+                j = qml.jacobian(cost, argnum=i)(*args, **kwargs)
+
+                if s == 1 and not qml.active_return():
                     j = np.expand_dims(j, 0)
-
                 # Divide each term by the probability per shot. This is
                 # because we are sampling one at a time.
                 jacs.append(c * j / p)
@@ -293,7 +301,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def _single_shot_expval_gradients(self, expval_cost, args, kwargs):
         """Compute the single shot gradients of an ExpvalCost object"""
-
         qnodes = expval_cost.qnodes
         coeffs = expval_cost.hamiltonian.coeffs
         device = qnodes[0].device
@@ -310,7 +317,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                     qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
                 )
             elif self.term_sampling is None:
-                device.shots = [(1, self.max_shots)]
+                device.shots = [(1, int(self.max_shots))]
                 # We iterate over each trainable argument, rather than using
                 # qml.jacobian(expval_cost), to take into account the edge case where
                 # different arguments have different shapes and cannot be stacked.
@@ -340,8 +347,17 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.check_learning_rate(1)
 
         try:
-            device.shots = [(1, self.max_shots)]
-            grads = [qml.jacobian(qnode, argnum=i)(*args, **kwargs) for i in self.trainable_args]
+            device.shots = [(1, int(self.max_shots))]
+
+            if qml.active_return():
+
+                def cost(*args, **kwargs):
+                    return qml.math.stack(qnode(*args, **kwargs))
+
+            else:
+                cost = qnode
+
+            grads = [qml.jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
         finally:
             device.shots = original_shots
 

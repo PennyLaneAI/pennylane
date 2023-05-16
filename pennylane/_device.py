@@ -690,6 +690,7 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         if self.custom_expand_fn is not None:
+            # pylint:disable=not-callable
             return self.custom_expand_fn(circuit, max_expansion=max_expansion)
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
@@ -721,6 +722,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
+        supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
@@ -750,7 +752,7 @@ class Device(abc.ABC):
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
-        elif expval_sum_in_obs and not is_shadow:
+        elif expval_sum_in_obs and not is_shadow and not supports_sum:
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
         elif (

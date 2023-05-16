@@ -41,6 +41,7 @@ ops = {
     "Identity": qml.Identity(wires=[0]),
     "Snapshot": qml.Snapshot("label"),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
+    "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(0, wires=[0, 1]),
     "CRY": qml.CRY(0, wires=[0, 1]),
@@ -58,6 +59,7 @@ ops = {
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
+    "PCPhase": qml.PCPhase(0, 1, wires=[0, 1]),
     "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "CPhaseShift00": qml.CPhaseShift00(0, wires=[0, 1]),
     "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),
@@ -559,7 +561,8 @@ class TestGatesQubit:
         res = circuit()
 
         # Disabling Pylint test because qml.ops can be misunderstood as qml.ops.qubit.ops
-        basis = qml.ops.qubit.matrix_ops.pauli_basis(n_wires)  # pylint: disable=no-member
+        basis_fn = qml.ops.qubit.special_unitary.pauli_basis_matrices  # pylint: disable=no-member
+        basis = basis_fn(n_wires)
         mat = qml.math.expm(1j * np.tensordot(theta_, basis, axes=[[0], [0]]))
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))

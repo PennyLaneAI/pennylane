@@ -60,7 +60,7 @@ def probs_to_unitary(probs):
     ):  # skip check and error if jitting to avoid JAX tracer errors
         if not qml.math.allclose(sum(probs), 1) or min(probs) < 0:
             raise ValueError(
-                "A valid probability distribution of non-negative numbers that sum to one"
+                "A valid probability distribution of non-negative numbers that sum to one "
                 "must be input"
             )
 

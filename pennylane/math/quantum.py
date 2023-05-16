@@ -1060,15 +1060,15 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     >>> max_entropy(x, indices=[0])
     0.6931472
 
-    The logarithm base can be switched to 2 for example.
+    The logarithm base can be changed. For example:
 
     >>> max_entropy(x, indices=[0], base=2)
     1.0
 
-    The maximum entropy can be obtained by providing a quantum state as a density matrix, for example:
+    The maximum entropy can be obtained by providing a quantum state as a density matrix. For example:
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-    >>> max_entropy(x, indices=[0])
+    >>> max_entropy(y, indices=[0])
     0.6931472
 
     The maximum entropy is always greater or equal to the Von Neumann entropy. In this maximally

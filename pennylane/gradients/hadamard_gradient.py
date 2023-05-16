@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for computing the parameter-shift gradient
+This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 import pennylane as qml
@@ -37,14 +37,16 @@ def _hadamard_grad(
     aux_wire=None,
     device_wires=None,
 ):
-    r"""Transform a QNode to compute the Hadamard test gradient of all gates
-    with respect to their inputs. This function is adapted to the new return system.
+    r"""Transform a QNode to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information about the shots.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
             a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
@@ -55,14 +57,14 @@ def _hadamard_grad(
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -179,8 +181,8 @@ def _hadamard_grad(
 
     """
     if not qml.active_return():
-        raise ValueError(
-            "The hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
+        raise NotImplementedError(
+            "The Hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
         )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
@@ -245,7 +247,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             gradient_data.append(0)
             continue
 
-        trainable_op, idx, p_idx = tape.get_operation(id_argnum, return_op_index=True)
+        trainable_op, idx, p_idx = tape.get_operation(id_argnum)
 
         ops_to_trainable_op = tape.operations[: idx + 1]
         ops_after_trainable_op = tape.operations[idx + 1 :]
@@ -300,10 +302,12 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 else:
                     measurements.append(qml.probs(op=obs_new))
 
-            new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+            new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=tape.shots)
 
-            new_tape.expand()
+            _rotations, _measurements = qml.tape.tape.rotations_and_diagonal_measurements(new_tape)
             # pylint: disable=protected-access
+            new_tape._ops = new_tape._ops + _rotations
+            new_tape._measurements = _measurements
             new_tape._update()
 
             num_tape += 1
@@ -354,7 +358,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             else:
                 axis = None if not multi_measurements else 0
                 grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=axis))
-                idx += 1
+                idx += num_tape
 
         if not multi_measurements and not multi_params:
             return grads[0]

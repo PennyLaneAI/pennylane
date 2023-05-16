@@ -173,6 +173,25 @@ The ``operation`` module provides the following:
     ~is_trainable
     ~not_tape
 
+Enabling New Arithmetic Operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+PennyLane is in the process of replacing :class:`~pennylane.Hamiltonian` and :class:`~.Tensor`
+with newer, more general arithmetic operators. These consist of :class:`~pennylane.ops.op_math.Prod`,
+:class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`. By default, using dunder
+methods (eg. ``+``, ``-``, ``@``, ``*``) to combine operators with scalars or other operators will
+create :class:`~pennylane.Hamiltonian`'s and :class:`~.Tensor`'s. If you would like to switch dunders to
+return newer arithmetic operators, the ``operation`` module provides the following helper functions:
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~enable_new_opmath
+    ~disable_new_opmath
+    ~active_new_opmath
+
 Other
 ~~~~~
 
@@ -211,17 +230,15 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
-# pylint:disable=access-member-before-definition
+# pylint:disable=access-member-before-definition,global-statement
 import abc
 import copy
 import functools
 import itertools
-import numbers
 import warnings
 from enum import IntEnum
 from typing import List
 
-import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -229,6 +246,7 @@ from scipy.sparse import coo_matrix, eye, kron
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -238,6 +256,7 @@ from .utils import pauli_eigs
 # =============================================================================
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
+__use_new_opmath = False
 
 
 class OperatorPropertyUndefined(Exception):
@@ -298,7 +317,7 @@ class WiresEnum(IntEnum):
     an operation acts on"""
 
     AnyWires = -1
-    AllWires = 0
+    AllWires = -2
 
 
 AllWires = WiresEnum.AllWires
@@ -843,10 +862,8 @@ class Operator(abc.ABC):
         """
         raise TermsUndefinedError
 
-    @property
-    @abc.abstractmethod
-    def num_wires(self):
-        """Number of wires the operator acts on."""
+    num_wires = AnyWires
+    """Number of wires the operator acts on."""
 
     @property
     def name(self):
@@ -1004,7 +1021,7 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
+        self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
 
         if do_queue:
             self.queue()
@@ -1269,6 +1286,15 @@ class Operator(abc.ABC):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_generator(cls):
+        r"""Bool: Whether or not the Operator returns a defined generator.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.generator != Operator.generator
+
     def generator(self):  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -1355,7 +1381,7 @@ class Operator(abc.ABC):
         raise AdjointUndefinedError
 
     def expand(self):
-        """Returns a tape that has recorded the decomposition of the operator.
+        """Returns a tape that contains the decomposition of the operator.
 
         Returns:
             .QuantumTape: quantum tape
@@ -1388,6 +1414,8 @@ class Operator(abc.ABC):
         """
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        if (p_rep := new_op._pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
@@ -1402,14 +1430,9 @@ class Operator(abc.ABC):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other)
-        if other == 0:
-            return self
-        if isinstance(other, qml.pulse.ParametrizedHamiltonian):
-            return other.__add__(self)
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
+            if qml.math.allequal(other, 0):
+                return self
             return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
@@ -1419,11 +1442,14 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.s_prod(scalar=other, operator=self)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
         return NotImplemented
 
     __rmul__ = __mul__
@@ -1434,8 +1460,8 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, numbers.Number)):
-            return self + (-other)
+        if isinstance(other, (Operator, TensorLike)):
+            return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other):
@@ -1448,10 +1474,7 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
 
@@ -1530,7 +1553,7 @@ class Operation(Operator):
 
     # Attributes for compilation transforms
     basis = None
-    """str or None: The target operation for controlled gates.
+    """str or None: The basis of an operation, or for controlled gates, of the
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
     or ``"Z"``.
 
@@ -1760,6 +1783,9 @@ class Observable(Operator):
         )
 
     def __matmul__(self, other):
+        if active_new_opmath():
+            return super().__matmul__(other=other)
+
         if isinstance(other, (Tensor, qml.Hamiltonian)):
             return other.__rmatmul__(self)
 
@@ -1830,6 +1856,9 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if active_new_opmath():
+            return super().__add__(other=other)
+
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
@@ -1841,6 +1870,9 @@ class Observable(Operator):
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        if active_new_opmath():
+            return super().__mul__(other=a)
+
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
 
@@ -1850,6 +1882,9 @@ class Observable(Operator):
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if active_new_opmath():
+            return super().__sub__(other=other)
+
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self + (-1 * other)
         return super().__sub__(other=other)
@@ -1919,8 +1954,8 @@ class Tensor(Observable):
         if base_label is not None:
             if len(base_label) != len(self.obs):
                 raise ValueError(
-                    "Tensor label requires ``base_label`` keyword to be same length"
-                    " as tensor components."
+                    "Tensor label requires ``base_label`` keyword to be same length "
+                    "as tensor components."
                 )
             return "@".join(
                 ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
@@ -2059,6 +2094,9 @@ class Tensor(Observable):
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
+        if isinstance(other, qml.Hamiltonian):
+            return other.__rmatmul__(self)
+
         if isinstance(other, Tensor):
             self.obs.extend(other.obs)
 
@@ -2712,11 +2750,12 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
+    if isinstance(obj, Operator):
+        return obj.has_generator
     try:
         obj.generator()
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
-
     return True
 
 
@@ -2763,8 +2802,7 @@ def is_trainable(obj):
 
 @qml.BooleanFn
 def defines_diagonalizing_gates(obj):
-    """Returns ``True`` if an operator defines the diagonalizing
-    gates are defined.
+    """Returns ``True`` if an operator defines the diagonalizing gates.
 
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.
@@ -2783,3 +2821,57 @@ def gen_is_multi_term_hamiltonian(obj):
         return False
 
     return isinstance(o, qml.Hamiltonian) and len(o.coeffs) > 1
+
+
+def enable_new_opmath():
+    """
+    Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
+
+    **Example**
+
+    >>> qml.operation.active_new_opmath()
+    False
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.operation.Tensor'>
+    >>> qml.operation.enable_new_opmath()
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.ops.op_math.prod.Prod'>
+    """
+    global __use_new_opmath
+    __use_new_opmath = True
+
+
+def disable_new_opmath():
+    """
+    Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
+
+    **Example**
+
+    >>> qml.operation.active_new_opmath()
+    True
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.ops.op_math.prod.Prod'>
+    >>> qml.disable_new_opmath()
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.operation.Tensor'>
+    """
+    global __use_new_opmath
+    __use_new_opmath = False
+
+
+def active_new_opmath():
+    """
+    Function that checks if the new arithmetic operator dunders are active
+
+    Returns:
+        bool: Returns ``True`` if the new arithmetic operator dunders are active
+
+    **Example**
+
+    >>> qml.operation.active_new_opmath()
+    False
+    >>> qml.operation.enable_new_opmath()
+    >>> qml.operation.active_new_opmath()
+    True
+    """
+    return __use_new_opmath

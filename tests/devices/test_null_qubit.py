@@ -14,23 +14,29 @@
 """
 Unit tests for the :mod:`pennylane.plugin.NullQubit` device.
 """
-import cmath
-
 # pylint: disable=protected-access,cell-var-from-loop
+from collections import defaultdict
 import math
 
 import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.null_qubit import NullQubit
+from pennylane.measurements import Shots
 from pennylane import Tracker
 
-from collections import defaultdict
 
+@pytest.fixture(
+    name="nullqubit_device",
+    scope="function",
+    params=[(np.float32, np.complex64), (np.float64, np.complex128)],
+)
+def fixture_nullqubit_device(request):
+    """Create a NullQubit device with the indicated number of wires,
+    parametrizing over real and complex dtypes."""
 
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def nullqubit_device(request):
     def _device(wires):
+        """Create NullQubit device."""
         return qml.device(
             "null.qubit", wires=wires, r_dtype=request.param[0], c_dtype=request.param[1]
         )
@@ -62,11 +68,15 @@ def test_dtype_errors():
 
 def test_custom_op_with_matrix():
     """Test that a dummy op with a matrix is supported."""
+    # pylint: disable=too-few-public-methods
 
     class DummyOp(qml.operation.Operation):
+        """Placeholder Operation on a single wire."""
+
         num_wires = 1
 
         def compute_matrix(self):
+            """Compute the matrix of the DummyOp"""
             return np.eye(2)
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -102,28 +112,6 @@ class TestApply:
         dev.reset()
         dev.apply([operation(input, wires=[0, 1])])
         assert dev._state == [0.0]
-
-    test_data_single_wire_with_parameters = [
-        (qml.PhaseShift, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
-        (qml.RX, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
-        (qml.RY, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
-        (qml.RZ, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
-        (qml.MultiRZ, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
-        (qml.Rot, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 2, math.pi / 4, math.pi / 8]),
-        (
-            qml.QubitUnitary,
-            [1 / math.sqrt(5), 2 / math.sqrt(5)],
-            [
-                np.array(
-                    [
-                        [1j / math.sqrt(2), 1j / math.sqrt(2)],
-                        [1j / math.sqrt(2), -1j / math.sqrt(2)],
-                    ]
-                )
-            ],
-        ),
-        (qml.DiagonalQubitUnitary, [1 / math.sqrt(5), 2 / math.sqrt(5)], [np.array([-1, 1])]),
-    ]
 
     @pytest.mark.parametrize(
         "op",
@@ -316,6 +304,8 @@ class TestVar:
 
 class TestSample:
     """Tests that samples are properly (not) calculated."""
+
+    # pylint: disable=too-few-public-methods
 
     def test_sample_values(self):
         """Tests if the samples returned by sample have
@@ -688,6 +678,7 @@ class TestTensorExpval:
 
     def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=2)
 
         A = np.array(
@@ -705,6 +696,7 @@ class TestTensorExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=3)
 
         A = np.array(
@@ -842,6 +834,7 @@ class TestTensorVar:
 
     def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=2)
 
         A = np.array(
@@ -859,6 +852,7 @@ class TestTensorVar:
 
     def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=3)
 
         A = np.array(
@@ -876,7 +870,6 @@ class TestTensorVar:
         assert dev.var(obs) == [0.0]
 
 
-@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOps:
     """Tests special methods to apply gates in NullQubit."""
 
@@ -902,40 +895,40 @@ class TestApplyOps:
     ]
 
     @pytest.mark.parametrize("method", single_qubit_ops)
-    def test_apply_single_qubit_op(self, method, inverse):
+    def test_apply_single_qubit_op(self, method):
         """Test if the application of single qubit operations is correct."""
-        state_out = method(self.state, axes=[1], inverse=inverse)
+        state_out = method(self.state, axes=[1])
         assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", two_qubit_ops)
-    def test_apply_two_qubit_op(self, method, inverse):
+    def test_apply_two_qubit_op(self, method):
         """Test if the application of two qubit operations is correct."""
         state_out = method(self.state, axes=[0, 1])
         assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", two_qubit_ops)
-    def test_apply_two_qubit_op_reverse(self, method, inverse):
+    def test_apply_two_qubit_op_reverse(self, method):
         """Test if the application of two qubit operations is correct when the applied wires are
         reversed."""
         state_out = method(self.state, axes=[2, 1])
         assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_smaller(self, method, inverse):
+    def test_apply_three_qubit_op_controls_smaller(self, method):
         """Test if the application of three qubit operations is correct when both control wires are
         smaller than the target wire."""
         state_out = method(self.state, axes=[0, 2, 3])
         assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_greater(self, method, inverse):
+    def test_apply_three_qubit_op_controls_greater(self, method):
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
         assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_split(self, method, inverse):
+    def test_apply_three_qubit_op_controls_split(self, method):
         """Test if the application of three qubit operations is correct when one control wire is smaller
         and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
@@ -946,9 +939,9 @@ class TestApplyOps:
     ]
 
     @pytest.mark.parametrize("method,par", single_qubit_ops_param)
-    def test_apply_single_qubit_op_(self, method, par, inverse):
+    def test_apply_single_qubit_op_param(self, method, par):
         """Test if the application of single qubit operations (with parameter) is correct."""
-        state_out = method(self.state, axes=[1], parameters=par, inverse=inverse)
+        state_out = method(self.state, axes=[1], parameters=par)
         assert state_out == [0.0]
 
 
@@ -1059,6 +1052,7 @@ class TestOpCallIntegration:
         (qml.RZ, [math.pi / 4], {"RZ": 1}),
         (qml.MultiRZ, [math.pi / 2], {"MultiRZ": 1}),
         (qml.DiagonalQubitUnitary, [np.array([-1, 1])], {"DiagonalQubitUnitary": 1}),
+        (qml.SpecialUnitary, [np.array([-1, 1, 0.4])], {"SpecialUnitary": 1}),
     ]
     two_qubit_ops_par = [
         (qml.CRX, [math.pi / 2], {"CRX": 1}),
@@ -1066,6 +1060,7 @@ class TestOpCallIntegration:
         (qml.CRZ, [math.pi / 2], {"CRZ": 1}),
         (qml.MultiRZ, [math.pi / 2], {"MultiRZ": 1}),
         (qml.DiagonalQubitUnitary, [np.array([-1, 1, -1, 1])], {"DiagonalQubitUnitary": 1}),
+        (qml.SpecialUnitary, [np.linspace(0.1, 2, 15)], {"SpecialUnitary": 1}),
         (qml.IsingXX, [math.pi / 2], {"IsingXX": 1}),
         (qml.IsingYY, [math.pi / 2], {"IsingYY": 1}),
         (qml.IsingZZ, [math.pi / 2], {"IsingZZ": 1}),
@@ -1152,7 +1147,9 @@ class TestOpCallIntegration:
 
 
 class TestState:
-    "Unit test for state and density_matrix operations."
+    """Unit test for state and density_matrix operations."""
+
+    # pylint: disable=too-few-public-methods
     dev = qml.device("null.qubit", wires=3)
 
     @pytest.mark.parametrize(
@@ -1178,12 +1175,26 @@ class TestTrackerIntegration:
 
         @qml.qnode(dev)
         def circuit():
+            qml.RX(1.23, wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
+        circuit_resources = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+        )
+
         class callback_wrapper:
+            """Callback wrapping class"""
+
+            # pylint: disable=too-few-public-methods
+
             @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
-                pass
+            def callback(totals=None, history=None, latest=None):
+                """Wrapped callback function."""
 
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
@@ -1198,6 +1209,7 @@ class TestTrackerIntegration:
             "shots": [None, None],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources, circuit_resources],
         }
         assert tracker.latest == {"batches": 1, "batch_len": 1}
 
@@ -1209,21 +1221,47 @@ class TestTrackerIntegration:
             "shots": [None, None],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources, circuit_resources],
         }
         assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
 
     def test_shots_execution(self, nullqubit_device, mocker):
         """Test that correct tracks shots."""
+        # pylint: disable=unexpected-keyword-arg
         dev = nullqubit_device(wires=1)
 
         @qml.qnode(dev)
         def circuit():
+            qml.RX(1.23, wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
+        circuit_resources_10 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+            shots=Shots(10),
+        )
+
+        circuit_resources_20 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+            shots=Shots(20),
+        )
+
         class callback_wrapper:
+            """Callback wrapping class"""
+
+            # pylint: disable=too-few-public-methods
+
             @staticmethod
-            def callback(totals=dict(), history=dict(), latest=dict()):
-                pass
+            def callback(totals=None, history=None, latest=None):
+                """Wrapped callback function."""
 
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
@@ -1238,6 +1276,7 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert tracker.latest == {"batches": 1, "batch_len": 1}
 
@@ -1256,5 +1295,93 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
+        }
+        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
+
+    def test_custom_resource_operations(self, nullqubit_device, mocker):
+        """Test that custom operation resources are tracked correctly."""
+        # pylint: disable=unexpected-keyword-arg
+        dev = nullqubit_device(wires=2)
+
+        class CustomResourceOperation(
+            qml.resource.ResourcesOperation
+        ):  # pylint: disable=too-few-public-methods
+            def resources(self):
+                return qml.resource.Resources(
+                    num_wires=2,
+                    num_gates=3,
+                    gate_types={"Hadamard": 2, "CNOT": 1},
+                    gate_sizes={1: 2, 2: 1},
+                    depth=2,
+                )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            qml.CNOT(wires=[0, 1])
+            CustomResourceOperation(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        circuit_resources_10 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=5,
+            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
+            gate_sizes={1: 3, 2: 2},
+            depth=4,
+            shots=Shots(10),
+        )
+
+        circuit_resources_20 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=5,
+            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
+            gate_sizes={1: 3, 2: 2},
+            depth=4,
+            shots=Shots(20),
+        )
+
+        class callback_wrapper:
+            """Callback wrapping class"""
+
+            # pylint: disable=too-few-public-methods
+
+            @staticmethod
+            def callback(totals=None, history=None, latest=None):
+                """Wrapped callback function."""
+
+        wrapper = callback_wrapper()
+        spy = mocker.spy(wrapper, "callback")
+
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
+            circuit(shots=10)
+            circuit(shots=20)
+
+        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2, "shots": 30}
+        assert tracker.history == {
+            "executions": [1, 1],
+            "shots": [10, 20],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
+        }
+        assert tracker.latest == {"batches": 1, "batch_len": 1}
+
+        assert spy.call_count == 4
+
+        _, kwargs_called = spy.call_args_list[-1]
+
+        assert kwargs_called["totals"] == {
+            "executions": 2,
+            "batches": 2,
+            "batch_len": 2,
+            "shots": 30,
+        }
+        assert kwargs_called["history"] == {
+            "executions": [1, 1],
+            "shots": [10, 20],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}

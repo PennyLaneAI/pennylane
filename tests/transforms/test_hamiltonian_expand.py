@@ -108,9 +108,7 @@ class TestHamiltonianExpand:
         tapes, fn = hamiltonian_expand(qs)
         results = dev.batch_execute(tapes)
         expval = fn(results)
-
         assert np.isclose(output, expval)
-        assert type(results[0]) == type(expval)
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_no_grouping(self, tape, output):
@@ -129,7 +127,6 @@ class TestHamiltonianExpand:
         expval = fn(results)
 
         assert np.isclose(output, expval)
-        assert type(results[0]) == type(expval)
 
     def test_grouping_is_used(self):
         """Test that the grouping in a Hamiltonian is used"""
@@ -181,6 +178,23 @@ class TestHamiltonianExpand:
 
         tapes, fn = hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("group", [True, False])
+    def test_shots_attribute(self, shots, group):
+        """Tests that the shots attribute is copied to the new tapes"""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with AnnotatedQueue() as q:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tape = QuantumScript.from_queue(q, shots=shots)
+        new_tapes, _ = hamiltonian_expand(tape, group=group)
+
+        assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
 
     def test_hamiltonian_error(self):
         """Tests that the script passed to hamiltonian_expand must end with a hamiltonian."""
@@ -275,6 +289,7 @@ class TestHamiltonianExpand:
             assert np.isclose(res, output)
 
             g = gtape.gradient(res, var)
+            print(g)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
 
@@ -374,6 +389,19 @@ SUM_OUTPUTS = [
 class TestSumExpand:
     """Tests for the sum_expand transform"""
 
+    def test_observables_on_same_wires(self):
+        """Test that even if the observables are on the same wires, if they are different operations, they are separated.
+        This is testing for a case that gave rise to a bug that occured due to a problem in MeasurementProcess.hash.
+        """
+        obs1 = qml.prod(qml.PauliX(0), qml.PauliX(1))
+        obs2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+
+        circuit = QuantumScript(measurements=[qml.expval(obs1), qml.expval(obs2)])
+        batch, post_processing_fn = sum_expand(circuit)
+        assert len(batch) == 2
+        assert qml.equal(batch[0][0], qml.expval(obs1))
+        assert qml.equal(batch[1][0], qml.expval(obs2))
+
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
@@ -419,6 +447,23 @@ class TestSumExpand:
 
         tapes, fn = sum_expand(qs, group=True)
         assert len(tapes) == 2
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("group", [True, False])
+    def test_shots_attribute(self, shots, group):
+        """Tests that the shots attribute is copied to the new tapes"""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with AnnotatedQueue() as q:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tape = QuantumScript.from_queue(q, shots=shots)
+        new_tapes, _ = sum_expand(tape, group=group)
+
+        assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
 
     def test_non_sum_tape(self):
         """Test that the ``sum_expand`` function returns the input tape if it does not

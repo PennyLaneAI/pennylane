@@ -65,16 +65,16 @@ class CompositeOp(Operator):
         if do_queue:
             self.queue()
 
-        self._batch_size = self._check_and_compute_batch_size()
+        self._check_batching(None)  # unused param
 
-    def _check_and_compute_batch_size(self):
+    def _check_batching(self, _):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
             raise ValueError(
                 "Broadcasting was attempted but the broadcasted dimensions "
                 f"do not match: {batch_sizes}."
             )
-        return batch_sizes.pop() if batch_sizes else None
+        self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
@@ -112,16 +112,20 @@ class CompositeOp(Operator):
     @property
     def data(self):
         """Create data property"""
-        return [op.data for op in self]
+        return [d for op in self for d in op.data]
 
     @data.setter
     def data(self, new_data):
         """Set the data property"""
-        for new_entry, op in zip(new_data, self):
-            op.data = new_entry
+        for op in self:
+            op_num_params = op.num_params
+            if op_num_params > 0:
+                op.data = new_data[:op_num_params]
+                new_data = new_data[op_num_params:]
 
     @property
     def num_wires(self):
+        """Number of wires the operator acts on."""
         return len(self.wires)
 
     @property
@@ -332,16 +336,17 @@ class CompositeOp(Operator):
         """The function used when combining the operands of the composite operator"""
 
     def map_wires(self, wire_map: dict):
+        # pylint:disable=protected-access
         cls = self.__class__
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
-        new_op._wires = Wires(  # pylint: disable=protected-access
-            [wire_map.get(wire, wire) for wire in self.wires]
-        )
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op.data = self.data.copy()
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires"}:
                 setattr(new_op, attr, value)
+        if (p_rep := new_op._pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op
 

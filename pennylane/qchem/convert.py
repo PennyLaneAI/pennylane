@@ -209,8 +209,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
         import openfermion
     except ImportError as Error:
         raise ImportError(
-            "This feature requires openfermion."
-            " It can be installed with: pip install openfermion"
+            "This feature requires openfermion. "
+            "It can be installed with: pip install openfermion"
         ) from Error
 
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)

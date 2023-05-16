@@ -16,21 +16,23 @@ This file contains the definition of the dot function, which computes the dot pr
 a vector and a list of operators.
 """
 from collections import defaultdict
-from typing import Sequence
+from typing import Sequence, Union, Callable
 
 import pennylane as qml
 from pennylane.operation import Operator, Tensor
 from pennylane.pulse import ParametrizedHamiltonian
 
 
-def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
+def dot(
+    coeffs: Sequence[Union[float, Callable]], ops: Sequence[Operator], pauli=False
+) -> Union[Operator, ParametrizedHamiltonian]:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
     :math:`c_k` and :math:`O_k` are the elements inside the ``coeffs`` and ``ops`` arguments, respectively.
 
     Args:
-        coeffs (Sequence[float]): sequence containing the coefficients of the linear combination
+        coeffs (Sequence[float, Callable]): sequence containing the coefficients of the linear combination
         ops (Sequence[Operator]): sequence containing the operators of the linear combination
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
@@ -40,7 +42,7 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
         ValueError: if the number of coefficients and operators does not match or if they are empty
 
     Returns:
-        Sum or Operator: operator describing the linear combination
+        Operator or ParametrizedHamiltonian: operator describing the linear combination
 
     **Example**
 
@@ -71,8 +73,6 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     >>> qml.dot(coeffs, ops)
     ParametrizedHamiltonian: terms=2
     """
-    if isinstance(coeffs, qml.QNodeCollection) or isinstance(ops, qml.QNodeCollection):
-        return qml.collections.dot(coeffs, ops)
 
     if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")

@@ -24,7 +24,7 @@ import contextlib
 import itertools
 import warnings
 from collections import defaultdict
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 
@@ -59,10 +59,17 @@ from pennylane.measurements import (
     VarianceMP,
     VnEntropy,
     VnEntropyMP,
+    Shots,
 )
-from pennylane.operation import operation_derivative
+from pennylane.resource import Resources
+from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
+
+
+def _sample_to_str(sample):
+    """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
+    return "".join(map(str, sample))
 
 
 class QubitDevice(Device):
@@ -234,7 +241,7 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    def _collect_shotvector_results(self, circuit, counts_exist):
+    def _collect_shotvector_results(self, circuit, counts_exist):  # pragma: no cover
         """Obtain and process statistics when using a shot vector.
         This routine is part of the ``execute()`` method."""
 
@@ -247,7 +254,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self._statistics_legacy(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -279,10 +286,8 @@ class QubitDevice(Device):
 
         return results
 
-    def _execute_new(self, circuit, **kwargs):
-        """New execute (update of return type) function, it executes a queue of quantum operations on the device and
-        then measure the given observables. More case will be added in future PRs, for the moment it only supports
-        measurements without shots.
+    def execute(self, circuit, **kwargs):
+        """It executes a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: instead of overwriting this, consider
         implementing a suitable subset of
@@ -298,7 +303,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.tapes.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -306,13 +311,16 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if not qml.active_return():
+            return self._execute_legacy(circuit, **kwargs)
+
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None:
+        if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
         # compute the required statistics
@@ -320,7 +328,7 @@ class QubitDevice(Device):
             results = self.shot_vec_statistics(circuit)
 
         else:
-            results = self._statistics_new(circuit)
+            results = self.statistics(circuit)
             single_measurement = len(circuit.measurements) == 1
 
             results = results[0] if single_measurement else tuple(results)
@@ -328,12 +336,25 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots, results=results)
+            shots_from_dev = self._shots if not self.shot_vector else self._raw_shot_sequence
+            tape_resources = circuit.specs["resources"]
+
+            resources = Resources(  # temporary until shots get updated on tape !
+                tape_resources.num_wires,
+                tape_resources.num_gates,
+                tape_resources.gate_types,
+                tape_resources.gate_sizes,
+                tape_resources.depth,
+                Shots(shots_from_dev),
+            )
+            self.tracker.update(
+                executions=1, shots=self._shots, results=results, resources=resources
+            )
             self.tracker.record()
 
         return results
 
-    def execute(self, circuit: QuantumTape, **kwargs):
+    def _execute_legacy(self, circuit: QuantumTape, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
@@ -351,7 +372,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.tapes.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -359,13 +380,11 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        if qml.active_return():
-            return self._execute_new(circuit, **kwargs)
 
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:
@@ -378,7 +397,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit=circuit)
+            results = self._statistics_legacy(circuit=circuit)
 
         if not circuit.is_sampled:
             if len(measurements) == 1:
@@ -417,13 +436,13 @@ class QubitDevice(Device):
         """Process measurement results from circuit execution using a device
         with a shot vector and return statistics.
 
-        This is an auxiliary method of execute_new and uses statistics_new.
+        This is an auxiliary method of execute and uses statistics.
 
         When using shot vectors, measurement results for each item of the shot
         vector are contained in a tuple.
 
         Args:
-            circuit (~.tapes.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -440,7 +459,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self._statistics_new(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             # This will likely be required:
             # if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
@@ -492,7 +511,7 @@ class QubitDevice(Device):
         return tuple(results)
 
     def _multi_meas_with_counts_shot_vec(self, circuit: QuantumTape, shot_tuple, r):
-        """Auxiliary function of the shot_vec_statistics and execute_new
+        """Auxiliary function of the shot_vec_statistics and execute
         functions for post-processing the results of multiple measurements at
         least one of which was a counts measurement.
 
@@ -527,9 +546,8 @@ class QubitDevice(Device):
 
         return new_r
 
-    def _batch_execute_new(self, circuits):
-        """Temporary batch execute function, waiting for QNode execution of the new return types. Execute a batch of
-        quantum circuits on the device.
+    def _batch_execute_legacy(self, circuits):
+        """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
         device's ``execute`` method. The results are collected in a list.
@@ -538,21 +556,18 @@ class QubitDevice(Device):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[~.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        # TODO: This method and the tests can be globally implemented by Device
-        # once it has the same signature in the execute() method
-
         results = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
 
-            res = self._execute_new(circuit)
+            res = self._execute_legacy(circuit)
             results.append(res)
 
         if self.tracker.active:
@@ -571,15 +586,13 @@ class QubitDevice(Device):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[~.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        # TODO: This method and the tests can be globally implemented by Device
-        # once it has the same signature in the execute() method
-        if qml.active_return():
-            return self._batch_execute_new(circuits=circuits)
+        if not qml.active_return():
+            return self._batch_execute_legacy(circuits=circuits)
 
         results = []
         for circuit in circuits:
@@ -587,7 +600,6 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            # TODO: Insert control on value here
             res = self.execute(circuit)
             results.append(res)
 
@@ -649,9 +661,9 @@ class QubitDevice(Device):
         return Wires.all_wires(list_of_wires)
 
     # pylint: disable=too-many-statements
-    def statistics(
+    def _statistics_legacy(
         self, observables=None, shot_range=None, bin_size=None, circuit: QuantumTape = None
-    ):
+    ):  # pragma: no cover
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -760,8 +772,8 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
+                        "The state or density matrix cannot be returned in combination "
+                        "with other return types"
                     )
 
                 if self.shots is not None:
@@ -824,16 +836,16 @@ class QubitDevice(Device):
             elif obs.return_type is Shadow:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
@@ -893,7 +905,7 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def _statistics_new(self, circuit: QuantumTape, shot_range=None, bin_size=None):
+    def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -976,8 +988,8 @@ class QubitDevice(Device):
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
+                        "The state or density matrix cannot be returned in combination "
+                        "with other return types"
                     )
 
                 if self.shots is not None:
@@ -999,11 +1011,10 @@ class QubitDevice(Device):
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
-                # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
-                #     raise NotImplementedError(
-                #         "Returning the Von Neumann entropy is not supported with shot vectors."
-                #     )
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the Von Neumann entropy is not supported with shot vectors."
+                    )
 
                 if self.shots is not None:
                     warnings.warn(
@@ -1020,11 +1031,10 @@ class QubitDevice(Device):
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
 
-                # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
-                #     raise NotImplementedError(
-                #         "Returning the mutual information is not supported with shot vectors."
-                #     )
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the mutual information is not supported with shot vectors."
+                    )
 
                 if self.shots is not None:
                     warnings.warn(
@@ -1039,16 +1049,16 @@ class QubitDevice(Device):
             elif isinstance(m, ClassicalShadowMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 result = self.classical_shadow(obs, circuit)
 
             elif isinstance(m, ShadowExpvalMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 result = self.shadow_expval(obs, circuit=circuit)
 
@@ -1062,6 +1072,8 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
+            else:
+                result = None
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
@@ -1093,7 +1105,8 @@ class QubitDevice(Device):
                 result = qml.math.squeeze(result)
 
             # 3. Append to final list
-            results.append(result)
+            if result is not None:
+                results.append(result)
 
         return results
 
@@ -1352,7 +1365,7 @@ class QubitDevice(Device):
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumTape): The quantum tape that is being executed
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -1389,7 +1402,9 @@ class QubitDevice(Device):
                 ]
 
                 self.reset()
-                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
+                self.apply(
+                    circuit.operations, rotations=self._get_diagonalizing_gates(circuit) + rotations
+                )
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
 
@@ -1403,7 +1418,7 @@ class QubitDevice(Device):
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
                 value measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumTape): The quantum tape that is being executed
 
         Returns:
             float: expectation value estimate.
@@ -1706,7 +1721,9 @@ class QubitDevice(Device):
 
 
         Args:
-            samples: samples in an array of dimension ``(shots,len(wires))``
+            samples: An array of samples, with the shape being ``(shots,len(wires))`` if an observable
+                is provided, with sample values being an array of 0s or 1s for each wire. Otherwise, it
+                has shape ``(shots,)``, with sample values being scalar eigenvalues of the observable
             obs (Observable): the observable sampled
             num_wires (int): number of wires the sampled observable was performed on
 
@@ -1744,23 +1761,33 @@ class QubitDevice(Device):
 
         outcomes = []
 
+        # if an observable was provided, batched samples will have shape (batch_size, shots)
+        batched_ndims = 2
+        shape = samples.shape
+
         if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-
+            samples = np.apply_along_axis(_sample_to_str, -1, samples)
+            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if obs.all_outcomes:
-                outcomes = self.generate_basis_states(num_wires)
-                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+                outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
             outcomes = qml.eigvals(obs)
 
-        # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: np.int64(0) for k in outcomes}
-        states, counts = np.unique(samples, return_counts=True)
-        for s, c in zip(states, counts):
-            outcome_dict[s] = c
+        batched = len(shape) == batched_ndims
+        if not batched:
+            samples = samples[None]
 
-        return outcome_dict
+        # generate empty outcome dict, populate values with state counts
+        base_dict = {k: np.int64(0) for k in outcomes}
+        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+        results = [np.unique(batch, return_counts=True) for batch in samples]
+        for result, outcome_dict in zip(results, outcome_dicts):
+            states, counts = result
+            for state, count in zip(states, counts):
+                outcome_dict[state] = count
+
+        return outcome_dicts if batched else outcome_dicts[0]
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
@@ -1907,8 +1934,8 @@ class QubitDevice(Device):
 
         if self.shots is not None:
             warnings.warn(
-                "Requested adjoint differentiation to be computed with finite shots."
-                " The derivative is always exact when using the adjoint differentiation method.",
+                "Requested adjoint differentiation to be computed with finite shots. "
+                "The derivative is always exact when using the adjoint differentiation method.",
                 UserWarning,
             )
 
@@ -1994,3 +2021,20 @@ class QubitDevice(Device):
 
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Note that this exists as a method of the Device class to enable child classes to
+        override the implementation if necessary (for example, to skip computing rotation
+        gates for a measurement that doesn't need them).
+
+        Args:
+            circuit (~.tape.QuantumTape): The circuit containing observables that may need diagonalizing
+
+        Returns:
+            List[~.Operation]: the operations that diagonalize the observables
+        """
+        # pylint:disable=no-self-use
+        return circuit.diagonalizing_gates

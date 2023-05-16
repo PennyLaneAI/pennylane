@@ -236,6 +236,18 @@ class TestApplyBroadcasted:
         for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
     ]
 
+    # Add qml.SpecialUnitary test cases
+    theta_1_par_1 = [np.array([np.pi / 2, 0, 0])]
+    theta_1_par_5 = [
+        np.array(
+            [[np.pi / 2, 0, 0], [0, np.pi / 2, 0], [0, 0, np.pi / 2], [0.3, 0, 0], [0.4, 0.2, 1.2]]
+        )
+    ]
+    test_data_single_wire_with_parameters += [
+        (qml.SpecialUnitary, s, mat_vec(qml.SpecialUnitary.compute_matrix(par[0], 1), s), par)
+        for s, par in [(state_1, theta_1_par_5), (state_5, theta_1_par_1), (state_5, theta_1_par_5)]
+    ]
+
     # Add qml.Rot test cases
     multi_par_1 = {
         "rz_0": [0.632, 0, 0],
@@ -369,6 +381,14 @@ class TestApplyBroadcasted:
     test_data_two_wires_with_parameters += [
         (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s), par)
         for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
+    ]
+
+    # Add qml.SpecialUnitary test cases
+    theta_2_par_1 = [np.linspace(0.1, 3, 15)]
+    theta_2_par_5 = [np.array([0.4, -0.2, 1.2, -0.5, 2.2])[:, np.newaxis] * np.eye(15)[2::3]]
+    test_data_two_wires_with_parameters += [
+        (qml.SpecialUnitary, s, mat_vec(qml.SpecialUnitary.compute_matrix(par[0], 2), s), par)
+        for s, par in [(state_1, theta_2_par_5), (state_5, theta_2_par_1), (state_5, theta_2_par_5)]
     ]
 
     @pytest.mark.parametrize(
@@ -1934,14 +1954,16 @@ class TestBroadcastingSupportViaExpansion:
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)
-            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         out = circuit(x, y)
-        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)]).T
+        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)])
 
         assert circuit.device.num_executions == len(y)
         tol = 1e-10 if shots is None else 1e-2
-        assert qml.math.allclose(out, expected, atol=tol, rtol=0)
+
+        assert qml.math.allclose(out[0], expected[0], atol=tol, rtol=0)
+        assert qml.math.allclose(out[1], expected[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "x, y", [(0.2, np.array([0.4])), (np.array([0.1, 5.1]), np.array([0.1, -0.3]))]

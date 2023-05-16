@@ -23,7 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import AllWires, AnyWires, Observable
+from pennylane.operation import AnyWires, Observable
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -67,7 +67,7 @@ class Hermitian(Observable):
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
-        A = qml.math.asarray(A)
+        A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:
@@ -209,13 +209,9 @@ class SparseHamiltonian(Observable):
         ``SparseHamiltonian`` observables can only be used to return expectation values.
         Variances and samples are not supported.
 
-    .. note::
-
-        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
-
     **Details:**
 
-    * Number of wires: All
+    * Number of wires: Any
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -232,17 +228,17 @@ class SparseHamiltonian(Observable):
     Sparse Hamiltonians can be constructed directly with a SciPy-compatible sparse matrix.
 
     Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then use
-    the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
+    :meth:`~.Hamiltonian.sparse_matrix` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
     >>> observables = [qml.PauliZ(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
-    >>> Hmat = qml.utils.sparse_hamiltonian(H)
+    >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
-    num_wires = AllWires
+    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 

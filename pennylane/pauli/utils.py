@@ -59,13 +59,13 @@ def is_pauli_word(observable):
 
     * A single pauli operator (see :class:`~.PauliX` for an example).
 
-    * A :class:`Tensor` instance containing Pauli operators.
+    * A :class:`.Tensor` instance containing Pauli operators.
 
-    * A :class:`Prod` instance containing Pauli operators.
+    * A :class:`.Prod` instance containing Pauli operators.
 
-    * A :class:`SProd` instance containing a valid Pauli word.
+    * A :class:`.SProd` instance containing a valid Pauli word.
 
-    * A :class:`Hamiltonian` instance with only one term.
+    * A :class:`.Hamiltonian` instance with only one term.
 
     .. Warning::
 
@@ -380,13 +380,13 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     * A single pauli operator (see :class:`~.PauliX` for an example).
 
-    * A :class:`Tensor` instance containing Pauli operators.
+    * A :class:`.Tensor` instance containing Pauli operators.
 
-    * A :class:`Prod` instance containing Pauli operators.
+    * A :class:`.Prod` instance containing Pauli operators.
 
-    * A :class:`SProd` instance containing a Pauli operator.
+    * A :class:`.SProd` instance containing a Pauli operator.
 
-    * A :class:`Hamiltonian` instance with only one term.
+    * A :class:`.Hamiltonian` instance with only one term.
 
     Given a Pauli in observable form, convert it into string of
     characters from ``['I', 'X', 'Y', 'Z']``. This representation is required for
@@ -1392,13 +1392,9 @@ def _pauli_mult(p1, p2):
                 k.append((j[0], pauli_mult_dict[j[1]]))
 
             if i[0] == j[0]:
+                k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
                 if i[1] + j[1] in pauli_coeff:
-                    k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
                     c = c * pauli_coeff[i[1] + j[1]]
-                else:
-                    k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
-
-    k = [i for i in k if "I" not in i[1]]
 
     for item in k:
         k_ = [i for i, x in enumerate(k) if x == item]
@@ -1484,3 +1480,15 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
                 binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix
+
+
+@lru_cache
+def _get_pauli_map(n):
+    r"""Return a list of Pauli operator objects acting on wires `0` up to `n`.
+
+    This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
+    """
+    return [
+        {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
+        for i in range(n + 1)
+    ]

@@ -163,6 +163,8 @@ class Hamiltonian(Observable):
 
     num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
+    batch_size = None
+    ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
 
     def __init__(
         self,
@@ -215,6 +217,9 @@ class Hamiltonian(Observable):
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+
+    def _check_batching(self, params):
+        """Override for Hamiltonian, batching is not yet supported."""
 
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
@@ -628,7 +633,7 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [op @ H for op in ops1]
+            terms = [op @ copy(H) for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
@@ -645,7 +650,7 @@ class Hamiltonian(Observable):
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [H @ op for op in ops1]
+            terms = [copy(H) @ op for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 

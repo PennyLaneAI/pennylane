@@ -24,23 +24,8 @@ from pennylane._device import _get_num_copies
 from pennylane.measurements import ProbabilityMP
 
 
-def _convert(jac, tangent):
-    """Utility to convert and cast the jacobian as tangent."""
-    if isinstance(jac, tuple):
-        jac_new = []
-        for j in jac:
-            j_ = qml.math.convert_like(j, tangent)
-            j_ = qml.math.cast(j_, tangent.dtype)
-            jac_new.append(j_)
-        jac = tuple(jac_new)
-    else:
-        jac = qml.math.convert_like(jac, tangent)
-        jac = qml.math.cast(jac, tangent.dtype)
-    return jac
-
-
 def compute_jvp_single(tangent, jac):
-    """Convenience function to compute the Jacobian vector product for a given
+    r"""Convenience function to compute the Jacobian vector product for a given
     tangent vector and a Jacobian for a single measurement tape.
 
     Args:
@@ -52,7 +37,10 @@ def compute_jvp_single(tangent, jac):
 
     **Examples**
 
-    1. For a single parameter and a single measurement without shape (e.g. expval, var):
+    We start with a number of examples. A more complete, technical description is given
+    further below.
+
+    1. For a single parameter and a single measurement without shape (e.g. ``expval``, ``var``):
 
     .. code-block:: pycon
 
@@ -61,7 +49,7 @@ def compute_jvp_single(tangent, jac):
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array(0.2)
 
-    2. For a single parameter and a single measurment with shape (e.g. probs):
+    2. For a single parameter and a single measurement with shape (e.g. ``probs``):
 
     .. code-block:: pycon
 
@@ -70,7 +58,8 @@ def compute_jvp_single(tangent, jac):
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array([0.6, 0.8])
 
-    3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
+    3. For multiple parameters (in this case 2 parameters) and a single measurement
+       without shape (e.g. ``expval``, ``var``):
 
     .. code-block:: pycon
 
@@ -79,7 +68,8 @@ def compute_jvp_single(tangent, jac):
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array(0.5)
 
-    4. For multiple parameters (in this case 2 parameters) and a single measurement with shape (e.g. probs):
+    4. For multiple parameters (in this case 2 parameters) and a single measurement with
+       shape (e.g. ``probs``):
 
     .. code-block:: pycon
 
@@ -88,47 +78,128 @@ def compute_jvp_single(tangent, jac):
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array([0.2, 0.5])
 
+    .. details::
+        :title: Technical description
+        :href: technical-description
+
+        There are multiple case distinctions in this function, for particular examples see above.
+
+        - The JVP may be for one **(A)** or multiple **(B)** parameters. We call the number of
+          parameters ``k``
+
+        - The number ``R`` of tape return type dimensions may be between 0 and 3.
+          We call the return type dimensions ``r_j``
+
+        - Each parameter may have an arbitrary number ``L_i>=0`` of dimensions
+
+        In the following, ``(a, b)`` denotes a tensor_like of shape ``(a, b)`` and ``[(a,), (b,)]``
+        / ``((a,), (b,))`` denotes a ``list`` / ``tuple`` of tensors with the indicated shapes,
+        respectively. Ignore the case of no trainable parameters, as it is filtered out in advance.
+
+        For scenario **(A)**, the input shapes can be in
+
+        .. list-table::
+           :widths: 30 40 30
+           :header-rows: 1
+
+           * - ``tangent`` shape
+             - ``jac`` shape
+             - Comment
+           * - ``(1,)`` or ``[()]`` or ``(())``
+             - ``()``
+             - scalar return, scalar parameter
+           * - ``(1,)`` or ``[()]`` or ``(())``
+             - ``(r_1,..,r_R)``
+             - tensor return, scalar parameter
+           * - ``[(l_1,..,l_{L_1})]`` [1]
+             - ``(l_1,..,l_{L_1})``
+             - scalar return, tensor parameter
+           * - ``[(l_1,..,l_{L_1})]`` [1]
+             - ``(r_1,..,r_R, l_1,..,l_{L_1})``
+             - tensor return, tensor parameter
+
+        [1] Note that intuitively, ``tangent`` could be allowed to be a tensor of shape
+        ``(l_1,..,l_{L_1})`` without an outer list. However, this is excluded in order
+        to allow for the distinction from scenario **(B)**. Internally, this input shape for
+        ``tangent`` never occurs for scenario **(A)**.
+
+        In this scenario, the tangent is reshaped into a one-dimensional tensor with shape
+        ``(tangent_size,)`` and the Jacobian is reshaped to have the dimensions
+        ``(r_1, ... r_R, tangent_size)``. This is followed by a ``tensordot`` contraction over the
+        ``tangent_size`` axis of both tensors.
+
+        For scenario **(B)**, the input shapes can be in
+
+        .. list-table::
+           :widths: 30 40 30
+           :header-rows: 1
+
+           * - ``tangent`` shape
+             - ``jac`` shape
+             - Comment
+           * - ``(k,)`` or ``[(),..,()]`` or ``((),..,())``
+             - ``((),..,())`` (length ``k``)
+             - scalar return, ``k`` scalar parameters
+           * - ``(k,)`` or ``[(),..,()]`` or ``((),..,())``
+             - ``((r_1,..,r_R),..,(r_1,..,r_R))`` [1]
+             - tensor return, ``k`` scalar parameters
+           * - ``[(l_1,..,l_{L_1}),..,(l_1,..,l_{L_k})]``
+             - ``((l_1,..,l_{L_1}),..,(l_1,..,l_{L_k}))``
+             - scalar return, ``k`` tensor parameters
+           * - ``[(l_1,..,l_{L_1}),..,(l_1,..,l_{L_k})]``
+             - ``((r_1,..,r_R, l_1,..,l_{L_1}),..,(r_1,..,r_R, l_1,..,l_{L_k}))`` [1]
+             - tensor return, ``k`` tensor parameters
+
+        [1] Note that the return type dimensions ``(r_1,..,r_R)`` are the same for all entries
+        of ``jac``, whereas the dimensions of the entries in ``tanget``, and the according
+        dimensions ``(l_1,..,l_{L_k})`` of the ``jac`` entries may differ.
+
+        In this scenario, another case separation is used: If any of the parameters is a
+        tensor (i.e. not a scalar), all tangent entries are reshaped into one-dimensional
+        tensors with shapes ``(tangent_size_i,)`` and then stacked into one one-dimensional tensor.
+        If there are no tensor parameters, the tangent is just stacked and reshaped.
+        The Jacobians are reshaped to have the dimensions ``(r_1, ... r_R, tangent_size_i)``
+        and then are concatenated along their last (potentially mismatching) axis.
+        This is followed by a tensordot contraction over the axes of size
+        :math:`\sum_i` ``tangent_size_i``.
+
     """
     if jac is None:
         return None
-
-    tangent = qml.math.stack(tangent)
-    jac = _convert(jac, tangent)
-
-    # Single param
-    if not isinstance(jac, tuple):
+    single_param = not isinstance(jac, tuple)
+    if (single_param and jac.shape == (0,)) or (not single_param and len(jac) == 0):
         # No trainable parameters
-        if jac.shape == (0,):
-            res = qml.math.zeros((1, 0))
-            return res
+        return qml.math.zeros((1, 0))
 
-        tangent = qml.math.reshape(tangent, (1,))
+    if single_param:
+        tangent = qml.math.stack(tangent)
+        first_tangent_ndim = len(tangent.shape[1:])
+        tangent = qml.math.flatten(tangent)
+        tangent_size = tangent.shape[0]
+        shape = jac.shape
+        new_shape = shape[: len(shape) - first_tangent_ndim] + (tangent_size,)
+        jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
+        jac = qml.math.reshape(jac, new_shape)
+        return qml.math.tensordot(jac, tangent, [[-1], [0]])
 
-        # No dimension e.g. expval
-        if jac.shape == ():
-            jac = qml.math.reshape(jac, (1,))
-
-        # With dimension e.g. probs
-        else:
-            jac = qml.math.reshape(jac, (1, -1))
-        res = qml.math.tensordot(jac, tangent, [[0], [0]])
-    # Multiple params
+    tangent_ndims = [t.ndim for t in tangent]
+    if isinstance(tangent, (tuple, list)) and any(t.ndim > 0 for t in tangent):
+        # At least one tangent entry is not a scalar, requiring us to flatten them and hstack
+        tangent = [qml.math.flatten(t) for t in tangent]
+        tangent_sizes = [t.shape[0] for t in tangent]
+        tangent = qml.math.hstack(tangent)
     else:
-        # No trainable parameters (adjoint)
-        if len(jac) == 0:
-            res = qml.math.zeros((1, 0))
-            return res
-
-        jac = qml.math.stack(jac)
-
-        # No dimension e.g. expval
-        if jac[0].shape == ():
-            res = qml.math.tensordot(jac, tangent, 1)
-
-        # With dimension e.g. probs
-        else:
-            res = qml.math.tensordot(jac, tangent, [[0], [0]])
-    return res
+        # Only scalar tangent entries, no flattening required and we may use stack
+        tangent_sizes = [1] * len(tangent)
+        tangent = qml.math.stack(tangent)
+    jac_shapes = [j.shape for j in jac]
+    new_shapes = [
+        shape[: len(shape) - t_ndim] + (tsize,)
+        for shape, t_ndim, tsize in zip(jac_shapes, tangent_ndims, tangent_sizes)
+    ]
+    jac = qml.math.concatenate([qml.math.reshape(j, s) for j, s in zip(jac, new_shapes)], axis=-1)
+    jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
+    return qml.math.tensordot(jac, tangent, [[-1], [0]])
 
 
 def compute_jvp_multi(tangent, jac):
@@ -165,8 +236,7 @@ def compute_jvp_multi(tangent, jac):
     """
     if jac is None:
         return None
-    res = tuple(compute_jvp_single(tangent, j) for j in jac)
-    return res
+    return tuple(compute_jvp_single(tangent, j) for j in jac)
 
 
 def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
@@ -227,61 +297,46 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     >>> jvp
     (Array(-0.62073976, dtype=float32), Array([-0.3259707 ,  0.32597077], dtype=float32))
     """
-    gradient_kwargs = gradient_kwargs or {}
-    num_params = len(tape.trainable_params)
-    num_measurements = len(tape.measurements)
-
-    if num_params == 0:
+    if len(tape.trainable_params) == 0:
         # The tape has no trainable parameters; the JVP
         # is simply none.
         return [], lambda _, num=None: None
 
-    multi_m = num_measurements > 1
+    multi_m = len(tape.measurements) > 1
 
     try:
-        if qml.math.allclose(qml.math.stack(tangent), 0):
+        # if qml.math.allclose(qml.math.stack(tangent), 0):
+        if qml.math.allclose(tangent, 0):
             # If the tangent vector is zero, then the
             # corresponding element of the JVP will be zero,
             # and we can avoid a quantum computation.
 
             def func(_):  # pylint: disable=unused-argument
+                # TODO: Update shape for CV variables and for qutrit simulations
+                res = tuple(_single_measurement_zero(m, tangent) for m in tape.measurements)
                 if not multi_m:
-                    # TODO: Update shape for CV variables and for qutrit simulations
-                    res = _single_measurement_zero(tape.measurements[0], tangent)
-                else:
-                    # TODO: Update shape for CV variables and for qutrit simulations
-                    res = [_single_measurement_zero(m, tangent) for m in tape.measurements]
-                    res = tuple(res)
+                    res = res[0]
                 return res
 
             return [], func
     except (AttributeError, TypeError):
         pass
 
+    gradient_kwargs = gradient_kwargs or {}
     gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        shot_vector = isinstance(shots, Sequence)
+        _jvp_fn = compute_jvp_multi if multi_m else compute_jvp_single
 
         # Jacobian without shot vectors
-        if not shot_vector:
-            if multi_m:
-                return compute_jvp_multi(tangent, jac)
-            return compute_jvp_single(tangent, jac)
+        if not isinstance(shots, Sequence):
+            return _jvp_fn(tangent, jac)
 
         # The jacobian is calculated for shot vectors
         len_shot_vec = _get_num_copies(shots)
-        jvps = []
-        if multi_m:
-            for i in range(len_shot_vec):
-                jvps.append(compute_jvp_multi(tangent, jac[i]))
-        else:
-            for i in range(len_shot_vec):
-                jvps.append(compute_jvp_single(tangent, jac[i]))
-
-        return tuple(jvps)
+        return tuple(_jvp_fn(tangent, jac[i]) for i in range(len_shot_vec))
 
     return gradient_tapes, processing_fn
 

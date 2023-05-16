@@ -14,15 +14,15 @@
 """
 This module contains the qml.state measurement.
 """
-from typing import Sequence
+from typing import Sequence, Optional
 
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, State, StateMeasurement
+from .measurements import State, StateMeasurement
 
 
-def state():
+def state() -> "StateMP":
     r"""Quantum state in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its state. A
@@ -33,7 +33,7 @@ def state():
     number of wires defined for the device.
 
     Returns:
-        StateMP: measurement process instance
+        StateMP: Measurement process instance
 
     **Example:**
 
@@ -81,7 +81,7 @@ def state():
     return StateMP()
 
 
-def density_matrix(wires):
+def density_matrix(wires) -> "StateMP":
     r"""Quantum density matrix in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its density
@@ -93,7 +93,7 @@ def density_matrix(wires):
         wires (Sequence[int] or int): the wires of the subsystem
 
     Returns:
-        StateMP: measurement process instance
+        StateMP: Measurement process instance
 
     **Example:**
 
@@ -131,16 +131,14 @@ class StateMP(StateMeasurement):
     Please refer to :func:`state` and :func:`density_matrix` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
 
     @property
     def return_type(self):
@@ -150,13 +148,9 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
+    def _shape_legacy(self, device, shots):
         num_shot_elements = (
-            1
-            if (device is None or device.shot_vector is None)
-            else sum(s.copies for s in device.shot_vector)
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
 
         if self.wires:
@@ -164,20 +158,15 @@ class StateMP(StateMeasurement):
             dim = 2 ** len(self.wires)
             return (num_shot_elements, dim, dim)
 
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
         # qml.state()
         dim = 2 ** len(device.wires)
         return (num_shot_elements, dim)
 
-    def _shape_new(self, device=None):
+    def shape(self, device, shots):
+        if not qml.active_return():
+            return self._shape_legacy(device, shots)
         num_shot_elements = (
-            1
-            if (device is None or device.shot_vector is None)
-            else sum(s.copies for s in device.shot_vector)
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
 
         if self.wires:
@@ -190,12 +179,6 @@ class StateMP(StateMeasurement):
             )
 
         # qml.state()
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-
         dim = 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 

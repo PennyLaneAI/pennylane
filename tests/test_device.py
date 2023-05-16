@@ -983,35 +983,63 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
+    class SomeDevice(qml.Device):
+        name = ""
+        short_name = ""
+        pennylane_requires = ""
+        version = ""
+        author = ""
+        operations = ""
+        observables = ""
+        apply = lambda *args, **kwargs: 0
+        expval = lambda *args, **kwargs: 0
+        reset = lambda *args, **kwargs: 0
+        supports_observable = lambda *args, **kwargs: True
+
     @pytest.mark.parametrize("use_grouping", (True, False))
-    def test_batch_transform_checks_use_grouping_property(self, use_grouping):
+    def test_batch_transform_checks_use_grouping_property(self, use_grouping, mocker):
         """If the device specifies `use_grouping=False`, the batch transform
         method won't expand the hamiltonian when the measured hamiltonian has
         grouping indices.
         """
 
-        class TestDevice(qml.Device):
-            name = ""
-            short_name = ""
-            pennylane_requires = ""
-            version = ""
-            author = ""
-            operations = ""
-            observables = ""
-            apply = lambda *args, **kwargs: 0
-            expval = lambda *args, **kwargs: 0
-            reset = lambda *args, **kwargs: 0
-            supports_observable = lambda *args, **kwargs: True
-
         H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
 
-        dev = TestDevice()
+        dev = self.SomeDevice()
         dev.shots = None
         dev.use_grouping = use_grouping
-        new_qscripts, post_proc_fn = dev.batch_transform(qs)
+        new_qscripts, _ = dev.batch_transform(qs)
 
         if use_grouping:
             assert len(new_qscripts) == 2
+            spy.assert_called_once()
         else:
             assert len(new_qscripts) == 1
+            spy.assert_not_called()
+
+    def test_batch_transform_does_not_expand_supported_sum(self, mocker):
+        """Tests that batch_transform does not expand Sums if they are supported."""
+        H = qml.sum(qml.PauliX(0), qml.PauliY(0))
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        spy = mocker.spy(qml.transforms, "sum_expand")
+
+        dev = self.SomeDevice()
+        new_qscripts, _ = dev.batch_transform(qs)
+
+        assert len(new_qscripts) == 1
+        spy.assert_not_called()
+
+    def test_batch_transform_expands_not_supported_sums(self, mocker):
+        """Tests that batch_transform expand Sums if they are not supported."""
+        H = qml.sum(qml.PauliX(0), qml.PauliY(0))
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        spy = mocker.spy(qml.transforms, "sum_expand")
+
+        dev = self.SomeDevice()
+        dev.supports_observable = lambda *args, **kwargs: False
+        new_qscripts, _ = dev.batch_transform(qs)
+
+        assert len(new_qscripts) == 2
+        spy.assert_called()

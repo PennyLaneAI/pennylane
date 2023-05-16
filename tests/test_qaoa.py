@@ -14,30 +14,32 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
+import pytest
 import itertools
+import numpy as np
 
 import networkx as nx
-import numpy as np
-import pytest
-import retworkx as rx
 from networkx import Graph
-from scipy.linalg import expm
-from scipy.sparse import csc_matrix, kron
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
+
 from pennylane.qaoa.cycle import (
+    edges_to_wires,
+    wires_to_edges,
     _inner_net_flow_constraint_hamiltonian,
-    _inner_out_flow_constraint_hamiltonian,
-    _partial_cycle_mixer,
+    net_flow_constraint,
+    loss_hamiltonian,
     _square_hamiltonian_terms,
     cycle_mixer,
-    edges_to_wires,
-    loss_hamiltonian,
-    net_flow_constraint,
+    _partial_cycle_mixer,
     out_flow_constraint,
-    wires_to_edges,
+    _inner_out_flow_constraint_hamiltonian,
 )
+from scipy.linalg import expm
+from scipy.sparse import csc_matrix, kron
+
 
 #####################################################
 
@@ -1125,17 +1127,17 @@ class TestLayers:
         [
             [
                 qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
-                [qml.RX(2, wires=[0]), qml.RX(2, wires=[1])],
+                [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
             ],
             [
                 qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
                 [
-                    qml.IsingXX(1, wires=[0, 1]),
-                    qml.IsingYY(1, wires=[0, 1]),
-                    qml.IsingXX(1, wires=[0, 2]),
-                    qml.IsingYY(1, wires=[0, 2]),
-                    qml.IsingXX(1, wires=[1, 2]),
-                    qml.IsingYY(1, wires=[1, 2]),
+                    qml.PauliRot(1, "XX", wires=[0, 1]),
+                    qml.PauliRot(1, "YY", wires=[0, 1]),
+                    qml.PauliRot(1, "XX", wires=[0, 2]),
+                    qml.PauliRot(1, "YY", wires=[0, 2]),
+                    qml.PauliRot(1, "XX", wires=[1, 2]),
+                    qml.PauliRot(1, "YY", wires=[1, 2]),
                 ],
             ],
         ],
@@ -1161,14 +1163,14 @@ class TestLayers:
         [
             [
                 qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
-                [qml.RZ(2, wires=[0]), qml.RZ(2, wires=[1])],
+                [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
             ],
             [
                 qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
                 [
-                    qml.IsingZZ(1, wires=[0, 1]),
-                    qml.IsingZZ(1, wires=[0, 2]),
-                    qml.IsingZZ(1, wires=[1, 2]),
+                    qml.PauliRot(1, "ZZ", wires=[0, 1]),
+                    qml.PauliRot(1, "ZZ", wires=[0, 2]),
+                    qml.PauliRot(1, "ZZ", wires=[1, 2]),
                 ],
             ],
         ],
@@ -1888,9 +1890,7 @@ class TestCycles:
         bitstrings = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_bitstrings = (
-            (cost(np.array(bitstring)).numpy(), bitstring) for bitstring in bitstrings
-        )
+        energies_bitstrings = ((cost(np.array(bitstring)), bitstring) for bitstring in bitstrings)
 
         for energy, bs in energies_bitstrings:
             # convert binary string to wires then wires to edges
@@ -1940,7 +1940,7 @@ class TestCycles:
         states = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_states = ((cost(np.array(state)).numpy(), state) for state in states)
+        energies_states = ((cost(np.array(state)), state) for state in states)
 
         # We now have the energies of each bitstring/state. We also want to calculate the net flow of
         # the corresponding edges
@@ -2013,9 +2013,7 @@ class TestCycles:
         bitstrings = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_bitstrings = (
-            (cost(np.array(bitstring)).numpy(), bitstring) for bitstring in bitstrings
-        )
+        energies_bitstrings = ((cost(np.array(bitstring)), bitstring) for bitstring in bitstrings)
 
         def find_simple_cycle(list_of_edges):
             """Returns True if list_of_edges contains a permutation corresponding to a simple cycle"""

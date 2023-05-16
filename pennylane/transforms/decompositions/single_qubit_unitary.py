@@ -20,16 +20,17 @@ from pennylane import math
 
 
 def _convert_to_su2(U, return_global_phase=False):
-    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
 
     Args:
-        U (array[complex]): A matrix, presumed to be :math:`2 \times 2` and unitary.
+        U (array[complex]): A matrix with a batch dimension, presumed to be
+        of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
         return_global_phase (bool): If `True`, the return will include
         the global phase. If `False`, only the :math:`SU(2)` representative
         is returned.
 
     Returns:
-        array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
+        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
         equivalent to U up to a global phase. If ``return_global_phase=True``,
         a 2-element tuple is returned, with the first element being the
         :math:`SU(2)` equivalent and the second, the global phase.
@@ -133,7 +134,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
             element of the returned list of operations.
 
     Returns:
-        list[qml.Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
+        list[Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
         another ``RX`` gate, which when applied in the order of appearance in the list is equivalent
         to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
@@ -141,13 +142,13 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     **Example**
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-                      [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
+    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(0.45246583660683803, wires=[0]),
-     RY(1.3974974118006183, wires=[0]),
-     RX(-1.7210192479534632, wires=[0]),
-     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RX(array(0.45246584), wires=[0]),
+    RY(array(1.39749741), wires=[0]),
+    RX(array(-1.72101925), wires=[0]),
+    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Small number to add to denominators to avoid division by zero

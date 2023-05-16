@@ -30,7 +30,7 @@ class TestEvolution:
         op = Evolution(base, param)
 
         assert op.base is base
-        assert op.coeff == 1j * param
+        assert op.coeff == -1j * param
         assert op.name == "Evolution"
         assert isinstance(op, Exp)
 
@@ -43,9 +43,22 @@ class TestEvolution:
     def test_evolution_matches_corresponding_exp(self):
         base_op = 2 * qml.PauliX(0)
         op1 = Exp(base_op, 1j)
-        op2 = Evolution(base_op, 1)
+        op2 = Evolution(base_op, -1)
 
         assert np.all(op1.matrix() == op2.matrix())
+
+    def test_has_generator_true(self):
+        """Test that has_generator returns True if the coefficient is purely imaginary."""
+        U = Evolution(qml.PauliX(0), 3)
+        assert U.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test that has_generator returns False if the coefficient is not purely imaginary."""
+        U = Evolution(qml.PauliX(0), 3j)
+        assert U.has_generator is False
+
+        U = Evolution(qml.PauliX(0), 0.01 + 2j)
+        assert U.has_generator is False
 
     def test_generator(self):
         U = Evolution(qml.PauliX(0), 3)
@@ -67,45 +80,44 @@ class TestEvolution:
         op = Evolution(base, param)
 
         assert op.data == [param]
-        assert op.coeff == 1j * op.data[0]
+        assert op.coeff == -1j * op.data[0]
         assert op.param == op.data[0]
 
-    @pytest.mark.parametrize(
-        "base", [qml.Hamiltonian([1], [qml.PauliX(0)]), qml.pow(qml.PauliX(0))]
-    )
-    def test_grad_method(self, base):
-        """Test that the grad_method of the Evolution operator corresponds to the grad_method of the base operator."""
-        ev = Evolution(base)
-        assert ev.grad_method == base.grad_method
+        new_param = np.array(2.345)
+        op.data = [new_param]
+
+        assert op.data == [new_param]
+        assert op.coeff == -1j * op.data[0]
+        assert op.data == op.data[0]
 
     def test_repr_paulix(self):
         """Test the __repr__ method when the base is a simple observable."""
         op = Evolution(qml.PauliX(0), 3)
-        assert repr(op) == "Evolution(3j PauliX)"
+        assert repr(op) == "Evolution(-3j PauliX)"
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
         t = qml.PauliX(0) @ qml.PauliX(1)
         isingxx = Evolution(t, 0.25)
 
-        assert repr(isingxx) == "Evolution(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+        assert repr(isingxx) == "Evolution(-0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
 
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
         op = Evolution(base, 3)
 
-        assert repr(op) == "Evolution(3j S(wires=[0]) @ PauliX(wires=[0]))"
+        assert repr(op) == "Evolution(-3j S(wires=[0]) @ PauliX(wires=[0]))"
 
     @pytest.mark.parametrize(
         "op,decimals,expected",
         [
-            (Evolution(qml.PauliZ(0), 2), None, "Exp(2j Z)"),
-            (Evolution(qml.PauliZ(0), 2), 2, "Exp(2.00j Z)"),
-            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), None, "Exp(2j Z@Y)"),
-            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), 2, "Exp(2.00j Z@Y)"),
-            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(5.678j RZ)"),
-            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(5.68j RZ\n(1.23))"),
+            (Evolution(qml.PauliZ(0), 2), None, "Exp(-2j Z)"),
+            (Evolution(qml.PauliZ(0), 2), 2, "Exp(-2.00j Z)"),
+            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), None, "Exp(-2j Z@Y)"),
+            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), 2, "Exp(-2.00j Z@Y)"),
+            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(-5.678j RZ)"),
+            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(-5.68j RZ\n(1.23))"),
         ],
     )
     def test_label(self, op, decimals, expected):
@@ -129,7 +141,7 @@ class TestEvolution:
         new_op = op.simplify()
 
         assert qml.equal(new_op.base, qml.PauliX(0))
-        assert new_op.coeff == 12j
+        assert new_op.coeff == -12j
 
     @pytest.mark.jax
     def test_parameter_shift_gradient_matches_jax(self):
@@ -189,6 +201,14 @@ class TestEvolution:
         ):
             qml.generator(op)
 
-    def test_warning_is_raised(self):
-        with pytest.warns(UserWarning, match="Please use `qml.evolve"):
-            Evolution(qml.PauliX(0))
+    def test_generator_undefined_error(self):
+        """Tests that an error is raised if the generator of an Evolution operator is requested
+        with a non-zero complex term in the operator parameter."""
+        param = 1 + 2.5j
+        op = Evolution(qml.PauliZ(0), param)
+
+        with pytest.raises(
+            qml.operation.GeneratorUndefinedError,
+            match="is not imaginary; the expected format is exp",
+        ):
+            _ = op.generator()

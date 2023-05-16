@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 import math
 
 import pytest
+from flaky import flaky
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
@@ -879,6 +880,7 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
+    @flaky(max_runs=3)
     @pytest.mark.parametrize("index", list(range(1, 9)))
     def test_hermitian(self, index, tol_stochastic):
         """Tests that sampling on a tensor product of Hermitian observables with another observable works

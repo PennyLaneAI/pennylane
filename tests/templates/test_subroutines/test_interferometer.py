@@ -70,19 +70,19 @@ class TestInterferometer:
         )
 
         for rec in [op_rect.expand(), op_tria.expand()]:
-            assert len(rec.operations) == 4
+            assert len(rec) == 4
 
-            assert isinstance(rec.operations[0], qml.Rotation)
-            assert rec.operations[0].parameters == phi
+            assert isinstance(rec[0], qml.Rotation)
+            assert rec[0].parameters == phi
 
-            assert isinstance(rec.operations[1], qml.Beamsplitter)
-            assert rec.operations[1].parameters == [theta[0], 0]
+            assert isinstance(rec[1], qml.Beamsplitter)
+            assert rec[1].parameters == [theta[0], 0]
 
-            assert isinstance(rec.operations[2], qml.Rotation)
-            assert rec.operations[2].parameters == [varphi[0]]
+            assert isinstance(rec[2], qml.Rotation)
+            assert rec[2].parameters == [varphi[0]]
 
-            assert isinstance(rec.operations[3], qml.Rotation)
-            assert rec.operations[3].parameters == [varphi[1]]
+            assert isinstance(rec[3], qml.Rotation)
+            assert rec[3].parameters == [varphi[1]]
 
     def test_one_mode(self, tol):
         """Test that a one mode interferometer correctly gives a rotation gate"""
@@ -91,9 +91,9 @@ class TestInterferometer:
         op = qml.Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
         rec = op.expand()
 
-        assert len(rec.operations) == 1
-        assert isinstance(rec.operations[0], qml.Rotation)
-        assert np.allclose(rec.operations[0].parameters, varphi, atol=tol)
+        assert len(rec) == 1
+        assert isinstance(rec[0], qml.Rotation)
+        assert np.allclose(rec[0].parameters, varphi, atol=tol)
 
     def test_two_mode_rect(self, tol):
         """Test that a two mode interferometer using the rectangular mesh
@@ -108,14 +108,14 @@ class TestInterferometer:
         op = qml.Interferometer(theta, phi, varphi, wires=wires)
         rec = op.expand()
 
-        isinstance(rec.operations[0], qml.Beamsplitter)
-        assert rec.operations[0].parameters == theta + phi
+        isinstance(rec[0], qml.Beamsplitter)
+        assert rec[0].parameters == theta + phi
 
-        assert isinstance(rec.operations[1], qml.Rotation)
-        assert rec.operations[1].parameters == [varphi[0]]
+        assert isinstance(rec[1], qml.Rotation)
+        assert rec[1].parameters == [varphi[0]]
 
-        assert isinstance(rec.operations[2], qml.Rotation)
-        assert rec.operations[2].parameters == [varphi[1]]
+        assert isinstance(rec[2], qml.Rotation)
+        assert rec[2].parameters == [varphi[1]]
 
     def test_two_mode_triangular(self, tol):
         """Test that a two mode interferometer using the triangular mesh
@@ -130,16 +130,16 @@ class TestInterferometer:
         op = qml.Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
         rec = op.expand()
 
-        assert len(rec.operations) == 3
+        assert len(rec) == 3
 
-        assert isinstance(rec.operations[0], qml.Beamsplitter)
-        assert rec.operations[0].parameters == theta + phi
+        assert isinstance(rec[0], qml.Beamsplitter)
+        assert rec[0].parameters == theta + phi
 
-        assert isinstance(rec.operations[1], qml.Rotation)
-        assert rec.operations[1].parameters == [varphi[0]]
+        assert isinstance(rec[1], qml.Rotation)
+        assert rec[1].parameters == [varphi[0]]
 
-        assert isinstance(rec.operations[2], qml.Rotation)
-        assert rec.operations[2].parameters == [varphi[1]]
+        assert isinstance(rec[2], qml.Rotation)
+        assert rec[2].parameters == [varphi[1]]
 
     def test_three_mode(self, tol):
         """Test that a three mode interferometer using either mesh gives the correct gates"""
@@ -155,32 +155,32 @@ class TestInterferometer:
 
         # Test rectangular mesh
         rec = op_rect.expand()
-        assert len(rec.operations) == 6
+        assert len(rec) == 6
 
         expected_bs_wires = [[0, 1], [1, 2], [0, 1]]
 
-        for idx, op in enumerate(rec.operations[:3]):
+        for idx, op in enumerate(rec[:3]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
             assert op.wires == Wires(expected_bs_wires[idx])
 
-        for idx, op in enumerate(rec.operations[3:]):
+        for idx, op in enumerate(rec[3:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
 
         # Test triangular mesh
         rec = op_tria.expand()
-        assert len(rec.operations) == 6
+        assert len(rec) == 6
 
         expected_bs_wires = [[1, 2], [0, 1], [1, 2]]
 
-        for idx, op in enumerate(rec.operations[:3]):
+        for idx, op in enumerate(rec[:3]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
             assert op.wires == Wires(expected_bs_wires[idx])
 
-        for idx, op in enumerate(rec.operations[3:]):
+        for idx, op in enumerate(rec[3:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
@@ -197,16 +197,16 @@ class TestInterferometer:
         op = qml.Interferometer(theta, phi, varphi, wires=wires)
         rec = op.expand()
 
-        assert len(rec.operations) == 10
+        assert len(rec) == 10
 
         expected_bs_wires = [[0, 1], [2, 3], [1, 2], [0, 1], [2, 3], [1, 2]]
 
-        for idx, op in enumerate(rec.operations[:6]):
+        for idx, op in enumerate(rec[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
             assert op.wires == Wires(expected_bs_wires[idx])
 
-        for idx, op in enumerate(rec.operations[6:]):
+        for idx, op in enumerate(rec[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
@@ -223,16 +223,16 @@ class TestInterferometer:
         op = qml.Interferometer(theta, phi, varphi, wires=wires, mesh="triangular")
         rec = op.expand()
 
-        assert len(rec.operations) == 10
+        assert len(rec) == 10
 
         expected_bs_wires = [[2, 3], [1, 2], [0, 1], [2, 3], [1, 2], [2, 3]]
 
-        for idx, op in enumerate(rec.operations[:6]):
+        for idx, op in enumerate(rec[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
             assert op.wires == Wires(expected_bs_wires[idx])
 
-        for idx, op in enumerate(rec.operations[6:]):
+        for idx, op in enumerate(rec[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
@@ -262,10 +262,10 @@ class TestInterferometer:
                 qml.Squeezing(sq[w][0], sq[w][1], wires=w)
 
             qml.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
+            return qml.expval(qml.NumberOperator(0))
 
         res = circuit(theta, phi, varphi)
-        expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
+        expected = np.array(0.96852694)
         assert np.allclose(res, expected, atol=tol)
 
     def test_interferometer_wrong_dim(self):

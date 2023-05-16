@@ -12,68 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
+from typing import Union
 
 # pylint: disable=protected-access
 import pennylane as qml
-from pennylane.wires import Wires
-from pennylane.measurements import StateMeasurement, MeasurementProcess
+import pennylane.numpy as np
 from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
+from .measure import measure
+from .sampling import measure_with_samples
 
 
-def measure_state_diagonalizing_gates(
-    measurementprocess: StateMeasurement, state: TensorLike
-) -> TensorLike:
-    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
-
-    Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    total_indices = len(state.shape)
-    wires = Wires(range(total_indices))
-
-    for op in measurementprocess.obs.diagonalizing_gates():
-        state = apply_operation(op, state)
-
-    return measurementprocess.process_state(qml.math.flatten(state), wires)
-
-
-def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
-    """Apply a measurement process to a state.
-
-    Args:
-        measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
-
-    Returns:
-        Tensorlike: the result of the measurement
-    """
-    if isinstance(measurementprocess, StateMeasurement):
-        if measurementprocess.obs is None:
-            # no need to apply diagonalizing gates
-            total_indices = len(state.shape)
-            wires = Wires(range(total_indices))
-            return measurementprocess.process_state(qml.math.flatten(state), wires)
-
-        if measurementprocess.obs.has_diagonalizing_gates:
-            return measure_state_diagonalizing_gates(measurementprocess, state)
-
-    raise NotImplementedError
-
-
-def simulate(circuit: qml.tape.QuantumScript) -> tuple:
+def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Union[tuple, TensorLike]:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -99,4 +60,27 @@ def simulate(circuit: qml.tape.QuantumScript) -> tuple:
     for op in circuit._ops:
         state = apply_operation(op, state)
 
-    return tuple(measure(mp, state) for mp in circuit.measurements)
+    if circuit.shots.total_shots is None:
+        # analytic case
+
+        if len(circuit.measurements) == 1:
+            return measure(circuit.measurements[0], state)
+
+        return tuple(measure(mp, state) for mp in circuit.measurements)
+
+    # finite-shot case
+
+    if len(circuit.measurements) == 1:
+        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
+
+    rng = np.random.default_rng(rng)
+    results = tuple(
+        measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
+    )
+
+    # no shot vector
+    if not circuit.shots.has_partitioned_shots:
+        return results
+
+    # shot vector case: move the shot vector axis before the measurement axis
+    return tuple(zip(*results))

@@ -72,7 +72,7 @@ def cost_layer(gamma, hamiltonian):
 
         .. code-block:: python
 
-            dev = qml.device('default.mixed', wires=2)
+            dev = qml.device('default.qubit', wires=2)
 
             @qml.qnode(dev)
             def circuit(gamma):
@@ -87,11 +87,11 @@ def cost_layer(gamma, hamiltonian):
         which gives us a circuit of the form:
 
         >>> print(qml.draw(circuit)(0.5))
-        0: ──H─╭Exp(-0.50j 𝓗(1.00,1.00))─┤  <Z>
-        1: ──H─╰Exp(-0.50j 𝓗(1.00,1.00))─┤  <Z>
+        0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
+        1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
-        0: ──H──RZ(1.00+0.00j)─╭●─────────────────╭●─┤  <Z>
-        1: ──H─────────────────╰X──RZ(1.00+0.00j)─╰X─┤  <Z>
+        0: ──H──MultiRZ(1.00)─╭MultiRZ(1.00)─┤  <Z>
+        1: ──H────────────────╰MultiRZ(1.00)─┤  <Z>
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
@@ -102,7 +102,7 @@ def cost_layer(gamma, hamiltonian):
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
 
-    qml.evolve(hamiltonian, coeff=gamma, num_steps=1)
+    qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
 
 
 def mixer_layer(alpha, hamiltonian):
@@ -134,7 +134,7 @@ def mixer_layer(alpha, hamiltonian):
 
         .. code-block:: python
 
-            dev = qml.device('default.mixed', wires=2)
+            dev = qml.device('default.qubit', wires=2)
 
             @qml.qnode(dev)
             def circuit(alpha):
@@ -149,11 +149,11 @@ def mixer_layer(alpha, hamiltonian):
         which gives us a circuit of the form:
 
         >>> print(qml.draw(circuit)(0.5))
-        0: ──H─╭Exp(-0.50j 𝓗(1.00,1.00))─┤  <Z>
-        1: ──H─╰Exp(-0.50j 𝓗(1.00,1.00))─┤  <Z>
+        0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
+        1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
-        0: ──H──RX(1.00+0.00j)─╭●──RX(1.00+0.00j)─╭●─┤  <Z>
-        1: ──H─────────────────╰X─────────────────╰X─┤  <Z>
+        0: ──H──H──MultiRZ(1.00)──H──H─╭MultiRZ(1.00)──H─┤  <Z>
+        1: ──H──H──────────────────────╰MultiRZ(1.00)──H─┤  <Z>
 
 
     """
@@ -162,4 +162,4 @@ def mixer_layer(alpha, hamiltonian):
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
 
-    qml.evolve(hamiltonian, coeff=alpha, num_steps=1)
+    qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)

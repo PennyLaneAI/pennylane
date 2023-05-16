@@ -44,8 +44,8 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 1
-        assert op.parameters == [[1], []]
-        assert op.data == [[1], []]
+        assert op.parameters == [1]
+        assert op.data == [1]
 
         assert op.wires == qml.wires.Wires("a")
 
@@ -63,8 +63,8 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 1
-        assert op.parameters == [[coeff], []]
-        assert op.data == [[coeff], []]
+        assert op.parameters == [coeff]
+        assert op.data == [coeff]
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
@@ -82,7 +82,7 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 2
-        assert op.data == [coeff, [base_coeff]]
+        assert op.data == [coeff, base_coeff]
 
         assert op.wires == qml.wires.Wires(5)
 
@@ -111,7 +111,15 @@ class TestProperties:
         base = qml.RX(phi, wires=0)
         op = Exp(base, coeff)
 
-        assert op.data == [[coeff], [phi]]
+        assert op.data == [coeff, phi]
+
+        new_phi = np.array(0.1234)
+        new_coeff = np.array(3.456)
+        op.data = [new_coeff, new_phi]
+
+        assert op.data == [new_coeff, new_phi]
+        assert op.base.data == [new_phi]
+        assert op.scalar == new_coeff
 
     # pylint: disable=protected-access
     def test_queue_category_ops(self):
@@ -876,6 +884,26 @@ class TestDifferentiation:
         with pytest.raises(GeneratorUndefinedError):
             op.generator()
 
+    def test_has_generator_true(self):
+        """Test that has_generator returns True if the coefficient is
+        purely imaginary and the base is Hermitian."""
+        op = Exp(qml.PauliX(0), 1j)
+        assert op.has_generator is True
+
+    def test_base_not_hermitian_has_generator_false(self):
+        """Test that has_generator returns False if the coefficient is
+        purely imaginary but the base is not Hermitian."""
+        op = Exp(qml.RX(1.23, 0), 1j)
+        assert op.has_generator is False
+
+    def test_real_component_has_generator_false(self):
+        """Test that has_generator returns False if the coefficient is not purely imaginary."""
+        op = Exp(qml.PauliX(0), 3)
+        assert op.has_generator is False
+
+        op = Exp(qml.PauliX(0), 0.01 + 2j)
+        assert op.has_generator is False
+
     def test_real_component_coefficient_generator_undefined(self):
         """Test that Hermitian base operator but real coefficient raises GeneratorUndefinedError"""
         op = Exp(qml.PauliX(0), 1)
@@ -913,3 +941,16 @@ class TestDifferentiation:
             op1.parameter_frequencies()
 
         assert op2.parameter_frequencies == [(4.0,)]
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of an Exp are considered trainable."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x, coeff):
+            Exp(qml.RX(x, 0), coeff)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(UserWarning):
+            circuit(np.array(2.0), np.array(0.5))
+        assert circuit.tape.trainable_params == [0, 1]

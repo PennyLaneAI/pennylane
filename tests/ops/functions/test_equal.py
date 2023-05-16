@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
+from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops.op_math import SymbolicOp, Controlled
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -1139,6 +1140,82 @@ class TestEqual:
         assert not qml.equal(op1, op2)
 
 
+class TestMeasurementsEqual:
+    @pytest.mark.jax
+    def test_observables_different_interfaces(self):
+        """Check that the check_interface keyword is used when comparing observables."""
+
+        import jax
+
+        M1 = np.eye(2)
+        M2 = jax.numpy.eye(2)
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2), check_interface=True)
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), check_interface=False)
+
+    def test_observables_different_trainability(self):
+        """Check the check_trainability keyword argument affects comparisons of measurements."""
+        M1 = qml.numpy.eye(2, requires_grad=True)
+        M2 = qml.numpy.eye(2, requires_grad=False)
+
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2), check_trainability=True)
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), check_trainability=False)
+
+    def test_observables_atol(self):
+        """Check that the atol keyword argument affects comparisons of measurements."""
+        M1 = np.eye(2)
+        M2 = M1 + 1e-3
+
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2))
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), atol=1e-1)
+
+    def test_observables_rtol(self):
+        """Check rtol affects comparison of measurement observables."""
+        M1 = np.eye(2)
+        M2 = np.diag([1 + 1e-3, 1 - 1e-3])
+
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2))
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), rtol=1e-2)
+
+    def test_eigvals_atol(self):
+        """Check atol affects comparisons of eigenvalues."""
+        m1 = ProbabilityMP(eigvals=(1, 1e-3))
+        m2 = ProbabilityMP(eigvals=(1, 0))
+
+        assert not qml.equal(m1, m2)
+        assert qml.equal(m1, m2, atol=1e-2)
+
+    def test_eigvals_rtol(self):
+        """Check that rtol affects comparisons of eigenvalues."""
+        m1 = ProbabilityMP(eigvals=(1 + 1e-3, 0))
+        m2 = ProbabilityMP(eigvals=(1, 0))
+
+        assert not qml.equal(m1, m2)
+        assert qml.equal(m1, m2, rtol=1e-2)
+
+    def test_observables_equal_but_wire_order_not(self):
+        """Test that when the wire orderings are not equal but the observables are, that
+        we still get True."""
+
+        x1 = qml.PauliX(1)
+        z0 = qml.PauliZ(0)
+
+        o1 = qml.prod(x1, z0)
+        o2 = qml.prod(z0, x1)
+        assert qml.equal(qml.expval(o1), qml.expval(o2))
+
+
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 
@@ -1491,3 +1568,108 @@ class TestSumComparisons:
         op1 = qml.sum(*base_list1)
         op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
+
+
+def f1(p, t):
+    return np.polyval(p, t)
+
+
+def f2(p, t):
+    return p[0] * t**2 + p[1]
+
+
+@pytest.mark.jax
+class TestParametrizedEvolutionComparisons:
+    """Tests comparisons between ParametrizedEvolution operators"""
+
+    def test_params_comparison(self):
+        """Test that params are compared for two ParametrizedEvolution ops"""
+        coeffs = [3, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+
+        h1 = qml.dot(coeffs, ops)
+
+        ev1 = qml.evolve(h1)
+        ev2 = qml.evolve(h1)
+
+        params1 = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
+        params2 = [[1.0, 2.0, 3.0, 4.0, 5.0], [8.0, 9.0]]
+
+        t = 3
+
+        assert qml.equal(ev1(params1, t), ev2(params1, t))
+        assert not qml.equal(ev1(params1, t), ev2(params2, t))
+
+    def test_wires_comparison(self):
+        """Test that wires are compared for two ParametrizedEvolution ops"""
+        coeffs = [3, f1, f2]
+        ops1 = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        ops2 = [qml.PauliX(1), qml.PauliY(2), qml.PauliZ(3)]
+
+        h1 = qml.dot(coeffs, ops1)
+        h2 = qml.dot(coeffs, ops2)
+
+        ev1 = qml.evolve(h1)
+        ev2 = qml.evolve(h1)
+        ev3 = qml.evolve(h2)
+
+        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
+        t = 3
+
+        assert qml.equal(ev1(params, t), ev2(params, t))
+        assert not qml.equal(ev1(params, t), ev3(params, t))
+
+    def test_times_comparison(self):
+        """Test that times are compared for two ParametrizedEvolution ops"""
+        coeffs = [3, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+
+        h1 = qml.dot(coeffs, ops)
+
+        ev1 = qml.evolve(h1)
+
+        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
+
+        t1 = 3
+        t2 = 4
+
+        assert qml.equal(ev1(params, t1), ev1(params, t1))
+        assert not qml.equal(ev1(params, t1), ev1(params, t2))
+
+    def test_operator_comparison(self):
+        """Test that operators are compared for two ParametrizedEvolution ops"""
+        coeffs = [3, f1, f2]
+        ops1 = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        ops2 = [qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)]
+
+        h1 = qml.dot(coeffs, ops1)
+        h2 = qml.dot(coeffs, ops2)
+
+        ev1 = qml.evolve(h1)
+        ev2 = qml.evolve(h1)
+        ev3 = qml.evolve(h2)
+
+        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
+        t = 3
+
+        assert qml.equal(ev1(params, t), ev2(params, t))
+        assert not qml.equal(ev1(params, t), ev3(params, t))
+
+    def test_coefficients_comparison(self):
+        """Test that coefficients are compared for two ParametrizedEvolution ops"""
+        coeffs1 = [3, f1, f2]
+        coeffs2 = [3, 4, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+
+        h1 = qml.dot(coeffs1, ops)
+        h2 = qml.dot(coeffs2, ops)
+
+        ev1 = qml.evolve(h1)
+        ev2 = qml.evolve(h1)
+        ev3 = qml.evolve(h2)
+
+        params = [[6.0, 7.0]]
+        t = 3
+
+        assert qml.equal(ev1(params, t), ev2(params, t))
+        assert not qml.equal(ev1(params, t), ev3(params, t))

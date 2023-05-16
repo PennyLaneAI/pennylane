@@ -23,7 +23,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
     "aux_wire",
-    "broadcast",
+    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
     "diagonal_shifts",
     "f0",
@@ -34,6 +34,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "n",
     "num",
     "num_directions",
+    "num_split_times",
     "off_diagonal_shifts",
     "order",
     "reduction",
@@ -42,6 +43,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "shifts",
     "shots",
     "strategy",
+    "use_broadcasting",
     "validate_params",
 ]
 
@@ -273,23 +275,40 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
-    def default_qnode_wrapper(self, qnode, targs, tkwargs):
+    def default_qnode_wrapper(self, qnode, targs, tkwargs):  # pylint: disable=too-many-statements
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
-        argnums = tkwargs.pop("argnums", None)
-
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-
-        cjac_fn = qml.transforms.classical_jacobian(
-            qnode, argnum=argnums, expand_fn=expand_invalid_trainable
-        )
 
         def jacobian_wrapper(
             *args, **kwargs
-        ):  # pylint: disable=too-many-return-statements, too-many-branches
-            if not qml.math.get_trainable_indices(args):
+        ):  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements
+            argnums = tkwargs.get("argnums", None)
+
+            interface = qml.math.get_interface(*args)
+            trainable_params = qml.math.get_trainable_indices(args)
+
+            if interface == "jax" and tkwargs.get("argnum", None):
+                raise qml.QuantumFunctionError(
+                    "argnum does not work with the Jax interface. You should use argnums instead."
+                )
+
+            if interface == "jax" and not trainable_params:
+                if argnums is None:
+                    argnums_ = [0]
+
+                else:
+                    argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums_, self.expand_fn, args, kwargs
+                )
+                argnums_ = qml.math.get_trainable_indices(params)
+                kwargs["argnums"] = argnums_
+
+            elif not trainable_params:
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
@@ -303,7 +322,17 @@ class gradient_transform(qml.batch_transform):
                 return qjac
 
             kwargs.pop("shots", False)
-            cjac = cjac_fn(*args, **kwargs)
+
+            # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+            # defined on the outer transform and therefore on the args.
+            if interface == "jax":
+                argnum_cjac = trainable_params or argnums
+            else:
+                argnum_cjac = None
+
+            cjac = qml.transforms.classical_jacobian(
+                qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+            )(*args, **kwargs)
 
             if qml.active_return():
                 if isinstance(cjac, tuple) and len(cjac) == 1:
@@ -319,7 +348,11 @@ class gradient_transform(qml.batch_transform):
                             return qjac
 
                 multi_meas = len(qnode.tape.measurements) > 1
-                multi_params = isinstance(cjac, tuple) or len(qnode.tape.trainable_params) > 1
+
+                if multi_meas:
+                    multi_params = isinstance(cjac, tuple) or isinstance(qjac[0], tuple)
+                else:
+                    multi_params = isinstance(cjac, tuple) or isinstance(qjac, tuple)
 
                 if not multi_params and not multi_meas:
                     if qjac.shape == ():
@@ -373,6 +406,8 @@ class gradient_transform(qml.batch_transform):
                 jacs = tuple(
                     qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
                 )
+                if len(jacs) == 1:
+                    return jacs[0]
                 return jacs
 
             is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]

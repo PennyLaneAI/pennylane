@@ -223,13 +223,44 @@ class SingleExcitation(Operation):
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), CRY(1.23, wires=[1, 0]), CNOT(wires=[0, 1])]
+        [Adjoint(T(wires=[0])),
+         Hadamard(wires=[0]),
+         S(wires=[0]),
+         Adjoint(T(wires=[1])),
+         Adjoint(S(wires=[1])),
+         Hadamard(wires=[1]),
+         CNOT(wires=[1, 0]),
+         RZ(-0.615, wires=[0]),
+         RY(0.615, wires=[1]),
+         CNOT(wires=[1, 0]),
+         Adjoint(S(wires=[0])),
+         Hadamard(wires=[0]),
+         T(wires=[0]),
+         Hadamard(wires=[1]),
+         S(wires=[1]),
+         T(wires=[1])]
 
         """
+        # This decomposition was found by plugging the matrix representation
+        # into transforms.two_qubit_decomposition and post-processing some of
+        # the resulting single-qubit gates.
         decomp_ops = [
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(phi, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.adjoint(qml.T)(wires=wires[0]),
+            qml.Hadamard(wires=wires[0]),
+            qml.S(wires=wires[0]),
+            qml.adjoint(qml.T)(wires=wires[1]),
+            qml.adjoint(qml.S)(wires=wires[1]),
+            qml.Hadamard(wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.RZ(-phi / 2, wires=wires[0]),
+            qml.RY(phi / 2, wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.adjoint(qml.S)(wires=wires[0]),
+            qml.Hadamard(wires=wires[0]),
+            qml.T(wires=wires[0]),
+            qml.Hadamard(wires=wires[1]),
+            qml.S(wires=wires[1]),
+            qml.T(wires=wires[1]),
         ]
         return decomp_ops
 
@@ -886,13 +917,16 @@ class OrbitalRotation(Operation):
 
     with the same orbital operation applied in the :math:`\alpha` and :math:`\beta` spin orbitals.
 
-    .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
+    .. figure:: ../../_static/qchem/orbital_rotation.jpeg
         :align: center
         :width: 100%
         :target: javascript:void(0);
 
-    Here, :math:`G(\phi)` represents a single-excitation Givens rotation, implemented in PennyLane
-    as the :class:`~.SingleExcitation` operation.
+    Here, :math:`G(\phi)` represents a single-excitation Givens rotation and :math:`f\text{SWAP}(\pi)`
+    represents the fermionic swap operator, implemented in PennyLane as the
+    :class:`~.SingleExcitation` operation and :class:`~.FermionicSWAP` operation, respectively. This
+    implementation is a modified version of the one given in `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`__\ ,
+    and is consistent with the Jordan-Wigner mapping in interleaved ordering.
 
     **Details:**
 
@@ -923,7 +957,7 @@ class OrbitalRotation(Operation):
         >>> circuit(0.1)
         array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
                 0.00249792+0.j,  0.        +0.j,  0.        +0.j,
-               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+                0.04991671+0.j,  0.        +0.j,  0.        +0.j,
                -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
@@ -946,26 +980,25 @@ class OrbitalRotation(Operation):
     def generator(self):
         w0, w1, w2, w3 = self.wires
         return 0.25 * (
-            qml.PauliX(w0) @ qml.PauliY(w2)
-            - qml.PauliY(w0) @ qml.PauliX(w2)
-            + qml.PauliX(w1) @ qml.PauliY(w3)
-            - qml.PauliY(w1) @ qml.PauliX(w3)
+            qml.PauliX(w0) @ qml.PauliZ(w1) @ qml.PauliY(w2)
+            - qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2)
+            + qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3)
+            - qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3)
         )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     mask_s = np.zeros((16, 16))
-    mask_s[1, 4] = mask_s[2, 8] = mask_s[7, 13] = mask_s[11, 14] = -1
-    mask_s[4, 1] = mask_s[8, 2] = mask_s[13, 7] = mask_s[14, 11] = 1
+    mask_s[1, 4] = mask_s[2, 8] = mask_s[13, 7] = mask_s[14, 11] = -1
+    mask_s[4, 1] = mask_s[8, 2] = mask_s[7, 13] = mask_s[11, 14] = 1
 
     mask_cs = np.zeros((16, 16))
-    mask_cs[3, 6] = mask_cs[3, 9] = mask_cs[6, 12] = mask_cs[9, 12] = -1
-    mask_cs[6, 3] = mask_cs[9, 3] = mask_cs[12, 6] = mask_cs[12, 9] = 1
+    mask_cs[6, 3] = mask_cs[3, 9] = mask_cs[12, 6] = mask_cs[9, 12] = -1
+    mask_cs[3, 6] = mask_cs[9, 3] = mask_cs[6, 12] = mask_cs[12, 9] = 1
 
     mask_s2 = np.zeros((16, 16))
-    mask_s2[3, 12] = mask_s2[12, 3] = 1
-    mask_s2[6, 9] = mask_s2[9, 6] = -1
+    mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -986,6 +1019,7 @@ class OrbitalRotation(Operation):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        # It has been further modifided for the decomposition consistent with interleaved JW ordering.
 
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
@@ -1044,13 +1078,16 @@ class OrbitalRotation(Operation):
         **Example:**
 
         >>> qml.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
-        [SingleExcitation(1.2, wires=[0, 2]), SingleExcitation(1.2, wires=[1, 3])]
+        [qml.FermionicSWAP(np.pi, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 2]),
+         SingleExcitation(1.2, wires=[1, 3]), qml.FermionicSWAP(np.pi, wires=[1, 2])]
 
         """
 
         return [
-            qml.SingleExcitation(phi, wires=[wires[0], wires[2]]),
-            qml.SingleExcitation(phi, wires=[wires[1], wires[3]]),
+            qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
+            qml.SingleExcitation(phi, wires=[wires[0], wires[1]]),
+            qml.SingleExcitation(phi, wires=[wires[2], wires[3]]),
+            qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
         ]
 
     def adjoint(self):

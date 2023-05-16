@@ -16,7 +16,6 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 import itertools
-import warnings
 from copy import copy
 from functools import reduce
 from typing import List
@@ -30,15 +29,6 @@ from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
-
-
-def op_sum(*summands, do_queue=True, id=None, lazy=True):
-    """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
-    warnings.warn(
-        "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
-        UserWarning,
-    )
-    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
 
 
 def sum(*summands, do_queue=True, id=None, lazy=True):
@@ -61,13 +51,13 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.op_sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.op_sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Sum`
@@ -81,8 +71,6 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
     array([[ 1,  1],
            [ 1, -1]])
     """
-    if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
-        return qml.collections.sum(summands[0])
     if lazy:
         return Sum(*summands, do_queue=do_queue, id=id)
 
@@ -179,9 +167,18 @@ class Sum(CompositeOp):
     _math_op = math.sum
 
     @property
+    def hash(self):
+        # Since addition is always commutative, we do not need to sort
+        return hash(("Sum", frozenset(o.hash for o in self.operands)))
+
+    @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return all(s.is_hermitian for s in self)
+        return (
+            all(s.is_hermitian for s in self)
+            if self._pauli_rep is None
+            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
+        )
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.

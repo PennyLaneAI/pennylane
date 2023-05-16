@@ -35,7 +35,9 @@ from pennylane.measurements import (
     Variance,
     VarianceMP,
     state,
+    Shots,
 )
+from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -326,38 +328,20 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Test that using a list of observables as an argument is deprecated."""
-        with monkeypatch.context() as m:
-            dev = mock_qubit_device_extract_stats()
-            with pytest.warns(
-                UserWarning,
-                match="Using a list of observables in ``QubitDevice.statistics`` is",
-            ):
-                dev.statistics([])
-            with pytest.warns(
-                UserWarning,
-                match="Using a list of observables in ``QubitDevice.statistics`` is",
-            ):
-                dev.statistics(observables=[])
-            qscript = QuantumScript()
-            with pytest.warns(
-                UserWarning,
-                match="Using a list of observables in ``QubitDevice.statistics`` is",
-            ):
-                dev.statistics([], circuit=qscript)
-            with pytest.raises(
-                ValueError, match="Please provide a circuit into the statistics method"
-            ):
-                dev.statistics()
-
     @pytest.mark.parametrize(
-        "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP]
+        "measurement",
+        [
+            ExpectationMP(obs=qml.PauliX(0)),
+            VarianceMP(obs=qml.PauliX(0)),
+            SampleMP(obs=qml.PauliX(0)),
+            ProbabilityMP(obs=qml.PauliX(0)),
+            StateMP(),
+        ],
     )
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
+        qscript = QuantumScript(measurements=[measurement])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
@@ -1224,6 +1208,14 @@ class TestExecution:
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
+    def test_get_diagonalizing_gates(self, mock_qubit_device):
+        """Test the private _get_diagonalizing_gates helper method."""
+        circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.probs(), qml.expval(qml.PauliX(0))])
+        dev = mock_qubit_device(wires=1)
+        rotations = dev._get_diagonalizing_gates(circuit)
+        assert len(rotations) == 1
+        assert qml.equal(rotations[0], qml.Hadamard(0))
+
 
 class TestExecutionBroadcasted:
     """Tests for the execute method with broadcasted parameters"""
@@ -1330,7 +1322,7 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
-        assert res[0].dtype == r_dtype
+        assert res[0][0].dtype == r_dtype
         assert res[1].dtype == r_dtype
 
     def test_result_empty_tape(self, mock_qubit_device_with_paulis_and_methods, tol):
@@ -1344,231 +1336,6 @@ class TestBatchExecution:
 
         assert len(res) == 3
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
-
-
-class TestShotList:
-    """Tests for passing shots as a list"""
-
-    shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4,), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11,),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3,), 30],
-        [[(10, 3)], [(10, 3)], (3,), 30],
-    ]
-
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_single_expval(self, shot_list, shot_vector, expected_shape, total_shots):
-        """Test a single expectation value"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        res = circuit(0.5)
-
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
-
-    shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11, 2),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3, 2), 30],
-        [[(10, 3)], [(10, 3)], (3, 2), 30],
-    ]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_multiple_expval(self, shot_list, shot_vector, expected_shape, total_shots):
-        """Test multiple expectation values"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
-
-        res = circuit(0.5, 0.1)
-
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
-
-        # test gradient works
-        res = qml.jacobian(circuit)(*pnp.array([0.5, 0.1], requires_grad=True))
-        assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == expected_shape
-        assert res[1].shape == expected_shape
-
-    shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 4), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11, 4),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3, 4), 30],
-        [[(10, 3)], [(10, 3)], (3, 4), 30],
-    ]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
-        """Test a probability return"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0, 1])
-
-        res = circuit(0.5, 0.1)
-
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
-
-        # test gradient works
-        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
-
-    shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2, 2), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11, 2, 2),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3, 2, 2), 30],
-        [[(10, 3)], [(10, 3)], (3, 2, 2), 30],
-    ]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
-        """Test multiple probability returns"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=0), qml.probs(wires=1)
-
-        res = circuit(0.5, 0.1)
-
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
-
-        # test gradient works
-        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
-
-    shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(), (2,), (3,), (10,)], 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            [(), (2,), (2,), (2,), (10,), (), (), (5,), (), (), ()],
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], [(10,), (10,), (10,)], 30],
-        [[(10, 3)], [(10, 3)], [(10,), (10,), (10,)], 30],
-    ]
-
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shapes,total_shots", shot_data)
-    def test_sample(self, shot_list, shot_vector, expected_shapes, total_shots):
-        """Test sample returns"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(wires=0))
-
-        res = circuit(0.5, 0.1)
-
-        for r, shape in zip(res, expected_shapes):
-            assert r.shape == shape
-
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
-
-    shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(2,), (2, 2), (3, 2), (10, 2)], 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            [(2,), (2, 2), (2, 2), (2, 2), (10, 2), (2,), (2,), (5, 2), (2,), (2,), (2,)],
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], [(10, 2), (10, 2), (10, 2)], 30],
-        [[(10, 3)], [(10, 3)], [(10, 2), (10, 2), (10, 2)], 30],
-    ]
-
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shapes,total_shots", shot_data)
-    def test_multiple_sample(self, shot_list, shot_vector, expected_shapes, total_shots):
-        """Test sample returns"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(wires=0)), qml.sample(qml.PauliZ(wires=1))
-
-        res = circuit(0.5, 0.1)
-
-        for r, shape in zip(res, expected_shapes):
-            assert r.shape == shape
-
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
-
-    def test_invalid_shot_list(self):
-        """Test exception raised if the shot list is the wrong type"""
-        with pytest.raises(qml.DeviceError, match="Shots must be"):
-            qml.device("default.qubit", wires=2, shots=0.5)
-
-        with pytest.raises(ValueError, match="Unknown shot sequence"):
-            qml.device("default.qubit", wires=2, shots=["a", "b", "c"])
-
-    @pytest.mark.parametrize("shot_list", [[1, 2, 3, 10], [1, 2, 2, 10, 1, 1], [10, 10, 10], [1]])
-    def test_error_shot_list_with_broadcasting(self, shot_list):
-        """Test that an error is raised when using parameter broadcasting with a
-        shot vector is attempted."""
-        dev = qml.device("default.qubit", wires=2, shots=shot_list)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RY(np.zeros(3), wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(wires=0)), qml.sample(qml.PauliZ(wires=1))
-
-        with pytest.raises(NotImplementedError, match="Parameter broadcasting when using"):
-            circuit()
 
 
 class TestGetBatchSize:
@@ -1606,3 +1373,110 @@ class TestGetBatchSize:
             dev._get_batch_size(tensor1, broadcasted_shape, qml.math.prod(broadcasted_shape))
             is None
         )
+
+
+class TestResourcesTracker:
+    """Test that the tracker can track resources and is integrated well with default qubit"""
+
+    qs_shots_wires_data = (
+        (qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])]), None, [0, 1]),
+        (qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)]), 10, [0, 1, 2]),
+        (
+            qml.tape.QuantumScript(
+                [
+                    qml.Hadamard(0),
+                    qml.RX(1.23, 1),
+                    qml.CNOT([0, 1]),
+                    qml.RX(4.56, 1),
+                    qml.Hadamard(0),
+                    qml.Hadamard(1),
+                ],
+            ),
+            (10, 10, 50),
+            [0, 1],
+        ),
+    )
+
+    expected_resources = (
+        Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(None)),
+        Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
+        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
+    )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
+
+    devices = (
+        "default.qubit",
+        "default.qubit.autograd",
+        "default.qubit.jax",
+        "default.qubit.torch",
+        "default.qubit.tf",
+    )
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("dev_name", devices)
+    @pytest.mark.parametrize(
+        "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
+    )
+    def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
+        """Test that the tracker accurately tracks resources in a single execution"""
+        qs, shots, wires = qs_shots_wires
+        dev = qml.device(dev_name, shots=shots, wires=wires)
+
+        with qml.Tracker(dev) as tracker:
+            dev.execute(qs)
+
+        assert len(tracker.history["resources"]) == 1  # single execution
+        assert tracker.history["resources"][0] == expected_resource
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("dev_name", devices)
+    def test_tracker_multi_execution(self, dev_name):
+        """Test that the tracker accurately tracks resources for multi executions"""
+        qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
+        qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
+
+        exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
+        exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
+
+        dev = qml.device(dev_name, shots=10, wires=[0, 1, 2])
+        with qml.Tracker(dev) as tracker:
+            dev.batch_execute([qs1])
+            dev.batch_execute([qs1, qs2])
+
+        assert tracker.totals == {"batches": 2, "executions": 3, "shots": 30, "batch_len": 3}
+        assert len(tracker.history["resources"]) == 3  # 1 per qscript execution
+
+        for tracked_r, expected_r in zip(
+            tracker.history["resources"], [exp_res1, exp_res1, exp_res2]
+        ):
+            assert tracked_r == expected_r
+
+    @pytest.mark.all_interfaces
+    def test_tracker_grad(self):
+        """Test that the tracker can track resources through a gradient computation"""
+        dev = qml.device("default.qubit", wires=1, shots=100)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)  # 2 term parameter shift
+            return qml.expval(qml.PauliZ(0))
+
+        x = pnp.array(0.1, requires_grad=True)
+        expected_resources = Resources(
+            num_wires=1,
+            num_gates=1,
+            gate_types={"RX": 1},
+            gate_sizes={1: 1},
+            shots=Shots(100),
+            depth=1,
+        )
+
+        with qml.Tracker(dev) as tracker:
+            qml.grad(circuit)(x)
+
+        assert tracker.totals["executions"] == 3
+        assert len(tracker.history["resources"]) == 3
+        assert tracker.history["resources"] == [
+            expected_resources,
+            expected_resources,
+            expected_resources,
+        ]

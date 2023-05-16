@@ -19,9 +19,9 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     MeasurementProcess,
-    MeasurementShapeError,
     Probability,
     ProbabilityMP,
+    Shots,
 )
 from pennylane.queuing import AnnotatedQueue
 
@@ -99,7 +99,7 @@ class TestProbs:
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (1, 2 ** len(wires))
+        assert res.shape(dev, Shots(shots)) == (2 ** len(wires),)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
@@ -107,20 +107,11 @@ class TestProbs:
         res = qml.probs(wires=wires)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
-
-    @pytest.mark.parametrize(
-        "measurement",
-        [qml.probs(wires=[0]), qml.state(), qml.sample(qml.PauliZ(0))],
-    )
-    def test_shape_no_device_error(self, measurement):
-        """Test that an error is raised if a device is not passed when querying
-        the shape of certain measurements."""
-        with pytest.raises(
-            MeasurementShapeError,
-            match="The device argument is required to obtain the shape of the measurement",
-        ):
-            measurement.shape()
+        assert res.shape(dev, Shots(shot_vector)) == (
+            (2 ** len(wires),),
+            (2 ** len(wires),),
+            (2 ** len(wires),),
+        )
 
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):
@@ -669,3 +660,51 @@ class TestProbs:
         )
 
         assert np.allclose(res, expected)
+
+    def test_non_commuting_probs_raises_error(self):
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0)), qml.probs(wires=[0, 1])
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only observables that are qubit-wise commuting"
+        ):
+            circuit(1, 2)
+
+    def test_commuting_probs_in_computational_basis(self):
+        """Test that `qml.probs` can be used in the computational basis with other commuting observables."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        res = circuit(1, 2)
+
+        @qml.qnode(dev)
+        def circuit2(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def circuit3(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        res2 = circuit2(1, 2)
+        res3 = circuit3(1, 2)
+
+        assert res[0] == res2
+        assert qml.math.allequal(res[1:], res3)

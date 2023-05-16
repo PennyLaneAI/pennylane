@@ -33,6 +33,11 @@ def _i(name):
     return import_module(name)
 
 
+# ------------------------------- Builtins -------------------------------- #
+
+ar.register_function("builtins", "ndim", lambda x: np.ndim(np.array(x)))
+ar.register_function("builtins", "shape", lambda x: np.array(x).shape)
+
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
@@ -103,6 +108,8 @@ ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 # qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
+ar.register_function("autograd", "ndim", lambda x: _i("autograd").numpy.ndim(x))
+ar.register_function("autograd", "shape", lambda x: _i("autograd").numpy.shape(x))
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
@@ -464,6 +471,7 @@ def _asarray_torch(x, dtype=None, **kwargs):
         np.float64: torch.float64,
         np.complex64: torch.complex64,
         np.complex128: torch.complex128,
+        "float64": torch.float64,
     }
 
     if dtype in dtype_map:
@@ -579,7 +587,7 @@ def _block_diag_torch(tensors):
     torch = _i("torch")
     sizes = np.array([t.shape for t in tensors])
     shape = np.sum(sizes, axis=0).tolist()
-    res = torch.zeros(shape, dtype=tensors[0].dtype)
+    res = torch.zeros(shape, dtype=tensors[0].dtype, device=tensors[0].device)
 
     # get the diagonal indices at which new block
     # diagonals need to be inserted

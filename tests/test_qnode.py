@@ -24,6 +24,7 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
+from pennylane.resource import Resources
 
 
 def dummyfunc():
@@ -560,9 +561,8 @@ class TestValidation:
         assert "Use diff_method instead" in str(w[0].message)
         assert "Use diff_method instead" in str(w[1].message)
 
-    def test_auto_interface_device_switched_warning(self):
-        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto
-        interface."""
+    def test_auto_interface_tracker_device_switched(self):
+        """Test that checks that the tracker is switched to the new device."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -570,11 +570,18 @@ class TestValidation:
             qml.RX(params, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            UserWarning,
-            match="The device was switched during the call of the QNode",
-        ):
+        with qml.Tracker(dev) as tracker:
             circuit(qml.numpy.array(0.1, requires_grad=True))
+
+        assert tracker.totals == {"executions": 1, "batches": 1, "batch_len": 1}
+        assert np.allclose(tracker.history.pop("results")[0], 0.99500417)
+        assert tracker.history == {
+            "executions": [1],
+            "shots": [None],
+            "batches": [1],
+            "batch_len": [1],
+            "resources": [Resources(1, 1, {"RX": 1}, {1: 1}, 1)],
+        }
 
     def test_autograd_interface_device_switched_no_warnings(self):
         """Test that checks that no warning is raised for device switch when you define an interface."""
@@ -615,6 +622,7 @@ class TestTapeConstruction:
         assert len(qn.qtape.operations) == 3
         assert len(qn.qtape.observables) == 1
         assert qn.qtape.num_params == 2
+        assert qn.qtape.shots.total_shots is None
 
         expected = qml.execute([qn.tape], dev, None)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -646,8 +654,8 @@ class TestTapeConstruction:
             pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        assert jac[0].shape == (2, 2)
-        assert jac[1].shape == (2, 2)
+        assert len(jac[0]) == 2
+        assert len(jac[1]) == 2
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
@@ -807,6 +815,43 @@ class TestTapeConstruction:
         dev = qml.device("default.qubit", wires=1)
         qnode = QNode(circuit, dev)
         assert np.allclose(qnode(0.5), np.cos(0.5), atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jit_counts_raises_error(self):
+        """Test that returning counts in a quantum function with trainable parameters while
+        jitting raises an error."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        def circuit1(param):
+            qml.Hadamard(0)
+            qml.RX(param, wires=1)
+            qml.CNOT([1, 0])
+            return qml.counts()
+
+        qnode = qml.QNode(circuit1, dev)
+        jitted_qnode1 = jax.jit(qnode)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+        ):
+            jitted_qnode1(0.123)
+
+        # Test with qnode decorator syntax
+        @qml.qnode(dev)
+        def circuit2(param):
+            qml.Hadamard(0)
+            qml.RX(param, wires=1)
+            qml.CNOT([1, 0])
+            return qml.counts()
+
+        jitted_qnode2 = jax.jit(circuit2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+        ):
+            jitted_qnode2(0.123)
 
 
 class TestDecorator:
@@ -995,7 +1040,7 @@ class TestIntegration:
         """
         from pennylane import numpy as anp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         x = anp.array(0.543, requires_grad=True)
         y = anp.array(-0.654, requires_grad=True)
@@ -1009,20 +1054,14 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        if diff_method == "hadamard":
-            with pytest.raises(
-                ValueError, match="The hadamard gradient only supports the new return type."
-            ):
-                res = qml.grad(circuit)(x, y)
-        else:
-            res = qml.grad(circuit)(x, y)
-            assert len(res) == 2
+        res = qml.grad(circuit)(x, y)
+        assert len(res) == 2
 
-            expected = (0, np.cos(y) * np.cos(x))
-            res = res
-            expected = expected
+        expected = (0, np.cos(y) * np.cos(x))
+        res = res
+        expected = expected
 
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -1222,8 +1261,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def qnode():
-            qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliZ(0)
+            return qml.expval(qml.PauliX(0))
 
         with qml.queuing.AnnotatedQueue() as q:
             qnode()
@@ -1415,6 +1454,50 @@ class TestShots:
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
             qml.jacobian(circuit, argnum=0)(0.3)
+
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+        ],
+    )
+    def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        qn = QNode(func, dev)
+
+        # No override
+        _ = qn(0.1, 0.2)
+        assert qn.tape.shots.total_shots == 5
+
+        # Override
+        _ = qn(0.1, 0.2, shots=shots)
+        assert qn.tape.shots.total_shots == total_shots
+        assert qn.tape.shots.shot_vector == shot_vector
+
+        # Decorator syntax
+        @qnode(dev)
+        def qn2(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        # No override
+        _ = qn2(0.1, 0.2)
+        assert qn2.tape.shots.total_shots == 5
+
+        # Override
+        _ = qn2(0.1, 0.2, shots=shots)
+        assert qn2.tape.shots.total_shots == total_shots
+        assert qn2.tape.shots.shot_vector == shot_vector
 
 
 @pytest.mark.xfail

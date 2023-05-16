@@ -42,7 +42,7 @@ Next generation devices
 will eventually replace :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
 
 While the current interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.experimental.Device` is
-accesssible from the ``pennylane.devices.experimental`` submodule.
+accessible from the ``pennylane.devices.experimental`` submodule.
 
 .. currentmodule:: pennylane.devices.experimental
 .. autosummary::
@@ -50,6 +50,7 @@ accesssible from the ``pennylane.devices.experimental`` submodule.
 
     ExecutionConfig
     Device
+    DefaultQubit2
 
 """
 

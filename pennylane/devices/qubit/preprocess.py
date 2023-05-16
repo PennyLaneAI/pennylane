@@ -14,12 +14,18 @@
 
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
+# pylint: disable=protected-access
+from dataclasses import replace
+from typing import Generator, Callable, Tuple, Union
+import warnings
 
 import pennylane as qml
 
-from pennylane.operation import Observable, Tensor
-from pennylane.measurements import MidMeasureMP
+from pennylane.operation import Tensor
+from pennylane.measurements import MidMeasureMP, StateMeasurement, SampleMeasurement, ExpectationMP
 from pennylane import DeviceError
+
+from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
 # Update observable list. Current list is same as supported observables for
 # default.qubit.
@@ -40,30 +46,142 @@ _observables = {
     "Evolution",
 }
 
-
-def _stopping_condition(op):
-    """Specify whether or not an Operator object is supported by the device"""
-    return getattr(op, "has_matrix", False)
+### UTILITY FUNCTIONS FOR EXPANDING UNSUPPORTED OPERATIONS ###
 
 
-def _supports_observable(observable):
-    """Checks if an observable is supported by this device.
+def _accepted_operator(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device."""
+    if op.name == "QFT" and len(op.wires) >= 6:
+        return False
+    if op.name == "GroverOperator" and len(op.wires) >= 13:
+        return False
+    return op.has_matrix
+
+
+def _operator_decomposition_gen(
+    op: qml.operation.Operator,
+) -> Generator[qml.operation.Operator, None, None]:
+    """A generator that yields the next operation that is accepted by DefaultQubit2."""
+    if _accepted_operator(op):
+        yield op
+    else:
+        try:
+            decomp = op.decomposition()
+        except qml.operation.DecompositionUndefinedError as e:
+            raise DeviceError(
+                f"Operator {op} not supported on DefaultQubit2. Must provide either a matrix or a decomposition."
+            ) from e
+
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(sub_op)
+
+
+#######################
+
+
+def validate_and_expand_adjoint(
+    circuit: qml.tape.QuantumTape,
+) -> Union[qml.tape.QuantumTape, DeviceError]:  # pylint: disable=protected-access
+    """Function for validating that the operations and observables present in the input circuit
+    are valid for adjoint differentiation.
 
     Args:
-        observable (type or str): observable to be checked
+        circuit(.QuantumTape): the tape to validate
 
     Returns:
-        bool: ``True`` iff supplied observable is supported
+        Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
+        If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
     """
-    if isinstance(observable, type) and issubclass(observable, Observable):
-        observable = observable.__name__
-    if isinstance(observable, str):
-        return observable in _observables
+    # Check validity of measurements
+    measurements = []
+    for m in circuit.measurements:
+        if not isinstance(m, ExpectationMP):
+            return DeviceError(
+                "Adjoint differentiation method does not support "
+                f"measurement {m.__class__.__name__}."
+            )
 
-    return False
+        if not m.obs.has_matrix:
+            return DeviceError(
+                f"Adjoint differentiation method does not support observable {m.obs.name}."
+            )
+
+        measurements.append(m)
+
+    expanded_ops = []
+    for op in circuit._ops:
+        if op.num_params > 1:
+            if not isinstance(op, qml.Rot):
+                return DeviceError(
+                    f"The {op} operation is not supported using "
+                    'the "adjoint" differentiation method.'
+                )
+            ops = op.decomposition()
+            expanded_ops.extend(ops)
+        elif not isinstance(op, qml.operation.StatePrep):
+            expanded_ops.append(op)
+
+    prep = circuit._prep[:1]
+
+    trainable_params = []
+    for k in circuit.trainable_params:
+        if hasattr(circuit._par_info[k]["op"], "return_type"):
+            warnings.warn(
+                "Differentiating with respect to the input parameters of "
+                f"{circuit._par_info[k]['op'].name} is not supported with the "
+                "adjoint differentiation method. Gradients are computed "
+                "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                "the parameters of the measured observables as non-trainable "
+                "to silence this warning.",
+                UserWarning,
+            )
+        else:
+            trainable_params.append(k)
+
+    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep, circuit.shots)
+    expanded_tape.trainable_params = trainable_params
+
+    return expanded_tape
 
 
-def expand_fn(circuit, max_expansion=10):
+def validate_measurements(
+    circuit: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+):
+    """Check that the circuit contains a valid set of measurements. A valid
+    set of measurements is defined as:
+
+    1. If circuit.shots is None (i.e., the execution is analytic), then
+       the circuit must only contain ``StateMeasurements``.
+    2. If circuit.shots is not None, then the circuit must only contain
+       ``SampleMeasurements``.
+
+    If the circuit has an invalid set of measurements, then an error is raised.
+
+    Args:
+        circuit (.QuantumTape): the circuit to validate
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
+    """
+    if circuit.shots.total_shots is None:
+        for m in circuit.measurements:
+            if not isinstance(m, StateMeasurement):
+                raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
+    else:
+        # check if an analytic diff method is used with finite shots
+        if execution_config.gradient_method in ["adjoint", "backprop"]:
+            raise DeviceError(
+                f"Circuits with finite shots must be executed with non-analytic "
+                f"gradient methods; got {execution_config.gradient_method}"
+            )
+
+        for m in circuit.measurements:
+            if not isinstance(m, SampleMeasurement):
+                raise DeviceError(
+                    f"Circuits with finite shots must only contain SampleMeasurements; got {m}"
+                )
+
+
+def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     """Method for expanding or decomposing an input circuit.
 
     This method expands the tape if:
@@ -73,11 +191,6 @@ def expand_fn(circuit, max_expansion=10):
 
     Args:
         circuit (.QuantumTape): the circuit to expand.
-        max_expansion (int): The number of times the circuit should be
-            expanded. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations
-            in the decomposition remain unsupported by the device, another
-            expansion occurs.
 
     Returns:
         .QuantumTape: The expanded/decomposed circuit, such that the device
@@ -87,13 +200,36 @@ def expand_fn(circuit, max_expansion=10):
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
         circuit = qml.defer_measurements(circuit)
 
-    if not all(_stopping_condition(op) for op in circuit.operations):
-        circuit = circuit.expand(depth=max_expansion, stop_at=_stopping_condition)
+    if len(circuit._prep) > 1:
+        raise DeviceError("DefaultQubit2 accepts at most one state prep operation.")
+
+    if not all(_accepted_operator(op) for op in circuit._ops):
+        try:
+            new_ops = [
+                final_op for op in circuit._ops for final_op in _operator_decomposition_gen(op)
+            ]
+        except RecursionError as e:
+            raise DeviceError(
+                "Reached recursion limit trying to decompose operations. "
+                "Operator decomposition may have entered an infinite loop."
+            ) from e
+        circuit = qml.tape.QuantumScript(
+            new_ops, circuit.measurements, circuit._prep, shots=circuit.shots
+        )
+
+    for observable in circuit.observables:
+        if isinstance(observable, Tensor):
+            if any(o.name not in _observables for o in observable.obs):
+                raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
+        elif observable.name not in _observables:
+            raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
 
     return circuit
 
 
-def batch_transform(circuit):
+def batch_transform(
+    circuit: qml.tape.QuantumScript,
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
 
@@ -133,63 +269,57 @@ def batch_transform(circuit):
     return tapes, batch_fn
 
 
-def check_validity(tape):
-    """Checks whether the operations and observables in queue are all supported by the device.
+def _update_config(config: ExecutionConfig) -> ExecutionConfig:
+    """Choose the "best" options for the configuration if they are left unspecified.
 
     Args:
-        tape (.QuantumTape): tape from which to validate operations and observables
+        config (ExecutionConfig): the initial execution config
 
-    Raises:
-        DeviceError: if there are operations in the queue or observables that the device does
-            not support
+    Returns:
+        ExecutionConfig: a new config with the best choices selected.
     """
-    for o in tape.operations:
-        operation_name = o.name
-
-        if not _stopping_condition(o):
-            raise DeviceError(f"Gate {operation_name} not supported on Python Device")
-
-    for o in tape.observables:
-        if isinstance(o, Tensor):
-            for i in o.obs:
-                if not _supports_observable(i.name):
-                    raise DeviceError(f"Observable {i.name} not supported on Python Device")
-        else:
-            observable_name = o.name
-
-            if not _supports_observable(observable_name):
-                raise DeviceError(f"Observable {observable_name} not supported on Python Device")
+    updated_values = {}
+    if config.gradient_method == "best":
+        updated_values["gradient_method"] = "backprop"
+    if config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = config.gradient_method in {
+            "best",
+            "adjoint",
+            "backprop",
+        }
+    if config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
+    return replace(config, **updated_values)
 
 
-def preprocess(tapes, execution_config=None, max_expansion=10):
+def preprocess(
+    circuits: Tuple[qml.tape.QuantumScript],
+    execution_config: ExecutionConfig = DefaultExecutionConfig,
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
     them to ensure all operators and measurements are supported by the execution device.
 
     Args:
-        tapes (Sequence[QuantumTape]): Batch of tapes to be processed.
+        circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
-        max_expansion (int): The number of times the circuit should be
-            expanded. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations
-            in the decomposition remain unsupported by the device, another
-            expansion occurs.
 
     Returns:
-        Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
+        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+        a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
     """
-    if execution_config and execution_config.shots is not None:
-        # Finite shot support will be added later
-        raise DeviceError("The Python Device does not support finite shots.")
+    for c in circuits:
+        validate_measurements(c, execution_config)
 
-    for i, tape in enumerate(tapes):
-        tapes[i] = expand_fn(tape, max_expansion=max_expansion)
-        check_validity(tapes[i])
+    circuits = tuple(expand_fn(c) for c in circuits)
+    if execution_config.gradient_method == "adjoint":
+        circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
+        for circuit_or_error in circuits:
+            if isinstance(circuit_or_error, DeviceError):
+                raise circuit_or_error  # it's an error
 
-    tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes)
+    circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return tapes, batch_fn
+    return circuits, batch_fn, _update_config(execution_config)

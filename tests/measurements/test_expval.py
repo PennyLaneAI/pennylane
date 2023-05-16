@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the expval module"""
+import copy
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
+from pennylane.measurements import Expectation, Shots
+from pennylane.measurements.expval import ExpectationMP
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -68,9 +70,14 @@ class TestExpval:
 
         atol = tol if shots is None else 0.05
         rtol = 0 if shots is None else 0.05
-
         assert np.allclose(res, expected, atol=atol, rtol=rtol)
-        assert res.dtype == r_dtype
+
+        # pylint: disable=no-member, unsubscriptable-object
+        if isinstance(res, tuple):
+            assert res[0].dtype == r_dtype
+            assert res[1].dtype == r_dtype
+        else:
+            assert res.dtype == r_dtype
 
         custom_measurement_process(new_dev, spy)
 
@@ -124,8 +131,12 @@ class TestExpval:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=1)
+
         res = qml.expval(obs)
-        assert res.shape() == (1,)
+        # pylint: disable=use-implicit-booleaness-not-comparison
+        assert res.shape(dev, Shots(None)) == ()
+        assert res.shape(dev, Shots(100)) == ()
 
     @pytest.mark.parametrize(
         "obs",
@@ -136,7 +147,7 @@ class TestExpval:
         res = qml.expval(obs)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector),)
+        assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     def test_projector_expval(self, shots, mocker):
@@ -185,3 +196,44 @@ class TestExpval:
 
         assert circuit() == circuit2()
         custom_measurement_process(dev, spy)
+
+    def test_copy_observable(self):
+        """Test that the observable is copied if present."""
+        m = qml.expval(qml.PauliX(0))
+        copied_m = copy.copy(m)
+        assert m.obs is not copied_m.obs
+        assert qml.equal(m.obs, copied_m.obs)
+
+    def test_copy_eigvals(self):
+        """Test that the eigvals value is just assigned to new mp without copying."""
+        # pylint: disable=protected-access
+        m = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0))
+        copied_m = copy.copy(m)
+        assert m._eigvals is copied_m._eigvals
+
+    def test_standard_obs(self):
+        """Check that the hash of an expectation value of an observable can distinguish different observables."""
+
+        o1 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        o2 = qml.prod(qml.PauliX(0), qml.PauliZ(1))
+
+        assert qml.expval(o1).hash == qml.expval(o1).hash
+        assert qml.expval(o2).hash == qml.expval(o2).hash
+        assert qml.expval(o1).hash != qml.expval(o2).hash
+
+        o3 = qml.sum(qml.PauliX("a"), qml.PauliY("b"))
+        assert qml.expval(o1).hash != qml.expval(o3).hash
+
+    def test_eigvals(self):
+        """Test that the eigvals property controls the hash property."""
+        m1 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0))
+        m2 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0), id="something")
+
+        assert m1.hash == m2.hash
+
+        m3 = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(1))
+        assert m1.hash != m3.hash
+
+        m4 = ExpectationMP(eigvals=[-1, 1], wires=qml.wires.Wires(1))
+        assert m1.hash != m4.hash
+        assert m3.hash != m4.hash

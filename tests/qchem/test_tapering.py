@@ -26,12 +26,13 @@ from pennylane import numpy as np
 from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.tapering import (
     _kernel,
-    _observable_mult,
     _reduced_row_echelon,
     clifford,
     optimal_sector,
     taper_hf,
     taper_operation,
+    _split_pauli_sentence,
+    _taper_pauli_sentence,
 )
 
 
@@ -227,34 +228,6 @@ def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
 
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
-
-
-@pytest.mark.parametrize(
-    ("obs_a", "obs_b", "result"),
-    [
-        (
-            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
-            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
-            qml.Hamiltonian(np.array([1.0]), [qml.Identity(0)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)]
-            ),
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-            ),
-            qml.Hamiltonian(
-                np.array([-0.25j, 0.25j, -0.25j, 0.25]),
-                [qml.PauliY(0), qml.PauliY(1), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
-            ),
-        ),
-    ],
-)
-def test_observable_mult(obs_a, obs_b, result):
-    r"""Test that observable_mult returns the correct result."""
-    o = _observable_mult(obs_a, obs_b)
-    assert o.compare(result)
 
 
 @pytest.mark.parametrize(
@@ -547,18 +520,22 @@ def test_taper_obs(symbols, geometry, charge):
         qml.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
+        obs_ps = qml.pauli.pauli_sentence(observable)
         tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
+        tapered_ps = _taper_pauli_sentence(obs_ps, generators, paulixops, paulix_sector)
+
         obs_val = (
             scipy.sparse.coo_matrix(state)
-            @ qml.utils.sparse_hamiltonian(observable)
+            @ observable.sparse_matrix()
             @ scipy.sparse.coo_matrix(state).T
         ).toarray()
         obs_val_tapered = (
             scipy.sparse.coo_matrix(state_tapered)
-            @ qml.utils.sparse_hamiltonian(tapered_obs)
+            @ tapered_obs.sparse_matrix()
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
         assert np.isclose(obs_val, obs_val_tapered)
+        assert qml.equal(tapered_obs, tapered_ps)
 
 
 @pytest.mark.parametrize(
@@ -664,12 +641,12 @@ def test_taper_excitations(
             for obs, tap_obs in zip(observables, tapered_obs):
                 expec_val = (
                     scipy.sparse.coo_matrix(excited_state)
-                    @ qml.utils.sparse_hamiltonian(obs)
+                    @ obs.sparse_matrix()
                     @ scipy.sparse.coo_matrix(excited_state).getH()
                 ).toarray()
                 expec_val_tapered = (
                     scipy.sparse.coo_matrix(excited_state_tapered)
-                    @ qml.utils.sparse_hamiltonian(tap_obs)
+                    @ tap_obs.sparse_matrix()
                     @ scipy.sparse.coo_matrix(excited_state_tapered).getH()
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)
@@ -722,10 +699,10 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
             qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
                 ],
             ),
         ),
@@ -826,10 +803,10 @@ def test_consistent_taper_ops(operation, op_gen):
             lambda wires: qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[2]),
-                    qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[2]),
-                    qml.PauliX(wires=wires[1]) @ qml.PauliY(wires=wires[3]),
-                    qml.PauliY(wires=wires[1]) @ qml.PauliX(wires=wires[3]),
+                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
                 ],
             ),
         ),
@@ -981,3 +958,25 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
         taper_operation(
             operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
         )
+
+
+@pytest.mark.parametrize(
+    ("ps_size", "max_size"),
+    [
+        (190, 49),
+        (40, 13),
+    ],
+)
+def test_split_pauli_sentence(ps_size, max_size):
+    """Test that _split_pauli_sentence splits the PauliSentence objects into correct chunks."""
+
+    pauli_sentence = qml.pauli.PauliSentence(
+        {qml.pauli.PauliWord({i: "X", i + 1: "Y", i + 2: "Z"}): i for i in range(ps_size)}
+    )
+
+    split_sentence = {}
+    for ps in _split_pauli_sentence(pauli_sentence, max_size=max_size):
+        assert len(ps) <= max_size
+        split_sentence = {**split_sentence, **ps}
+
+    assert pauli_sentence == qml.pauli.PauliSentence(split_sentence)

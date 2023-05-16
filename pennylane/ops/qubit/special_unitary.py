@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops.qubit.parametric_ops import PauliRot
+from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 
 _pauli_matrices = np.array(
     [[[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, -1j], [1j, 0]], [[1, 0], [0, -1]]]
@@ -222,7 +222,7 @@ class SpecialUnitary(Operation):
     Note that for specific operations like the ``RX`` rotation gate above, it is
     strongly recommended to use the specialized implementation ``qml.RX`` rather
     than ``PauliRot`` or ``SpecialUnitary``.
-    However, ``SpecialUnitary`` gates go beyong such rotations: Multiple Pauli words
+    However, ``SpecialUnitary`` gates go beyond such rotations: Multiple Pauli words
     can be activated simultaneously, giving access to more complex operations.
     For two qubits, this could look like this:
 
@@ -418,7 +418,7 @@ class SpecialUnitary(Operation):
 
             U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
 
-        See :func:`~.ops.qubit.matrix_ops.pauli_basis_strings` for the ordering of Pauli words.
+        See the main class documentation above for the ordering of Pauli words.
 
         .. note::
 
@@ -590,7 +590,7 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        .. seealso:: `~.SpecialUnitary.get_one_parameter_generators`
+        .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 
         """
         num_wires = self.hyperparameters["num_wires"]

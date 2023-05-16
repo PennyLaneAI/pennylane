@@ -390,7 +390,7 @@ def draw_mpl(
                 :target: javascript:void(0);
 
         If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.  Only by selecting
-        ``show_all_wires=True`` will empty wires be diplayed.
+        ``show_all_wires=True`` will empty wires be displayed.
 
         .. code-block:: python
 

@@ -4,6 +4,7 @@ on:
     types: [published]
 
 env:
+  JAX_VERSION: 0.4.3
   TF_VERSION: 2.10.0
   TORCH_VERSION: 1.13.0
 
@@ -67,7 +68,7 @@ jobs:
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
         if: matrix.config.suite == 'jax'
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -153,7 +154,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install KaHyPar
         run: pip3 install kahypar==1.1.7
@@ -290,7 +291,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -344,7 +345,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
