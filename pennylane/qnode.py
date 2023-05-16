@@ -826,7 +826,7 @@ class QNode:
 
     def __call__(
         self, *args, **kwargs
-    ) -> qml.typing.Result:  # pylint: disable=too-many-branches, too-many-statements
+    ) -> qml.typing.Result:
         override_shots = False
         old_interface = self.interface
 
