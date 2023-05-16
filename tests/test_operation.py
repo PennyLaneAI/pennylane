@@ -48,15 +48,11 @@ qutrit_subspace_error_data = [
 
 
 @pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
-@pytest.mark.parametrize("op_cls", [qml.THadamard, qml.TRX])
 def test_qutrit_subspace_op_errors(op_cls, subspace, err_msg):
     """Test that the correct errors are raised when subspace is incorrectly defined"""
 
     with pytest.raises(ValueError, match=err_msg):
-        if op_cls.num_params != 0:
-            _ = op_cls(0.123, wires=range(op_cls.num_wires), subspace=subspace)
-        else:
-            _ = op_cls(wires=range(op_cls.num_wires), subspace=subspace)
+        _ = Operation.validate_subspace(subspace)
 
 
 class TestOperatorConstruction:

@@ -157,8 +157,10 @@ matrix_data = [
 ]
 
 
+@pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
 class TestMatrix:
-    @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
+    """Tests for the matrix of parametrized qutrit operations."""
+
     def test_matrix(self, op, theta, subspace, expected, tol):
         """Test that matrices of parametric qutrit operations are correct"""
         assert np.allclose(op.compute_matrix(theta, subspace=subspace), expected, atol=tol, rtol=0)
@@ -167,7 +169,6 @@ class TestMatrix:
         )
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
     def test_matrix_tf(self, op, theta, subspace, expected, tol):
         """Test that compute_matrix works with tensorflow variables"""
         import tensorflow as tf

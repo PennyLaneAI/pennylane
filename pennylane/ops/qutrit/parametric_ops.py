@@ -19,7 +19,7 @@ core parameterized gates for qutrits.
 import itertools
 
 import pennylane as qml
-from pennylane.operation import Operation, validate_subspace
+from pennylane.operation import Operation
 
 
 class TRX(Operation):
@@ -91,7 +91,7 @@ class TRX(Operation):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
-        self._subspace = validate_subspace(subspace)
+        self._subspace = Operation.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }

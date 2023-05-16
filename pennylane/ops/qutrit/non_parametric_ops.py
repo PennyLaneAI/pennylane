@@ -18,8 +18,7 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
-import pennylane as qml  # pylint: disable=unused-import
-from pennylane.operation import Operation, validate_subspace
+from pennylane.operation import Operation, AdjointUndefinedError
 from pennylane.wires import Wires
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
@@ -469,7 +468,7 @@ class THadamard(Operation):
         return base_label or "TH"
 
     def __init__(self, wires, subspace=None, do_queue=True):
-        self._subspace = validate_subspace(subspace) if subspace is not None else None
+        self._subspace = Operation.validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }
@@ -536,7 +535,7 @@ class THadamard(Operation):
 
     def adjoint(self):
         if self.subspace is None:
-            raise qml.operation.AdjointUndefinedError
+            raise AdjointUndefinedError
         return THadamard(wires=self.wires, subspace=self.subspace)
 
     def pow(self, z):
