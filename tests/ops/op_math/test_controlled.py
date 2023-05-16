@@ -499,8 +499,6 @@ class TestOperationProperties:
         class DummyOp(Operation):
             """Dummy op."""
 
-            pass
-
         with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
             assert Controlled(DummyOp(2), 1).base_name == "C(DummyOp)"
 

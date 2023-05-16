@@ -887,8 +887,6 @@ class TestOperationProperties:
         class DummyOp(qml.operation.Operation):
             """Dummy op."""
 
-            pass
-
         with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
             assert power_method(DummyOp(2), 2).base_name == "DummyOp**2"
 
