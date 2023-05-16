@@ -464,13 +464,11 @@ class TestDecompositions:  # pylint: disable=too-few-public-methods
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
         op = qml.CY(wires=[0, 1])
-        cry_pi = qml.CRY(np.pi, wires=[0, 1])
-        s = qml.S(0)
         gate1, gate2 = op.decomposition()
         decomposed_matrix = qml.matrix(op.decomposition)()
 
-        assert qml.equal(gate1, cry_pi)
-        assert qml.equal(gate2, s)
+        assert qml.equal(gate1, qml.CRY(np.pi, wires=[0, 1]))
+        assert qml.equal(gate2, qml.S(0))
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
 
@@ -506,6 +504,7 @@ label_data = [
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
+    """Tests that the label method gives the expected result."""
     assert op.label() == label
     assert op.label(decimals=2) == label
 
@@ -529,8 +528,9 @@ involution_ops = [  # ops who are their own inverses
 
 @pytest.mark.parametrize("op", involution_ops)
 def test_adjoint_method(op):
+    """Tests the adjoint method for operations that are their own adjoint."""
     adj_op = copy.copy(op)
     for _ in range(4):
         adj_op = adj_op.adjoint()
 
-        assert adj_op.name == op.name
+        assert qml.equal(adj_op, op)
