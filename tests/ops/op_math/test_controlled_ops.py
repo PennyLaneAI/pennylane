@@ -18,13 +18,12 @@ Unit tests for Operators inheriting from Controlled.
 import copy
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 from gate_data import (
     CZ,
 )
-
-from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -538,7 +537,8 @@ class TestSparseMatrix:  # pylint: disable=too-few-public-methods
         expected_sparse_mat = csr_matrix(mat)
         sparse_mat = op.sparse_matrix()
 
-        assert type(sparse_mat) == type(expected_sparse_mat)
+        assert isinstance(sparse_mat, csr_matrix)
+        assert isinstance(expected_sparse_mat, csr_matrix)
         assert all(sparse_mat.data == expected_sparse_mat.data)
         assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
