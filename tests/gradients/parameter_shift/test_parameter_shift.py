@@ -33,6 +33,8 @@ class TestGetOperationRecipe:
             (qml.RX, (1.0,), (np.pi / 2,)),
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
+            (qml.TRX, (0.5, 1), None),
+            (qml.TRX, (0.5, 1), (0.4, 0.8)),
         ],
     )
     def test_custom_recipe_first_order(self, orig_op, frequencies, shifts):
@@ -84,6 +86,8 @@ class TestGetOperationRecipe:
             (qml.RX, (1.0,), (np.pi / 2,)),
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
+            (qml.TRX, (0.5, 1), None),
+            (qml.TRX, (0.5, 1), (0.4, 0.8)),
         ],
     )
     def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
