@@ -118,7 +118,7 @@ class TestAutogradExecuteUnitTests:
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
-        with pytest.raises(ValueError, match="Unknown interface"):
+        with pytest.raises(ValueError, match="interface must be in"):
             cost(a, device=dev)
 
     def test_grad_on_execution(self, mocker):
@@ -921,7 +921,6 @@ class TestHigherOrderDerivatives:
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
-        params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q1:
