@@ -14,7 +14,6 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
-# pylint: disable=import-outside-toplevel
 
 import warnings
 import pytest
