@@ -26,9 +26,9 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    _SpecialForm,
     get_args,
     get_origin,
-    _SpecialForm,
 )
 
 from numpy.typing import ArrayLike

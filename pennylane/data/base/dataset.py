@@ -31,6 +31,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
     cast,
     get_origin,
@@ -116,6 +117,8 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
         bind: The Zarr group that contains this dataset.
     """
 
+    Self = TypeVar("Self", bound="Dataset")
+
     type_id = "dataset"
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
@@ -124,7 +127,7 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
 
     def __init__(
         self,
-        bind: Optional[ZarrGroup] = None,
+        bind: Optional[Union[ZarrGroup, Tuple[ZarrGroup, str]]] = None,
         info: Optional[AttributeInfo] = None,
         **attrs: Any,
     ):
@@ -137,7 +140,10 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
                 already exist in ``bind`` will be loaded into this dataset.
             **attrs: Attributes to add to this dataset.
         """
-        super().__init__(value=None, info=info, bind=bind)  # type: ignore
+        if isinstance(bind, zarr.Group):
+            super().__init__(value=None, info=info, bind=bind)  # type: ignore
+        else:
+            super().__init__(value=None, info=info, parent_and_key=bind)
 
         self._validate_arguments(attrs)
         for name, attr in attrs.items():
