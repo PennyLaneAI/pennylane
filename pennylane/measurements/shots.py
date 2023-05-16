@@ -135,7 +135,7 @@ class Shots:
 
     _frozen = False
 
-    def __new__(cls, shots):
+    def __new__(cls, shots=None):
         return shots if isinstance(shots, cls) else object.__new__(cls)
 
     def __setattr__(self, name, value):
@@ -145,7 +145,7 @@ class Shots:
             )
         return super().__setattr__(name, value)
 
-    def __init__(self, shots):
+    def __init__(self, shots=None):
         if shots is None:
             self.total_shots = None
             self.shot_vector = ()
@@ -183,6 +183,19 @@ class Shots:
     def __repr__(self):
         """The representation of the class"""
         return f"Shots(total_shots={self.total_shots}, shot_vector={self.shot_vector})"
+
+    def __eq__(self, other):
+        """Equality between Shot instances."""
+        return self.total_shots == other.total_shots and self.shot_vector == other.shot_vector
+
+    def __hash__(self):
+        """Hash for a given Shot instance."""
+        return hash(self.shot_vector)
+
+    def __iter__(self):
+        for shot_copy in self.shot_vector:
+            for _ in range(shot_copy.copies):
+                yield shot_copy.shots
 
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
