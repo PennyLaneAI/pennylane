@@ -487,7 +487,7 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_two_ops)
     def test_period_two_noninteger_power(self, op):
         """Test that ops with a period of 2 raised to a non-integer power raise an error."""
-        if op.__class__ is qml.PauliZ:
+        if isinstance(op, qml.PauliZ):
             pytest.skip("PauliZ can be raised to any power.")
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
