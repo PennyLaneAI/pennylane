@@ -1055,6 +1055,39 @@ class TestRandomSeed:
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
 
+class TestHamiltonianSamples:
+    """Test that the measure_with_samples function works as expected for
+    Hamiltonian and Sum observables
+
+    This is a copy of the tests in test_sampling.py, but using the device instead"""
+
+    def test_hamiltonian_expval(self):
+        """Test that sampling works well for Hamiltonian observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = dev.execute(qs)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_sum_expval(self):
+        """Test that sampling works well for Sum observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = dev.execute(qs)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+
 def test_broadcasted_parameter():
     """Test that DefaultQubit2 handles broadcasted parameters as expected."""
     dev = DefaultQubit2()

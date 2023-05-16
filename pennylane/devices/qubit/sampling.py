@@ -15,7 +15,8 @@
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import SampleMeasurement, Shots
+from pennylane.ops import Sum, Hamiltonian
+from pennylane.measurements import SampleMeasurement, Shots, ExpectationMP
 from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
 
@@ -27,6 +28,40 @@ def measure_with_samples(
     Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
     have already been mapped to integer wires used in the device.
+
+    Args:
+        mp (~.measurements.SampleMeasurement): The sample measurement to perform
+        state (np.ndarray[complex]): The state vector to sample from
+        shots (~.measurements.Shots): The number of samples to take
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+
+    Returns:
+        TensorLike[Any]: Sample measurement results
+    """
+    # if the measurement process involves a Sum or a Hamiltonian, measure each
+    # of the terms separately and sum
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Hamiltonian):
+        return sum(
+            c * measure_with_samples(ExpectationMP(t), state, shots, rng=rng)
+            for c, t in zip(*mp.obs.terms())
+        )
+
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Sum):
+        return sum(measure_with_samples(ExpectationMP(t), state, shots, rng=rng) for t in mp.obs)
+
+    # measure with the usual method (rotate into the measurement basis)
+    return _measure_with_samples_diagonalizing_gates(mp, state, shots, rng=rng)
+
+
+def _measure_with_samples_diagonalizing_gates(
+    mp: SampleMeasurement, state: np.ndarray, shots: Shots, rng=None
+) -> TensorLike:
+    """
+    Returns the samples of the measurement process performed on the given state,
+    by rotating the state into the measurement basis using the diagonalizing gates
+    given by the measurement process.
 
     Args:
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
