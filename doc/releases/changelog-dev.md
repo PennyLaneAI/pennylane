@@ -34,11 +34,16 @@
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
   [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
+* Integrated `QuantumScript.shots` with `QNode` so that shots are placed on the `QuantumScript`
+  during `QNode` construction.
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
+
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
 * `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
   [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
@@ -70,6 +75,10 @@
 * Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
+
+* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
+  an execution.
+  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
 
 * `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
 [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
