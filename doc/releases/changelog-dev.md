@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
+  instead of a `QubitUnitary` operation with a dense matrix.
+  [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
+  
 * The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
@@ -60,6 +64,9 @@
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
 
+* Added a keyword argument `seed` to the `DefaultQubit2` device.
+  [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
+
 * Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
@@ -71,8 +78,14 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
 <h3>Breaking changes 💔</h3>
+
+* `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
+  and `MultiRZ` gates.
+  [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
 
 * Jax trainable parameters are now `Tracer` instead of `JVPTracer`, it is not always the right definition for the JIT 
   interface, but we update them in the custom JVP using symbolic zeros.
@@ -115,4 +128,5 @@ Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
-Jay Soni.
+Jay Soni,
+David Wierichs.
