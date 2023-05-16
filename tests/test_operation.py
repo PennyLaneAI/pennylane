@@ -52,7 +52,7 @@ def test_qutrit_subspace_op_errors(op_cls, subspace, err_msg):
     """Test that the correct errors are raised when subspace is incorrectly defined"""
 
     with pytest.raises(ValueError, match=err_msg):
-        _ = Operation.validate_subspace(subspace)
+        _ = Operator.validate_subspace(subspace)
 
 
 class TestOperatorConstruction:
