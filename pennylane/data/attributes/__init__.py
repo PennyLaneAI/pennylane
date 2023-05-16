@@ -34,8 +34,6 @@ __all__ = (
     "DatasetOperator",
     "DatasetNone",
     "DatasetWires",
-    "DatasetMolecule",
-    "DatasetSparseArray",
     "DatasetHamiltonian",
     "DatasetPauliSentence",
     "DatasetPauliWord",
