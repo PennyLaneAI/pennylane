@@ -81,6 +81,9 @@
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
+* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
+  and now inherits from `qml.ops.op_math.ControlledOp`.
+
 <h3>Breaking changes 💔</h3>
 
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
@@ -129,4 +132,5 @@ Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
