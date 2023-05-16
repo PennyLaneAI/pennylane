@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.jvp module."""
-# pylint:disable=import-outside-toplevel
 import pytest
 
 import pennylane as qml

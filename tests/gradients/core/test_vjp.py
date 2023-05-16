@@ -260,8 +260,8 @@ class TestVJP:
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2,)
 
-        expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        exp = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -287,8 +287,8 @@ class TestVJP:
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2,)
 
-        expected = np.array([-np.sin(x), 2 * np.cos(y)])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        exp = np.array([-np.sin(x), 2 * np.cos(y)])
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -314,7 +314,7 @@ class TestVJP:
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2,)
 
-        expected = (
+        exp = (
             np.array(
                 [
                     [-2 * np.sin(x), 0],
@@ -339,7 +339,7 @@ class TestVJP:
             / 2
         )
         dy = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-        assert np.allclose(res, dy @ expected, atol=tol, rtol=0)
+        assert np.allclose(res, dy @ exp, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("dtype", [np.float32, np.float64])
     def test_dtype_matches_dy(self, dtype):
@@ -358,7 +358,16 @@ class TestVJP:
         assert func([]).dtype == dtype
 
 
+def ansatz(x, y):
+    """A two-qubit, two-parameter quantum circuit ansatz."""
+    qml.RX(x, wires=[0])
+    qml.RY(y, wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qml.probs(wires=[0, 1])
+
+
 def expected(params):
+    """Compute the expected VJP for the ansatz above."""
     x, y = 1.0 * params
     return (
         np.array(
@@ -369,13 +378,6 @@ def expected(params):
         )
         / 2
     )
-
-
-def ansatz(x, y):
-    qml.RX(x, wires=[0])
-    qml.RY(y, wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.probs(wires=[0, 1])
 
 
 class TestVJPGradients:
@@ -564,8 +566,6 @@ class TestBatchVJP:
 
     def test_all_tapes_no_trainable_parameters(self):
         """If all tapes have no trainable parameters all outputs will be None"""
-        dev = qml.device("default.qubit", wires=2)
-
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
