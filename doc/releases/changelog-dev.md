@@ -68,6 +68,7 @@
 * Support for sample-based measurements has been added to the `DefaultQubit2` device.
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
+  [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
