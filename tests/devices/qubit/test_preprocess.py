@@ -26,7 +26,9 @@ from pennylane.devices.qubit.preprocess import (
     batch_transform,
     preprocess,
     validate_and_expand_adjoint,
+    validate_measurements,
 )
+from pennylane.devices.experimental import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
@@ -147,20 +149,15 @@ class TestExpandFnValidation:
         """Test that expand_fn throws an error when a tensor includes invalid obserables"""
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[
-                qml.expval(qml.GellMann(wires=0, index=1) @ qml.GellMann(wires=1, index=2))
-            ],
+            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
         )
         with pytest.raises(DeviceError, match="Observable expval"):
             expand_fn(tape)
 
-    def test_expand_fn_valid_tensor_observable(self):
-        """Test that expand_fn passes when a tensor includes only valid obserables."""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[qml.expval(qml.PauliZ(0) @ qml.PauliX(1))],
-        )
-        expand_fn(tape)
+    def test_valid_tensor_observable(self):
+        """Test that a valid tensor ovservable passes without error."""
+        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
+        assert expand_fn(tape) is tape
 
     def test_state_prep_only_one(self):
         """Test that a device error is raised if the script has multiple state prep ops."""
@@ -168,12 +165,6 @@ class TestExpandFnValidation:
         with pytest.raises(
             DeviceError, match=r"DefaultQubit2 accepts at most one state prep operation."
         ):
-            expand_fn(qs)
-
-    def test_only_state_based_measurements(self):
-        """Test that a device error is raised if a measurement is not a state measurement."""
-        qs = QuantumScript([], [qml.expval(qml.PauliZ(0)), qml.sample()])
-        with pytest.raises(DeviceError, match=r"Measurement process sample"):
             expand_fn(qs)
 
     def test_expand_fn_passes(self):
@@ -202,17 +193,20 @@ class TestExpandFnValidation:
 class TestExpandFnTransformations:
     """Tests for the behavior of the `expand_fn` helper."""
 
-    def test_expand_fn_expand_unsupported_op(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_expand_fn_expand_unsupported_op(self, shots):
         """Test that expand_fn expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
-        tape = QuantumScript(ops=ops, measurements=measurements)
+        tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
 
         expanded_tape = expand_fn(tape)
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
             assert qml.equal(op, exp)
+
+        assert tape.shots == expanded_tape.shots
 
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
@@ -250,6 +244,82 @@ class TestExpandFnTransformations:
         qs = QuantumScript([NoMatOp("a")], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))])
         new_qs = expand_fn(qs)
         assert new_qs.measurements == qs.measurements
+
+
+class TestValidateMeasurements:
+    """Unit tests for the validate_measurements function"""
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.state(), qml.expval(qml.PauliZ(0)), qml.probs(0)],
+            [qml.state(), qml.vn_entropy(0), qml.mutual_info(0, 1)],
+        ],
+    )
+    def test_only_state_measurements(self, measurements):
+        """Test that an analytic circuit containing only StateMeasurements works"""
+        tape = QuantumScript([], measurements, shots=None)
+        validate_measurements(tape)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(0)],
+        ],
+    )
+    def test_only_sample_measurements(self, measurements):
+        """Test that a circuit with finite shots containing only SampleMeasurements works"""
+        tape = QuantumScript([], measurements, shots=100)
+        validate_measurements(tape)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.state(), qml.sample(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0))],
+        ],
+    )
+    def test_analytic_with_samples(self, measurements):
+        """Test that an analytic circuit containing SampleMeasurements raises an error"""
+        tape = QuantumScript([], measurements, shots=None)
+
+        msg = "Analytic circuits must only contain StateMeasurements"
+        with pytest.raises(DeviceError, match=msg):
+            validate_measurements(tape)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.sample(wires=0), qml.state()],
+            [qml.expval(qml.PauliZ(0)), qml.state(), qml.sample(wires=0)],
+        ],
+    )
+    def test_finite_shots_with_state(self, measurements):
+        """Test that a circuit with finite shots containing StateMeasurements raises an error"""
+        tape = QuantumScript([], measurements, shots=100)
+
+        msg = "Circuits with finite shots must only contain SampleMeasurements"
+        with pytest.raises(DeviceError, match=msg):
+            validate_measurements(tape)
+
+    @pytest.mark.parametrize("diff_method", ["adjoint", "backprop"])
+    def test_finite_shots_analytic_diff_method(self, diff_method):
+        """Test that a circuit with finite shots executed with diff_method "adjoint"
+        or "backprop" raises an error"""
+        tape = QuantumScript([], [qml.expval(qml.PauliZ(0))], shots=100)
+
+        execution_config = ExecutionConfig()
+        execution_config.gradient_method = diff_method
+
+        msg = "Circuits with finite shots must be executed with non-analytic gradient methods"
+        with pytest.raises(DeviceError, match=msg):
+            validate_measurements(tape, execution_config)
 
 
 class TestBatchTransform:
@@ -361,7 +431,8 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs.trainable_params == qs_valid.trainable_params
 
-    def test_valid_tape_with_expansion(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_valid_tape_with_expansion(self, shots):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
         and is expanded"""
         prep_op = qml.QubitStateVector(
@@ -371,6 +442,7 @@ class TestAdjointDiffTapeValidation:
             ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
             prep=[prep_op],
+            shots=shots,
         )
 
         qs.trainable_params = {1, 2, 3}
@@ -386,6 +458,7 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs.trainable_params == qs_valid.trainable_params
+        assert qs.shots == qs_valid.shots
 
 
 class TestPreprocess:
