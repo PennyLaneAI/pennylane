@@ -19,6 +19,8 @@ import functools
 import inspect
 import warnings
 from collections.abc import Sequence
+from typing import Union
+
 
 import autograd
 
@@ -360,7 +362,7 @@ class QNode:
     def __init__(
         self,
         func,
-        device,
+        device: Union[Device, "qml.devices.experimental.Device"],
         interface="auto",
         diff_method="best",
         expansion_strategy="gradient",
@@ -378,7 +380,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, Device):
+        if not isinstance(device, (Device, qml.devices.experimental.Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
@@ -474,12 +476,13 @@ class QNode:
         if self.interface == "auto" and self.diff_method in ["backprop", "best"]:
             if self.diff_method == "backprop":
                 # Check that the device has the capabilities to support backprop
-                backprop_devices = self.device.capabilities().get("passthru_devices", None)
-                if backprop_devices is None:
-                    raise qml.QuantumFunctionError(
-                        f"The {self.device.short_name} device does not support native computations with "
-                        "autodifferentiation frameworks."
-                    )
+                if isinstance(self.device, Device):
+                    backprop_devices = self.device.capabilities().get("passthru_devices", None)
+                    if backprop_devices is None:
+                        raise qml.QuantumFunctionError(
+                            f"The {self.device.short_name} device does not support native computations with "
+                            "autodifferentiation frameworks."
+                        )
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
@@ -637,6 +640,13 @@ class QNode:
 
     @staticmethod
     def _validate_backprop_method(device, interface):
+        if isinstance(device, qml.devices.experimental.Device):
+            config = qml.devices.experimental.ExecutionConfig(
+                gradient_method="backprop", interface=interface
+            )
+            if device.supports_derivatives(config):
+                return "backprop", {}, device
+            raise qml.QuantumFunctionError(f"Device {device.name} does not support backprop")
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
@@ -716,13 +726,19 @@ class QNode:
 
     @staticmethod
     def _validate_device_method(device):
-        # determine if the device provides its own jacobian method
-        if device.capabilities().get("provides_jacobian", False):
-            return "device", {}, device
+        if isinstance(device, Device):
+            # determine if the device provides its own jacobian method
+            if device.capabilities().get("provides_jacobian", False):
+                return "device", {}, device
+            name = device.short_name
+        else:
+            config = qml.devices.experimental.ExecutionConfig(gradient_method="device")
+            if device.supports_derivatives(config):
+                return True
+            name = device.name
 
         raise qml.QuantumFunctionError(
-            f"The {device.short_name} device does not provide a native "
-            "method for computing the jacobian."
+            f"The {name} device does not provide a native " "method for computing the jacobian."
         )
 
     @staticmethod
@@ -856,14 +872,18 @@ class QNode:
 
                 # pylint: disable=not-callable
                 # update the gradient function
-                set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
+                if isinstance(self._original_device, Device):
+                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
 
             else:
-                kwargs["shots"] = (
-                    self._original_device._raw_shot_sequence
-                    if self._original_device._shot_vector
-                    else self._original_device.shots
-                )
+                if isinstance(self._original_device, Device):
+                    kwargs["shots"] = (
+                        self._original_device._raw_shot_sequence
+                        if self._original_device._shot_vector
+                        else self._original_device.shots
+                    )
+                else:
+                    kwargs["shots"] = None
 
         # construct the tape
         self.construct(args, kwargs)
