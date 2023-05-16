@@ -28,7 +28,7 @@ class DatasetArray(AttributeType[ZarrArray, numpy.ndarray, ArrayLike]):
     type_id = "array"
 
     def zarr_to_value(self, bind: ZarrArray) -> numpy.ndarray:
-        return numpy.array(self.bind, dtype=bind.dtype, order=bind.order)
+        return numpy.array(self.bind, dtype=bind.dtype)
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: ArrayLike) -> ZarrArray:
         bind_parent[key] = value

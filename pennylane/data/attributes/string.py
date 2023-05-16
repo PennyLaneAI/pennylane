@@ -30,10 +30,12 @@ class DatasetString(AttributeType[ZarrArray, str, str]):
         return (str,)
 
     def zarr_to_value(self, bind: ZarrArray) -> str:
-        return bind[()]
+        return bind.asstr()[()]
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: str) -> ZarrArray:
         if key in bind_parent:
             del bind_parent[key]
 
-        return bind_parent.array(name=key, data=value, dtype=str)
+        bind_parent[key] = value
+
+        return bind_parent[key]

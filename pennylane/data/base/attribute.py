@@ -18,7 +18,7 @@ import itertools
 import typing
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping, Sequence
 from numbers import Number
 from types import MappingProxyType
 from typing import (
@@ -63,7 +63,6 @@ class AttributeInfo(MutableMapping):
     """
 
     attrs_namespace: ClassVar[str] = "qml.data."
-
     attrs_bind: typing.MutableMapping[str, Any]
 
     doc: Optional[str]
@@ -269,6 +268,14 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         in subclasses to implement additional initialization"""
 
     @classmethod
+    def py_type(cls, value_type: Type[InitValueType]) -> str:
+        """Determines the ``py_type`` of an attribute during value initialization,
+        if it was not provided in the ``info`` argument. This method returns
+        ``f"{value_type.__module__}.{value_type.__name__}``.
+        """
+        return get_type_str(value_type)
+
+    @classmethod
     def consumes_types(cls) -> typing.Iterable[type]:
         """
         Returns an iterable of types for which this should be the default
@@ -286,7 +293,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         """Converts value into a Zarr Array or Group under bind_parent[key]."""
 
     def get_value(self) -> T:
-        """Loads the mapped value from ``bind``."""
+        """Parses the mapped value from ``bind``."""
         return self.zarr_to_value(self.bind)
 
     def copy_value(self) -> T:
@@ -302,7 +309,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
 
         info["type_id"] = self.type_id
         if info.py_type is None:
-            info.py_type = get_type_str(type(value))
+            info.py_type = self.py_type(type(value))
 
         new_bind = self.value_to_zarr(parent, key, value)
         new_info = AttributeInfo(new_bind.attrs)
@@ -312,7 +319,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
 
     def _set_parent(self, parent: ZarrGroup, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
-        zarr.convenience.copy(source=self.bind, dest=parent, name=key, if_exists="replace")
+        zarr.copy(source=self.bind, dest=parent, key=key, if_exists="replace")
 
     def _check_bind(self):
         """
@@ -346,7 +353,12 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         __type_consumer_registry
     )
 
-    def __init_subclass__(cls) -> None:  # pylint: disable=arguments-differ
+    def __init_subclass__(  # pylint: disable=arguments-differ
+        cls, *, abstract: bool = False
+    ) -> None:
+        if abstract:
+            return super().__init_subclass__()
+
         existing_type = AttributeType.__registry.get(cls.type_id)
         if existing_type is not None:
             raise TypeError(
@@ -364,6 +376,15 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
             AttributeType.__type_consumer_registry[type_] = cls
 
         return super().__init_subclass__()
+
+    def __copy__(self: Self) -> Self:
+        impl_group = zarr.group()
+        zarr.copy(self.bind, impl_group, "_")
+
+        return type(self)(bind=impl_group["_"])
+
+    def __deepcopy__(self: Self, memo) -> Self:
+        return self.__copy__()
 
 
 def get_attribute_type(zobj: Zarr) -> Type[AttributeType[Zarr, Any, Any]]:
@@ -426,5 +447,9 @@ def match_obj_type(type_or_obj: Union[T, Type[T]]) -> Type[AttributeType[ZarrAny
         ret = AttributeType.registry["scalar"]
     elif hasattr(type_, "__array__"):
         ret = AttributeType.registry["array"]
+    elif issubclass(type_, Sequence):
+        ret = AttributeType.registry["list"]
+    elif issubclass(type_, Mapping):
+        ret = AttributeType.registry["dict"]
 
     return ret
