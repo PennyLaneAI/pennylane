@@ -725,7 +725,7 @@ class TestStochPulseGradQNodeIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,  # , cache=False
+            num_split_times=num_split_times,
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)

@@ -76,7 +76,7 @@ def _split_evol_ops(op, ob, tau):
             term ``ob``.
     """
     t0, *_, t1 = op.t
-    if broadcast := qml.math.ndim(tau) > 0:
+    if bcast := qml.math.ndim(tau) > 0:
         tau = jnp.sort(tau)
         before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
         after_t = before_t.copy()
@@ -88,17 +88,12 @@ def _split_evol_ops(op, ob, tau):
     coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
 
     # Create Pauli rotations to be inserted at tau
+    ode_kwargs = op.odeint_kwargs
     ops = tuple(
         [
-            op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs),
+            op(op.data, before_t, return_intermediate=bcast, **ode_kwargs),
             qml.exp(qml.dot([-1j * shift], [ob])),
-            op(
-                op.data,
-                after_t,
-                return_intermediate=broadcast,
-                complementary=broadcast,
-                **op.odeint_kwargs,
-            ),
+            op(op.data, after_t, return_intermediate=bcast, complementary=bcast, **ode_kwargs),
         ]
         for shift in shifts
     )
@@ -144,6 +139,8 @@ def _parshift_and_integrate(
         cjacs (tensor_like): classical Jacobian evaluated at the splitting times
         int_prefactor (float): prefactor of the numerical integration, corresponding to the size
             of the time range divided by the number of splitting time samples
+        psr_coeffs (tensor_like): Coefficients of the parameter-shift rule to contract the results
+            with before integrating numerically.
         single_measure (bool): Whether the results contain a single measurement per shot setting
         shot_vector (bool): Whether the results have a shot vector axis
         use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
@@ -154,28 +151,33 @@ def _parshift_and_integrate(
 
     if use_broadcasting:
 
-        def _parshift_and_contract(res_list, cjacs, int_prefactor):
-            # This one will not work yet with tuples.
+        def _psr_and_contract(res_list, cjacs, int_prefactor):
+            # Stack results and slice away the first and last values, corresponding to the initial
+            # condition and the final value of the time evolution, but not to a splitting time
             res = qml.math.stack(res_list)[:, 1:-1]
+            # Contract the results with the parameter-shift ruel coefficients
             parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
     else:
         num_shifts = len(psr_coeffs)
 
-        def _parshift_and_contract(res_list, cjacs, int_prefactor):
+        def _psr_and_contract(res_list, cjacs, int_prefactor):
             res = qml.math.stack(res_list)
+            # Reshape the results such that the first axis corresponds to the splitting times
+            # and the second axis corresponds to different shifts
             new_shape = ((shape := qml.math.shape(res))[0] // num_shifts, num_shifts) + shape[1:]
             res = qml.math.reshape(res, new_shape)
+            # Contract the results with the parameter-shift ruel coefficients
             parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
     if not single_measure + shot_vector == 1:
-        return tuple(_parshift_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
     if single_measure:
         # Single measurement without shot vector
-        return _parshift_and_contract(results, cjacs, int_prefactor)
+        return _psr_and_contract(results, cjacs, int_prefactor)
 
     # Multiple measurements with shot vector. Not supported with broadcasting yet.
     if use_broadcasting:
@@ -185,8 +187,7 @@ def _parshift_and_integrate(
             "supported all simultaneously by stoch_pulse_grad."
         )
     return tuple(
-        tuple(_parshift_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r))
-        for r in zip(*results)
+        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )
 
 
@@ -559,12 +560,6 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
         )
 
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-    # if not qml.pauli.is_pauli_word(ob):
-    # raise ValueError(
-    # "stoch_pulse_grad currently only supports Pauli words as parametrized "
-    # f"terms in ParametrizedHamiltonian. Got {ob}"
-    # )
-    # word = qml.pauli.pauli_word_to_string(ob)
     cjac_fn = jax.jacobian(coeff, argnums=0)
 
     t0, *_, t1 = op.t
