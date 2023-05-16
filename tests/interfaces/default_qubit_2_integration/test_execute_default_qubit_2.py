@@ -51,6 +51,7 @@ class TestBatchTransformHelper:
 
     def test_warns_if_requested_off(self):
         """Test that a warning is raised if the the batch transform is requested to not be used."""
+
         # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operator):
             """Dummy operator."""

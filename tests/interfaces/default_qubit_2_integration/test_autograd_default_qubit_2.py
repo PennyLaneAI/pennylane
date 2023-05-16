@@ -119,25 +119,26 @@ class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs, shots, device):
+    def test_execution(self, execute_kwargs):
         """Test execution"""
+        dev = DefaultQubit2()
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))])
 
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))])
 
-            return execute([tape1, tape2], device, **execute_kwargs)
+            return execute([tape1, tape2], dev, **execute_kwargs)
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
-        with device.tracker:
+        with dev.tracker:
             res = cost(a, b)
 
-        assert device.tracker.totals["batches"] == 1
-        assert device.tracker.totals["executions"] == 2  # different wires so different hashes
+        assert dev.tracker.totals["batches"] == 1
+        assert dev.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
         assert res[0].shape == ()
