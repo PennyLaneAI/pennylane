@@ -385,6 +385,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
     For simplicity, consider a pulse program consisting of this single pulse and a
     measurement of the expectation value of :math:`X^{(0)}`.
+
     .. code-block:: python
 
         dev = qml.device("default.qubit.jax", wires=2)
