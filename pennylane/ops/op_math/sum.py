@@ -76,9 +76,6 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
             "your operator within a qml.QueuingManager.stop_recording() context."
         )
 
-    if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
-        return qml.collections.sum(summands[0])
-
     if not lazy:
         for op in summands:
             QueuingManager.remove(op)
