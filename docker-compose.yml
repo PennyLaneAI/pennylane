@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  pl:
+    image: pl
+    stdin_open: true
+    tty: true
+    ports:
+      - 8003:80
+    volumes:
+      - ./datasets:/usr/src/pennylane/datasets
+      - ./script:/usr/src/pennylane/script
