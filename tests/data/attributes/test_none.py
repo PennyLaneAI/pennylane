@@ -10,7 +10,7 @@ class TestDatasetsNone:
         assert dsets_none.get_value() is None
         assert bool(dsets_none) is False
         assert dsets_none.info["type_id"] == "none"
-        assert dsets_none.bind.shape == ()
+        assert dsets_none.bind.shape is None
 
     def test_bind_init(self):
         """Test that DatasetsNone can be bind-initialized."""
@@ -21,4 +21,4 @@ class TestDatasetsNone:
         assert dsets_none.get_value() is None
         assert bool(dsets_none) is False
         assert dsets_none.info["type_id"] == "none"
-        assert dsets_none.bind.shape == ()
+        assert dsets_none.bind.shape is None

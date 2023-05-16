@@ -73,7 +73,6 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     attribute_type: Union[Type[AttributeType[ZarrAny, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
-    extra: Optional[Dict[str, Any]] = None,
     default_factory: Optional[Callable[[], T]] = None,
     **kwargs,
 ) -> Any:
@@ -91,7 +90,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
 
     return Attribute(
         cast(Type[AttributeType[ZarrAny, T, T]], attribute_type),
-        AttributeInfo(doc=doc, py_type=py_type, extra=extra or {}),
+        AttributeInfo(doc=doc, py_type=py_type),
         default=default,
         default_factory=default_factory,
     )
@@ -140,7 +139,7 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
                 already exist in ``bind`` will be loaded into this dataset.
             **attrs: Attributes to add to this dataset.
         """
-        if isinstance(bind, zarr.Group):
+        if isinstance(bind, (zarr.Group, zarr.File)):
             super().__init__(value=None, info=info, bind=bind)  # type: ignore
         else:
             super().__init__(value=None, info=info, parent_and_key=bind)
@@ -193,10 +192,10 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
         zgrp = zarr.open_group(filepath, mode="r")
 
         if assign_to:
-            zarr.convenience.copy(zgrp, self.bind, assign_to)
+            zarr.copy(zgrp, self.bind, assign_to)
         else:
-            if_exists = "replace" if overwrite_attrs else "raise"
-            zarr.convenience.copy_all(zgrp, self.bind, if_exists=if_exists)
+            if_exists = "overwrite" if overwrite_attrs else "raise"
+            zarr.copy_all(zgrp, self.bind, if_exists=if_exists)
 
     def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w-"):
         """Write dataset to Zarr file at filepath. Can also accept an S3 URL.
@@ -208,8 +207,8 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
                 create if doesn't exist). Default is "w-".
         """
         with zarr.open_group(filepath, mode=mode) as zgrp:
-            zarr.convenience.copy_all(self.bind, zgrp)
-            zgrp.store.close()
+            zarr.copy_all(self.bind, zgrp)
+            zgrp.attrs.update(self.bind.attrs)
 
     def _validate_arguments(self, args: Dict[str, Any]):
         """Validates arguments to __init__() based on the declared
@@ -247,9 +246,17 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
         except KeyError as exc:
             raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
 
+    def __delattr__(self, __name: str) -> None:
+        try:
+            del self._mapper[__name]
+        except KeyError as exc:
+            raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
+
     def __init_subclass__(cls, **kwargs) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
+        super().__init_subclass__(**kwargs)
+
         fields = {}
 
         for name, annotated_type in cls.__annotations__.items():

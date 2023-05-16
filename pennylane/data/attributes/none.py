@@ -37,7 +37,7 @@ class DatasetNone(AttributeType[ZarrArray, type(None), type(None)]):
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: None) -> ZarrArray:
         """Creates an empty array under 'key'."""
-        return bind_parent.empty(key, shape=())
+        return bind_parent.create_dataset(key, dtype="f")
 
     def __bool__(self) -> Literal[False]:
         return False
