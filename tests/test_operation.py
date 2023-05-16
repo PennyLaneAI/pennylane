@@ -48,7 +48,7 @@ qutrit_subspace_error_data = [
 
 
 @pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
-def test_qutrit_subspace_op_errors(op_cls, subspace, err_msg):
+def test_qutrit_subspace_op_errors(subspace, err_msg):
     """Test that the correct errors are raised when subspace is incorrectly defined"""
 
     with pytest.raises(ValueError, match=err_msg):
