@@ -9,11 +9,9 @@ from pennylane.data.attributes import (
     DatasetScalar,
     DatasetString,
     DatasetWires,
-    DatasetSparseArray,
 )
 from pennylane.data.base.attribute import match_obj_type
 from pennylane.wires import Wires
-from pennylane.data.attributes.sparse_array_ import _ALL_SPARSE
 
 
 @pytest.mark.parametrize(
@@ -43,7 +41,6 @@ from pennylane.data.attributes.sparse_array_ import _ALL_SPARSE
         (type(None), DatasetNone),
         (Wires([1]), DatasetWires),
         (Wires, DatasetWires),
-        *((sparse_cls, DatasetSparseArray) for sparse_cls in _ALL_SPARSE),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
