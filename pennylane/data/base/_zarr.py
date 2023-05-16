@@ -23,28 +23,26 @@ class _zarr_lazy:  # pylint: disable=too-few-public-methods
 
     convenience: ModuleType
 
-    def __init__(self, __root=None):
-        self.__root = __root
-        self.__submodules = {}
+    def __init__(self):
+        self.__zarr = None
 
     def _do_import(self):
         try:
-            self.__root = importlib.import_module("zarr")
-            self.__submodules["convenience"] = importlib.import_module("zarr.convenience")
+            self.__zarr = importlib.import_module("zarr")
         except ImportError as Error:
             raise ImportError(
-                "This feature requires the 'zarr' package. "
-                "It can be installed with:\n\n pip install zarr."
+                "This feature requires the 'zarr' and 'zstd' packages. "
+                "They can be installed with:\n\n pip install zarr zstd."
             ) from Error
 
+        numcodecs = importlib.import_module("numcodecs")
+        self.__zarr.storage.default_compressor = numcodecs.Blosc(cname="zstd", clevel=3)
+
     def __getattr__(self, resource: str) -> Any:
-        if self.__root is None:
+        if self.__zarr is None:
             self._do_import()
 
-        if resource in self.__submodules:
-            return self.__submodules[resource]
-
-        return getattr(self.__root, resource)
+        return getattr(self.__zarr, resource)
 
 
 zarr = _zarr_lazy()
