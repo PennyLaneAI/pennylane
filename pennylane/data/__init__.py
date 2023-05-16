@@ -22,8 +22,6 @@ from .attributes import (
     DatasetScalar,
     DatasetString,
     DatasetWires,
-    DatasetMolecule,
-    DatasetSparseArray,
     DatasetPauliSentence,
     DatasetPauliWord,
 )
@@ -43,8 +41,6 @@ __all__ = (
     "DatasetOperator",
     "DatasetNone",
     "DatasetWires",
-    "DatasetSparseArray",
-    "DatasetMolecule",
     "DatasetPauliWord",
     "DatasetPauliSentence",
 )

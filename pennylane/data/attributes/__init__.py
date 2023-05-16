@@ -21,7 +21,7 @@ from .operator import DatasetOperator, DatasetHamiltonian
 from .scalar import DatasetScalar
 from .string import DatasetString
 from .wires import DatasetWires
-from .sparse_array import DatasetSparseArray
+from .sparse_array_ import DatasetSparseArray
 from .molecule import DatasetMolecule
 from .pauli import DatasetPauliWord, DatasetPauliSentence
 

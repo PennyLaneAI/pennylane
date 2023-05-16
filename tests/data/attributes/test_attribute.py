@@ -13,7 +13,7 @@ from pennylane.data.attributes import (
 )
 from pennylane.data.base.attribute import match_obj_type
 from pennylane.wires import Wires
-from pennylane.data.attributes.sparse_array import _ALL_SPARSE
+from pennylane.data.attributes.sparse_array_ import _ALL_SPARSE
 
 
 @pytest.mark.parametrize(

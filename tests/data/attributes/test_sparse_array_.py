@@ -1,6 +1,6 @@
 import pytest
 import scipy.sparse
-from pennylane.data.attributes.sparse_array import DatasetSparseArray, _ALL_SPARSE
+from pennylane.data.attributes.sparse_array_ import DatasetSparseArray, _ALL_SPARSE
 
 
 SP_MATRIX = scipy.sparse.random(10, 15)
