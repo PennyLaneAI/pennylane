@@ -61,6 +61,7 @@ class DefaultQutrit(QutritDevice):
         "TAdd",
         "TSWAP",
         "THadamard",
+        "TRX",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
