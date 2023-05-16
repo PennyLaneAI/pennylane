@@ -23,9 +23,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops.qubit.non_parametric_ops import PauliY
+from pennylane.ops.qubit.non_parametric_ops import PauliY, S
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.ops.qubit.non_parametric_ops import S
 from .controlled import ControlledOp
 
 
