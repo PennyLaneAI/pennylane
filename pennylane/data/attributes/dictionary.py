@@ -17,12 +17,11 @@ of Dataset attributes."""
 
 import typing
 from collections.abc import Mapping, MutableMapping
-from typing import Generic, Optional, TypeVar, Union, Dict
+from typing import Dict, Generic, Optional, TypeVar, Union
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
-
 
 class DatasetDict(
     Generic[T],

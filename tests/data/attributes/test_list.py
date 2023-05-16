@@ -1,9 +1,8 @@
 from itertools import combinations
 
 import pytest
-import zarr
 
-from pennylane.data import AttributeType, DatasetList
+from pennylane.data import DatasetList
 
 
 def _generate_slices(list_len: int):
