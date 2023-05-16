@@ -24,11 +24,19 @@ from gate_data import (
     CZ,
 )
 
+from scipy.sparse import csr_matrix
+
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import AnyWires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 
+# Non-parametrized operations and their matrix representation
+NON_PARAMETRIZED_OPERATIONS = [
+    (qml.CZ, CZ),
+]
+
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = ((qml.CZ(wires=[0, 1]), CZ),)
 
 X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
@@ -436,12 +444,6 @@ class TestControlledQubitUnitary:
             )
 
 
-# Non-parametrized operations and their matrix representation
-NON_PARAMETRIZED_OPERATIONS = [
-    (qml.CZ, CZ),
-]
-
-
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_nonparametrized_op_copy(self, op_cls, _, tol):
@@ -528,6 +530,17 @@ class TestControlledMethod:  # pylint: disable=too-few-public-methods
         """Test the PauliZ _controlled method."""
         out = qml.CZ(wires=[0, 1])._controlled("a")  # pylint: disable=protected-access
         assert qml.equal(out, qml.CCZ(("a", 0, 1)))
+
+
+class TestSparseMatrix:  # pylint: disable=too-few-public-methods
+    @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
+    def test_sparse_matrix(self, op, mat):
+        expected_sparse_mat = csr_matrix(mat)
+        sparse_mat = op.sparse_matrix()
+
+        assert type(sparse_mat) == type(expected_sparse_mat)
+        assert all(sparse_mat.data == expected_sparse_mat.data)
+        assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
 
 label_data = [
