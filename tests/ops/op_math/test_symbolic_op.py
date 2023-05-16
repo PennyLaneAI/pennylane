@@ -24,10 +24,20 @@ from pennylane.wires import Wires
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+    """Temporary scalar symbolic op class."""
+    _name = "TempScalar"
+
     @staticmethod
     def _matrix(scalar, mat):
         pass
 
+class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+    """Copy of temporary scalar symbolic op class."""
+    _name = "TempScalarCopy"
+
+    @staticmethod
+    def _matrix(scalar, mat):
+        pass
 
 def test_intialization():
     """Test initialization for a SymbolicOp"""
@@ -240,3 +250,15 @@ class TestScalarSymbolicOp:
         assert op.data == [3.3, 5.5]
         assert op.scalar == 3.3
         assert op.base.data == [5.5]
+
+    def test_hash(self):
+        """Test that a hash correctly identifies ScalarSymbolicOps."""
+        op0 = TempScalar(Operator(1.1, wires=[0]), 0.3)
+        op1 = TempScalar(Operator(1.1, wires=[0]), 0.3)
+        op2 = TempScalar(Operator(1.1, wires=[0]), 0.6)
+        op3 = TempScalar(Operator(1.2, wires=[0]), 0.3)
+        op4 = TempScalarCopy(Operator(1.1, wires=[0]), 0.3)
+        assert op0.hash == op1.hash
+        for second_op in [op2, op3, op4]:
+            assert op0.hash != second_op.hash
+
