@@ -476,7 +476,7 @@ class TestPowMethod:
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
-        assert op.pow(n)[0].__class__ is op.__class__
+        assert qml.equal(op.pow(n)[0], op)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
