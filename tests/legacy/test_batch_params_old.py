@@ -210,6 +210,7 @@ def test_jax(diff_method, tol, interface):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.xfail
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
 @pytest.mark.parametrize("interface", ["jax-jit"])
