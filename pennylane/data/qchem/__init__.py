@@ -1,4 +1,3 @@
-
 class QChemHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
     """Attribute type for QChem dataset hamiltonians, which use only Pauli operators."""
 

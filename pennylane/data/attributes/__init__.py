@@ -37,4 +37,6 @@ __all__ = (
     "DatasetHamiltonian",
     "DatasetPauliSentence",
     "DatasetPauliWord",
+    "DatasetSparseArray",
+    "DatasetMolecule",
 )

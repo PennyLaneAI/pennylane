@@ -24,6 +24,8 @@ from .attributes import (
     DatasetWires,
     DatasetPauliSentence,
     DatasetPauliWord,
+    DatasetSparseArray,
+    DatasetMolecule,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
@@ -43,4 +45,6 @@ __all__ = (
     "DatasetWires",
     "DatasetPauliWord",
     "DatasetPauliSentence",
+    "DatasetMolecule",
+    "DatasetSparseArray",
 )
