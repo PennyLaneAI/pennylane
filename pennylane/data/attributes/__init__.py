@@ -17,7 +17,7 @@ from .array import DatasetArray
 from .dictionary import DatasetDict
 from .list import DatasetList
 from .none import DatasetNone
-from .operator import DatasetOperator
+from .operator import DatasetOperator, DatasetHamiltonian
 from .scalar import DatasetScalar
 from .string import DatasetString
 from .wires import DatasetWires
@@ -35,4 +35,5 @@ __all__ = (
     "DatasetWires",
     "DatasetMolecule",
     "DatasetSparseArray",
+    "DatasetHamiltonian",
 )

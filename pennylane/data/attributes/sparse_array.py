@@ -24,6 +24,13 @@ from scipy.sparse import (
     dia_array,
     dok_array,
     lil_array,
+    csc_matrix,
+    csr_matrix,
+    bsr_matrix,
+    coo_matrix,
+    dia_matrix,
+    dok_matrix,
+    lil_matrix,
 )
 
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
@@ -37,6 +44,13 @@ _ALL_SPARSE = (
     dia_array,
     dok_array,
     lil_array,
+    csc_matrix,
+    csr_matrix,
+    bsr_matrix,
+    coo_matrix,
+    dia_matrix,
+    dok_matrix,
+    lil_matrix,
 )
 _ALL_SPARSE_MAP = {type_.__qualname__: type_ for type_ in _ALL_SPARSE}
 
