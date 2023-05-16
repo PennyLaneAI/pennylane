@@ -334,11 +334,10 @@ class TestNonzeroCoeffsAndWords:
         assert words == []
 
 
-evolve_op = qml.evolve(qml.pulse.constant * qml.PauliZ("a"))([np.array(0.2)], 0.2)
 tapes = [
-    qml.tape.QuantumScript([qml.PauliX(0)], []),
-    qml.tape.QuantumScript([evolve_op], [qml.expval(qml.PauliZ(0))]),
-    qml.tape.QuantumScript([evolve_op, qml.RZ(0.3, "b"), evolve_op, qml.PauliX(0)], []),
+    ([qml.PauliX(0)], []),
+    (["evolve_op"], [qml.expval(qml.PauliZ(0))]),
+    (["evolve_op", qml.RZ(0.3, "b"), "evolve_op", qml.PauliX(0)], []),
 ]
 
 tapes_and_op_ids = [
@@ -353,6 +352,7 @@ tapes_and_op_ids = [
 all_ops = [[rot := qml.PauliRot(0.3, "IXZ", [0, 1, "a"])], [rot, qml.RY(0.3, 5), qml.PauliX(1)]]
 
 
+@pytest.mark.jax
 class TestInsertOp:
     """Test the utility _insert_op."""
 
@@ -362,6 +362,10 @@ class TestInsertOp:
     @pytest.mark.parametrize("ops", all_ops)
     def test_output_properties(self, tape, op_idx, ops):
         """Test that the input tape and inserted ops are taken into account correctly."""
+        evolve_op = qml.evolve(qml.pulse.constant * qml.PauliZ("a"))([np.array(0.2)], 0.2)
+        operations, measurements = tape
+        operations = [evolve_op if op=="evolve_op" else op for op in operations]
+        tape = qml.tape.QuantumScript(operations, measurements)
         new_tapes = _insert_op(tape, ops, op_idx)
         assert isinstance(new_tapes, list) and len(new_tapes) == len(ops)
         for t, op in zip(new_tapes, ops):
