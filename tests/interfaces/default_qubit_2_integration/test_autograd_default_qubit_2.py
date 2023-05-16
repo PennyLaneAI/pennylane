@@ -102,7 +102,7 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit2()),
+    ({"gradient_fn": param_shift}, 100000, DefaultQubit2(seed=42)),
     ({"gradient_fn": param_shift}, None, DefaultQubit2()),
     ({"gradient_fn": "backprop"}, None, DefaultQubit2()),
     # no device gradient yet
