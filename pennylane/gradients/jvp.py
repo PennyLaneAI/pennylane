@@ -323,6 +323,8 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         pass
 
     gradient_kwargs = gradient_kwargs or {}
+    if shots is None:
+        shots = tape.shots
     gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
