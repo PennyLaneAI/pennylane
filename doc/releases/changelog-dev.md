@@ -76,6 +76,10 @@
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
+* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
+  an execution.
+  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
+
 * `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
 [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
