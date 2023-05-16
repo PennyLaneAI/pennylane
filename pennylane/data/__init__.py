@@ -19,11 +19,11 @@ from .attributes import (
     DatasetList,
     DatasetNone,
     DatasetOperator,
+    DatasetPauliSentence,
+    DatasetPauliWord,
     DatasetScalar,
     DatasetString,
     DatasetWires,
-    DatasetPauliSentence,
-    DatasetPauliWord,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute

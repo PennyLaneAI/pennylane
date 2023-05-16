@@ -17,11 +17,11 @@ from .array import DatasetArray
 from .dictionary import DatasetDict
 from .list import DatasetList
 from .none import DatasetNone
-from .operator import DatasetOperator, DatasetHamiltonian
+from .operator import DatasetHamiltonian, DatasetOperator
+from .pauli import DatasetPauliSentence, DatasetPauliWord
 from .scalar import DatasetScalar
 from .string import DatasetString
 from .wires import DatasetWires
-from .pauli import DatasetPauliWord, DatasetPauliSentence
 
 __all__ = (
     "DatasetArray",

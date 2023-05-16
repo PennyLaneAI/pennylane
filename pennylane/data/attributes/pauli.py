@@ -1,8 +1,9 @@
-from pennylane.data.base.attribute import AttributeType
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
-from typing import Tuple, Type
 import json
+from typing import Tuple, Type
+
+from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pauli.pauli_arithmetic import PauliWord
 
 

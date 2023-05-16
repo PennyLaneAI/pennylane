@@ -13,16 +13,16 @@
 # limitations under the License.
 """Contains AttributeType definition for subclasses of ``pennylane.operation.Operator``."""
 
+import json
 from functools import lru_cache
 from typing import Dict, Generic, Tuple, Type, TypeVar
-import json
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane import Hamiltonian
 from pennylane.data.attributes.array import DatasetArray
+from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.typing_util import ZarrGroup
 from pennylane.operation import Operator
-from pennylane import Hamiltonian
 from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
 
 
@@ -129,6 +129,6 @@ class DatasetHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
 
         bind.array("ops", data=[pauli_word_to_string(op, wire_map) for op in ops], dtype=str)
         bind.array("coeffs", data=coeffs)
-        bind.array("wires", data=json.dumps([w for w in value.wires]), dtype=str)
+        bind.array("wires", data=json.dumps(list(w for w in value.wires)), dtype=str)
 
         return bind
