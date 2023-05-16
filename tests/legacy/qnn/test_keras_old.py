@@ -30,8 +30,8 @@ def model(get_circuit, n_qubits, output_dim):
     """Fixture for creating a hybrid Keras model. The model is composed of KerasLayers sandwiched
     between Dense layers."""
     c, w = get_circuit
-    layer1 = KerasLayer(c, w, output_dim)
-    layer2 = KerasLayer(c, w, output_dim)
+    layer1 = KerasLayer(c, w, output_dim, split_batches=True)
+    layer2 = KerasLayer(c, w, output_dim, split_batches=True)
 
     model = tf.keras.models.Sequential(
         [
@@ -49,8 +49,10 @@ def model(get_circuit, n_qubits, output_dim):
 @pytest.fixture
 def model_dm(get_circuit_dm, n_qubits, output_dim):
     c, w = get_circuit_dm
-    layer1 = KerasLayer(c, w, output_dim)
-    layer2 = KerasLayer(c, w, output_dim)
+
+    # set split_batches to True since qml.math.reduce_dm does not support broadcasting
+    layer1 = KerasLayer(c, w, output_dim, split_batches=True)
+    layer2 = KerasLayer(c, w, output_dim, split_batches=True)
 
     model = tf.keras.models.Sequential(
         [
@@ -190,7 +192,7 @@ class TestKerasLayer:
             qml.RX(kwargs["w7"], wires=4 % n_qubits)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = KerasLayer(c, w, output_dim=output_dim)
+        layer = KerasLayer(c, w, output_dim=output_dim, split_batches=True)
         x = tf.ones((2, n_qubits))
 
         layer_out = layer(x)
@@ -260,7 +262,7 @@ class TestKerasLayer:
             qml.RX(w7, wires=4 % n_qubits)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = KerasLayer(c, w, output_dim=output_dim)
+        layer = KerasLayer(c, w, output_dim=output_dim, split_batches=True)
         x = tf.ones((2, n_qubits))
 
         layer_out = layer(x)
@@ -336,7 +338,7 @@ class TestKerasLayer:
         """Test if the call() method performs correctly, i.e., that it outputs with shape
         (batch_size, output_dim) with results that agree with directly calling the QNode"""
         c, w = get_circuit
-        layer = KerasLayer(c, w, output_dim)
+        layer = KerasLayer(c, w, output_dim, split_batches=True)
         x = tf.ones((batch_size, n_qubits))
 
         layer_out = layer(x)
@@ -365,7 +367,7 @@ class TestKerasLayer:
             qml.RX(w7, wires=0)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = KerasLayer(c_shuffled, w, output_dim)
+        layer = KerasLayer(c_shuffled, w, output_dim, split_batches=True)
         x = tf.ones((batch_size, n_qubits))
 
         layer_out = layer(x)
@@ -395,7 +397,7 @@ class TestKerasLayer:
             qml.RX(w7, wires=0)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = KerasLayer(c_default, w, output_dim)
+        layer = KerasLayer(c_default, w, output_dim, split_batches=True)
         x = tf.ones((batch_size, n_qubits))
 
         layer_out = layer(x)
@@ -415,7 +417,9 @@ class TestKerasLayer:
         """
         c, w = get_circuit
 
-        layer = KerasLayer(c, w, output_dim)
+        # set split_batches to True since parameter broadcasting does not support
+        # more than one batch dimension
+        layer = KerasLayer(c, w, output_dim, split_batches=True)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
         with tf.GradientTape() as tape:
@@ -441,7 +445,7 @@ class TestKerasLayer:
         """Test if the gradients of the KerasLayer are equal to the gradients of the circuit when
         taken with respect to the trainable variables"""
         c, w = get_circuit
-        layer = KerasLayer(c, w, output_dim)
+        layer = KerasLayer(c, w, output_dim, split_batches=True)
         x = tf.ones((1, n_qubits))
 
         with tf.GradientTape() as tape:
@@ -475,7 +479,7 @@ class TestKerasLayer:
 
         weight_shapes = {"weights": (3, 2, 3)}
 
-        qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
+        qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2, split_batches=True)
 
         inputs = tf.ones((4, 2))
 
@@ -624,7 +628,7 @@ def test_batch_input():
         return qml.probs(op=qml.PauliZ(1))
 
     KerasLayer.set_input_argument("x")
-    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
     conf = layer.get_config()
     layer.build((None, 2))
     assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)

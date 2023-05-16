@@ -372,7 +372,6 @@ class KerasLayer(Layer):
                 "output_dim": self.output_dim,
                 "weight_specs": self.weight_specs,
                 "weight_shapes": self.weight_shapes,
-                "argnum": self.argnum,
             }
         )
         return config
