@@ -58,6 +58,7 @@ Controlled Operator Classes
     :toctree: api
 
     ~ControlledQubitUnitary
+    ~CY
 
 Decompositions
 ~~~~~~~~~~~~~~
