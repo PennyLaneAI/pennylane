@@ -44,5 +44,5 @@ __all__ = (
     "DatasetWires",
     "DatasetSparseArray",
     "DatasetMolecule",
-    "DatasetHamiltonian"
+    "DatasetHamiltonian",
 )

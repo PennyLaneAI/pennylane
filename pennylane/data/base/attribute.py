@@ -63,7 +63,6 @@ class AttributeInfo(MutableMapping):
     """
 
     attrs_namespace: ClassVar[str] = "qml.data."
-
     attrs_bind: typing.MutableMapping[str, Any]
 
     doc: Optional[str]
@@ -320,7 +319,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
 
     def _set_parent(self, parent: ZarrGroup, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
-        zarr.convenience.copy(source=self.bind, dest=parent, name=key, if_exists="replace")
+        zarr.copy(source=self.bind, dest=parent, key=key, if_exists="replace")
 
     def _check_bind(self):
         """
@@ -380,7 +379,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
 
     def __copy__(self: Self) -> Self:
         impl_group = zarr.group()
-        zarr.convenience.copy(self.bind, impl_group, "_")
+        zarr.copy(self.bind, impl_group, "_")
 
         return type(self)(bind=impl_group["_"])
 

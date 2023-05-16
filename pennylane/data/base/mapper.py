@@ -92,7 +92,7 @@ class AttributeTypeMapper(MutableMapping):
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
             if info:
                 value.info.load(info)
-        elif require_type:
+        elif require_type is not None:
             require_type(value, info, parent_and_key=(self.bind, key))
         else:
             attr_type = match_obj_type(value)
