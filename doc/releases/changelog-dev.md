@@ -78,6 +78,9 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
+
 <h3>Breaking changes 💔</h3>
 
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
