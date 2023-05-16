@@ -526,7 +526,7 @@ class TestControlledMethod:  # pylint: disable=too-few-public-methods
 
     def test_CZ(self):
         """Test the PauliZ _controlled method."""
-        out = qml.CZ(wires=[0, 1])._controlled("a")
+        out = qml.CZ(wires=[0, 1])._controlled("a")  # pylint: disable=protected-access
         assert qml.equal(out, qml.CCZ(("a", 0, 1)))
 
 
