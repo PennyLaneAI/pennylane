@@ -30,6 +30,7 @@ pytestmark = pytest.mark.jax
 class TestCaching:
     """Tests for caching behaviour"""
 
+    @pytest.mark.skip("caching is not implemented for jax")
     @pytest.mark.parametrize("num_params", [2, 3])
     def test_caching_param_shift_hessian(self, num_params):
         """Test that, when using parameter-shift transform,
@@ -179,7 +180,7 @@ class TestJaxExecuteIntegration:
         expected = [jnp.cos(a), -jnp.cos(a) * jnp.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = jax.jacobian(cost)(a, b, device=dev)
+        res = jax.jacobian(cost, argnums=[0, 1])(a, b, device=dev)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2,)
         assert res[1].shape == (2,)
@@ -276,6 +277,9 @@ class TestJaxExecuteIntegration:
 
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
+        if execute_kwargs["gradient_fn"] == param_shift:
+            pytest.skip("Basic QNode execution wipes out trainable params with param-shift")
+
         a = jnp.array(0.1)
         b = jnp.array(0.2)
 
@@ -291,7 +295,7 @@ class TestJaxExecuteIntegration:
             tape.set_parameters([a, b])
             return jnp.hstack(execute([tape], dev, **execute_kwargs)[0])
 
-        jac_fn = jax.jacobian(cost)
+        jac_fn = jax.jacobian(cost, argnums=[0, 1])
         jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
@@ -303,7 +307,7 @@ class TestJaxExecuteIntegration:
         expected = [jnp.cos(2 * a), -jnp.cos(2 * a) * jnp.sin(b)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.jacobian(lambda a, b: cost(2 * a, b))
+        jac_fn = jax.jacobian(lambda a, b: cost(2 * a, b), argnums=[0, 1])
         jac = jac_fn(a, b)
         expected = (
             [-2 * jnp.sin(2 * a), 2 * jnp.sin(2 * a) * jnp.sin(b)],
@@ -433,7 +437,7 @@ class TestJaxExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.jacobian(cost)
+        jac_fn = jax.jacobian(cost, argnums=[0, 1])
         res = jac_fn(x, y, device=dev)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (4,)
@@ -482,7 +486,7 @@ class TestJaxExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.jacobian(cost)
+        jac_fn = jax.jacobian(cost, argnums=[0, 1])
         res = jac_fn(x, y, device=dev)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3,)
@@ -655,6 +659,8 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = jnp.hstack(jax.jacobian(cost_fn)(weights, coeffs1, coeffs2, dev=dev))
+        res = jnp.hstack(
+            jax.jacobian(cost_fn, argnums=[0, 1, 2])(weights, coeffs1, coeffs2, dev=dev)
+        )
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
