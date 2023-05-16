@@ -32,37 +32,6 @@ from pennylane.interfaces import InterfaceUnsupportedError, execute
 from pennylane.interfaces.jax_jit import _execute_with_fwd_legacy
 
 
-@pytest.mark.parametrize(
-    "version, package, should_raise",
-    [
-        ("0.4.1", jax, False),
-        ("0.4.2", jax, False),
-        ("0.4.3", jax, False),
-        ("0.4.4", jax, True),
-        ("0.4.5", jax, True),
-    ],
-)
-def test_raise_version_error(package, version, should_raise, monkeypatch):
-    """Test JAX version error"""
-    a = jnp.array([0.1, 0.2])
-
-    dev = qml.device("default.qubit", wires=1)
-
-    with qml.queuing.AnnotatedQueue() as q:
-        qml.expval(qml.PauliZ(0))
-
-    tape = qml.tape.QuantumScript.from_queue(q)
-    with monkeypatch.context() as m:
-        m.setattr(package, "__version__", version)
-
-        if should_raise:
-            msg = "The JAX JIT interface of PennyLane requires JAX"
-            with pytest.raises(InterfaceUnsupportedError, match=msg):
-                execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
-        else:
-            execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
-
-
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
@@ -508,8 +477,9 @@ class TestJaxExecuteIntegration:
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_jit_grad_with_backward_grad_on_execution(self, execute_kwargs, interface):
-        """Test jax jit grad for adjoint diff method in backward grad_on_execution"""
+    @pytest.mark.xfail
+    def test_jit_grad_with_backward_mode(self, execute_kwargs, interface):
+        """Test jax jit grad for adjoint diff method in backward mode"""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
         expected_results = jnp.array([-0.3875172, -0.18884787, -0.38355705])

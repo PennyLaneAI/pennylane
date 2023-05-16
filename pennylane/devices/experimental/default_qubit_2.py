@@ -17,6 +17,9 @@ This module contains the next generation successor to default qubit
 
 from typing import Union, Callable, Tuple, Optional, Sequence
 
+import pennylane.numpy as np
+from pennylane.resource import Resources
+from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 
@@ -36,7 +39,10 @@ PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 class DefaultQubit2(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
-    This class currently has no arguments.
+    Args:
+        seed (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
 
     **Example:**
 
@@ -95,9 +101,14 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
+    def __init__(self, seed=None) -> None:
+        super().__init__()
+
+        self._rng = np.random.default_rng(seed)
+
     def supports_derivatives(
         self,
-        execution_config: ExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
@@ -113,6 +124,8 @@ class DefaultQubit2(Device):
             Bool: Whether or not a derivative can be calculated provided the given information
 
         """
+        if execution_config is None:
+            return True
         # backpropagation currently supported for all supported circuits
         # will later need to add logic if backprop requested with finite shots
         # do once device accepts finite shots
@@ -178,10 +191,22 @@ class DefaultQubit2(Device):
             circuits = [circuits]
 
         if self.tracker.active:
+            for c in circuits:
+                tape_resources = c.specs["resources"]
+
+                resources = Resources(  # temporary until shots get updated on tape !
+                    tape_resources.num_wires,
+                    tape_resources.num_gates,
+                    tape_resources.gate_types,
+                    tape_resources.gate_sizes,
+                    tape_resources.depth,
+                    Shots(c.shots),
+                )
+                self.tracker.update(resources=resources)
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
-        results = tuple(simulate(c) for c in circuits)
+        results = tuple(simulate(c, rng=self._rng) for c in circuits)
         return results[0] if is_single_circuit else results
 
     def compute_derivatives(
