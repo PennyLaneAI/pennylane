@@ -108,12 +108,17 @@
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
-  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
 
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
+  [(#4089)](https://github.com/PennyLaneAI/pennylane/pull/4089)
+
+* `Sum` and `Prod` operators now raise an error if initialized with `do_queue=False` as the behaviour for this
+  was unspecified.
+  [(#4013)](https://github.com/PennyLaneAI/pennylane/pull/4013)
 
 <h3>Contributors ✍️</h3>
 
