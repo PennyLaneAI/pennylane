@@ -78,6 +78,9 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* `CZ` now inherits from the `ControlledOp` class. It now supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
+  [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
+
 <h3>Breaking changes 💔</h3>
 
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
@@ -124,6 +127,7 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
+Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs.
