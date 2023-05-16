@@ -40,7 +40,7 @@ def _get_all_operator_classes() -> Tuple[Type[Operator], ...]:
 
     rec(Operator)
 
-    return tuple(acc - {Hamiltonian})
+    return tuple(acc)
 
 
 @lru_cache(1)

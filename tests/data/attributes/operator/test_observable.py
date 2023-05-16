@@ -47,18 +47,8 @@ pauli_ops = [
 
 identity = [qml.Identity(wires) for wires in [0, 1, "q", None, [1, "a"]]]
 
-from pennylane.data.attributes.operator import DatasetHamiltonian
 
-
-@pytest.mark.parametrize("ham", hamiltonians)
-def test_hamiltonian(ham):
-    dset_ham = DatasetHamiltonian(ham)
-
-    ham_out = dset_ham.get_value()
-    assert repr(ham_out) == repr(ham)
-
-
-@pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity])
+@pytest.mark.parametrize("obs_in", [*hamiltonians, *hermitian_ops, *pauli_ops, *identity])
 class TestDatasetOperatorObservable:
     def test_value_init_observable(self, obs_in):
         """Test that a DatasetOperator can be value-initialized

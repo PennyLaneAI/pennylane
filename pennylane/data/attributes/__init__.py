@@ -23,6 +23,7 @@ from .string import DatasetString
 from .wires import DatasetWires
 from .sparse_array import DatasetSparseArray
 from .molecule import DatasetMolecule
+from .pauli import DatasetPauliWord, DatasetPauliSentence
 
 __all__ = (
     "DatasetArray",
@@ -36,4 +37,6 @@ __all__ = (
     "DatasetMolecule",
     "DatasetSparseArray",
     "DatasetHamiltonian",
+    "DatasetPauliSentence",
+    "DatasetPauliWord",
 )
