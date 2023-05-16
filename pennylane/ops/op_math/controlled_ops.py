@@ -163,6 +163,14 @@ class CZ(ControlledOp):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     def __init__(self, wires):
         control_wire, wire = wires
