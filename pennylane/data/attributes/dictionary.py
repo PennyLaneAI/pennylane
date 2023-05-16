@@ -23,6 +23,7 @@ from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
+
 class DatasetDict(
     Generic[T],
     AttributeType[ZarrGroup, typing.Mapping[str, T], Optional[typing.Mapping[str, T]]],
