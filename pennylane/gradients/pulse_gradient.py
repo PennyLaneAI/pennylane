@@ -86,30 +86,22 @@ def _split_evol_ops(op, ob, tau):
 
     eigvals = qml.eigvals(ob)
     coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
-    num_shifts = len(shifts)
 
-    before_pulses = (
-        op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs) for _ in range(num_shifts)
-    )
-    after_pulses = (
-        op(
-            op.data,
-            after_t,
-            return_intermediate=broadcast,
-            complementary=broadcast,
-            **op.odeint_kwargs,
-        )
-        for _ in range(num_shifts)
-    )
     # Create Pauli rotations to be inserted at tau
-    ops = tuple([ 
+    ops = tuple(
         [
             op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs),
             qml.exp(qml.dot([-1j * shift], [ob])),
-            op(op.data, after_t, return_intermediate=broadcast, complementary=broadcast, **op.odeint_kwargs),
+            op(
+                op.data,
+                after_t,
+                return_intermediate=broadcast,
+                complementary=broadcast,
+                **op.odeint_kwargs,
+            ),
         ]
         for shift in shifts
-    ])
+    )
     return ops, qml.math.array(coeffs)
 
 
@@ -173,7 +165,7 @@ def _parshift_and_integrate(
 
         def _parshift_and_contract(res_list, cjacs, int_prefactor):
             res = qml.math.stack(res_list)
-            new_shape = ((shape:=qml.math.shape(res))[0]//num_shifts, num_shifts) + shape[1:]
+            new_shape = ((shape := qml.math.shape(res))[0] // num_shifts, num_shifts) + shape[1:]
             res = qml.math.reshape(res, new_shape)
             parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
@@ -193,7 +185,8 @@ def _parshift_and_integrate(
             "supported all simultaneously by stoch_pulse_grad."
         )
     return tuple(
-        tuple(_parshift_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
+        tuple(_parshift_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r))
+        for r in zip(*results)
     )
 
 
@@ -566,12 +559,12 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
         )
 
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-    #if not qml.pauli.is_pauli_word(ob):
-        #raise ValueError(
-            #"stoch_pulse_grad currently only supports Pauli words as parametrized "
-            #f"terms in ParametrizedHamiltonian. Got {ob}"
-        #)
-    #word = qml.pauli.pauli_word_to_string(ob)
+    # if not qml.pauli.is_pauli_word(ob):
+    # raise ValueError(
+    # "stoch_pulse_grad currently only supports Pauli words as parametrized "
+    # f"terms in ParametrizedHamiltonian. Got {ob}"
+    # )
+    # word = qml.pauli.pauli_word_to_string(ob)
     cjac_fn = jax.jacobian(coeff, argnums=0)
 
     t0, *_, t1 = op.t

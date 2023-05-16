@@ -49,9 +49,24 @@ class TestSplitEvolOps:
         (ham_single_q_const, [0.3], 2.3, 1.2 * qml.PauliZ(0)),
         (ham_single_q_const, [0.3], 2.3, qml.dot([1.9], [qml.PauliZ(0)])),
         (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), qml.PauliY(1)),
-        (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), 0.2 * qml.PauliX(1) + 0.9 * qml.PauliZ(1)),
-        (ham_two_q_pwc, [np.linspace(0, 1, 13)], (0.2, 0.6, 0.9, 1.8), qml.PauliY(0) @ qml.PauliX(1)),
-        (ham_two_q_pwc, [np.linspace(0, 1, 13)], (0.2, 0.6, 0.9, 1.8), qml.PauliY(0) @ qml.PauliX(1) + 0.2 * qml.PauliZ(0)),
+        (
+            ham_single_q_pwc,
+            [np.linspace(0, 1, 13)],
+            (0.6, 1.2),
+            0.2 * qml.PauliX(1) + 0.9 * qml.PauliZ(1),
+        ),
+        (
+            ham_two_q_pwc,
+            [np.linspace(0, 1, 13)],
+            (0.2, 0.6, 0.9, 1.8),
+            qml.PauliY(0) @ qml.PauliX(1),
+        ),
+        (
+            ham_two_q_pwc,
+            [np.linspace(0, 1, 13)],
+            (0.2, 0.6, 0.9, 1.8),
+            qml.PauliY(0) @ qml.PauliX(1) + 0.2 * qml.PauliZ(0),
+        ),
     ]
 
     @pytest.mark.parametrize("ham, params, time, ob", split_evol_ops_test_cases)
@@ -351,7 +366,9 @@ class TestStochPulseGrad:
         jax.config.update("jax_enable_x64", True)
         params = [jnp.array(0.24)]
         T = t if isinstance(t, tuple) else (0, t)
-        ham_single_q_const = qml.pulse.constant * qml.dot([0.2, 0.9], [qml.PauliY(0), qml.PauliX(0)])
+        ham_single_q_const = qml.pulse.constant * qml.dot(
+            [0.2, 0.9], [qml.PauliY(0), qml.PauliX(0)]
+        )
         op = qml.evolve(ham_single_q_const)(params, t)
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
 
@@ -555,7 +572,8 @@ class TestStochPulseGrad:
         ham = (
             qml.pulse.constant * qml.PauliX(0)
             + (lambda p, t: jnp.sin(p * t)) * qml.PauliZ(0)
-            + jnp.polyval * qml.dot([1., 0.4], [qml.PauliY(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(1)])
+            + jnp.polyval
+            * qml.dot([1.0, 0.4], [qml.PauliY(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(1)])
         )
         params = [jnp.array(1.51), jnp.array(-0.371), jnp.array([0.2, 0.2, -0.4])]
         dev = qml.device("default.qubit.jax", wires=2)
@@ -574,8 +592,6 @@ class TestStochPulseGrad:
         # Two generating terms with two shifts (X_0 and Z_0), one with eight shifts
         # (Y_0Y_1+0.4 X_1 has eigenvalues [-1.4, -0.6, 0.6, 1.4] yielding frequencies
         # [0.8, 1.2, 2.0, 2.8] and hence 2 * 4 = 8 shifts)
-        eigvals = qml.eigvals(ham.ops[2])
-
         num_shifts = 2 * 2 + 8
         assert len(tapes) == num_shifts * num_split_times
 
@@ -706,7 +722,10 @@ class TestStochPulseGradQNodeIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times#, cache=False
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            num_split_times=num_split_times,  # , cache=False
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -943,13 +962,13 @@ class TestStochPulseGradQNodeIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=2)
         T = 0.2
 
         def f(p, t):
             return jnp.sin(p * t)
 
-        ham_single_q_const = 0.1 * qml.PauliX(0) + f * qml.PauliY(0)
+        ham_single_q_const = 0.1 * qml.PauliX(0) + f * (qml.PauliY(0) @ qml.PauliY(1))
 
         def ansatz(params):
             qml.evolve(ham_single_q_const)(params, T)
