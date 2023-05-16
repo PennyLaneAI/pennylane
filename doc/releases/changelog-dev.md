@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
+  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+
 * The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
@@ -112,10 +116,11 @@ This release contains contributions from (in alphabetical order):
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
-Korbinian Kottmann
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
-Jay Soni.
+Jay Soni,
+David Wierichs.
