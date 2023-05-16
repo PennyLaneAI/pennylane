@@ -364,7 +364,7 @@ class TestInsertOp:
         """Test that the input tape and inserted ops are taken into account correctly."""
         evolve_op = qml.evolve(qml.pulse.constant * qml.PauliZ("a"))([np.array(0.2)], 0.2)
         operations, measurements = tape
-        operations = [evolve_op if op=="evolve_op" else op for op in operations]
+        operations = [evolve_op if op == "evolve_op" else op for op in operations]
         tape = qml.tape.QuantumScript(operations, measurements)
         new_tapes = _insert_op(tape, ops, op_idx)
         assert isinstance(new_tapes, list) and len(new_tapes) == len(ops)
