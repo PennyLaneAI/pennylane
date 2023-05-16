@@ -833,9 +833,7 @@ class QNode:
         if old_interface == "auto":
             self.interface = "auto"
 
-    def __call__(
-        self, *args, **kwargs
-    ) -> qml.typing.Result:
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
         override_shots = False
         old_interface = self.interface
 
