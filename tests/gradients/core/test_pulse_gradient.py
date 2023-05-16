@@ -668,7 +668,8 @@ class TestStochPulseGrad:
         exp_grad = exp_grad[0] + exp_grad[1]
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
 
-    def test_with_jit(self):
+    @pytest.mark.parametrize("generator", [qml.PauliY(0), qml.dot([0.6, 0.8], [qml.PauliY(0), qml.PauliX(0)])])
+    def test_with_jit(self, generator):
         """Test that the stochastic parameter-shift rule works with JITting."""
         import jax
         import jax.numpy as jnp
@@ -676,7 +677,7 @@ class TestStochPulseGrad:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = (0.2, 0.5)
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        ham_single_q_const = qml.pulse.constant * generator
 
         def fun(params):
             op = qml.evolve(ham_single_q_const)(params, T)
