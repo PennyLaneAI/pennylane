@@ -464,7 +464,13 @@ class TestDecompositions:  # pylint: disable=too-few-public-methods
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
         op = qml.CY(wires=[0, 1])
+        cry_pi = qml.CRY(np.pi, wires=[0, 1])
+        s = qml.S(0)
+        gate1, gate2 = op.decomposition()
         decomposed_matrix = qml.matrix(op.decomposition)()
+
+        assert qml.equal(gate1, cry_pi)
+        assert qml.equal(gate2, s)
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
 
