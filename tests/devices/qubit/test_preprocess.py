@@ -149,20 +149,15 @@ class TestExpandFnValidation:
         """Test that expand_fn throws an error when a tensor includes invalid obserables"""
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[
-                qml.expval(qml.GellMann(wires=0, index=1) @ qml.GellMann(wires=1, index=2))
-            ],
+            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
         )
         with pytest.raises(DeviceError, match="Observable expval"):
             expand_fn(tape)
 
-    def test_expand_fn_valid_tensor_observable(self):
-        """Test that expand_fn passes when a tensor includes only valid obserables."""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[qml.expval(qml.PauliZ(0) @ qml.PauliX(1))],
-        )
-        expand_fn(tape)
+    def test_valid_tensor_observable(self):
+        """Test that a valid tensor ovservable passes without error."""
+        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
+        assert expand_fn(tape) is tape
 
     def test_state_prep_only_one(self):
         """Test that a device error is raised if the script has multiple state prep ops."""

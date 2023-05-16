@@ -34,11 +34,16 @@
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
   [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
+* Integrated `QuantumScript.shots` with `QNode` so that shots are placed on the `QuantumScript`
+  during `QNode` construction.
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
+
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
 * `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
   [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
@@ -81,6 +86,9 @@
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
 <h3>Breaking changes 💔</h3>
 

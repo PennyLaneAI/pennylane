@@ -27,15 +27,17 @@ import inspect
 import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps, partial
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Optional, Union, Tuple
 
-from cachetools import LRUCache
+from cachetools import LRUCache, Cache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
+
+device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -86,9 +88,84 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
-def cache_execute(
-    fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None
+def _batch_transform(
+    tapes: Sequence[QuantumTape],
+    device: device_type,
+    config: "qml.devices.experimental.ExecutionConfig",
+    override_shots: Union[bool, int, Sequence[int]] = False,
+    device_batch_transform: bool = True,
+) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.experimental.ExecutionConfig"]:
+    """Apply the device batch transform unless requested not to.
+
+    Args:
+        tapes (Tuple[.QuantumTape]): batch of tapes to preprocess
+        device (Device, devices.experimental.Device): the device that defines the required batch transformation
+        config (qml.devices.experimental.ExecutionConfig): the config that characterizes the requested computation
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
+        device_batch_transform (bool): Whether to apply any batch transforms defined by the device
+            (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
+            of the device batch transform is to expand out Hamiltonian measurements into
+            constituent terms if not supported on the device.
+
+    Returns:
+        Sequence[QuantumTape], Callable: The new batch of quantum scripts and the post processing
+
+    """
+    if isinstance(device, qml.devices.experimental.Device):
+        if not device_batch_transform:
+            warnings.warn(
+                "device batch transforms cannot be turned off with the new device interface.",
+                UserWarning,
+            )
+        return device.preprocess(tapes, config)
+    if device_batch_transform:
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        return *qml.transforms.map_batch_transform(dev_batch_transform, tapes), config
+
+    def null_post_processing_fn(results):
+        """A null post processing function used because the user requested not to use the device batch transform."""
+        return results
+
+    return tapes, null_post_processing_fn, config
+
+
+def _preprocess_expand_fn(
+    expand_fn: Union[str, Callable], device: device_type, max_expansion: int
 ) -> Callable:
+    """Preprocess the ``expand_fn`` configuration property.
+
+    Args:
+        expand_fn (str, Callable): If string, then it must be "device".  Otherwise, it should be a map
+            from one tape to a new tape. The final tape must be natively executable by the device.
+        device (Device, devices.experimental.Device): The device that we will be executing on.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
+    Returns:
+        Callable: a map from one quantum tape to a new one. The output should be compatible with the device.
+
+    """
+    if expand_fn != "device":
+        return expand_fn
+    if isinstance(device, qml.devices.experimental.Device):
+
+        def blank_expansion_function(tape):  # pylint: disable=function-redefined
+            """A blank expansion function since the new device handles expansion in preprocessing."""
+            return tape
+
+        return blank_expansion_function
+
+    def device_expansion_function(tape):  # pylint: disable=function-redefined
+        """A wrapper around the device ``expand_fn``."""
+        return device.expand_fn(tape, max_expansion=max_expansion)
+
+    return device_expansion_function
+
+
+def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -140,7 +217,9 @@ def cache_execute(
         if cache is None or (isinstance(cache, bool) and not cache):
             # No caching. Simply execute the execution function
             # and return the results.
-            res = fn(tapes, **kwargs)
+
+            # must convert to list as new device interface returns tuples
+            res = list(fn(tapes, **kwargs))
             return (res, []) if return_tuple else res
 
         execution_tapes = {}
@@ -204,7 +283,8 @@ def cache_execute(
 
         else:
             # execute all unique tapes that do not exist in the cache
-            res = fn(execution_tapes.values(), **kwargs)
+            # convert to list as new device interface returns a tuple
+            res = list(fn(execution_tapes.values(), **kwargs))
 
         final_res = []
 
@@ -231,16 +311,16 @@ def cache_execute(
 
 def execute(
     tapes: Sequence[QuantumTape],
-    device,
-    gradient_fn: Callable = None,
+    device: device_type,
+    gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     grad_on_execution="best",
     gradient_kwargs=None,
-    cache=True,
+    cache: Union[bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
-    expand_fn="device",
+    expand_fn="device",  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
 ) -> ResultBatch:
@@ -264,7 +344,7 @@ def execute(
             pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
-        cache (bool): Whether to cache evaluations. This can result in
+        cache (bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
         cachesize (int): the size of the cache
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
@@ -273,7 +353,7 @@ def execute(
             (classical) computational overhead during the backwards pass.
         override_shots (int): The number of shots to use for the execution. If ``False``, then the
             number of shots on the device is used.
-        expand_fn (function): Tape expansion function to be called prior to device execution.
+        expand_fn (str, function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
             is called.
@@ -366,53 +446,62 @@ def execute(
             device_batch_transform=device_batch_transform,
         )
 
+    ### Specifying and preprocessing variables ####
+
     if interface == "auto":
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
 
+    new_device_interface = isinstance(device, qml.devices.experimental.Device)
+    config = qml.devices.experimental.ExecutionConfig(interface=interface)
     gradient_kwargs = gradient_kwargs or {}
-
-    if device_batch_transform:
-        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
-        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
-    else:
-        batch_fn = lambda res: res  # pragma: no cover
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
 
-    batch_execute = set_shots(device, override_shots)(device.batch_execute)
+    if new_device_interface:
+        batch_execute = device.execute
+    else:
+        batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
-    if expand_fn == "device":
-        expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
+    expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
-    if gradient_fn is None:
-        # don't unwrap if it's an interface device
-        if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
-            return batch_fn(
-                qml.interfaces.cache_execute(
-                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-                )(tapes)
-            )
-        unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        res = qml.interfaces.cache_execute(
-            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-        )(unwrapped_tapes)
+    #### Executing the configured setup #####
 
-        return batch_fn(res)
+    tapes, batch_fn, config = _batch_transform(
+        tapes, device, config, override_shots, device_batch_transform
+    )
 
-    if gradient_fn == "backprop" or interface is None:
-        return batch_fn(
-            qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
+    # Exiting early if we do not need to deal with an interface boundary
+    no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
+    if no_interface_boundary_required:
+        device_supports_interface_data = (
+            new_device_interface
+            or config.interface is None
+            or gradient_fn == "backprop"
+            or device.short_name == "default.mixed"
+            or "passthru_interface" in device.capabilities()
         )
+        if not device_supports_interface_data:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+
+        # use qml.interfaces so that mocker can spy on it during testing
+        cached_execute_fn = qml.interfaces.cache_execute(
+            batch_execute,
+            cache,
+            expand_fn=expand_fn,
+            return_tuple=False,
+            pass_kwargs=new_device_interface,
+        )
+        results = cached_execute_fn(tapes, execution_config=config)
+        return batch_fn(results)
 
     # the default execution function is batch_execute
+    # use qml.interfaces so that mocker can spy on it during testing
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
 
     _grad_on_execution = False
@@ -441,11 +530,14 @@ def execute(
 
         else:
             # disable caching on the forward pass
+            # use qml.interfaces so that mocker can spy on it during testing
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
             # replace the backward gradient computation
+            # use qml.interfaces so that mocker can spy on it during testing
+            gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
             gradient_fn = qml.interfaces.cache_execute(
-                set_shots(device, override_shots)(device.gradients),
+                gradient_fn_with_shots,
                 cache,
                 pass_kwargs=True,
                 return_tuple=False,
@@ -456,12 +548,7 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    try:
-        mapped_interface = INTERFACE_MAP[interface]
-    except KeyError as e:
-        raise ValueError(
-            f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
-        ) from e
+    mapped_interface = INTERFACE_MAP[config.interface]
     try:
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
@@ -498,7 +585,7 @@ def execute(
 
 def _execute_legacy(
     tapes: Sequence[QuantumTape],
-    device,
+    device: device_type,
     gradient_fn: Callable = None,
     interface="auto",
     mode="best",
@@ -611,6 +698,10 @@ def _execute_legacy(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+
+    if isinstance(device, qml.devices.experimental.Device):
+        raise ValueError("New device interface only works with return types enabled.")
+
     if interface == "auto":
         params = []
         for tape in tapes:
