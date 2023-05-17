@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
 
+from ..identity import Identity
 from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow, SProd
 
 
@@ -44,6 +45,11 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     """
 
     return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+
+
+@bind_new_parameters.register
+def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
+    return qml.Identity(*params, wires=op.wires)
 
 
 @bind_new_parameters.register

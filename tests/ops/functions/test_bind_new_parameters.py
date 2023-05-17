@@ -254,6 +254,7 @@ def test_tensor(op, new_params, expected_op):
             qml.BasisState([1, 1], wires=[0, 1]),
         ),
         (qml.GellMann(wires=0, index=4), [], qml.GellMann(wires=0, index=4)),
+        (qml.Identity(wires=[1, 2]), [], qml.Identity(wires=[1, 2])),
         (qml.pow(qml.RX(0.123, 0), 2, lazy=False), [0.456], qml.RX(0.456, 0)),
         (
             qml.adjoint(qml.RX(0.123, wires=0), lazy=False),
