@@ -23,8 +23,8 @@ Pending deprecations
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
 
-* ``QuantumScript``'s ``name`` keyword argument and property are deprecated. Please, avoid using
-  them.
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated. Please, avoid using them.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
 
   - Deprecated in v0.31
   - Will be removed in v0.32

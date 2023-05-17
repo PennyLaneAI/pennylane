@@ -93,7 +93,7 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): Deprecated way to give a name to the quantum script.
+        name (str): Deprecated way to give a name to the quantum script. Avoid using.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -1385,9 +1385,9 @@ class QuantumScript:
 
 def _warn_name():
     warnings.warn(
-        "The ``name`` property of ``QuantumScript`` is deprecated and will be removed in the next"
-        " release. Going forward, please refrain from using the ``QuantumScript``'s ``name`` "
-        "keyword argument or relying on ``QuantumScript.name``.",
+        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
+        " removed in the next release. Going forward, please refrain from using them. This also affects"
+        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
         UserWarning,
     )
 
