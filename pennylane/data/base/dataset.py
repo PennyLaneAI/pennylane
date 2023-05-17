@@ -56,43 +56,31 @@ class Attribute(Generic[T]):
     Attributes:
         attribute_type: The ``AttributeType`` class for this attribute
         info: Attribute info
-        default: Default value for this attribute, if not provided
-            to __init__()
-        default_factory: Zero-argument callable that returns
-            a default value
     """
 
     attribute_type: Type[AttributeType[HDF5Any, T, Any]]
     info: AttributeInfo
-    default: Union[Literal[UNSET], T, None]
-    default_factory: Optional[Callable[[], T]] = None
 
 
 def attribute(  # pylint: disable=too-many-arguments, unused-argument
-    default: Union[Literal[UNSET], T, None] = UNSET,
     attribute_type: Union[Type[AttributeType[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
-    default_factory: Optional[Callable[[], T]] = None,
     **kwargs,
 ) -> Any:
     """Used to define fields on a declarative Dataclass.
 
     Args:
-        default: See ``Attribute.default``
         attribute_type: ``AttributeType`` class for this attribute. If not provided,
             type may be derived from the type annotation on the class.
         doc: Documentation for the attribute
         py_type: Type annotation or string describing this object's type. If not
             provided, the annotation on the class will be used
-        default_factory: See ``Attribute.default_factory``
     """
 
     return Attribute(
         cast(Type[AttributeType[HDF5Any, T, T]], attribute_type),
         AttributeInfo(doc=doc, py_type=py_type),
-        default=default,
-        default_factory=default_factory,
     )
 
 
@@ -172,6 +160,24 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
         """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
 
+    @classmethod
+    def open(
+        cls: Type[Self], filepath: Union[str, Path], mode: Literal["w", "w-", "a", "r"] = "r"
+    ) -> Self:
+        """Open existing dataset or create a new one file at ``filepath``.
+
+        Args:
+            filepath: Path to dataset file
+            mode: File handling mode. Possible values are "w-" (create, fail if file
+                exists), "w" (create, overwrite existing), "a" (append existing,
+                create if doesn't exist), "r" (read existing, must exist). Default is "r".
+        Returns:
+            Dataset object from file
+        """
+        f = h5py.File(filepath, mode)
+
+        return cls(bind=f)
+
     def read(
         self,
         filepath: Union[str, Path],
@@ -189,6 +195,7 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             overwrite_attrs: Whether to overwrite attributes that already exist in this
                 dataset.
         """
+        # TODO: better error message when overwriting attribute fails
         zgrp = h5py.open_group(filepath, mode="r")
 
         if assign_to:
@@ -206,6 +213,8 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
                 exists), "w" (create, overwrite existing), and "a" (append existing,
                 create if doesn't exist). Default is "w-".
         """
+        # TODO: better error message for 'ContainsGroupError'
+
         with h5py.open_group(filepath, mode=mode) as zgrp:
             h5py.copy_all(self.bind, zgrp)
             zgrp.attrs.update(self.bind.attrs)
@@ -251,6 +260,13 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             del self._mapper[__name]
         except KeyError as exc:
             raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
+
+    def __repr__(self) -> str:
+        attrs_repr = ", ".join(
+            (f"{attr_name}={repr(attr.get_value())}" for attr_name, attr in self.attrs.items())
+        )
+
+        return f"Dataset({attrs_repr})"
 
     def __init_subclass__(cls, **kwargs) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using

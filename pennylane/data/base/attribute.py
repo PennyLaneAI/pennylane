@@ -340,7 +340,7 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
         return str(self.get_value())
 
     def __repr__(self) -> str:
-        return object.__repr__(self)
+        return f"{type(self).__name__}({repr(self.get_value())})"
 
     def __eq__(self, __value: object) -> bool:
         return self.get_value() == __value
