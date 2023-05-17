@@ -27,6 +27,7 @@ tests/ops/qubit/test_matrix_ops.py
 tests/ops/qubit/test_special_unitary.py
 tests/ops/qubit/test_state_prep.py
 tests/ops/qutrit/test_qutrit_observables.py
+tests/ops/qutrit/test_qutrit_parametric_ops.py
 tests/pulse/**
 tests/qchem/test_givens_rotations.py
 tests/tape/test_qscript.py
