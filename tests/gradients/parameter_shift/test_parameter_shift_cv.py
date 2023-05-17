@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift_cv module."""
-# pylint: disable=protected-access, no-self-use, import-outside-toplevel, not-callable, no-value-for-parameter
+# pylint: disable=protected-access, no-self-use, not-callable, no-value-for-parameter
 
 import pytest
 
@@ -661,6 +661,7 @@ class TestExpectationQuantumGradients:
         with no Heisenberg representation is a descendent."""
         dev = qml.device("default.gaussian", wires=2, hbar=hbar)
 
+        # pylint: disable=too-few-public-methods
         class Rotation(qml.operation.CVOperation):
             """Dummy operation that does not support
             heisenberg representation"""
@@ -1010,6 +1011,7 @@ class TestVarianceQuantumGradients:
         computing the gradient analytically of an expectation value that
         contains an operation with more than two terms in the gradient recipe"""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.CVOperation):
             """Dummy op"""
 
