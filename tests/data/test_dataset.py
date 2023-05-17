@@ -58,7 +58,7 @@ class TestDataset:
 
     @pytest.mark.parametrize("mode", ["w-", "w", "a"])
     def test_write(self, tmp_path, mode):
-        """Test that the ``write`` method creates a Zarr file that contains
+        """Test that the ``write`` method creates a HDF5 file that contains
         the all the data in the dataset."""
         ds = Dataset(x=DatasetScalar(1.0, AttributeInfo(py_type=int, doc="an int")))
 
