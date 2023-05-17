@@ -205,7 +205,6 @@ def test_hamiltonian(H, new_coeffs, expected_H):
 
     assert qml.equal(new_H, expected_H)
     assert new_H is not H
-    assert all(n_obs is not obs for n_obs, obs in zip(new_H.ops, H.ops))
 
 
 @pytest.mark.parametrize(
@@ -255,7 +254,6 @@ def test_tensor(op, new_params, expected_op):
             qml.BasisState([1, 1], wires=[0, 1]),
         ),
         (qml.GellMann(wires=0, index=4), [], qml.GellMann(wires=0, index=4)),
-        (qml.PauliX(0), None, qml.PauliX(0)),
         (qml.pow(qml.RX(0.123, 0), 2, lazy=False), [0.456], qml.RX(0.456, 0)),
         (
             qml.adjoint(qml.RX(0.123, wires=0), lazy=False),

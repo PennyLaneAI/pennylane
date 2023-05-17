@@ -15,7 +15,7 @@
 This module contains the qml.bind_new_parameters function.
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 import copy
 from functools import singledispatch
 
@@ -23,10 +23,10 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
 
-from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow
+from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow, SProd
 
 
-def _validate_params(op: Operator, params: Optional[Sequence[TensorLike]]) -> Sequence[TensorLike]:
+def _validate_params(op: Operator, params: Sequence[TensorLike]):
     """Validate that the list of new parameters has the correct length and shape.
 
     Args:
@@ -39,8 +39,6 @@ def _validate_params(op: Operator, params: Optional[Sequence[TensorLike]]) -> Se
     Raises:
         ValueError: If the new parameters don't have the expected shape.
     """
-    if params is None:
-        params = []
 
     if isinstance(op, qml.Hamiltonian):
         invalid_params = len(params) != len(op.data)
@@ -53,11 +51,9 @@ def _validate_params(op: Operator, params: Optional[Sequence[TensorLike]]) -> Se
             f"got {len(params)}, expected {op.num_params}."
         )
 
-    return params
-
 
 @singledispatch
-def bind_new_parameters(op: Operator, params: Optional[Sequence[TensorLike]] = None) -> Operator:
+def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     """Create a new operator with updated parameters
 
     This function takes an :class:`~.Operator` and new parameters as input and
@@ -74,17 +70,15 @@ def bind_new_parameters(op: Operator, params: Optional[Sequence[TensorLike]] = N
     Raises:
         ValueError: If the shape of the old and new operator parameters don't match
     """
-    params = _validate_params(op, params)
+    _validate_params(op, params)
 
     return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
 
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
-def bind_new_parameters_composite_op(
-    op: CompositeOp, params: Optional[Sequence[TensorLike]] = None
-):
-    params = _validate_params(op, params)
+def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
+    _validate_params(op, params)
     new_operands = []
 
     for operand in op.operands:
@@ -97,8 +91,8 @@ def bind_new_parameters_composite_op(
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
-def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Optional[Sequence[TensorLike]] = None):
-    params = _validate_params(op, params)
+def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]):
+    _validate_params(op, params)
 
     new_base = bind_new_parameters(op.base, params)
     new_hyperparameters = copy.deepcopy(op.hyperparameters)
@@ -114,16 +108,8 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Optional[Sequence[Te
 
 
 @bind_new_parameters.register
-def bind_new_parameters_scalar_symbolic_op(
-    op: ScalarSymbolicOp, params: Optional[Sequence[TensorLike]] = None
-):
-    params = _validate_params(op, params)
-
-    if isinstance(op, Pow):
-        new_scalar = op.scalar
-        new_base = bind_new_parameters(op.base, params)
-
-        return Pow(new_base, new_scalar)
+def bind_new_parameters_scalar_symbolic_op(op: ScalarSymbolicOp, params: Sequence[TensorLike]):
+    _validate_params(op, params)
 
     new_scalar = params[0]
     params = params[1:]
@@ -132,31 +118,43 @@ def bind_new_parameters_scalar_symbolic_op(
     new_hyperparameters = copy.deepcopy(op.hyperparameters)
     _ = new_hyperparameters.pop("base")
 
-    try:
-        # `try-except` block to accomodate for the fact that different `ScalarSymbolicOp`
-        # subclasses accept the base and scalar in different orders
-        return op.__class__(new_base, new_scalar, **new_hyperparameters)
-    except AttributeError:
-        pass
+    return op.__class__(new_base, new_scalar, **new_hyperparameters)
 
-    return op.__class__(new_scalar, new_base, **new_hyperparameters)
+
+@bind_new_parameters.register
+def bind_new_parameters_sprod(op: SProd, params: Sequence[TensorLike]):
+    _validate_params(op, params)
+
+    new_scalar = params[0]
+    params = params[1:]
+    new_base = bind_new_parameters(op.base, params)
+
+    return SProd(new_scalar, new_base)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
+    _validate_params(op, params)
+
+    new_scalar = op.scalar
+    new_base = bind_new_parameters(op.base, params)
+
+    return Pow(new_base, new_scalar)
 
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
-def bind_new_parameters_hamiltonian(
-    op: qml.Hamiltonian, params: Optional[Sequence[TensorLike]] = None
-):
-    params = _validate_params(op, params)
-    new_observables = copy.deepcopy(op.ops)
+def bind_new_parameters_hamiltonian(op: qml.Hamiltonian, params: Sequence[TensorLike]):
+    _validate_params(op, params)
+    new_observables = op.ops
 
     return qml.Hamiltonian(params, new_observables)
 
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
-def bind_new_parameters_tensor(op: Tensor, params: Optional[Sequence[TensorLike]] = None):
-    params = _validate_params(op, params)
+def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
+    _validate_params(op, params)
     new_obs = []
 
     for obs in op.obs:
