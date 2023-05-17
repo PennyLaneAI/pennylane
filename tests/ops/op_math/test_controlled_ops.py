@@ -449,7 +449,7 @@ class TestOperations:
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
-        assert qml.equal(copied_op, op)
+        assert qml.equal(copied_op, op, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
@@ -468,7 +468,7 @@ class TestDecompositions:  # pylint: disable=too-few-public-methods
         res = op.decomposition()
 
         assert len(res) == 1
-        assert qml.equal(qml.ctrl(qml.PhaseShift(np.pi, wires=1), 0), res[0])
+        assert qml.equal(qml.ctrl(qml.PhaseShift(np.pi, wires=1), 0), res[0], atol=tol, rtol=0)
 
         decomposed_matrix = res[0].matrix()
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
