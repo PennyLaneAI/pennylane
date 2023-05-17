@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a new function `qml.bind_new_parameters` that creates a copy of an operator with new parameters
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
   without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
 
