@@ -16,15 +16,16 @@
 import pytest
 import numpy as np
 
-jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
 
 import pennylane as qml
 from pennylane.devices.experimental import DefaultQubit2
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
+
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+config = pytest.importorskip("jax.config")
+config.config.update("jax_enable_x64", True)
 
 pytestmark = pytest.mark.jax
 
