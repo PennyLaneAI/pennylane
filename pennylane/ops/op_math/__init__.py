@@ -57,6 +57,7 @@ Controlled Operator Classes
 .. autosummary::
     :toctree: api
 
+    ~CZ
     ~ControlledQubitUnitary
 
 Decompositions
