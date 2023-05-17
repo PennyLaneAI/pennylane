@@ -39,10 +39,10 @@ from typing import (
 
 from typing_extensions import dataclass_transform
 
-from pennylane.data.base._zarr import zarr
+from pennylane.data.base._hdf5 import h5py
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
 from pennylane.data.base.mapper import MapperMixin, match_obj_type
-from pennylane.data.base.typing_util import UNSET, T, ZarrAny, ZarrGroup
+from pennylane.data.base.typing_util import UNSET, HDF5Any, HDF5Group, T
 
 
 @dataclass
@@ -62,7 +62,7 @@ class Attribute(Generic[T]):
             a default value
     """
 
-    attribute_type: Type[AttributeType[ZarrAny, T, Any]]
+    attribute_type: Type[AttributeType[HDF5Any, T, Any]]
     info: AttributeInfo
     default: Union[Literal[UNSET], T, None]
     default_factory: Optional[Callable[[], T]] = None
@@ -70,7 +70,7 @@ class Attribute(Generic[T]):
 
 def attribute(  # pylint: disable=too-many-arguments, unused-argument
     default: Union[Literal[UNSET], T, None] = UNSET,
-    attribute_type: Union[Type[AttributeType[ZarrAny, T, Any]], Literal[UNSET]] = UNSET,
+    attribute_type: Union[Type[AttributeType[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
     default_factory: Optional[Callable[[], T]] = None,
@@ -89,7 +89,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     """
 
     return Attribute(
-        cast(Type[AttributeType[ZarrAny, T, T]], attribute_type),
+        cast(Type[AttributeType[HDF5Any, T, T]], attribute_type),
         AttributeInfo(doc=doc, py_type=py_type),
         default=default,
         default_factory=default_factory,
@@ -105,7 +105,7 @@ class _DatasetTransform:
     """
 
 
-class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _DatasetTransform):
+class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _DatasetTransform):
     """
     Base class for Datasets.
 
@@ -113,7 +113,7 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
         fields: A mapping of attribute names to their ``Attribute`` information. Note that
             this contains attributes declared on the class, not attributes added to
             an instance. Use ``attrs`` to view all attributes on an instance.
-        bind: The Zarr group that contains this dataset.
+        bind: The HDF5 group that contains this dataset.
     """
 
     Self = TypeVar("Self", bound="Dataset")
@@ -122,24 +122,24 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
-    bind: ZarrGroup = attribute(default=None, kw_only=False)  # type: ignore
+    bind: HDF5Group = attribute(default=None, kw_only=False)  # type: ignore
 
     def __init__(
         self,
-        bind: Optional[Union[ZarrGroup, Tuple[ZarrGroup, str]]] = None,
+        bind: Optional[Union[HDF5Group, Tuple[HDF5Group, str]]] = None,
         info: Optional[AttributeInfo] = None,
         **attrs: Any,
     ):
         """
-        Load a dataset from a Zarr Group or initialize a new Dataset.
+        Load a dataset from a HDF5 Group or initialize a new Dataset.
 
         Args:
-            bind: The Zarr group, or path to zarr file, that will contain this dataset.
+            bind: The HDF5 group, or path to hdf5 file, that will contain this dataset.
                 If None, the dataset will be stored in memory. Any attributes that
                 already exist in ``bind`` will be loaded into this dataset.
             **attrs: Attributes to add to this dataset.
         """
-        if isinstance(bind, (zarr.Group, zarr.File)):
+        if isinstance(bind, (h5py.Group, h5py.File)):
             super().__init__(value=None, info=info, bind=bind)  # type: ignore
         else:
             super().__init__(value=None, info=info, parent_and_key=bind)
@@ -152,15 +152,15 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
     def consumes_types(cls) -> Tuple[Type["Dataset"]]:
         return (cls,)
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value) -> HDF5Group:
         return bind_parent.create_group(key)
 
-    def zarr_to_value(self, bind: ZarrGroup) -> "Dataset":
+    def hdf5_to_value(self, bind: HDF5Group) -> "Dataset":
         return self
 
     @property
-    def bind(self) -> ZarrGroup:
-        """The Zarr group that contains this dataset's attributes."""
+    def bind(self) -> HDF5Group:
+        """The HDF5 group that contains this dataset's attributes."""
         return self._bind
 
     @property
@@ -179,7 +179,7 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
         *,
         overwrite_attrs: bool = False,
     ):
-        """Load dataset from Zarr file at filepath. Can also accept an S3 URL.
+        """Load dataset from HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
             filepath: Path to file containing dataset
@@ -189,25 +189,25 @@ class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _Data
             overwrite_attrs: Whether to overwrite attributes that already exist in this
                 dataset.
         """
-        zgrp = zarr.open_group(filepath, mode="r")
+        zgrp = h5py.open_group(filepath, mode="r")
 
         if assign_to:
-            zarr.copy(zgrp, self.bind, assign_to)
+            h5py.copy(zgrp, self.bind, assign_to)
         else:
             if_exists = "overwrite" if overwrite_attrs else "raise"
-            zarr.copy_all(zgrp, self.bind, if_exists=if_exists)
+            h5py.copy_all(zgrp, self.bind, if_exists=if_exists)
 
     def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w-"):
-        """Write dataset to Zarr file at filepath. Can also accept an S3 URL.
+        """Write dataset to HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
-            filepath: Path of zarr file
+            filepath: Path of hdf5 file
             mode: File handling mode. Possible values are "w-" (create, fail if file
                 exists), "w" (create, overwrite existing), and "a" (append existing,
                 create if doesn't exist). Default is "w-".
         """
-        with zarr.open_group(filepath, mode=mode) as zgrp:
-            zarr.copy_all(self.bind, zgrp)
+        with h5py.open_group(filepath, mode=mode) as zgrp:
+            h5py.copy_all(self.bind, zgrp)
             zgrp.attrs.update(self.bind.attrs)
 
     def _validate_arguments(self, args: Dict[str, Any]):

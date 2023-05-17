@@ -17,10 +17,10 @@
 from typing import Tuple, Type
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+from pennylane.data.base.typing_util import HDF5Array, HDF5Group
 
 
-class DatasetString(AttributeType[ZarrArray, str, str]):
+class DatasetString(AttributeType[HDF5Array, str, str]):
     """Attribute type for strings."""
 
     type_id = "string"
@@ -29,10 +29,10 @@ class DatasetString(AttributeType[ZarrArray, str, str]):
     def consumes_types(cls) -> Tuple[Type[str]]:
         return (str,)
 
-    def zarr_to_value(self, bind: ZarrArray) -> str:
+    def hdf5_to_value(self, bind: HDF5Array) -> str:
         return bind.asstr()[()]
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: str) -> ZarrArray:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: str) -> HDF5Array:
         if key in bind_parent:
             del bind_parent[key]
 
