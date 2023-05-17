@@ -54,8 +54,9 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     new_operands = []
 
     for operand in op.operands:
-        sub_params = params[: operand.num_params]
-        params = params[operand.num_params :]
+        op_num_params = operand.num_params
+        sub_params = params[: op_num_params]
+        params = params[op_num_params :]
         new_operands.append(bind_new_parameters(operand, sub_params))
 
     return op.__class__(*new_operands)
