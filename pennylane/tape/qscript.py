@@ -93,7 +93,7 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): a name given to the quantum script
+        name (str): Deprecated way to give a name to the quantum script.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -186,7 +186,9 @@ class QuantumScript:
         name=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self.name = name
+        self._name = name
+        if name is not None:
+            _warn_name()
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -247,6 +249,17 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
+
+    @property
+    def name(self):
+        """Name of the quantum script. Raises deprecation warning.
+
+        Returns:
+
+            str or None: The name given to the quantum script upon creation (if any).
+        """
+        _warn_name()
+        return self._name
 
     @property
     def interface(self):
@@ -1368,6 +1381,15 @@ class QuantumScript:
     def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
+
+
+def _warn_name():
+    warnings.warn(
+        "The ``name`` property of ``QuantumScript`` is deprecated and will be removed in the next"
+        " release. Going forward, please refrain from using the ``QuantumScript``'s ``name`` "
+        "keyword argument or relying on ``QuantumScript.name``.",
+        UserWarning,
+    )
 
 
 class SpecsDict(dict):
