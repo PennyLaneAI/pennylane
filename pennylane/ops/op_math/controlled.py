@@ -143,15 +143,6 @@ class Controlled(SymbolicOp):
         do_queue(bool):  indicates whether the operator should be
             recorded when created in a tape context
 
-    .. note::
-        This class, ``Controlled``, denotes a controlled version of any individual operation.
-        :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
-        more general ``Controlled`` class.
-
-        The :class:`~.ControlledOp` currently constructed by the :func:`~.ctrl` transform wraps
-        an entire tape and does not provide as many representations and attributes as ``Controlled``,
-        but :class:`~.ControlledOp` does decompose.
-
     .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
