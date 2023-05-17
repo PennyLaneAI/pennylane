@@ -258,6 +258,13 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
         except KeyError as exc:
             raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
 
+    def __repr__(self) -> str:
+        attrs_repr = ", ".join(
+            (f"{attr_name}={repr(attr.get_value())}" for attr_name, attr in self.attrs.items())
+        )
+
+        return f"Dataset({attrs_repr})"
+
     def __init_subclass__(cls, **kwargs) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
