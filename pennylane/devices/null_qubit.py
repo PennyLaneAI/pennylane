@@ -166,10 +166,10 @@ class NullQubit(QubitDevice):
             self._apply_operation(self._state, op)
 
     def _apply_operation(self, state, operation):
-        self._operation_calls[operation.__class__.__name__] += 1
+        self._operation_calls[operation.name] += 1
 
-        if operation.__class__.__name__ in self._apply_ops:
-            return self._apply_ops[operation.__class__.__name__](state, axes=None)
+        if operation.name in self._apply_ops:
+            return self._apply_ops[operation.name](state, axes=None)
 
         wires = operation.wires
         if operation in diagonal_in_z_basis:
