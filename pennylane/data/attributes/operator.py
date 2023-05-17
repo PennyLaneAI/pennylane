@@ -15,15 +15,17 @@
 
 import json
 from functools import lru_cache
-from typing import Dict, Generic, Tuple, Type, TypeVar
+from typing import Dict, Generic, Tuple, Type, TypeVar, List
 
 from pennylane import Hamiltonian
 from pennylane.data.attributes.array import DatasetArray
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import AttributeType, AttributeInfo
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.typing_util import ZarrGroup
 from pennylane.operation import Operator
 from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
+from pennylane.data.attributes.wires import DatasetWires
+import numpy as np
 
 
 @lru_cache(1)
@@ -40,7 +42,7 @@ def _get_all_operator_classes() -> Tuple[Type[Operator], ...]:
 
     rec(Operator)
 
-    return tuple(acc)
+    return tuple(acc - {Hamiltonian})
 
 
 @lru_cache(1)
@@ -72,28 +74,19 @@ class DatasetOperator(Generic[Op], AttributeType[ZarrGroup, Op, Op]):
         return _get_all_operator_classes()
 
     def zarr_to_value(self, bind: ZarrGroup) -> Op:
-        mapper = AttributeTypeMapper(bind)
+        info = AttributeInfo(bind.attrs)
+        op_cls = _operator_name_to_class_dict()[info["operator_class"]]
 
-        op_cls = _operator_name_to_class_dict()[mapper.info["operator_class"]]
-        op = object.__new__(op_cls)
+        wires = DatasetWires(bind=bind["wires"]).get_value()
+        params = np.array(bind["params"])
 
-        for attr_name, attr in mapper.items():
-            if attr_name == "data":
-                setattr(op, attr_name, list(attr.bind))
-            else:
-                setattr(op, attr_name, attr.copy_value())
-
-        return op
+        return op_cls(*params, wires=wires)
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Op) -> ZarrGroup:
         bind = bind_parent.create_group(key)
-        mapper = AttributeTypeMapper(bind)
 
-        for attr_name, attr in vars(value).items():
-            if attr_name == "data":
-                mapper.set_item(attr_name, attr, None, require_type=DatasetArray)
-            else:
-                mapper[attr_name] = attr
+        DatasetWires(value.wires, parent_and_key=(bind, "wires"))
+        DatasetArray(value.data, parent_and_key=(bind, "params"))
 
         return bind
 
