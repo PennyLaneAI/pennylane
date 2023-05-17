@@ -695,6 +695,14 @@ class Operator(abc.ABC):
             )
         )
 
+    def __eq__(self, other):
+        warnings.warn(UserWarning, "The behaviour of Operator.__eq__ will be updated soon.")
+        return super().__eq__(other)
+
+    def __hash__(self):
+        warnings.warn(UserWarning, "The behaviour of Operator.__hash__ will be updated soon.")
+        return super().__hash__()
+
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
