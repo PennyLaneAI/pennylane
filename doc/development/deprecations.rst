@@ -18,6 +18,12 @@ Pending deprecations
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
 
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated. Please, avoid using
+  them.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
