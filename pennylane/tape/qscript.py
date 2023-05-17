@@ -1236,8 +1236,9 @@ class QuantumScript:
             self._specs["num_used_wires"] = self.num_wires
             self._specs["num_trainable_params"] = self.num_params
             self._specs["depth"] = resources.depth
+            self._specs = SpecsDict(self._specs)
 
-        return SpecsDict(self._specs)
+        return self._specs
 
     # pylint: disable=too-many-arguments
     def draw(
