@@ -18,9 +18,8 @@ from .dictionary import DatasetDict
 from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
-from .operator import DatasetOperator
+from .operator import DatasetHamiltonian, DatasetOperator
 from .pauli import DatasetPauliSentence, DatasetPauliWord
-from .qchem import QChemHamiltonian
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
 from .string import DatasetString
@@ -39,4 +38,5 @@ __all__ = (
     "DatasetPauliWord",
     "DatasetSparseArray",
     "DatasetMolecule",
+    "DatasetHamiltonian",
 )

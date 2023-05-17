@@ -13,14 +13,19 @@
 # limitations under the License.
 """Contains AttributeType definition for subclasses of ``pennylane.operation.Operator``."""
 
+import json
 from functools import lru_cache
 from typing import Dict, Generic, Tuple, Type, TypeVar
 
+import numpy as np
+
+from pennylane import Hamiltonian
 from pennylane.data.attributes.array import DatasetArray
-from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.mapper import AttributeTypeMapper
+from pennylane.data.attributes.wires import DatasetWires
+from pennylane.data.base.attribute import AttributeInfo, AttributeType
 from pennylane.data.base.typing_util import ZarrGroup
 from pennylane.operation import Operator
+from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
 
 
 @lru_cache(1)
@@ -37,7 +42,7 @@ def _get_all_operator_classes() -> Tuple[Type[Operator], ...]:
 
     rec(Operator)
 
-    return tuple(acc)
+    return tuple(acc - {Hamiltonian})
 
 
 @lru_cache(1)
@@ -69,27 +74,54 @@ class DatasetOperator(Generic[Op], AttributeType[ZarrGroup, Op, Op]):
         return _get_all_operator_classes()
 
     def zarr_to_value(self, bind: ZarrGroup) -> Op:
-        mapper = AttributeTypeMapper(bind)
+        info = AttributeInfo(bind.attrs)
+        op_cls = _operator_name_to_class_dict()[info["operator_class"]]
 
-        op_cls = _operator_name_to_class_dict()[mapper.info["operator_class"]]
-        op = object.__new__(op_cls)
+        wires = DatasetWires(bind=bind["wires"]).get_value()
+        params = np.array(bind["params"])
 
-        for attr_name, attr in mapper.items():
-            if attr_name == "data":
-                setattr(op, attr_name, list(attr.bind))
-            else:
-                setattr(op, attr_name, attr.copy_value())
-
-        return op
+        return op_cls(*params, wires=wires)
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Op) -> ZarrGroup:
         bind = bind_parent.create_group(key)
-        mapper = AttributeTypeMapper(bind)
 
-        for attr_name, attr in vars(value).items():
-            if attr_name == "data":
-                mapper.set_item(attr_name, attr, None, require_type=DatasetArray)
-            else:
-                mapper[attr_name] = attr
+        DatasetWires(value.wires, parent_and_key=(bind, "wires"))
+        DatasetArray(value.data, parent_and_key=(bind, "params"))
+
+        return bind
+
+
+class DatasetHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
+    """Attribute type that can serialize any ``pennylane.operation.Operator`` class."""
+
+    type_id = "hamiltonian"
+
+    def __post_init__(self, value: Hamiltonian, info):
+        """Save the class name of the operator ``value`` into the
+        attribute info."""
+        super().__post_init__(value, info)
+        self.info["operator_class"] = type(value).__qualname__
+
+    @classmethod
+    def consumes_types(cls) -> Tuple[Type[Hamiltonian]]:
+        return (Hamiltonian,)
+
+    def zarr_to_value(self, bind: ZarrGroup) -> Hamiltonian:
+        wire_map = {w: i for i, w in enumerate(json.loads(bind["wires"][()]))}
+
+        ops = [string_to_pauli_word(pauli_string, wire_map) for pauli_string in bind["ops"]]
+        coeffs = list(bind["coeffs"])
+
+        return Hamiltonian(coeffs, ops)
+
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Hamiltonian) -> ZarrGroup:
+        bind = bind_parent.create_group(key)
+
+        coeffs, ops = value.terms()
+        wire_map = {w: i for i, w in enumerate(value.wires)}
+
+        bind.array("ops", data=[pauli_word_to_string(op, wire_map) for op in ops], dtype=str)
+        bind.array("coeffs", data=coeffs)
+        bind.array("wires", data=json.dumps(list(w for w in value.wires)), dtype=str)
 
         return bind
