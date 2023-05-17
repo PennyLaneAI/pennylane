@@ -97,7 +97,7 @@
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
-* The new device interface in integrated with `qml.execute` for jax.
+* The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
 <h3>Breaking changes 💔</h3>
