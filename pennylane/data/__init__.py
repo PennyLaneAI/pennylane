@@ -17,15 +17,15 @@ from .attributes import (
     DatasetArray,
     DatasetDict,
     DatasetList,
+    DatasetMolecule,
     DatasetNone,
     DatasetOperator,
-    DatasetScalar,
-    DatasetString,
-    DatasetWires,
     DatasetPauliSentence,
     DatasetPauliWord,
+    DatasetScalar,
     DatasetSparseArray,
-    DatasetMolecule,
+    DatasetString,
+    DatasetWires,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute

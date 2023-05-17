@@ -33,11 +33,11 @@ class DatasetMolecule(AttributeType[ZarrGroup, Molecule, Molecule]):
 
     def zarr_to_value(self, bind: ZarrGroup) -> Molecule:
         return Molecule(
-            symbols=list(bind["symbols"]),
+            symbols=list(bind["symbols"].asstr()),
             coordinates=np.array(bind["coordinates"]),
             charge=int(bind["charge"][()]),
             mult=int(bind["mult"][()]),
-            basis_name=bind["basis_name"][()],
+            basis_name=bind["basis_name"].asstr()[()],
             l=np.array(bind["l"]),
             alpha=np.array(bind["alpha"]),
             coeff=np.array(bind["coeff"]),
@@ -46,7 +46,7 @@ class DatasetMolecule(AttributeType[ZarrGroup, Molecule, Molecule]):
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Molecule) -> ZarrGroup:
         bind = bind_parent.create_group(key)
 
-        bind.array("symbols", value.symbols, dtype=str)
+        bind["symbols"] = value.symbols
         bind["coordinates"] = value.coordinates
         bind["charge"] = value.charge
         bind["mult"] = value.mult

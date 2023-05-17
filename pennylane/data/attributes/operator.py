@@ -15,15 +15,12 @@
 
 from functools import lru_cache
 from typing import Dict, Generic, Tuple, Type, TypeVar
-import json
 
-from pennylane.data.base.attribute import AttributeType
 from pennylane.data.attributes.array import DatasetArray
+from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.typing_util import ZarrGroup
 from pennylane.operation import Operator
-from pennylane import Hamiltonian
-from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
 
 
 @lru_cache(1)
@@ -94,41 +91,5 @@ class DatasetOperator(Generic[Op], AttributeType[ZarrGroup, Op, Op]):
                 mapper.set_item(attr_name, attr, None, require_type=DatasetArray)
             else:
                 mapper[attr_name] = attr
-
-        return bind
-
-
-class DatasetHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
-    """Attribute type that can serialize any ``pennylane.operation.Operator`` class."""
-
-    type_id = "hamiltonian"
-
-    def __post_init__(self, value: Hamiltonian, info):
-        """Save the class name of the operator ``value`` into the
-        attribute info."""
-        super().__post_init__(value, info)
-        self.info["operator_class"] = type(value).__qualname__
-
-    @classmethod
-    def consumes_types(cls) -> Tuple[Type[Hamiltonian]]:
-        return (Hamiltonian,)
-
-    def zarr_to_value(self, bind: ZarrGroup) -> Hamiltonian:
-        wire_map = {w: i for i, w in enumerate(json.loads(bind["wires"][()]))}
-
-        ops = [string_to_pauli_word(pauli_string, wire_map) for pauli_string in bind["ops"]]
-        coeffs = list(bind["coeffs"])
-
-        return Hamiltonian(coeffs, ops)
-
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Hamiltonian) -> ZarrGroup:
-        bind = bind_parent.create_group(key)
-
-        coeffs, ops = value.terms()
-        wire_map = {w: i for i, w in enumerate(value.wires)}
-
-        bind.array("ops", data=[pauli_word_to_string(op, wire_map) for op in ops], dtype=str)
-        bind.array("coeffs", data=coeffs)
-        bind.array("wires", data=json.dumps([w for w in value.wires]), dtype=str)
 
         return bind

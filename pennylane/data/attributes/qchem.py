@@ -1,3 +1,12 @@
+import json
+from typing import Tuple, Type
+
+from pennylane import Hamiltonian
+from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.typing_util import ZarrGroup
+from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
+
+
 class QChemHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
     """Attribute type for QChem dataset hamiltonians, which use only Pauli operators."""
 
@@ -8,10 +17,6 @@ class QChemHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
         attribute info."""
         super().__post_init__(value, info)
         self.info["operator_class"] = type(value).__qualname__
-
-    @classmethod
-    def consumes_types(cls) -> Tuple[Type[Hamiltonian]]:
-        return (Hamiltonian,)
 
     def zarr_to_value(self, bind: ZarrGroup) -> Hamiltonian:
         wire_map = {json.loads(w): i for i, w in enumerate(bind["wires"].asstr())}

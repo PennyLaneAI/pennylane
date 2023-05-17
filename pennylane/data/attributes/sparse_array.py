@@ -18,18 +18,18 @@ from typing import Generic, Tuple, Type, TypeVar, Union, cast
 import numpy as np
 from scipy.sparse import (
     bsr_array,
-    coo_array,
-    csc_array,
-    csr_array,
-    dia_array,
-    dok_array,
-    lil_array,
-    csc_matrix,
-    csr_matrix,
     bsr_matrix,
+    coo_array,
     coo_matrix,
+    csc_array,
+    csc_matrix,
+    csr_array,
+    csr_matrix,
+    dia_array,
     dia_matrix,
+    dok_array,
     dok_matrix,
+    lil_array,
     lil_matrix,
 )
 

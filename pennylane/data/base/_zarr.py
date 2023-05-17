@@ -14,11 +14,12 @@
 """Contains a lazy-loaded interface to the Zarr module. For internal use only."""
 
 import importlib
+from pathlib import Path
+from random import randint
 from types import ModuleType
 from typing import Any, Literal, Union
-from pathlib import Path
-from .typing_util import ZarrGroup, ZarrArray, ZarrAny
-from random import randint
+
+from .typing_util import ZarrAny, ZarrArray, ZarrGroup
 
 
 class _zarr_lazy:  # pylint: disable=too-few-public-methods
