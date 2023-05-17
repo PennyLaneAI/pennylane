@@ -249,7 +249,9 @@ def test_qubit_observable(f_observable, q_observable):
     disable_new_opmath()
 
     assert h_as_hamiltonian.compare(h_ref)
-    assert np.allclose(qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2]))
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2])
+    )
 
 
 @pytest.mark.parametrize(
@@ -276,7 +278,9 @@ def test_qubit_observable_cutoff(f_observable, cut_off):
 
     assert h_as_hamiltonian.compare(h_ref)
     assert qml.equal(h_as_op, h_ref_op)
-    assert np.allclose(qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_op, wire_order=[0, 1, 2]))
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_op, wire_order=[0, 1, 2])
+    )
 
 
 @pytest.mark.parametrize(
