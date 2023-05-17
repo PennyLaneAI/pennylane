@@ -121,6 +121,8 @@
 
 <h3>Deprecations 👋</h3>
 
+* `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
