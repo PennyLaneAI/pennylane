@@ -75,9 +75,12 @@ class TestShotsConstruction:
 
     def test_None(self):
         """Tests the constructor when shots is None."""
-        shots = Shots(None)
-        assert shots.shot_vector == ()
-        assert shots.total_shots is None
+        shots1 = Shots(None)
+        shots2 = Shots()  # this also defaults to None
+        assert shots1.shot_vector == ()
+        assert shots2.shot_vector == ()
+        assert shots1.total_shots is None
+        assert shots2.total_shots is None
 
     def test_int(self):
         """Tests the constructor when shots is an int."""
@@ -144,6 +147,22 @@ class TestShotsConstruction:
             hash_s = hash(s)
             assert hash_s == hash(copy.copy(s))
             assert hash_s == hash(Shots(s.shot_vector if s.shot_vector else None))
+
+    @pytest.mark.parametrize(
+        "shots, expected",
+        [
+            (100, [100]),
+            ([(100, 1)], [100]),
+            ([(100, 2)], [100, 100]),
+            ([100, 200], [100, 200]),
+            ([(100, 2), 200], [100, 100, 200]),
+            ([(100, 3), 200, (300, 2)], [100, 100, 100, 200, 300, 300]),
+        ],
+    )
+    def test_iter(self, shots, expected):
+        """Test that iteration over Shots works correctly"""
+        actual = list(Shots(shots))
+        assert actual == expected
 
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from pennylane.data import AttributeInfo, Dataset, DatasetScalar, attribute
-from pennylane.data.base._zarr import zarr
+from pennylane.data.base._hdf5 import h5py
 
 
 class TestDataset:
@@ -65,7 +65,7 @@ class TestDataset:
         path: Path = tmp_path / "test"
         ds.write(path, mode=mode)
 
-        zgrp = zarr.open_group(path, mode="r")
+        zgrp = h5py.open_group(path, mode="r")
 
         ds_2 = Dataset(zgrp)
 

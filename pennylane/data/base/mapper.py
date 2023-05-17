@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a class for mapping Zarr groups to Dataset Attributes, and a mixin
+"""Contains a class for mapping HDF5 groups to Dataset Attributes, and a mixin
 class that provides the mapper class."""
 
 
@@ -26,7 +26,7 @@ from pennylane.data.base.attribute import (
     get_attribute_type,
     match_obj_type,
 )
-from pennylane.data.base.typing_util import ZarrGroup
+from pennylane.data.base.typing_util import HDF5Group
 
 
 class AttributeTypeError(TypeError):
@@ -49,13 +49,13 @@ class AttributeTypeError(TypeError):
 class AttributeTypeMapper(MutableMapping):
     """
     This class performs the mapping between the objects contained
-    in a Zarr group and Dataset attributes.
+    in a HDF5 group and Dataset attributes.
     """
 
-    bind: ZarrGroup
+    bind: HDF5Group
     _cache: Dict[str, AttributeType]
 
-    def __init__(self, bind: ZarrGroup) -> None:
+    def __init__(self, bind: HDF5Group) -> None:
         self._cache = {}
         self.bind = bind
 
@@ -128,10 +128,10 @@ class AttributeTypeMapper(MutableMapping):
 
 class MapperMixin:  # pylint: disable=too-few-public-methods
     """Mixin class for Dataset types that provide an interface
-    to a Zarr group, e.g `DatasetList`, `DatasetDict`. Provides
+    to a HDF5 group, e.g `DatasetList`, `DatasetDict`. Provides
     a `_mapper` property over the type's ``bind`` attribute."""
 
-    bind: ZarrGroup
+    bind: HDF5Group
 
     __mapper: AttributeTypeMapper = None
 

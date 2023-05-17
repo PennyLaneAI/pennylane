@@ -33,12 +33,12 @@ from typing import (
 
 from numpy.typing import ArrayLike
 
-# Type aliases for Zarr objects.
-ZarrAttrs = MutableMapping
-ZarrArray = ArrayLike
-ZarrGroup = MutableMapping
-ZarrAny = Union[ZarrArray, ZarrGroup]
-Zarr = TypeVar("Zarr", ZarrArray, ZarrGroup, ZarrAny)
+# Type aliases for HDF5 objects.
+HDF5Attrs = MutableMapping
+HDF5Array = ArrayLike
+HDF5Group = MutableMapping
+HDF5Any = Union[HDF5Array, HDF5Group]
+HDF5 = TypeVar("HDF5", HDF5Array, HDF5Group, HDF5Any)
 
 # Generic type variable
 T = TypeVar("T")

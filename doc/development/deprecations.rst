@@ -6,6 +6,11 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:

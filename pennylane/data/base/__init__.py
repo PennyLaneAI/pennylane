@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The base module contains the base class that defines the underlying
-type machinery, and the low-level Zarr interface of the data module."""
+type machinery, and the low-level HDF5 interface of the data module."""
