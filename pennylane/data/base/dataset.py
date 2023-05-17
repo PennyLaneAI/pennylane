@@ -56,43 +56,31 @@ class Attribute(Generic[T]):
     Attributes:
         attribute_type: The ``AttributeType`` class for this attribute
         info: Attribute info
-        default: Default value for this attribute, if not provided
-            to __init__()
-        default_factory: Zero-argument callable that returns
-            a default value
     """
 
     attribute_type: Type[AttributeType[HDF5Any, T, Any]]
     info: AttributeInfo
-    default: Union[Literal[UNSET], T, None]
-    default_factory: Optional[Callable[[], T]] = None
 
 
 def attribute(  # pylint: disable=too-many-arguments, unused-argument
-    default: Union[Literal[UNSET], T, None] = UNSET,
     attribute_type: Union[Type[AttributeType[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
-    default_factory: Optional[Callable[[], T]] = None,
     **kwargs,
 ) -> Any:
     """Used to define fields on a declarative Dataclass.
 
     Args:
-        default: See ``Attribute.default``
         attribute_type: ``AttributeType`` class for this attribute. If not provided,
             type may be derived from the type annotation on the class.
         doc: Documentation for the attribute
         py_type: Type annotation or string describing this object's type. If not
             provided, the annotation on the class will be used
-        default_factory: See ``Attribute.default_factory``
     """
 
     return Attribute(
         cast(Type[AttributeType[HDF5Any, T, T]], attribute_type),
         AttributeInfo(doc=doc, py_type=py_type),
-        default=default,
-        default_factory=default_factory,
     )
 
 
@@ -171,6 +159,24 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
     def list_attributes(self) -> List[str]:
         """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
+
+    @classmethod
+    def open(
+        cls: Type[Self], filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w"
+    ) -> Self:
+        """Open existing dataset or create a new one file at ``filepath``.
+
+        Args:
+            filepath: Path to dataset file
+            mode: File handling mode. Possible values are "w-" (create, fail if file
+                exists), "w" (create, overwrite existing), and "a" (append existing,
+                create if doesn't exist). Default is "w-".
+
+        Returns:
+            Dataset object from file
+        """
+        f = h5py.File(filepath, mode)
+        return cls(bind=f)
 
     def read(
         self,
