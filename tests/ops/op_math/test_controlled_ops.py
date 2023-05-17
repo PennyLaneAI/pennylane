@@ -468,9 +468,7 @@ class TestDecompositions:  # pylint: disable=too-few-public-methods
         res = op.decomposition()
 
         assert len(res) == 1
-        assert isinstance(res[0], qml.ops.ControlledOp)
-        assert res[0].base.name == "PhaseShift"
-        assert res[0].data[0] == np.pi
+        assert qml.equal(qml.ctrl(qml.PhaseShift(np.pi/2, wires=1), 0), res[0])
 
         decomposed_matrix = res[0].matrix()
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -534,6 +532,7 @@ class TestControlledMethod:  # pylint: disable=too-few-public-methods
 class TestSparseMatrix:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
     def test_sparse_matrix(self, op, mat):
+        """Tests the sparse matrix method for operations which support it."""
         expected_sparse_mat = csr_matrix(mat)
         sparse_mat = op.sparse_matrix()
 
@@ -550,6 +549,7 @@ label_data = [
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
+    """Tests that the label method gives the expected r esult."""
     assert op.label() == label
     assert op.label(decimals=2) == label
 
@@ -573,8 +573,9 @@ involution_ops = [  # ops who are their own inverses
 
 @pytest.mark.parametrize("op", involution_ops)
 def test_adjoint_method(op):
+    """Tests the adjoint method for operations that are their own adjoint."""
     adj_op = copy.copy(op)
     for _ in range(4):
         adj_op = adj_op.adjoint()
 
-        assert adj_op.name == op.name
+        assert qml.equal(adj_op, op)
