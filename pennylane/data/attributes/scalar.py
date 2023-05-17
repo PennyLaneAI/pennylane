@@ -16,20 +16,20 @@
 from numbers import Number
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+from pennylane.data.base.typing_util import HDF5Array, HDF5Group
 
 
-class DatasetScalar(AttributeType[ZarrArray, Number, Number]):
+class DatasetScalar(AttributeType[HDF5Array, Number, Number]):
     """
     Attribute type for numbers.
     """
 
     type_id = "scalar"
 
-    def zarr_to_value(self, bind: ZarrArray) -> Number:
+    def hdf5_to_value(self, bind: HDF5Array) -> Number:
         return bind[()]
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Number) -> ZarrArray:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Number) -> HDF5Array:
         bind_parent[key] = value
 
         return bind_parent[key]

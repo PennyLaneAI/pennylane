@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from pennylane.data import AttributeInfo, Dataset, DatasetScalar, attribute
-from pennylane.data.base._zarr import zarr
+from pennylane.data.base._hdf5 import h5py
 
 
 class TestDataset:
@@ -58,14 +58,14 @@ class TestDataset:
 
     @pytest.mark.parametrize("mode", ["w-", "w", "a"])
     def test_write(self, tmp_path, mode):
-        """Test that the ``write`` method creates a Zarr file that contains
+        """Test that the ``write`` method creates a HDF5 file that contains
         the all the data in the dataset."""
         ds = Dataset(x=DatasetScalar(1.0, AttributeInfo(py_type=int, doc="an int")))
 
         path: Path = tmp_path / "test"
         ds.write(path, mode=mode)
 
-        zgrp = zarr.open_group(path, mode="r")
+        zgrp = h5py.open_group(path, mode="r")
 
         ds_2 = Dataset(zgrp)
 

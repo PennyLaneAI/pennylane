@@ -35,13 +35,13 @@ from typing import (
     overload,
 )
 
-from pennylane.data.base._zarr import zarr
+from pennylane.data.base._hdf5 import h5py
 from pennylane.data.base.typing_util import (
+    HDF5,
     UNSET,
+    HDF5Any,
+    HDF5Group,
     T,
-    Zarr,
-    ZarrAny,
-    ZarrGroup,
     get_type_str,
     resolve_special_type,
 )
@@ -49,12 +49,12 @@ from pennylane.data.base.typing_util import (
 
 class AttributeInfo(MutableMapping):
     """Contains metadata that may be assigned to a dataset
-    attribute. Is stored in the Zarr object's ``attrs`` dict.
+    attribute. Is stored in the HDF5 object's ``attrs`` dict.
 
     Attributes:
         attrs_namespace: Keys for this class's attributes will
             be prefixed with this string in ``attrs_bind``.
-        attrs_bind: The Zarr attrs dict that this instance is bound to,
+        attrs_bind: The HDF5 attrs dict that this instance is bound to,
             or any mutable mapping
         py_type: Type annotation for this attribute
         doc: Documentation for this attribute
@@ -151,9 +151,9 @@ class AttributeInfo(MutableMapping):
 InitValueType = TypeVar("InitValueType")
 
 
-class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
+class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
     """
-    The AttributeType class provides an interface for converting Python objects to and from a Zarr
+    The AttributeType class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
     AttributeType, and Python types to compatible AttributeTypes.
 
@@ -174,26 +174,26 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
-        parent_and_key: Optional[Tuple[ZarrGroup, str]] = None,
+        parent_and_key: Optional[Tuple[HDF5Group, str]] = None,
     ):
         """Initialize a new dataset attribute from ``value``.
 
         Args:
             value: Value that will be stored in dataset attribute.
             info: Metadata to attach to attribute.
-            parent_and_key: A 2-tuple specifying the Zarr group that will contain
+            parent_and_key: A 2-tuple specifying the HDF5 group that will contain
                 this attribute, and its key. If None, attribute will be stored in-memory.
         """
 
     @overload
-    def __init__(self, *, bind: Zarr):
+    def __init__(self, *, bind: HDF5):
         """Load previously persisted dataset attribute from ``bind``.
 
         If ``bind`` contains an attribute of a different type, or does not
         contain a dataset attribute, a ``TypeError` will be raised.
 
         Args:
-            bind: Zarr object from which existing attribute will be loaded.
+            bind: HDF5 object from which existing attribute will be loaded.
         """
 
     def __init__(
@@ -201,31 +201,31 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
-        bind: Optional[Zarr] = None,
-        parent_and_key: Optional[Tuple[ZarrGroup, str]] = None,
+        bind: Optional[HDF5] = None,
+        parent_and_key: Optional[Tuple[HDF5Group, str]] = None,
     ) -> None:
         """
         Initialize a new dataset attribute, or load from an existing
-        zarr object.
+        hdf5 object.
 
         This constructor can be called two ways: value initialization
         or bind initialization.
 
         Value initialization creates the attribute with specified ``value`` in
-        a new Zarr object, with optional ``info`` attached. The attribute can
-        be created in an existing Zarr group by passing the ``parent_and_key``
+        a new HDF5 object, with optional ``info`` attached. The attribute can
+        be created in an existing HDF5 group by passing the ``parent_and_key``
         argument.
 
         Bind initialization loads an attribute that was previously persisted
-        in Zarr object ``bind``.
+        in HDF5 object ``bind``.
 
         Note that if ``bind`` is provided, all other arguments will be ignored.
 
         Args:
             value: Value to initialize attribute to
             info: Metadata to attach to attribute
-            bind: Zarr object from which existing attribute will be loaded
-            parent_and_key: A 2-tuple specifying the Zarr group that will contain
+            bind: HDF5 object from which existing attribute will be loaded
+            parent_and_key: A 2-tuple specifying the HDF5 group that will contain
                 this attribute, and its key.
         """
         if bind is not None:
@@ -236,7 +236,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         if parent_and_key is not None:
             parent, key = parent_and_key
         else:
-            parent, key = zarr.group(), "_"
+            parent, key = h5py.group(), "_"
 
         if value is UNSET:
             value = self.default_value()
@@ -253,8 +253,8 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         return AttributeInfo(self.bind.attrs)
 
     @property
-    def bind(self) -> Zarr:
-        """Returns the Zarr object that contains this attribute's
+    def bind(self) -> HDF5:
+        """Returns the HDF5 object that contains this attribute's
         data."""
         return self._bind
 
@@ -285,25 +285,25 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         return ()
 
     @abstractmethod
-    def zarr_to_value(self, bind: Zarr) -> T:
+    def hdf5_to_value(self, bind: HDF5) -> T:
         """Parses bind into Python object."""
 
     @abstractmethod
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: InitValueType) -> Zarr:
-        """Converts value into a Zarr Array or Group under bind_parent[key]."""
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: InitValueType) -> HDF5:
+        """Converts value into a HDF5 Array or Group under bind_parent[key]."""
 
     def get_value(self) -> T:
         """Parses the mapped value from ``bind``."""
-        return self.zarr_to_value(self.bind)
+        return self.hdf5_to_value(self.bind)
 
     def copy_value(self) -> T:
         """Parses the mapped value from ``bind`` and loads it into memory."""
         return self.get_value()
 
     def _set_value(
-        self, value: InitValueType, info: Optional[AttributeInfo], parent: ZarrGroup, key: str
-    ) -> Zarr:
-        """Converts ``value`` into Zarr format and sets the attribute info."""
+        self, value: InitValueType, info: Optional[AttributeInfo], parent: HDF5Group, key: str
+    ) -> HDF5:
+        """Converts ``value`` into HDF5 format and sets the attribute info."""
         if info is None:
             info = AttributeInfo()
 
@@ -311,15 +311,15 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         if info.py_type is None:
             info.py_type = self.py_type(type(value))
 
-        new_bind = self.value_to_zarr(parent, key, value)
+        new_bind = self.value_to_hdf5(parent, key, value)
         new_info = AttributeInfo(new_bind.attrs)
         info.save(new_info)
 
         return new_bind
 
-    def _set_parent(self, parent: ZarrGroup, key: str):
+    def _set_parent(self, parent: HDF5Group, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
-        zarr.copy(source=self.bind, dest=parent, key=key, if_exists="replace")
+        h5py.copy(source=self.bind, dest=parent, key=key, if_exists="replace")
 
     def _check_bind(self):
         """
@@ -329,11 +329,11 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         existing_type_id = self.info.get("type_id")
         if existing_type_id is None:
             raise TypeError(
-                f"Zarr '{type(self.bind).__qualname__}' does not contain a dataset attribute."
+                f"HDF5 '{type(self.bind).__qualname__}' does not contain a dataset attribute."
             )
         if existing_type_id != self.type_id:
             raise TypeError(
-                f"Zarr '{type(self.bind).__qualname__}' is bound to another attribute type {existing_type_id}"
+                f"HDF5 '{type(self.bind).__qualname__}' is bound to another attribute type {existing_type_id}"
             )
 
     def __str__(self) -> str:
@@ -378,8 +378,8 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         return super().__init_subclass__()
 
     def __copy__(self: Self) -> Self:
-        impl_group = zarr.group()
-        zarr.copy(self.bind, impl_group, "_")
+        impl_group = h5py.group()
+        h5py.copy(self.bind, impl_group, "_")
 
         return type(self)(bind=impl_group["_"])
 
@@ -387,7 +387,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         return self.__copy__()
 
 
-def get_attribute_type(zobj: Zarr) -> Type[AttributeType[Zarr, Any, Any]]:
+def get_attribute_type(zobj: HDF5) -> Type[AttributeType[HDF5, Any, Any]]:
     """
     Returns the ``AttributeType`` of the dataset attribute contained
     in ``zobj``.
@@ -422,7 +422,7 @@ def _get_type(type_or_obj: Union[object, Type]) -> Type:
     return type_
 
 
-def match_obj_type(type_or_obj: Union[T, Type[T]]) -> Type[AttributeType[ZarrAny, T, T]]:
+def match_obj_type(type_or_obj: Union[T, Type[T]]) -> Type[AttributeType[HDF5Any, T, T]]:
     """
     Returns an ``AttributeType`` that can accept an object of type ``type_or_obj``
     as a value.

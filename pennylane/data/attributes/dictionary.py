@@ -21,12 +21,12 @@ from typing import Dict, Generic, Optional, TypeVar, Union
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
+from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 
 
 class DatasetDict(
     Generic[T],
-    AttributeType[ZarrGroup, typing.Mapping[str, T], Optional[typing.Mapping[str, T]]],
+    AttributeType[HDF5Group, typing.Mapping[str, T], Optional[typing.Mapping[str, T]]],
     MutableMapping,
     MapperMixin,
 ):
@@ -43,10 +43,10 @@ class DatasetDict(
     def default_value(self) -> None:
         return None
 
-    def zarr_to_value(self, bind: ZarrGroup) -> typing.MutableMapping[str, T]:
+    def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableMapping[str, T]:
         return self
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: None) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: None) -> HDF5Group:
         grp = bind_parent.create_group(key)
 
         return grp
@@ -62,7 +62,7 @@ class DatasetDict(
     def __getitem__(self, __key: str) -> T:
         return self._mapper[__key].get_value()
 
-    def __setitem__(self, __key: str, __value: Union[T, AttributeType[ZarrAny, T, T]]) -> None:
+    def __setitem__(self, __key: str, __value: Union[T, AttributeType[HDF5Any, T, T]]) -> None:
         self._mapper[__key] = __value
 
     def __delitem__(self, __key: str) -> None:

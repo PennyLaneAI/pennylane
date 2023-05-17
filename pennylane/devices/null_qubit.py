@@ -20,6 +20,8 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from pennylane import QubitDevice
 from pennylane import numpy as np
+from pennylane.measurements import Shots
+from pennylane.resource import Resources
 from .._version import __version__
 
 
@@ -164,10 +166,10 @@ class NullQubit(QubitDevice):
             self._apply_operation(self._state, op)
 
     def _apply_operation(self, state, operation):
-        self._operation_calls[operation.base_name] += 1
+        self._operation_calls[operation.name] += 1
 
-        if operation.__class__.__name__ in self._apply_ops:
-            return self._apply_ops[operation.base_name](state, axes=None)
+        if operation.name in self._apply_ops:
+            return self._apply_ops[operation.name](state, axes=None)
 
         wires = operation.wires
         if operation in diagonal_in_z_basis:
@@ -285,7 +287,18 @@ class NullQubit(QubitDevice):
         self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots)
+            shots_from_dev = self._shots
+            tape_resources = circuit.specs["resources"]
+
+            resources = Resources(  # temporary until shots get updated on tape !
+                tape_resources.num_wires,
+                tape_resources.num_gates,
+                tape_resources.gate_types,
+                tape_resources.gate_sizes,
+                tape_resources.depth,
+                Shots(shots_from_dev),
+            )
+            self.tracker.update(executions=1, shots=self._shots, resources=resources)
             self.tracker.record()
         return [0.0]
 

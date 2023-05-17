@@ -24,7 +24,7 @@ class TestList:
     @pytest.mark.parametrize("value", [[], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
     def test_bind_init(self, value):
         """Test that a DatasetList can be initialized from
-        a previously initialized Zarr group."""
+        a previously initialized HDF5 group."""
 
         bind = DatasetList(value).bind
 
