@@ -124,18 +124,18 @@ class ResourcesOperation(Operation):
         """
 
 
-def _count_resources(tape, shots: Shots) -> Resources:
-    """Given a quantum circuit (tape) and number of samples, this function
+def _count_resources(tape) -> Resources:
+    """Given a quantum circuit (tape), this function
      counts the resources used by standard PennyLane operations.
 
     Args:
         tape (.QuantumTape): The quantum circuit for which we count resources
-        shots (Shots): The number of samples or shots to execute
 
     Returns:
         (.Resources): The total resources used in the workflow
     """
     num_wires = len(tape.wires)
+    shots = tape.shots
     depth = tape.graph.get_depth()
 
     num_gates = 0
