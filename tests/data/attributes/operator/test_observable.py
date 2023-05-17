@@ -65,7 +65,7 @@ class TestDatasetOperatorObservable:
         assert obs_in.compare(obs_out)
 
     def test_bind_init_observable(self, obs_in):
-        """Test that DatasetOperator can be initialized from a Zarr group
+        """Test that DatasetOperator can be initialized from a HDF5 group
         that contains a operator attribute."""
         bind = DatasetOperator(obs_in).bind
 

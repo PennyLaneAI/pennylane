@@ -24,7 +24,7 @@ from pennylane.data.attributes.array import DatasetArray
 from pennylane.data.attributes.list import DatasetList
 from pennylane.data.attributes.wires import DatasetWires
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
-from pennylane.data.base.typing_util import ZarrGroup
+from pennylane.data.base.typing_util import HDF5Group
 from pennylane.operation import Operator, Tensor
 from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
 
@@ -178,7 +178,7 @@ _SUPPORTED_OPS = (
 )
 
 
-class DatasetOperator(Generic[Op], AttributeType[ZarrGroup, Op, Op]):
+class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
     """Attribute type that can serialize any ``pennylane.operation.Operator`` class."""
 
     type_id = "operator"
@@ -193,7 +193,7 @@ class DatasetOperator(Generic[Op], AttributeType[ZarrGroup, Op, Op]):
     def consumes_types(cls) -> Tuple[Type[Operator], ...]:
         return _SUPPORTED_OPS
 
-    def zarr_to_value(self, bind: ZarrGroup) -> Op:
+    def hdf5_to_value(self, bind: HDF5Group) -> Op:
         info = AttributeInfo(bind.attrs)
         op_cls = _operator_name_to_class_dict()[info["operator_class"]]
 
@@ -202,7 +202,7 @@ class DatasetOperator(Generic[Op], AttributeType[ZarrGroup, Op, Op]):
 
         return op_cls(*params, wires=wires)
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Op) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Op) -> HDF5Group:
         bind = bind_parent.create_group(key)
 
         DatasetWires(value.wires, parent_and_key=(bind, "wires"))
@@ -218,14 +218,14 @@ class DatasetTensor(DatasetList[Tensor]):
     def consumes_types(cls) -> Tuple[Type[Tensor]]:
         return (Tensor,)
 
-    def zarr_to_value(self, bind: ZarrGroup) -> Tensor:
+    def hdf5_to_value(self, bind: HDF5Group) -> Tensor:
         return Tensor(*(DatasetOperator(bind=obs_bind).get_value() for obs_bind in bind.values()))
 
     def __post_init__(self, value: Tensor, info):
         return super().__post_init__(value.obs, info)
 
 
-class DatasetHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
+class DatasetHamiltonian(AttributeType[HDF5Group, Hamiltonian, Hamiltonian]):
     """Attribute type that can serialize any ``pennylane.operation.Operator`` class."""
 
     type_id = "hamiltonian"
@@ -234,7 +234,7 @@ class DatasetHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
     def consumes_types(cls) -> Tuple[Type[Hamiltonian]]:
         return (Hamiltonian,)
 
-    def zarr_to_value(self, bind: ZarrGroup) -> Hamiltonian:
+    def hdf5_to_value(self, bind: HDF5Group) -> Hamiltonian:
         wire_map = {w: i for i, w in enumerate(json.loads(bind["wires"][()]))}
 
         ops = [string_to_pauli_word(pauli_string, wire_map) for pauli_string in bind["ops"]]
@@ -242,7 +242,7 @@ class DatasetHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
 
         return Hamiltonian(coeffs, ops)
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Hamiltonian) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Hamiltonian) -> HDF5Group:
         bind = bind_parent.create_group(key)
 
         coeffs, ops = value.terms()

@@ -17,7 +17,7 @@ import numbers
 from typing import Any, Tuple, Type, Union
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+from pennylane.data.base.typing_util import HDF5Array, HDF5Group
 from pennylane.wires import Wires
 
 _JSON_TYPES = {int, str, float, type(None), bool}
@@ -31,7 +31,7 @@ class UnserializableWireError(TypeError):
         )
 
 
-class DatasetWires(AttributeType[ZarrArray, Wires, Wires]):
+class DatasetWires(AttributeType[HDF5Array, Wires, Wires]):
     """The ``DatasetWires`` class implements serialization for ``pennylane.wires.Wires``
     objects.
 
@@ -45,10 +45,10 @@ class DatasetWires(AttributeType[ZarrArray, Wires, Wires]):
     def consumes_types(cls) -> Tuple[Type[Wires]]:
         return (Wires,)
 
-    def zarr_to_value(self, bind: ZarrArray) -> Wires:
+    def hdf5_to_value(self, bind: HDF5Array) -> Wires:
         return Wires(json.loads(bind.asstr()[()]))
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Wires) -> ZarrArray:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Wires) -> HDF5Array:
         json_wires = []
         for w in value:
             if type(w) not in _JSON_TYPES:
