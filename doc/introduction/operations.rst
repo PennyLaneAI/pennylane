@@ -163,6 +163,7 @@ Non-parametrized gates
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CH
     ~pennylane.SWAP
     ~pennylane.ISWAP
     ~pennylane.ECR
@@ -458,6 +459,21 @@ Qutrit gates constructed from a matrix
 
     ~pennylane.QutritUnitary
     ~pennylane.ControlledQutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_param:
+
+Qutrit parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TRX
 
 :html:`</div>`
 
