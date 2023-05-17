@@ -99,6 +99,7 @@
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
 * The construction of the pauli representation for the `Sum` class is now faster.
+  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
 <h3>Breaking changes 💔</h3>
 
