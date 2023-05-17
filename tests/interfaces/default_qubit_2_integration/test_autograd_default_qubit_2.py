@@ -670,8 +670,6 @@ class TestHamiltonianWorkflows:
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
-        if shots:
-            pytest.xfail("DefaultQubit2 does not yet support hamiltonians with shots")
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
         weights = np.array([0.4, 0.5], requires_grad=True)
@@ -686,8 +684,6 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
-        if shots:
-            pytest.xfail("DefaultQubit2 does not yet support hamiltonians with shots")
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
