@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+  given subspace.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
@@ -86,6 +90,9 @@
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
 
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
