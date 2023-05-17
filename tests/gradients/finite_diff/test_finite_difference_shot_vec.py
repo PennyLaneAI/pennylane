@@ -314,19 +314,17 @@ class TestFiniteDiff:
             tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
             assert tapes == []
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if first order finite differences is used, then
         the tape is executed only once using the current parameter
         values."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = finite_diff(tape, approx_order=1, h=h_val, shots=default_shot_vector)
+        tapes, _ = finite_diff(tape, approx_order=1, h=h_val, shots=default_shot_vector)
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
@@ -342,7 +340,7 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
-        tapes, fn = finite_diff(tape, approx_order=1, f0=f0, h=h_val, shots=default_shot_vector)
+        tapes, _ = finite_diff(tape, approx_order=1, f0=f0, h=h_val, shots=default_shot_vector)
 
         assert len(tapes) == tape.num_params
 
@@ -449,6 +447,7 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
+        # pylint: disable=too-few-public-methods
         class SpecialObservable(Observable):
             """SpecialObservable"""
 
@@ -458,11 +457,15 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
+        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubit):
+            """A device that supports the above SpecialObservable as a return type."""
+
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
+            # pylint: disable=unused-argument
             @staticmethod
             def _asarray(arr, dtype=None):
                 return np.array(arr)
@@ -472,6 +475,7 @@ class TestFiniteDiff:
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
+                """Compute the expectation value of an observable."""
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
@@ -542,7 +546,7 @@ class TestFiniteDiffIntegration:
             assert res[1][1].shape == (4,)
             assert res[1][2].shape == (4,)
 
-    def test_single_expectation_value(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -582,7 +586,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
@@ -625,7 +629,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -673,9 +677,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
 
-    def test_multiple_expectation_value_with_argnum_one(
-        self, approx_order, strategy, validate, tol
-    ):
+    def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
         be trainable.
@@ -691,8 +693,8 @@ class TestFiniteDiffIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.probs(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # we choose only 1 trainable parameter
@@ -705,23 +707,24 @@ class TestFiniteDiffIntegration:
             h=h_val,
             shots=many_shots_shot_vector,
         )
-        res = fn(dev.batch_execute(tapes))
-
         all_res = fn(dev.batch_execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
 
-        expected = [0, np.cos(y) * np.cos(x)]
+        cx, sx, cy, sy = np.cos(x / 2), np.sin(x / 2), np.cos(y / 2), np.sin(y / 2)
+        # probability vector is [cx**2 * cy**2, cx**2 * sy**2, sx**2 * sy**2, sx**2 * cy**2]
+        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (2 * sy * cy)
+        exp_probs = [np.zeros(4), exp_dprob]
+        exp_expval = [0, -np.sin(y) * np.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
-            assert isinstance(res[0], tuple)
-            assert np.allclose(res[0][0], 0)
-            assert isinstance(res[1], tuple)
-            assert np.allclose(res[1][0], 0)
+            assert len(res) == 2  # two measurements
+            assert np.allclose(res[0], exp_probs, atol=finite_diff_shot_vec_tol)
+            assert np.allclose(res[1], exp_expval, atol=finite_diff_shot_vec_tol)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -765,7 +768,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_var_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_var_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -811,7 +814,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_prob_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -885,7 +888,7 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy, tol):
+    def test_autograd(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
@@ -928,7 +931,7 @@ class TestFiniteDiffGradients:
             assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy, tol):
+    def test_autograd_ragged(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
@@ -967,7 +970,7 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, approx_order, strategy, tol):
+    def test_tf(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
@@ -1008,7 +1011,7 @@ class TestFiniteDiffGradients:
         assert np.allclose([res_0, res_1], expected, atol=finite_diff_shot_vec_tol, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy, tol):
+    def test_tf_ragged(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
@@ -1046,7 +1049,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res_01[0], expected, atol=finite_diff_shot_vec_tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, approx_order, strategy, tol):
+    def test_torch(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
@@ -1092,7 +1095,7 @@ class TestFiniteDiffGradients:
         )
 
     @pytest.mark.jax
-    def test_jax(self, approx_order, strategy, tol):
+    def test_jax(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
@@ -1272,20 +1275,21 @@ class TestReturn:
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 
-    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
-    def test_N_N(self, shot_vec, meas, shape, op_wires):
+    def test_N_N(self, shot_vec, op_wires):
         """Test multi-param multi-measurement case"""
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
         params = np.random.random(6)
 
-        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         with qml.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
                 qml.RY(
                     params[idx], wires=[w]
                 )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
 
+            # The following asserts that there actually is a w defined, or raises an
+            # error if op_wires was empty
+            w = op_wires[-1]
             # Extra op - 5 measurements in total
             qml.RY(
                 params[5], wires=[w]
