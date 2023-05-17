@@ -162,20 +162,20 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
 
     @classmethod
     def open(
-        cls: Type[Self], filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w"
+        cls: Type[Self], filepath: Union[str, Path], mode: Literal["w", "w-", "a", "r"] = "r"
     ) -> Self:
         """Open existing dataset or create a new one file at ``filepath``.
 
         Args:
             filepath: Path to dataset file
             mode: File handling mode. Possible values are "w-" (create, fail if file
-                exists), "w" (create, overwrite existing), and "a" (append existing,
-                create if doesn't exist). Default is "w-".
-
+                exists), "w" (create, overwrite existing), "a" (append existing,
+                create if doesn't exist), "r" (read existing, must exist). Default is "r".
         Returns:
             Dataset object from file
         """
         f = h5py.File(filepath, mode)
+
         return cls(bind=f)
 
     def read(
@@ -195,6 +195,7 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             overwrite_attrs: Whether to overwrite attributes that already exist in this
                 dataset.
         """
+        # TODO: better error message when overwriting attribute fails
         zgrp = h5py.open_group(filepath, mode="r")
 
         if assign_to:
@@ -212,6 +213,8 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
                 exists), "w" (create, overwrite existing), and "a" (append existing,
                 create if doesn't exist). Default is "w-".
         """
+        # TODO: better error message for 'ContainsGroupError'
+
         with h5py.open_group(filepath, mode=mode) as zgrp:
             h5py.copy_all(self.bind, zgrp)
             zgrp.attrs.update(self.bind.attrs)
