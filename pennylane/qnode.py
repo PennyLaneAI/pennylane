@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements
 import functools
 import inspect
 import warnings
@@ -729,7 +729,7 @@ class QNode:
     def _validate_parameter_shift(device):
         model = device.capabilities().get("model", None)
 
-        if model == "qubit":
+        if model in {"qubit", "qutrit"}:
             return qml.gradients.param_shift, {}, device
 
         if model == "cv":
@@ -833,7 +833,7 @@ class QNode:
         if old_interface == "auto":
             self.interface = "auto"
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
         override_shots = False
         old_interface = self.interface
 
