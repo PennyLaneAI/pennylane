@@ -18,7 +18,7 @@ This module contains the functions needed for creating fermionic and qubit obser
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.utils import _get_pauli_map, _pauli_mult, simplify
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, active_new_opmath
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
@@ -91,7 +91,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
-        Hamiltonian: Simplified PennyLane Hamiltonian
+        Union[~.Hamiltonian, ~.Operator]: Simplified PennyLane Hamiltonian
 
     **Example**
 
@@ -101,6 +101,15 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> print(qubit_observable(f))
     ((-1+0j)) [Z0]
     + ((1+0j)) [I0]
+
+    If the new op-math is active, an arithmetic operator is returned instead.
+
+    >>> qml.operation.enable_new_opmath()
+    >>> coeffs = np.array([1.0, 1.0])
+    >>> ops = [[0, 0], [0, 0]]
+    >>> f = (coeffs, ops)
+    >>> print(qubit_observable(f))
+    ((0.5+0j)*(Identity(wires=[0]))) + ((-0.5+0j)*(PauliZ(wires=[0]))) + ((0.5+0j)*(Identity(wires=[0]))) + ((-0.5+0j)*(PauliZ(wires=[0])))
     """
     ops = []
     coeffs = qml.math.array([])
@@ -115,6 +124,18 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
             if op != 0:
                 ops = ops + op[1]
                 coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
+
+    if active_new_opmath():
+        arithmetic_ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
+
+        terms = tuple(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, arithmetic_ops) if abs(coeff) >= cutoff)
+        num_terms = len(terms)
+
+        if num_terms == 0:
+            return qml.s_prod(0, qml.Identity(ops[0].wires[0]))  # use any op and any wire to represent the null op
+        if num_terms == 1:
+            return terms[0]  # just return the op
+        return qml.sum(*terms)
 
     return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
