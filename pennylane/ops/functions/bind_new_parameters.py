@@ -52,8 +52,8 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 
     for operand in op.operands:
         op_num_params = operand.num_params
-        sub_params = params[: op_num_params]
-        params = params[op_num_params :]
+        sub_params = params[:op_num_params]
+        params = params[op_num_params:]
         new_operands.append(bind_new_parameters(operand, sub_params))
 
     return op.__class__(*new_operands)
@@ -69,7 +69,7 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
 
 
 @bind_new_parameters.register
-def bind_new_parameters_symbolic_op(op: Adjoint, params: Sequence[TensorLike]):
+def bind_new_parameters_adjoint(op: Adjoint, params: Sequence[TensorLike]):
     # Need a separate dispatch for `Adjoint` because using a more general class
     # signature results in a call to `Adjoint.__new__` which doesn't raise an
     # error but does return an unusable object.
@@ -90,6 +90,7 @@ def bind_new_parameters_scalar_symbolic_op(op: ScalarSymbolicOp, params: Sequenc
 
 @bind_new_parameters.register
 def bind_new_parameters_sprod(op: SProd, params: Sequence[TensorLike]):
+    # Separate dispatch for `SProd` since its constructor has a different interface
     new_scalar = params[0]
     params = params[1:]
     new_base = bind_new_parameters(op.base, params)
