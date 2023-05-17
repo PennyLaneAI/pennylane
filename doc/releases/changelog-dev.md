@@ -99,6 +99,7 @@
 
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
+  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
 <h3>Breaking changes 💔</h3>
 
