@@ -71,6 +71,17 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing jacobians of the unitary directly with `dense=False`.
+  ```python
+  def U(params):
+      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
+      Um = qml.evolve(H)(params, t=10., dense=False)
+      return qml.matrix(Um)
+  params = jnp.array([[0.5]], dtype=complex)
+  jac = jax.jacobian(U, holomorphic=True)(params)
+  ```
+  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
+
 
 <h3>Breaking changes 💔</h3>
 
