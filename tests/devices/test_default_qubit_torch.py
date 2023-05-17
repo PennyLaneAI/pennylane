@@ -1020,7 +1020,7 @@ class TestExpval:
         res = dev.execute(tape)
 
         expected_res = expected(theta, phi, torch_device)
-        assert torch.allclose(res, expected_res, atol=tol, rtol=0)
+        assert torch.allclose(qml.math.stack(res), expected_res, atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, device, torch_device, theta, phi, varphi, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
@@ -1052,7 +1052,7 @@ class TestExpval:
         ev2 = ((a - d) * torch.cos(theta) * torch.cos(phi) + 2 * re_b * torch.sin(phi) + a + d) / 2
         expected = torch.tensor([ev1, ev2], dtype=torch.float64, device=torch_device)
 
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(qml.math.stack(res), expected, atol=tol, rtol=0)
 
     def test_do_not_split_analytic_torch(
         self, device, torch_device, theta, phi, varphi, tol, mocker
@@ -2288,7 +2288,7 @@ class TestSamples:
         b = torch.tensor(0.43, dtype=torch.float64, device=torch_device)
 
         res = circuit(a, b)
-        assert torch.is_tensor(res)
+        assert isinstance(res, tuple)
 
         # We don't check the expected value due to stochasticity, but
         # leave it here for completeness.
@@ -2394,94 +2394,6 @@ class TestSamplesBroadcasted:
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
-    def test_qnode_collection_integration(self, torch_device):
-        """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.rand(
-            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2),
-            requires_grad=True,
-            device=torch_device,
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights))
-
-        res = cost(weights)
-        res.backward()
-
-        grad = weights.grad
-
-        assert torch.is_tensor(res)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self, torch_device):
-        """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.rand(
-            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2),
-            requires_grad=True,
-            device=torch_device,
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights))
-
-        res = cost(weights)
-        res.backward()
-
-        grad = weights.grad
-
-        assert torch.is_tensor(res)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self, torch_device):
-        """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.tensor(
-            [[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]],
-            requires_grad=True,
-            device=torch_device,
-            dtype=torch.float64,
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert torch.is_tensor(res)
-        assert qml.math.shape(res) == (3,)
-
-        jac = torch.autograd.functional.jacobian(cost, (weights,))[0]
-
-        assert torch.is_tensor(jac)
-        assert jac.shape == (3, 2, 3)
-
     def test_sampling_analytic_mode(self, torch_device):
         """Test that when sampling with shots=None, dev uses 1000 shots and
         raises an error.
@@ -2512,3 +2424,65 @@ class TestHighLevelIntegration:
             "when using sample-based measurements.",
         ):
             res = circuit()
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("torch_device", torch_devices)
+class TestCtrlOperator:
+    """Test-case for qml.ctrl operator with in-built parametric gates."""
+
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            (
+                qml.RX,
+                torch.tensor(
+                    [
+                        0.70172985 - 0.08687008j,
+                        -0.0053667 + 0.0j,
+                        0.70039457 - 0.08703569j,
+                        0.0 - 0.04326927j,
+                    ],
+                    dtype=torch.complex128,
+                ),
+            ),
+            (
+                qml.RY,
+                torch.tensor(
+                    [
+                        0.70172985 - 0.08687008j,
+                        0.0 - 0.0053667j,
+                        0.70039457 - 0.08703569j,
+                        0.04326927 + 0.0j,
+                    ],
+                    dtype=torch.complex128,
+                ),
+            ),
+            (
+                qml.RZ,
+                torch.tensor(
+                    [0.69636316 - 0.08687008j, 0.0 + 0.0j, 0.70039457 - 0.13030496j, 0.0 + 0.0j],
+                    dtype=torch.complex128,
+                ),
+            ),
+        ],
+    )
+    def test_ctrl_r_operators(self, torch_device, ops, tol):
+        """Test qml.ctrl using R-gate targets"""
+        dev = qml.device("default.qubit.torch", wires=2, shots=None, torch_device=torch_device)
+        par = torch.tensor([0.12345, 0.2468], dtype=torch.float64, device=torch_device)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(params):
+            qml.Hadamard(0)
+            qml.ctrl(op=ops[0](params[0], wires=1), control=0)
+            qml.RX(params[1], wires=0)
+            return qml.state()
+
+        result = circuit(par)
+        assert torch.allclose(
+            result,
+            ops[1].to(device=torch_device),
+            atol=tol,
+            rtol=0,
+        )

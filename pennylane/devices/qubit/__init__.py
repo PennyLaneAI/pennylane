@@ -29,10 +29,10 @@ at your own discretion.
     simulate
 """
 
-from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
+from .adjoint_jacobian import adjoint_jacobian
+from .initialize_state import create_initial_state
 from .measure import measure
-from .sampling import sample_state
-
 from .preprocess import preprocess
+from .sampling import sample_state, measure_with_samples
 from .simulate import simulate

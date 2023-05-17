@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the expval module"""
+import copy
 import numpy as np
 import pytest
-import copy
 
 import pennylane as qml
-from pennylane.measurements import Expectation
+from pennylane.measurements import Expectation, Shots
 from pennylane.measurements.expval import ExpectationMP
 
 
@@ -70,9 +70,14 @@ class TestExpval:
 
         atol = tol if shots is None else 0.05
         rtol = 0 if shots is None else 0.05
-
         assert np.allclose(res, expected, atol=atol, rtol=rtol)
-        assert res.dtype == r_dtype
+
+        # pylint: disable=no-member, unsubscriptable-object
+        if isinstance(res, tuple):
+            assert res[0].dtype == r_dtype
+            assert res[1].dtype == r_dtype
+        else:
+            assert res.dtype == r_dtype
 
         custom_measurement_process(new_dev, spy)
 
@@ -126,8 +131,12 @@ class TestExpval:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=1)
+
         res = qml.expval(obs)
-        assert res.shape() == (1,)
+        # pylint: disable=use-implicit-booleaness-not-comparison
+        assert res.shape(dev, Shots(None)) == ()
+        assert res.shape(dev, Shots(100)) == ()
 
     @pytest.mark.parametrize(
         "obs",
@@ -138,7 +147,7 @@ class TestExpval:
         res = qml.expval(obs)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector),)
+        assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     def test_projector_expval(self, shots, mocker):
@@ -197,6 +206,7 @@ class TestExpval:
 
     def test_copy_eigvals(self):
         """Test that the eigvals value is just assigned to new mp without copying."""
+        # pylint: disable=protected-access
         m = ExpectationMP(eigvals=[-0.5, 0.5], wires=qml.wires.Wires(0))
         copied_m = copy.copy(m)
         assert m._eigvals is copied_m._eigvals

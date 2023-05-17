@@ -806,6 +806,21 @@ class TestHamiltonian:
         """Tests that Hamiltonians are subtracted correctly"""
         assert H.compare(H1 - H2)
 
+    def test_hamiltonian_tensor_matmul(self):
+        """Tests that a hamiltonian can be multiplied by a tensor."""
+        H = qml.PauliX(0) + qml.PauliY(0)
+        t = qml.PauliZ(1) @ qml.PauliZ(2)
+        out = H @ t
+
+        expected = qml.Hamiltonian(
+            [1, 1],
+            [
+                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
+            ],
+        )
+        assert qml.equal(out, expected)
+
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
         """Tests that Hamiltonians are tensored correctly"""

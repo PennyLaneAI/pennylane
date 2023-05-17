@@ -83,18 +83,18 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
+    def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
+        if not shots.has_partitioned_shots:
             return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, device, shots):
+        if not qml.active_return():
+            return self._shape_legacy(device, shots)
+        if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_samples(
@@ -128,7 +128,6 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx]
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
-
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
         prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)

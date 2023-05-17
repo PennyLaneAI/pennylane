@@ -189,7 +189,7 @@ class TestQubitUnitaryXYXDecomposition:
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
         # Check the global phase
         assert qml.math.isclose(
-            qml.math.unwrap(obtained_gates[3].parameters[0]), expected_params[3]
+            qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
         # Now we check the XYX rotation angles
         assert qml.math.allclose(

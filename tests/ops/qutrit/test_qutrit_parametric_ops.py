@@ -207,8 +207,10 @@ matrix_data = [
 ]
 
 
+@pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
 class TestMatrix:
-    @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
+    """Tests for the matrix of parametrized qutrit operations."""
+
     def test_matrix(self, op, theta, subspace, expected, tol):
         """Test that matrices of parametric qutrit operations are correct"""
         assert np.allclose(op.compute_matrix(theta, subspace=subspace), expected, atol=tol, rtol=0)
@@ -217,7 +219,6 @@ class TestMatrix:
         )
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
     def test_matrix_tf(self, op, theta, subspace, expected, tol):
         """Test that compute_matrix works with tensorflow variables"""
         import tensorflow as tf
@@ -351,26 +352,6 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
-
-
-subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([-1], "The subspace must be a sequence"),
-    (None, "The subspace must be a sequence"),
-    ("a", "The subspace must be a sequence"),
-    ("12", "Elements of the subspace must be 0, 1, or 2."),
-    ([0, 1, 2], "The subspace must be a sequence"),
-    ([-1, 3], "Elements of the subspace must be 0, 1, or 2."),
-    (1, "The subspace must be a sequence"),
-]
-
-
-@pytest.mark.parametrize("op", [qml.TRX])
-@pytest.mark.parametrize("subspace, err_msg", subspace_error_data)
-def test_subspace_errors(op, subspace, err_msg):
-    """Test that the correct error is thrown for ill-defined subspaces."""
-    with pytest.raises(ValueError, match=err_msg):
-        op(0.123, wires=0, subspace=subspace)
 
 
 @pytest.mark.parametrize(

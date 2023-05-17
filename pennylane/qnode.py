@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements
 import functools
 import inspect
 import warnings
@@ -127,6 +127,10 @@ class QNode:
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
+        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not.
+            Only applies if the device is queried for the gradient; gradient transform
+            functions available in ``qml.gradients`` are only supported on the backward
+            pass. The 'best' option chooses automatically between the two options and is default.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -361,6 +365,7 @@ class QNode:
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,
+        grad_on_execution="best",
         mode="best",
         cache=True,
         cachesize=10000,
@@ -413,6 +418,7 @@ class QNode:
         # execution keyword arguments
         self.execute_kwargs = {
             "mode": mode,
+            "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
@@ -745,10 +751,19 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
+        if not self._qfunc_uses_shots_arg:
+            shots = kwargs.pop("shots", None)
+        else:
+            shots = (
+                self._original_device._raw_shot_sequence
+                if self._original_device._shot_vector
+                else self._original_device.shots
+            )
+
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func)(*args, **kwargs)
+        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
@@ -818,7 +833,7 @@ class QNode:
         if old_interface == "auto":
             self.interface = "auto"
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
         override_shots = False
         old_interface = self.interface
 
@@ -829,7 +844,7 @@ class QNode:
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
             # interpret it as device shots value for this call.
-            override_shots = kwargs.pop("shots", False)
+            override_shots = kwargs.get("shots", False)
 
             if override_shots is not False:
                 # Since shots has changed, we need to update the preferred gradient function.
@@ -843,6 +858,13 @@ class QNode:
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
 
+            else:
+                kwargs["shots"] = (
+                    self._original_device._raw_shot_sequence
+                    if self._original_device._shot_vector
+                    else self._original_device.shots
+                )
+
         # construct the tape
         self.construct(args, kwargs)
 
@@ -855,6 +877,9 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
+            if "mode" in self.execute_kwargs:
+                self.execute_kwargs.pop("mode")
+            # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
                 [self.tape],
                 device=self.device,
@@ -890,7 +915,16 @@ class QNode:
             self._update_original_device()
 
             return res
-
+        if "mode" in self.execute_kwargs:
+            mode = self.execute_kwargs.pop("mode")
+            if mode == "forward":
+                grad_on_execution = True
+            elif mode == "backward":
+                grad_on_execution = False
+            else:
+                grad_on_execution = "best"
+            self.execute_kwargs["grad_on_execution"] = grad_on_execution
+        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             [self.tape],
             device=self.device,
