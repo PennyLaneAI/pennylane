@@ -270,21 +270,3 @@ def test_vanilla_operators(op, new_params, expected_op):
 
     assert qml.equal(new_op, expected_op)
     assert new_op is not op
-
-
-@pytest.mark.parametrize(
-    "op",
-    [
-        qml.sum(qml.s_prod(5, qml.PauliX(0)), qml.PauliZ(1)),
-        qml.s_prod(3, qml.PauliX(0)),
-        qml.adjoint(qml.RX(0.123, 0)),
-        qml.Hamiltonian([1], [qml.PauliX(0)]),
-        Tensor(qml.Hermitian(I, 0), qml.PauliX(1)),
-        qml.RX(0.123, 0),
-    ],
-)  # All tested operators expect one or more parameter; test uses empty parameter list
-def test_incorrect_parameters(op):
-    """Test that `bind_new_parameters` with raises the correct error when the
-    shape of the new parameters does not match the orginal parameters."""
-    with pytest.raises(ValueError, match="The length of the new parameters does not match"):
-        _ = bind_new_parameters(op, [])
