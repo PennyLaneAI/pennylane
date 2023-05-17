@@ -19,9 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import VnEntropy
+from pennylane.measurements import VnEntropy, Shots
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
+
+# pylint: disable=too-many-arguments, no-member
 
 
 def expected_entropy_ising_xx(param):
@@ -115,13 +117,13 @@ class TestInitialization:
         assert meas.numeric_type == float
         assert meas.return_type == VnEntropy
 
-    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.vn_entropy(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
-        assert meas.shape(dev) == shape
+        assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestIntegration:
@@ -228,8 +230,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["torch"])
-    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method, interface):
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with torch."""
         import torch
 
@@ -351,7 +352,7 @@ class TestIntegration:
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
-        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)

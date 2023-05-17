@@ -20,7 +20,13 @@ import os
 import types
 import warnings
 
+from typing import Callable, Tuple
+
 import pennylane as qml
+from pennylane.typing import ResultBatch
+
+PostprocessingFn = Callable[[ResultBatch], ResultBatch]
+QuantumTapeBatch = Tuple[qml.tape.QuantumScript]
 
 
 class batch_transform:
@@ -313,6 +319,17 @@ class batch_transform:
             if old_interface == "auto":
                 qnode.interface = "auto"
 
+            if "mode" in execute_kwargs:
+                mode = execute_kwargs.pop("mode")
+                if not qml.active_return():
+                    if mode == "forward":  # pragma: no cover
+                        grad_on_execution = True
+                    elif mode == "backward":  # pragma: no cover
+                        grad_on_execution = False
+                    else:
+                        grad_on_execution = "best"
+                    execute_kwargs["grad_on_execution"] = grad_on_execution
+
             res = qml.execute(
                 tapes,
                 device=qnode.device,
@@ -438,7 +455,9 @@ class batch_transform:
         return lambda tape: self.construct(tape, *targs, **tkwargs)
 
 
-def map_batch_transform(transform, tapes):
+def map_batch_transform(
+    transform: batch_transform, tapes: QuantumTapeBatch
+) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
     """Map a batch transform over multiple tapes.
 
     Args:
@@ -490,7 +509,20 @@ def map_batch_transform(transform, tapes):
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
 
-    def processing_fn(res):
+    def processing_fn(res: ResultBatch) -> ResultBatch:
+        """Applies a batch of post-procesing functions to results.
+
+        Args:
+            res (ResultBatch): the results of executing a batch of circuits
+
+        Returns:
+            ResultBatch : results that have undergone classical post processing
+
+        Closure variables:
+            tape_counts: the number of tapes outputted from each application of the transform
+            batch_fns: the post processing functions to apply to each sub-batch
+
+        """
         count = 0
         final_results = []
 

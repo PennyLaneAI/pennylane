@@ -1954,14 +1954,16 @@ class TestBroadcastingSupportViaExpansion:
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)
-            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         out = circuit(x, y)
-        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)]).T
+        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)])
 
         assert circuit.device.num_executions == len(y)
         tol = 1e-10 if shots is None else 1e-2
-        assert qml.math.allclose(out, expected, atol=tol, rtol=0)
+
+        assert qml.math.allclose(out[0], expected[0], atol=tol, rtol=0)
+        assert qml.math.allclose(out[1], expected[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "x, y", [(0.2, np.array([0.4])), (np.array([0.1, 5.1]), np.array([0.1, -0.3]))]

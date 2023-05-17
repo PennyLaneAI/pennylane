@@ -355,6 +355,7 @@ class TestPassthruIntegration:
         gives the correct result with respect to the parameter-shift method"""
         p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_torch = torch.tensor(p, dtype=torch.float64, requires_grad=True)
+        p_torch_2 = torch.tensor(p, dtype=torch.float64, requires_grad=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
@@ -368,16 +369,19 @@ class TestPassthruIntegration:
         dev2 = qml.device("default.mixed", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", interface="torch")
 
         res = circuit1(p_torch)
-        assert qml.math.allclose(res, circuit2(p), atol=tol, rtol=0)
+        assert qml.math.allclose(qml.math.stack(res), circuit2(p), atol=tol, rtol=0)
 
         assert circuit1.gradient_fn == "backprop"
         assert circuit2.gradient_fn is qml.gradients.param_shift
 
         grad = torch.autograd.functional.jacobian(circuit1, p_torch)
-        assert qml.math.allclose(grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+        grad_expected = torch.autograd.functional.jacobian(circuit2, p_torch_2)
+
+        assert qml.math.allclose(grad[0], grad_expected[0], atol=tol, rtol=0)
+        assert qml.math.allclose(grad[1], grad_expected[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "op, wire_ids, exp_fn",
@@ -639,7 +643,7 @@ class TestPassthruIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -650,7 +654,7 @@ class TestPassthruIntegration:
                 (1 - torch.cos(x) * torch.cos(y)) / 2,
             ]
         )
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(qml.math.hstack(res), expected, atol=tol, rtol=0)
 
         res_x, res_y = torch.autograd.functional.jacobian(circuit, (x, y))
         expected_x = torch.tensor(
@@ -660,8 +664,8 @@ class TestPassthruIntegration:
             [0, -torch.cos(x) * torch.sin(y) / 2, torch.cos(x) * torch.sin(y) / 2]
         )
 
-        assert torch.allclose(res_x, expected_x, atol=tol, rtol=0)
-        assert torch.allclose(res_y, expected_y, atol=tol, rtol=0)
+        assert torch.allclose(expected_x, qml.math.hstack([res_x[0], res_y[0]]), atol=tol, rtol=0)
+        assert torch.allclose(expected_y, qml.math.hstack([res_x[1], res_y[1]]), atol=tol, rtol=0)
 
     def test_batching(self, tol):
         """Tests that the gradient of the qnode is correct with batching parameters"""
@@ -692,51 +696,20 @@ class TestPassthruIntegration:
         assert qml.math.allclose(torch.diagonal(res_b), expected_b, atol=tol, rtol=0)
 
 
-class TestHighLevelIntegration:
-    """Tests for integration with higher level components of PennyLane."""
+def test_template_integration():
+    """Test that a PassthruQNode default.mixed.torch works with templates."""
+    dev = qml.device("default.mixed", wires=2)
 
-    def test_template_integration(self):
-        """Test that a PassthruQNode default.mixed.torch works with templates."""
-        dev = qml.device("default.mixed", wires=2)
+    @qml.qnode(dev, interface="torch", diff_method="backprop")
+    def circuit(weights):
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+    shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+    weights = torch.tensor(np.random.random(shape), dtype=torch.float64, requires_grad=True)
 
-        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        weights = torch.tensor(np.random.random(shape), dtype=torch.float64, requires_grad=True)
+    res = circuit(weights)
+    res.backward()
 
-        res = circuit(weights)
-        res.backward()
-
-        assert isinstance(weights.grad, torch.Tensor)
-        assert weights.grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.torch works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(
-                qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch"
-            )
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.rand(
-            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2), requires_grad=True
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights))
-
-        res = cost(weights)
-        res.backward()
-
-        grad = weights.grad
-
-        assert torch.is_tensor(res)
-        assert grad.shape == weights.shape
+    assert isinstance(weights.grad, torch.Tensor)
+    assert weights.grad.shape == weights.shape

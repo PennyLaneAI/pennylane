@@ -168,7 +168,7 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.3 jaxlib==0.4.3"
+            "You can install jax via: pip install jax==0.4.10 jaxlib==0.4.10"
         )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
@@ -287,16 +287,16 @@ def pwc(timespan):
         )
 
     if isinstance(timespan, (tuple, list)):
-        t1, t2 = timespan
+        t0, t1 = timespan
     else:
-        t1 = 0
-        t2 = timespan
+        t0 = 0
+        t1 = timespan
 
     def func(params, t):
         num_bins = len(params)
         params = jnp.concatenate([jnp.array(params), jnp.zeros(1)])
         # get idx from timestamp, then set idx=0 if idx is out of bounds for the array
-        idx = num_bins / (t2 - t1) * (t - t1)
+        idx = num_bins / (t1 - t0) * (t - t0)
         idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 
         return params[idx]
@@ -361,18 +361,18 @@ def pwc_from_function(timespan, num_bins):
         )
 
     if isinstance(timespan, tuple):
-        t1, t2 = timespan
+        t0, t1 = timespan
     else:
-        t1 = 0
-        t2 = timespan
+        t0 = 0
+        t1 = timespan
 
     def inner(fn):
-        time_bins = np.linspace(t1, t2, num_bins)
+        time_bins = np.linspace(t0, t1, num_bins)
 
         def wrapper(params, t):
             constants = jnp.array(list(fn(params, time_bins)) + [0])
 
-            idx = num_bins / (t2 - t1) * (t - t1)
+            idx = num_bins / (t1 - t0) * (t - t0)
             # check interval is within 0 to num_bins, then cast to int, to avoid casting outcomes between -1 and 0 as 0
             idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 

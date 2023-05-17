@@ -493,6 +493,15 @@ class TestMiscMethods:
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
 
+    def test_base_name_deprecated(self):
+        """Tests that the base_name property is deprecated."""
+
+        class DummyOp(Operation):
+            """Dummy op."""
+
+        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
+            assert Controlled(DummyOp(2), 1).base_name == "C(DummyOp)"
+
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
@@ -705,7 +714,7 @@ class TestMatrix:
         """Check that an op that defines a sparse matrix has it used in the controlled
         sparse matrix."""
 
-        Hmat = qml.utils.sparse_hamiltonian(1.0 * qml.PauliX(0))
+        Hmat = (1.0 * qml.PauliX(0)).sparse_matrix()
         H_sparse = qml.SparseHamiltonian(Hmat, wires="0")
         op = Controlled(H_sparse, "a")
 
@@ -1520,6 +1529,7 @@ def test_qubit_unitary(M):
     assert not equal_list(list(tape), expected)
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "M",
     [

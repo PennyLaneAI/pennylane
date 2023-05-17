@@ -859,10 +859,36 @@ class TestDecompositionExpand:
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
+    def test_decomposition_in_recording_context_with_int_z(self):
+        """Tests that decomposition applies ops to a surrounding context."""
+        base_ops = [qml.PauliX(0), qml.PauliZ(1)]
+        base = qml.prod(*base_ops)
+        z = 2
+        op = Pow(base, z)
+
+        # if this fails, someone must have implemented it! will need a new operator to use
+        with pytest.raises(qml.operation.PowUndefinedError):
+            base.pow(2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            op.decomposition()
+
+        assert len(q.queue) == z
+        assert all(qml.equal(applied_op, base) for applied_op in q.queue)
+
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestOperationProperties:
     """Test Operation specific properties."""
+
+    def test_base_name_deprecated(self, power_method):
+        """Tests that the base_name property is deprecated."""
+
+        class DummyOp(qml.operation.Operation):
+            """Dummy op."""
+
+        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
+            assert power_method(DummyOp(2), 2).base_name == "DummyOp**2"
 
     def test_basis(self, power_method):
         """Test that the basis attribute is the same as the base op's basis attribute."""

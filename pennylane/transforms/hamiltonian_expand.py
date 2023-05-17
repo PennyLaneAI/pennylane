@@ -158,30 +158,35 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+            new_tape = tape.__class__(
+                tape._ops, (qml.expval(o) for o in obs), tape._prep, shots=tape.shots
+            )
 
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
         def processing_fn(res_groupings):
             if qml.active_return():
-                dot_products = [
-                    qml.math.dot(
-                        qml.math.reshape(
-                            qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
-                        ),
-                        c_group,
-                    )
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                # pylint: disable=no-member
+                res_groupings = [
+                    qml.math.stack(r)
+                    if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
+                    else r
+                    for r in res_groupings
                 ]
-            else:
-                dot_products = []
-                for c_group, r_group in zip(coeff_groupings, res_groupings):
-                    if len(c_group) == 1 and len(r_group) != 1:
-                        dot_products.append(r_group * c_group)
-                    else:
-                        dot_products.append(qml.math.dot(r_group, c_group))
+                res_groupings = [
+                    qml.math.reshape(r, (1,)) if r.shape == () else r for r in res_groupings
+                ]
+            dot_products = []
+            for c_group, r_group in zip(coeff_groupings, res_groupings):
+                if tape.batch_size:
+                    r_group = r_group.T
+                if len(c_group) == 1 and len(r_group) != 1:
+                    dot_products.append(r_group * c_group)
+                else:
+                    dot_products.append(qml.math.dot(r_group, c_group))
             summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+
             return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
         return tapes, processing_fn
@@ -192,7 +197,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
+        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep, shots=tape.shots)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
@@ -350,12 +355,13 @@ def sum_expand(tape: QuantumTape, group=True):
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
         qscripts = [
-            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep)
+            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep, shots=tape.shots)
             for m_group in m_groups
         ]
     else:
         qscripts = [
-            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
+            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep, shots=tape.shots)
+            for m in measurements
         ]
 
     def processing_fn(expanded_results):
