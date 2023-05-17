@@ -84,6 +84,8 @@ def _split_evol_ops(op, ob, tau):
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
+    if isinstance(ob, qml.pauli.PauliSentence):
+        ob = ob.operation()
     eigvals = qml.eigvals(ob)
     coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
 
