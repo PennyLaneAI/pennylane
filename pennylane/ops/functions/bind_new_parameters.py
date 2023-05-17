@@ -14,6 +14,7 @@
 """
 This module contains the qml.bind_new_parameters function.
 """
+# pylint: disable=missing-docstring
 
 from typing import Sequence
 import copy
@@ -40,15 +41,11 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
     Returns:
         .Operator: New operator with updated parameters
-
-    Raises:
-        ValueError: If the shape of the old and new operator parameters don't match
     """
 
     return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
 
 
-# pylint: disable=missing-docstring
 @bind_new_parameters.register
 def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLike]):
     new_operands = []
@@ -62,21 +59,21 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     return op.__class__(*new_operands)
 
 
-# pylint: disable=missing-docstring
 @bind_new_parameters.register
 def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]):
-
     new_base = bind_new_parameters(op.base, params)
     new_hyperparameters = copy.deepcopy(op.hyperparameters)
     _ = new_hyperparameters.pop("base")
 
-    if isinstance(op, Adjoint):
-        # Need this branch because using the other class signature results in a call to
-        # `Adjoint.__new__` which doesn't raise an error but does return an unusable
-        # object
-        return Adjoint(new_base)
-
     return op.__class__(new_base, **new_hyperparameters)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_symbolic_op(op: Adjoint, params: Sequence[TensorLike]):
+    # Need a separate dispatch for `Adjoint` because using a more general class
+    # signature results in a call to `Adjoint.__new__` which doesn't raise an
+    # error but does return an unusable object.
+    return Adjoint(bind_new_parameters(op.base, params))
 
 
 @bind_new_parameters.register
@@ -102,16 +99,17 @@ def bind_new_parameters_sprod(op: SProd, params: Sequence[TensorLike]):
 
 @bind_new_parameters.register
 def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
+    # Need a separate dispatch for `Pow` because using a more general class
+    # signature results in a call to `Pow.__new__` which doesn't raise an
+    # error but does return an unusable object.
     return Pow(bind_new_parameters(op.base, params), op.scalar)
 
 
-# pylint: disable=missing-docstring
 @bind_new_parameters.register
 def bind_new_parameters_hamiltonian(op: qml.Hamiltonian, params: Sequence[TensorLike]):
     return qml.Hamiltonian(params, op.ops)
 
 
-# pylint: disable=missing-docstring
 @bind_new_parameters.register
 def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
     new_obs = []
