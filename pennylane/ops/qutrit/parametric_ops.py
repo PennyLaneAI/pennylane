@@ -385,14 +385,15 @@ class TRZ(Operation):
     def generator(self):
         if self.subspace == (0, 1):
             return qml.s_prod(-0.5, qml.GellMann(wires=self.wires, index=3))
-        elif self.subspace == (0, 2):
+
+        if self.subspace == (0, 2):
             coeffs = [-0.25, -0.25 * np.sqrt(3)]
             obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
             return qml.dot(coeffs, obs)
-        else:
-            coeffs = [-0.25 * np.sqrt(3), 0.25]
-            obs = [qml.GellMann(wires=self.wires, index=8), qml.GellMann(wires=self.wires, index=3)]
-            return qml.dot(coeffs, obs)
+
+        coeffs = [-0.25 * np.sqrt(3), 0.25]
+        obs = [qml.GellMann(wires=self.wires, index=8), qml.GellMann(wires=self.wires, index=3)]
+        return qml.dot(coeffs, obs)
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
