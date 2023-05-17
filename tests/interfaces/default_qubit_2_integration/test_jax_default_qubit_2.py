@@ -13,10 +13,13 @@
 # limitations under the License.
 """Jax specific tests for execute and default qubit 2."""
 # pylint: disable=invalid-sequence-index
-import jax
 import pytest
 import numpy as np
-from jax import numpy as jnp
+
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+config = pytest.importorskip("jax.config")
+config.config.update("jax_enable_x64", True)
 
 import pennylane as qml
 from pennylane.devices.experimental import DefaultQubit2
