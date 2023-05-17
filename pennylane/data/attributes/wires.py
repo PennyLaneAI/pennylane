@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains AttributeType definition for ``pennylane.wires.Wires`` objects."""
-from typing import Tuple, Type
+import json
+import numbers
+from typing import Any, Tuple, Type, Union
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 from pennylane.wires import Wires
-from typing import Any, Union
-import numbers
-import json
 
 _JSON_TYPES = {int, str, float, type(None), bool}
 JsonType = Union[int, str, float, None, bool]
