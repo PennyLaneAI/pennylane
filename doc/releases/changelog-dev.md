@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+  given subspace.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
@@ -68,6 +72,7 @@
 * Support for sample-based measurements has been added to the `DefaultQubit2` device.
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
+  [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -86,6 +91,9 @@
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
 
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
@@ -112,6 +120,8 @@
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
 <h3>Deprecations 👋</h3>
+
+* `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
 <h3>Documentation 📝</h3>
 

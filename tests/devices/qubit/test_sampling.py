@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit import sample_state, measure_with_samples
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]]) / np.sqrt(2)
@@ -417,3 +418,119 @@ class TestMeasureSamples:
         for res in result:
             assert res.shape == ()
             assert res == 0
+
+
+class TestHamiltonianSamples:
+    """Test that the measure_with_samples function works as expected for
+    Hamiltonian and Sum observables"""
+
+    def test_hamiltonian_expval(self):
+        """Test that sampling works well for Hamiltonian observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
+
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = simulate(qs, rng=100)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_sum_expval(self):
+        """Test that sampling works well for Sum observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
+
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = simulate(qs, rng=100)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_multi_wires(self):
+        """Test that sampling works for Sums with large numbers of wires"""
+        n_wires = 10
+        scale = 0.05
+        offset = 0.8
+
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        res = simulate(qs, rng=100)
+
+        phase = offset + scale * np.array(range(n_wires))
+        cosines = qml.math.cos(phase)
+        sines = qml.math.sin(phase)
+        expected = 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
+
+        assert np.allclose(res, expected, atol=0.05)
+
+    def test_complex_hamiltonian(self):
+        """Test that sampling works for complex Hamiltonians"""
+        scale = 0.05
+        offset = 0.4
+
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(4)]
+
+        # taken from qml.data
+        H = qml.Hamiltonian(
+            [
+                -0.3796867241618816,
+                0.1265398827193729,
+                0.1265398827193729,
+                0.15229282586796247,
+                0.05080559325437572,
+                -0.05080559325437572,
+                -0.05080559325437572,
+                0.05080559325437572,
+                -0.10485523662149618,
+                0.10102818539518765,
+                -0.10485523662149615,
+                0.15183377864956338,
+                0.15183377864956338,
+                0.10102818539518765,
+                0.1593698831813122,
+            ],
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+        )
+
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        res = simulate(qs, rng=100)
+
+        qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        expected = simulate(qs_exp)
+
+        assert np.allclose(res, expected, atol=0.001)
