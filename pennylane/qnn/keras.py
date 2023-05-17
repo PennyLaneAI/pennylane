@@ -17,6 +17,9 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
+import pennylane as qml
+from pennylane.measurements import StateMP, VnEntropyMP, MutualInfoMP, PurityMP
+
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
@@ -204,7 +207,6 @@ class KerasLayer(Layer):
         weight_shapes: dict,
         output_dim,
         weight_specs: Optional[dict] = None,
-        split_batches=False,
         **kwargs,
     ):
         # pylint: disable=too-many-arguments
@@ -226,7 +228,7 @@ class KerasLayer(Layer):
         self.qnode = qnode
         self.qnode.interface = "tf"
 
-        self.split_batches = split_batches
+        self.split_batches = None
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
@@ -265,6 +267,21 @@ class KerasLayer(Layer):
             if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
                 raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
+    @staticmethod
+    def _broadcasting_supported(qtape):
+        """
+        Returns whether broadcasting is supported on the given tape
+        """
+        for m in qtape.measurements:
+            if isinstance(m, (VnEntropyMP, MutualInfoMP, PurityMP)):
+                return False
+
+            if isinstance(m, StateMP) and m.wires:
+                # density matrix
+                return False
+
+        return True
+
     def build(self, input_shape):
         """Initializes the QNode weights.
 
@@ -274,6 +291,17 @@ class KerasLayer(Layer):
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
             self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
+
+        inputs = tf.zeros(input_shape[-1])
+
+        kwargs = {
+            **{self.input_arg: inputs},
+            **{k: 1.0 * w for k, w in self.qnode_weights.items()},
+        }
+        self.qnode.construct((), kwargs)
+        self.split_batches = (
+            not self._broadcasting_supported(self.qnode.tape) or not qml.active_return()
+        )
 
         super().build(input_shape)
 

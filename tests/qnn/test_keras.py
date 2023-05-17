@@ -51,10 +51,8 @@ def model(get_circuit, n_qubits, output_dim):
 def model_dm(get_circuit_dm, n_qubits, output_dim):
     """The Keras NN model."""
     c, w = get_circuit_dm
-
-    # set split_batches to True since qml.math.reduce_dm does not support broadcasting
-    layer1 = KerasLayer(c, w, output_dim, split_batches=True)
-    layer2 = KerasLayer(c, w, output_dim, split_batches=True)
+    layer1 = KerasLayer(c, w, output_dim)
+    layer2 = KerasLayer(c, w, output_dim)
 
     m = tf.keras.models.Sequential(
         [
@@ -302,10 +300,14 @@ class TestKerasLayer:
         values that are the input keyword arguments, and we check that the specified weight_specs
         keywords are there."""
 
-        def add_weight_dummy(*args, **kwargs):  # pylint: disable=unused-argument
-            """Dummy function for mocking out the add_weight method to simply return the input
-            keyword arguments"""
-            return kwargs
+        add_weight = KerasLayer.add_weight
+
+        specs = {}
+
+        def add_weight_dummy(self, **kwargs):
+            """Dummy function for mocking out the add_weight method to store the kwargs in a dict"""
+            specs[kwargs["name"]] = kwargs
+            return add_weight(self, **kwargs)
 
         weight_specs = {
             "w1": {"initializer": "random_uniform", "trainable": False},
@@ -324,10 +326,7 @@ class TestKerasLayer:
             layer.build(input_shape=(10, n_qubits))
 
             for weight in layer.weight_shapes:
-                assert all(
-                    item in layer.qnode_weights[weight].items()
-                    for item in weight_specs[weight].items()
-                )
+                assert all(item in specs[weight].items() for item in weight_specs[weight].items())
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
     @pytest.mark.parametrize("input_shape", [(10, 4), (8, 3)])

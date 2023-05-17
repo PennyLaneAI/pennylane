@@ -19,6 +19,8 @@ import math
 from collections.abc import Iterable
 from typing import Callable, Dict, Union, Any, Text
 
+import pennylane as qml
+from pennylane.measurements import StateMP, VnEntropyMP, MutualInfoMP, PurityMP
 from pennylane.qnode import QNode
 
 try:
@@ -245,7 +247,6 @@ class TorchLayer(Module):
         init_method: Union[Callable, Dict[str, Union[Callable, Any]]] = None,
         # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
         # tests that don't use torch module.
-        split_batches=False,
     ):
         if not TORCH_IMPORTED:
             raise ImportError(
@@ -267,7 +268,7 @@ class TorchLayer(Module):
         self.qnode = qnode
         self.qnode.interface = "torch"
 
-        self.split_batches = split_batches
+        self.split_batches = None
 
         self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
 
@@ -297,6 +298,21 @@ class TorchLayer(Module):
         } != set(sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
+    @staticmethod
+    def _broadcasting_supported(qtape):
+        """
+        Returns whether broadcasting is supported on the given tape
+        """
+        for m in qtape.measurements:
+            if isinstance(m, (VnEntropyMP, MutualInfoMP, PurityMP)):
+                return False
+
+            if isinstance(m, StateMP) and m.wires:
+                # density matrix
+                return False
+
+        return True
+
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """Evaluates a forward pass through the QNode based upon input data and the initialized
         weights.
@@ -307,6 +323,18 @@ class TorchLayer(Module):
         Returns:
             tensor: output data
         """
+        if self.split_batches is None:
+            zeros = torch.zeros(inputs.shape[-1])
+
+            kwargs = {
+                **{self.input_arg: zeros},
+                **{arg: weight.to(zeros) for arg, weight in self.qnode_weights.items()},
+            }
+            self.qnode.construct((), kwargs)
+            self.split_batches = (
+                not self._broadcasting_supported(self.qnode.tape) or not qml.active_return()
+            )
+
         has_batch_dim = len(inputs.shape) > 1
 
         # in case the input has more than one batch dimension

@@ -46,8 +46,8 @@ def module(get_circuit, n_qubits, output_dim):
             self.clayer1 = torch.nn.Linear(n_qubits, n_qubits)
             self.clayer2 = torch.nn.Linear(output_dim, n_qubits)
             self.clayer3 = torch.nn.Linear(output_dim, output_dim)
-            self.qlayer1 = TorchLayer(c, w, split_batches=True)
-            self.qlayer2 = TorchLayer(c, w, split_batches=True)
+            self.qlayer1 = TorchLayer(c, w)
+            self.qlayer2 = TorchLayer(c, w)
 
         def forward(self, x):
             x = self.clayer1(x)
@@ -429,7 +429,7 @@ class TestTorchLayer:
         """Test if the forward() method accepts a batched input and returns a tensor of the right
         shape"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, split_batches=True)
+        layer = TorchLayer(c, w)
         x = torch.Tensor(np.ones((2, n_qubits)))
 
         layer_out = layer.forward(x)
