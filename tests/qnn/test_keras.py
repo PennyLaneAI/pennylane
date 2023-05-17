@@ -437,10 +437,7 @@ class TestKerasLayer:
         (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly.
         """
         c, w = get_circuit
-
-        # set split_batches to True since parameter broadcasting does not support
-        # more than one batch dimension
-        layer = KerasLayer(c, w, output_dim, split_batches=True)
+        layer = KerasLayer(c, w, output_dim)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
         with tf.GradientTape() as tape:

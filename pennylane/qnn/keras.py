@@ -286,16 +286,29 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if self.split_batches and len(tf.shape(inputs)) > 1:
+        has_batch_dim = len(tf.shape(inputs)) > 1
+
+        # in case the input has more than one batch dimension
+        if has_batch_dim:
+            batch_dims = tf.shape(inputs)[:-1]
+            inputs = tf.reshape(inputs, (-1, tf.shape(inputs)[-1]))
+
+        if self.split_batches and has_batch_dim:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
             batch_results = []
             for x in tf.unstack(inputs):
-                batch_results.append(self.call(x))
-            return tf.stack(batch_results)
+                batch_results.append(self._evaluate_qnode(x))
 
-        return self._evaluate_qnode(inputs)
+            results = tf.stack(batch_results)
+        else:
+            results = self._evaluate_qnode(inputs)
+
+        if has_batch_dim:
+            results = tf.reshape(results, (*batch_dims, *results.shape[1:]))
+
+        return results
 
     def _evaluate_qnode(self, x):
         """Evaluates a QNode for a single input datapoint.

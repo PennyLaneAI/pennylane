@@ -307,16 +307,27 @@ class TorchLayer(Module):
         Returns:
             tensor: output data
         """
+        has_batch_dim = len(inputs.shape) > 1
 
-        if self.split_batches and len(inputs.shape) > 1:
+        # in case the input has more than one batch dimension
+        if has_batch_dim:
+            batch_dims = inputs.shape[:-1]
+            inputs = torch.reshape(inputs, (-1, inputs.shape[-1]))
+
+        if self.split_batches and has_batch_dim:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
-            reconstructor = [self.forward(x) for x in torch.unbind(inputs)]
-            return torch.stack(reconstructor)
+            reconstructor = [self._evaluate_qnode(x) for x in torch.unbind(inputs)]
+            results = torch.stack(reconstructor)
+        else:
+            # calculate the forward pass as usual
+            results = self._evaluate_qnode(inputs)
 
-        # calculate the forward pass as usual
-        return self._evaluate_qnode(inputs)
+        if has_batch_dim:
+            results = torch.reshape(results, (*batch_dims, *results.shape[1:]))
+
+        return results
 
     def _evaluate_qnode(self, x):
         """Evaluates the QNode for a single input datapoint.

@@ -459,10 +459,7 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
         right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
         c, w = get_circuit
-
-        # set split_batches to True since parameter broadcasting does not support
-        # more than one batch dimension
-        layer = TorchLayer(c, w, split_batches=True)
+        layer = TorchLayer(c, w)
 
         x = torch.Tensor(np.ones((batch_size, middle_dim, n_qubits)))
 
