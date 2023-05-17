@@ -33,6 +33,7 @@ from cachetools import LRUCache, Cache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
+from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
 
@@ -322,7 +323,7 @@ def execute(
     expand_fn="device",  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
-):
+) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
 
