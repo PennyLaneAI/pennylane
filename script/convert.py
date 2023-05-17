@@ -1,33 +1,33 @@
 from pennylane.data_old import load
 from pennylane.data import Dataset
-from pennylane.data.base.attribute import match_obj_type
+from pennylane.data.attributes import QChemHamiltonian
+import h5py
+from pennylane import Hamiltonian
 
-import zarr
-
-
-def convert_dataset(ds_old, zroot: zarr.Group):
+def convert_dataset(ds_old, zroot: h5py.File):
     ds_new = Dataset(bind=(zroot, ds_old._description))
 
-    for attr in ds_old.attrs:
-        print(f"Converting attribute {attr}")
-        setattr(ds_new, attr, getattr(ds_old, attr))
-        print(f"Converted attribute {attr}")
+    for attr_name in ds_old.attrs:
+        print(f"Converting attribute {attr_name}")
+        attr = getattr(ds_old, attr_name)
 
-        delattr(ds_old, attr)
+        if isinstance(attr, Hamiltonian):
+            print("using QCHemHamiltonaian")
+            attr = QChemHamiltonian(attr, parent_and_key=(ds_new.bind, attr_name))
+        else:
+            setattr(ds_new, attr_name, attr)
+        print(f"Converted attribute {attr_name}")
+
+        delattr(ds_old, attr_name)
 
 
 
 def main():
     ds_old = load('qchem', molname="CH4", bondlength="0.5", basis="STO-3G")[0]
 
-    with zarr.group() as zroot:
+    with h5py.File(f"datasets/test.h5py", "w-") as zroot:
         convert_dataset(ds_old, zroot)
 
-        path = f"datasts/zarr/qchem/{ds_old._description}"
-        print(f"saving to {path}")
-
-        with zarr.open_group(path, mode="w") as fgrp:
-            zarr.copy_all(zroot, fgrp)
     
 
 

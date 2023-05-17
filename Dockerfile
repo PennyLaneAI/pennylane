@@ -1,7 +1,7 @@
 FROM python:3.10 AS base
 
 RUN apt-get update -y && apt-get install build-essential -y
-RUN pip install zarr zstd dill 'numpy<1.24'
+RUN pip install h5py zstd dill 'numpy<1.24'
 
 WORKDIR /usr/src/pennylane
 
