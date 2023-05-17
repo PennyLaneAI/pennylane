@@ -11,7 +11,6 @@ tests/drawer/test_draw_mpl.py
 tests/drawer/test_drawer_utils.py
 tests/drawer/test_tape_mpl.py
 tests/fourier/test_coefficients.py
-
 tests/gradients/core/**
 tests/gradients/finite_diff/**
 tests/gradients/parameter_shift/**
