@@ -294,17 +294,20 @@ class KerasLayer(Layer):
             inputs = tf.reshape(inputs, (-1, tf.shape(inputs)[-1]))
 
         if self.split_batches and has_batch_dim:
-            # If the input size is not 1-dimensional, unstack the input along its first dimension,
-            # recursively call the forward pass on each of the yielded tensors, and then stack the
-            # outputs back into the correct shape
+            # If the input has a batch dimension and we want to execute each data point separately,
+            # unstack the input along its first dimension, execute the QNode on each of the yielded
+            # tensors, and then stack the outputs back into the correct shape
             batch_results = []
             for x in tf.unstack(inputs):
                 batch_results.append(self._evaluate_qnode(x))
 
             results = tf.stack(batch_results)
         else:
+            # If the input has no batch_dim or we want to use broadcasting,
+            # calculate the forward pass as usual
             results = self._evaluate_qnode(inputs)
 
+        # reshape to the correct number of batch dims
         if has_batch_dim:
             results = tf.reshape(results, (*batch_dims, *results.shape[1:]))
 
