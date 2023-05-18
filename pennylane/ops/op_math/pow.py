@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
+import warnings
 
 from scipy.linalg import fractional_matrix_power
 
@@ -126,6 +127,10 @@ class PowOperation(Operation):
 
     @property
     def base_name(self):
+        warnings.warn(
+            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
+            UserWarning,
+        )
         return self._name
 
     @property
