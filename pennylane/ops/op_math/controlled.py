@@ -85,9 +85,14 @@ def ctrl(op, control, control_values=None, work_wires=None):
     Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
 
     """
+    custom_controlled_ops = {
+        qml.PauliZ: qml.CZ,
+    }
     control_values = [control_values] if isinstance(control_values, int) else control_values
     control = qml.wires.Wires(control)
 
+    if isinstance(op, tuple(custom_controlled_ops)) and len(control) == 1:
+        return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
