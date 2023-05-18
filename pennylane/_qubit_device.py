@@ -1926,9 +1926,6 @@ class QubitDevice(Device):
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )
 
-            if not hasattr(m.obs, "base_name"):
-                m.obs.base_name = None  # This is needed for when the observable is a tensor product
-
         if self.shot_vector is not None:
             raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
 

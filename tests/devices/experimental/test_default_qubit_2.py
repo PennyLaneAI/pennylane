@@ -168,6 +168,8 @@ class TestSupportsDerivatives:
     def test_supports_backprop(self):
         """Test that DefaultQubit2 says that it supports backpropagation."""
         dev = DefaultQubit2()
+        assert dev.supports_derivatives() is True
+
         config = ExecutionConfig(gradient_method="backprop")
         assert dev.supports_derivatives(config) is True
 
@@ -951,6 +953,228 @@ class TestPreprocessingIntegration:
 
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
+
+
+class TestRandomSeed:
+    """Test that the device behaves correctly when provided with a random seed"""
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
+    def test_same_seed(self, measurements):
+        """Test that different devices given the same random seed will produce
+        the same results"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        dev1 = DefaultQubit2(seed=123)
+        result1 = dev1.execute(qs)
+
+        dev2 = DefaultQubit2(seed=123)
+        result2 = dev2.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2 = [result1], [result2]
+
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+
+    def test_different_seed(self):
+        """Test that different devices given different random seeds will produce
+        different results (with almost certainty)"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+
+        dev1 = DefaultQubit2(seed=None)
+        result1 = dev1.execute(qs)
+
+        dev2 = DefaultQubit2(seed=123)
+        result2 = dev2.execute(qs)
+
+        dev3 = DefaultQubit2(seed=456)
+        result3 = dev3.execute(qs)
+
+        # assert results are pairwise different
+        assert np.any(result1 != result2)
+        assert np.any(result1 != result3)
+        assert np.any(result2 != result3)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
+    def test_different_executions(self, measurements):
+        """Test that the same device will produce different results every execution"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        dev = DefaultQubit2(seed=123)
+        result1 = dev.execute(qs)
+        result2 = dev.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2 = [result1], [result2]
+
+        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
+    def test_global_seed(self, measurements):
+        """Test that a global seed does not affect the result of devices
+        provided with a seed"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        # expected result
+        dev1 = DefaultQubit2(seed=123)
+        result1 = dev1.execute(qs)
+
+        # set a global seed both before initialization of the
+        # device and before execution of the tape
+        np.random.seed(456)
+        dev2 = DefaultQubit2(seed=123)
+        np.random.seed(789)
+        result2 = dev2.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2 = [result1], [result2]
+
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+
+
+class TestHamiltonianSamples:
+    """Test that the measure_with_samples function works as expected for
+    Hamiltonian and Sum observables
+
+    This is a copy of the tests in test_sampling.py, but using the device instead"""
+
+    def test_hamiltonian_expval(self):
+        """Test that sampling works well for Hamiltonian observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = dev.execute(qs)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_sum_expval(self):
+        """Test that sampling works well for Sum observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = dev.execute(qs)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_multi_wires(self):
+        """Test that sampling works for Sums with large numbers of wires"""
+        n_wires = 10
+        scale = 0.05
+        offset = 0.8
+
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        res = dev.execute(qs)
+
+        phase = offset + scale * np.array(range(n_wires))
+        cosines = qml.math.cos(phase)
+        sines = qml.math.sin(phase)
+        expected = 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
+
+        assert np.allclose(res, expected, atol=0.05)
+
+    def test_complex_hamiltonian(self):
+        """Test that sampling works for complex Hamiltonians"""
+        scale = 0.05
+        offset = 0.4
+
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(4)]
+
+        # taken from qml.data
+        H = qml.Hamiltonian(
+            [
+                -0.3796867241618816,
+                0.1265398827193729,
+                0.1265398827193729,
+                0.15229282586796247,
+                0.05080559325437572,
+                -0.05080559325437572,
+                -0.05080559325437572,
+                0.05080559325437572,
+                -0.10485523662149618,
+                0.10102818539518765,
+                -0.10485523662149615,
+                0.15183377864956338,
+                0.15183377864956338,
+                0.10102818539518765,
+                0.1593698831813122,
+            ],
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+        )
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        res = dev.execute(qs)
+
+        qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        expected = dev.execute(qs_exp)
+
+        assert np.allclose(res, expected, atol=0.001)
 
 
 def test_broadcasted_parameter():
