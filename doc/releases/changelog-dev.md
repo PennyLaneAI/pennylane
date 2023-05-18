@@ -113,6 +113,9 @@
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
+* The construction of the pauli representation for the `Sum` class is now faster.
+  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
+
 <h3>Breaking changes 💔</h3>
 
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
