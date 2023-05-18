@@ -10,6 +10,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `data.Dataset` class now uses HDF5 for serialization
+  [(4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
+
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
   instead of a `QubitUnitary` operation with a dense matrix.
   [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
