@@ -330,7 +330,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
     For this differentiation method, the unitary matrix corresponding to each pulse
     is computed and differentiated with an autodiff framework. From this derivative,
-    the so-called effective generators :math:`\Omega_{k, r}` of the pulses
+    the so-called effective generators :math:`\Omega_{k}` of the pulses
     (one for each variational parameter) are extracted.
     Afterwards, the generators are decomposed into the Pauli basis and the
     standard parameter-shift rule is used to evaluate the derivatives of the pulse program
@@ -370,7 +370,9 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     :math:`\theta_0 Y^{(0)}+f(\boldsymbol{\theta_1}, t) Y^{(1)} + \theta_2 Z^{(0)}X^{(1)}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
-    :math:`\theta_2 = \frac{2}{5}`, :math:`f(\boldsymbol{\theta_1}, t) = \theta_1^0 t + \theta_1^1` as well as a time interval :math:`t=[\frac{1}{10}, \frac{9}{10}]`.
+    :math:`\theta_2 = \frac{2}{5}`, the time-dependent function
+    :math:`f(\boldsymbol{\theta_1}, t) = \theta_{1,0} t + \theta_{1,1}`
+    as well as a time interval :math:`t=\left[\frac{1}{10}, \frac{9}{10}\right]`.
 
     .. code-block:: python
 
@@ -396,7 +398,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
             return qml.expval(qml.PauliX(0))
 
     We registered the ``QNode`` to be differentiated with the ``hybrid_pulse_grad`` method.
-    This allows us to simply differentiate it with ``jax.jacobian``, which internally
+    This allows us to simply differentiate it with ``jax.grad``, which internally
     makes use of the hybrid pulse parameter-shift method.
 
     >>> jax.grad(circuit)(params)
@@ -413,7 +415,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
     There are :math:`12` tapes because there are two shift parameters per Pauli word
     and six Pauli words in the basis of the *dynamical Lie algebra (DLA)* of the pulse:
-    :math:`\{Y^{(1)}, X^{(0)}X^{(1)}, X^{(0)}Z^{(1)}, Y^{(0)}, Z^{(0)}X^{(1)}, Z^{(0)}Z^{(1)}\}`.
+    :math:`\left\{Y^{(1)}, X^{(0)}X^{(1)}, X^{(0)}Z^{(1)}, Y^{(0)}, Z^{(0)}X^{(1)}, Z^{(0)}Z^{(1)}\right\}`.
     We may inspect one of the tapes, which differs from the original tape by the inserted
     rotation gate ``"RIY"``, i.e. a ``PauliRot(np.pi/2, "IY", wires=[0, 1])`` gate.
 
@@ -444,86 +446,100 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
         .. math::
 
-            H(\{\boldsymbol{\theta_k}\}, t) = \sum_{k=1}^K f_k(\boldsymbol{\theta_k}, t) H_k
+            H(\boldsymbol{\theta}, t) = \sum_{k=1}^K f_k(\boldsymbol{\theta}, t) H_k
 
         where the Hamiltonian terms :math:`\{H_k\}` are constant and the :math:`\{f_k\}` are
         parametrized time-dependent functions depending on the parameters
-        :math:`\boldsymbol{\theta_k}`.
-        We may associate a matrix function with this Hamiltonian (and a time interval
-        :math:`[t_0, t_1]`), which is given by the matrix of the unitary time evolution operator
-        under :math:`H` that solves the Schrödinger equation:
+        :math:`\boldsymbol{\theta}`.
+        The unitary time evolution operator associated with :math:`H` is the solution to the
+        Schrödinger equation
 
         .. math::
 
-            U(\{\boldsymbol{\theta_k}\}, [t_0, t_1]) =
-            \mathcal{T} \exp\left[ -i\int_{t_0}^{t_1}
-            H(\{\boldsymbol{\theta_k}\}, \tau) \mathrm{d}\tau \right].
+            \frac{\mathrm{d} U}{\mathrm{d} t}(t) = 
+            -i H(\boldsymbol{\theta}, t) U(t), \quad U(0) = \mathbb{I}
 
+        For a fixed time interval :math:`[t_0, t_1]`, we associate a matrix function 
+        :math:`U(\boldsymbol{\theta})` with the unitary evolution.
         To compute the hybrid pulse parameter-shift gradient, we are interested in the partial
-        derivatives of this function, usually with respect to the parameters
+        derivatives of this matrix function, usually with respect to the parameters
         :math:`\boldsymbol{\theta}`. Provided that :math:`H` does not act on too many qubits,
         or that we have an alternative sparse representation of
-        :math:`U(\{\boldsymbol{\theta_k}\}, [t_0, t_1])`,
-        we may compute these partial derivatives
+        :math:`U(\boldsymbol{\theta})`, we may compute these partial derivatives
 
         .. math::
 
-            \frac{\partial U(\{\boldsymbol{\theta_k}\}, [t_0, t_1])}{\partial \theta_{k, r}}
+            \frac{\partial U(\boldsymbol{\theta})}{\partial \theta_{k}}
 
-        classically via automatic differentiation, where :math:`\theta_{k, r}` is
-        the :math:`r`\ -th scalar parameter in :math:`\boldsymbol{\theta_k}`.
+        classically via automatic differentiation, where :math:`\theta_{k}` is
+        the :math:`k`\ -th (scalar) parameter in :math:`\boldsymbol{\theta}`.
 
-        Now, due to the compactness of the groups :math:`\mathrm{SU}(N)` , we know that
-        for each :math:`\theta_{k, r}` there is an *effective generator* :math:`\Omega_{k, r}`
+        Now, due to the compactness of the groups :math:`\mathrm{SU}(N)`\ , we know that
+        for each :math:`\theta_{k}` there is an *effective generator* :math:`\Omega_{k}`
         such that
 
         .. math::
 
-            \frac{\partial U(\{\boldsymbol{\theta_k}\}, [t_0, t_1])}{\partial \theta_{k,r}} =
-            U(\{\boldsymbol{\theta_k}\}, [t_0, t_1])
-            \frac{\mathrm{d}}{\mathrm{d} x} \exp[x\Omega_{k,r}]\large|_{x=0}.
+            \frac{\partial U(\boldsymbol{\theta})}{\partial \theta_{k}} =
+            U(\boldsymbol{\theta})
+            \frac{\mathrm{d}}{\mathrm{d} x} \exp[x\Omega_{k}]\large|_{x=0}.
 
         Given that we can compute the left-hand side expression as well as the matrix
-        for :math:`U` itself, we can compute :math:`\Omega_{k,r}` for all parameters
-        :math:`\theta_{k,r}`.
+        for :math:`U` itself, we can compute :math:`\Omega_{k}` for all parameters
+        :math:`\theta_{k}`.
         In addition, we may decompose these generators into Pauli words:
 
         .. math::
 
-            \Omega_{k,r} =\sum_{\ell=1}^{L} \omega_{k,r}^{(\ell)} \left(P_{\ell}\right)
+            \Omega_{k} =\sum_{\ell=1}^{L} \omega_{k}^{(\ell)} P_{\ell}
 
-        The coefficients :math:`\omega_{k,r}^{(\ell)}` of the generators can be computed
-        by decomposing the anti-Hermitian matrix :math:`\Omega_{k,r}` into the Pauli
-        basis and only keeping the non-vanishing terms. This is possible by a tensor
+        The coefficients :math:`\omega_{k}^{(\ell)}` of the generators can be computed
+        by decomposing the anti-Hermitian matrix :math:`\Omega_{k}` into the Pauli
+        basis and only keeping the non-vanishing terms. This is possible via a tensor
         contraction with the full Pauli basis (or alternative, more efficient methods):
 
         .. math::
 
-            \omega_{k,r}^{(\ell)} = \frac{1}{2^N}\mathrm{Tr}\left[P_\ell \Omega_{k,r}\right]
+            \omega_{k}^{(\ell)} = \frac{1}{2^N}\mathrm{Tr}\left[P_\ell \Omega_{k}\right]
 
         where :math:`N` is the number of qubits.
-        We may use all of the above to rewrite the partial derivative of an expectation
-        value-based objective function:
+
+        Thus far, we discussed the derivative of the time evolution, or pulse.
+        Now, consider an objective function that is based on measuring an expectation
+        value after executing a pulse program:
+
+        .. math::
+            C(\boldsymbol{\theta})&=
+            \langle\psi_0|U(\boldsymbol{\theta})^\dagger B
+            U(\boldsymbol{\theta}) |\psi_0\rangle
+
+        Using the derivative of :math:`U` and the decomposition of the effective
+        generator :math:`\Omega_k` above, we calculate the partial derivative of
+        :math:`C`:
 
         .. math::
 
-            C(\{\boldsymbol{\theta_k}\}, [t_0, t_1])&=
-            \langle\psi_0|U(\{\boldsymbol{\theta_k}\}, [t_0, t_1])^\dagger B
-            U(\{\boldsymbol{\theta_k}\}, [t_0, t_1]) |\psi_0\rangle\\
-            \frac{\partial C}{\partial \theta_{k,r}} (\{\boldsymbol{\theta_k}\}, [t_0, t_1])&=
-            \langle\psi_0|\left[U^\dagger B U, \Omega_{k,r}\right]|\psi_0\rangle\\
-            &=\sum_{\ell=1}^L \omega_{k,r}^{(\ell)}
+            \frac{\partial C}{\partial \theta_{k}} (\boldsymbol{\theta})&=
+            \langle\psi_0|\left[U^\dagger B U, \Omega_{k}\right]|\psi_0\rangle\\
+            &=\sum_{\ell=1}^L \omega_{k}^{(\ell)}
             \langle\psi_0|\left[U^\dagger B U, P_\ell \right]|\psi_0\rangle\\
-            &=\sum_{\ell=1}^L \tilde\omega_{k,r}^{(\ell)}
-            \langle\psi_0|\left[U^\dagger B U, -\frac{i}{2}P_\ell \right]|\psi_0\rangle
-            &=\sum_{\ell=1}^L \tilde\omega_{k,r}^{(\ell)}
+            &=\sum_{\ell=1}^L \tilde\omega_{k}^{(\ell)}
+            \langle\psi_0|\left[U^\dagger B U, -\frac{i}{2}P_\ell \right]|\psi_0\rangle\\
+            &=\sum_{\ell=1}^L \tilde\omega_{k}^{(\ell)}
+            \frac{\mathrm{d}}{\mathrm{d}x}
+            \langle\psi_0|\exp\left(i\frac{x}{2}P_\ell \right)U^\dagger B
+            U\exp\left(-i\frac{x}{2}P_\ell \right)|\psi_0\rangle\large|_{x=0}\\
+            &=\sum_{\ell=1}^L \tilde\omega_{k}^{(\ell)}
             \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x)\large|_{x=0}
 
-        where we skipped the arguments of the unitary for readability, introduced the
-        modified coefficients :math:`\tilde\omega_{k,r}^{(\ell)}=2i\omega_{k,r}^{(\ell)}`,
-        and denoted by :math:`C_\ell(x)` the modified cost function that has a Pauli
-        rotation about :math:`-\frac{x}{2}P_\ell` inserted before the parametrized time
-        evolution.
+        where we skipped the argument :math:`\boldsymbol{\theta}` of :math:`U` for readability
+        and introduced the modified coefficients
+        :math:`\tilde\omega_{k}^{(\ell)}=2i\omega_{k}^{(\ell)}`.
+        In the second to last step, we rewrote the commutator of :math:`U^\dagger BU` and
+        :math:`\frac{i}{2}P_\ell` as the derivative (at zero) of a modified cost function
+        that executes a Pauli rotation about :math:`-i\frac{x}{2}P_\ell` before the
+        parametrized time evolution.
+        Finally, we denoted this modified cost function by :math:`C_\ell(x)`.
 
     """
     transform_name = "hybrid pulse parameter-shift"
