@@ -541,32 +541,40 @@ class TestIntegration:
         assert qml.math.isclose(res_def, res_mix, atol=1e-4)
         assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)
 
-    def test_jitted_unitary_differentiation_sparse(self,):
+    def test_jitted_unitary_differentiation_sparse(
+        self,
+    ):
         """Test that the unitary can be differentiated with and without jitting using sparse matrices"""
         import jax
         import jax.numpy as jnp
+
         jax.config.update("jax_enable_x64", True)
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H)(params, t=10., dense=False)
+            Um = qml.evolve(H)(params, t=10.0, dense=False)
             return qml.matrix(Um)
+
         params = jnp.array([[0.5]], dtype=complex)
         jac = jax.jacobian(U, holomorphic=True)(params)
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
 
-    def test_jitted_unitary_differentiation_dense(self,):
+    def test_jitted_unitary_differentiation_dense(
+        self,
+    ):
         """Test that the unitary can be differentiated with and without jitting using dense matrices"""
         import jax
         import jax.numpy as jnp
+
         jax.config.update("jax_enable_x64", True)
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H)(params, t=10., dense=True)
+            Um = qml.evolve(H)(params, t=10.0, dense=True)
             return qml.matrix(Um)
+
         params = jnp.array([[0.5]], dtype=complex)
         jac = jax.jacobian(U, holomorphic=True)(params)
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
