@@ -169,9 +169,7 @@ class CircuitGraph:
                 # Create an edge between this and the previous operator
                 # There isn't any default value for the edge-data in
                 # rx.PyDiGraph.add_edge(); this is set to an empty string
-                self._graph.add_edge(
-                    self._indices[id(wire[i - 1])], self._indices[id(wire[i])], ""
-                )
+                self._graph.add_edge(self._indices[id(wire[i - 1])], self._indices[id(wire[i])], "")
 
         # For computing depth; want only a graph with the operations, not
         # including the observables
