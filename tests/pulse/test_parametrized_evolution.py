@@ -280,6 +280,24 @@ class TestInitialization:
         assert compare_to.hash != diff_ret_intmdt.hash
         assert compare_to.hash != diff_complementary.hash
 
+    @pytest.mark.parametrize(
+        "params", [[0.2, [1, 2, 3]], [0.2, np.array([1, 2, 3])], [0.2, (1, 2, 3)]]
+    )
+    def test_label(self, params):
+        """Test that the label displays correctly with and without decimal and base_label"""
+        H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + np.polyval * qml.PauliY(1)
+        op = qml.evolve(H)(params, 2)
+
+        assert op.label() == "ParametrizedEvolution"
+        assert (
+            op.label(decimals=2) == "ParametrizedEvolution\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+        )
+        assert op.label(base_label="my_label") == "my_label"
+        assert (
+            op.label(base_label="my_label", decimals=2)
+            == "my_label\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+        )
+
 
 @pytest.mark.jax
 class TestMatrix:

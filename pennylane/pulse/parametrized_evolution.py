@@ -373,7 +373,7 @@ class ParametrizedEvolution(Operation):
         dense: bool = None,
         do_queue=True,
         id=None,
-        **odeint_kwargs
+        **odeint_kwargs,
     ):
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
@@ -426,7 +426,7 @@ class ParametrizedEvolution(Operation):
             complementary=complementary,
             do_queue=True,
             id=self.id,
-            **odeint_kwargs
+            **odeint_kwargs,
         )
 
     def _check_time_batching(self):
@@ -489,3 +489,54 @@ class ParametrizedEvolution(Operation):
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + jnp.polyval * qml.PauliY(1)
+        >>> params = [0.2, [1, 2, 3]]
+        >>> op = qml.evolve(H)(params, t=2)
+
+        >>> op.label()
+        "ParametrizedEvolution"
+        >>> op.label(decimals=2)
+        "ParametrizedEvolution\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+        >>> op.label(base_label="my_label")
+        "my_label"
+        >>> op.label(decimals=2, base_label="my_label")
+        "my_label\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+        """
+        op_label = base_label or self.__class__.__name__
+
+        if decimals is None:
+            return op_label
+
+        params = self.parameters
+
+        def _format_number(x):
+            try:
+                return format(qml.math.toarray(x), f".{decimals}f")
+            except ValueError:
+                # If the parameter can't be displayed as a float
+                return format(x)
+
+        def _format_arraylike(x):
+            s = "[" + ",".join(_format_number(i) for i in x) + "]"
+            return s
+
+        param_strings = [_format_arraylike(p) if p.shape else _format_number(p) for p in params]
+
+        p = ",".join(s for s in param_strings)
+        return f"{op_label}\n(p=[{p}], t={self.t})"
