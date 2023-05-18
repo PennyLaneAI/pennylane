@@ -85,7 +85,7 @@ class AttributeTypeMapper(MutableMapping):
         value: Any,
         info: Optional[AttributeInfo],
         require_type: Optional[Type[AttributeType]] = None,
-    ):
+    ) -> None:
         """Creates or replaces attribute ``key`` with ``value``, optionally
         including ``info``.
 
@@ -113,7 +113,7 @@ class AttributeTypeMapper(MutableMapping):
 
         self._cache.pop(key, None)
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         self.set_item(key, value, None)
 
     def move(self, src: str, dest: str) -> None:
@@ -134,7 +134,7 @@ class AttributeTypeMapper(MutableMapping):
     def __contains__(self, key: str) -> bool:
         return key in self._cache or key in self.bind
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self._cache.pop(key, None)
         del self.bind[key]
 
