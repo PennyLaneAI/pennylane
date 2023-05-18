@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for computing the hybrid parameter-shift gradient
-of pulse sequences in a qubit-based quantum tape.
+This module contains functions for computing the pulse generator
+parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
 from collections.abc import Sequence
 import numpy as np
@@ -58,7 +58,7 @@ def _one_parameter_generators(op):
         where ``N`` is the number of qubits the evolution acts on and ``par_shape`` is the
         shape of the ``k``\ th parameter of the evolution.
 
-    See the documentation of hybrid_pulse_grad for more details and a mathematical derivation.
+    See the documentation of pulse_generator for more details and a mathematical derivation.
     """
 
     def _compute_matrix(*args):
@@ -98,7 +98,7 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
         basis coefficients. That is, for the effective generator :math:`\frac{1}{3}iX`, which has
         the Pauli basis coefficient :math:`\frac{1}{3}i`, this function will compute the
         number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qml.PauliRot``
-        in the hybrid pulse differentiation pipeline.
+        in the pulse generator differentiation pipeline.
 
     .. note::
 
@@ -156,7 +156,7 @@ def _insert_op(tape, ops, op_idx):
 
 
 def _generate_tapes_and_coeffs(tape, idx, atol, cache):
-    """Compute the modified tapes and coefficients required to compute the hybrid pulse
+    """Compute the modified tapes and coefficients required to compute the pulse generator
     derivative of a tape with respect to an indicated trainable parameter.
 
     Args:
@@ -167,7 +167,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
         cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
 
     Returns:
-        list[`~.QuantumScript`]: Modified tapes to be added to the hybrid pulse differentiation
+        list[`~.QuantumScript`]: Modified tapes to be added to the pulse generator differentiation
             tapes. It is an empty list if modified tapes were already created for another
             parameter of the pulse of interest.
         tuple[int, int, tensor_like]: Gradient computation data, consisting of the start and end
@@ -186,7 +186,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     if not isinstance(op, ParametrizedEvolution):
         # only ParametrizedEvolution can be treated with this gradient transform
         raise ValueError(
-            "hybrid_pulse_grad does not support differentiating parameters of "
+            "pulse_generator does not support differentiating parameters of "
             "other operations than pulses."
         )
 
@@ -246,12 +246,13 @@ def _parshift_and_contract(results, coeffs, single_measure, shot_vector):
     )
 
 
-def _expval_hybrid_pulse_grad(tape, argnum, shots, atol):
-    """Compute the hybrid pulse parameter-shift rule for a quantum circuit that returns expectation
+def _expval_pulse_generator(tape, argnum, shots, atol):
+    """Compute the pulse generator parameter-shift rule for a quantum circuit that returns expectation
     values of observables.
 
     Args:
-        tape (`~.QuantumTape`): Quantum circuit to be differentiated with the hybrid rule.
+        tape (`~.QuantumTape`): Quantum circuit to be differentiated with the pulse generator
+            parameter-shift rule.
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -321,8 +322,8 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol):
     return gradient_tapes, processing_fn
 
 
-def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
-    r"""Transform a QNode to compute the hybrid pulse parameter-shift gradient of pulses
+def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
+    r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules. Thus, it is limited to few-qubit pulses, but allows
@@ -392,14 +393,14 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.hybrid_pulse_grad)
+        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_generator)
         def circuit(params):
             op = qml.evolve(H)(params, t)
             return qml.expval(qml.PauliX(0))
 
-    We registered the ``QNode`` to be differentiated with the ``hybrid_pulse_grad`` method.
+    We registered the ``QNode`` to be differentiated with the ``pulse_generator`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
-    makes use of the hybrid pulse parameter-shift method.
+    makes use of the pulse generator parameter-shift method.
 
     >>> jax.grad(circuit)(params)
     [Array(1.4189798, dtype=float32, weak_type=True),
@@ -409,7 +410,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> tapes, fun = qml.gradients.hybrid_pulse_grad(circuit.tape, argnums=[0, 1, 2])
+    >>> tapes, fun = qml.gradients.pulse_generator(circuit.tape, argnums=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -441,7 +442,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
         :title: Theoretical background
         :href: theory
 
-        The hybrid pulse parameter-shift gradient method makes use of the *effective generator*
+        The pulse generator parameter-shift gradient method makes use of the *effective generator*
         of a pulse for given parameters and duration. Consider the parametrized Hamiltonian
 
         .. math::
@@ -461,7 +462,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
         For a fixed time interval :math:`[t_0, t_1]`, we associate a matrix function
         :math:`U(\boldsymbol{\theta})` with the unitary evolution.
-        To compute the hybrid pulse parameter-shift gradient, we are interested in the partial
+        To compute the pulse generator parameter-shift gradient, we are interested in the partial
         derivatives of this matrix function, usually with respect to the parameters
         :math:`\boldsymbol{\theta}`. Provided that :math:`H` does not act on too many qubits,
         or that we have an alternative sparse representation of
@@ -542,7 +543,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
         Finally, we denoted this modified cost function by :math:`C_\ell(x)`.
 
     """
-    transform_name = "hybrid pulse parameter-shift"
+    transform_name = "pulse generator parameter-shift"
     _assert_has_jax(transform_name)
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
@@ -551,7 +552,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hybrid_pulse_grad)
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_generator)
 
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad(tape, shots)
@@ -560,11 +561,11 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    return _expval_hybrid_pulse_grad(tape, argnum, shots, atol)
+    return _expval_pulse_generator(tape, argnum, shots, atol)
 
 
-def expand_invalid_trainable_hybrid_pulse_grad(x, *args, **kwargs):
-    r"""Do not expand any operation. We expect the ``hybrid_pulse_grad`` to be used
+def expand_invalid_trainable_pulse_generator(x, *args, **kwargs):
+    r"""Do not expand any operation. We expect the ``pulse_generator`` to be used
     on pulse programs and we do not expect decomposition pipelines between pulses
     and gate-based circuits yet.
     """
@@ -572,6 +573,6 @@ def expand_invalid_trainable_hybrid_pulse_grad(x, *args, **kwargs):
     return x
 
 
-hybrid_pulse_grad = gradient_transform(
-    _hybrid_pulse_grad, expand_fn=expand_invalid_trainable_hybrid_pulse_grad
+pulse_generator = gradient_transform(
+    _pulse_generator, expand_fn=expand_invalid_trainable_pulse_generator
 )

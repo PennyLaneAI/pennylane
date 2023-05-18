@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the gradients.hybrid_pulse_gradient module.
+Tests for the gradients.pulse_generator module.
 """
 # pylint:disable=import-outside-toplevel
 
@@ -23,9 +23,9 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
-from pennylane.gradients.hybrid_pulse_gradient import (
+from pennylane.gradients.pulse_generator_gradient import (
     _generate_tapes_and_coeffs,
-    hybrid_pulse_grad,
+    pulse_generator,
     _insert_op,
     _nonzero_coeffs_and_words,
     _one_parameter_generators,
@@ -34,7 +34,7 @@ from pennylane.gradients.hybrid_pulse_gradient import (
 )
 
 
-def grad_fn(tape, dev, fn=hybrid_pulse_grad, **kwargs):
+def grad_fn(tape, dev, fn=pulse_generator, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
     _tapes, fn = fn(tape, **kwargs)
     return fn(dev.batch_execute(_tapes)), _tapes
@@ -668,22 +668,22 @@ class TestParshiftAndContract:
 
 
 @pytest.mark.jax
-class TestHybridPulseGradEdgeCases:
-    """Test that differentiating edge case tapes with ``hybrid_pulse_grad`` works."""
+class TestPulseGeneratorEdgeCases:
+    """Test that differentiating edge case tapes with ``pulse_generator`` works."""
 
     def test_raises_with_state_return(self):
         """Make sure an error is raised for a tape that returns a state."""
         tape = qml.tape.QuantumScript(measurements=[qml.state()])
-        _match = "circuits that return the state with the hybrid pulse parameter-shift gradient"
+        _match = "circuits that return the state with the pulse generator parameter-shift gradient"
         with pytest.raises(ValueError, match=_match):
-            _ = hybrid_pulse_grad(tape)
+            _ = pulse_generator(tape)
 
     def test_raises_with_variance_return(self):
         """Make sure an error is raised for a tape that returns a variance."""
         tape = qml.tape.QuantumScript(measurements=[qml.var(qml.PauliX(0))])
-        _match = "gradient of variances with the hybrid pulse parameter-shift gradient"
+        _match = "gradient of variances with the pulse generator parameter-shift gradient"
         with pytest.raises(ValueError, match=_match):
-            _ = hybrid_pulse_grad(tape)
+            _ = pulse_generator(tape)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -701,7 +701,7 @@ class TestHybridPulseGradEdgeCases:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = hybrid_pulse_grad(tape)
+            g_tapes, post_processing = pulse_generator(tape)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -724,7 +724,7 @@ class TestHybridPulseGradEdgeCases:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            _tapes, fn = hybrid_pulse_grad(tape)
+            _tapes, fn = pulse_generator(tape)
         res = fn(dev.batch_execute(_tapes))
 
         assert _tapes == []
@@ -746,25 +746,25 @@ class TestHybridPulseGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hybrid, _tapes = grad_fn(tape, dev)
+        res_pulse_gen, _tapes = grad_fn(tape, dev)
 
         assert _tapes == []
 
-        assert isinstance(res_hybrid, tuple)
+        assert isinstance(res_pulse_gen, tuple)
 
-        assert len(res_hybrid) == 3
+        assert len(res_pulse_gen) == 3
 
-        assert isinstance(res_hybrid[0], np.ndarray)
-        assert res_hybrid[0].shape == (4,)
-        assert np.allclose(res_hybrid[0], 0)
+        assert isinstance(res_pulse_gen[0], np.ndarray)
+        assert res_pulse_gen[0].shape == (4,)
+        assert np.allclose(res_pulse_gen[0], 0)
 
-        assert isinstance(res_hybrid[1], np.ndarray)
-        assert res_hybrid[1].shape == (4,)
-        assert np.allclose(res_hybrid[1], 0)
+        assert isinstance(res_pulse_gen[1], np.ndarray)
+        assert res_pulse_gen[1].shape == (4,)
+        assert np.allclose(res_pulse_gen[1], 0)
 
-        assert isinstance(res_hybrid[2], np.ndarray)
-        assert res_hybrid[2].shape == (4,)
-        assert np.allclose(res_hybrid[2], 0)
+        assert isinstance(res_pulse_gen[2], np.ndarray)
+        assert res_pulse_gen[2].shape == (4,)
+        assert np.allclose(res_pulse_gen[2], 0)
 
     def test_all_zero_diff_methods_multiple_returns_tape(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -781,48 +781,48 @@ class TestHybridPulseGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res_hybrid, _tapes = grad_fn(tape, dev)
+        res_pulse_gen, _tapes = grad_fn(tape, dev)
 
         assert _tapes == []
 
-        assert isinstance(res_hybrid, tuple)
+        assert isinstance(res_pulse_gen, tuple)
 
-        assert len(res_hybrid) == 2
+        assert len(res_pulse_gen) == 2
 
         # First elem
-        assert len(res_hybrid[0]) == 3
+        assert len(res_pulse_gen[0]) == 3
 
-        assert isinstance(res_hybrid[0][0], np.ndarray)
-        assert res_hybrid[0][0].shape == ()
-        assert np.allclose(res_hybrid[0][0], 0)
+        assert isinstance(res_pulse_gen[0][0], np.ndarray)
+        assert res_pulse_gen[0][0].shape == ()
+        assert np.allclose(res_pulse_gen[0][0], 0)
 
-        assert isinstance(res_hybrid[0][1], np.ndarray)
-        assert res_hybrid[0][1].shape == ()
-        assert np.allclose(res_hybrid[0][1], 0)
+        assert isinstance(res_pulse_gen[0][1], np.ndarray)
+        assert res_pulse_gen[0][1].shape == ()
+        assert np.allclose(res_pulse_gen[0][1], 0)
 
-        assert isinstance(res_hybrid[0][2], np.ndarray)
-        assert res_hybrid[0][2].shape == ()
-        assert np.allclose(res_hybrid[0][2], 0)
+        assert isinstance(res_pulse_gen[0][2], np.ndarray)
+        assert res_pulse_gen[0][2].shape == ()
+        assert np.allclose(res_pulse_gen[0][2], 0)
 
         # Second elem
-        assert len(res_hybrid[0]) == 3
+        assert len(res_pulse_gen[0]) == 3
 
-        assert isinstance(res_hybrid[1][0], np.ndarray)
-        assert res_hybrid[1][0].shape == (4,)
-        assert np.allclose(res_hybrid[1][0], 0)
+        assert isinstance(res_pulse_gen[1][0], np.ndarray)
+        assert res_pulse_gen[1][0].shape == (4,)
+        assert np.allclose(res_pulse_gen[1][0], 0)
 
-        assert isinstance(res_hybrid[1][1], np.ndarray)
-        assert res_hybrid[1][1].shape == (4,)
-        assert np.allclose(res_hybrid[1][1], 0)
+        assert isinstance(res_pulse_gen[1][1], np.ndarray)
+        assert res_pulse_gen[1][1].shape == (4,)
+        assert np.allclose(res_pulse_gen[1][1], 0)
 
-        assert isinstance(res_hybrid[1][2], np.ndarray)
-        assert res_hybrid[1][2].shape == (4,)
-        assert np.allclose(res_hybrid[1][2], 0)
+        assert isinstance(res_pulse_gen[1][2], np.ndarray)
+        assert res_pulse_gen[1][2].shape == (4,)
+        assert np.allclose(res_pulse_gen[1][2], 0)
 
 
 @pytest.mark.jax
-class TestHybridPulseGradTapes:
-    """Test that differentiating tapes with ``hybrid_pulse_grad`` works."""
+class TestPulseGeneratorTapes:
+    """Test that differentiating tapes with ``pulse_generator`` works."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
     def test_single_pulse_single_term(self, shots, tol):
@@ -844,7 +844,7 @@ class TestHybridPulseGradTapes:
         theta = integral_of_polyval(x, t)
         assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
-        _tapes, fn = hybrid_pulse_grad(tape, shots=shots)
+        _tapes, fn = pulse_generator(tape, shots=shots)
         assert len(_tapes) == 2
 
         grad = fn(qml.execute(_tapes, dev))
@@ -880,7 +880,7 @@ class TestHybridPulseGradTapes:
             return qml.expval(qml.PauliZ(0))
 
         circuit.construct(([x, y],), {})
-        _tapes, fn = hybrid_pulse_grad(circuit.tape, argnums=[0, 1], shots=shots)
+        _tapes, fn = pulse_generator(circuit.tape, argnums=[0, 1], shots=shots)
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
@@ -919,7 +919,7 @@ class TestHybridPulseGradTapes:
             return qml.expval(qml.PauliZ(0))
 
         circuit.construct(([x, y, z],), {})
-        _tapes, fn = hybrid_pulse_grad(circuit.tape, argnums=[0, 1, 2], shots=shots)
+        _tapes, fn = pulse_generator(circuit.tape, argnums=[0, 1, 2], shots=shots)
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
@@ -935,12 +935,12 @@ class TestHybridPulseGradTapes:
 
 
 @pytest.mark.jax
-class TestHybridPulseGradQNode:
-    """Test that hybrid_pulse_grad integrates correctly with QNodes."""
+class TestPulseGeneratorQNode:
+    """Test that pulse_generator integrates correctly with QNodes."""
 
     def test_simple_qnode_expval(self):
         """Test that a simple qnode that returns an expectation value
-        can be differentiated with hybrid_pulse_grad."""
+        can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
@@ -949,7 +949,7 @@ class TestHybridPulseGradQNode:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=hybrid_pulse_grad)
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
@@ -962,7 +962,7 @@ class TestHybridPulseGradQNode:
 
     def test_simple_qnode_expval_two_evolves(self):
         """Test that a simple qnode that returns an expectation value
-        can be differentiated with hybrid_pulse_grad."""
+        can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
@@ -973,7 +973,7 @@ class TestHybridPulseGradQNode:
         ham_x = qml.pulse.constant * qml.PauliX(0)
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=hybrid_pulse_grad)
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_x)(params[0], T_x)
             qml.evolve(ham_y)(params[1], T_y)
@@ -988,7 +988,7 @@ class TestHybridPulseGradQNode:
 
     def test_simple_qnode_probs(self):
         """Test that a simple qnode that returns an probabilities
-        can be differentiated with hybrid_pulse_grad."""
+        can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
@@ -997,7 +997,7 @@ class TestHybridPulseGradQNode:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=hybrid_pulse_grad)
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.probs(wires=0)
@@ -1010,7 +1010,7 @@ class TestHybridPulseGradQNode:
 
     def test_simple_qnode_probs_expval(self):
         """Test that a simple qnode that returns an probabilities
-        can be differentiated with hybrid_pulse_grad."""
+        can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
@@ -1019,7 +1019,7 @@ class TestHybridPulseGradQNode:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=hybrid_pulse_grad)
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
@@ -1034,7 +1034,7 @@ class TestHybridPulseGradQNode:
     @pytest.mark.xfail
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     def test_simple_qnode_jit(self, time_interface):
-        """Test that a simple qnode can be differentiated with hybrid_pulse_grad."""
+        """Test that a simple qnode can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
@@ -1043,7 +1043,7 @@ class TestHybridPulseGradQNode:
         T = {"python": 0.2, "numpy": np.array(0.2), "jax": jnp.array(0.2)}[time_interface]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=hybrid_pulse_grad)
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params, T=None):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
@@ -1056,7 +1056,7 @@ class TestHybridPulseGradQNode:
 
     @pytest.mark.slow
     def test_advanced_qnode(self):
-        """Test that an advanced qnode can be differentiated with hybrid_pulse_grad."""
+        """Test that an advanced qnode can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
@@ -1078,7 +1078,7 @@ class TestHybridPulseGradQNode:
             ansatz,
             dev,
             interface="jax",
-            diff_method=hybrid_pulse_grad,
+            diff_method=pulse_generator,
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
@@ -1090,13 +1090,13 @@ class TestHybridPulseGradQNode:
 
 
 @pytest.mark.jax
-class TestHybridPulseGradDiff:
-    """Test that hybrid_pulse_grad is differentiable."""
+class TestPulseGeneratorDiff:
+    """Test that pulse_generator is differentiable."""
 
     # pylint: disable=too-few-public-methods
     @pytest.mark.slow
     def test_jax(self):
-        """Test that hybrid_pulse_grad is differentiable with JAX."""
+        """Test that pulse_generator is differentiable with JAX."""
         import jax
         import jax.numpy as jnp
 
@@ -1109,7 +1109,7 @@ class TestHybridPulseGradDiff:
             op = qml.evolve(ham_single_q_const)(params, T)
             tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
             tape.trainable_params = [0]
-            _tapes, fn = hybrid_pulse_grad(tape)
+            _tapes, fn = pulse_generator(tape)
             return fn(qml.execute(_tapes, dev, None))
 
         params = [jnp.array(0.4)]

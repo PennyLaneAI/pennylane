@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the gradients.hybrid_pulse_gradient module.
+"""Tests for the gradients.pulse_generator module.
 Note that the module is implemented for the new return type system
 so that this test suite just tests for correctly raised errors."""
 # pylint:disable=import-outside-toplevel
 import pytest
 import pennylane as qml
-from pennylane.gradients.hybrid_pulse_gradient import hybrid_pulse_grad
+from pennylane.gradients.pulse_generator_gradient import pulse_generator
 
 
 @pytest.mark.jax
-def test_hybrid_pulse_grad_raises():
-    """Test that hybrid_pulse_grad raises a NotImplementedError."""
+def test_pulse_generator_raises():
+    """Test that pulse_generator raises a NotImplementedError."""
     tape = qml.tape.QuantumScript()
-    with pytest.raises(NotImplementedError, match="The hybrid pulse parameter-shift"):
-        _ = hybrid_pulse_grad(tape)
+    with pytest.raises(NotImplementedError, match="The pulse generator parameter-shift"):
+        _ = pulse_generator(tape)
