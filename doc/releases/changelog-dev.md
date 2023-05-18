@@ -12,7 +12,7 @@
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
-* Added the `TRZ` qutrit rotation operator, which allows applying a Pauli X rotation on a
+* Added the `TRZ` qutrit rotation operator, which allows applying a Z rotation on a
   given subspace.
   [(#2847)](https://github.com/PennyLaneAI/pennylane/pull/2847)
 
