@@ -60,7 +60,7 @@ class QutritUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, *params, wires, do_queue=True):
+    def __init__(self, *params, wires, do_queue=None):
         wires = Wires(wires)
 
         # For pure QutritUnitary operations (not controlled), check that the number
@@ -201,7 +201,7 @@ class ControlledQutritUnitary(QutritUnitary):
         control_wires=None,
         wires=None,
         control_values=None,
-        do_queue=True,
+        do_queue=None,
     ):
         if control_wires is None:
             raise ValueError("Must specify control wires")

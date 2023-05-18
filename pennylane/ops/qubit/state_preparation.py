@@ -151,7 +151,7 @@ class QubitStateVector(StatePrep):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state, wires, do_queue=True, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
         state = self.parameters[0]
 

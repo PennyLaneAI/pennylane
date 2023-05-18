@@ -54,7 +54,7 @@ class Conditional(Operation):
         self,
         expr: MeasurementValue[bool],
         then_op: Type[Operation],
-        do_queue=True,
+        do_queue=None,
         id=None,
     ):
         self.meas_val = expr

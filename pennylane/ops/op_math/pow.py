@@ -183,7 +183,7 @@ class Pow(ScalarSymbolicOp):
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, z=1, do_queue=True, id=None):
+    def __new__(cls, base=None, z=1, do_queue=None, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
@@ -213,7 +213,7 @@ class Pow(ScalarSymbolicOp):
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, do_queue=True, id=None):
+    def __init__(self, base=None, z=1, do_queue=None, id=None):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 

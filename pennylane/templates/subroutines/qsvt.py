@@ -255,7 +255,7 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, UA, projectors, do_queue=True, id=None):
+    def __init__(self, UA, projectors, do_queue=None, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
 

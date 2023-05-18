@@ -69,7 +69,7 @@ class MultiRZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def __init__(self, theta, wires=None, do_queue=True, id=None):
+    def __init__(self, theta, wires=None, do_queue=None, id=None):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
@@ -259,7 +259,7 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(self, theta, pauli_word, wires=None, do_queue=True, id=None):
+    def __init__(self, theta, pauli_word, wires=None, do_queue=None, id=None):
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters["pauli_word"] = pauli_word
 
@@ -582,7 +582,7 @@ class PCPhase(Operation):
         mat = np.diag([1 if index < dim else -1 for index in range(shape)])
         return qml.Hermitian(mat, wires=self.wires)
 
-    def __init__(self, phi, dim, wires, do_queue=True, id=None):
+    def __init__(self, phi, dim, wires, do_queue=None, id=None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -773,7 +773,7 @@ class IsingXX(Operation):
     def generator(self):
         return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -910,7 +910,7 @@ class IsingYY(Operation):
     def generator(self):
         return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1054,7 +1054,7 @@ class IsingZZ(Operation):
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1241,7 +1241,7 @@ class IsingXY(Operation):
             + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1412,7 +1412,7 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

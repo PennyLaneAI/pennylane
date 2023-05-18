@@ -202,7 +202,7 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
@@ -357,7 +357,7 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -509,7 +509,7 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
@@ -2269,7 +2269,7 @@ class MultiControlledX(Operation):
         wires=None,
         control_values=None,
         work_wires=None,
-        do_queue=True,
+        do_queue=None,
     ):
         if wires is None:
             raise ValueError("Must specify the wires where the operation acts on")
@@ -2549,7 +2549,7 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, wires=Wires([]), only_visual=False, do_queue=True, id=None):
+    def __init__(self, wires=Wires([]), only_visual=False, do_queue=None, id=None):
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
@@ -2621,7 +2621,7 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         if wires == []:
             raise ValueError(
                 f"{self.__class__.__name__}: wrong number of wires. "

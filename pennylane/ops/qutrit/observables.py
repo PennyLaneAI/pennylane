@@ -205,7 +205,7 @@ class GellMann(Observable):
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""
 
-    def __init__(self, wires, index=1, do_queue=True, id=None):
+    def __init__(self, wires, index=1, do_queue=None, id=None):
         if not isinstance(index, int) or index < 1 or index > 8:
             raise ValueError(
                 "The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive."

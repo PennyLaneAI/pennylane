@@ -69,7 +69,7 @@ class ControlledPhaseShift(Operation):
     def generator(self):
         return qml.Projector(np.array([1, 1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -259,7 +259,7 @@ class CPhaseShift00(Operation):
     def generator(self):
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -447,7 +447,7 @@ class CPhaseShift01(Operation):
     def generator(self):
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -627,7 +627,7 @@ class CPhaseShift10(Operation):
     def generator(self):
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -812,7 +812,7 @@ class CRX(Operation):
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ PauliX(self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -976,7 +976,7 @@ class CRY(Operation):
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ PauliY(self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1139,7 +1139,7 @@ class CRZ(Operation):
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ PauliZ(self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1328,7 +1328,7 @@ class CRot(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+    def __init__(self, phi, theta, omega, wires, do_queue=None, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):

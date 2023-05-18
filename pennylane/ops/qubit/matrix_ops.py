@@ -119,7 +119,7 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, do_queue=True, id=None, unitary_check=False
+        self, U, wires, do_queue=None, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
@@ -494,7 +494,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, do_queue=True, id=None):
+    def __init__(self, A, wires, do_queue=None, id=None):
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])

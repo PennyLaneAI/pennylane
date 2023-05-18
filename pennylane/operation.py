@@ -1657,7 +1657,7 @@ class Operation(Operator):
         )
         return self.__class__.__name__
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity

@@ -175,7 +175,7 @@ class SingleExcitation(Operation):
         w1, w2 = self.wires
         return 0.25 * (qml.PauliX(w1) @ qml.PauliY(w2) - qml.PauliY(w1) @ qml.PauliX(w2))
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -326,7 +326,7 @@ class SingleExcitationMinus(Operation):
             - qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -457,7 +457,7 @@ class SingleExcitationPlus(Operation):
             + qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -621,7 +621,7 @@ class DoubleExcitation(Operation):
     def pow(self, z):
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     mask_s = np.zeros((16, 16))
@@ -794,7 +794,7 @@ class DoubleExcitationPlus(Operation):
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -986,7 +986,7 @@ class OrbitalRotation(Operation):
             - qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     mask_s = np.zeros((16, 16))
@@ -1176,7 +1176,7 @@ class FermionicSWAP(Operation):
             + qml.PauliY(w1) @ qml.PauliY(w2)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

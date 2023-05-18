@@ -59,7 +59,7 @@ class AmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
+    def __init__(self, gamma, wires, do_queue=None, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -139,7 +139,7 @@ class GeneralizedAmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires, do_queue=True, id=None):
+    def __init__(self, gamma, p, wires, do_queue=None, id=None):
         super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -217,7 +217,7 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
+    def __init__(self, gamma, wires, do_queue=None, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -305,7 +305,7 @@ class DepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
+    def __init__(self, p, wires, do_queue=None, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -380,7 +380,7 @@ class BitFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
+    def __init__(self, p, wires, do_queue=None, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -463,7 +463,7 @@ class ResetError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires, do_queue=True, id=None):
+    def __init__(self, p0, p1, wires, do_queue=None, id=None):
         super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -568,7 +568,7 @@ class PauliError(Channel):
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, operators, p, wires=None, do_queue=True, id=None):
+    def __init__(self, operators, p, wires=None, do_queue=None, id=None):
         super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
 
         # check if the specified operators are legal
@@ -670,7 +670,7 @@ class PhaseFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
+    def __init__(self, p, wires, do_queue=None, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -720,7 +720,7 @@ class QubitChannel(Channel):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, K_list, wires=None, do_queue=True, id=None):
+    def __init__(self, K_list, wires=None, do_queue=None, id=None):
         super().__init__(*K_list, wires=wires, do_queue=do_queue, id=id)
 
         # check all Kraus matrices are square matrices
@@ -849,7 +849,7 @@ class ThermalRelaxationError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
+    def __init__(self, pe, t1, t2, tq, wires, do_queue=None, id=None):
         super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

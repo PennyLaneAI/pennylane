@@ -73,7 +73,7 @@ class RX(Operation):
     def generator(self):
         return -0.5 * PauliX(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -170,7 +170,7 @@ class RY(Operation):
     def generator(self):
         return -0.5 * PauliY(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -266,7 +266,7 @@ class RZ(Operation):
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -403,7 +403,7 @@ class PhaseShift(Operation):
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -575,7 +575,7 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+    def __init__(self, phi, theta, omega, wires, do_queue=None, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -743,7 +743,7 @@ class U1(Operation):
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -869,7 +869,7 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    def __init__(self, phi, delta, wires, do_queue=True, id=None):
+    def __init__(self, phi, delta, wires, do_queue=None, id=None):
         super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1012,7 +1012,7 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
+    def __init__(self, theta, phi, delta, wires, do_queue=None, id=None):
         super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

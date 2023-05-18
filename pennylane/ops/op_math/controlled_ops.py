@@ -105,7 +105,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_wires,
         wires=None,
         control_values=None,
-        do_queue=True,
+        do_queue=None,
         unitary_check=False,
         work_wires=None,
     ):

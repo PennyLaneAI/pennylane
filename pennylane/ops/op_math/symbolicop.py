@@ -172,7 +172,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     _name = "ScalarSymbolicOp"
 
-    def __init__(self, base, scalar: float, do_queue=True, id=None):
+    def __init__(self, base, scalar: float, do_queue=None, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
         super().__init__(base, do_queue=do_queue, id=id)
         self._batch_size = self._check_and_compute_batch_size(scalar)

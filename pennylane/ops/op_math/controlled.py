@@ -241,7 +241,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=too-many-function-args
     def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
@@ -606,7 +606,7 @@ class ControlledOp(Controlled, operation.Operation):
 
     # pylint: disable=too-many-function-args
     def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
     ):
         super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
         # check the grad_recipe validity

@@ -371,7 +371,7 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        do_queue=True,
+        do_queue=None,
         id=None,
         **odeint_kwargs
     ):
@@ -424,7 +424,7 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
-            do_queue=True,
+            do_queue=None,
             id=self.id,
             **odeint_kwargs
         )

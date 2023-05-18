@@ -110,7 +110,7 @@ class Rotation(CVOperation):
     grad_method = "A"
     grad_recipe = (_two_term_shift_rule,)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -165,7 +165,7 @@ class Squeezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, r, phi, wires, do_queue=True, id=None):
+    def __init__(self, r, phi, wires, do_queue=None, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -222,7 +222,7 @@ class Displacement(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, a, phi, wires, do_queue=True, id=None):
+    def __init__(self, a, phi, wires, do_queue=None, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -281,7 +281,7 @@ class Beamsplitter(CVOperation):
     grad_method = "A"
     grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
 
-    def __init__(self, theta, phi, wires, do_queue=True, id=None):
+    def __init__(self, theta, phi, wires, do_queue=None, id=None):
         super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
 
     # For the beamsplitter, both parameters are rotation-like
@@ -350,7 +350,7 @@ class TwoModeSqueezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, r, phi, wires, do_queue=True, id=None):
+    def __init__(self, r, phi, wires, do_queue=None, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -414,7 +414,7 @@ class QuadraticPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, do_queue=True, id=None):
+    def __init__(self, s, wires, do_queue=None, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -469,7 +469,7 @@ class ControlledAddition(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, do_queue=True, id=None):
+    def __init__(self, s, wires, do_queue=None, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -528,7 +528,7 @@ class ControlledPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, do_queue=True, id=None):
+    def __init__(self, s, wires, do_queue=None, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -569,7 +569,7 @@ class Kerr(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, kappa, wires, do_queue=True, id=None):
+    def __init__(self, kappa, wires, do_queue=None, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):
@@ -600,7 +600,7 @@ class CrossKerr(CVOperation):
     num_wires = 2
     grad_method = "F"
 
-    def __init__(self, kappa, wires, do_queue=True, id=None):
+    def __init__(self, kappa, wires, do_queue=None, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):
@@ -631,7 +631,7 @@ class CubicPhase(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
+    def __init__(self, gamma, wires, do_queue=None, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):
@@ -683,7 +683,7 @@ class InterferometerUnitary(CVOperation):
     grad_method = None
     grad_recipe = None
 
-    def __init__(self, U, wires, do_queue=True, id=None):
+    def __init__(self, U, wires, do_queue=None, id=None):
         super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -736,7 +736,7 @@ class CoherentState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi, wires, do_queue=True, id=None):
+    def __init__(self, a, phi, wires, do_queue=None, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -762,7 +762,7 @@ class SqueezedState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, r, phi, wires, do_queue=True, id=None):
+    def __init__(self, r, phi, wires, do_queue=None, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -798,7 +798,7 @@ class DisplacedSqueezedState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi_a, r, phi_r, wires, do_queue=True, id=None):
+    def __init__(self, a, phi_a, r, phi_r, wires, do_queue=None, id=None):
         super().__init__(a, phi_a, r, phi_r, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -823,7 +823,7 @@ class ThermalState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, nbar, wires, do_queue=True, id=None):
+    def __init__(self, nbar, wires, do_queue=None, id=None):
         super().__init__(nbar, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -853,7 +853,7 @@ class GaussianState(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
-    def __init__(self, V, r, wires, do_queue=True, id=None):
+    def __init__(self, V, r, wires, do_queue=None, id=None):
         super().__init__(V, r, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -881,7 +881,7 @@ class FockState(CVOperation):
     num_wires = 1
     grad_method = None
 
-    def __init__(self, n, wires, do_queue=True, id=None):
+    def __init__(self, n, wires, do_queue=None, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -974,7 +974,7 @@ class FockStateVector(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
-    def __init__(self, state, wires, do_queue=True, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1024,7 +1024,7 @@ class FockDensityMatrix(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
-    def __init__(self, state, wires, do_queue=True, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -1061,7 +1061,7 @@ class CatState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi, p, wires, do_queue=True, id=None):
+    def __init__(self, a, phi, p, wires, do_queue=None, id=None):
         super().__init__(a, phi, p, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -1270,7 +1270,7 @@ class QuadOperator(CVObservable):
     grad_method = "A"
     ev_order = 1
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1350,7 +1350,7 @@ class PolyXP(CVObservable):
     grad_method = "F"
     ev_order = 2
 
-    def __init__(self, q, wires, do_queue=True, id=None):
+    def __init__(self, q, wires, do_queue=None, id=None):
         super().__init__(q, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1410,7 +1410,7 @@ class FockStateProjector(CVObservable):
     grad_method = None
     ev_order = None
 
-    def __init__(self, n, wires, do_queue=True, id=None):
+    def __init__(self, n, wires, do_queue=None, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):

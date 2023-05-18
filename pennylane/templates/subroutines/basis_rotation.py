@@ -99,7 +99,7 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires, unitary_matrix, check=False, do_queue=True, id=None):
+    def __init__(self, wires, unitary_matrix, check=False, do_queue=None, id=None):
         M, N = unitary_matrix.shape
         if M != N:
             raise ValueError(

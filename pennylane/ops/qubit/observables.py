@@ -66,7 +66,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A, wires, do_queue=True, id=None):
+    def __init__(self, A, wires, do_queue=None, id=None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -244,7 +244,7 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H, wires=None, do_queue=True, id=None):
+    def __init__(self, H, wires=None, do_queue=None, id=None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
@@ -355,7 +355,7 @@ class Projector(Observable):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, basis_state, wires, do_queue=True, id=None):
+    def __init__(self, basis_state, wires, do_queue=None, id=None):
         wires = Wires(wires)
         shape = qml.math.shape(basis_state)
 

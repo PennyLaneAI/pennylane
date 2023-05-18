@@ -46,7 +46,7 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})

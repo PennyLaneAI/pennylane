@@ -61,7 +61,7 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, tag=None, do_queue=True):
+    def __init__(self, tag=None, do_queue=None):
         self.tag = tag
         super().__init__(wires=[], do_queue=do_queue)
 

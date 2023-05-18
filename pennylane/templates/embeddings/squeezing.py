@@ -102,7 +102,7 @@ class SqueezingEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
+    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=None, id=None):
         shape = qml.math.shape(features)
         constants = [c] * shape[0]
         constants = qml.math.convert_like(constants, features)

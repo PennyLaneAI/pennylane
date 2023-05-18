@@ -143,7 +143,7 @@ class SProd(ScalarSymbolicOp):
     """
     _name = "SProd"
 
-    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
+    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=None, id=None):
         super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
 
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
