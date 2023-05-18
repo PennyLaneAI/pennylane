@@ -16,15 +16,13 @@
 from .attributes import (
     DatasetArray,
     DatasetDict,
+    DatasetHamiltonian,
     DatasetList,
     DatasetNone,
     DatasetOperator,
-    DatasetPauliSentence,
-    DatasetPauliWord,
+    DatasetOperatorList,
     DatasetScalar,
     DatasetString,
-    DatasetOperatorList,
-    DatasetHamiltonian,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
@@ -43,6 +41,4 @@ __all__ = (
     "DatasetOperatorList",
     "DatasetHamiltonian",
     "DatasetNone",
-    "DatasetPauliWord",
-    "DatasetPauliSentence",
 )

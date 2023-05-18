@@ -12,7 +12,6 @@ from pennylane.data.attributes import (
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
 import pennylane as qml
-from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
