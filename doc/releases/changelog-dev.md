@@ -138,6 +138,8 @@
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
+* `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value

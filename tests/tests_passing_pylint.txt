@@ -17,6 +17,7 @@ tests/gradients/parameter_shift/**
 tests/interfaces/default_qubit_2_integration/**
 tests/kernels/**
 tests/legacy/test_measurements_old.py
+tests/legacy/test_pulse_gradient_old.py
 tests/math/test_functions.py
 tests/math/test_init.py
 tests/measurements/**
