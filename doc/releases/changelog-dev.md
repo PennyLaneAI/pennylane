@@ -96,6 +96,17 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
+  ```python
+  def U(params):
+      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
+      Um = qml.evolve(H)(params, t=10., dense=False)
+      return qml.matrix(Um)
+  params = jnp.array([[0.5]], dtype=complex)
+  jac = jax.jacobian(U, holomorphic=True)(params)
+  ```
+  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
+
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
 
@@ -130,6 +141,8 @@
 * ``QuantumScript``'s ``name`` keyword argument and property are deprecated. Please, avoid using them.
   This also affects ``QuantumTape`` and ``OperationRecorder``.
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
+
+* `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
 <h3>Documentation 📝</h3>
 

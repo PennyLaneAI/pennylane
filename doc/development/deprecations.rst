@@ -36,16 +36,6 @@ Pending deprecations
   - Still accessible in v0.28, v0.29, v0.30
   - Will be removed in v0.31
 
-* The ``grouping`` module is deprecated. The functionality has been moved and
-  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
-
-  - Still accessible in v0.27, v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
-  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
-  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
-  have been consolidated in the ``pauli/grouping/`` directory.
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -102,7 +92,17 @@ Completed deprecation cycles
   - The old signature is replaced with the new one in v0.30
 
 
-* ``qml.VQECost`` is removed. 
+* The ``grouping`` module is removed. The functionality has been moved and
+  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
+
+  - Still accessible in v0.27, v0.28, v0.29, v0.30
+  - Will be removed in v0.31
+
+  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
+  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
+  have been consolidated in the ``pauli/grouping/`` directory.
+
+* ``qml.VQECost`` is removed.
 
    - Deprecated in 0.13
    - Removed in 0.29
