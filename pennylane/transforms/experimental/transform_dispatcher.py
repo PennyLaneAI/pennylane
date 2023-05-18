@@ -29,7 +29,7 @@ class TransformDispatcher:
     Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
     on tape, qfunc and qnode."""
 
-    def __init__(self, transform, expand_fn=None, qnode_postprocessing=None):
+    def __init__(self, transform, expand_transform=None, qnode_postprocessing=None):
         if not callable(transform):
             raise TransformError(
                 f"The function to register, {transform}, "
@@ -38,7 +38,7 @@ class TransformDispatcher:
 
         self._transform = transform
         functools.update_wrapper(self, transform)
-        self._expand_fn = expand_fn
+        self._expand_transform = expand_transform
         self._qnode_postprocessing = qnode_postprocessing
 
     def __call__(self, *targs, **tkwargs):
@@ -55,7 +55,7 @@ class TransformDispatcher:
             return self.default_qnode_transform(obj,
                                                 targs,
                                                 tkwargs,
-                                                expand_fn=self._expand_fn,
+                                                expand_transform=self._expand_transform,
                                                 qnode_postprocessing=self._qnode_postprocessing)
         elif callable(obj):
             return self.default_qfunc_transform(obj, targs, tkwargs)
@@ -68,8 +68,8 @@ class TransformDispatcher:
         return self._transform
 
     @property
-    def expand_fn(self):
-        return self._expand_fn
+    def expand_transform(self):
+        return self._expand_transform
 
     @property
     def qnode_postprocessing(self):
@@ -87,15 +87,19 @@ class TransformDispatcher:
 
         return wrapper
 
-    def default_qnode_transform(self, qnode, targs, tkwargs, expand_fn=None, qnode_postprocessing=None):
+    def default_qnode_transform(self, qnode, targs, tkwargs):
         """Register a qnode transformation"""
+        if self.expand_transform:
+            qnode.add_transform(
+                TransformContainer(self._expand_transform)
+            )
         qnode.add_transform(
-            TransformContainer(self._transform, targs, tkwargs, expand_fn, qnode_postprocessing)
+            TransformContainer(self._transform, targs, tkwargs, self._qnode_postprocessing)
         )
         return qnode
 
 
-def transform(transform, expand_fn=None, qnode_postprocessing=None):
+def transform(transform, expand_transform=None, qnode_postprocessing=None):
     """
     Signature and type validation for the transform and its expand function and qnode post processing.
 
@@ -104,9 +108,22 @@ def transform(transform, expand_fn=None, qnode_postprocessing=None):
     TODO: add example of what is expected from a transform.
     """
     # Check signature of transform to force the fn style (tape, ...) - > (batch_tape, fn)
-    signature = get_type_hints(transform)
+    signature_transform = get_type_hints(transform)
+    _transform_signature_check(signature_transform)
 
-    # Check the tape arg
+    if expand_transform:
+        # Check the signature of expand_tranform to force the fn style (tape, ...) - > (batch_tape, fn)
+        signature_expand_transform = get_type_hints(expand_transform)
+        # TODO: Check it only contains one tape
+        _transform_signature_check(signature_expand_transform)
+
+    # Check the signature of qnode_postprocessing
+
+    return TransformDispatcher(transform, expand_transform=expand_transform, qnode_postprocessing=qnode_postprocessing)
+
+
+def _transform_signature_check(signature):
+    """Check the signature of a tranform"""
     tape = signature.get('tape', None)
 
     if tape is None:
@@ -115,20 +132,14 @@ def transform(transform, expand_fn=None, qnode_postprocessing=None):
         TransformError("The type of the tape argument must be a QuantumTape")
 
     ret = signature.get('return', None)
+
     if ret is None:
         TransformError("Their must be an argument tape")
 
-    # Check the signature of expand_fn
-
-    # Check the signature of qnode_postprocessing
-
-    return TransformDispatcher(transform, expand_fn=expand_fn, qnode_postprocessing=qnode_postprocessing)
-
 
 class TransformContainer:
-    def __init__(self, transform, args, kwargs, expand_fn, qnode_processing):
+    def __init__(self, transform, args=None, kwargs=None, qnode_processing=None):
         self.transform = transform
-        self.targs = args
-        self.tkwargs = kwargs
-        self.expand_fn = expand_fn
+        self.targs = args if args else []
+        self.tkwargs = kwargs if kwargs else {}
         self.qnode_processing = qnode_processing

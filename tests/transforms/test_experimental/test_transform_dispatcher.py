@@ -15,87 +15,97 @@
 import pytest
 import pennylane as qml
 from pennylane.transforms.experimental import transform
+from pennylane.devices.experimental import DefaultQubit2
+
+# TODO: Replace with default qubit 2
+
+dev = qml.device("default.qubit", wires=2)
 
 with qml.tape.QuantumTape() as tape_circuit:
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=0)
     qml.RZ(0.42, wires=1)
+    qml.expval(qml.PauliZ(wires=0))
 
 
-def incorrect_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
-    tape.circuit.pop()
+def qfunc(a):
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.PauliX(wires=0)
+    qml.RZ(a, wires=1)
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+@qml.qnode(device=dev)
+def qfunc(a):
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.PauliX(wires=0)
+    qml.RZ(a, wires=1)
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+##########################################
+# Non-valid transforms
+
+non_callable = tape_circuit
+
+
+def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
+    tape_copy = tape.copy()
+    return [tape, tape_copy]
+
+
+def no_tape_sequence_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
     return tape, lambda x: x
 
 
-def my_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, callable):
+non_valid_transforms = [non_callable, no_processing_fn_transform, no_tape_sequence_transform]
+
+
+##########################################
+# Valid transforms
+
+def a_valid_transform(tape: qml.tape.QuantumTape, index: int) -> (qml.tape.QuantumTape, callable):
     tape.circuit.pop()
+    return [tape], lambda x: x
+
+
+valid_transforms = [a_valid_transform]
+
+
+##########################################
+# Non-valid expand transforms
+
+
+def no_processing_fn_expand_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
+    tape_copy = tape.copy()
+    return [tape, tape_copy]
+
+
+def no_tape_sequence_expand_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
     return tape, lambda x: x
 
 
-# def my_batch_transform():
-#
-# def my_informational_transform(tape)
-#     def fn():
-#         return tape
-#     return [tape], fn
+non_valid_expand_transforms = [non_callable, no_processing_fn_expand_transform, no_tape_sequence_expand_transform()]
+
+
+##########################################
+# Valid expand transforms
+
+def a_valid_expand_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, callable):
+    return [tape], lambda x: x
+
+
+valid_expand_transforms = [a_valid_expand_transform]
+
 
 class TestTransformDispatcher:
     """Test that adjacent inverse gates are cancelled."""
 
     def test_dispatcher_signature(self):
-        """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
+        """Test the signature"""
 
-        dispatched_transform = transform(incorrect_transform)
-
-        dispatched_transform(tape_circuit)
-
-# class TestTransformDispatcherTape:
-#     """Test that adjacent inverse gates are cancelled."""
-#
-#     def test_one_qubit_cancel_adjacent_self_inverse(self):
-#         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
-#
-#         def qfunc():
-#             qml.Hadamard(wires=0)
-#             qml.Hadamard(wires=0)
-#
-#         transformed_qfunc = cancel_inverses(qfunc)
-#
-#         new_tape = qml.tape.make_qscript(transformed_qfunc)()
-#
-#         assert len(new_tape.operations) == 0
-#
-#
-# class TestTransformDispatcherQfunc:
-#     """Test that adjacent inverse gates are cancelled."""
-#
-#     def test_one_qubit_cancel_adjacent_self_inverse(self):
-#         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
-#
-#         def qfunc():
-#             qml.Hadamard(wires=0)
-#             qml.Hadamard(wires=0)
-#
-#         transformed_qfunc = cancel_inverses(qfunc)
-#
-#         new_tape = qml.tape.make_qscript(transformed_qfunc)()
-#
-#         assert len(new_tape.operations) == 0
-#
-#
-# class TestTransformDispatcherQNode:
-#     """Test that adjacent inverse gates are cancelled."""
-#
-#     def test_one_qubit_cancel_adjacent_self_inverse(self):
-#         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
-#
-#         def qfunc():
-#             qml.Hadamard(wires=0)
-#             qml.Hadamard(wires=0)
-#
-#         transformed_qfunc = cancel_inverses(qfunc)
-#
-#         new_tape = qml.tape.make_qscript(transformed_qfunc)()
-#
-#         assert len(new_tape.operations) == 0
+        dispatched_transform = transform(a_valid_transform)
+        tapes, fn = dispatched_transform(tape_circuit, 0)
