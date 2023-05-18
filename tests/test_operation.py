@@ -824,6 +824,15 @@ class TestOperationConstruction:
         op = DummyOp(wires=0)
         assert op.is_hermitian is False
 
+    def test_base_name_deprecated(self):
+        """Test that the base name property raises a deprecation warning."""
+
+        class DummyOp(qml.operation.Operation):
+            pass
+
+        with pytest.warns(UserWarning, match=r"Operation.base_name is deprecated."):
+            assert DummyOp(2).base_name == "DummyOp"
+
 
 class TestObservableConstruction:
     """Test custom observables construction."""

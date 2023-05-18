@@ -563,7 +563,7 @@ class DefaultMixed(QubitDevice):
             operation (.Operation): operation to apply on the device
         """
         wires = operation.wires
-        if operation.base_name == "Identity":
+        if operation.name == "Identity":
             return
 
         if isinstance(operation, QubitStateVector):
