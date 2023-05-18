@@ -10,6 +10,7 @@ from pennylane.data.attributes import (
     DatasetString,
     DatasetWires,
 )
+from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
 from pennylane.wires import Wires
 
@@ -31,12 +32,6 @@ from pennylane.wires import Wires
         (np.array([np.int64(0)]), DatasetArray),
         (np.array([complex(1, 2)]), DatasetArray),
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
-        ([], DatasetList),
-        ([1, 2], DatasetList),
-        ([np.int64(0)], DatasetList),
-        ([{"a": 1}], DatasetList),
-        ({}, DatasetDict),
-        ({"a": [1, 2]}, DatasetDict),
         (None, DatasetNone),
         (type(None), DatasetNone),
         (Wires([1]), DatasetWires),

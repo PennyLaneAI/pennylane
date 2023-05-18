@@ -409,7 +409,10 @@ class TestSupportedConfs:
     def test_all_paramshift_state(self, interface, return_type, shots, wire_specs):
         """Test diff_method=parameter-shift fails for all interfaces and
         the return_types State and DensityMatrix"""
-        msg = "Computing the gradient of circuits that return the state is not supported."
+        msg = (
+            "Computing the gradient of circuits that return the state with the "
+            "parameter-shift rule gradient transform is not supported."
+        )
         complex = return_type == "StateVector"
 
         with pytest.raises(ValueError, match=msg):
@@ -535,15 +538,19 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if return_type in (VnEntropy, MutualInfo):
-            with pytest.raises(
-                ValueError,
-                match="Computing the gradient of circuits that return the state is not supported.",
-            ):
+            msg = (
+                "Computing the gradient of circuits that return the state with the "
+                "Hadamard test gradient transform is not supported."
+            )
+            with pytest.raises(ValueError, match=msg):
                 grad = compute_gradient(x, interface, circuit, return_type)
         elif return_type == Variance:
             with pytest.raises(
                 ValueError,
-                match="Computing the gradient of variances with the Hadamard test gradient is not implemented.",
+                match=(
+                    "Computing the gradient of variances with the Hadamard test "
+                    "gradient transform is not supported."
+                ),
             ):
                 grad = compute_gradient(x, interface, circuit, return_type)
         else:

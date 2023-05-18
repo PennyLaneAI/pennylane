@@ -30,6 +30,9 @@ from pennylane.data.base.typing_util import HDF5Group
 
 
 class AttributeTypeError(TypeError):
+    """Exception that is raised when attempting to serialize a value
+    that is incompatible with the ``AttributeType``."""
+
     key: str
     expected_type: Type[AttributeType]
     type_: Type[AttributeType]
@@ -82,11 +85,21 @@ class AttributeTypeMapper(MutableMapping):
         value: Any,
         info: Optional[AttributeInfo],
         require_type: Optional[Type[AttributeType]] = None,
-    ):
+    ) -> None:
         """Creates or replaces attribute ``key`` with ``value``, optionally
-        including ``info``."""
+        including ``info``.
+
+        Args:
+            key: Name of attribute in HDF5 group
+            value: Attribute value, either a compatible object or an already
+                initialized ``AttributeType``.
+            info: Extra info to attach to attribute
+            require_type: Force the ``value`` to be serialized as this type.
+                If ``value`` is an ``AttributeType``, it must be an instance of ``require_type``.
+                Otherwise, ``value`` must be serializable by ``require_type``.
+        """
         if isinstance(value, AttributeType):
-            if require_type and type(value) is not require_type:
+            if require_type and not isinstance(value, require_type):
                 raise AttributeTypeError(key, require_type, type(value))
 
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
@@ -100,7 +113,7 @@ class AttributeTypeMapper(MutableMapping):
 
         self._cache.pop(key, None)
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         self.set_item(key, value, None)
 
     def move(self, src: str, dest: str) -> None:
@@ -121,9 +134,14 @@ class AttributeTypeMapper(MutableMapping):
     def __contains__(self, key: str) -> bool:
         return key in self._cache or key in self.bind
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self._cache.pop(key, None)
         del self.bind[key]
+
+    def __repr__(self) -> str:
+        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
+
+        return f"{{{items_repr}}}"
 
 
 class MapperMixin:  # pylint: disable=too-few-public-methods
