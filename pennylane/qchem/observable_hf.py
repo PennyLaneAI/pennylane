@@ -126,22 +126,14 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
                 coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
 
     if active_new_opmath():
-        arithmetic_ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
+        ps = qml.dot(coeffs, ops, pauli=True)
+        ps.simplify(tol=cutoff)
 
-        terms = tuple(
-            qml.s_prod(coeff, op)
-            for coeff, op in zip(coeffs, arithmetic_ops)
-            if abs(coeff) >= cutoff
-        )
-        num_terms = len(terms)
-
-        if num_terms == 0:
+        if len(ps) == 0:
             return qml.s_prod(
                 0, qml.Identity(ops[0].wires[0])
             )  # use any op and any wire to represent the null op
-        if num_terms == 1:
-            return terms[0]  # just return the op
-        return qml.sum(*terms)
+        return ps.operation()
 
     return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
