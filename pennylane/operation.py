@@ -696,11 +696,21 @@ class Operator(abc.ABC):
         )
 
     def __eq__(self, other):
-        warnings.warn(UserWarning, "The behaviour of Operator.__eq__ will be updated soon.")
+        warnings.warn(
+            "The behaviour of Operator.__eq__ will be updated soon. Currently, op1 == op2 is "
+            "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
+            "qml.equal(op1, op2).",
+            UserWarning
+        )
         return super().__eq__(other)
 
     def __hash__(self):
-        warnings.warn(UserWarning, "The behaviour of Operator.__hash__ will be updated soon.")
+        warnings.warn(
+            "The behaviour of Operator.__hash__ will be updated soon. Currently, Operator.__hash__ "
+            "is equivalent to object.__hash__. Soon, Operator.__hash__ will be determined by the "
+            "combined __hash__ of the name, wires, parameters and hyperparameters of the Operator.",
+            UserWarning
+        )
         return super().__hash__()
 
     @staticmethod

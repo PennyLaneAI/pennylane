@@ -272,6 +272,34 @@ class TestOperatorConstruction:
         state = [0, 1, 0]
         assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
 
+    def test_eq_deprecation_warning(self):
+        """Test that a warning is raised when `Operator.__eq__` is used."""
+
+        class DummyOp(qml.operation.Operator):
+            """Dummy operator"""
+            num_wires = 1
+
+        op1 = DummyOp(0)
+        op2 = DummyOp(0)
+
+        with pytest.warns(UserWarning, "The behaviour of Operator.__eq__"):
+            _ = op1 == op2
+
+        with pytest.warns(UserWarning, "The behaviour of Operator.__eq__"):
+            _ = op1.__eq__(op2)
+
+    def test_hash_deprecation_warning(self):
+        """Test that a warning is raised when `Operator.__eq__` is used."""
+
+        class DummyOp(qml.operation.Operator):
+            """Dummy operator"""
+            num_wires = 1
+
+        op = DummyOp(0)
+
+        with pytest.warns(UserWarning, "The behaviour of Operator.__hash__"):
+            _ = op.__hash__()
+
 
 class TestBroadcasting:
     """Test parameter broadcasting checks."""

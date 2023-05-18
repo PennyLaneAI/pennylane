@@ -55,6 +55,11 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
+* `Operator.__eq__` and `Operator.__hash__` will now raise a warning to indicate upcoming changes
+  to their behaviour.
+
+  - Deprecated in v0.31
+
 
 Completed deprecation cycles
 ----------------------------
