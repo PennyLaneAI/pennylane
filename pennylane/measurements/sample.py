@@ -226,7 +226,7 @@ class SampleMP(SampleMeasurement):
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
-        if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * qml.math.squeeze(samples)
         else:

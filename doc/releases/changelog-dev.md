@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
+  without mutating the original operator.
+  [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+
+* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+  given subspace.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
@@ -14,18 +22,18 @@
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
 * Accelerate Jordan-Wigner transforms caching Pauli gate objects.
-  [(4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
+  [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
 
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
   removed.
-  [(4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
-  [(4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
+  [(#4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
+  [(#4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
 
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
   inform the users that the `pyscf` backend can be used for open-shell calculations.
-  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 * Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
   concretely.
@@ -68,6 +76,7 @@
 * Support for sample-based measurements has been added to the `DefaultQubit2` device.
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
+  [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -87,8 +96,25 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
+  ```python
+  def U(params):
+      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
+      Um = qml.evolve(H)(params, t=10., dense=False)
+      return qml.matrix(Um)
+  params = jnp.array([[0.5]], dtype=complex)
+  jac = jax.jacobian(U, holomorphic=True)(params)
+  ```
+  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
+
+* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
+
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
+
+* The construction of the pauli representation for the `Sum` class is now faster.
+  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
 <h3>Breaking changes 💔</h3>
 
@@ -112,6 +138,10 @@
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
 <h3>Deprecations 👋</h3>
+
+* `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
+
+* `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
 <h3>Documentation 📝</h3>
 
