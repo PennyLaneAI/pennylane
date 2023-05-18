@@ -367,7 +367,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     **Example**
 
     Consider the parameterized Hamiltonian
-    :math:`\theta_0 Y^{(0)}+f(\boldsymbol{\theta_1}, t) Y^{(1)} + \theta_2 Z^{(0)}X^{(1)}`
+    :math:`\theta_0 Y_{0}+f(\boldsymbol{\theta_1}, t) Y_{1} + \theta_2 Z_{0}X_{1}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
     :math:`\theta_2 = \frac{2}{5}`, the time-dependent function
@@ -386,7 +386,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
         t = [0.1, 0.9]
 
     For simplicity, consider a pulse program consisting of this single pulse and a
-    measurement of the expectation value of :math:`X^{(0)}`.
+    measurement of the expectation value of :math:`X_{0}`.
 
     .. code-block:: python
 
@@ -415,7 +415,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
     There are :math:`12` tapes because there are two shift parameters per Pauli word
     and six Pauli words in the basis of the *dynamical Lie algebra (DLA)* of the pulse:
-    :math:`\left\{Y^{(1)}, X^{(0)}X^{(1)}, X^{(0)}Z^{(1)}, Y^{(0)}, Z^{(0)}X^{(1)}, Z^{(0)}Z^{(1)}\right\}`.
+    :math:`\left\{Y_{1}, X_{0}X_{1}, X_{0}Z_{1}, Y_{0}, Z_{0}X_{1}, Z_{0}Z_{1}\right\}`.
     We may inspect one of the tapes, which differs from the original tape by the inserted
     rotation gate ``"RIY"``, i.e. a ``PauliRot(np.pi/2, "IY", wires=[0, 1])`` gate.
 
@@ -456,10 +456,10 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
         .. math::
 
-            \frac{\mathrm{d} U}{\mathrm{d} t}(t) = 
+            \frac{\mathrm{d} U}{\mathrm{d} t}(t) =
             -i H(\boldsymbol{\theta}, t) U(t), \quad U(0) = \mathbb{I}
 
-        For a fixed time interval :math:`[t_0, t_1]`, we associate a matrix function 
+        For a fixed time interval :math:`[t_0, t_1]`, we associate a matrix function
         :math:`U(\boldsymbol{\theta})` with the unitary evolution.
         To compute the hybrid pulse parameter-shift gradient, we are interested in the partial
         derivatives of this matrix function, usually with respect to the parameters
