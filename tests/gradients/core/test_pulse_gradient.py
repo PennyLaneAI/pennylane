@@ -20,7 +20,11 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.gradients.pulse_gradient import _split_evol_ops, _split_evol_tapes, stoch_pulse_grad
+from pennylane.gradients.pulse_gradient import (
+    _split_evol_ops,
+    _split_evol_tapes,
+    stoch_pulse_grad,
+)
 
 
 # pylint: disable=too-few-public-methods

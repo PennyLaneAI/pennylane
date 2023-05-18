@@ -679,7 +679,7 @@ class TestParameterShiftHessian:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = []
 
-        msg = "Attempted to compute the hessian of a tape with no trainable parameters"
+        msg = "Attempted to compute the Hessian of a tape with no trainable parameters"
         with pytest.warns(UserWarning, match=msg):
             tapes, fn = qml.gradients.param_shift_hessian(tape)
 
@@ -1436,7 +1436,7 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -1455,7 +1455,7 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -1474,7 +1474,7 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -1493,7 +1493,7 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
