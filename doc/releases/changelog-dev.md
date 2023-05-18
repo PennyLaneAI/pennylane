@@ -96,11 +96,25 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
+  ```python
+  def U(params):
+      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
+      Um = qml.evolve(H)(params, t=10., dense=False)
+      return qml.matrix(Um)
+  params = jnp.array([[0.5]], dtype=complex)
+  jac = jax.jacobian(U, holomorphic=True)(params)
+  ```
+  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
+
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
 
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
+
+* The construction of the pauli representation for the `Sum` class is now faster.
+  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
 <h3>Breaking changes 💔</h3>
 
@@ -126,6 +140,8 @@
 <h3>Deprecations 👋</h3>
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
+
+* `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
 <h3>Documentation 📝</h3>
 

@@ -1227,13 +1227,11 @@ class QuantumScript:
                 self
             )  # pylint: disable=protected-access
 
-            self._specs = SpecsDict(
-                {
-                    "resources": resources,
-                    "gate_sizes": defaultdict(int),
-                    "gate_types": defaultdict(int),
-                }
-            )
+            self._specs = {
+                "resources": resources,
+                "gate_sizes": defaultdict(int),
+                "gate_types": defaultdict(int),
+            }
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
@@ -1246,6 +1244,7 @@ class QuantumScript:
             self._specs["num_used_wires"] = self.num_wires
             self._specs["num_trainable_params"] = self.num_params
             self._specs["depth"] = resources.depth
+            self._specs = SpecsDict(self._specs)
 
         return self._specs
 
@@ -1393,7 +1392,7 @@ class SpecsDict(dict):
         if item in self.old_to_new_key_map:
             warnings.warn(
                 f"The {item} key is deprecated and will be removed in the next release. "
-                f'Going forward, please use: qml.specs()["resources"].{self.old_to_new_key_map[item]}'
+                f'Going forward, please use: specs["resources"].{self.old_to_new_key_map[item]}'
             )
         return super().__getitem__(item)
 
