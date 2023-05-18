@@ -17,19 +17,19 @@ import numpy
 from numpy.typing import ArrayLike
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+from pennylane.data.base.typing_util import HDF5Array, HDF5Group
 
 
-class DatasetArray(AttributeType[ZarrArray, numpy.ndarray, ArrayLike]):
+class DatasetArray(AttributeType[HDF5Array, numpy.ndarray, ArrayLike]):
     """
     Attribute type for objects that implement the Array protocol, including numpy arrays.
     """
 
     type_id = "array"
 
-    def zarr_to_value(self, bind: ZarrArray) -> numpy.ndarray:
+    def hdf5_to_value(self, bind: HDF5Array) -> numpy.ndarray:
         return numpy.array(self.bind, dtype=bind.dtype)
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: ArrayLike) -> ZarrArray:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: ArrayLike) -> HDF5Array:
         bind_parent[key] = value
         return bind_parent[key]

@@ -14,7 +14,6 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
-# pylint: disable=import-outside-toplevel
 
 import warnings
 import pytest
@@ -520,6 +519,24 @@ class TestHadamardGrad:
 
         assert len(record) == 0
 
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_shots_attribute(self, shots):
+        """Tests that the shots attribute is copied to the new tapes"""
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        _, tapes = grad_fn(tape, dev)
+
+        assert all(new_tape.shots == tape.shots for new_tape in tapes)
+
 
 class TestHadamardGradEdgeCases:
     """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
@@ -640,7 +657,8 @@ class TestHadamardGradEdgeCases:
             qml.state()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match=r"return the state is not supported"):
+        _match = r"return the state with the Hadamard test gradient transform"
+        with pytest.raises(ValueError, match=_match):
             qml.gradients.hadamard_grad(tape)
 
     def test_variance_non_differentiable_error(self):
@@ -654,7 +672,10 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
-            match=r"Computing the gradient of variances with the Hadamard test gradient is not implemented.",
+            match=(
+                r"Computing the gradient of variances with the Hadamard test "
+                "gradient transform is not supported."
+            ),
         ):
             qml.gradients.hadamard_grad(tape)
 

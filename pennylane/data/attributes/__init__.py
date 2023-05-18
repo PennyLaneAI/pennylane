@@ -18,12 +18,16 @@ from .dictionary import DatasetDict
 from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
-from .operator import DatasetHamiltonian, DatasetOperator, DatasetTensor
+from .operator import (
+    DatasetHamiltonian,
+    DatasetOperator,
+    DatasetOperatorList,
+    DatasetTensor,
+)
 from .pauli import DatasetPauliSentence, DatasetPauliWord
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
 from .string import DatasetString
-from .wires import DatasetWires
 
 __all__ = (
     "DatasetArray",
@@ -32,8 +36,9 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
+    "DatasetOperatorList",
     "DatasetNone",
-    "DatasetWires",
+    "DatasetHamiltonian",
     "DatasetPauliSentence",
     "DatasetPauliWord",
     "DatasetSparseArray",

@@ -7,7 +7,7 @@ on:
 
 
 env:
-  JAX_VERSION: 0.4.3
+  JAX_VERSION: 0.4.10
   TF_VERSION: 2.12.0
   TORCH_VERSION: 2.0.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
@@ -42,10 +42,6 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
           pip install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
-
-      - name: Conditionally install cvxpy and cvxopt
-        if: matrix.python-version != '3.11'
-        run: python -m pip install cvxpy cvxopt
 
       - name: Install PennyLane
         run: |
@@ -94,10 +90,6 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
-      - name: Conditionally install cvxpy and cvxopt
-        if: matrix.python-version != '3.11'
-        run: python -m pip install cvxpy cvxopt
-
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
@@ -145,7 +137,7 @@ jobs:
           python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
-          pip install pytest-split cvxpy cvxopt tensorflow~=$TF_VERSION keras~=$TF_VERSION
+          pip install pytest-split tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install PennyLane
         run: |
@@ -196,10 +188,6 @@ jobs:
           pip install -r requirements-dev.txt --upgrade
           pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
-      - name: Conditionally install cvxpy and cvxopt
-        if: matrix.python-version != '3.11'
-        run: python -m pip install cvxpy cvxopt
-
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
@@ -248,10 +236,6 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
           pip install pytest-split
-
-      - name: Conditionally install cvxpy and cvxopt
-        if: matrix.python-version != '3.11'
-        run: python -m pip install cvxpy cvxopt
 
       - name: Install PennyLane
         run: |

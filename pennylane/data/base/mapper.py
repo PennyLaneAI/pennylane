@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a class for mapping Zarr groups to Dataset Attributes, and a mixin
+"""Contains a class for mapping HDF5 groups to Dataset Attributes, and a mixin
 class that provides the mapper class."""
 
 
@@ -26,36 +26,19 @@ from pennylane.data.base.attribute import (
     get_attribute_type,
     match_obj_type,
 )
-from pennylane.data.base.typing_util import ZarrGroup
-
-
-class AttributeTypeError(TypeError):
-    key: str
-    expected_type: Type[AttributeType]
-    type_: Type[AttributeType]
-
-    def __init__(
-        self, key: str, expected_type: Type[AttributeType], type_: Type[AttributeType]
-    ) -> None:
-        self.key = key
-        self.expected_type = expected_type
-        self.type_ = type_
-
-        super().__init__(
-            f"Attribute '{key}' requires value compatible with '{expected_type}', got '{type_}'"
-        )
+from pennylane.data.base.typing_util import HDF5Group
 
 
 class AttributeTypeMapper(MutableMapping):
     """
     This class performs the mapping between the objects contained
-    in a Zarr group and Dataset attributes.
+    in a HDF5 group and Dataset attributes.
     """
 
-    bind: ZarrGroup
+    bind: HDF5Group
     _cache: Dict[str, AttributeType]
 
-    def __init__(self, bind: ZarrGroup) -> None:
+    def __init__(self, bind: HDF5Group) -> None:
         self._cache = {}
         self.bind = bind
 
@@ -82,11 +65,21 @@ class AttributeTypeMapper(MutableMapping):
         value: Any,
         info: Optional[AttributeInfo],
         require_type: Optional[Type[AttributeType]] = None,
-    ):
+    ) -> None:
         """Creates or replaces attribute ``key`` with ``value``, optionally
-        including ``info``."""
+        including ``info``.
+
+        Args:
+            key: Name of attribute in HDF5 group
+            value: Attribute value, either a compatible object or an already
+                initialized ``AttributeType``.
+            info: Extra info to attach to attribute
+            require_type: Force the ``value`` to be serialized as this type.
+                If ``value`` is an ``AttributeType``, it must be an instance of ``require_type``.
+                Otherwise, ``value`` must be serializable by ``require_type``.
+        """
         if isinstance(value, AttributeType):
-            if require_type and type(value) is not require_type:
+            if require_type and not isinstance(value, require_type):
                 raise AttributeTypeError(key, require_type, type(value))
 
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
@@ -100,7 +93,7 @@ class AttributeTypeMapper(MutableMapping):
 
         self._cache.pop(key, None)
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         self.set_item(key, value, None)
 
     def move(self, src: str, dest: str) -> None:
@@ -121,17 +114,22 @@ class AttributeTypeMapper(MutableMapping):
     def __contains__(self, key: str) -> bool:
         return key in self._cache or key in self.bind
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self._cache.pop(key, None)
         del self.bind[key]
+
+    def __repr__(self) -> str:
+        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
+
+        return f"{{{items_repr}}}"
 
 
 class MapperMixin:  # pylint: disable=too-few-public-methods
     """Mixin class for Dataset types that provide an interface
-    to a Zarr group, e.g `DatasetList`, `DatasetDict`. Provides
+    to a HDF5 group, e.g `DatasetList`, `DatasetDict`. Provides
     a `_mapper` property over the type's ``bind`` attribute."""
 
-    bind: ZarrGroup
+    bind: HDF5Group
 
     __mapper: AttributeTypeMapper = None
 

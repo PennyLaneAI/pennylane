@@ -3,17 +3,18 @@ import pytest
 
 from pennylane.data.attributes import (
     DatasetArray,
-    DatasetDict,
-    DatasetList,
     DatasetNone,
     DatasetScalar,
     DatasetString,
-    DatasetWires,
     DatasetSparseArray,
+    DatasetHamiltonian,
+    DatasetOperator,
 )
+from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
 from pennylane.wires import Wires
 from pennylane.data.attributes.sparse_array import _ALL_SPARSE
+import pennylane as qml
 
 
 @pytest.mark.parametrize(
@@ -33,17 +34,11 @@ from pennylane.data.attributes.sparse_array import _ALL_SPARSE
         (np.array([np.int64(0)]), DatasetArray),
         (np.array([complex(1, 2)]), DatasetArray),
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
-        ([], DatasetList),
-        ([1, 2], DatasetList),
-        ([np.int64(0)], DatasetList),
-        ([{"a": 1}], DatasetList),
-        ({}, DatasetDict),
-        ({"a": [1, 2]}, DatasetDict),
         (None, DatasetNone),
         (type(None), DatasetNone),
-        (Wires([1]), DatasetWires),
-        (Wires, DatasetWires),
         *((sp_cls, DatasetSparseArray) for sp_cls in _ALL_SPARSE),
+        (qml.Hamiltonian, DatasetHamiltonian),
+        *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):

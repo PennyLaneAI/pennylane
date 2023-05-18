@@ -306,7 +306,9 @@ def _compute_cfim(p, dp):
 def _make_probs(tape, wires=None, post_processing_fn=None):
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
-    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
+    qscript = qml.tape.QuantumScript(
+        tape.operations, [qml.probs(wires=wires or tape.wires)], shots=tape.shots
+    )
 
     if post_processing_fn is None:
 

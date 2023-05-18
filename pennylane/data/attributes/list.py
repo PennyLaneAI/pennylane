@@ -20,12 +20,12 @@ from typing import Generic, List, Union, overload
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
+from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 
 
 class DatasetList(
     Generic[T],
-    AttributeType[ZarrGroup, typing.Sequence[T], typing.Iterable[T]],
+    AttributeType[HDF5Group, typing.Sequence[T], typing.Iterable[T]],
     MutableSequence,
     MapperMixin,
 ):
@@ -39,12 +39,12 @@ class DatasetList(
     def default_value(self) -> typing.Iterable[T]:
         return ()
 
-    def zarr_to_value(self, bind: ZarrGroup) -> typing.MutableSequence[T]:
+    def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableSequence[T]:
         return self
 
-    def value_to_zarr(
-        self, bind_parent: ZarrGroup, key: str, value: typing.Iterable[T]
-    ) -> ZarrGroup:
+    def value_to_hdf5(
+        self, bind_parent: HDF5Group, key: str, value: typing.Iterable[T]
+    ) -> HDF5Group:
         grp = bind_parent.create_group(key)
 
         return grp
@@ -57,7 +57,7 @@ class DatasetList(
         elements copied.."""
         return self.copy_value()
 
-    def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
+    def insert(self, index: int, value: Union[T, AttributeType[HDF5Any, T, T]]):
         """Implements the insert() method."""
         if index < 0:
             index = len(self) + index
@@ -111,7 +111,7 @@ class DatasetList(
 
         return self._mapper[str(index)].get_value()
 
-    def __setitem__(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
+    def __setitem__(self, index: int, value: Union[T, AttributeType[HDF5Any, T, T]]):
         if index < 0:
             index = len(self) + index
 

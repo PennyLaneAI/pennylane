@@ -33,12 +33,12 @@ from typing import (
 
 from numpy.typing import ArrayLike
 
-# Type aliases for Zarr objects.
-ZarrAttrs = MutableMapping
-ZarrArray = ArrayLike
-ZarrGroup = MutableMapping
-ZarrAny = Union[ZarrArray, ZarrGroup]
-Zarr = TypeVar("Zarr", ZarrArray, ZarrGroup, ZarrAny)
+# Type aliases for HDF5 objects.
+HDF5Attrs = MutableMapping
+HDF5Array = ArrayLike
+HDF5Group = MutableMapping
+HDF5Any = Union[HDF5Array, HDF5Group]
+HDF5 = TypeVar("HDF5", HDF5Array, HDF5Group, HDF5Any)
 
 # Generic type variable
 T = TypeVar("T")
@@ -61,7 +61,7 @@ UNSET = UnsetType.UNSET
 
 
 @lru_cache
-def get_type_str(cls: Union[type, str, None]) -> str:
+def get_type_str(cls: Union[type, str, None]) -> str:  # pylint: disable=too-many-return-statements
     """Return a string representing the type ``cls``.
 
     If cls is a built-in type, such as 'str', returns the unqualified
@@ -85,7 +85,7 @@ def get_type_str(cls: Union[type, str, None]) -> str:
     if isinstance(cls, _SpecialForm):
         # These are typing constructs like Union, Literal etc that
         # are not parametrized
-        return cls._name
+        return cls._name  # pylint: disable=protected-access
 
     orig_type = get_origin(cls)
     if orig_type is not None:
@@ -110,10 +110,21 @@ def resolve_special_type(type_: Any) -> Optional[Tuple[type, List[type]]]:
     If ``type_`` is a regular type, or an object, this function will return
     ``None``.
 
-    For example:
-        resolve_special_type(Union[str, int]) == (Union, [str, int])
-        resolve_special_type(List[str]) == (list, [str])
-        resolve_special_type(list) == (list, [])
+    Note that this function will only perform one level of recursion - the
+    arguments of nested types will not be resolved:
+
+        >>> resolve_special_type(List[List[int]])
+        (<class 'list'>, [<class 'list'>])
+
+    Further examples:
+        >>> resolve_special_type(Union[str, int])
+        (typing.Union, [<class 'str'>, <class 'int'>])
+        >>> resolve_special_type(List[str])
+        (<class 'list'>, [<class 'int'>])
+        >>> resolve_special_type(List)
+        (<class 'list'>, [])
+        >>> resolve_special_type(list)
+        None
     """
 
     orig_type = get_origin(type_)

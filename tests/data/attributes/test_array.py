@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pennylane.data.attributes import DatasetArray, DatasetScalar
+from pennylane.data.attributes import DatasetArray
 
 
 class TestDatasetArray:
@@ -20,7 +20,7 @@ class TestDatasetArray:
 
     @pytest.mark.parametrize("value", [[1, 2, 3], [[1], [2]]])
     def test_bind_init(self, value):
-        """Test that DatasetArray can be initialized from a Zarr array
+        """Test that DatasetArray can be initialized from a HDF5 array
         that was created by a DatasetArray."""
         value = np.array(value)
         bind = DatasetArray(value).bind

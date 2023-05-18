@@ -91,8 +91,8 @@ class QuantumScript:
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
-        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of
-            shots for execution. Note that this property is still experimental and under development.
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
         name (str): a name given to the quantum script
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
@@ -1045,7 +1045,9 @@ class QuantumScript:
             _ops = self._ops.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
+        new_qscript = self.__class__(
+            ops=_ops, measurements=_measurements, prep=_prep, shots=self.shots
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
@@ -1125,7 +1127,9 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep)
+        adj = self.__class__(
+            ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
+        )
         if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
@@ -1204,7 +1208,7 @@ class QuantumScript:
         wires: 2
         gates: 6
         depth: 4
-        shots: 0
+        shots: Shots(total=None)
         gate_types:
         {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
         gate_sizes:
@@ -1212,16 +1216,14 @@ class QuantumScript:
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(
-                self, shots=0
+                self
             )  # pylint: disable=protected-access
 
-            self._specs = SpecsDict(
-                {
-                    "resources": resources,
-                    "gate_sizes": defaultdict(int),
-                    "gate_types": defaultdict(int),
-                }
-            )
+            self._specs = {
+                "resources": resources,
+                "gate_sizes": defaultdict(int),
+                "gate_types": defaultdict(int),
+            }
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
@@ -1234,6 +1236,7 @@ class QuantumScript:
             self._specs["num_used_wires"] = self.num_wires
             self._specs["num_trainable_params"] = self.num_params
             self._specs["depth"] = resources.depth
+            self._specs = SpecsDict(self._specs)
 
         return self._specs
 
@@ -1381,7 +1384,7 @@ class SpecsDict(dict):
         if item in self.old_to_new_key_map:
             warnings.warn(
                 f"The {item} key is deprecated and will be removed in the next release. "
-                f'Going forward, please use: qml.specs()["resources"].{self.old_to_new_key_map[item]}'
+                f'Going forward, please use: specs["resources"].{self.old_to_new_key_map[item]}'
             )
         return super().__getitem__(item)
 
