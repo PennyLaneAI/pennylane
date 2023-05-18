@@ -699,7 +699,8 @@ class Operator(abc.ABC):
         warnings.warn(
             "The behaviour of Operator.__eq__ will be updated soon. Currently, op1 == op2 is "
             "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
-            "qml.equal(op1, op2).",
+            "qml.equal(op1, op2). To continue using operator equality in its current state, "
+            "use 'op1 is op2'.",
             UserWarning
         )
         return super().__eq__(other)
