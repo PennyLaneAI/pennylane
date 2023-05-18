@@ -141,7 +141,7 @@
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
-* ``QuantumScript``'s ``name`` keyword argument and property are deprecated. Please, avoid using them.
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
   This also affects ``QuantumTape`` and ``OperationRecorder``.
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
