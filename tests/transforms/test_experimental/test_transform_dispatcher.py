@@ -14,7 +14,7 @@
 
 import pytest
 import pennylane as qml
-from pennylane.transforms.experimental import transform_dispatcher
+from pennylane.transforms.experimental import transform
 
 with qml.tape.QuantumTape() as tape_circuit:
     qml.Hadamard(wires=0)
@@ -28,7 +28,7 @@ def incorrect_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
     return tape, lambda x: x
 
 
-def transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, callable):
+def my_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, callable):
     tape.circuit.pop()
     return tape, lambda x: x
 
@@ -46,7 +46,7 @@ class TestTransformDispatcher:
     def test_dispatcher_signature(self):
         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
 
-        dispatched_transform = transform_dispatcher(incorrect_transform)
+        dispatched_transform = transform(incorrect_transform)
 
         dispatched_transform(tape_circuit)
 

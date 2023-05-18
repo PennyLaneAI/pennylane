@@ -14,4 +14,4 @@
 r"""This module contains the experimental transforms building blocks.
 """
 
-from .transform_dispatcher import transform_dispatcher
+from .transform_dispatcher import transform
