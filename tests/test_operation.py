@@ -69,17 +69,15 @@ class TestOperatorConstruction:
         op = qml.ops.Hadamard(wires=0)
         assert isinstance(op, qml.operation.Operation)
 
-    def test_do_queue_deprecation(self):
+    @pytest.mark.parametrize('do_queue', [True, False])
+    def test_do_queue_deprecation(self, do_queue):
         """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
             "Use qml.queuing.QueuingManager.stop_recording()"
         )
         with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            Operator(wires=0, do_queue=True)
-
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            Operator(wires=0, do_queue=False)
+            Operator(wires=0, do_queue=do_queue)
 
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""

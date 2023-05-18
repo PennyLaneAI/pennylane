@@ -56,6 +56,16 @@ class TestConstructor:
         assert isinstance(op, Pow)
         assert isinstance(op.base, TempOperator)
 
+    @pytest.mark.parametrize('do_queue', [True, False])
+    def test_pow_do_queue_deprecation(self, do_queue):
+        """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Use qml.queuing.QueuingManager.stop_recording()"
+        )
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            qml.pow(TempOperator(0), 2, lazy=False, do_queue=do_queue)
+
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
     def test_nonlazy_identity_simplification(self, op):
         """Test that nonlazy pow returns a single identity if the power decomposes
