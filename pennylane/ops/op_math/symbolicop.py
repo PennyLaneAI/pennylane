@@ -16,6 +16,7 @@ This submodule defines a base class for symbolic operations representing operato
 """
 from abc import abstractmethod
 from copy import copy
+import warnings
 
 import numpy as np
 
@@ -66,13 +67,20 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base, do_queue=True, id=None):
+    def __init__(self, base, do_queue=None, id=None):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
         self._pauli_rep = None
 
-        if do_queue:
+        if do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+        if do_queue or do_queue is None:
             self.queue()
 
     @property

@@ -37,7 +37,7 @@ from .symbolicop import ScalarSymbolicOp, SymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, do_queue=True, id=None):
+def pow(base, z=1, lazy=True, do_queue=None, id=None):
     """Raise an Operator to a power.
 
     Args:
@@ -105,7 +105,14 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     else:
         pow_op = qml.prod(*pow_ops)
 
-    if do_queue:
+    if do_queue is not None:
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Use qml.queuing.QueuingManager.stop_recording()"
+        )
+        warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+    if do_queue or do_queue is None:
         QueuingManager.remove(base)
 
     return pow_op

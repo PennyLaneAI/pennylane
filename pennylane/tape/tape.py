@@ -17,6 +17,7 @@ This module contains the base quantum tape.
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
 from threading import RLock
+import warnings
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
@@ -355,9 +356,15 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         prep=None,
         shots=None,
         name=None,
-        do_queue=True,
+        do_queue=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
+        if do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(UserWarning, do_queue_deprecation_warning)
         self.do_queue = do_queue
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)

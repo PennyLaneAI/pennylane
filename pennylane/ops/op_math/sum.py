@@ -19,6 +19,7 @@ import itertools
 from copy import copy
 from functools import reduce
 from typing import List
+import warnings
 
 import numpy as np
 
@@ -31,7 +32,7 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def sum(*summands, do_queue=True, id=None, lazy=True):
+def sum(*summands, do_queue=None, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -80,7 +81,14 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
         id=id,
     )
 
-    if do_queue:
+    if do_queue is not None:
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Use qml.queuing.QueuingManager.stop_recording()"
+        )
+        warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+    if do_queue or do_queue is None:
         for op in summands:
             QueuingManager.remove(op)
 

@@ -17,6 +17,7 @@ computing the scalar product of operations.
 """
 from typing import Union
 from copy import copy
+import warnings
 
 import pennylane as qml
 import pennylane.math as qnp
@@ -28,7 +29,7 @@ from pennylane.queuing import QueuingManager
 from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
+def s_prod(scalar, operator, lazy=True, do_queue=None, id=None):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -78,7 +79,14 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
 
     sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
 
-    if do_queue:
+    if do_queue is not None:
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Use qml.queuing.QueuingManager.stop_recording()"
+        )
+        warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+    if do_queue or do_queue is None:
         QueuingManager.remove(operator)
 
     return sprod_op

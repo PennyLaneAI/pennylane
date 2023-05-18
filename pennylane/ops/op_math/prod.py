@@ -20,6 +20,7 @@ from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
 from typing import List, Tuple, Union
+import warnings
 
 from scipy.sparse import kron as sparse_kron
 
@@ -42,7 +43,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None, lazy=True):
+def prod(*ops, do_queue=None, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -120,7 +121,14 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
         id=id,
     )
 
-    if do_queue:
+    if do_queue is not None:
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Use qml.queuing.QueuingManager.stop_recording()"
+        )
+        warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+    if do_queue or do_queue is None:
         for op in ops:
             QueuingManager.remove(op)
 

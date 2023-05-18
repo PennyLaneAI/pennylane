@@ -970,7 +970,7 @@ class Operator(abc.ABC):
         param_string = ",\n".join(_format(p) for p in params)
         return f"{op_label}\n({param_string})"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
@@ -1023,7 +1023,14 @@ class Operator(abc.ABC):
 
         self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
 
-        if do_queue:
+        if do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+        if do_queue or do_queue is None:
             self.queue()
 
     def _check_batching(self, params):
