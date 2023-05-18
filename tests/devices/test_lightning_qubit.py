@@ -47,6 +47,8 @@ def test_no_backprop_auto_interface():
     differentiation method."""
 
     dev = qml.device("lightning.qubit", wires=2)
+    if not dev._CPP_BINARY_AVAILABLE:
+        pytest.skip("lightning is falling back on default.qubit")
 
     def circuit():
         """Simple quantum function."""

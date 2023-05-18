@@ -133,6 +133,8 @@ class TestSnapshot:
     def test_lightning_qubit(self, method):
         """Test that an error is (currently) raised on the lightning simulator."""
         dev = qml.device("lightning.qubit", wires=2)
+        if not dev._CPP_BINARY_AVAILABLE:
+            pytest.skip("lightning is falling back on default.qubit")
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
