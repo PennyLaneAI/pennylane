@@ -585,12 +585,9 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
-      - name: Install zstd
-        run: pip3 install zstd
-
-      - name: Install dill
-        run: pip3 install dill
-
+      - name: Install datasets dependencies
+        run: pip install h5py zstd
+        
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
