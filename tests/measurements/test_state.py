@@ -169,7 +169,10 @@ class TestState:
 
         with pytest.raises(
             ValueError,
-            match="Computing the gradient of circuits that return the state is not supported",
+            match=(
+                "Computing the gradient of circuits that return the state with the "
+                "parameter-shift rule gradient transform is not supported"
+            ),
         ):
             d_func(pnp.array(0.1, requires_grad=True))
 
