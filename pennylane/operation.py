@@ -697,7 +697,7 @@ class Operator(abc.ABC):
 
     def __eq__(self, other):
         warnings.warn(
-            "The behaviour of Operator.__eq__ will be updated soon. Currently, op1 == op2 is "
+            "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
             "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
             "qml.equal(op1, op2). To continue using operator equality in its current state, "
             "use 'op1 is op2'.",
@@ -707,9 +707,11 @@ class Operator(abc.ABC):
 
     def __hash__(self):
         warnings.warn(
-            "The behaviour of Operator.__hash__ will be updated soon. Currently, Operator.__hash__ "
-            "is equivalent to object.__hash__. Soon, Operator.__hash__ will be determined by the "
-            "combined __hash__ of the name, wires, parameters and hyperparameters of the Operator.",
+            "The behaviour of operator hashing will be updated soon. Currently, each operator "
+            "instance has a unique hash. Soon, an operator's hash will be determined by the "
+            "combined hash of the name, wires, parameters and hyperparameters of the operator. "
+            "To continue using operator hashing in its current state, wrap the operator inside "
+            "a qml.queuing.WrappedObj instance.",
             UserWarning,
         )
         return super().__hash__()
