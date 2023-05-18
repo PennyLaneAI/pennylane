@@ -368,7 +368,6 @@ class Controlled(SymbolicOp):
         new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
         new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
 
-
         return ctrl(
             op=new_base,
             control=new_control_wires,
