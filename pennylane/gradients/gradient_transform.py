@@ -151,9 +151,7 @@ def _grad_method_validation(method, tape):
     }
 
     # check and raise an error if any parameters are non-differentiable
-    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
-
-    if nondiff_params:
+    if nondiff_params := {idx for idx, g in diff_methods.items() if g is None}:
         raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
     numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
@@ -255,11 +253,7 @@ def _all_zero_grad(tape, shots=None):
     par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
         # TODO: Update shape for CV variables
-        if isinstance(m, ProbabilityMP):
-            shape = (2 ** len(m.wires),)
-        else:
-            shape = ()
-
+        shape = (2 ** len(m.wires),) if isinstance(m, ProbabilityMP) else ()
         if len(tape.trainable_params) == 1:
             sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
         else:
@@ -417,11 +411,11 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
     if not cjac_is_tuple:
         is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
-        if not qml.math.is_abstract(cjac):
-            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-                # Classical Jacobian is the identity. No classical processing
-                # is present inside the QNode.
-                return qjac
+        if not qml.math.is_abstract(cjac) and (
+            is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))
+        ):
+            # Classical Jacobian is the identity. No classical processing is present in the QNode
+            return qjac
 
     multi_meas = num_measurements > 1
     shot_vector = isinstance(shots, Sequence)
@@ -629,11 +623,7 @@ class gradient_transform(qml.batch_transform):
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
-            if interface == "jax":
-                argnum_cjac = trainable_params or argnums
-            else:
-                argnum_cjac = None
-
+            argnum_cjac = trainable_params or argnums if interface == "jax" else None
             cjac = qml.transforms.classical_jacobian(
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
