@@ -616,6 +616,10 @@ class ControlledOp(Controlled, operation.Operation):
 
     @property
     def base_name(self):
+        warnings.warn(
+            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
+            UserWarning,
+        )
         return f"C({self.base.base_name})"
 
     @property

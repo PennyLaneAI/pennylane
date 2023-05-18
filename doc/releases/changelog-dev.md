@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
+  without mutating the original operator.
+  [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+
+* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+  given subspace.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
@@ -14,18 +22,18 @@
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
 * Accelerate Jordan-Wigner transforms caching Pauli gate objects.
-  [(4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
+  [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
 
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
   removed.
-  [(4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
-  [(4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
+  [(#4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
+  [(#4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
 
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
   inform the users that the `pyscf` backend can be used for open-shell calculations.
-  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 * Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
   concretely.
@@ -34,11 +42,16 @@
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
   [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
+* Integrated `QuantumScript.shots` with `QNode` so that shots are placed on the `QuantumScript`
+  during `QNode` construction.
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
+
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
 * `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
   [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
@@ -63,6 +76,7 @@
 * Support for sample-based measurements has been added to the `DefaultQubit2` device.
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
+  [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -71,12 +85,22 @@
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
+* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
+  an execution.
+  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
+
 * `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
 [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+* The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
 <h3>Breaking changes 💔</h3>
 
@@ -100,6 +124,8 @@
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
 <h3>Deprecations 👋</h3>
+
+* `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
 <h3>Documentation 📝</h3>
 
