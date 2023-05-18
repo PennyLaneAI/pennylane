@@ -701,7 +701,7 @@ class Operator(abc.ABC):
             "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
             "qml.equal(op1, op2). To continue using operator equality in its current state, "
             "use 'op1 is op2'.",
-            UserWarning
+            UserWarning,
         )
         return super().__eq__(other)
 
@@ -710,7 +710,7 @@ class Operator(abc.ABC):
             "The behaviour of Operator.__hash__ will be updated soon. Currently, Operator.__hash__ "
             "is equivalent to object.__hash__. Soon, Operator.__hash__ will be determined by the "
             "combined __hash__ of the name, wires, parameters and hyperparameters of the Operator.",
-            UserWarning
+            UserWarning,
         )
         return super().__hash__()
 
