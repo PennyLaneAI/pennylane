@@ -358,6 +358,11 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
         # is simply none.
         return [], lambda _, num=None: None
 
+    # pylint:disable=protected-access
+    if isinstance(shots, Sequence) and all(isinstance(s, qml._device.ShotTuple) for s in shots):
+        shots = list(map(tuple, shots))
+    shots = qml.measurements.Shots(shots)
+
     try:
         if _all_close_to_zero(dy):
             # If the dy vector is zero, then the

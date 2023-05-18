@@ -16,13 +16,18 @@ including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 from functools import partial
 import warnings
-from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP, ProbabilityMP
+from pennylane.measurements import (
+    MutualInfoMP,
+    StateMP,
+    VarianceMP,
+    VnEntropyMP,
+    ProbabilityMP,
+    Shots,
+)
 
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
@@ -246,7 +251,7 @@ def choose_grad_methods(diff_methods, argnum):
     return {idx: diff_methods[idx] for idx in argnum}
 
 
-def _all_zero_grad(tape, shots=None):
+def _all_zero_grad(tape, shots=Shots(None)):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
@@ -261,11 +266,10 @@ def _all_zero_grad(tape, shots=None):
 
         list_zeros.append(sub_list_zeros)
 
-    if isinstance(shots, Sequence):
-        len_shot_vec = _get_num_copies(shots)
+    if shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
-        return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
+            return [], lambda _: tuple(list_zeros[0] for _ in range(shots.num_copies))
+        return [], lambda _: tuple(tuple(list_zeros) for _ in range(shots.num_copies))
 
     if len(tape.measurements) == 1:
         return [], lambda _: list_zeros[0]
@@ -280,17 +284,16 @@ _no_trainable_grad_warning = (
 )
 
 
-def _no_trainable_grad(tape, shots=None):
+def _no_trainable_grad(tape, shots=Shots(None)):
     """Auxiliary function that returns correctly formatted gradients when there
     are no trainable parameters."""
     warnings.warn(_no_trainable_grad_warning)
-    if isinstance(shots, Sequence):
-        len_shot_vec = _get_num_copies(shots)
+    if shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
+            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(shots.num_copies))
         return [], lambda _: tuple(
             tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-            for _ in range(len_shot_vec)
+            for _ in range(shots.num_copies)
         )
 
     if len(tape.measurements) == 1:
@@ -382,22 +385,21 @@ def reorder_grads(grads, tape_specs):
     tapes, which will return a single measurement-like shaped output (no shot vector), or a list
     thereof (shot vector).
     """
-    single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
-    if single_measure and num_params == 1:
-        return grads[0]
-    len_shot_vec = _get_num_copies(shots) if shot_vector else None
+    single_measure, num_params, num_measurements, shots = tape_specs
     if single_measure:
-        if not shot_vector:
+        if num_params == 1:
+            return grads[0]
+        if not shots.has_partitioned_shots:
             return tuple(grads)
-        return _swap_first_two_axes(grads, num_params, len_shot_vec)
+        return _swap_first_two_axes(grads, num_params, shots.num_copies)
 
-    if not shot_vector:
+    if not shots.has_partitioned_shots:
         return _swap_first_two_axes(grads, num_params, num_measurements)
-    return _move_first_axis_to_third_pos(grads, num_params, len_shot_vec, num_measurements)
+    return _move_first_axis_to_third_pos(grads, num_params, shots.num_copies, num_measurements)
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
+def _contract_qjac_with_cjac(qjac, cjac, num_measurements, partitioned_shots):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
@@ -418,7 +420,6 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
             return qjac
 
     multi_meas = num_measurements > 1
-    shot_vector = isinstance(shots, Sequence)
 
     if cjac_is_tuple:
         multi_params = True
@@ -426,7 +427,7 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
         _qjac = qjac
         if multi_meas:
             _qjac = _qjac[0]
-        if shot_vector:
+        if partitioned_shots:
             _qjac = _qjac[0]
         multi_params = isinstance(_qjac, tuple)
 
@@ -437,11 +438,11 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
         def _reshape(x):
             return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
-        if not (multi_meas or shot_vector):
+        if not (multi_meas or partitioned_shots):
             # Single parameter, single measurements
             return tdot(_reshape(qjac), cjac)
 
-        if not (multi_meas and shot_vector):
+        if not (multi_meas and partitioned_shots):
             return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
         # Single parameter, multiple measurements
@@ -619,7 +620,6 @@ class gradient_transform(qml.batch_transform):
                 return qjac
 
             kwargs.pop("shots", False)
-            tkwarg_shots = tkwargs.get("shots", False)
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
@@ -630,7 +630,8 @@ class gradient_transform(qml.batch_transform):
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, tkwarg_shots)
+                partitioned_shots = Shots(tkwargs.get("shots", None)).has_partitioned_shots
+                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, partitioned_shots)
 
             return _contract_qjac_with_cjac_legacy(qjac, cjac)
 

@@ -275,6 +275,7 @@ def spsa_grad(
             sampler_seed=sampler_seed,
         )
 
+    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 

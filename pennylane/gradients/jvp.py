@@ -20,7 +20,6 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
 from pennylane.measurements import ProbabilityMP
 
 
@@ -303,6 +302,10 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = len(tape.measurements) > 1
+    # pylint:disable=protected-access
+    if isinstance(shots, Sequence) and all(isinstance(s, qml._device.ShotTuple) for s in shots):
+        shots = list(map(tuple, shots))
+    shots = qml.measurements.Shots(shots)
 
     try:
         # if qml.math.allclose(qml.math.stack(tangent), 0):
@@ -331,12 +334,11 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         _jvp_fn = compute_jvp_multi if multi_m else compute_jvp_single
 
         # Jacobian without shot vectors
-        if not isinstance(shots, Sequence):
+        if not shots.has_partitioned_shots:
             return _jvp_fn(tangent, jac)
 
         # The jacobian is calculated for shot vectors
-        len_shot_vec = _get_num_copies(shots)
-        return tuple(_jvp_fn(tangent, jac[i]) for i in range(len_shot_vec))
+        return tuple(_jvp_fn(tangent, jac[i]) for i in range(shots.num_copies))
 
     return gradient_tapes, processing_fn
 
