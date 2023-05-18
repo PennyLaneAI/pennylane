@@ -467,6 +467,7 @@ class TestDecompositions:  # pylint: disable=too-few-public-methods
         op = qml.CZ(wires=[0, 1])
         res = op.decomposition()
 
+        assert op.has_decomposition
         assert len(res) == 1
         assert qml.equal(qml.ctrl(qml.PhaseShift(np.pi, wires=1), 0), res[0], atol=tol, rtol=0)
 
@@ -567,7 +568,7 @@ def test_control_wires(op, control_wires):
 
 
 involution_ops = [  # ops who are their own inverses
-    qml.CZ((0, 1)),
+    qml.CZ(wires=(0, 1)),
 ]
 
 
@@ -579,3 +580,15 @@ def test_adjoint_method(op):
         adj_op = adj_op.adjoint()
 
         assert qml.equal(adj_op, op)
+
+
+@pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
+def test_map_wires(op_cls, _):
+    """Test that we can get and set private wires in all operations."""
+
+    op = op_cls(wires=[0, 1])
+    assert op.wires == Wires((0, 1))
+
+    op = op.map_wires(wire_map={0: "a", 1: "b"})
+    assert op.base.wires == Wires(("b"))
+    assert op.control_wires == Wires(("a"))
