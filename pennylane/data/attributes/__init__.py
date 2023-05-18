@@ -21,7 +21,7 @@ from .operator import DatasetHamiltonian, DatasetOperator
 from .pauli import DatasetPauliSentence, DatasetPauliWord
 from .scalar import DatasetScalar
 from .string import DatasetString
-from .wires import DatasetWires
+from .operator import DatasetHamiltonian, DatasetOperator, DatasetOperatorList
 
 __all__ = (
     "DatasetArray",
@@ -30,8 +30,8 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
+    "DatasetOperatorList",
     "DatasetNone",
-    "DatasetWires",
     "DatasetHamiltonian",
     "DatasetPauliSentence",
     "DatasetPauliWord",

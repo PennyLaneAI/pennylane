@@ -23,7 +23,8 @@ from .attributes import (
     DatasetPauliWord,
     DatasetScalar,
     DatasetString,
-    DatasetWires,
+    DatasetOperatorList,
+    DatasetHamiltonian,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
@@ -39,8 +40,9 @@ __all__ = (
     "DatasetList",
     "DatasetDict",
     "DatasetOperator",
+    "DatasetOperatorList",
+    "DatasetHamiltonian",
     "DatasetNone",
-    "DatasetWires",
     "DatasetPauliWord",
     "DatasetPauliSentence",
 )

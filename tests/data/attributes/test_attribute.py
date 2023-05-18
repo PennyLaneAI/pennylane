@@ -3,16 +3,16 @@ import pytest
 
 from pennylane.data.attributes import (
     DatasetArray,
-    DatasetDict,
-    DatasetList,
     DatasetNone,
     DatasetScalar,
     DatasetString,
-    DatasetWires,
+    DatasetHamiltonian,
+    DatasetOperator,
 )
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
-from pennylane.wires import Wires
+import pennylane as qml
+from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
@@ -34,8 +34,8 @@ from pennylane.wires import Wires
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
         (None, DatasetNone),
         (type(None), DatasetNone),
-        (Wires([1]), DatasetWires),
-        (Wires, DatasetWires),
+        (qml.Hamiltonian, DatasetHamiltonian),
+        *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
