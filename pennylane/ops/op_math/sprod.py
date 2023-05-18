@@ -79,13 +79,6 @@ def s_prod(scalar, operator, lazy=True, do_queue=None, id=None):
 
     sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
 
-    if do_queue is not None:
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Use qml.queuing.QueuingManager.stop_recording()"
-        )
-        warnings.warn(do_queue_deprecation_warning, UserWarning)
-
     if do_queue or do_queue is None:
         QueuingManager.remove(operator)
 
