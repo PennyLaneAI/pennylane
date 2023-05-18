@@ -18,11 +18,11 @@ from typing import Tuple, Type
 import numpy as np
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import ZarrGroup
+from pennylane.data.base.typing_util import HDF5Group
 from pennylane.qchem import Molecule
 
 
-class DatasetMolecule(AttributeType[ZarrGroup, Molecule, Molecule]):
+class DatasetMolecule(AttributeType[HDF5Group, Molecule, Molecule]):
     """Attribute type for ``pennylane.qchem.Molecule``."""
 
     type_id = "molecule"
@@ -31,7 +31,7 @@ class DatasetMolecule(AttributeType[ZarrGroup, Molecule, Molecule]):
     def consumes_types(cls) -> Tuple[Type[Molecule], ...]:
         return (Molecule,)
 
-    def zarr_to_value(self, bind: ZarrGroup) -> Molecule:
+    def hdf5_to_value(self, bind: HDF5Group) -> Molecule:
         return Molecule(
             symbols=list(bind["symbols"].asstr()),
             coordinates=np.array(bind["coordinates"]),
@@ -43,7 +43,7 @@ class DatasetMolecule(AttributeType[ZarrGroup, Molecule, Molecule]):
             coeff=np.array(bind["coeff"]),
         )
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Molecule) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Molecule) -> HDF5Group:
         bind = bind_parent.create_group(key)
 
         bind["symbols"] = value.symbols

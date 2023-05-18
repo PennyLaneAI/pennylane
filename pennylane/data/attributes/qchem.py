@@ -3,11 +3,11 @@ from typing import Tuple, Type
 
 from pennylane import Hamiltonian
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import ZarrGroup
+from pennylane.data.base.typing_util import HDF5Group
 from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
 
 
-class QChemHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
+class QChemHamiltonian(AttributeType[HDF5Group, Hamiltonian, Hamiltonian]):
     """Attribute type for QChem dataset hamiltonians, which use only Pauli operators."""
 
     type_id = "qchem_hamiltonian"
@@ -18,7 +18,7 @@ class QChemHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
         super().__post_init__(value, info)
         self.info["operator_class"] = type(value).__qualname__
 
-    def zarr_to_value(self, bind: ZarrGroup) -> Hamiltonian:
+    def hdf5_to_value(self, bind: HDF5Group) -> Hamiltonian:
         wire_map = {json.loads(w): i for i, w in enumerate(bind["wires"].asstr())}
 
         ops = [string_to_pauli_word(pauli_string, wire_map) for pauli_string in bind["ops"].asstr()]
@@ -26,7 +26,7 @@ class QChemHamiltonian(AttributeType[ZarrGroup, Hamiltonian, Hamiltonian]):
 
         return Hamiltonian(coeffs, ops)
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Hamiltonian) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Hamiltonian) -> HDF5Group:
         bind = bind_parent.create_group(key)
 
         coeffs, ops = value.terms()

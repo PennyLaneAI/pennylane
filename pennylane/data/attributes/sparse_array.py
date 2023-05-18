@@ -34,7 +34,7 @@ from scipy.sparse import (
 )
 
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
-from pennylane.data.base.typing_util import ZarrGroup
+from pennylane.data.base.typing_util import HDF5Group
 
 _ALL_SPARSE = (
     bsr_array,
@@ -59,7 +59,7 @@ SparseArrayT = TypeVar("SparseArrayT", bound=SparseArray)
 
 
 class DatasetSparseArray(
-    Generic[SparseArrayT], AttributeType[ZarrGroup, SparseArrayT, SparseArrayT]
+    Generic[SparseArrayT], AttributeType[HDF5Group, SparseArrayT, SparseArrayT]
 ):
     """Attribute type for Scipy sparse arrays. Can accept values of any type in
     ``scipy.sparse``. Arrays are stored in CSR format."""
@@ -95,7 +95,7 @@ class DatasetSparseArray(
 
         return f"scipy.sparse.{value_type.__qualname__}"
 
-    def zarr_to_value(self, bind: ZarrGroup) -> SparseArrayT:
+    def hdf5_to_value(self, bind: HDF5Group) -> SparseArrayT:
         info = AttributeInfo(bind.attrs)
 
         value = csr_array(
@@ -109,7 +109,7 @@ class DatasetSparseArray(
 
         return value
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: SparseArrayT) -> ZarrGroup:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: SparseArrayT) -> HDF5Group:
         if not isinstance(value, csr_array):
             csr_value = csr_array(value)
         else:

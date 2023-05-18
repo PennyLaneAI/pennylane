@@ -18,12 +18,7 @@ from .dictionary import DatasetDict
 from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
-from .operator import (
-    DatasetHamiltonian,
-    DatasetOperator,
-    DatasetOperatorList,
-    DatasetTensor,
-)
+from .operator import DatasetHamiltonian, DatasetOperator, DatasetOperatorList
 from .pauli import DatasetPauliSentence, DatasetPauliWord
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
