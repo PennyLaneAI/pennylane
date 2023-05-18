@@ -38,6 +38,7 @@ from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, Vn
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
+from pennylane.math.quantum import _density_matrix_from_matrix
 
 from .._version import __version__
 
@@ -739,7 +740,7 @@ class DefaultMixed(QubitDevice):
                 self._apply_operation(bit_flip)
 
     def density_matrix(self, wires):
-        """Returns the reduced density matrix over the given wires.
+        """Returns the reduced density matrix of the device state over the given wires.
 
         Args:
             wires (Wires): wires of the reduced system
@@ -748,6 +749,6 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
-        state = getattr(self, "state", None)
+        state = qml.math.cast(getattr(self, "state", None), dtype=self.C_DTYPE)
         wires = self.map_wires(wires)
-        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE, input_is_dm=True)
+        return _density_matrix_from_matrix(state, indices=wires)

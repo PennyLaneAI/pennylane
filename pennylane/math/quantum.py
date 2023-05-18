@@ -211,6 +211,9 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
     """
     shape = density_matrix.shape
     batch_dim, dim = (None, shape[0]) if len(shape) == 2 else shape[:2]
+    if batch_dim is not None:
+        raise ValueError("_density_matrix_from_matrix does not support broadcasting yet.")
+
     num_indices = int(np.log2(dim))
 
     if check_state:
@@ -378,15 +381,17 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     """
     shape = np.shape(state)
     batch_dim, dim = (None, shape[0]) if len(shape) == 1 else shape[:2]
+    if batch_dim is not None:
+        raise ValueError("_density_matrix_from_state_vector does not support broadcasting yet.")
 
     # Check the format and norm of the state vector
     if check_state:
         _check_state_vector(state)
 
     # Get dimension of the quantum system and reshape
-    num_indices = int(np.log2(dim))
-    consecutive_wires = list(range(num_indices))
-    state = np.reshape(state, [2] * num_indices)
+    num_wires = int(np.log2(dim))
+    consecutive_wires = list(range(num_wires))
+    state = np.reshape(state, [2] * num_wires)
 
     # Get the system to be traced
     traced_system = [x for x in consecutive_wires if x not in indices]
@@ -398,7 +403,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def reduced_dm(state, indices, check_state=False, c_dtype="complex128", input_is_dm=None):
+def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the reduced density matrix from a state vector or a density matrix. It supports all interfaces (Numpy,
     Autograd, Torch, Tensorflow and Jax).
 
@@ -407,11 +412,9 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128", input_is
         indices (Sequence(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
-        input_is_dm (bool): Whether the input state is a density matrix already.
 
     Returns:
         tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
-        or ``(batch_dim, 2**len(indices), 2**len(indices))`` with batching.
 
     **Example**
 
@@ -449,34 +452,15 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128", input_is
     """
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
-    shape = state.shape
-    dim = shape[-1]
+    len_state = state.shape[0]
+    # State vector
+    if state.shape == (len_state,):
+        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
+        return density_matrix
 
-    if input_is_dm is None:
-        if shape == (dim,):
-            input_is_dm = False
-        elif (len(shape) == 2 and shape[0] != shape[1]) or len(shape) == 3:
-            # Broadcasted state vector or broadcasted density matrix
-            # WARNING: if the broadcasting dimension matches the state dim, this
-            # will go unnoticed and be misinterpreted as a density matrix!
-            raise ValueError(
-                "Broadcasted density matrices are not supported yet. "
-                f"The batch dimension is {shape[0]}"
-            )
-        elif len(shape) == 2:
-            # WARNING: if the broadcasting dimension matches the state dim, this
-            # will go unnoticed and be misinterpreted as a density matrix!
-            input_is_dm = True
-    elif len(shape) != 1 + input_is_dm:
-        # Broadcasted  vector or density matrix was detected
-        raise ValueError(
-            "Broadcasted density matrices are not supported yet. "
-            f"The batch dimension is {shape[0]}"
-        )
+    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
 
-    if input_is_dm:
-        return _density_matrix_from_matrix(state, indices, check_state)
-    return _density_matrix_from_state_vector(state, indices, check_state)
+    return density_matrix
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):
