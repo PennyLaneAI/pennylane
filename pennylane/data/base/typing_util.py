@@ -61,7 +61,7 @@ UNSET = UnsetType.UNSET
 
 
 @lru_cache
-def get_type_str(cls: Union[type, str, None]) -> str:
+def get_type_str(cls: Union[type, str, None]) -> str:  # pylint: disable=too-many-return-statements
     """Return a string representing the type ``cls``.
 
     If cls is a built-in type, such as 'str', returns the unqualified
@@ -85,7 +85,7 @@ def get_type_str(cls: Union[type, str, None]) -> str:
     if isinstance(cls, _SpecialForm):
         # These are typing constructs like Union, Literal etc that
         # are not parametrized
-        return cls._name
+        return cls._name  # pylint: disable=protected-access
 
     orig_type = get_origin(cls)
     if orig_type is not None:

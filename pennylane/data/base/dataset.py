@@ -22,7 +22,6 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Dict,
     Generic,
@@ -87,7 +86,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
 @dataclass_transform(
     order_default=False, eq_default=False, field_specifiers=(attribute,), kw_only_default=True
 )
-class _DatasetTransform:
+class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """This base class that tells the type system that ``Dataset`` behaves like a dataclass.
     See: https://peps.python.org/pep-0681/
     """

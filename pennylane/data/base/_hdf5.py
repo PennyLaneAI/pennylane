@@ -15,15 +15,15 @@
 
 import importlib
 from pathlib import Path
-from random import randint
 from types import ModuleType
 from typing import Any, Literal, Union
+from uuid import uuid4
 
-from .typing_util import HDF5Any, HDF5Array, HDF5Group
+from .typing_util import HDF5Any, HDF5Group
 
 
 class _h5py_lazy:  # pylint: disable=too-few-public-methods
-    """Provides a lazy-loaded interface to the H5Py module."""
+    """Provides a lazy-loaded interface to the H5Py module, and convenience methods."""
 
     convenience: ModuleType
 
@@ -46,7 +46,8 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
         return getattr(self.__h5, resource)
 
     def group(self) -> HDF5Group:
-        f = self.File(str(randint(0, 32768)), mode="w-", driver="core", backing_store=False)
+        """Creates a new HDF5 group in memory."""
+        f = self.File(str(uuid4()), mode="w-", driver="core", backing_store=False)
         return f
 
     def copy(
@@ -56,6 +57,15 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
         key: str,
         if_exists: Literal["raise", "overwrite"] = "raise",
     ):
+        """Copy HDF5 array or group ``source`` into group ``dest``.
+
+        Args:
+            source: HDF5 group or array to copy
+            dest: Target HDF5 group
+            key: Name to save source into, under dest
+            if_exists: How to handle conflicts if ``key`` already exists in
+                ``dest``. ``"raise"`` will raise an exception, ``overwrite``
+                will overwrite the existing object in ``dest``."""
         if if_exists == "raise" and key in dest:
             raise ValueError(f"Key {key} already exists in in {source.name}")
 
@@ -64,12 +74,21 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
     def copy_all(
         self, source: HDF5Group, dest: HDF5Group, if_exists: Literal["raise", "overwrite"] = "raise"
     ):
+        """Copies all values of ``source`` into ``dest``."""
         for key, elem in source.items():
             self.copy(elem, dest, key=key, if_exists=if_exists)
 
     def open_group(
         self, path: Union[Path, str], mode: Literal["r", "w", "w-", "a"] = "r"
     ) -> HDF5Group:
+        """Creates or opens an HDF5 file at ``path`` and returns the root HDF5 group.
+
+        Args:
+            path: File system path for HDF5 File
+            mode:  File handling mode. Possible values are "w-" (create, fail if file
+                exists), "w" (create, overwrite existing), "a" (append existing,
+                create if doesn't exist), "r" (read existing, must exist). Default is "r".
+        """
         return self.__h5.File(path, mode)
 
 
