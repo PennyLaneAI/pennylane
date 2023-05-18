@@ -14,14 +14,17 @@
 """
 Tests for the gradients.pulse_gradient module.
 """
-# pylint:disable=import-outside-toplevel
 
 import copy
 import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.gradients.pulse_gradient import _split_evol_ops, _split_evol_tapes, stoch_pulse_grad
+from pennylane.gradients.pulse_gradient import (
+    _split_evol_ops,
+    _split_evol_tapes,
+    stoch_pulse_grad,
+)
 
 
 # pylint: disable=too-few-public-methods
@@ -862,7 +865,7 @@ class TestStochPulseGradQNodeIntegration:
 
         params = [jnp.array(0.4)]
         with pytest.raises(NotImplementedError, match="Broadcasting, multiple measurements and"):
-            _ = jax.jacobian(circuit)(params)
+            jax.jacobian(circuit)(params)
 
     # TODO: delete error test above and uncomment the following test case once #2690 is resolved.
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1)])  # , ([100, 100], 0.1)])
