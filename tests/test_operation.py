@@ -69,7 +69,7 @@ class TestOperatorConstruction:
         op = qml.ops.Hadamard(wires=0)
         assert isinstance(op, qml.operation.Operation)
 
-    @pytest.mark.parametrize('do_queue', [True, False])
+    @pytest.mark.parametrize("do_queue", [True, False])
     def test_do_queue_deprecation(self, do_queue):
         """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
         do_queue_deprecation_warning = (

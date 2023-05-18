@@ -17,7 +17,6 @@ computing the scalar product of operations.
 """
 from typing import Union
 from copy import copy
-import warnings
 
 import pennylane as qml
 import pennylane.math as qnp

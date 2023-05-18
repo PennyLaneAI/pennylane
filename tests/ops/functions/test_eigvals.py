@@ -327,7 +327,7 @@ class TestCompositeOperations:
 
         assert np.allclose(mat_eigvals, op_eigvals)
 
-    @pytest.mark.parametrize('do_queue', [True, False])
+    @pytest.mark.parametrize("do_queue", [True, False])
     def test_composite_do_queue_deprecation(self, do_queue):
         """Test that CompositeOp raises a deprecation warning when do_queue is not None."""
         factors = (qml.PauliX(0), qml.PauliY(0))

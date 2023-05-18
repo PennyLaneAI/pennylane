@@ -56,7 +56,7 @@ class TestConstructor:
         assert isinstance(op, Pow)
         assert isinstance(op.base, TempOperator)
 
-    @pytest.mark.parametrize('do_queue', [True, False])
+    @pytest.mark.parametrize("do_queue", [True, False])
     def test_pow_do_queue_deprecation(self, do_queue):
         """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
         do_queue_deprecation_warning = (

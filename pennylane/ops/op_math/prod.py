@@ -20,7 +20,6 @@ from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
 from typing import List, Tuple, Union
-import warnings
 
 from scipy.sparse import kron as sparse_kron
 

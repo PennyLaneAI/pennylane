@@ -18,7 +18,6 @@ computing the sum of operations.
 import itertools
 from copy import copy
 from typing import List
-import warnings
 
 import numpy as np
 
