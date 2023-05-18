@@ -371,7 +371,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     def __enter__(self):
         QuantumTape._lock.acquire()
-        if self.do_queue:
+        if self.do_queue or self.do_queue is None:
             QueuingManager.append(self)
         QueuingManager.add_active_queue(self)
         return self
