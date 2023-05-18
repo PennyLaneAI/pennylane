@@ -223,3 +223,8 @@ class Shots:
         if self.total_shots is None:
             return False
         return len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1
+
+    @property
+    def num_copies(self):
+        """The total number of copies of any shot quantity."""
+        return sum(s.copies for s in self.shot_vector)

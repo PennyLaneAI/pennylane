@@ -218,3 +218,15 @@ class TestShotsConstruction:
     def test_has_partitioned_shots(self, shots, expected):
         """Tests the has_partitioned_shots method."""
         assert Shots(shots).has_partitioned_shots is expected
+
+    @pytest.mark.parametrize(
+        "shots, expected",
+        [
+            (None, 0),
+            (10, 1),
+            ([10, 10], 2),
+            ([10, 10, 20], 3),
+        ],
+    )
+    def test_num_copies(self, shots, expected):
+        assert Shots(shots).num_copies == expected
