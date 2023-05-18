@@ -118,7 +118,7 @@ class LazyDotPytree:
     """Jax pytree representing a lazy dot operation."""
 
     coeffs: Tuple[complex, ...]
-    mats: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
+    mats: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
 
     @jax.jit
     def __matmul__(self, other):
