@@ -511,7 +511,7 @@ def vjp(
                 unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
                 jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
-                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
+                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, shot_vector)
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
