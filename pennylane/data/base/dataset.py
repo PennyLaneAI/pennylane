@@ -22,9 +22,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Dict,
     Generic,
     List,
     Literal,
@@ -87,7 +85,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
 @dataclass_transform(
     order_default=False, eq_default=False, field_specifiers=(attribute,), kw_only_default=True
 )
-class _DatasetTransform:
+class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """This base class that tells the type system that ``Dataset`` behaves like a dataclass.
     See: https://peps.python.org/pep-0681/
     """
@@ -114,8 +112,9 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
 
     def __init__(
         self,
-        bind: Optional[Union[HDF5Group, Tuple[HDF5Group, str]]] = None,
+        bind: Optional[HDF5Group] = None,
         info: Optional[AttributeInfo] = None,
+        validate: bool = True,
         **attrs: Any,
     ):
         """
@@ -125,6 +124,9 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             bind: The HDF5 group, or path to hdf5 file, that will contain this dataset.
                 If None, the dataset will be stored in memory. Any attributes that
                 already exist in ``bind`` will be loaded into this dataset.
+            info: Additional info to attach to this dataset
+            validate: If ``True``, all declared fields of this dataset must
+                be provided in ``attrs`` or contained in ``bind``.
             **attrs: Attributes to add to this dataset.
         """
         if isinstance(bind, (h5py.Group, h5py.File)):
@@ -132,9 +134,11 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
         else:
             super().__init__(value=None, info=info, parent_and_key=bind)
 
-        self._validate_arguments(attrs)
         for name, attr in attrs.items():
             setattr(self, name, attr)
+
+        if validate:
+            self._validate_attrs()
 
     @classmethod
     def consumes_types(cls) -> Tuple[Type["Dataset"]]:
@@ -184,7 +188,7 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
         assign_to: Optional[str] = None,
         *,
         overwrite_attrs: bool = False,
-    ):
+    ) -> None:
         """Load dataset from HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
@@ -204,7 +208,7 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             if_exists = "overwrite" if overwrite_attrs else "raise"
             h5py.copy_all(zgrp, self.bind, if_exists=if_exists)
 
-    def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w-"):
+    def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w-") -> None:
         """Write dataset to HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
@@ -215,22 +219,17 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
         """
         # TODO: better error message for 'ContainsGroupError'
 
-        with h5py.open_group(filepath, mode=mode) as zgrp:
-            h5py.copy_all(self.bind, zgrp)
-            zgrp.attrs.update(self.bind.attrs)
+        with h5py.open_group(filepath, mode=mode) as grp:
+            h5py.copy_all(self.bind, grp)
+            grp.attrs.update(self.bind.attrs)
 
-    def _validate_arguments(self, args: Dict[str, Any]):
-        """Validates arguments to __init__() based on the declared
-        fields of this dataset."""
+    def _validate_attrs(self) -> None:
+        """Validates that ``attrs`` matched the delcared fields of this
+        dataset."""
         missing = []
-        for name, field in self.fields.items():
-            if name not in args:
-                if field.default_factory is not None:
-                    args[name] = field.default_factory()
-                elif field.default != UNSET:
-                    args[name] = field.default
-                else:
-                    missing.append(name)
+        for name in self.fields:
+            if name not in self.attrs:
+                missing.append(name)
 
         if missing:
             missing_args = ", ".join(f"'{arg}'" for arg in missing)

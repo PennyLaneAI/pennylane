@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pennylane.data.attributes import DatasetArray, DatasetScalar
+from pennylane.data.attributes import DatasetArray
 
 
 class TestDatasetArray:

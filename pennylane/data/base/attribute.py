@@ -68,7 +68,7 @@ class AttributeInfo(MutableMapping):
     doc: Optional[str]
 
     @overload
-    def __init__(
+    def __init__(  # overload to specify known keyword args
         self,
         attrs_bind: Optional[typing.MutableMapping[str, Any]] = None,
         *,
@@ -79,7 +79,7 @@ class AttributeInfo(MutableMapping):
         ...
 
     @overload
-    def __init__(self):
+    def __init__(self):  # need at least two overloads when using @overload
         ...
 
     def __init__(self, attrs_bind: Optional[typing.MutableMapping[str, Any]] = None, **kwargs: Any):
@@ -137,7 +137,7 @@ class AttributeInfo(MutableMapping):
         except KeyError:
             return None
 
-    def __delitem__(self, __name: str):
+    def __delitem__(self, __name: str) -> None:
         del self.attrs_bind[f"{self.attrs_namespace}{__name}"]
         self._update_len(-1)
 
@@ -263,7 +263,7 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
         must be initialized with a value."""
         return UNSET
 
-    def __post_init__(self, value: InitValueType, info: Optional[AttributeInfo]):
+    def __post_init__(self, value: InitValueType, info: Optional[AttributeInfo]) -> None:
         """Called after __init__(), only during value initialization. Can be implemented
         in subclasses to implement additional initialization"""
 
@@ -297,7 +297,8 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
         return self.hdf5_to_value(self.bind)
 
     def copy_value(self) -> T:
-        """Parses the mapped value from ``bind`` and loads it into memory."""
+        """Parse the mapped value from ``bind``, and also perform a 'deep-copy'
+        of any nested values contained in ``bind``."""
         return self.get_value()
 
     def _set_value(
