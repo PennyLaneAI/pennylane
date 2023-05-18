@@ -98,7 +98,19 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
 )
-from pennylane.ops.functions import *
+from pennylane.ops.functions import (
+    dot,
+    eigvals,
+    equal,
+    evolve,
+    generator,
+    is_commuting,
+    is_hermitian,
+    is_unitary,
+    map_wires,
+    matrix,
+    simplify,
+)
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
