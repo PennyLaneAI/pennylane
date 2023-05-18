@@ -4,11 +4,11 @@
 
 <h3>New features since last release</h3>
 
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+* Added the `TRX` qutrit rotation operator, which allows applying an X rotation on a
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
-* Added the `TRY` qutrit rotation operator, which allows applying a Pauli Y rotation on a
+* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
