@@ -116,6 +116,10 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* The label for `ParametrizedEvolution` can display parameters even when they are array-like. The 
+  number of decimal places used when displaying the parameters can be set by the kwarg `decimals`.
+  [(#4151)](https://github.com/PennyLaneAI/pennylane/pull/4151)
+
 <h3>Breaking changes 💔</h3>
 
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
@@ -159,6 +163,7 @@
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann
