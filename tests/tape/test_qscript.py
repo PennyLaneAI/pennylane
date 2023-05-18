@@ -30,7 +30,7 @@ class TestInitialization:
     def test_name(self):
         """Test the name property."""
         name = "hello"
-        with pytest.warns(UserWarning, match="``name`` property of ``QuantumScript``"):
+        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
             qs = QuantumScript(name=name)
             assert qs.name == name
 
@@ -38,7 +38,7 @@ class TestInitialization:
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript(_update=False)
-        with pytest.warns(UserWarning, match="``name`` property of ``QuantumScript``"):
+        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
             assert qs.name is None
         assert len(qs._ops) == 0
         assert len(qs._prep) == 0
