@@ -277,6 +277,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             """Dummy operator"""
+
             num_wires = 1
 
         op1 = DummyOp(0)
@@ -293,6 +294,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             """Dummy operator"""
+
             num_wires = 1
 
         op = DummyOp(0)
