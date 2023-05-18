@@ -25,7 +25,8 @@ class TransformError(Exception):
 
 
 class TransformDispatcher:
-    r"""Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
+    r"""This object is developper facing and should not be used directly.
+    Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
     on tape, qfunc and qnode."""
 
     def __init__(self, transform, expand_fn=None, qnode_postprocessing=None):
@@ -36,9 +37,7 @@ class TransformDispatcher:
             )
 
         self._transform = transform
-
         functools.update_wrapper(self, transform)
-
         self._expand_fn = expand_fn
         self._qnode_postprocessing = qnode_postprocessing
 
@@ -64,20 +63,33 @@ class TransformDispatcher:
             TransformError("The object on which is the transform is applied is not valid."
                            "It can be a tape, a QNode or a qfunc.")
 
+    @property
+    def transform(self):
+        return self._transform
+
+    @property
+    def expand_fn(self):
+        return self._expand_fn
+
+    @property
+    def qnode_postprocessing(self):
+        return self._qnode_postprocessing
+
     def default_qfunc_transform(self, qfunc, targs, tkwargs):
         """Register a qnode transformation"""
 
-        def wrap(*args, **kwargs):
+        def wrapper(*args, **kwargs):
             tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
             new_tape, _ = self._transform(tape, *targs, **tkwargs)
 
             for op in new_tape[0].circuit:
                 qml.apply(op)
-        return wrap
+
+        return wrapper
 
     def default_qnode_transform(self, qnode, targs, tkwargs, expand_fn=None, qnode_postprocessing=None):
         """Register a qnode transformation"""
-        qnode.transform_program.push(
+        qnode.add_transform(
             TransformContainer(self._transform, targs, tkwargs, expand_fn, qnode_postprocessing)
         )
         return qnode
