@@ -152,11 +152,11 @@ class TorchLayer(Module):
 
         **Model saving**
 
-        Instances of ``TorchLayer`` can be saved using the usual ``torch.save()`` utility":
+        Instances of ``TorchLayer`` can be saved using the usual ``torch.save()`` utility:
 
         .. code-block::
 
-            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes, init_method=init_method)
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
             torch.save(qlayer.state_dict(), SAVE_PATH)
 
         To load the model, an instance of the class must be created first before calling ``torch.load()``,
@@ -164,7 +164,7 @@ class TorchLayer(Module):
 
         .. code-block::
 
-            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes, init_method=init_method)
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
             qlayer.load_state_dict(torch.load(SAVE_PATH))
             qlayer.eval()
 
