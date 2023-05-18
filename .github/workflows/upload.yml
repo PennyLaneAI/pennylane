@@ -4,7 +4,7 @@ on:
     types: [published]
 
 env:
-  JAX_VERSION: 0.4.3
+  JAX_VERSION: 0.4.10
   TF_VERSION: 2.10.0
   TORCH_VERSION: 1.13.0
 
