@@ -68,19 +68,6 @@ class CY(ControlledOp):
         super().__init__(base, control_wire, do_queue=do_queue, id=id)
         self._name = "CY"
 
-    def adjoint(self):
-        return CY(self.wires)
-
-    def simplify(self):
-        return self
-
-    def pow(self, z):
-        if z % 2 == 1:
-            return [CY(self.wires)]
-
-        base_pow = self.base.pow(z)
-        return [ControlledOp(op, self.control_wires) for op in base_pow]
-
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
