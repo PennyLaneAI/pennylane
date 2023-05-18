@@ -127,6 +127,10 @@
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated. Please, avoid using them.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+  [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
@@ -150,6 +154,7 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
+Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs.
