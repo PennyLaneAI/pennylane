@@ -110,10 +110,21 @@ def resolve_special_type(type_: Any) -> Optional[Tuple[type, List[type]]]:
     If ``type_`` is a regular type, or an object, this function will return
     ``None``.
 
-    For example:
-        resolve_special_type(Union[str, int]) == (Union, [str, int])
-        resolve_special_type(List[str]) == (list, [str])
-        resolve_special_type(list) == (list, [])
+    Note that this function will only perform one level of recursion - the
+    arguments of nested types will not be resolved:
+
+        >>> resolve_special_type(List[List[int]])
+        (<class 'list'>, [<class 'list'>])
+
+    Further examples:
+        >>> resolve_special_type(Union[str, int])
+        (typing.Union, [<class 'str'>, <class 'int'>])
+        >>> resolve_special_type(List[str])
+        (<class 'list'>, [<class 'int'>])
+        >>> resolve_special_type(List)
+        (<class 'list'>, [])
+        >>> resolve_special_type(list)
+        None
     """
 
     orig_type = get_origin(type_)
