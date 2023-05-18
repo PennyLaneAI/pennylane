@@ -16,10 +16,12 @@
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 # pylint: disable=consider-using-generator, protected-access
 import os
+import warnings
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import active_new_opmath
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -837,6 +839,13 @@ def molecular_hamiltonian(
 
     |
 
+    .. warning::
+
+        If this function is called with a :code:`grouping_type` while :code:`enable_new_opmath()` is active, then
+        an arithmetic operator will be returned and the grouping will be ignored.
+
+    |
+
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
         coordinates (array[float]): atomic positions in Cartesian coordinates.
@@ -903,6 +912,14 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
+    if grouping_type is not None:
+        warnings.warn(
+            "The grouping functionality in molecular_hamiltonian is deprecated. "
+            "Please manually compute the groupings via: "
+            "qml.Hamiltonian(molecular_h.coeffs, molecular_h.ops, grouping_type=grouping_type, method=grouping_method)",
+            UserWarning,
+        )
+
     if method not in ["dhf", "pyscf"]:
         raise ValueError("Only 'dhf' and 'pyscf' backends are supported.")
 
@@ -945,11 +962,16 @@ def molecular_hamiltonian(
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
             coeffs = qml.numpy.real(h.coeffs, requires_grad=False)
-            h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
         else:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
             coeffs = qml.numpy.real(h.coeffs)
+
+        if active_new_opmath():
+            ps = qml.dot(coeffs, h.ops, pauli=True)
+            h = qml.s_prod(0, qml.Identity(h.ops[0].wires[0])) if len(ps) == 0 else ps.operation()
+        else:
             h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
+
         if wires:
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
