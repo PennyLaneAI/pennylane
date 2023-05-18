@@ -6,13 +6,13 @@
 
 * There is a new gradient transform `hybrid_pulse_grad` for pulse programs, implementing a hybrid
   method that combines automatic differentiation and parameter-shift rules.
-  [(4073)](https://github.com/PennyLaneAI/pennylane/pull/4073)
 
   This gradient method computes the effective generators of a pulse and implements parameter-shift
   rules for these generators that are equivalent to the partial derivative of the pulse program
   with respect to the pulse parameters. For this, it inserts `PauliRot` gates.
   The method can be activated by setting `diff_method=qml.gradients.hybrid_pulse_grad` in a
   QNode decorator/initialization.
+  [(4073)](https://github.com/PennyLaneAI/pennylane/pull/4073)
   
 
 <h3>Improvements 🛠</h3>

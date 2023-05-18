@@ -326,7 +326,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules. Thus, it is limited to few-qubit pulses, but allows
-    for the evaluation of parameter-shift gradients for many-qubit pulse programs.
+    for the evaluation of parameter-shift gradients for many-qubit pulse programs on hardware.
 
     For this differentiation method, the unitary matrix corresponding to each pulse
     is computed and differentiated with an autodiff framework. From this derivative,
@@ -370,7 +370,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     :math:`\theta_0 Y^{(0)}+f(\boldsymbol{\theta_1}, t) Y^{(1)} + \theta_2 Z^{(0)}X^{(1)}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
-    :math:`\frac{2}{5}` as well as a time interval :math:`t=[\frac{1}{10}, \frac{9}{10}]`.
+    :math:`\theta_2 = \frac{2}{5}`, :math:`f(\boldsymbol{\theta_1}, t) = \theta_1^0 t + \theta_1^1` as well as a time interval :math:`t=[\frac{1}{10}, \frac{9}{10}]`.
 
     .. code-block:: python
 
@@ -396,10 +396,10 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
             return qml.expval(qml.PauliX(0))
 
     We registered the ``QNode`` to be differentiated with the ``hybrid_pulse_grad`` method.
-    This allows us to simply differentiate it with ``jax.jacobian``, for example, internally
-    making use of the hybrid pulse parameter-shift method.
+    This allows us to simply differentiate it with ``jax.jacobian``, which internally
+    makes use of the hybrid pulse parameter-shift method.
 
-    >>> jax.jacobian(circuit)(params)
+    >>> jax.grad(circuit)(params)
     [Array(1.4189798, dtype=float32, weak_type=True),
      Array([0.00164918, 0.00284802], dtype=float32),
      Array(-0.09984542, dtype=float32, weak_type=True)]
@@ -447,7 +447,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
             H(\{\boldsymbol{\theta_k}\}, t) = \sum_{k=1}^K f_k(\boldsymbol{\theta_k}, t) H_k
 
         where the Hamiltonian terms :math:`\{H_k\}` are constant and the :math:`\{f_k\}` are
-        parametrized time-dependent functions depending the parameters
+        parametrized time-dependent functions depending on the parameters
         :math:`\boldsymbol{\theta_k}`.
         We may associate a matrix function with this Hamiltonian (and a time interval
         :math:`[t_0, t_1]`), which is given by the matrix of the unitary time evolution operator
@@ -526,20 +526,17 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
         evolution.
 
     """
-    print(argnum)
     transform_name = "hybrid pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    print(argnum)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hybrid_pulse_grad)
 
-    print(diff_methods)
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad(tape, shots)
 

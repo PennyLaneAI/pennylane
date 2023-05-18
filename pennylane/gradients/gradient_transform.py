@@ -593,8 +593,6 @@ class gradient_transform(qml.batch_transform):
 
             interface = qml.math.get_interface(*args)
             trainable_params = qml.math.get_trainable_indices(args)
-            print(f"{trainable_params=}")
-            print(f"{interface=}")
 
             if interface == "jax" and tkwargs.get("argnum", None):
                 raise qml.QuantumFunctionError(
@@ -640,7 +638,6 @@ class gradient_transform(qml.batch_transform):
             cjac = qml.transforms.classical_jacobian(
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
-            print(qjac, cjac)
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
