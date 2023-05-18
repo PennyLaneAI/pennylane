@@ -42,6 +42,15 @@ from pennylane.queuing import AnnotatedQueue, process_queue
 _empty_wires = qml.wires.Wires([])
 
 
+def _warn_name():
+    warnings.warn(
+        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
+        " removed in the next release. Going forward, please refrain from using them. This also affects"
+        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
+        UserWarning,
+    )
+
+
 OPENQASM_GATES = {
     "CNOT": "cx",
     "CZ": "cz",
@@ -1380,15 +1389,6 @@ class QuantumScript:
     def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
-
-
-def _warn_name():
-    warnings.warn(
-        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
-        " removed in the next release. Going forward, please refrain from using them. This also affects"
-        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
-        UserWarning,
-    )
 
 
 class SpecsDict(dict):
