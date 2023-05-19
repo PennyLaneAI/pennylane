@@ -13,6 +13,15 @@ def _generate_slices(list_len: int):
 
 
 class TestList:
+    def test_default_init(self):
+        """Test that a DatasetList can be initialized without arguments."""
+        dset_list = DatasetList()
+
+        assert dset_list == []
+        assert dset_list.info.type_id == "list"
+        assert dset_list.info.py_type == "list"
+        assert len(dset_list) == 0
+
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
     def test_value_init(self, value):
         """Test that a DatasetList can be initialized from
@@ -20,6 +29,7 @@ class TestList:
 
         lst = DatasetList(value)
         assert lst == value
+        assert repr(lst) == repr(value)
 
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
     def test_bind_init(self, value):

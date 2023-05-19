@@ -26,8 +26,8 @@ from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 
 class DatasetDict(
     Generic[T],
-    AttributeType[HDF5Group, typing.Mapping[str, T], Optional[typing.Mapping[str, T]]],
-    MutableMapping,
+    AttributeType[HDF5Group, typing.Mapping[str, T], typing.Mapping[str, T]],
+    typing.MutableMapping[str, T],
     MapperMixin,
 ):
     """Provides a dict-like collection for Dataset attribute types."""
@@ -36,12 +36,11 @@ class DatasetDict(
 
     type_id = "dict"
 
-    def __post_init__(self, value: Optional[typing.Mapping[str, T]], info):
-        if value:
-            self.update(value)
+    def __post_init__(self, value: typing.Mapping[str, T], info):
+        self.update(value)
 
-    def default_value(self) -> None:
-        return None
+    def default_value(self) -> Dict:
+        return {}
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableMapping[str, T]:
         return self

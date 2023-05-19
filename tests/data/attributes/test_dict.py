@@ -1,9 +1,20 @@
 import pytest
 
 from pennylane.data.attributes import DatasetDict
+from pennylane.data.base.typing_util import UNSET
 
 
 class TestDatasetDict:
+    def test_default_init(self):
+        """Test that a DatasetDict can be initialized without arguments."""
+        dset_dict = DatasetDict()
+
+        assert dset_dict == {}
+        assert dset_dict.info.type_id == "dict"
+        assert dset_dict.info.py_type == "dict"
+        assert dset_dict.bind.keys() == set()
+        assert len(dset_dict) == 0
+
     @pytest.mark.parametrize(
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]
     )
@@ -16,6 +27,7 @@ class TestDatasetDict:
         assert dset_dict.info.py_type == "dict"
         assert dset_dict.bind.keys() == value.keys()
         assert len(dset_dict) == len(value)
+        assert repr(value) == repr(dset_dict)
 
     @pytest.mark.parametrize(
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]

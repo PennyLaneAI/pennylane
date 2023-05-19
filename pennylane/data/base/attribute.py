@@ -252,7 +252,7 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
 
         self._bind = self._set_value(value, info, parent, key)
         self._check_bind()
-        self.__post_init__(value, info)
+        self.__post_init__(value, self.info)
 
     @property
     def info(self) -> AttributeInfo:

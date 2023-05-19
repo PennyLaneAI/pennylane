@@ -18,6 +18,7 @@ import typing
 from collections.abc import MutableSequence, Sequence
 from typing import Generic, List, Union, overload
 
+
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
@@ -26,7 +27,7 @@ from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 class DatasetList(
     Generic[T],
     AttributeType[HDF5Group, typing.Sequence[T], typing.Iterable[T]],
-    MutableSequence,
+    typing.MutableSequence[T],
     MapperMixin,
 ):
     """Provides a list-like collection type for Dataset Attributes."""
