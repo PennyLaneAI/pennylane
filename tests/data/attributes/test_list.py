@@ -45,6 +45,16 @@ class TestList:
         ds = DatasetList(builtin)
         assert builtin[index] == ds[index]
 
+    @pytest.mark.parametrize("index", (-4, 3))
+    def test_indexing_out_of_range(self, index):
+        """Test that DatasetList raises an IndexError if given an
+        index less than its negative length, or greater than or equal
+        to its length.
+        """
+        ds = DatasetList([1, 2, 3])
+        with pytest.raises(IndexError):
+            ds[index]
+
     @pytest.mark.parametrize("index", range(-5, 5))
     def test_insert(self, index):
         """Test that insert on a DatasetList works exactly like inserting
