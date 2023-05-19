@@ -17,6 +17,7 @@ Tests the MPLDrawer.
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
+# pylint: disable=protected-access,wrong-import-position
 
 import pytest
 
@@ -27,7 +28,6 @@ from matplotlib.patches import FancyArrow
 
 from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
-import pennylane
 
 
 class TestInitialization:
@@ -109,6 +109,8 @@ class TestInitialization:
 
 
 class TestLabels:
+    """Test wire labels work as expected."""
+
     def test_labels(self):
         """Tests labels are added"""
 
@@ -449,6 +451,7 @@ class TestCTRL:
         plt.close()
 
     def test_target_x_color(self):
+        """Test the color of target_x."""
         drawer = MPLDrawer(1, 3)
 
         rgba_red = (1, 0, 0, 1)
@@ -508,6 +511,7 @@ class TestCTRL:
         plt.close()
 
     def test_CNOT_color(self):
+        """Tests the color of CNOT."""
         drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
         drawer.CNOT(0, (0, 1), options={"color": rgba_red})
