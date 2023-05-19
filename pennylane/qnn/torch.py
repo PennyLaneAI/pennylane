@@ -159,7 +159,7 @@ class TorchLayer(Module):
             qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
             torch.save(qlayer.state_dict(), SAVE_PATH)
 
-        To load the model, an instance of the class must be created first before calling ``torch.load()``,
+        To load the layer again, an instance of the class must be created first before calling ``torch.load()``,
         as required by PyTorch:
 
         .. code-block::
