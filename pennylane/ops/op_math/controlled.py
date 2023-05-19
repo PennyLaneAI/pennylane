@@ -148,10 +148,6 @@ class Controlled(SymbolicOp):
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
 
-        The :class:`~.ControlledOperation` currently constructed by the :func:`~.ctrl` transform wraps
-        an entire tape and does not provide as many representations and attributes as ``Controlled``,
-        but :class:`~.ControlledOperation` does decompose.
-
     .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
