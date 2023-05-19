@@ -37,7 +37,7 @@ class DatasetList(
         self.extend(value)
 
     def default_value(self) -> typing.Iterable[T]:
-        return ()
+        return []
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableSequence[T]:
         return self
