@@ -236,9 +236,7 @@ class TRY(Operation):
     def generator(self):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(
-        self, phi, wires, subspace=[0, 1], do_queue=True, id=None
-    ):  # pylint: disable=dangerous-default-value
+    def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
         self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
@@ -256,12 +254,10 @@ class TRY(Operation):
         Returns:
             tuple[int]: subspace on which operator acts
         """
-        return tuple(sorted(self._subspace))
+        return self._subspace
 
     @staticmethod
-    def compute_matrix(
-        theta, subspace=(0, 1)
-    ):  # pylint: disable=arguments-differ,dangerous-default-value
+    def compute_matrix(theta, subspace=(0, 1)):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

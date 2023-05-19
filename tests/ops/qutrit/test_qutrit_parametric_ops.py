@@ -358,7 +358,7 @@ def test_control_wires(op, control_wires):
     "op, obs, grad_fn",
     [
         (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
-        (qml.TRY, qml.GellMann(0, 8), lambda phi: 0 * phi),
+        (qml.TRY, qml.GellMann(0, 1), lambda phi: np.cos(phi)),
     ],
 )
 class TestGrad:
@@ -398,7 +398,7 @@ class TestGrad:
 
         jac = qml.jacobian(circuit)(phi)
 
-        assert np.allclose(jac, grad_fn(np.diag(phi)), atol=tol, rtol=0)
+        assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
@@ -437,7 +437,7 @@ class TestGrad:
         phi = jnp.linspace(0, 2 * np.pi, 7)
         jac = jax.jacobian(circuit)(phi)
 
-        assert np.allclose(jac, grad_fn(np.diag(phi)), atol=tol, rtol=0)
+        assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
@@ -475,7 +475,7 @@ class TestGrad:
         jac = torch.autograd.functional.jacobian(circuit, phi_torch)
         phi = phi_torch.detach().numpy()
 
-        assert qml.math.allclose(jac, grad_fn(np.diag(phi)), atol=tol, rtol=0)
+        assert qml.math.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
@@ -517,6 +517,6 @@ class TestGrad:
         with tf.GradientTape() as tape:
             result = circuit(phi_tf)
         res = tape.jacobian(result, phi_tf)
-        expected = tf.Variable(grad_fn(np.diag(phi)))
+        expected = tf.Variable(np.diag(grad_fn(phi)))
 
         assert qml.math.allclose(res, expected, atol=tol, rtol=0)
