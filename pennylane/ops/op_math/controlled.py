@@ -97,7 +97,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         and len(control) == 1
         and (control_values is None or control_values[0])
     ):
-        QueuingManager().remove(op)
+        QueuingManager.remove(op)
         return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
         return Controlled(
