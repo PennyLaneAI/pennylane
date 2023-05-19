@@ -235,14 +235,12 @@ class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op], _DatasetOpe
 
 
 class DatasetOperatorList(
-    AttributeType[HDF5Group, List[Operator], typing.Sequence[Operator]], _DatasetOperatorMixin
+    Generic[Op], AttributeType[HDF5Group, List[Op], typing.Sequence[Op]], _DatasetOperatorMixin
 ):
     type_id = "operator_list"
 
-    def value_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: Sequence[Operator]
-    ) -> HDF5Group:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Sequence[Op]) -> HDF5Group:
         return self._ops_to_hdf5(bind_parent, key, value)
 
-    def hdf5_to_value(self, bind: HDF5Group) -> List[Operator]:
+    def hdf5_to_value(self, bind: HDF5Group) -> List[Op]:
         return self._hdf5_to_ops(bind)
