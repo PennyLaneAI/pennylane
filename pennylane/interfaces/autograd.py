@@ -16,8 +16,6 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-from collections.abc import Sequence
-
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -436,14 +434,7 @@ def vjp(
         dy = dy[0]
 
         computing_jacobian = _n == max_diff
-
-        if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
-            # assumes all tapes have the same shot vector
-            shot_vector = (
-                tapes[0].shots.shot_vector if tapes[0].shots.has_partitioned_shots else None
-            )
-        else:
-            shot_vector = device.shot_vector
+        new_device_interface = isinstance(device, qml.devices.experimental.Device)
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -451,9 +442,14 @@ def vjp(
             jacs = ans[1]
 
         if jacs:
+            if new_device_interface:  # pragma: no-cover
+                # assumes all tapes have the same shot vector
+                partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
+            else:
+                partitioned_shots = device.shot_vector
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, shot_vector)
+            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, partitioned_shots)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -467,7 +463,7 @@ def vjp(
                         unwrapped_tapes,
                         dy,
                         gradient_fn,
-                        shots=shot_vector,
+                        shots=None if new_device_interface else device.shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -479,7 +475,7 @@ def vjp(
                         tapes,
                         dy,
                         gradient_fn,
-                        shots=shot_vector,
+                        shots=None if new_device_interface else device.shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -522,13 +518,12 @@ def vjp(
     return grad_fn
 
 
-def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
+def _compute_vjps_autograd(jacs, dy, multi_measurements, partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        shot_vector_defined = isinstance(shots, Sequence)
-        dy_ = dy[i] if shot_vector_defined else (dy[i],)
-        jac_ = jacs[i] if shot_vector_defined else (jacs[i],)
+        dy_ = dy[i] if partitioned_shots else (dy[i],)
+        jac_ = jacs[i] if partitioned_shots else (jacs[i],)
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):
