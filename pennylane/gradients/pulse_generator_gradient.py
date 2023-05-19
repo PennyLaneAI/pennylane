@@ -45,8 +45,8 @@ except ImportError:
 
 
 def _one_parameter_generators(op):
-    r"""Compute the effective generators of one-parameter groups that reproduce
-    the partial derivatives of a parameterized evolution.
+    r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
+    reproduce the partial derivatives of a parameterized evolution.
 
     Args:
         op (`~.ParametrizedEvolution`): Parametrized evolution for which to compute the generator
@@ -58,19 +58,49 @@ def _one_parameter_generators(op):
         where ``N`` is the number of qubits the evolution acts on and ``par_shape`` is the
         shape of the ``k``\ th parameter of the evolution.
 
+    The effective generator can be computed from the derivative of the unitary
+    matrix corresponding to the full time evolution of a pulse:
+
+    .. math::
+
+        \Omega_k = U(\theta)^\dagger \frac{\partial}{\partial \theta_k} U(\theta)
+
+    Here :math:`U(\theta)` is the unitary matrix of the time evolution due to the pulse
+    and :math:`\theta` are the variational parameters of the pulse.
+
     See the documentation of pulse_generator for more details and a mathematical derivation.
     """
 
     def _compute_matrix(*args):
+        """Parametrized computation of the matrix for the given pulse ``op``."""
         return op(*args, t=op.t, **op.odeint_kwargs).matrix()
 
-    data = [(1.0 + 0.0j) * d for d in op.data]
-    # These lines compute the Jacobian of compute_matrix every time -> to be optimized
-    jac = jax.jacobian(_compute_matrix, argnums=0, holomorphic=True)(data)
+    def _matrix_real(*args):
+        """Parametrized computation of the real part of the matrix
+        for the given pulse ``op``."""
+        return _compute_matrix(*args).real
 
-    # Compute the Omegas from the Jacobian.
+    def _matrix_imag(*args):
+        """Parametrized computation of the imaginary part of the matrix
+        for the given pulse ``op``."""
+        return _compute_matrix(*args).imag
+
+    # Compute the Jacobian of _compute_matrix in real and imaginary parts separately, and add them
+    # The output is a tuple, with one entry per parameter, each of which has the axes
+    # (mat_dim, mat_dim, *parameter_shape)
+    jac = (jax.jacobian(_matrix_real, argnums=0)(op.data)
+        + 1j * jax.jacobian(_matrix_imag, argnums=0)(op.data))
+
+    # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
+    # The output has the shape (mat_dim, mat_dim)
     U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in data]))
-    # After contracting, move the parameter derivative axis to the first position
+
+    # Compute U^\dagger @ \partial U / \partial \theta_k
+    # For each entry ``j`` in the tuple ``jac``,
+    # 1. Contract U_dagger with j along the axes [0], [0]. This effectively transposes
+    #    U_dagger, which we skipped above.
+    # 2. After contraction, the axes are (mat_dim, mat_dim, *parameter_shape).
+    # 3. Move the first two axis to the last two positions. TODO :Necessary?
     return tuple(
         qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
         for j in jac
@@ -82,6 +112,8 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
     the partial derivatives of a parametrized evolution. The coefficients correspond
     to the decomposition into (rescaled) Pauli word generators as used by ``PauliRot``
     gates.
+    In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
+    and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
     Args:
         generators (tuple[tensor_like]): Generators of the one-parameter groups that
@@ -414,11 +446,28 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     >>> len(tapes)
     12
 
-    There are :math:`12` tapes because there are two shift parameters per Pauli word
-    and six Pauli words in the basis of the *dynamical Lie algebra (DLA)* of the pulse:
-    :math:`\left\{Y_{1}, X_{0}X_{1}, X_{0}Z_{1}, Y_{0}, Z_{0}X_{1}, Z_{0}Z_{1}\right\}`.
+    Why are there :math:`12` tapes? 
+    Consider the terms in the time-dependent pulse Hamiltonian: :math:`\{Y_0, Y_1, Z_0X_1\}`
+    Via the Lie bracket, which is just the standard matrix commutator, they
+    generate an algebra, the so-called *dynamical Lie algebra (DLA)* of the pulse.
+    In order to find all Pauli words that occur in the DLA, we need to (recursively)
+    calculate all possible commutators between the three words above and their
+    commutators. For the three words above, we obtain three additional words:
+
+    .. math::
+        
+        [Y_0, Z_0X_1] &\propto X_0X_1 \\
+        [Y_1, Z_0X_1] &\propto Z_0Z_1 \\
+        [Y_0, Z_0Z_1] &\propto X_0Z_1
+
+    All other commutators result in expressions proportional to one of the six Pauli words.
+    For each of these six words, we need to compute the standard parameter-shift rule
+    requiring two shifted circuits, which yields :math:`12` tapes.
+
     We may inspect one of the tapes, which differs from the original tape by the inserted
     rotation gate ``"RIY"``, i.e. a ``PauliRot(np.pi/2, "IY", wires=[0, 1])`` gate.
+    Note that the order of the tapes follows lexicographical ordering of the inserted
+    Pauli rotations, so that :math:`Y_1` is the first of the six words.
 
     >>> print(qml.drawer.tape_text(tapes[0]))
     0: ─╭RIY─╭ParametrizedEvolution─┤  <X>

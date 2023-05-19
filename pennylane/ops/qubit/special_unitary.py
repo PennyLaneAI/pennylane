@@ -126,7 +126,7 @@ def pauli_basis_strings(num_wires):
 
 
 def _pauli_decompose(matrix, num_wires):
-    """Compute the coefficients of a matrix or a batch of matrices (batch dimension(s) in the
+    r"""Compute the coefficients of a matrix or a batch of matrices (batch dimension(s) in the
     leading axes) in the Pauli basis.
 
     Args:
@@ -136,14 +136,28 @@ def _pauli_decompose(matrix, num_wires):
     Returns:
         tensor_like: Coefficients of the input ``matrix`` in the Pauli basis.
 
-    The normalization is such that a single Pauli word as input has a coefficient of
-    ``1`` for its own word and zeros else.
+    For a matrix :math:`M`, these coefficients are defined via
+    :math:`M = \sum_\ell c_\ell P_\ell` and they can be computed using the (Frobenius) inner
+    product of :math:`M` with the corresponding Pauli word :math:`P_\ell`: 
+    :math:`c_\ell = \frac{1}{2^N}\operatorname{Tr}\left\{P_\ell M\right\}` where the prefactor
+    is the normalization that makes the standard Pauli basis orthonormal, and :math:`N`
+    is the number of qubits.
+    That is, the normalization is such that a single Pauli word :math:`P_k` has
+    coefficients ``c_\ell = \delta_{k\ell}``.
+
+    Note that this implementation takes :math:`\mathcal{O}(16^N)` operations per input
+    matrix but there is a more efficient method taking only :math:`\mathcal{O}(N4^N)`
+    operations per matrix.
     """
+    # Create the dense Pauli basis tensor (shape (d^2-1, d, d)) with d = 2**num_wires
     basis = pauli_basis_matrices(num_wires)
-    return (
-        qml.math.cast(qml.math.tensordot(basis, matrix, axes=[[1, 2], [-1, -2]]), matrix.dtype)
-        / 2**num_wires
-    )
+    # Contract the Pauli basis tensor with the input, which has shape (*batch_dims, d, d)
+    # We are interested in the traces of the matrix products, for each Pauli basis. Both
+    # contractions (mult and trace) can be executed by providing all axes of size d to
+    # ``tensordot``, which gives us a vectorized way to compute the coefficients.
+    coefficients = qml.math.tensordot(basis, matrix, axes=[[1, 2], [-1, -2]])
+    # Finally, cast to the original data type and renormalize
+    return qml.math.cast(coefficients, matrix.dtype) / 2**num_wires
 
 
 class SpecialUnitary(Operation):
