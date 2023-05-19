@@ -30,7 +30,8 @@ class DatasetDict(
     typing.MutableMapping[str, T],
     MapperMixin,
 ):
-    """Provides a dict-like collection for Dataset attribute types."""
+    """Provides a dict-like collection for Dataset attribute types. Keys must
+    be strings."""
 
     Self = TypeVar("Self", bound="DatasetDict")
 
@@ -59,15 +60,21 @@ class DatasetDict(
         return self.copy_value()
 
     def __getitem__(self, __key: str) -> T:
+        self._check_key(__key)
+
         return self._mapper[__key].get_value()
 
     def __setitem__(self, __key: str, __value: Union[T, AttributeType[HDF5Any, T, T]]) -> None:
+        self._check_key(__key)
+
         if __key in self:
             del self[__key]
 
         self._mapper[__key] = __value
 
     def __delitem__(self, __key: str) -> None:
+        self._check_key(__key)
+
         del self._mapper[__key]
 
     def __len__(self) -> int:
@@ -94,3 +101,8 @@ class DatasetDict(
         items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
 
         return f"{{{items_repr}}}"
+
+    def _check_key(self, __key: str) -> None:
+        """Checks that __key is a string, and raises a ``TypeError`` if it isn't."""
+        if not isinstance(__key, str):
+            raise TypeError(f"'{type(self).__name__}' keys must be strings.")

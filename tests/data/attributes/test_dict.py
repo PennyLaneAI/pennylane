@@ -54,3 +54,10 @@ class TestDatasetDict:
         value["a"] = 2
 
         assert ds == value
+
+    @pytest.mark.parametrize("data", [{1: 2}, {None: 3}, {str: 3}])
+    def test_init_key_type_not_str_exc(self, data):
+        """Tests that a ``TypeError` is raised when trying to create a DatasetDict with non-string
+        keys."""
+        with pytest.raises(TypeError, match="'DatasetDict' keys must be strings"):
+            DatasetDict(data)
