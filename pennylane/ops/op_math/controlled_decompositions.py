@@ -397,7 +397,7 @@ def ctrl_decomp_bisect(
     **Example:**
 
     >>> op = qml.T(0) # uses OD algorithm
-    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
+    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─┤
     1: ─├●────────│──────────├●────────│──────────┤
     2: ─├●────────│──────────├●────────│──────────┤
@@ -405,7 +405,7 @@ def ctrl_decomp_bisect(
     4: ───────────├●───────────────────├●─────────┤
     5: ───────────╰●───────────────────╰●─────────┤
     >>> op = qml.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
-    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
+    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
     1: ────├●────────│──────────├●────────│─────────────┤
     2: ────├●────────│──────────├●────────│─────────────┤
@@ -413,7 +413,7 @@ def ctrl_decomp_bisect(
     4: ──────────────├●───────────────────├●────────────┤
     5: ──────────────╰●───────────────────╰●────────────┤
     >>> op = qml.Hadamard(0) # uses general algorithm
-    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
+    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)─┤
     1: ────────│─────────────────│──────────├●────────│──────────├●────────│─────────┤
     2: ────────│─────────────────│──────────├●────────│──────────├●────────│─────────┤
