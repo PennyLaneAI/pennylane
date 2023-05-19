@@ -541,9 +541,7 @@ class TestIntegration:
         assert qml.math.isclose(res_def, res_mix, atol=1e-4)
         assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)
 
-    def test_jitted_unitary_differentiation_sparse(
-        self,
-    ):
+    def test_jitted_unitary_differentiation_sparse(self):
         """Test that the unitary can be differentiated with and without jitting using sparse matrices"""
         import jax
         import jax.numpy as jnp
@@ -561,9 +559,7 @@ class TestIntegration:
 
         assert qml.math.allclose(jac, jac_jit)
 
-    def test_jitted_unitary_differentiation_dense(
-        self,
-    ):
+    def test_jitted_unitary_differentiation_dense(self):
         """Test that the unitary can be differentiated with and without jitting using dense matrices"""
         import jax
         import jax.numpy as jnp
