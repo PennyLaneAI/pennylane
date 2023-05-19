@@ -60,7 +60,9 @@ class THermitian(Hermitian):
         A (array): square Hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -181,7 +183,9 @@ class GellMann(Observable):
         index (int): The index of the Gell-Mann matrix to be used. Must be between 1
             and 8 inclusive
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example:**

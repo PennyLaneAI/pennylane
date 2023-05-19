@@ -34,7 +34,9 @@ class Evolution(Exp):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        do_queue (bool): determines if the sum operator will be queued.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str): id for the Evolution operator. Default is None.
 
     Returns:

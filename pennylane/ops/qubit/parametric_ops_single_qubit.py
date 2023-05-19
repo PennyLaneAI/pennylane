@@ -56,7 +56,9 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -153,7 +155,9 @@ class RY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -249,7 +253,9 @@ class RZ(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -386,7 +392,9 @@ class PhaseShift(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -562,7 +570,9 @@ class Rot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -727,7 +737,9 @@ class U1(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -856,7 +868,9 @@ class U2(Operation):
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -999,7 +1013,9 @@ class U3(Operation):
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1

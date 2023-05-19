@@ -132,7 +132,9 @@ class GeneralizedAmplitudeDamping(Channel):
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -297,7 +299,9 @@ class DepolarizingChannel(Channel):
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -372,7 +376,9 @@ class BitFlip(Channel):
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -456,7 +462,9 @@ class ResetError(Channel):
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -548,7 +556,9 @@ class PauliError(Channel):
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -662,7 +672,9 @@ class PhaseFlip(Channel):
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -714,7 +726,9 @@ class QubitChannel(Channel):
         K_list (list[array[complex]]): list of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -842,7 +856,9 @@ class ThermalRelaxationError(Channel):
         tg (float): the gate time for relaxation error
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 4

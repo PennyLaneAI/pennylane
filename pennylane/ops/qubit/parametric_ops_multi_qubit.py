@@ -56,7 +56,9 @@ class MultiRZ(Operation):
         theta (tensor_like or float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -227,7 +229,9 @@ class PauliRot(Operation):
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -535,7 +539,9 @@ class PCPhase(Operation):
         dim (int): the dimension of the subspace
         wires (Iterable[int, str], Wires): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -757,7 +763,9 @@ class IsingXX(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -894,7 +902,9 @@ class IsingYY(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1038,7 +1048,9 @@ class IsingZZ(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1222,7 +1234,9 @@ class IsingXY(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1402,7 +1416,9 @@ class PSWAP(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2

@@ -51,7 +51,9 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on (optional if U is provided as a QubitUnitary)
         control_values (List[int, bool]): a list providing the state of the control qubits to control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the operator (default False)
-        do_queue (bool): indicates whether the operator should be recorded when created in a tape context
+        do_queue (bool): indicates whether the operator should be recorded when created in a tape context.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
 
     **Example**
 

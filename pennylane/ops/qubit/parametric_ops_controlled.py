@@ -52,7 +52,9 @@ class ControlledPhaseShift(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -243,7 +245,9 @@ class CPhaseShift00(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -431,7 +435,9 @@ class CPhaseShift01(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -611,7 +617,9 @@ class CPhaseShift10(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Any, Wires): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -795,7 +803,9 @@ class CRX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -959,7 +969,9 @@ class CRY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1122,7 +1134,9 @@ class CRZ(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1315,7 +1329,9 @@ class CRot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2

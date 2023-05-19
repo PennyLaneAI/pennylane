@@ -48,7 +48,9 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 

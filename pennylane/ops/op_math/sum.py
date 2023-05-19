@@ -38,7 +38,8 @@ def sum(*summands, do_queue=None, id=None, lazy=True):
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
@@ -93,7 +94,9 @@ class Sum(CompositeOp):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        do_queue (bool): determines if the sum operator will be queued.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::

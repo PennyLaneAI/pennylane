@@ -68,7 +68,9 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
+        do_queue (bool): determines if the scalar product operator will be queued.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:

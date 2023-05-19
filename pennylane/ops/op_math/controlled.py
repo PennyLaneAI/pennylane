@@ -141,7 +141,9 @@ class Controlled(SymbolicOp):
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
         do_queue(bool):  indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.

@@ -244,7 +244,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
         name (str): a name given to the quantum tape
-        do_queue=True (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        do_queue=True (bool): Whether or not to queue.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -328,13 +330,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
+    To prevent the tape from being queued use ``qml.QueuingManager.stop_recording()``.
 
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape(do_queue=False) as tape2:
-                qml.RX(0.123, wires=0)
+            with qml.QueuingManager.stop_recording():
+                with qml.tape.QuantumTape() as tape2:
+                    qml.RX(0.123, wires=0)
 
     Here, tape2 records the RX gate, but tape1 doesn't record tape2.
 

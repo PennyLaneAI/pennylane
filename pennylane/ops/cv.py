@@ -102,7 +102,9 @@ class Rotation(CVOperation):
         phi (float): the rotation angle
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -153,7 +155,9 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -210,7 +214,9 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -273,7 +279,9 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -337,7 +345,9 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -401,7 +411,9 @@ class QuadraticPhase(CVOperation):
         s (float): parameter
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -457,7 +469,9 @@ class ControlledAddition(CVOperation):
         s (float): addition multiplier
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -516,7 +530,9 @@ class ControlledPhase(CVOperation):
         s (float):  phase shift multiplier
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -562,7 +578,9 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -593,7 +611,9 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -624,7 +644,9 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -675,7 +697,9 @@ class InterferometerUnitary(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[Any] or Any): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -729,7 +753,9 @@ class CoherentState(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -755,7 +781,9 @@ class SqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -791,7 +819,9 @@ class DisplacedSqueezedState(CVOperation):
         phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 4
@@ -816,7 +846,9 @@ class ThermalState(CVOperation):
         nbar (float): mean thermal population of the mode
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -846,7 +878,9 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -874,7 +908,9 @@ class FockState(CVOperation):
         n (int): Fock state to prepare
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -926,7 +962,9 @@ class FockStateVector(CVOperation):
             or a multimode ket, with one array dimension per mode
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     .. details::
@@ -1017,7 +1055,9 @@ class FockDensityMatrix(CVOperation):
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -1054,7 +1094,9 @@ class CatState(CVOperation):
             cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 3
@@ -1261,7 +1303,9 @@ class QuadOperator(CVObservable):
             the generalized quadrature observable
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -1340,7 +1384,9 @@ class PolyXP(CVObservable):
         q (array[float]): expansion coefficients
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -1401,7 +1447,9 @@ class FockStateProjector(CVObservable):
             total number of wires in the QNode.
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1

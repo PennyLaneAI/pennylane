@@ -36,7 +36,9 @@ class CompositeOp(Operator):
         operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
 
     Keyword Args:
-        do_queue (bool): determines if the operator will be queued. Default is True.
+        do_queue (bool): determines if the operator will be queued.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property

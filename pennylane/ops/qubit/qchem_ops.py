@@ -135,7 +135,9 @@ class SingleExcitation(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -298,7 +300,9 @@ class SingleExcitationMinus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -429,7 +433,9 @@ class SingleExcitationPlus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -567,7 +573,9 @@ class DoubleExcitation(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -768,7 +776,9 @@ class DoubleExcitationPlus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
@@ -851,7 +861,9 @@ class DoubleExcitationMinus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
@@ -941,7 +953,9 @@ class OrbitalRotation(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -1132,7 +1146,9 @@ class FermionicSWAP(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): String representing the operation (optional)
 
     **Example**

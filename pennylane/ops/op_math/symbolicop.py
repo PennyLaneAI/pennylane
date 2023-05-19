@@ -31,7 +31,9 @@ class SymbolicOp(Operator):
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -162,7 +164,8 @@ class ScalarSymbolicOp(SymbolicOp):
         base (~.operation.Operator): the base operation that is modified symbolicly
         scalar (float): the scalar coefficient
         do_queue (bool): indicates whether the operator should be recorded when created in a tape
-            context
+            context. This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str): custom label given to an operator instance, can be useful for some applications
             where the instance has to be identified
 

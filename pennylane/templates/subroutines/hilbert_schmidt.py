@@ -71,8 +71,9 @@ class HilbertSchmidt(Operation):
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape(do_queue=False) as u_tape:
-                qml.Hadamard(wires=0)
+            with qml.tape.QuantumTape() as u_tape:
+                with qml.QueuingManager.stop_recording():
+                    qml.Hadamard(wires=0)
 
             def v_function(params):
                 qml.RZ(params[0], wires=1)
@@ -213,8 +214,9 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
             import numpy as np
 
-            with qml.tape.QuantumTape(do_queue=False) as u_tape:
-                qml.CZ(wires=[0,1])
+            with qml.tape.QuantumTape() as u_tape:
+                with qml.QueuingManager.stop_recording():
+                    qml.CZ(wires=[0,1])
 
             def v_function(params):
                 qml.RZ(params[0], wires=2)

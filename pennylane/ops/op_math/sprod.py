@@ -38,7 +38,9 @@ def s_prod(scalar, operator, lazy=True, do_queue=None, id=None):
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
-        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
+        do_queue (bool): determines if the scalar product operator will be queued.
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
@@ -94,7 +96,9 @@ class SProd(ScalarSymbolicOp):
 
     Keyword Args:
         do_queue (bool): determines if the scalar product operator will be queued
-            (currently not supported). Default is True.
+            (currently not supported).
+            This arguement is deprecated, instead of setting it to `False`
+            use `qml.QueuingManager.stop_recording()`.
         id (str or None): id for the scalar product operator. Default is None.
 
     .. note::
