@@ -560,7 +560,7 @@ def execute(
         # We must do this now, prior to the interface, to ensure that
         # decompositions with parameter processing is tracked by the
         # autodiff frameworks.
-        tapes = tuple(expand_fn(t) for t in tapes)
+        tapes = [expand_fn(t) for t in tapes]
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
