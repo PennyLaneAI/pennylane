@@ -129,31 +129,6 @@ class TestDensityMatrixFromStateVectors:
         assert np.allclose(density_matrix, expected)
 
     @pytest.mark.parametrize("array_func", array_funcs)
-    @pytest.mark.parametrize("state_vector", list(zip(*state_vectors))[0])
-    def test_reduced_dm_raises_with_broadcasted_statevector(self, state_vector, array_func):
-        """Test that an error is raised for a broadcasted state vector."""
-        state_vector = np.outer(np.exp([1j, -0.5j, 0]), state_vector)
-        state_vector = array_func(state_vector)
-
-        with pytest.raises(ValueError, match="Broadcasted density matrices"):
-            _ = fn.reduced_dm(state_vector, indices=[0, 1])
-
-    @pytest.mark.parametrize("array_func", array_funcs)
-    @pytest.mark.parametrize("state_vector", list(zip(*state_vectors))[0])
-    def test_reduced_dm_raises_with_broadcasted_and_input_is_dm(self, state_vector, array_func):
-        """Test that an error is raised for a broadcasted state vector even if the
-        broadcasting dimension is ambiguous, as long as `input_is_dm` is used."""
-        state_vector = np.outer(np.exp([1j, -0.5j, 0, -1]), state_vector)
-        state_vector = array_func(state_vector)
-
-        with pytest.raises(ValueError, match="Broadcasted density matrices"):
-            _ = fn.reduced_dm(state_vector, indices=[0, 1], input_is_dm=False)
-
-        # Currently, when input_is_dm is not used, square broadcasted state vectors are not detected
-        wrong_dm = fn.reduced_dm(state_vector, indices=[0, 1])
-        assert np.allclose(wrong_dm, state_vector)
-
-    @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", single_wires_list)
     def test_reduced_dm_with_state_vector_single_wires(
@@ -341,16 +316,6 @@ class TestDensityMatrixFromMatrix:
             expected = permute_two_qubit_dm(expected)
 
         assert np.allclose(returned_density_matrix, expected)
-
-    @pytest.mark.parametrize("array_func", array_funcs)
-    @pytest.mark.parametrize("input_is_dm", [None, True])
-    def test_reduced_dm_raises_with_broadcasted_dm(self, array_func, input_is_dm):
-        """Test that an error is raised for a broadcasted density matrix."""
-        density_matrix = np.tensordot(np.exp([1j, -0.5j, 0]), mat_00, axes=0)
-        density_matrix = array_func(density_matrix)
-
-        with pytest.raises(ValueError, match="Broadcasted density matrices"):
-            _ = fn.reduced_dm(density_matrix, indices=[0], input_is_dm=input_is_dm)
 
     def test_matrix_wrong_shape(self):
         """Test that wrong shaped state vector raises an error with check_state=True"""
