@@ -174,7 +174,7 @@ class CZ(ControlledOp):
 
     def __init__(self, wires):
         control_wire, wire = wires
-        base = PauliZ(wire)
+        base = PauliZ(wires=wire)
         super().__init__(base, control_wire)
         self._name = "CZ"
 

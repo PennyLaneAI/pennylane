@@ -24,8 +24,9 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math as qmlmath
 from pennylane import operation
+from pennylane import math as qmlmath
+from pennylane.queuing import QueuingManager
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -88,10 +89,15 @@ def ctrl(op, control, control_values=None, work_wires=None):
     custom_controlled_ops = {
         qml.PauliZ: qml.CZ,
     }
-    control_values = [control_values] if isinstance(control_values, int) else control_values
+    control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
 
-    if isinstance(op, tuple(custom_controlled_ops)) and len(control) == 1:
+    if (
+        isinstance(op, tuple(custom_controlled_ops))
+        and len(control) == 1
+        and (control_values is None or control_values[0])
+    ):
+        QueuingManager().remove(op)
         return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
         return Controlled(
