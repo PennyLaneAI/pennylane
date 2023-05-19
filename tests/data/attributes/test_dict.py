@@ -43,3 +43,14 @@ class TestDatasetDict:
         assert dset_dict.info.py_type == "dict"
         assert dset_dict.bind.keys() == value.keys()
         assert len(dset_dict) == len(value)
+
+    @pytest.mark.parametrize("value", [{}, {"a": 1, "b": 2}])
+    def test_setitem(self, value):
+        """Test that __setitem__ can replace or insert a new element
+        into a DatasetDict."""
+
+        ds = DatasetDict(value)
+        ds["a"] = 2
+        value["a"] = 2
+
+        assert ds == value

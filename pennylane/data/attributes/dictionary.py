@@ -16,8 +16,8 @@ of Dataset attributes."""
 
 
 import typing
-from collections.abc import Mapping, MutableMapping
-from typing import Dict, Generic, Optional, TypeVar, Union
+from collections.abc import Mapping
+from typing import Dict, Generic, TypeVar, Union
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
@@ -62,6 +62,9 @@ class DatasetDict(
         return self._mapper[__key].get_value()
 
     def __setitem__(self, __key: str, __value: Union[T, AttributeType[HDF5Any, T, T]]) -> None:
+        if __key in self:
+            del self[__key]
+
         self._mapper[__key] = __value
 
     def __delitem__(self, __key: str) -> None:

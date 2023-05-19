@@ -30,6 +30,7 @@ class TestList:
         lst = DatasetList(value)
         assert lst == value
         assert repr(lst) == repr(value)
+        assert len(lst) == len(value)
 
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
     def test_bind_init(self, value):
@@ -75,4 +76,39 @@ class TestList:
         builtin.insert(index, 10)
         ds.insert(index, 10)
 
-        assert ds[index] == builtin[index]
+        assert ds == builtin
+
+    @pytest.mark.parametrize("index", range(-4, 3))
+    def test_delitem(self, index):
+        """Test that __delitem__ can remove an object from any index while
+        preserving the list structure."""
+        builtin = [0, 1, 2, {"a": 1}]
+        ds = DatasetList(builtin)
+
+        del ds[index]
+        del builtin[index]
+
+        assert ds == builtin
+        assert len(ds) == len(builtin)
+
+    @pytest.mark.parametrize("index", range(-4, 3))
+    def test_setitem(self, index):
+        """Test that __setitem__ can replace an object at any index while preserving
+        the list structure."""
+        builtin = [0, 1, 2, {"a": 1}]
+        ds = DatasetList(builtin)
+
+        ds[index] = "test"
+        builtin[index] = "test"
+
+        assert ds == builtin
+        assert len(ds) == len(builtin)
+
+    @pytest.mark.parametrize("index", (-2, 1))
+    def test_setitem_out_of_range(self, index):
+        """Test that __setitem__ raises an IndexError when given an index
+        that is out of range of the list."""
+        ds = DatasetList([0])
+
+        with pytest.raises(IndexError):
+            ds[index] = 1
