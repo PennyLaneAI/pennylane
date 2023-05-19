@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
-from typing import Union
-
 # pylint: disable=protected-access
 import pennylane as qml
+
 import pennylane.numpy as np
-from pennylane.typing import TensorLike
+from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
@@ -25,7 +24,7 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
-def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Union[tuple, TensorLike]:
+def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.

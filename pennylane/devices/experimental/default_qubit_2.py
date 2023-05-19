@@ -18,9 +18,8 @@ This module contains the next generation successor to default qubit
 from typing import Union, Callable, Tuple, Optional, Sequence
 
 import pennylane.numpy as np
-from pennylane.resource import Resources
-from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -28,8 +27,11 @@ from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
 
+Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+# always a function from a resultbatch to either a result or a result batch
+PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 class DefaultQubit2(Device):
@@ -139,7 +141,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable, ExecutionConfig]:
+    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
@@ -168,7 +170,7 @@ class DefaultQubit2(Device):
 
         if is_single_circuit:
 
-            def convert_batch_to_single_output(results):
+            def convert_batch_to_single_output(results: ResultBatch) -> Result:
                 """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
                 return post_processing_fn(results)[0]
 
@@ -180,7 +182,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ):
+    ) -> Result_or_ResultBatch:
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
@@ -188,17 +190,7 @@ class DefaultQubit2(Device):
 
         if self.tracker.active:
             for c in circuits:
-                tape_resources = c.specs["resources"]
-
-                resources = Resources(  # temporary until shots get updated on tape !
-                    tape_resources.num_wires,
-                    tape_resources.num_gates,
-                    tape_resources.gate_types,
-                    tape_resources.gate_sizes,
-                    tape_resources.depth,
-                    Shots(c.shots),
-                )
-                self.tracker.update(resources=resources)
+                self.tracker.update(resources=c.specs["resources"])
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
