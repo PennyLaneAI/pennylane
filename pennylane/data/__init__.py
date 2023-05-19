@@ -17,6 +17,7 @@ from .attributes import (
     DatasetArray,
     DatasetDict,
     DatasetHamiltonian,
+    DatasetJSON,
     DatasetList,
     DatasetMolecule,
     DatasetNone,
@@ -49,4 +50,5 @@ __all__ = (
     "DatasetPauliSentence",
     "DatasetMolecule",
     "DatasetSparseArray",
+    "DatasetJSON",
 )

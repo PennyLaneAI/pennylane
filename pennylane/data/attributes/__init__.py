@@ -15,6 +15,7 @@
 
 from .array import DatasetArray
 from .dictionary import DatasetDict
+from .json import DatasetJSON
 from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
@@ -39,5 +40,5 @@ __all__ = (
     "DatasetSparseArray",
     "DatasetMolecule",
     "DatasetHamiltonian",
-    "DatasetTensor",
+    "DatasetJSON",
 )
