@@ -13,3 +13,8 @@
 # limitations under the License.
 """The base module contains the base class that defines the underlying
 type machinery, and the low-level HDF5 interface of the data module."""
+
+from .attribute import AttributeInfo, AttributeType
+from .dataset import Dataset, attribute
+
+__all__ = ("AttributeInfo", "AttributeType", "Dataset", "attribute")
