@@ -72,35 +72,27 @@ def _one_parameter_generators(op):
     """
 
     def _compute_matrix(*args):
-        """Parametrized computation of the matrix for the given pulse ``op``."""
-        return op(*args, t=op.t, **op.odeint_kwargs).matrix()
-
-    def _matrix_real(*args):
-        """Parametrized computation of the real part of the matrix
-        for the given pulse ``op``."""
-        return _compute_matrix(*args).real
-
-    def _matrix_imag(*args):
-        """Parametrized computation of the imaginary part of the matrix
-        for the given pulse ``op``."""
-        return _compute_matrix(*args).imag
+        """Parametrized computation of the matrix for the given pulse ``op``.
+        Return the real and imaginary parts separately."""
+        mat = op(*args, t=op.t, **op.odeint_kwargs).matrix()
+        return mat.real, mat.imag
 
     # Compute the Jacobian of _compute_matrix in real and imaginary parts separately, and add them
     # The output is a tuple, with one entry per parameter, each of which has the axes
     # (mat_dim, mat_dim, *parameter_shape)
-    jac = (jax.jacobian(_matrix_real, argnums=0)(op.data)
-        + 1j * jax.jacobian(_matrix_imag, argnums=0)(op.data))
+    jac_real, jac_imag = jax.jacobian(_compute_matrix, argnums=0)(op.data)
+    jac = jac_real + 1j * jac_imag
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
-    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in data]))
+    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in op.data]))
 
     # Compute U^\dagger @ \partial U / \partial \theta_k
     # For each entry ``j`` in the tuple ``jac``,
     # 1. Contract U_dagger with j along the axes [0], [0]. This effectively transposes
     #    U_dagger, which we skipped above.
     # 2. After contraction, the axes are (mat_dim, mat_dim, *parameter_shape).
-    # 3. Move the first two axis to the last two positions. TODO :Necessary?
+    # 3. Move the first two axis to the last two positions.
     return tuple(
         qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
         for j in jac
@@ -140,6 +132,9 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
         of the evolution. This can be improved to :math:`\mathcal{O}(nN4^N}` by using the
         fast Walsh-Hadamard transform.
     """
+    # The generators are skew-Hermitian. Therefore _pauli_decompose will return a purely
+    # imaginary tensor. Multiplying with 2i results in a real-valued tensor, which
+    # we prefer over a complex-valued tensor with vanishing imaginary part
     return tuple(qml.math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
 
 
@@ -147,7 +142,7 @@ def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
     """Given a tuple of coefficient tensors with a common first axis size :math:`4^N-1`,
     where :math:`N` is the number of wires, filter out those indices for the first axis for which
     the sliced coefficients are not all zero. Return these coefficients, as well as the
-    corresponding Pauli word strings on :math:`N` wires for these indices.
+    corresponding Pauli word strings on :math:`N` wires.
 
     Args:
         coefficients(tuple[tensor_like]): Coefficients to filter.
@@ -260,6 +255,8 @@ def _parshift_and_contract(results, coeffs, single_measure, shot_vector):
     """
 
     def _parshift_and_contract_single(res_list, coeffs):
+        """Execute the standard parameter-shift rule on a list of results
+        and contract with Pauli basis coefficients."""
         psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
         return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
 
@@ -309,19 +306,45 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
 
     """
     argnum = argnum or tape.trainable_params
+    # Initialize a cache that will store the following:
+    # 1. the following single entry ``str: int`` that memorized the number of tapes that
+    #    were created overall thus far.
+    # 2. one entry per ``ParametrizedEvolution`` that contains at least one trainable
+    #    parameter of the tape that also is marked as trainable as per ``argnum``.
+    #    These entries have the format ``int: (int, int, tuple[tensor_like])``. The key is the
+    #    index for the pulse within the tape operations. The first two entries of the value
+    #    are a "start" and an "end" pointer, referencing which tapes in ``gradient_tapes``
+    #    have been created for the pulse.
+    #    Correspondingly, these pointers define the sub-list of results that should be used
+    #    for the given pulse in the postprocessing function below.
+    #    The third entry in the value tuple contains the coefficients of the effective
+    #    generators of the given pulse. These are given in a tuple, with one entry per
+    #    parameter of the pulse.
+    #    For details on these coefficients, see _one_parameter_paulirot_coeffs.
+    cache = {"total_num_tapes": 0}
+    # ``gradient_data`` will contain tuples ``(int, int, tensor_like)``, with the first two
+    # entries being the start/end pointers explained above, and the third entry being the
+    # coefficients tensor for one particular parameter of a pulse (one entry of the coefficients
+    # tuple in the corresponding ``cache`` entry).
     gradient_data = []
     gradient_tapes = []
-    cache = {"total_num_tapes": 0}
     for idx, trainable_idx in enumerate(tape.trainable_params):
         if trainable_idx not in argnum:
+            # Trainable parameters that are de-selected by ``argnum`` receive a vanishing
+            # gradient entry.
             # Indicate that there are no tapes for this parameter by setting start==end
             gradient_data.append((0, 0, None))
             continue
 
+        # Generate new tapes and coefficients, or retrieve them from the cache, in case
+        # the pulse to which ``trainable_idx`` belongs was already treated.
+        # If new tapes and coefficients are created, they are added to the cache as well
         tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, cache)
+
         gradient_data.append(data)
         gradient_tapes.extend(tapes)
 
+    # Extract some specifications about the original tape, required for output formatting
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
@@ -329,14 +352,24 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     tape_specs = (single_measure, num_params, num_measurements, shot_vector, shots)
 
     def processing_fn(results):
+        """Post-process the results of the parameter-shifted tapes of the pulse
+        generator parameter-shift rule into the gradient."""
         grads = []
+        # Iterate over gradient_data, which is equivalent to the trainable parameters in argnum
         for start, end, coeffs in gradient_data:
+            # If start and end pointer are equal, no tapes contribute and we get a vanishing
+            # gradient for this parameter. For this, add an entry ``None``, which will
+            # be replaced by the appropriately formatted zero later on.
             if start == end:
                 grads.append(None)
                 continue
+
+            # Extract the results corresponding to the start and end pointer of the pulse
+            # to which the current parameter belongs.
             res = results[start:end]
-            # Apply the postprocessing of the parameter-shift rule and contract with the
-            # one-parameter group coefficients, computing the partial circuit derivative
+            # Apply the parameter-shift rule (respecting the tape output formatting)
+            # and contract the result with the coefficients of the effective generators
+            # in the Pauli basis. This computes the partial derivative.
             g = _parshift_and_contract(res, coeffs, single_measure, shot_vector)
             grads.append(g)
 
@@ -346,10 +379,9 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
-        print(f"{grads=}")
-        x = reorder_grads(grads, tape_specs)
 
-        return x
+        # Reformat the flat list of gradients into an output that fits the original tape specs.
+        return reorder_grads(grads, tape_specs)
 
     return gradient_tapes, processing_fn
 
@@ -446,7 +478,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     >>> len(tapes)
     12
 
-    Why are there :math:`12` tapes? 
+    Why are there :math:`12` tapes?
     Consider the terms in the time-dependent pulse Hamiltonian: :math:`\{Y_0, Y_1, Z_0X_1\}`
     Via the Lie bracket, which is just the standard matrix commutator, they
     generate an algebra, the so-called *dynamical Lie algebra (DLA)* of the pulse.
@@ -455,7 +487,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     commutators. For the three words above, we obtain three additional words:
 
     .. math::
-        
+
         [Y_0, Z_0X_1] &\propto X_0X_1 \\
         [Y_1, Z_0X_1] &\propto Z_0Z_1 \\
         [Y_0, Z_0Z_1] &\propto X_0Z_1

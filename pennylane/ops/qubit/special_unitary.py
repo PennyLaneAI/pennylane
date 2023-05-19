@@ -138,7 +138,7 @@ def _pauli_decompose(matrix, num_wires):
 
     For a matrix :math:`M`, these coefficients are defined via
     :math:`M = \sum_\ell c_\ell P_\ell` and they can be computed using the (Frobenius) inner
-    product of :math:`M` with the corresponding Pauli word :math:`P_\ell`: 
+    product of :math:`M` with the corresponding Pauli word :math:`P_\ell`:
     :math:`c_\ell = \frac{1}{2^N}\operatorname{Tr}\left\{P_\ell M\right\}` where the prefactor
     is the normalization that makes the standard Pauli basis orthonormal, and :math:`N`
     is the number of qubits.
