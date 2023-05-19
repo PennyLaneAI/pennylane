@@ -16,7 +16,6 @@ This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
 # pylint: disable=no-member, too-many-branches
-from collections.abc import Sequence
 import numpy as np
 import autograd
 
@@ -359,8 +358,6 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     # pylint:disable=protected-access
-    if isinstance(shots, Sequence) and all(isinstance(s, qml._device.ShotTuple) for s in shots):
-        shots = list(map(tuple, shots))
     shots = qml.measurements.Shots(shots)
 
     try:
