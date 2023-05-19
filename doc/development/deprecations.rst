@@ -45,8 +45,24 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* `Operator.__eq__` and `Operator.__hash__` will now raise a warning to indicate upcoming changes
+* ``Operator.__eq__`` and ``Operator.__hash__`` will now raise a warning to indicate upcoming changes
   to their behaviour.
+
+  The upcoming changes to operator equality will allow users to use operator equality the same way as
+  with ``qml.equal``. With the changes to hashing, unique operators that are equal will have the same
+  hash. These changes will allow behaviour such as the following:
+
+  >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
+  True
+  >>> set([qml.PauliZ(0), qml.PauliZ(0)])
+  {PauliZ(wires=[0])}
+
+  Meanwhile, the current behaviour is shown below:
+
+  >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
+  False
+  >>> set([qml.PauliZ(0), qml.PauliZ(0)])
+  {PauliZ(wires=[0]), PauliZ(wires=[0])}
 
   - Added in v0.31
   - Behaviour will change in v0.32

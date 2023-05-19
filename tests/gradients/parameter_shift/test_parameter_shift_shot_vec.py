@@ -2142,7 +2142,7 @@ class TestParameterShiftRule:
             tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
             fn(dev.batch_execute(tapes))
 
-        assert len(record) == 0
+        assert len(record) == 1 # Length 1 due to Operator __eq__ and __hash__ warnings
 
 
 # TODO: allow broadcast=True
