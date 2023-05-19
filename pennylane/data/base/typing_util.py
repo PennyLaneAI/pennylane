@@ -19,6 +19,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import (
     Any,
+    Dict,
     ForwardRef,
     List,
     Literal,
@@ -39,6 +40,8 @@ HDF5Array = ArrayLike
 HDF5Group = MutableMapping
 HDF5Any = Union[HDF5Array, HDF5Group]
 HDF5 = TypeVar("HDF5", HDF5Array, HDF5Group, HDF5Any)
+
+JSON = Union[str, int, bool, float, None, Dict[str, Any], List[Any]]
 
 # Generic type variable
 T = TypeVar("T")

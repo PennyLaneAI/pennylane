@@ -106,7 +106,7 @@ class DatasetList(
         if index < 0:
             index = len(self) + index
 
-        if not (0 <= index < len(self)):
+        if not 0 <= index < len(self):
             raise IndexError(index)
 
         return self._mapper[str(index)].get_value()

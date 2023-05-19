@@ -29,26 +29,6 @@ from pennylane.data.base.attribute import (
 from pennylane.data.base.typing_util import HDF5Group
 
 
-class AttributeTypeError(TypeError):
-    """Exception that is raised when attempting to serialize a value
-    that is incompatible with the ``AttributeType``."""
-
-    key: str
-    expected_type: Type[AttributeType]
-    type_: Type[AttributeType]
-
-    def __init__(
-        self, key: str, expected_type: Type[AttributeType], type_: Type[AttributeType]
-    ) -> None:
-        self.key = key
-        self.expected_type = expected_type
-        self.type_ = type_
-
-        super().__init__(
-            f"Attribute '{key}' requires value compatible with '{expected_type}', got '{type_}'"
-        )
-
-
 class AttributeTypeMapper(MutableMapping):
     """
     This class performs the mapping between the objects contained
@@ -100,7 +80,7 @@ class AttributeTypeMapper(MutableMapping):
         """
         if isinstance(value, AttributeType):
             if require_type and not isinstance(value, require_type):
-                raise AttributeTypeError(key, require_type, type(value))
+                raise TypeError(key, require_type, type(value))
 
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
             if info:

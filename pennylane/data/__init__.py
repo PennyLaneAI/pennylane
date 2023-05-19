@@ -16,6 +16,7 @@
 from .attributes import (
     DatasetArray,
     DatasetDict,
+    DatasetJSON,
     DatasetList,
     DatasetNone,
     DatasetScalar,
@@ -35,4 +36,5 @@ __all__ = (
     "DatasetList",
     "DatasetDict",
     "DatasetNone",
+    "DatasetJSON",
 )

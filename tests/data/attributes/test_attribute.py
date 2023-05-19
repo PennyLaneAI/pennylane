@@ -1,6 +1,12 @@
 import numpy as np
 import pytest
 
+from pennylane.data.attributes import (
+    DatasetArray,
+    DatasetNone,
+    DatasetScalar,
+    DatasetString,
+)
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
 
