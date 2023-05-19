@@ -89,7 +89,8 @@ class DatasetList(
         return str(list(self))
 
     def __repr__(self) -> str:
-        return repr(list(self))
+        items_repr = ", ".join(repr(elem) for elem in self)
+        return f"[{items_repr}]"
 
     @overload
     def __getitem__(self, index: slice) -> typing.List[T]:
@@ -115,7 +116,7 @@ class DatasetList(
         if index < 0:
             index = len(self) + index
 
-        if index < 0 or index >= len(self):
+        if not 0 <= index < len(self):
             raise IndexError(index)
 
         self._mapper[str(index)] = value
