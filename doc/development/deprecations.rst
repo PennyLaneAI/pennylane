@@ -48,7 +48,8 @@ Pending deprecations
 * `Operator.__eq__` and `Operator.__hash__` will now raise a warning to indicate upcoming changes
   to their behaviour.
 
-  - Deprecated in v0.31
+  - Added in v0.31
+  - Behaviour will change in v0.32
 
 
 Completed deprecation cycles
