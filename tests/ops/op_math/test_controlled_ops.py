@@ -34,10 +34,14 @@ from pennylane.ops.qubit.matrix_ops import QubitUnitary
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
+    (qml.CY, CY),
     (qml.CZ, CZ),
 ]
 
-SPARSE_MATRIX_SUPPORTED_OPERATIONS = ((qml.CZ(wires=[0, 1]), CZ),)
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
+    (qml.CY(wires=[0, 1]), CY),
+    (qml.CZ(wires=[0, 1]), CZ),
+)
 
 X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
@@ -445,11 +449,6 @@ class TestControlledQubitUnitary:
             )
 
 
-NON_PARAMETRIZED_OPERATIONS = [
-    (qml.CY, CY),
-]
-
-
 class TestOperations:
     @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
     def test_nonparametrized_op_copy(self, op_cls, _, tol):
@@ -480,8 +479,6 @@ class TestDecompositions:  # pylint: disable=too-few-public-methods
         assert qml.equal(gate2, qml.S(0))
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-
-    period_two_ops = (qml.CY(wires=(0, 1)),)
     def test_CZ_decomposition(self, tol):
         """Tests that the decomposition of the CZ gate is correct"""
         op = qml.CZ(wires=[0, 1])
@@ -504,7 +501,10 @@ class TestEigenval:  # pylint: disable=too-few-public-methods
         assert np.allclose(res, exp)
 
 
-period_two_ops = (qml.CZ(wires=(0, 1)),)
+period_two_ops = (
+    qml.CY(wires=(0, 1)),
+    qml.CZ(wires=(0, 1)),
+)
 
 
 class TestPowMethod:
@@ -525,13 +525,11 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_two_ops)
     def test_period_two_noninteger_power(self, op):
         """Test that ops with a period of 2 raised to a non-integer power raise an error."""
-        if isinstance(op, qml.PauliZ):
+        if isinstance(op, (qml.PauliZ, qml.CZ)):
             pytest.skip("PauliZ can be raised to any power.")
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
 
-
-        label_data = [(qml.CY(wires=(0, 1)), "Y")]
         if op.__class__ is qml.CZ:
             pytest.skip("CZ can be raised to any power.")
         with pytest.raises(qml.operation.PowUndefinedError):
@@ -572,13 +570,14 @@ class TestSparseMatrix:  # pylint: disable=too-few-public-methods
 
 
 label_data = [
+    (qml.CY(wires=(0, 1)), "Y"),
     (qml.CZ(wires=(0, 1)), "Z"),
 ]
 
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
-    """Tests that the label method gives the expected r esult."""
+    """Tests that the label method gives the expected result."""
     assert op.label() == label
     assert op.label(decimals=2) == label
 
