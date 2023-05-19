@@ -145,6 +145,7 @@
 
 * `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Please
   use the `qml.QueuingManager.stop_recording()` context instead.
+  [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
 
 <h3>Documentation 📝</h3>
 
