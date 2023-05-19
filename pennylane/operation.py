@@ -1644,6 +1644,10 @@ class Operation(Operator):
     @property
     def base_name(self):
         """Holdover from when in-place inversion changed then name. To be removed."""
+        warnings.warn(
+            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
+            UserWarning,
+        )
         return self.__class__.__name__
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):

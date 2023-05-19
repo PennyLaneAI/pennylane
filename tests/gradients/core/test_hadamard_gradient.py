@@ -14,7 +14,6 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
-# pylint: disable=import-outside-toplevel
 
 import warnings
 import pytest
@@ -658,7 +657,8 @@ class TestHadamardGradEdgeCases:
             qml.state()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match=r"return the state is not supported"):
+        _match = r"return the state with the Hadamard test gradient transform"
+        with pytest.raises(ValueError, match=_match):
             qml.gradients.hadamard_grad(tape)
 
     def test_variance_non_differentiable_error(self):
@@ -672,7 +672,10 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
-            match=r"Computing the gradient of variances with the Hadamard test gradient is not implemented.",
+            match=(
+                r"Computing the gradient of variances with the Hadamard test "
+                "gradient transform is not supported."
+            ),
         ):
             qml.gradients.hadamard_grad(tape)
 

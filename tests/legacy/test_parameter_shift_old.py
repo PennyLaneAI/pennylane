@@ -34,6 +34,8 @@ class TestGetOperationRecipe:
             (qml.RX, (1.0,), (np.pi / 2,)),
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
+            (qml.TRX, (0.5, 1), None),
+            (qml.TRX, (0.5, 1), (0.3, 0.6)),
         ],
     )
     def test_custom_recipe_first_order(self, orig_op, frequencies, shifts):
@@ -66,6 +68,8 @@ class TestGetOperationRecipe:
             (qml.RX, (1.0,), (np.pi / 2,)),
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
+            (qml.TRX, (0.5, 1), None),
+            (qml.TRX, (0.5, 1), (0.3, 0.6)),
         ],
     )
     def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
@@ -138,7 +142,8 @@ class TestParamShift:
             qml.state()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match=r"return the state is not supported"):
+        _match = r"return the state with the parameter-shift rule gradient transform is not"
+        with pytest.raises(ValueError, match=_match):
             qml.gradients.param_shift(tape)
 
     def test_independent_parameter(self, mocker):

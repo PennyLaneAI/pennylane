@@ -14,7 +14,6 @@
 """
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
-# pylint: disable="import-outside-toplevel"
 import numpy
 import pytest
 
