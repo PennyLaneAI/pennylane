@@ -568,12 +568,16 @@ class TestTorchLayerIntegration:
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_save_model(self, get_circuit, n_qubits, output_dim):
         """Test if the model can be saved and loaded"""
-        model = TorchLayer(*get_circuit)
+        qlayer = TorchLayer(*get_circuit)
+        clayer = torch.nn.Linear(output_dim, 2)
+        model = torch.nn.Sequential(qlayer, clayer)
 
         saved_state_dict = model.state_dict()
         torch.save(saved_state_dict, "dummy.pt")
 
-        new_model = TorchLayer(*get_circuit)
+        new_qlayer = TorchLayer(*get_circuit)
+        new_clayer = torch.nn.Linear(output_dim, 2)
+        new_model = torch.nn.Sequential(new_qlayer, new_clayer)
         new_state_dict = new_model.state_dict()
 
         assert list(saved_state_dict.keys()) == list(new_state_dict.keys())
