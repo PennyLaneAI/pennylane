@@ -55,7 +55,7 @@ class DatasetDict(
         return {key: attr.copy_value() for key, attr in self._mapper.items()}
 
     def copy(self) -> Dict[str, T]:
-        """Returns a copy if this mapping as a builtin ``dict``, with all
+        """Returns a copy of this mapping as a builtin ``dict``, with all
         elements copied."""
         return self.copy_value()
 
@@ -86,7 +86,9 @@ class DatasetDict(
         return (key for key in self.bind.keys())
 
     def __str__(self) -> str:
-        return str(dict(self))
+        return repr(self)
 
-    def __repr__(self):
-        return repr(dict(self))
+    def __repr__(self) -> str:
+        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
+
+        return f"{{{items_repr}}}"

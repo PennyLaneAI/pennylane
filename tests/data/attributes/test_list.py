@@ -13,7 +13,7 @@ def _generate_slices(list_len: int):
 
 
 class TestList:
-    @pytest.mark.parametrize("value", [[1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
+    @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
     def test_value_init(self, value):
         """Test that a DatasetList can be initialized from
         a list."""
@@ -21,13 +21,12 @@ class TestList:
         lst = DatasetList(value)
         assert lst == value
 
-    @pytest.mark.parametrize("value", [[], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
+    @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
     def test_bind_init(self, value):
         """Test that a DatasetList can be initialized from
         a previously initialized HDF5 group."""
 
         bind = DatasetList(value).bind
-
         assert DatasetList(bind=bind) == value
 
     @pytest.mark.parametrize("slc", _generate_slices(3))

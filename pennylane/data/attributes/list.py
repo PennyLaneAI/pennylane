@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains an AttributeType that allows for heterogenous lists of dataset
+"""Contains an AttributeType that allows for heterogeneous lists of dataset
 types."""
 
 import typing
@@ -29,7 +29,7 @@ class DatasetList(
     MutableSequence,
     MapperMixin,
 ):
-    """Provides a list-like collection type for dataset attributes."""
+    """Provides a list-like collection type for Dataset Attributes."""
 
     type_id = "list"
 
@@ -37,7 +37,7 @@ class DatasetList(
         self.extend(value)
 
     def default_value(self) -> typing.Iterable[T]:
-        return ()
+        return []
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableSequence[T]:
         return self
@@ -106,7 +106,7 @@ class DatasetList(
         if index < 0:
             index = len(self) + index
 
-        if index < 0 or index >= len(self):
+        if not (0 <= index < len(self)):
             raise IndexError(index)
 
         return self._mapper[str(index)].get_value()
