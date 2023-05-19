@@ -54,14 +54,14 @@ Pending deprecations
 
   >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
   True
-  >>> set([qml.PauliZ(0), qml.PauliZ(0)])
+  >>> {qml.PauliZ(0), qml.PauliZ(0)}
   {PauliZ(wires=[0])}
 
   Meanwhile, the current behaviour is shown below:
 
   >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
   False
-  >>> set([qml.PauliZ(0), qml.PauliZ(0)])
+  >>> {qml.PauliZ(0), qml.PauliZ(0)}
   {PauliZ(wires=[0]), PauliZ(wires=[0])}
 
   - Added in v0.31
