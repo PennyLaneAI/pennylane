@@ -2243,7 +2243,7 @@ class TestParameterShiftRule:
             tapes, fn = qml.gradients.param_shift(tape)
             fn(dev.batch_execute(tapes))
 
-        assert len(record) == 0
+        assert len(record) == 1 # One warning because of operator __eq__ and __hash__
 
 
 # The following pylint disable is for cost1 through cost6

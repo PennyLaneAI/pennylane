@@ -283,10 +283,10 @@ class TestOperatorConstruction:
         op1 = DummyOp(0)
         op2 = DummyOp(0)
 
-        with pytest.warns(UserWarning, "The behaviour of operator equality"):
+        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
             _ = op1 == op2
 
-        with pytest.warns(UserWarning, "The behaviour of operator equality"):
+        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
             _ = op1.__eq__(op2)
 
     def test_hash_deprecation_warning(self):
@@ -299,7 +299,7 @@ class TestOperatorConstruction:
 
         op = DummyOp(0)
 
-        with pytest.warns(UserWarning, "The behaviour of operator hashing"):
+        with pytest.warns(UserWarning, match="The behaviour of operator hashing"):
             _ = op.__hash__()
 
 

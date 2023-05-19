@@ -517,7 +517,7 @@ class TestHadamardGrad:
         with warnings.catch_warnings(record=True) as record:
             grad_fn(tape, dev=dev)
 
-        assert len(record) == 0
+        assert len(record) == 1 # One warning because of operator __eq__ and __hash__
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
