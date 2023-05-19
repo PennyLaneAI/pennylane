@@ -117,6 +117,9 @@
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
+* `CZ` now inherits from the `ControlledOp` class. It now supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
+  [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
+
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
@@ -148,6 +151,10 @@
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+  [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
+
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
 <h3>Documentation 📝</h3>
@@ -173,6 +180,7 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
+Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs.
