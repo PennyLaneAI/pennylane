@@ -143,6 +143,9 @@
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
+* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Please
+  use the `qml.QueuingManager.stop_recording()` context instead.
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
@@ -168,4 +171,5 @@ Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
