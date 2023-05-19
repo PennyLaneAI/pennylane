@@ -23,7 +23,7 @@ import numpy as np
 from scipy.special import factorial
 
 import pennylane as qml
-from pennylane.measurements import ProbabilityMP
+from pennylane.measurements import ProbabilityMP, Shots
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
@@ -156,7 +156,7 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def _processing_fn(results, shots=qml.measurements.Shots(None), single_shot_batch_fn=None):
+def _processing_fn(results, shots: Shots = Shots(None), single_shot_batch_fn=None):
     if not shots.has_partitioned_shots:
         return single_shot_batch_fn(results)
     grads_tuple = []
@@ -338,7 +338,7 @@ def finite_diff(
             validate_params=validate_params,
             shots=shots,
         )
-    shots = qml.measurements.Shots(shots)
+    shots = Shots(shots)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 

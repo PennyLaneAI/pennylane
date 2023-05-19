@@ -18,7 +18,7 @@ of tapes.
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import ProbabilityMP
+from pennylane.measurements import ProbabilityMP, Shots
 
 
 def compute_jvp_single(tangent, jac):
@@ -300,7 +300,7 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = len(tape.measurements) > 1
-    shots = qml.measurements.Shots(shots)
+    shots = Shots(shots)
 
     try:
         # if qml.math.allclose(qml.math.stack(tangent), 0):

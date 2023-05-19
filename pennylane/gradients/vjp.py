@@ -357,7 +357,6 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
         # is simply none.
         return [], lambda _, num=None: None
 
-    # pylint:disable=protected-access
     shots = qml.measurements.Shots(shots)
 
     try:
