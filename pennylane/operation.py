@@ -695,18 +695,6 @@ class Operator(abc.ABC):
             )
         )
 
-    #####################################
-    ####### REMOVE BEFORE MERGING #######
-
-    def __eq__(self, other):
-        return qml.equal(self, other)
-
-    def __hash__(self):
-        return self.hash
-
-    ####### REMOVE BEFORE MERGING #######
-    #####################################
-
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
