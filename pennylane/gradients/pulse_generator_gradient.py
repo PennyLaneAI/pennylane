@@ -16,6 +16,7 @@ This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
 from collections.abc import Sequence
+from functools import partial
 import numpy as np
 
 import pennylane as qml
@@ -72,16 +73,19 @@ def _one_parameter_generators(op):
     """
 
     def _compute_matrix(*args):
+        """Parametrized computation of the matrix for the given pulse ``op``."""
+        return op(*args, t=op.t, **op.odeint_kwargs).matrix()
+
+    def _compute_matrix_split(*args):
         """Parametrized computation of the matrix for the given pulse ``op``.
         Return the real and imaginary parts separately."""
-        mat = op(*args, t=op.t, **op.odeint_kwargs).matrix()
+        mat = _compute_matrix(*args)
         return mat.real, mat.imag
 
-    # Compute the Jacobian of _compute_matrix in real and imaginary parts separately, and add them
+    # Compute the Jacobian of _compute_matrix, giving the Jacobian of the real and imag parts
     # The output is a tuple, with one entry per parameter, each of which has the axes
     # (mat_dim, mat_dim, *parameter_shape)
-    jac_real, jac_imag = jax.jacobian(_compute_matrix, argnums=0)(op.data)
-    jac = jac_real + 1j * jac_imag
+    jac_real, jac_imag = jax.jacobian(_compute_matrix_split, argnums=0)(op.data)
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
@@ -93,9 +97,10 @@ def _one_parameter_generators(op):
     #    U_dagger, which we skipped above.
     # 2. After contraction, the axes are (mat_dim, mat_dim, *parameter_shape).
     # 3. Move the first two axis to the last two positions.
+    moveax = partial(qml.math.moveaxis, source=(0, 1), destination=(-2, -1))
     return tuple(
-        qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
-        for j in jac
+        moveax(qml.math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
+        for j_r, j_i in zip(jac_real, jac_imag)
     )
 
 
