@@ -22,22 +22,24 @@ class TestList:
         assert dset_list.info.py_type == "list"
         assert len(dset_list) == 0
 
+    @pytest.mark.parametrize("input_type", (list, tuple))
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_value_init(self, value):
+    def test_value_init(self, input_type, value):
         """Test that a DatasetList can be initialized from
         a list."""
 
-        lst = DatasetList(value)
+        lst = DatasetList(input_type(value))
         assert lst == value
         assert repr(lst) == repr(value)
         assert len(lst) == len(value)
 
+    @pytest.mark.parametrize("input_type", (list, tuple))
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_bind_init(self, value):
+    def test_bind_init(self, input_type, value):
         """Test that a DatasetList can be initialized from
         a previously initialized HDF5 group."""
 
-        bind = DatasetList(value).bind
+        bind = DatasetList(input_type(value)).bind
         assert DatasetList(bind=bind) == value
 
     @pytest.mark.parametrize("slc", _generate_slices(3))
