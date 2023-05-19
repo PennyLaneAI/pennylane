@@ -80,7 +80,7 @@ class AttributeTypeMapper(MutableMapping):
         """
         if isinstance(value, AttributeType):
             if require_type and not isinstance(value, require_type):
-                raise AttributeTypeError(key, require_type, type(value))
+                raise TypeError(key, require_type, type(value))
 
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
             if info:

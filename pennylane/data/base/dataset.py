@@ -26,6 +26,7 @@ from typing import (
     Generic,
     List,
     Literal,
+    MutableMapping,
     Optional,
     Tuple,
     Type,
@@ -91,7 +92,7 @@ class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """
 
 
-class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _DatasetTransform):
+class Dataset(MapperMixin, _DatasetTransform):
     """
     Base class for Datasets.
 
@@ -105,15 +106,16 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
     Self = TypeVar("Self", bound="Dataset")
 
     type_id = "dataset"
+    category: ClassVar[str] = "generic"
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
     bind: HDF5Group = attribute(default=None, kw_only=False)  # type: ignore
+    validate: InitVar[bool] = attribute(default=True, kw_only=False)
 
     def __init__(
         self,
         bind: Optional[HDF5Group] = None,
-        info: Optional[AttributeInfo] = None,
         validate: bool = True,
         **attrs: Any,
     ):
@@ -130,9 +132,11 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             **attrs: Attributes to add to this dataset.
         """
         if isinstance(bind, (h5py.Group, h5py.File)):
-            super().__init__(value=None, info=info, bind=bind)  # type: ignore
+            self._bind = bind
         else:
-            super().__init__(value=None, info=info, parent_and_key=bind)
+            self._bind = h5py.group()
+
+        self._init_bind()
 
         for name, attr in attrs.items():
             setattr(self, name, attr)
@@ -140,20 +144,14 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
         if validate:
             self._validate_attrs()
 
-    @classmethod
-    def consumes_types(cls) -> Tuple[Type["Dataset"]]:
-        return (cls,)
-
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value) -> HDF5Group:
-        return bind_parent.create_group(key)
-
-    def hdf5_to_value(self, bind: HDF5Group) -> "Dataset":
-        return self
-
     @property
     def bind(self) -> HDF5Group:
         """The HDF5 group that contains this dataset's attributes."""
         return self._bind
+
+    @property
+    def info(self) -> AttributeInfo:
+        return AttributeInfo(self.bind.attrs)
 
     @property
     def attrs(self) -> typing.Mapping[str, AttributeType]:
@@ -237,6 +235,13 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
                 f"__init__() missing {len(missing)} required keyword argument(s): {missing_args}"
             )
 
+    def _init_bind(self):
+        if self.bind.file.mode == "r+":
+            if "type_id" not in self.info:
+                self.info["type_id"] = self.type_id
+            if "category" not in self.bind:
+                self.info["category"] = self.category
+
     def __setattr__(self, __name: str, __value: Union[Any, AttributeType]) -> None:
         if __name.startswith("_"):
             super().__setattr__(__name, __value)
@@ -267,10 +272,12 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
 
         return f"Dataset({attrs_repr})"
 
+    __registry = {}
+    registry = MappingProxyType(__registry)
+
     def __init_subclass__(cls, **kwargs) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
-        super().__init_subclass__(**kwargs)
 
         fields = {}
 
@@ -282,14 +289,11 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             ):
                 continue
 
-            attr = getattr(cls, name, None)
-            if attr is None:
-                attr = attribute()
-            else:
+            attr = getattr(cls, name, attribute())
+            try:
                 delattr(cls, name)
-
-            if not isinstance(attr, Attribute):
-                attr = attribute(default=attr)
+            except AttributeError:
+                pass
 
             attr.info.py_type = annotated_type
             if attr.attribute_type is UNSET:
@@ -298,3 +302,31 @@ class Dataset(AttributeType[HDF5Group, "Dataset", "Dataset"], MapperMixin, _Data
             fields[name] = attr
 
         cls.fields = MappingProxyType(fields)
+
+        existing_dataset_cls = Dataset.__registry.get(cls.category)
+        if existing_dataset_cls is not None:
+            raise TypeError(
+                f"Dataset class with category {cls.category} already exists: {type(existing_dataset_cls)}"
+            )
+
+        Dataset.__registry[cls.category] = cls
+
+
+_DatasetType = TypeVar("_DatasetType", bound=Dataset)
+
+
+class _DatasetAttributeType(
+    Generic[_DatasetType], AttributeType[HDF5Group, _DatasetType, _DatasetType]
+):
+    type_id = "dataset"
+
+    def hdf5_to_value(self, bind: HDF5Group) -> _DatasetType:
+        category = AttributeInfo(bind.attrs)["category"]
+        dataset_cls = Dataset.registry.get(category, Dataset)
+
+        return dataset_cls(bind)
+
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: _DatasetType) -> HDF5Group:
+        h5py.copy(value.bind, bind_parent, key)
+
+        return bind_parent[key]

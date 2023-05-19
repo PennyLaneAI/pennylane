@@ -1,14 +1,20 @@
 from pennylane.data_old import load
-from pennylane.data import Dataset
+from pennylane.data.qchem import QChemDataset
 import h5py
+
+rename_map = {"meas_groupings": "qwc_groupings"}
+skiplist = {"parameters"}
 
 def convert_dataset(ds_old, zroot: h5py.File):
 
-    ds_new = Dataset((zroot, "data"))
+    ds_new = QChemDataset(zroot, validate=False)
 
-    for attr_name in ds_old.attrs:
+    for attr_name in ds_new.fields:
+        if attr_name in skiplist:
+            continue
+        
         print(f"Converting attribute {attr_name}")
-        attr = getattr(ds_old, attr_name)
+        attr = getattr(ds_old, rename_map.get(attr_name, attr_name))
         setattr(ds_new, attr_name, attr)
         print(f"Converted attribute {attr_name}")
 
@@ -17,7 +23,7 @@ def convert_dataset(ds_old, zroot: h5py.File):
 
 
 def main():
-    ds_old = load('qchem', attributes=["qwc_groupings"], molname="CH4", bondlength="0.5", basis="STO-3G")[0]
+    ds_old = load('qchem', molname="CH4", bondlength="0.5", basis="STO-3G")[0]
     with h5py.File(f"datasets/test.h5", "w-") as zroot:
         convert_dataset(ds_old, zroot)
 

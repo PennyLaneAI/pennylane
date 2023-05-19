@@ -7,6 +7,8 @@ from pennylane.data.base.typing_util import JSON, HDF5Array, HDF5Group
 class DatasetJSON(AttributeType[HDF5Array, JSON, JSON]):
     """Dataset type for JSON-serializable data."""
 
+    type_id = "json"
+
     def hdf5_to_value(self, bind: HDF5Array) -> JSON:
         return json.loads(bind.asstr()[()])
 
