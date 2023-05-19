@@ -54,8 +54,8 @@ class Hermitian(Observable):
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -223,8 +223,8 @@ class SparseHamiltonian(Observable):
         wires (Sequence[int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -353,8 +353,8 @@ class Projector(Observable):
         wires (Iterable): wires that the projector acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires

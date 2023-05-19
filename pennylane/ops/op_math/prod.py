@@ -56,8 +56,8 @@ def prod(*ops, do_queue=None, id=None, lazy=True):
 
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued.
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -138,8 +138,8 @@ class Prod(CompositeOp):
 
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued.
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`

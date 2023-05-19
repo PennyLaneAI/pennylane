@@ -136,8 +136,8 @@ class SingleExcitation(Operation):
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -301,8 +301,8 @@ class SingleExcitationMinus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False````
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -434,8 +434,8 @@ class SingleExcitationPlus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -574,8 +574,8 @@ class DoubleExcitation(Operation):
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -777,8 +777,8 @@ class DoubleExcitationPlus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
@@ -862,8 +862,8 @@ class DoubleExcitationMinus(Operation):
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
@@ -954,8 +954,8 @@ class OrbitalRotation(Operation):
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -1147,8 +1147,8 @@ class FermionicSWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**

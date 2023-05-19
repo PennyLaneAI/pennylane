@@ -88,8 +88,8 @@ class QubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context.
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
@@ -436,8 +436,8 @@ class BlockEncode(Operation):
         wires (Iterable[int, str], Wires): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to `False`
-            use `qml.QueuingManager.stop_recording()`.
+            This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     Raises:
