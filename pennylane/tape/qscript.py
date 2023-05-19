@@ -1269,7 +1269,7 @@ class QuantumScript:
         show_all_wires=False,
         decimals=None,
         max_length=100,
-        show_matrices=False,
+        show_matrices=True,
     ):
         """Draw the quantum script as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
@@ -1280,7 +1280,7 @@ class QuantumScript:
                 Default ``None`` will omit parameters from operation labels.
             max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
                 begin anew beneath the previous lines.
-            show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+            show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
 
         Returns:
             str: the circuit representation of the quantum script
