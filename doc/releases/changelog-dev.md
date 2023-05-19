@@ -70,6 +70,10 @@
   the hash of any operators/measurement processes.
   [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
 
+* All drawing methods changed their default value for the keyword argument `show_matrices`
+  to `True`. This allows quick insights into broadcasted tapes for example.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
+
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
 
@@ -121,6 +125,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
+
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
   and `MultiRZ` gates.
   [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
@@ -164,7 +171,7 @@ This release contains contributions from (in alphabetical order):
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
-Korbinian Kottmann
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
