@@ -33,7 +33,6 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
-from pennylane.math.quantum import _density_matrix_from_state_vector
 
 from .._version import __version__
 
@@ -920,20 +919,6 @@ class DefaultQubit(QubitDevice):
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
-
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix of the device state over the given wires.
-
-        Args:
-            wires (Wires): wires of the reduced system
-
-        Returns:
-            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix of the state prior to measurement.
-        """
-        state = qml.math.cast(getattr(self, "state", None), dtype=self.C_DTYPE)
-        wires = self.map_wires(wires)
-        return _density_matrix_from_state_vector(state, indices=wires)
 
     def classical_shadow(self, obs, circuit):
         """

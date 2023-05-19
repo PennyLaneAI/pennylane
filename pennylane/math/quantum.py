@@ -209,11 +209,7 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
 
 
     """
-    shape = density_matrix.shape
-    batch_dim, dim = (None, shape[0]) if len(shape) == 2 else shape[:2]
-    if batch_dim is not None:
-        raise ValueError("_density_matrix_from_matrix does not support broadcasting yet.")
-
+    dim = density_matrix.shape[0]
     num_indices = int(np.log2(dim))
 
     if check_state:
@@ -221,13 +217,15 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
 
     consecutive_indices = list(range(num_indices))
 
-    # Return the full density matrix if all the wires are given
+    # Return the full density matrix if all the wires are given, potentially permuted
     if len(indices) == num_indices:
-        return _permute_dense_matrix(density_matrix, consecutive_indices, indices, batch_dim)
+        return _permute_dense_matrix(density_matrix, consecutive_indices, indices, None)
 
+    # Compute the partial trace
     traced_wires = [x for x in consecutive_indices if x not in indices]
     density_matrix = _partial_trace(density_matrix, traced_wires)
-    return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
+    # Permute the remaining indices of the density matrix
+    return _permute_dense_matrix(density_matrix, sorted(indices), indices, None)
 
 
 def _partial_trace(density_matrix, indices):
@@ -379,10 +377,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
-    shape = np.shape(state)
-    batch_dim, dim = (None, shape[0]) if len(shape) == 1 else shape[:2]
-    if batch_dim is not None:
-        raise ValueError("_density_matrix_from_state_vector does not support broadcasting yet.")
+    dim = np.shape(state)[0]
 
     # Check the format and norm of the state vector
     if check_state:
@@ -400,7 +395,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     density_matrix = np.tensordot(state, np.conj(state), axes=(traced_system, traced_system))
     density_matrix = np.reshape(density_matrix, (2 ** len(indices), 2 ** len(indices)))
 
-    return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
+    return _permute_dense_matrix(density_matrix, sorted(indices), indices, None)
 
 
 def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
@@ -455,12 +450,9 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     len_state = state.shape[0]
     # State vector
     if state.shape == (len_state,):
-        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
-        return density_matrix
+        return _density_matrix_from_state_vector(state, indices, check_state)
 
-    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
-
-    return density_matrix
+    return _density_matrix_from_matrix(state, indices, check_state)
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):
