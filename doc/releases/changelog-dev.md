@@ -151,6 +151,10 @@
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+  [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
+
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
 <h3>Documentation 📝</h3>
