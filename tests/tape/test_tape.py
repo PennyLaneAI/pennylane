@@ -1031,6 +1031,7 @@ class TestExpand:
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
+    @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
         """Test that gates specified in the stop_at
         argument are not expanded."""

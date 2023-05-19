@@ -42,6 +42,15 @@ from pennylane.queuing import AnnotatedQueue, process_queue
 _empty_wires = qml.wires.Wires([])
 
 
+def _warn_name():
+    warnings.warn(
+        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
+        " removed in the next release. Going forward, please refrain from using them. This also affects"
+        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
+        UserWarning,
+    )
+
+
 OPENQASM_GATES = {
     "CNOT": "cx",
     "CZ": "cz",
@@ -93,7 +102,7 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): a name given to the quantum script
+        name (str): Deprecated way to give a name to the quantum script. Avoid using.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -186,7 +195,9 @@ class QuantumScript:
         name=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self.name = name
+        self._name = name
+        if name is not None:
+            _warn_name()
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -247,6 +258,17 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
+
+    @property
+    def name(self):
+        """Name of the quantum script. Raises deprecation warning.
+
+        Returns:
+
+            str or None: The name given to the quantum script upon creation (if any).
+        """
+        _warn_name()
+        return self._name
 
     @property
     def interface(self):
@@ -1219,13 +1241,11 @@ class QuantumScript:
                 self
             )  # pylint: disable=protected-access
 
-            self._specs = SpecsDict(
-                {
-                    "resources": resources,
-                    "gate_sizes": defaultdict(int),
-                    "gate_types": defaultdict(int),
-                }
-            )
+            self._specs = {
+                "resources": resources,
+                "gate_sizes": defaultdict(int),
+                "gate_types": defaultdict(int),
+            }
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
@@ -1238,6 +1258,7 @@ class QuantumScript:
             self._specs["num_used_wires"] = self.num_wires
             self._specs["num_trainable_params"] = self.num_params
             self._specs["depth"] = resources.depth
+            self._specs = SpecsDict(self._specs)
 
         return self._specs
 
@@ -1248,7 +1269,7 @@ class QuantumScript:
         show_all_wires=False,
         decimals=None,
         max_length=100,
-        show_matrices=False,
+        show_matrices=True,
     ):
         """Draw the quantum script as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
@@ -1259,7 +1280,7 @@ class QuantumScript:
                 Default ``None`` will omit parameters from operation labels.
             max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
                 begin anew beneath the previous lines.
-            show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+            show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
 
         Returns:
             str: the circuit representation of the quantum script
@@ -1385,7 +1406,7 @@ class SpecsDict(dict):
         if item in self.old_to_new_key_map:
             warnings.warn(
                 f"The {item} key is deprecated and will be removed in the next release. "
-                f'Going forward, please use: qml.specs()["resources"].{self.old_to_new_key_map[item]}'
+                f'Going forward, please use: specs["resources"].{self.old_to_new_key_map[item]}'
             )
         return super().__getitem__(item)
 
