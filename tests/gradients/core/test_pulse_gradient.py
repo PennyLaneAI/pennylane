@@ -733,10 +733,7 @@ class TestStochPulseGradQNodeIntegration:
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev,
-            interface="jax",
-            diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
+            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)

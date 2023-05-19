@@ -90,8 +90,6 @@ def _split_evol_ops(op, ob, tau):
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
-    if isinstance(ob, qml.pauli.PauliSentence):
-        ob = ob.operation()
     eigvals = qml.eigvals(ob)
     coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
 
@@ -164,7 +162,7 @@ def _parshift_and_integrate(
             # Stack results and slice away the first and last values, corresponding to the initial
             # condition and the final value of the time evolution, but not to a splitting time
             res = qml.math.stack(res_list)[:, 1:-1]
-            # Contract the results with the parameter-shift ruel coefficients
+            # Contract the results with the parameter-shift rule coefficients
             parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
@@ -174,10 +172,11 @@ def _parshift_and_integrate(
         def _psr_and_contract(res_list, cjacs, int_prefactor):
             res = qml.math.stack(res_list)
             # Reshape the results such that the first axis corresponds to the splitting times
-            # and the second axis corresponds to different shifts
-            new_shape = ((shape := qml.math.shape(res))[0] // num_shifts, num_shifts) + shape[1:]
+            # and the second axis corresponds to different shifts. All other axes are untouched
+            shape = qml.math.shape(res)
+            new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
             res = qml.math.reshape(res, new_shape)
-            # Contract the results with the parameter-shift ruel coefficients
+            # Contract the results with the parameter-shift rule coefficients
             parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
