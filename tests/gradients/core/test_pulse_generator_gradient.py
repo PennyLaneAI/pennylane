@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
+from pennylane.math import expand_matrix
 from pennylane.gradients.pulse_generator_gradient import (
     _generate_tapes_and_coeffs,
     pulse_generator,
@@ -32,6 +33,8 @@ from pennylane.gradients.pulse_generator_gradient import (
     _one_parameter_paulirot_coeffs,
     _parshift_and_contract,
 )
+
+X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
 
 def grad_fn(tape, dev, fn=pulse_generator, **kwargs):
@@ -55,7 +58,7 @@ def integral_of_polyval(params, t):
 class TestOneParameterGenerators:
     """Test the utility function _one_parameter_generators."""
 
-    @pytest.mark.parametrize("term", [qml.PauliX(0), qml.PauliY("a") @ qml.PauliX(3)])
+    @pytest.mark.parametrize("term", [X(0), Y("a") @ X(3)])
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
     def test_with_single_const_term_ham(self, term, t):
         """Test that the generators are correct for a single-term constant Hamiltonian."""
@@ -71,23 +74,29 @@ class TestOneParameterGenerators:
         op = qml.evolve(H)(params, t)
         gens = _one_parameter_generators(op)
 
+        # op has a single parameter in its parameter input list, so the
+        # generators should be a length-1 tuple.
         assert isinstance(gens, tuple)
         assert len(gens) == 1
         gen = gens[0]
+        # The effective generator should have the shape of the pulse
         assert gen.shape == (2 ** len(term.wires),) * 2
+        # A Hamiltonian with a single term and a constant pulse envelope yields
+        # a rotation gate about said term, with the effective rotation parameter
+        # given by the duration of the constant pulse.
         expected = -1j * T * term.matrix()
         assert qml.math.allclose(gen, expected)
 
     @pytest.mark.parametrize(
         "terms",
         [
-            [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            [qml.PauliX(0), qml.PauliX(0)],
-            [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(3)],
+            [X(0), Z(1), X(0) @ Z(1)],
+            [X(0), X(0)],
+            [X(0), Z(1), Y(3)],
             [
-                qml.PauliY("a") @ qml.PauliX(3),
-                qml.PauliX(3) @ qml.PauliZ(0),
-                qml.PauliY("a") @ qml.PauliZ(0),
+                Y("a") @ X(3),
+                X(3) @ Z(0),
+                Y("a") @ Z(0),
             ],
         ],
     )
@@ -108,19 +117,25 @@ class TestOneParameterGenerators:
         op = qml.evolve(H, dense=True)(params, t)
         gens = _one_parameter_generators(op)
 
+        # op has as many parameters in its parameter input list as there are terms,
+        # so generators should be a tuple with as many entries as Hamiltonian terms.
         assert isinstance(gens, tuple)
         assert len(gens) == num_terms
         dim = 2 ** len(H.wires)
+        # A Hamiltonian with commuting terms and constant pulse envelopes yields
+        # a product of rotation gates about its terms, with the effective rotation parameters
+        # given by the duration of the constant pulse.
         for gen, term in zip(gens, terms):
+            # The effective generator should have the shape of the pulse
             assert gen.shape == (dim, dim)
-            expected = -1j * T * qml.math.expand_matrix(term.matrix(), term.wires, H.wires)
+            expected = -1j * T * expand_matrix(term.matrix(), term.wires, H.wires)
             assert qml.math.allclose(gen, expected)
 
     @pytest.mark.parametrize(
         "terms",
         [
-            [qml.PauliX(0), qml.PauliZ(0), qml.PauliY(0)],
-            [qml.PauliY("a") @ qml.PauliX(3), qml.PauliX(3) @ qml.PauliZ("a")],
+            [X(0), Z(0), Y(0)],
+            [Y("a") @ X(3), X(3) @ Z("a")],
         ],
     )
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
@@ -133,16 +148,16 @@ class TestOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
 
         def manual_matrix(params):
+            """Compute the matrix of a constant pulse with non-commuting Hamiltonian terms."""
+            summands = [
+                p * expand_matrix(term.matrix(), term.wires, H.wires)
+                for p, term in zip(params, terms)
+            ]
             exp = jnp.sum(
-                jnp.array(
-                    [
-                        p * qml.math.expand_matrix(term.matrix(), term.wires, H.wires)
-                        for p, term in zip(params, terms)
-                    ]
-                ),
+                jnp.array(summands),
                 axis=0,
             )
-            return qml.math.linalg.expm(-1j * T * exp)
+            return jax.scipy.linalg.expm(-1j * T * exp)
 
         num_terms = len(terms)
         H = qml.math.dot([qml.pulse.constant for _ in range(num_terms)], terms)
@@ -152,17 +167,22 @@ class TestOneParameterGenerators:
         op = qml.evolve(H)(params, t)
         gens = _one_parameter_generators(op)
 
+        # op has as many parameters in its parameter input list as there are terms,
+        # so generators should be a tuple with as many entries as Hamiltonian terms.
         assert isinstance(gens, tuple)
         assert len(gens) == num_terms
         dim = 2 ** len(H.wires)
         params = [p.astype(jnp.complex128) for p in params]
+        # Manually compute the matrix of the pulse and its derivative. Compose the two into the
+        # effective generator. Omega = U* @ dU
         U = manual_matrix(params)
         expected = [U.conj().T @ j for j in jax.jacobian(manual_matrix, holomorphic=True)(params)]
         for gen, expec in zip(gens, expected):
+            # The effective generator should have the shape of the pulse
             assert gen.shape == (dim, dim)
             assert qml.math.allclose(gen, expec)
 
-    @pytest.mark.parametrize("term", [qml.PauliX(0), qml.PauliY("a") @ qml.PauliX(3)])
+    @pytest.mark.parametrize("term", [X(0), Y("a") @ X(3)])
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
     def test_with_single_timedep_term_ham(self, term, t):
         """Test that the generators are correct for a single-term time-dependent Hamiltonian."""
@@ -173,28 +193,35 @@ class TestOneParameterGenerators:
 
         H = jnp.polyval * term
         params = [jnp.array([0.4, 0.2, 0.1])]
+        # Jacobian of the effective rotation parameter
         par_fn_jac = jax.grad(integral_of_polyval)(params[0], t)
 
         op = qml.evolve(H)(params, t)
         gens = _one_parameter_generators(op)
 
+        # op has a single parameter in its parameter input list, so the
+        # generators should be a length-1 tuple.
         assert isinstance(gens, tuple)
         assert len(gens) == 1
         gen = gens[0]
+        # The effective generator should have the shape of the parameters and the pulse
+        # together. Here, the parameters are one-dimensional, so we get (num_params, dim, dim)
         assert gen.shape == (len(params[0]), dim := 2 ** len(term.wires), dim)
+        # The outer product of the rotation parameter Jacobian and the matrix of
+        # the Hamiltonian term yields the Jacobian of the pulse
         expected = jnp.tensordot(par_fn_jac, -1j * term.matrix(), axes=0)
         assert qml.math.allclose(gen, expected)
 
     @pytest.mark.parametrize(
         "terms",
         [
-            [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            [qml.PauliX(0), qml.PauliX(0)],
-            [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(3)],
+            [X(0), Z(1), X(0) @ Z(1)],
+            [X(0), X(0)],
+            [X(0), Z(1), Y(3)],
             [
-                qml.PauliY("a") @ qml.PauliX(3),
-                qml.PauliX(3) @ qml.PauliZ(0),
-                qml.PauliY("a") @ qml.PauliZ(0),
+                Y("a") @ X(3),
+                X(3) @ Z(0),
+                Y("a") @ Z(0),
             ],
         ],
     )
@@ -209,22 +236,27 @@ class TestOneParameterGenerators:
 
         num_terms = len(terms)
         H = qml.math.dot([jnp.polyval for _ in range(num_terms)], terms)
-        params = [jnp.array([0.4, 0.1, 0.2]), jnp.array([0.9, -0.2, 0.5]), jnp.array([-0.5, 0.2])][
-            :num_terms
-        ]
+        params = [jnp.array([0.4, 0.1, 0.2]), jnp.array([0.9, -0.2, 0.5]), jnp.array([-0.5, 0.2])]
+        params = params[:num_terms]
+        # Jacobian functions of the effective rotation parameter (all polyval)
         par_fn_jac_fn = jax.grad(integral_of_polyval)
+        # Jacobian of the effective rotation parameter for the different terms
         par_fn_jac = [par_fn_jac_fn(p, t) for p in params]
 
         op = qml.evolve(H, dense=True, atol=1e-9)(params, t)
         gens = _one_parameter_generators(op)
 
+        # op has as many parameters in its parameter input list as there are terms,
+        # so generators should be a tuple with as many entries as Hamiltonian terms.
         assert isinstance(gens, tuple)
         assert len(gens) == num_terms
         dim = 2 ** len(H.wires)
         for gen, term, p, jac in zip(gens, terms, params, par_fn_jac):
+            # The effective generator should have the shape of the parameters and the pulse
+            # together. Here, the parameters are one-dimensional, so we get (num_params, dim, dim)
             assert gen.shape == (len(p), dim, dim)
             expected = jnp.tensordot(
-                jac, -1j * qml.math.expand_matrix(term.matrix(), term.wires, H.wires), axes=0
+                jac, -1j * expand_matrix(term.matrix(), term.wires, H.wires), axes=0
             )
             assert qml.math.allclose(gen, expected)
 
@@ -239,7 +271,7 @@ class TestOneParameterPauliRotCoeffs:
         "r_dtype, c_dtype", [("float64", "complex128"), ("float32", "complex64")]
     )
     def test_output_properties(self, num_wires, pardims, r_dtype, c_dtype):
-        """Test that the output for an anti-Hermitian input is real-valued
+        """Test that the output for a skew-Hermitian input is real-valued
         and has the correct shape(s)."""
         import jax.numpy as jnp
 
@@ -249,6 +281,7 @@ class TestOneParameterPauliRotCoeffs:
         gens = tuple(np.random.random(sh) + 1j * np.random.random(sh) for sh in gen_shapes)
         # make skew-Hermitian and cast to right complex dtype
         gens = tuple((g - np.moveaxis(g.conj(), -2, -1)).astype(c_dtype) for g in gens)
+
         coeffs = _one_parameter_paulirot_coeffs(gens, num_wires)
         assert isinstance(coeffs, tuple)
         assert len(coeffs) == len(pardims)
@@ -278,41 +311,51 @@ class TestNonzeroCoeffsAndWords:
         """Test that no coefficients and words are returned when all coefficients vanish."""
         dim = 4**num_wires - 1
         shapes = [(dim, 3), (dim,), (dim, 2, 5)]
+        # Generate zero coefficients only
         coeffs = tuple(np.zeros(shape) for shape in shapes)
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
+        # There should be as many coefficient sets as before, namely three, and they should
+        # be empty.
         assert new_coeffs == [[], [], []]
+        # There should be an empty list of Pauli words left.
         assert words == []
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
     def test_separate_nonzero(self, num_wires):
         """Test that a single coefficient in any of the coefficients is sufficient
         to keep the Pauli word in the filter."""
+        # Create many coefficients, each just with one ``1`` entry at distinct places.
         coeffs = tuple(np.eye(4**num_wires - 1))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
+        # The coefficients should not have changed and all words should be returned
         assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, coeffs))
         assert len(words) == 4**num_wires - 1
+        # Also check that the order of the words is consistent.
         assert all(w == exp for w, exp in zip(words, pauli_basis_strings(num_wires)))
 
     @pytest.mark.parametrize(
         "num_wires, remove_ids", [(1, [0]), (1, [2]), (2, [0, 3]), (2, [0, 1, 2, 3]), (2, [10])]
     )
     def test_single_zeros(self, num_wires, remove_ids):
-        """Test that a removing single entries/Pauli words works as expected."""
+        """Test that a removing single entries/Pauli words leads to the corresponding
+        rows in the coefficients being skipped."""
         dim = 4**num_wires - 1
-        # Set coefficients to zero
+        # Set a few coefficients to zero
         coeffs = tuple(np.zeros(dim) if i in remove_ids else e for i, e in enumerate(np.eye(dim)))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
         mask = np.ones(dim, bool)
         mask[remove_ids] = 0
+        # Filter the coefficients and Pauli words for non-zero components
         exp_coeffs = tuple(c[mask] for c in coeffs)
         exp_words = [w for i, w in zip(mask, pauli_basis_strings(num_wires)) if i]
         assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs))
         assert len(words) == 4**num_wires - 1 - len(remove_ids)
         assert all(w == exp for w, exp in zip(words, exp_words))
 
-        # Remove coefficients altogether
+        # Remove entries in np.eye(...) coefficients tuple altogether, effectively doing
+        # the same as setting rows of coefficients to zero.
         coeffs = tuple(e for i, e in enumerate(np.eye(dim)) if i not in remove_ids)
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
         exp_coeffs = tuple(c[mask] for c in coeffs)
@@ -323,6 +366,8 @@ class TestNonzeroCoeffsAndWords:
     def test_atol(self):
         """Test that the precision keyword argument atol is used correctly."""
         atols = [1e-8, 1e-4, 1e-1]
+        # With the following coefficients, different rows will be considered to vanish
+        # for the different tolerances set above.
         coeffs = (np.array(atols), np.array(atols) * 2)
         for i, atol in enumerate(atols):
             new_coeffs, words = _nonzero_coeffs_and_words(coeffs, 1, atol=atol / 10)
@@ -334,22 +379,22 @@ class TestNonzeroCoeffsAndWords:
         assert words == []
 
 
-tapes = [
-    ([qml.PauliX(0)], []),
-    (["evolve_op"], [qml.expval(qml.PauliZ(0))]),
-    (["evolve_op", qml.RZ(0.3, "b"), "evolve_op", qml.PauliX(0)], []),
+all_ops_and_meas = [
+    ([X(0)], []),
+    (["evolve_op"], [qml.expval(Z(0))]),
+    (["evolve_op", qml.RZ(0.3, "b"), "evolve_op", X(0)], []),
 ]
 
-tapes_and_op_ids = [
-    (tapes[0], 0),
-    (tapes[0], 1),
-    (tapes[1], 0),
-    (tapes[1], 1),
-    (tapes[2], 0),
-    (tapes[2], 3),
-    (tapes[2], 4),
+ops_meas_and_op_ids = [
+    (all_ops_and_meas[0], 0),
+    (all_ops_and_meas[0], 1),
+    (all_ops_and_meas[1], 0),
+    (all_ops_and_meas[1], 1),
+    (all_ops_and_meas[2], 0),
+    (all_ops_and_meas[2], 3),
+    (all_ops_and_meas[2], 4),
 ]
-all_ops = [[rot := qml.PauliRot(0.3, "IXZ", [0, 1, "a"])], [rot, qml.RY(0.3, 5), qml.PauliX(1)]]
+all_ops = [[rot := qml.PauliRot(0.3, "IXZ", [0, 1, "a"])], [rot, qml.RY(0.3, 5), X(1)]]
 
 
 @pytest.mark.jax
@@ -358,12 +403,12 @@ class TestInsertOp:
 
     # pylint: disable=too-few-public-methods
 
-    @pytest.mark.parametrize("tape, op_idx", tapes_and_op_ids)
+    @pytest.mark.parametrize("ops_and_meas, op_idx", ops_meas_and_op_ids)
     @pytest.mark.parametrize("ops", all_ops)
-    def test_output_properties(self, tape, op_idx, ops):
+    def test_output_properties(self, ops_and_meas, op_idx, ops):
         """Test that the input tape and inserted ops are taken into account correctly."""
-        evolve_op = qml.evolve(qml.pulse.constant * qml.PauliZ("a"))([np.array(0.2)], 0.2)
-        operations, measurements = tape
+        evolve_op = qml.evolve(qml.pulse.constant * Z("a"))([np.array(0.2)], 0.2)
+        operations, measurements = ops_and_meas
         operations = [evolve_op if op == "evolve_op" else op for op in operations]
         tape = qml.tape.QuantumScript(operations, measurements)
         new_tapes = _insert_op(tape, ops, op_idx)
@@ -384,18 +429,26 @@ class TestGenerateTapesAndCoeffs:
     def make_tape(self, all_H, all_params):
         """Make a tape with parametrized evolutions."""
         ops = [qml.evolve(H)(p, self.T) for H, p in zip(all_H, all_params)]
-        return qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        return qml.tape.QuantumScript(ops, [qml.expval(Z(0))])
 
     def check_cache_equality(self, cache, expected):
         """Check that a cache equals an expected cache."""
         assert list(cache.keys()) == list(expected.keys())
+        # "total_num_tapes" always is a key in the caches
         assert cache["total_num_tapes"] == expected["total_num_tapes"]
         for k, v in cache.items():
             if k == "total_num_tapes":
+                # We already checked "total_num_tapes", so skip this entry
                 continue
+            expected_value = expected[k]
+            # values of the cache should be three-tuples with format (int, int, tuple[tensor_like])
             assert isinstance(v, tuple) and len(v) == 3
-            assert v[:2] == expected[k][:2]
-            for _v, e in zip(v[2], expected[k][2]):
+            # first two entries (integers) are start and end pointers into the list of
+            # tapes (or equivalently into the list of results later on in the gradient transfom)
+            assert v[:2] == expected_value[:2]
+            # last entry is a tuple of coefficients, so we iterate over the outer-most axis
+            # (the tuple axis) and compare the tensors one after the other
+            for _v, e in zip(v[2], expected_value[2]):
                 assert qml.math.allclose(_v, e, atol=self.atol)
 
     def check_tapes_and_coeffs_equality(self, grad_tapes, tup, expected):
@@ -423,9 +476,9 @@ class TestGenerateTapesAndCoeffs:
         """Test the tape generation for a single parameter and Hamiltonian term in a tape."""
         import jax.numpy as jnp
 
-        H = qml.pulse.constant * qml.PauliX(0)
+        H = qml.pulse.constant * X(0)
         if add_constant:
-            H = 0.4 * qml.PauliZ(1) + H
+            H = 0.4 * Z(1) + H
         params = [jnp.array(0.4)]
         tape = self.make_tape([H], [params])
         cache = {"total_num_tapes": -5}
@@ -454,13 +507,11 @@ class TestGenerateTapesAndCoeffs:
         import jax
         import jax.numpy as jnp
 
-        H = qml.pulse.constant * qml.PauliX(0) + jnp.polyval * (
-            qml.PauliX(0) if same_terms else qml.PauliZ(1)
-        )
+        H = qml.pulse.constant * X(0) + jnp.polyval * (X(0) if same_terms else Z(1))
         params = [jnp.array(0.4), jnp.array([0.3, 0.2, 0.1])]
         tape = self.make_tape([H], [params])
         cache = {"total_num_tapes": 10}
-        # The Hamiltonian above has a two parametrized terms, generated by PauliX(0) and
+        # The Hamiltonian above has two parametrized terms, generated by PauliX(0) and
         # by PauliX(0) or PauliZ(1), depending on whether same_terms is True.
         # For same_terms=True, we expect 2 tapes both with an inserted PauliRot about PauliX(0),
         # but with differing angles. For same_terms=False, there are two more tapes, with
@@ -517,8 +568,8 @@ class TestGenerateTapesAndCoeffs:
             args = (p[1] * t[1] + p[2], p[1] * t[0] + p[2])
             return -p[0] / p[1] * jnp.cos(args[0]) + p[0] / p[1] * jnp.cos(args[1])
 
-        H0 = qml.pulse.constant * qml.PauliX(0) + jnp.polyval * qml.PauliZ(1)
-        H1 = jnp.polyval * (qml.PauliY(1) @ qml.PauliY(0)) + _sin * (qml.PauliZ(0) @ qml.PauliZ(1))
+        H0 = qml.pulse.constant * X(0) + jnp.polyval * Z(1)
+        H1 = jnp.polyval * (Y(1) @ Y(0)) + _sin * (Z(0) @ Z(1))
         params0 = [jnp.array(0.4), jnp.array([0.3, 0.2, 0.1])]
         params1 = [jnp.array([0.3, 0.2, 0.1, 1.2]), jnp.array([0.4, 1.2, -0.9])]
 
@@ -593,7 +644,7 @@ class TestParshiftAndContract:
         # derivative 0.81*value
         results = [np.array(pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, True, False)
+        output = _parshift_and_contract(results, coeffs, single_measure=True, shot_vector=False)
         assert isinstance(output, np.ndarray)
         assert output.shape == (num_out,)
         expected = 0.81 * values @ np.stack(coeffs)
@@ -610,7 +661,7 @@ class TestParshiftAndContract:
         # derivative 0.81*value
         results = [shot_factors * (pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, True, True)
+        output = _parshift_and_contract(results, coeffs, single_measure=True, shot_vector=True)
         assert isinstance(output, tuple)
         assert len(output) == len_shot_vector
         assert all(isinstance(x, np.ndarray) for x in output)
@@ -629,7 +680,7 @@ class TestParshiftAndContract:
         # derivative 0.81*value
         results = [meas_factors * (pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, False, False)
+        output = _parshift_and_contract(results, coeffs, single_measure=False, shot_vector=False)
         # Note that these checks are equal to those for single_measure and not shot_vector
         assert isinstance(output, tuple)
         assert len(output) == num_measurements
@@ -654,7 +705,7 @@ class TestParshiftAndContract:
         factors = np.outer(shot_factors, meas_factors)
         results = [factors * (pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, False, True)
+        output = _parshift_and_contract(results, coeffs, single_measure=False, shot_vector=True)
         # Note that these checks are equal to those for single_measure and not shot_vector
         assert isinstance(output, tuple)
         assert len(output) == len_shot_vector
@@ -680,7 +731,7 @@ class TestPulseGeneratorEdgeCases:
 
     def test_raises_with_variance_return(self):
         """Make sure an error is raised for a tape that returns a variance."""
-        tape = qml.tape.QuantumScript(measurements=[qml.var(qml.PauliX(0))])
+        tape = qml.tape.QuantumScript(measurements=[qml.var(X(0))])
         _match = "gradient of variances with the pulse generator parameter-shift gradient"
         with pytest.raises(ValueError, match=_match):
             _ = pulse_generator(tape)
@@ -694,7 +745,7 @@ class TestPulseGeneratorEdgeCases:
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(Z(0) @ Z(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # TODO: remove once #2155 is resolved
@@ -717,7 +768,7 @@ class TestPulseGeneratorEdgeCases:
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.expval(Z(0) @ Z(1))
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -776,7 +827,7 @@ class TestPulseGeneratorEdgeCases:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(*params, wires=0)
-            qml.expval(qml.PauliZ(wires=2))
+            qml.expval(Z(wires=2))
             qml.probs([2, 3])
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -834,11 +885,11 @@ class TestPulseGeneratorTapes:
         prng_key = jax.random.PRNGKey(8251)
         dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=prng_key)
 
-        H = jnp.polyval * qml.PauliX(0)
+        H = jnp.polyval * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
         t = [0.2, 0.3]
         op = qml.evolve(H)([x], t=t)
-        tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
 
         val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t)
@@ -858,6 +909,7 @@ class TestPulseGeneratorTapes:
             assert isinstance(grad, jnp.ndarray) and grad.shape == x.shape
             assert qml.math.allclose(grad, exp_grad, atol=tol)
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
     def test_single_pulse_multi_term(self, shots, tol):
         """Test that a single pulse with multiple Hamiltonian terms is
@@ -869,7 +921,7 @@ class TestPulseGeneratorTapes:
         dev = qml.device("default.qubit.jax", wires=1, shots=None)
         dev_shots = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=prng_key)
 
-        H = 0.1 * qml.PauliZ(0) + jnp.polyval * qml.PauliX(0) + qml.pulse.constant * qml.PauliY(0)
+        H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
         x = jnp.array([0.4, 0.2, 0.1])
         y = jnp.array(-0.5)
         t = [0.2, 0.3]
@@ -877,7 +929,7 @@ class TestPulseGeneratorTapes:
         @qml.qnode(dev, interface="jax")
         def circuit(par):
             qml.evolve(H)(par, t=t)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(Z(0))
 
         circuit.construct(([x, y],), {})
         _tapes, fn = pulse_generator(circuit.tape, argnums=[0, 1], shots=shots)
@@ -894,7 +946,8 @@ class TestPulseGeneratorTapes:
             assert isinstance(grad, tuple) and len(grad) == 2
             assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad))
 
-    @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
+    @pytest.mark.slow
+    @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
     def test_multi_pulse(self, shots, tol):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
@@ -905,8 +958,8 @@ class TestPulseGeneratorTapes:
         dev = qml.device("default.qubit.jax", wires=1, shots=None)
         dev_shots = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=prng_key)
 
-        H0 = 0.1 * qml.PauliZ(0) + jnp.polyval * qml.PauliX(0)
-        H1 = 0.2 * qml.PauliY(0) + qml.pulse.constant * qml.PauliY(0) + jnp.polyval * qml.PauliZ(0)
+        H0 = 0.1 * Z(0) + jnp.polyval * X(0)
+        H1 = 0.2 * Y(0) + qml.pulse.constant * Y(0) + jnp.polyval * Z(0)
         x = jnp.array([0.4, 0.2, 0.1])
         y = jnp.array(0.5)
         z = jnp.array([-0.3, 0.6])
@@ -916,7 +969,7 @@ class TestPulseGeneratorTapes:
         def circuit(par):
             qml.evolve(H0)(par[:1], t=t)
             qml.evolve(H1)(par[1:], t=t)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(Z(0))
 
         circuit.construct(([x, y, z],), {})
         _tapes, fn = pulse_generator(circuit.tape, argnums=[0, 1, 2], shots=shots)
@@ -947,12 +1000,12 @@ class TestPulseGeneratorQNode:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.2
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        ham_single_q_const = qml.pulse.constant * Y(0)
 
         @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(Z(0))
 
         params = [jnp.array(0.4)]
         grad = jax.jacobian(circuit)(params)
@@ -970,14 +1023,14 @@ class TestPulseGeneratorQNode:
         dev = qml.device("default.qubit.jax", wires=1)
         T_x = 0.1
         T_y = 0.2
-        ham_x = qml.pulse.constant * qml.PauliX(0)
-        ham_y = qml.pulse.constant * qml.PauliX(0)
+        ham_x = qml.pulse.constant * X(0)
+        ham_y = qml.pulse.constant * X(0)
 
         @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_x)(params[0], T_x)
             qml.evolve(ham_y)(params[1], T_y)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(Z(0))
 
         params = [[jnp.array(0.4)], [jnp.array(-0.1)]]
         grad = jax.jacobian(circuit)(params)
@@ -987,7 +1040,7 @@ class TestPulseGeneratorQNode:
         assert qml.math.allclose(grad, exp_grad)
 
     def test_simple_qnode_probs(self):
-        """Test that a simple qnode that returns an probabilities
+        """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
@@ -995,7 +1048,7 @@ class TestPulseGeneratorQNode:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.2
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        ham_single_q_const = qml.pulse.constant * Y(0)
 
         @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
@@ -1009,7 +1062,7 @@ class TestPulseGeneratorQNode:
         assert qml.math.allclose(jac, exp_jac)
 
     def test_simple_qnode_probs_expval(self):
-        """Test that a simple qnode that returns an probabilities
+        """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
@@ -1017,12 +1070,12 @@ class TestPulseGeneratorQNode:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.2
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        ham_single_q_const = qml.pulse.constant * Y(0)
 
         @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
-            return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
+            return qml.probs(wires=0), qml.expval(Z(0))
 
         params = [jnp.array(0.4)]
         jac = jax.jacobian(circuit)(params)
@@ -1041,12 +1094,12 @@ class TestPulseGeneratorQNode:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = {"python": 0.2, "numpy": np.array(0.2), "jax": jnp.array(0.2)}[time_interface]
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        ham_single_q_const = qml.pulse.constant * Y(0)
 
         @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params, T=None):
             qml.evolve(ham_single_q_const)(params, T)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(Z(0))
 
         params = [jnp.array(0.4)]
         p = params[0] * T
@@ -1065,14 +1118,14 @@ class TestPulseGeneratorQNode:
         params = [jnp.array(0.21), jnp.array(-0.171), jnp.array([0.05, 0.03, -0.1])]
         dev = qml.device("default.qubit.jax", wires=2)
         ham = (
-            qml.pulse.constant * qml.PauliX(0)
-            + (lambda p, t: jnp.sin(p * t)) * qml.PauliZ(0)
-            + jnp.polyval * (qml.PauliY(0) @ qml.PauliY(1))
+            qml.pulse.constant * X(0)
+            + (lambda p, t: jnp.sin(p * t)) * Z(0)
+            + jnp.polyval * (Y(0) @ Y(1))
         )
 
         def ansatz(params):
             qml.evolve(ham)(params, 0.1)
-            return qml.expval(qml.PauliY(0) @ qml.PauliX(1))
+            return qml.expval(Y(0) @ X(1))
 
         qnode_pulse_grad = qml.QNode(
             ansatz,
@@ -1103,11 +1156,11 @@ class TestPulseGeneratorDiff:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.5
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+        ham_single_q_const = qml.pulse.constant * Y(0)
 
         def fun(params):
             op = qml.evolve(ham_single_q_const)(params, T)
-            tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+            tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
             tape.trainable_params = [0]
             _tapes, fn = pulse_generator(tape)
             return fn(qml.execute(_tapes, dev, None))
