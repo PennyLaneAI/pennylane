@@ -26,7 +26,6 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import operation
 from pennylane import math as qmlmath
-from pennylane.queuing import QueuingManager
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -97,7 +96,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         and len(control) == 1
         and (control_values is None or control_values[0])
     ):
-        QueuingManager.remove(op)
+        qml.QueuingManager.remove(op)
         return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
         return Controlled(
