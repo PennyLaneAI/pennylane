@@ -633,7 +633,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
     def _controlled(self, wire):
-        return CZ(wires=wire + self.wires)
+        return qml.CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -1033,103 +1033,6 @@ class CNOT(Operation):
 
     def _controlled(self, wire):
         return Toffoli(wires=wire + self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[0])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
-class CZ(Operation):
-    r"""CZ(wires)
-    The controlled-Z operator
-
-    .. math:: CZ = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & 1 & 0\\
-            0 & 0 & 0 & -1
-        \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the wires the operation acts on
-    """
-    num_wires = 2
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "Z"
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Z"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CZ.matrix`
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CZ.compute_matrix())
-        [[ 1  0  0  0]
-         [ 0  1  0  0]
-         [ 0  0  1  0]
-         [ 0  0  0 -1]]
-        """
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-
-    @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
-        r"""Eigenvalues of the operator in the computational basis (static method).
-
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
-        the operator can be reconstructed as
-
-        .. math:: O = U \Sigma U^{\dagger},
-
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
-        Otherwise, no particular order for the eigenvalues is guaranteed.
-
-        .. seealso:: :meth:`~.CZ.eigvals`
-
-
-        Returns:
-            array: eigenvalues
-
-        **Example**
-
-        >>> print(qml.CZ.compute_eigvals())
-        [1, 1, 1, -1]
-        """
-        return np.array([1, 1, 1, -1])
-
-    def adjoint(self):
-        return CZ(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    def _controlled(self, wire):
-        return CCZ(wires=wire + self.wires)
 
     @property
     def control_wires(self):

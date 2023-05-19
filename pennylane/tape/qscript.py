@@ -42,6 +42,15 @@ from pennylane.queuing import AnnotatedQueue, process_queue
 _empty_wires = qml.wires.Wires([])
 
 
+def _warn_name():
+    warnings.warn(
+        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
+        " removed in the next release. Going forward, please refrain from using them. This also affects"
+        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
+        UserWarning,
+    )
+
+
 OPENQASM_GATES = {
     "CNOT": "cx",
     "CZ": "cz",
@@ -93,7 +102,7 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): a name given to the quantum script
+        name (str): Deprecated way to give a name to the quantum script. Avoid using.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -186,7 +195,9 @@ class QuantumScript:
         name=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self.name = name
+        self._name = name
+        if name is not None:
+            _warn_name()
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -247,6 +258,17 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
+
+    @property
+    def name(self):
+        """Name of the quantum script. Raises deprecation warning.
+
+        Returns:
+
+            str or None: The name given to the quantum script upon creation (if any).
+        """
+        _warn_name()
+        return self._name
 
     @property
     def interface(self):
