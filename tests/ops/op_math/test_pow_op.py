@@ -33,7 +33,7 @@ class TempOperator(qml.operation.Operator):
 
 
 # pylint: disable=unused-argument
-def pow_using_dunder_method(base, z, do_queue=False, id=None):
+def pow_using_dunder_method(base, z, id=None):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
     return base**z
