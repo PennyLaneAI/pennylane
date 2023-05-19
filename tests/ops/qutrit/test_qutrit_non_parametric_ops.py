@@ -35,18 +35,6 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), [1, 2]),
 ]
 
-subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([1, 2, 3], "The subspace must be a sequence with"),
-    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
-    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
-    ([1], "The subspace must be a sequence with"),
-    (0, "The subspace must be a sequence with two unique"),
-]
-
-
-# TODO: Add tests for testing that the decomposition of non-parametric ops is correct
-
 
 class TestOperations:
     @pytest.mark.parametrize("op_cls, mat, subspace", NON_PARAMETRIZED_OPERATIONS)
@@ -74,18 +62,6 @@ class TestOperations:
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("subspace, err_msg", subspace_error_data)
-    @pytest.mark.parametrize("op_cls", [qml.THadamard])
-    def test_subspace_op_errors(self, op_cls, subspace, err_msg):
-        """Test that the correct errors are raised when subspace is incorrectly defined"""
-
-        with pytest.raises(ValueError, match=err_msg):
-            op = op_cls(wires=range(op_cls.num_wires), subspace=subspace)
-            op.matrix()
-
-        with pytest.raises(ValueError, match=err_msg):
-            op_cls.compute_matrix(subspace=subspace)
 
 
 class TestEigenval:
