@@ -208,6 +208,21 @@ class TestConstruction:
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
+    
+    @pytest.mark.parametrize("do_queue", [True, False])
+    def test_composite_do_queue_deprecation(self, do_queue):
+        """Test that CompositeOp raises a deprecation warning when do_queue is not None."""
+        factors = (qml.PauliX(0), qml.PauliY(0))
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Use qml.queuing.QueuingManager.stop_recording()"
+        )
+
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            qml.prod(*factors, do_queue=do_queue)
+
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            qml.sum(*factors, do_queue=do_queue)
 
 
 class TestMscMethods:
