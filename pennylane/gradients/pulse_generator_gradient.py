@@ -479,6 +479,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
+    >>> circuit.construct((params,), {}) # Build the tape of the circuit.
     >>> tapes, fun = qml.gradients.pulse_generator(circuit.tape, argnums=[0, 1, 2])
     >>> len(tapes)
     12
@@ -568,8 +569,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         .. math::
 
             \frac{\partial U(\boldsymbol{\theta})}{\partial \theta_{k}} =
-            U(\boldsymbol{\theta})
-            \frac{\mathrm{d}}{\mathrm{d} x} \exp[x\Omega_{k}]\large|_{x=0}.
+            U(\boldsymbol{\theta})\Omega_{k}.
 
         Given that we can compute the left-hand side expression as well as the matrix
         for :math:`U` itself, we can compute :math:`\Omega_{k}` for all parameters

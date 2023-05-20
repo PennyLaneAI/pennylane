@@ -550,7 +550,7 @@ class TestIntegration:
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H)(params, t=10.0, dense=False)
+            Um = qml.evolve(H, dense=False)(params, t=10.0)
             return qml.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
@@ -568,7 +568,7 @@ class TestIntegration:
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H)(params, t=10.0, dense=True)
+            Um = qml.evolve(H, dense=True)(params, t=10.0)
             return qml.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)

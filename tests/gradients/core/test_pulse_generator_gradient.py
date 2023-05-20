@@ -1144,12 +1144,15 @@ class TestPulseGeneratorQNode:
 
 @pytest.mark.jax
 class TestPulseGeneratorDiff:
-    """Test that pulse_generator is differentiable."""
+    """Test that pulse_generator is differentiable, i.e. that computing
+    the derivative with pulse_generator is differentiable a second time,
+    yielding the Hessian."""
 
     # pylint: disable=too-few-public-methods
     @pytest.mark.slow
     def test_jax(self):
-        """Test that pulse_generator is differentiable with JAX."""
+        """Test that pulse_generator is differentiable,
+        allowing to compute the Hessian, with JAX.."""
         import jax
         import jax.numpy as jnp
 
