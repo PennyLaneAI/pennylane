@@ -343,7 +343,7 @@ def _make_zero_rep(g, single_measure, shot_vector, par_shapes=None):
         return zero_entry(g)
     if single_measure or not shot_vector:
         return tuple(map(zero_entry, g))
-    return tuple(tuple(zero_entry, shot_comp_g) for shot_comp_g in g)
+    return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
 
 
 def expval_param_shift(
