@@ -198,6 +198,7 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("slicing", [False, True])
     def test_acting_on_qnodes_single_param(self, shots, slicing, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
+        np.random.seed(234)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -214,8 +215,6 @@ class TestGradientTransformIntegration:
         res = grad_fn(w)
         assert circuit.interface == "auto"
         expected = np.array([-np.sin(w[0] if slicing else w), 0])
-        print(expected)
-        print(res)
         if isinstance(shots, list):
             assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:
@@ -224,6 +223,7 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
     def test_acting_on_qnodes_multi_param(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
+        np.random.seed(234)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
