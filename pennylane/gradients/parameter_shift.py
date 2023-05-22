@@ -333,17 +333,23 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
 def _make_zero_rep(g, single_measure, shot_vector, par_shapes=None):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
     of a gradient computation, where g is a previously computed non-zero gradient entry."""
-    cut_dims, add_shape = (0, ()) if par_shapes is None else (len(par_shapes[0]), par_shapes[1])
+    cut_dims, par_shape = (0, ()) if par_shapes is None else (len(par_shapes[0]), par_shapes[1])
 
-    def zero_entry(grad_entry):
-        """Create a gradient entry that is zero and has the correctly modified shape."""
-        return qml.math.zeros(add_shape + qml.math.shape(grad_entry)[cut_dims:], like=grad_entry)
+    if par_shapes is None:
+        zero_entry = qml.math.zeros_like
+    else:
+        def zero_entry(grad_entry):
+            """Create a gradient entry that is zero and has the correctly modified shape."""
+            new_shape = par_shape + qml.math.shape(grad_entry)[cut_dims:]
+            return qml.math.zeros(new_shape, like=grad_entry)
 
     if single_measure and not shot_vector:
-        return zero_entry(g)
-    if single_measure or not shot_vector:
-        return tuple(map(zero_entry, g))
-    return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
+        rep =  zero_entry(g)
+    elif single_measure or not shot_vector:
+        rep =  tuple(map(zero_entry, g))
+    else:
+        rep =  tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
+    return rep
 
 
 def expval_param_shift(
