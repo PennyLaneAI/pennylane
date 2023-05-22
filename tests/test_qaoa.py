@@ -2038,7 +2038,7 @@ class TestCycles:
             wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
             edges = tuple(m[w] for w in wires_)
 
-            if len(edges)>0 and find_simple_cycle(edges):
+            if len(edges) > 0 and find_simple_cycle(edges):
                 assert energy == min(energies_bitstrings)[0]
-            elif len(edges)>0 and not find_simple_cycle(edges):
+            elif len(edges) > 0 and not find_simple_cycle(edges):
                 assert energy > min(energies_bitstrings)[0]

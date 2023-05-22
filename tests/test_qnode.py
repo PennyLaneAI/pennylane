@@ -956,6 +956,7 @@ class TestIntegration:
     @pytest.mark.parametrize("interface", ["tf", "auto"])
     def test_correct_number_of_executions_tf(self, interface):
         """Test that number of executions are tracked in the tf interface."""
+
         def func():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])

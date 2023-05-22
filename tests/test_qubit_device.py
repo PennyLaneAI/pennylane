@@ -703,6 +703,7 @@ class TestVar:
         # pylint: disable=too-few-public-methods
         class MyObs(qml.operation.Observable):
             """Observable with no eigenvalue representation defined."""
+
             num_wires = 1
 
             def eigvals(self):

@@ -482,9 +482,7 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
 
-    def test_conditional_ops_unsupported_error(
-        self, mock_device_with_paulis_and_methods
-    ):
+    def test_conditional_ops_unsupported_error(self, mock_device_with_paulis_and_methods):
         """Test that an error is raised for conditional operations if
         mid-circuit measurements are not supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)

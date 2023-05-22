@@ -30,9 +30,7 @@ class TestEdgeHermitian:
     """Test Hermitian edge cases."""
 
     @pytest.mark.parametrize("theta,phi", list(zip(THETA, PHI)))
-    def test_hermitian_two_wires_identity_expectation_only_hermitian(
-        self, shots, theta, phi
-    ):
+    def test_hermitian_two_wires_identity_expectation_only_hermitian(self, shots, theta, phi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
