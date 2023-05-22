@@ -165,6 +165,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
+  generating terms of a pulse Hamiltonian.
+  [(4156)](https://github.com/PennyLaneAI/pennylane/pull/4156)
+  
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 

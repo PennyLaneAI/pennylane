@@ -556,6 +556,7 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
             "stoch_pulse_grad currently only supports Pauli words as parametrized "
             f"terms in ParametrizedHamiltonian. Got {ob}"
         )
+    prefactor = next(iter(qml.pauli.pauli_sentence(ob).values()))
     word = qml.pauli.pauli_word_to_string(ob)
     cjac_fn = jax.jacobian(coeff, argnums=0)
 
@@ -571,7 +572,7 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
             split_evolve_ops = _split_evol_ops(op, word, ob.wires, tau)
             tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
     avg_prefactor = (t1 - t0) / num_split_times
-    return cjacs, tapes, avg_prefactor
+    return cjacs, tapes, avg_prefactor * prefactor
 
 
 # pylint: disable=too-many-arguments
