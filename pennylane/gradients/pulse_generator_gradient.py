@@ -333,12 +333,15 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     # tuple in the corresponding ``cache`` entry).
     gradient_data = []
     gradient_tapes = []
-    for idx, trainable_idx in enumerate(tape.trainable_params):
+    tape_params = tape.get_parameters()
+    for idx, (trainable_idx, param) in enumerate(zip(tape.trainable_params, tape_params)):
+        shape = qml.math.shape(param)
+
         if trainable_idx not in argnum:
             # Trainable parameters that are de-selected by ``argnum`` receive a vanishing
             # gradient entry.
             # Indicate that there are no tapes for this parameter by setting start==end
-            gradient_data.append((0, 0, None))
+            gradient_data.append((0, 0, None, shape))
             continue
 
         # Access the pulse in the tape into which the current trainable parameter
@@ -350,7 +353,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
         # but do not add create any additional tapes.
         tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, cache)
 
-        gradient_data.append(data)
+        gradient_data.append((*data, shape))
         gradient_tapes.extend(tapes)
 
     # Extract some specifications about the original tape, required for output formatting
@@ -364,13 +367,16 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
         """Post-process the results of the parameter-shifted tapes of the pulse
         generator parameter-shift rule into the gradient."""
         grads = []
+        zero_parshapes = []
         # Iterate over gradient_data, which is equivalent to the trainable parameters in argnum
-        for start, end, coeffs in gradient_data:
+        for start, end, coeffs, par_shape in gradient_data:
             # If start and end pointer are equal, no tapes contribute and we get a vanishing
             # gradient for this parameter. For this, add an entry ``None``, which will
-            # be replaced by the appropriately formatted zero later on.
+            # be replaced by the appropriately formatted zero later on. Memorize the parameter
+            # shape for said formatting.
             if start == end:
                 grads.append(None)
+                zero_parshapes.append(par_shape)
                 continue
 
             # Extract the results corresponding to the start and end pointer of the pulse
@@ -382,11 +388,21 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
             g = _parshift_and_contract(res, coeffs, single_measure, shot_vector)
             grads.append(g)
 
+            # Memorize the parameter shape for the nonzero gradient entry
+            nonzero_parshape = par_shape
+
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        zero_rep = _make_zero_rep(g, single_measure, shot_vector)
+        # This shape needs to be modified because pulse parameters may differ in shape.
+        zero_parshapes = iter(zero_parshapes)
+        for i, _g in enumerate(grads):
+            if _g is None:
+                par_shapes = (nonzero_parshape, next(zero_parshapes))
+                # Make zero representative gradient entry, adapting the shape
+                zero_rep = _make_zero_rep(g, single_measure, shot_vector, par_shapes)
+                # Fill in zero-valued gradient entry
+                grads[i] = zero_rep
 
-        # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
         # Reformat the flat list of gradients into an output that fits the original tape specs.

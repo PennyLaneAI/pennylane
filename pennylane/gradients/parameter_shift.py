@@ -330,21 +330,20 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def _make_zero_rep(g, single_measure, shot_vector):
+def _make_zero_rep(g, single_measure, shot_vector, par_shapes=None):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
     of a gradient computation, where g is a previously computed non-zero gradient entry."""
+    cut_dims, add_shape = (0, ()) if par_shapes is None else (len(par_shapes[0]), par_shapes[1])
+
+    def zero_entry(grad_entry):
+        """Create a gradient entry that is zero and has the correctly modified shape."""
+        return qml.math.zeros(add_shape + qml.math.shape(grad_entry)[cut_dims:], like=grad_entry)
+
     if single_measure and not shot_vector:
-        zero_rep = qml.math.zeros_like(g)
-    elif single_measure:
-        zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
-    elif not shot_vector:
-        zero_rep = tuple(qml.math.zeros_like(meas_g) for meas_g in g)
-    else:
-        zero_rep = tuple(
-            tuple(qml.math.zeros_like(grad_component) for grad_component in shot_comp_g)
-            for shot_comp_g in g
-        )
-    return zero_rep
+        return zero_entry(g)
+    elif single_measure or not shot_vector:
+        return tuple(map(zero_entry, g))
+    return tuple(tuple(zero_entry, shot_comp_g) for shot_comp_g in g)
 
 
 def expval_param_shift(

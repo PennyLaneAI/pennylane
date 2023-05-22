@@ -359,7 +359,7 @@ def reorder_grads(grads, tape_specs):
         2. Shot vector (if ``shots`` is a ``list`` or ``list[tuple]``. Skipped otherwise)
         3. Measurements (if there are multiple measurements. Skipped otherwise)
         4. Measurement shape
-        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise) TODO: TBC
+        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise)
 
     The final order of axes of gradient results should be:
 
