@@ -341,7 +341,7 @@ def _make_zero_rep(g, single_measure, shot_vector, par_shapes=None):
 
     if single_measure and not shot_vector:
         return zero_entry(g)
-    elif single_measure or not shot_vector:
+    if single_measure or not shot_vector:
         return tuple(map(zero_entry, g))
     return tuple(tuple(zero_entry, shot_comp_g) for shot_comp_g in g)
 
