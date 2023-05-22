@@ -599,6 +599,7 @@ class TestTorchLayerIntegration:
         assert dict_keys == all_params
         assert len(dict_keys) == len(all_params)
 
+    # pylint: disable=unused-argument
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_save_model(self, get_circuit, n_qubits, output_dim):
         """Test if the model can be saved and loaded"""
