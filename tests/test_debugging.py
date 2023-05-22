@@ -22,6 +22,7 @@ import pennylane as qml
 class TestSnapshot:
     """Test the Snapshot instruction for simulators."""
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
     def test_default_qubit(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
@@ -38,7 +39,7 @@ class TestSnapshot:
 
         circuit()
         assert dev._debugger is None
-        if method != None:
+        if method is not None:
             assert circuit.interface == "auto"
 
         result = qml.snapshots(circuit)()
@@ -52,6 +53,7 @@ class TestSnapshot:
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
@@ -82,6 +84,7 @@ class TestSnapshot:
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_gaussian(self, method):
         """Test that multiple snapshots are returned correctly on the CV simulator."""
@@ -238,12 +241,11 @@ class TestSnapshot:
             qml.Snapshot()
             if m == "expval":
                 return qml.expval(qml.PauliZ(0))
-            elif m == "var":
+            if m == "var":
                 return qml.var(qml.PauliY(1))
-            elif m == "probs":
+            if m == "probs":
                 return qml.probs([0, 1])
-            else:
-                return qml.state()
+            return qml.state()
 
         result = qml.snapshots(circuit)()
         expected = {
