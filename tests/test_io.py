@@ -36,6 +36,7 @@ class MockPluginConverter:
         """True if the mocked loader was called."""
         return self.mock_loader.called
 
+    # pylint: disable=unsubscriptable-object
     @property
     def last_args(self):
         """The last call arguments of the mocked loader."""
