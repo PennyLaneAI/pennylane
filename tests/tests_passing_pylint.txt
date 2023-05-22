@@ -1,3 +1,4 @@
+tests/circuit_graph/**
 tests/data/**
 tests/devices/experimental/**
 tests/devices/qubit/**
