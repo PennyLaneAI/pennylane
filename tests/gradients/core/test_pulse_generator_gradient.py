@@ -1008,10 +1008,12 @@ class TestPulseGeneratorQNode:
             return qml.expval(Z(0))
 
         params = [jnp.array(0.4)]
-        grad = jax.jacobian(circuit)(params)
+        with qml.Tracker(dev) as tracker:
+            grad = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
         assert qml.math.allclose(grad, exp_grad)
+        assert tracker.totals["executions"] == 1 + 2  # one forward pass, two shifted tapes
 
     def test_simple_qnode_expval_two_evolves(self):
         """Test that a simple qnode that returns an expectation value

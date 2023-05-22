@@ -312,8 +312,8 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     """
     argnum = argnum or tape.trainable_params
     # Initialize a cache that will store the following:
-    # 1. the following single entry ``str: int`` that memorized the number of tapes that
-    #    were created overall thus far.
+    # 1. a single entry ``str: int`` that memorizes the number of tapes that
+    #    were created overall thus far. It is initialized in the following line
     # 2. one entry per ``ParametrizedEvolution`` that contains at least one trainable
     #    parameter of the tape that also is marked as trainable as per ``argnum``.
     #    These entries have the format ``int: (int, int, tuple[tensor_like])``. The key is the
@@ -341,9 +341,13 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
             gradient_data.append((0, 0, None))
             continue
 
-        # Generate new tapes and coefficients, or retrieve them from the cache, in case
-        # the pulse to which ``trainable_idx`` belongs was already treated.
-        # If new tapes and coefficients are created, they are added to the cache as well
+        # Access the pulse in the tape into which the current trainable parameter
+        # feeds. If this pulse is analyzed for the first time, compute its effective
+        # generators and their Pauli basis coefficients for _all_ parameters of the pulse,
+        # and create the tapes of the modified cost function for all occurring Pauli words.
+        # If the pulse has been analyzed before, retrieve the tape/results pointers of
+        # the pulse and the coefficients belonging to the current parameter from the cache,
+        # but do not add create any additional tapes.
         tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, cache)
 
         gradient_data.append(data)
@@ -525,6 +529,12 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         commonly encountered with PennyLane.
         In addition, this transform is only JIT-compatible with scalar pulse parameters.
 
+    .. note::
+
+        For pulse Hamiltonians with complex generating terms and few parameters,
+        the decomposition approach taken in this method may incur more
+        (quantum and classical) computational cost than strictly necessary.
+
     .. details::
         :title: Theoretical background
         :href: theory
@@ -578,7 +588,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         .. math::
 
-            \Omega_{k} =\sum_{\ell=1}^{L} \omega_{k}^{(\ell)} P_{\ell}
+            \Omega_{k} = \sum_{\ell=1}^{L} \omega_{k}^{(\ell)} P_{\ell}
 
         The coefficients :math:`\omega_{k}^{(\ell)}` of the generators can be computed
         by decomposing the anti-Hermitian matrix :math:`\Omega_{k}` into the Pauli
@@ -596,7 +606,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         value after executing a pulse program:
 
         .. math::
-            C(\boldsymbol{\theta})&=
+            C(\boldsymbol{\theta})=
             \langle\psi_0|U(\boldsymbol{\theta})^\dagger B
             U(\boldsymbol{\theta}) |\psi_0\rangle
 
@@ -624,9 +634,24 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         :math:`\tilde\omega_{k}^{(\ell)}=2i\omega_{k}^{(\ell)}`.
         In the second to last step, we rewrote the commutator of :math:`U^\dagger BU` and
         :math:`\frac{i}{2}P_\ell` as the derivative (at zero) of a modified cost function
-        that executes a Pauli rotation about :math:`-i\frac{x}{2}P_\ell` before the
-        parametrized time evolution.
-        Finally, we denoted this modified cost function by :math:`C_\ell(x)`.
+        :math:`C_\ell(x)` that executes a Pauli rotation about :math:`-i\frac{x}{2}P_\ell`
+        before the parametrized time evolution. Here, the variable :math:`x` is just a
+        convenient way to write the modified cost function. Note that its derivative with
+        respect to :math:`x` can be computed with the standard two-term parameter-shift
+        rule for Pauli rotation gates.
+
+        *Caching*
+
+        Considering the derivation above, we notice that the same modified cost function
+        :math:`C_\ell(x)` may appear in the derivatives of distinct parameters
+        :math:`\theta_k` and :math:`\theta_m`. In order to not evaluate the same
+        modified quantum circuit derivatives multiple times, we use an internal
+        cache that avoids repeated creation of the same parameter-shifted circuits.
+        In addition, all modified cost functions :math:`C_\ell` that would be multiplied
+        with a vanishing coefficient :math:`\tilde\omega_{k}^{(\ell)}` *for all* :math:`k`
+        are skipped altogether.
+        This approach requires a few additional classical coprocessing steps but allows
+        us to save quantum resources in many relevant pulse programs.
 
     """
     transform_name = "pulse generator parameter-shift"
