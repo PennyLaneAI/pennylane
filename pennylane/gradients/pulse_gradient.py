@@ -543,26 +543,30 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
     """Generate the tapes and compute the classical Jacobians for one given
     generating Hamiltonian term of one pulse.
     """
+    # Obtain the operation into which the indicated parameter feeds, its position in the tape,
+    # and the index of the parameter within the operation
     op, op_idx, term_idx = tape.get_operation(idx)
     if not isinstance(op, ParametrizedEvolution):
+        # Only pulses are supported
         raise ValueError(
             "stoch_pulse_grad does not support differentiating parameters of "
             "other operations than pulses."
         )
 
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
+    # Only pulses with (rescaled) Pauli words are allowed as generating terms.
+    # This includes single-term Hamiltonians, SProd, Prod, Tensor and simple Paulis.
     if not qml.pauli.is_pauli_word(ob):
         raise ValueError(
             "stoch_pulse_grad currently only supports Pauli words as parametrized "
             f"terms in ParametrizedHamiltonian. Got {ob}"
         )
+    # Obtain the prefactor of the (rescaled) Pauli word. works for all formats allowed above.
     prefactor = next(iter(qml.pauli.pauli_sentence(ob).values()))
     word = qml.pauli.pauli_word_to_string(ob)
-    cjac_fn = jax.jacobian(coeff, argnums=0)
 
     t0, *_, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
-    cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
     if use_broadcasting:
         split_evolve_ops = _split_evol_ops(op, word, ob.wires, taus)
         tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
@@ -571,8 +575,15 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
         for tau in taus:
             split_evolve_ops = _split_evol_ops(op, word, ob.wires, tau)
             tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
-    avg_prefactor = (t1 - t0) / num_split_times
-    return cjacs, tapes, avg_prefactor * prefactor
+
+    # Obtain the classical Jacobian and evaluate it at the splitting times
+    cjac_fn = jax.jacobian(coeff, argnums=0)
+    cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
+
+    # Compute the averaging prefactor of the Monte Carlo integral, and include the
+    # prefactor from the rescaled Pauli word
+    avg_prefactor = (t1 - t0) / num_split_times * prefactor
+    return cjacs, tapes, avg_prefactor
 
 
 # pylint: disable=too-many-arguments
