@@ -6,6 +6,24 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The `grouping_type` and `grouping_method` arguments of `qchem.molecular_hamiltonian()` are deprecated.
+
+  - Deprecated in v0.24
+  - Will be removed in v0.31
+
+  Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
+
+  .. code-block:: python
+
+    H, qubits = molecular_hamiltonian(symbols, coordinates)
+    grouped_h = qml.Hamiltonian(
+        H.coeffs,
+        H.ops,
+        grouping_type=grouping_type,
+        method=grouping_method,
+    )
+
+
 * The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
 
   - Still accessible in v0.31
