@@ -99,13 +99,13 @@ class TRX(Operation):
 
     @property
     def subspace(self):
-        """The single-qutrit basis states the operator acts on.
+        """The single-qutrit basis states which the operator acts on
 
-        The subspace defines which two basis states the opreation acts on. The basis state
-        not included in the subspace remains unaffected.
+        This subspace determines which two single-qutrit basis states the operator acts on.
+        The remaining basis state is not affected by the operator.
 
         Returns:
-            tuple[int]: subspace on which the operator acts
+            tuple[int]: subspace on which operator acts
         """
         return self._subspace
 
@@ -247,9 +247,8 @@ class TRY(Operation):
     def subspace(self):
         """The single-qutrit basis states which the operator acts on
 
-        This property returns the 2D subspace on which the operator acts. This subspace
-        determines which two single-qutrit basis states the operator acts on. The remaining
-        basis state is not affected by the operator.
+        This subspace determines which two single-qutrit basis states the operator acts on.
+        The remaining basis state is not affected by the operator.
 
         Returns:
             tuple[int]: subspace on which operator acts
