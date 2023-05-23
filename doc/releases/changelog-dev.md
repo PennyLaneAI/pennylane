@@ -168,6 +168,12 @@
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
+* Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
+  an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
+  being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
+  which allows reproducibly calling `spsa_grad` without getting the same results every time.
+  [(4107)](https://github.com/PennyLaneAI/pennylane/issues/4107)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -183,4 +189,5 @@ Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
