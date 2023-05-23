@@ -129,8 +129,9 @@ NumPy
 ~~~~~
 
 When using the standard NumPy framework, PennyLane offers some built-in optimizers.
-Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
-:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, :class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
+Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`,
+:class:`~.RiemannianGradientOptimizer`, :class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`,
+:class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
 
 :html:`<div class="summary-table">`
 
@@ -145,6 +146,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.MomentumOptimizer
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
+    ~pennylane.RiemannianGradientOptimizer
     ~pennylane.RMSPropOptimizer
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
