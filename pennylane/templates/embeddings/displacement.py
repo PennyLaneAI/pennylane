@@ -67,7 +67,7 @@ class DisplacementEmbedding(Operation):
 
         And, the resulting circuit is:
 
-        >>> print(qml.draw(circuit)(X))
+        >>> print(qml.draw(circuit, show_matrices=False)(X))
         0: ─╭DisplacementEmbedding(M0)──────────┤
         1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
         2: ─╰DisplacementEmbedding(M0)──────────┤
@@ -91,7 +91,7 @@ class DisplacementEmbedding(Operation):
 
         And, the resulting circuit is:
 
-        >>> print(qml.draw(circuit)(X))
+        >>> print(qml.draw(circuit, show_matrices=False)(X))
         0: ─╭DisplacementEmbedding(M0)──────────┤
         1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
         2: ─╰DisplacementEmbedding(M0)──────────┤

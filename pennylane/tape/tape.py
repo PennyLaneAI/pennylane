@@ -243,7 +243,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): a name given to the quantum tape
+        name (str): Deprecated way to give a name to the quantum tape. Avoid using.
         do_queue=True (bool): Whether or not to queue.
             This arguement is deprecated, instead of setting it to ``False``
             use :meth:`~.QueuingManager.stop_recording`.
