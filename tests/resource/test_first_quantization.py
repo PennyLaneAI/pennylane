@@ -364,6 +364,32 @@ def test_init_error_2(n, eta, omega, error, br, charge, vectors):
 
 
 @pytest.mark.parametrize(
+    ("n", "eta", "error", "br", "charge", "vectors"),
+    [
+        (
+            1e10,
+            100,
+            0.0016,
+            7,
+            0,
+            np.array(
+                [
+                    [10.0, 0.0, 0.0],
+                    [0.0, 10.0, 0.0],
+                    [1.0, 1.0, 10.0],
+                ]
+            ),
+        ),
+    ],
+)
+def test_norm_error_noncubic(n, eta, error, br, charge, vectors):
+    r"""Test that _norm_noncubic raises an error when the computed norm is zero."""
+    print(n, eta, error, br, charge, vectors)
+    with pytest.raises(ValueError, match="The computed 1-norm is zero"):
+        qml.resource.FirstQuantization._norm_noncubic(n, eta, error, br, charge, vectors)
+
+
+@pytest.mark.parametrize(
     ("n_p, n_m, n_dirty, n_tof, kappa, ms_cost_ref, beta_ref"),
     [(6, 37, 3331, 500, 1, 13372.0, 90.0), (6, 37, 3331, 1, 1, 30686.0, 68.0)],
 )

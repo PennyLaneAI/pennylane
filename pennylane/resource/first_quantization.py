@@ -766,7 +766,7 @@ class FirstQuantization(Operation):
         # final lambda value is computed from case checking derived in Section E and Appendix D of
         # PRX Quantum 2, 040332 (2021)
         if p_nu * lambda_t_p >= (1 - p_nu) * (lambda_u_1 + lambda_v_1):
-            return 0.0, 0.0
+            raise ValueError("The computed 1-norm is zero.")  # return 0.0, 0.0
         if p_nu_amp * lambda_t_p >= (1 - p_nu_amp) * (lambda_u_1 + lambda_v_1):
             return (lambda_t_p + lambda_u_1 + lambda_v_1) / p_eq, aa_steps
         return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
