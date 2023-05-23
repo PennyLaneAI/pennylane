@@ -565,6 +565,38 @@ class TestTorchLayerIntegration:
         assert dict_keys == all_params
         assert len(dict_keys) == len(all_params)
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    def test_save_model(self, get_circuit, n_qubits, output_dim):
+        """Test if the model can be saved and loaded"""
+        qlayer = TorchLayer(*get_circuit)
+        clayer = torch.nn.Linear(output_dim, 2)
+        model = torch.nn.Sequential(qlayer, clayer)
+
+        saved_state_dict = model.state_dict()
+        torch.save(saved_state_dict, "dummy.pt")
+
+        new_qlayer = TorchLayer(*get_circuit)
+        new_clayer = torch.nn.Linear(output_dim, 2)
+        new_model = torch.nn.Sequential(new_qlayer, new_clayer)
+        new_state_dict = new_model.state_dict()
+
+        assert list(saved_state_dict.keys()) == list(new_state_dict.keys())
+
+        # test that the new model's weights are different
+        assert all(
+            torch.any(saved_state_dict[k] != new_state_dict[k]) for k in saved_state_dict.keys()
+        )
+
+        new_model.load_state_dict(torch.load("dummy.pt"))
+        new_state_dict = new_model.state_dict()
+
+        assert list(saved_state_dict.keys()) == list(new_state_dict.keys())
+
+        # test that the new model's weights are now the same
+        assert all(
+            torch.all(saved_state_dict[k] == new_state_dict[k]) for k in saved_state_dict.keys()
+        )
+
 
 @pytest.mark.torch
 def test_vjp_is_unwrapped_for_param_shift():
