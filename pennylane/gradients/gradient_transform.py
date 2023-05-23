@@ -27,7 +27,6 @@ from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyM
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
-    "atol",
     "aux_wire",
     "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
