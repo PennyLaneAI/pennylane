@@ -1719,7 +1719,7 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
 
-    assert len(recwarn) == 2    # Two warnings due to Operator __eq__ and __hash__
+    assert len(recwarn) == 0
 
 
 def aux_wire_ansatz_0(x, y):

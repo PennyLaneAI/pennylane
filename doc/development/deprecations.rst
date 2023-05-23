@@ -51,8 +51,8 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* ``Operator.__eq__`` and ``Operator.__hash__`` will now raise a warning to indicate upcoming changes
-  to their behaviour.
+* The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` will be updated soon. Their documentation
+  has been updated to reflect the incoming changes.
 
   The upcoming changes to operator equality will allow users to use operator equality the same way as
   with ``qml.equal``. With the changes to hashing, unique operators that are equal will have the same

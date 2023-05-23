@@ -151,8 +151,8 @@
 
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
-* `Operator.__eq__` and `Operator.__hash__` will now raise a warning to indicate upcoming changes
-  to their behaviour.
+* Added warning to documentation of `Operator.__eq__` and `Operator.__hash__` to reflect upcoming changes
+  to operator equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
 
 * ``QuantumScript``'s ``name`` keyword argument and property are deprecated.

@@ -696,24 +696,38 @@ class Operator(abc.ABC):
         )
 
     def __eq__(self, other):
-        warnings.warn(
-            "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
-            "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
-            "qml.equal(op1, op2). To continue using operator equality in its current state, "
-            "use 'op1 is op2'.",
-            UserWarning,
-        )
+        """Equality dunder method to compare two operators.
+        
+        This method is called when the ``==`` is used to compare two operators.
+
+        .. warning::
+
+            The behaviour of operator equality will be updated soon. Currently, op1 == op2 is
+            True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to
+            qml.equal(op1, op2). To continue using operator equality in its current state,
+            use 'op1 is op2'.
+
+        Returns:
+            bool: ``True`` if operators are equal, ``False`` otherwise
+        """
         return super().__eq__(other)
 
     def __hash__(self):
-        warnings.warn(
-            "The behaviour of operator hashing will be updated soon. Currently, each operator "
-            "instance has a unique hash. Soon, an operator's hash will be determined by the "
-            "combined hash of the name, wires, parameters and hyperparameters of the operator. "
-            "To continue using operator hashing in its current state, wrap the operator inside "
-            "a qml.queuing.WrappedObj instance.",
-            UserWarning,
-        )
+        """Hash dunder method to compute the hash of an operator.
+        
+        This method is called when ``hash(op)`` is computed.
+
+        .. warning::
+
+            The behaviour of operator hashing will be updated soon. Currently, each ``Operator``
+            instance has a unique hash. Soon, the ``Operator`` hash will be determined by the
+            combined hash of the name, wires, parameters and hyperparameters of the ``Operator``.
+            To continue using ``Operator`` hashing in its current state, wrap the ``Operator``
+            inside a ``qml.queuing.WrappedObj`` instance.
+
+        Returns:
+            int: hash of the operator
+        """
         return super().__hash__()
 
     @staticmethod
