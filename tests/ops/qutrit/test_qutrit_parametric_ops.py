@@ -443,7 +443,7 @@ class TestGrad:
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_torch(self, op, obs, grad_fn, phi, diff_method, tol):
-        """Test that parametric operations are differentiable with Torch and the gradient is correct"""
+        """Test that parametrized operations are differentiable with Torch and the gradient is correct"""
         import torch
 
         dev = qml.device("default.qutrit", wires=1)
@@ -461,7 +461,7 @@ class TestGrad:
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_torch_broadcasted(self, op, obs, grad_fn, diff_method, tol):
-        """Test that differentiation of parametric operations in Torch with broadcasting works."""
+        """Test that differentiation of parametrized operations in Torch with broadcasting works."""
         import torch
 
         dev = qml.device("default.qutrit", wires=1)
@@ -481,7 +481,7 @@ class TestGrad:
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_tf(self, op, obs, grad_fn, phi, diff_method, tol):
-        """Test that parametric operations are differentiable with TensorFlow and the gradient is correct"""
+        """Test that parametrized operations are differentiable with TensorFlow and the gradient is correct"""
         import tensorflow as tf
 
         dev = qml.device("default.qutrit", wires=1)
@@ -502,7 +502,7 @@ class TestGrad:
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_tf_broadcasted(self, op, obs, grad_fn, diff_method, tol):
-        """Test that differentiation of parametric operations in TensorFlow with broadcasting works."""
+        """Test that differentiation of parametrized operations in TensorFlow with broadcasting works."""
         import tensorflow as tf
 
         dev = qml.device("default.qutrit", wires=1)
