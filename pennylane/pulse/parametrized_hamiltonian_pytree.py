@@ -31,8 +31,8 @@ from .hardware_hamiltonian import HardwareHamiltonian
 class ParametrizedHamiltonianPytree:
     """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
-    mat_fixed: Optional[Union[jnp.ndarray, sparse.CSR]]
-    mats_parametrized: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
+    mat_fixed: Optional[Union[jnp.ndarray, sparse.BCSR]]
+    mats_parametrized: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
     coeffs_parametrized: Tuple[Callable]
     reorder_fn: Callable
 
@@ -49,7 +49,7 @@ class ParametrizedHamiltonianPytree:
         Returns:
             ParametrizedHamiltonianPytree: pytree object
         """
-        make_array = jnp.array if dense else sparse.CSR.fromdense
+        make_array = jnp.array if dense else sparse.BCSR.fromdense
 
         if len(H.ops_fixed) > 0:
             mat_fixed = make_array(qml.matrix(H.H_fixed(), wire_order=wire_order))
@@ -118,7 +118,7 @@ class LazyDotPytree:
     """Jax pytree representing a lazy dot operation."""
 
     coeffs: Tuple[complex, ...]
-    mats: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
+    mats: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
 
     @jax.jit
     def __matmul__(self, other):

@@ -33,7 +33,8 @@ ml_frameworks_list = [
 
 
 @pytest.mark.parametrize("framework", ml_frameworks_list)
-def test_convert_arrays_to_numpy(framework):
+@pytest.mark.parametrize("shots", [None, 100])
+def test_convert_arrays_to_numpy(framework, shots):
     """Tests that convert_to_numpy_parameters works with autograd arrays."""
 
     x = qml.math.asarray(np.array(1.234), like=framework)
@@ -47,7 +48,7 @@ def test_convert_arrays_to_numpy(framework):
     m = [qml.state(), qml.expval(qml.Hermitian(M, 0))]
     prep = [qml.QubitStateVector(state, 0)]
 
-    qs = qml.tape.QuantumScript(ops, m, prep)
+    qs = qml.tape.QuantumScript(ops, m, prep, shots=shots)
     new_qs = convert_to_numpy_parameters(qs)
 
     # check ops that should be unaltered
@@ -58,6 +59,9 @@ def test_convert_arrays_to_numpy(framework):
     for ind in (0, 1, 2, 6):
         assert qml.equal(new_qs[ind], qs[ind], check_interface=False, check_trainability=False)
         assert qml.math.get_interface(*new_qs[ind].data) == "numpy"
+
+    # check shots attribute matches
+    assert new_qs.shots == qs.shots
 
 
 @pytest.mark.autograd

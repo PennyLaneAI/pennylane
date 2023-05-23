@@ -242,7 +242,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 continue
 
             # set the QNode device shots
-            h.device.shots = [(1, s)]
+            h.device.shots = [(1, int(s))]
 
             jacs = []
             for i in argnums:
@@ -317,7 +317,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                     qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
                 )
             elif self.term_sampling is None:
-                device.shots = [(1, self.max_shots)]
+                device.shots = [(1, int(self.max_shots))]
                 # We iterate over each trainable argument, rather than using
                 # qml.jacobian(expval_cost), to take into account the edge case where
                 # different arguments have different shapes and cannot be stacked.
@@ -347,7 +347,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.check_learning_rate(1)
 
         try:
-            device.shots = [(1, self.max_shots)]
+            device.shots = [(1, int(self.max_shots))]
 
             if qml.active_return():
 
