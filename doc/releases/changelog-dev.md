@@ -168,6 +168,9 @@
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
+* `qml.pauli.are_identical_pauli_words` now treats all identities as equal. Identity terms on Hamiltonians with non-standard
+  wire orders are no longer eliminated.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
