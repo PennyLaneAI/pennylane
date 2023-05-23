@@ -183,7 +183,7 @@ def apply_operation(op: qml.operation.Operator, state, is_state_batched: bool = 
         [1., 0.]], requires_grad=True)
 
     """
-    state.apply_gate(op.matrix(), *op.wires)
+    state.apply_gate(op.matrix(), *op.wires, contract=False)
 
 
 # @apply_operation.register

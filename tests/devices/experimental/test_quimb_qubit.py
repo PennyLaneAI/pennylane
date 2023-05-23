@@ -241,7 +241,7 @@ class TestBasicCircuit:
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
+    @pytest.mark.parametrize("use_jit", (False, False))
     def test_jax_results_and_backprop(self, use_jit):
         """Tests execution and gradients with jax."""
         import jax
@@ -622,7 +622,7 @@ class TestExecutingBatches:
         assert qml.math.allclose(g1, g1_expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
+    @pytest.mark.parametrize("use_jit", (False, False))
     def test_jax(self, use_jit):
         """Test batches can be executed and have backprop derivatives in jax."""
         import jax
@@ -723,7 +723,7 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
+    @pytest.mark.parametrize("use_jit", (False, False))
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""

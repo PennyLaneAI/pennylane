@@ -40,7 +40,12 @@ def state_diagonalizing_gates(
         TensorLike: the result of the measurement
     """
     obs = measurementprocess.obs
-    return state.local_expectation(obs.matrix(), tuple(obs.wires), backend="jax")
+    fs_opts = {
+        "simplify_sequence": "ADCRS",
+        "simplify_atol": 0.0,
+    }
+    # make sure to return a real value for JAX-diff
+    return state.local_expectation(obs.matrix(), tuple(obs.wires), **fs_opts).real
     # wires = obs.wires
     # for op in measurementprocess.obs():
     #     apply_operation(op, state)
