@@ -23,7 +23,6 @@ import pytest
 from gate_data import (
     CNOT,
     CSWAP,
-    CZ,
     CCZ,
     ECR,
     ISWAP,
@@ -43,7 +42,6 @@ from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import math
 from pennylane.operation import AnyWires
 from pennylane.wires import Wires
 
@@ -54,7 +52,6 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
     (qml.SISWAP, SISWAP),
-    (qml.CZ, CZ),
     (qml.CCZ, CCZ),
     (qml.S, S),
     (qml.T, T),
@@ -1146,7 +1143,6 @@ period_two_ops = (
     qml.PauliZ(0),
     qml.Hadamard("a"),
     qml.CNOT(wires=(0, 1)),
-    qml.CZ(wires=(0, 1)),
     qml.CY(wires=(0, 1)),
     qml.CH(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
@@ -1338,11 +1334,6 @@ class TestControlledMethod:
         out = original._controlled("a")
         assert qml.equal(original, out)
 
-    def test_CZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qml.CZ(wires=[0, 1])._controlled("a")
-        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
-
 
 class TestSparseMatrix:
     @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
@@ -1365,7 +1356,6 @@ label_data = [
     (qml.T(wires=0), "T"),
     (qml.SX(wires=0), "SX"),
     (qml.CNOT(wires=(0, 1)), "X"),
-    (qml.CZ(wires=(0, 1)), "Z"),
     (qml.CY(wires=(0, 1)), "Y"),
     (qml.CH(wires=(0, 1)), "H"),
     (qml.SWAP(wires=(0, 1)), "SWAP"),
@@ -1401,7 +1391,6 @@ control_data = [
     (qml.SISWAP(wires=(0, 1)), Wires([])),
     (qml.ECR(wires=(0, 1)), Wires([])),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
-    (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
@@ -1425,7 +1414,6 @@ involution_ops = [  # ops who are their own inverses
     qml.PauliY(0),
     qml.PauliZ(0),
     qml.CNOT((0, 1)),
-    qml.CZ((0, 1)),
     qml.CY((0, 1)),
     qml.CH((0, 1)),
     qml.SWAP((0, 1)),

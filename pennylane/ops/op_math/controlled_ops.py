@@ -17,9 +17,13 @@ This submodule contains controlled operators based on the Controlled and Control
 
 import warnings
 from typing import Iterable
+from functools import lru_cache
+
+import numpy as np
 
 from pennylane.operation import AnyWires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.ops.qubit.non_parametric_ops import PauliZ, CCZ
 from .controlled import ControlledOp
 
 
@@ -136,3 +140,66 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=self.work_wires,
         )
         return new_op
+
+
+class CZ(ControlledOp):
+    r"""CZ(wires)
+    The controlled-Z operator
+
+    .. math:: CZ = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 1 & 0\\
+            0 & 0 & 0 & -1
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    def __init__(self, wires):
+        control_wire, wire = wires
+        base = PauliZ(wires=wire)
+        super().__init__(base, control_wire)
+        self._name = "CZ"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CZ.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CZ.compute_matrix())
+        [[ 1  0  0  0]
+         [ 0  1  0  0]
+         [ 0  0  1  0]
+         [ 0  0  0 -1]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+
+    def _controlled(self, wire):
+        return CCZ(wires=wire + self.wires)
