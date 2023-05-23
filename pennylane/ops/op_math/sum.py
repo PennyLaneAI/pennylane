@@ -17,7 +17,6 @@ computing the sum of operations.
 """
 import itertools
 from copy import copy
-from functools import reduce
 from typing import List
 
 import numpy as np
@@ -259,7 +258,11 @@ class Sum(CompositeOp):
                 op._pauli_rep for op in self.operands  # pylint: disable=protected-access
             ]
         ):
-            return reduce((lambda a, b: a + b), operand_pauli_reps)
+            new_rep = qml.pauli.PauliSentence()
+            for operand_rep in operand_pauli_reps:
+                for pw, coeff in operand_rep.items():
+                    new_rep[pw] += coeff
+            return new_rep
         return None
 
     @classmethod

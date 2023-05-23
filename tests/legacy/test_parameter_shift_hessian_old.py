@@ -878,7 +878,7 @@ class TestParameterShiftHessian:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -897,7 +897,7 @@ class TestParameterShiftHessian:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -916,7 +916,7 @@ class TestParameterShiftHessian:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -935,7 +935,7 @@ class TestParameterShiftHessian:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_hessian(circuit)(weights)
 
         assert res == ()
@@ -955,7 +955,7 @@ class TestParameterShiftHessian:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
-        with pytest.warns(UserWarning, match="hessian of a tape with no trainable parameters"):
+        with pytest.warns(UserWarning, match="Hessian of a tape with no trainable parameters"):
             h_tapes, post_processing = qml.gradients.param_shift_hessian(tape)
         res = post_processing(qml.execute(h_tapes, dev, None))
 
