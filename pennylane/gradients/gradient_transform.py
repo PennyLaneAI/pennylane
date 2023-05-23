@@ -399,7 +399,7 @@ def reorder_grads(grads, tape_specs):
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qjac, cjac, num_measurements, partitioned_shots):
+def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
@@ -427,7 +427,7 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, partitioned_shots):
         _qjac = qjac
         if multi_meas:
             _qjac = _qjac[0]
-        if partitioned_shots:
+        if has_partitioned_shots:
             _qjac = _qjac[0]
         multi_params = isinstance(_qjac, tuple)
 
@@ -438,11 +438,11 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, partitioned_shots):
         def _reshape(x):
             return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
-        if not (multi_meas or partitioned_shots):
+        if not (multi_meas or has_partitioned_shots):
             # Single parameter, single measurements
             return tdot(_reshape(qjac), cjac)
 
-        if not (multi_meas and partitioned_shots):
+        if not (multi_meas and has_partitioned_shots):
             return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
         # Single parameter, multiple measurements
@@ -630,8 +630,8 @@ class gradient_transform(qml.batch_transform):
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
-                partitioned_shots = Shots(tkwargs.get("shots", None)).has_partitioned_shots
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, partitioned_shots)
+                has_partitioned_shots = Shots(tkwargs.get("shots", None)).has_partitioned_shots
+                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
 
             return _contract_qjac_with_cjac_legacy(qjac, cjac)
 

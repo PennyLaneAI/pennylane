@@ -326,14 +326,14 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def _make_zero_rep(g, single_measure, partitioned_shots):
+def _make_zero_rep(g, single_measure, has_partitioned_shots):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
     of a gradient computation, where g is a previously computed non-zero gradient entry."""
-    if single_measure and not partitioned_shots:
+    if single_measure and not has_partitioned_shots:
         zero_rep = qml.math.zeros_like(g)
     elif single_measure:
         zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
-    elif not partitioned_shots:
+    elif not has_partitioned_shots:
         zero_rep = tuple(qml.math.zeros_like(meas_g) for meas_g in g)
     else:
         zero_rep = tuple(
@@ -667,7 +667,7 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     return tuple(new_pdA2)
 
 
-def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, partitioned_shots):
+def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, has_partitioned_shots):
     """The main auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
@@ -677,7 +677,7 @@ def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, parti
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
         if involutory := set(var_indices) - set(non_involutory_indices):
-            if partitioned_shots:
+            if has_partitioned_shots:
                 pdA2 = tuple(
                     _put_zeros_in_pdA2_involutory(tape, pdA2_shot_comp, involutory)
                     for pdA2_shot_comp in pdA2
@@ -766,7 +766,7 @@ def _create_variance_proc_fn(
     def processing_fn(results):
         f0 = results[0]
 
-        partitioned_shots = shots.has_partitioned_shots
+        has_partitioned_shots = shots.has_partitioned_shots
 
         # analytic derivative of <A>
         pdA = pdA_fn(results[int(not pdA_fn.first_result_unshifted) : tape_boundary])
@@ -778,14 +778,14 @@ def _create_variance_proc_fn(
             pdA2_fn,
             non_involutory_indices,
             var_indices,
-            partitioned_shots,
+            has_partitioned_shots,
         )
 
         # The logic follows:
         # variances (var_mask==True): return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp
         # plain expectations (var_mask==False): return d<A>/dp
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
-        if partitioned_shots:
+        if has_partitioned_shots:
             final_res = []
             for idx_shot_comp in range(shots.num_copies):
                 f0_comp = f0[idx_shot_comp]

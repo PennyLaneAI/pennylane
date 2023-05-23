@@ -226,6 +226,8 @@ class TestShotsConstruction:
             (10, 1),
             ([10, 10], 2),
             ([10, 10, 20], 3),
+            ([100, (10, 3)], 4),
+            ([(10, 3), (20, 2)], 5),
         ],
     )
     def test_num_copies(self, shots, expected):
