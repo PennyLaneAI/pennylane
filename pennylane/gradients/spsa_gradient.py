@@ -35,7 +35,7 @@ from .gradient_transform import (
 from .general_shift_rules import generate_multishifted_tapes
 
 
-def _rademacher_sampler(indices, num_params, *args, seed=None):
+def _rademacher_sampler(indices, num_params, *args, rng):
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
@@ -46,15 +46,16 @@ def _rademacher_sampler(indices, num_params, *args, seed=None):
         indices (Sequence[int]): Indices of the trainable tape parameters that will be perturbed.
         num_params (int): Total number of trainable tape parameters.
 
+    Kwargs:
+        rng (np.random.Generator): A NumPy pseudo-random number generator.
+
     Returns:
         tensor_like: Vector of size ``num_params`` with non-zero entries at positions indicated
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
     # pylint: disable=unused-argument
-    if seed is not None:
-        np.random.seed(seed)
     direction = np.zeros(num_params)
-    direction[indices] = np.random.choice([-1, 1], size=len(indices))
+    direction[indices] = rng.choice([-1, 1], size=len(indices))
     return direction
 
 
@@ -71,7 +72,7 @@ def spsa_grad(
     shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
-    sampler_seed=None,
+    sampler_rng=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -125,16 +126,18 @@ def spsa_grad(
               A valid sampling method can, but does not have to, take this counter into
               account. In any case, ``sampler`` has to accept this third argument.
 
-            - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
-              This argument should be passed to some method that seeds any randomness used in
-              the sampler.
+            - The keyword argument ``rng``, expected to be a NumPy pseudo-random number generator,
+              which should be used to sample directions randomly.
 
             Note that the circuit evaluations in the various sampled directions are *averaged*,
             not simply summed up.
 
-        sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
-            call to the sampler, so that only one unique direction is sampled even if
-            ``num_directions>1``.
+        sampler_rng (Union[np.random.Generator, int, None]): Either a NumPy pseudo-random number
+            generator or an integer, which will be used as the PRNG seed. Default is None, which
+            creates a NumPy PRNG without a seed. Note that calling ``spsa_gradient`` multiple times
+            with a seed (i.e., an integer) will result in the same directions being sampled in each
+            call. In this case it is advisable to create a NumPy PRNG and pass it to
+            ``spsa_gradient`` in each call.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -272,7 +275,7 @@ def spsa_grad(
             shots=shots,
             num_directions=num_directions,
             sampler=sampler,
-            sampler_seed=sampler_seed,
+            sampler_rng=sampler_rng,
         )
 
     if argnum is None and not tape.trainable_params:
@@ -302,6 +305,17 @@ def spsa_grad(
         # Skip the unshifted tape
         shifts = shifts[1:]
 
+    if sampler_rng is None:
+        sampler_rng = np.random.default_rng()
+    elif isinstance(sampler_rng, int):
+        sampler_rng = np.random.default_rng(sampler_rng)
+    elif not isinstance(sampler_rng, np.random.Generator):
+        err = (
+            'Argument sampler_rng has invalid type. Expected an integer, '
+            f'or np.random.Generator, or None. Received {type(sampler_rng)}'
+        )
+        raise ValueError(err)
+
     method_map = choose_grad_methods(diff_methods, argnum)
 
     num_trainable_params = len(tape.trainable_params)
@@ -310,7 +324,7 @@ def spsa_grad(
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep, seed=sampler_seed)
+        direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
@@ -382,7 +396,7 @@ def _spsa_grad_legacy(
     shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
-    sampler_seed=None,
+    sampler_rng=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -436,13 +450,15 @@ def _spsa_grad_legacy(
               A valid sampling method can, but does not have to, take this counter into
               account. In any case, ``sampler`` has to accept this third argument.
 
-            - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
-              This argument should be passed to some method that seeds any randomness used in
-              the sampler.
+            - The keyword argument ``rng``, expected to be a NumPy pseudo-random number generator,
+              which should be used to sample directions randomly.
 
-        sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
-            call to the sampler, so that only one unique direction is sampled even if
-            ``num_directions>1``.
+        sampler_rng (Union[np.random.Generator, int, None]): Either a NumPy pseudo-random number
+            generator or an integer which will be used as the PRNG seed. Default is None, which
+            creates a NumPy PRNG without a seed. Note that calling ``spsa_gradient`` multiple times
+            with a seed (i.e., an integer) will result in the same directions being sampled in each
+            call. In this case it is advisable to create a NumPy PRNG and pass it to
+            ``spsa_gradient`` each time.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -564,6 +580,17 @@ def _spsa_grad_legacy(
         # Skip the unshifted tape
         shifts = shifts[1:]
 
+    if sampler_rng is None:
+        sampler_rng = np.random.default_rng()
+    elif isinstance(sampler_rng, int):
+        sampler_rng = np.random.default_rng(sampler_rng)
+    elif not isinstance(sampler_rng, np.random.Generator):
+        err = (
+            'Argument rng has invalid type. Expected an integer, or np.random.Generator, or None. '
+            f'Received {type(sampler_rng)}'
+        )
+        raise ValueError(err)
+
     method_map = choose_grad_methods(diff_methods, argnum)
 
     indices = [i for i in range(num_trainable_params) if (i in method_map and method_map[i] != "0")]
@@ -571,7 +598,7 @@ def _spsa_grad_legacy(
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep, seed=sampler_seed)
+        direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
