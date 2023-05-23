@@ -1038,6 +1038,10 @@ class Operator(abc.ABC):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
+
+        if any(qml.math.is_abstract(p) and len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
+            return
+
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:

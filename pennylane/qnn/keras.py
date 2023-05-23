@@ -132,6 +132,50 @@ class KerasLayer(Layer):
         If ``weight_specs`` is not specified, weights will be added using the Keras default
         initialization and without any regularization or constraints.
 
+        **Model saving**
+
+        The weights of models that contain ``KerasLayers`` can be saved using the usual
+        ``tf.keras.Model.save_weights`` method:
+
+        .. code-block::
+
+            clayer = tf.keras.layers.Dense(2, input_shape=(2,))
+            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+            model = tf.keras.Sequential([clayer, qlayer])
+            model.save_weights(SAVE_PATH)
+
+        To load the model weights, first instantiate the model like before, then call
+        ``tf.keras.Model.load_weights``:
+
+        .. code-block::
+
+            clayer = tf.keras.layers.Dense(2, input_shape=(2,))
+            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+            model = tf.keras.Sequential([clayer, qlayer])
+            model.load_weights(SAVE_PATH)
+
+        If the ``KerasLayer`` is created with ``dynamic=False`` (the default), then models
+        containing the layer can be saved directly using ``tf.keras.Model.save``. This
+        method also saves the model architecture, weights, and training configuration, including
+        the optimizer state:
+
+        .. code-block::
+
+            clayer = tf.keras.layers.Dense(2, input_shape=(2,))
+            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+            model = tf.keras.Sequential([clayer, qlayer])
+            model.save(SAVE_PATH)
+
+        In this case, loading the model requires no knowledge of the original source code:
+
+        .. code-block::
+            model = tf.keras.models.load_model(SAVE_PATH)
+
+        .. note::
+            Currently ``KerasLayer`` objects cannot be saved in the ``HDF5`` file format. In order
+            to save a model using the latter method above, the ``SavedModel`` file format (default
+            in TensorFlow 2.x) should be used.
+
         **Additional example**
 
         The code block below shows how a circuit composed of templates from the
@@ -249,6 +293,9 @@ class KerasLayer(Layer):
 
         super().__init__(dynamic=True, **kwargs)
 
+        # no point in delaying the initialization of weights, since we already know their shapes
+        self.build(None)
+
     def _signature_validation(self, qnode, weight_shapes):
         sig = inspect.signature(qnode.func).parameters
 
@@ -293,17 +340,9 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if len(tf.shape(inputs)) > 1 and self.argnum is None:
-            # If the input size is not 1-dimensional, unstack the input along its first dimension,
-            # recursively call the forward pass on each of the yielded tensors, and then stack the
-            # outputs back into the correct shape
-            reconstructor = []
-            for x in tf.unstack(inputs):
-                reconstructor.append(self.call(x))
-            return tf.stack(reconstructor)
-
         return self._evaluate_qnode(inputs)
 
+    @tf.autograph.experimental.do_not_convert
     def _evaluate_qnode(self, x):
         """Evaluates a QNode for a single input datapoint.
 
@@ -318,8 +357,15 @@ class KerasLayer(Layer):
             **{k: 1.0 * w for k, w in self.qnode_weights.items()},
         }
         res = self.qnode(**kwargs)
+
         if isinstance(res, (list, tuple)):
+            # if len(tf.shape(x)) > 1:
+            if tf.shape(x).shape[0] > 1:
+                # multi-return and batch dim case
+                res = [tf.reshape(r, (tf.shape(x)[0], -1)) for r in res]
+
             return tf.experimental.numpy.hstack(res)
+
         return res
 
     def compute_output_shape(self, input_shape):
