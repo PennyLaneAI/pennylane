@@ -123,6 +123,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* Updated the `gradients` module to use the new `Shots` object internally.
+  [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
+
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
