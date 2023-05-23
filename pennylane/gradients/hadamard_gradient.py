@@ -186,6 +186,7 @@ def _hadamard_grad(
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    shots = qml.measurements.Shots(shots)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
