@@ -43,12 +43,70 @@ class TestSplitEvolOps:
     ham_single_q_pwc = lambda _: qml.pulse.pwc((2.0, 4.0)) * qml.PauliZ(0)
     ham_two_q_pwc = lambda _: qml.pulse.pwc((2.0, 4.0)) * (qml.PauliZ(0) @ qml.PauliX(1))
 
-    split_evol_ops_test_cases = [
-        (ham_single_q_const, [0.3], 2.3, qml.PauliX(0)),
-        (ham_single_q_const, [0.3], 2.3, qml.Hamiltonian([0.2], [qml.PauliZ(0)])),
-        (ham_single_q_const, [0.3], 2.3, 1.2 * qml.PauliZ(0)),
-        (ham_single_q_const, [0.3], 2.3, qml.dot([1.9], [qml.PauliZ(0)])),
-        (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), qml.PauliY(1)),
+    split_evol_ops_test_cases_pauliword = [
+        (ham_single_q_const, [0.3], 2.3, qml.PauliX(0), "X"),
+        (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), qml.PauliY(1), "Y"),
+        (
+            ham_two_q_pwc,
+            [np.linspace(0, 1, 13)],
+            (0.2, 0.6, 0.9, 1.8),
+            qml.PauliY(0) @ qml.PauliX(1),
+            "YX",
+        ),
+        (ham_single_q_const, [0.3], 2.3, qml.Hamiltonian([0.2], [qml.PauliZ(0)]), "Z"),
+        (ham_single_q_const, [0.3], 2.3, 1.2 * qml.PauliZ(0), "Z"),
+        (ham_single_q_const, [0.3], 2.3, qml.dot([1.9], [qml.PauliZ(0)]), "Z"),
+    ]
+
+    # pylint: disable=too-many-arguments
+    @pytest.mark.parametrize("ham, params, time, ob, word", split_evol_ops_test_cases_pauliword)
+    def test_with_pauliword(self, ham, params, time, ob, word):
+        """Test that _split_evol_ops returns the right ops with correct
+        relations to the input operation for a Pauli word as ``ob``."""
+
+        import jax
+
+        ham = ham(None)
+        key = jax.random.PRNGKey(5324)
+        op = qml.evolve(ham)(params, time)
+        op_copy = copy.deepcopy(op)
+        exp_time = [0, time] if qml.math.ndim(time) == 0 else time
+        # Cross-check instantiation of evolution time
+        assert qml.math.allclose(op.t, exp_time)
+
+        # Sample splitting time
+        tau = jax.random.uniform(key) * (exp_time[1] - exp_time[0]) + exp_time[0]
+        ops, coeffs = _split_evol_ops(op, ob, tau)
+        eigvals = qml.eigvals(ob)
+        prefactor = np.max(eigvals)
+        exp_coeffs = [prefactor, -prefactor]
+        exp_shifts = [np.pi / 2, -np.pi / 2]
+
+        # Check coefficients
+        assert qml.math.allclose(coeffs, exp_coeffs)
+
+        # Check that the original operation was not altered
+        assert qml.equal(op, op_copy)
+
+        assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
+
+        for exp_shift, _ops in zip(exp_shifts, ops):
+            assert isinstance(_ops, list) and len(_ops) == 3
+            # Check that the split-up time evolution is correct
+            assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
+            # Patch _ops[0] to have the same time as op, so that it should become the same as op
+            _ops[0].t = op.t
+            assert qml.equal(_ops[0], op)
+
+            assert qml.math.allclose(_ops[2].t, [tau, op.t[-1]])
+            # Patch _ops[2] to have the same time as op, so that it should become the same as op
+            _ops[2].t = op.t
+            assert qml.equal(_ops[2], op)
+
+            # Check that the inserted exponential is correct
+            assert qml.equal(qml.PauliRot(exp_shift, word, wires=ob.wires), _ops[1])
+
+    split_evol_ops_test_cases_general = [
         (
             ham_single_q_pwc,
             [np.linspace(0, 1, 13)],
@@ -59,20 +117,14 @@ class TestSplitEvolOps:
             ham_two_q_pwc,
             [np.linspace(0, 1, 13)],
             (0.2, 0.6, 0.9, 1.8),
-            qml.PauliY(0) @ qml.PauliX(1),
-        ),
-        (
-            ham_two_q_pwc,
-            [np.linspace(0, 1, 13)],
-            (0.2, 0.6, 0.9, 1.8),
             qml.PauliY(0) @ qml.PauliX(1) + 0.2 * qml.PauliZ(0),
         ),
     ]
 
-    @pytest.mark.parametrize("ham, params, time, ob", split_evol_ops_test_cases)
-    def test_output_properties(self, ham, params, time, ob):
+    @pytest.mark.parametrize("ham, params, time, ob", split_evol_ops_test_cases_general)
+    def test_with_general_ob(self, ham, params, time, ob):
         """Test that _split_evol_ops returns the right ops with correct
-        relations to the input operation."""
+        relations to the input operation for a general Hermitian as ``ob``."""
 
         import jax
 
@@ -112,6 +164,8 @@ class TestSplitEvolOps:
             assert qml.equal(_ops[2], op)
 
             # Check that the inserted exponential is correct
+            print(exp_shift)
+            print(_ops[1].data)
             assert qml.equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
 

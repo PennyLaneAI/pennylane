@@ -90,8 +90,15 @@ def _split_evol_ops(op, ob, tau):
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
-    eigvals = qml.eigvals(ob)
-    coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
+    if qml.pauli.is_pauli_word(ob):
+        prefactor = next(iter(qml.pauli.pauli_sentence(ob).values()))
+        word = qml.pauli.pauli_word_to_string(ob)
+        insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
+        coeffs = [prefactor, -prefactor]
+    else:
+        eigvals = qml.eigvals(ob)
+        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
+        insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
     ode_kwargs = op.odeint_kwargs
@@ -99,10 +106,10 @@ def _split_evol_ops(op, ob, tau):
     ops = tuple(
         [
             op(op.data, before_t, return_intermediate=bcast, **ode_kwargs),
-            qml.exp(qml.dot([-1j * shift], [ob])),
+            insert_op,
             op(op.data, after_t, return_intermediate=bcast, complementary=bcast, **ode_kwargs),
         ]
-        for shift in shifts
+        for insert_op in insert_ops
     )
     return ops, qml.math.array(coeffs)
 
