@@ -123,6 +123,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* Updated the `gradients` module to use the new `Shots` object internally.
+  [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
