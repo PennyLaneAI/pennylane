@@ -112,7 +112,7 @@ def _is_pw_tensor(observable: Tensor):
 
 @is_pauli_word.register
 def _is_pw_ham(observable: Hamiltonian):
-    return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
+    return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
 
 @is_pauli_word.register
@@ -126,11 +126,29 @@ def _is_pw_sprod(observable: SProd):
 
 
 @singledispatch
-def pauli_word_prefactor(operator):
+def pauli_word_prefactor(observable):
     """If the operator provided is a valid Pauli word (i.e a single term which may be a tensor product
     of pauli operators), then this function extracts the prefactor.
+
+    Args:
+        observable (~.Operator): the operator to be examined
+
+    Returns:
+        Union[int, float, complex]: The scaling/phase coefficient of the Pauliword.
+
+    Raises:
+        ValueError: If an operator is provided that is not a valid PauliWord.
+
+    **Example**
+
+    >>> pauli_word_prefactor(qml.Identity(0))
+    1
+    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(1))
+    1
+    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(0))
+    1j
     """
-    raise ValueError(f"Expected a valid PauliWord, got {operator}")
+    raise ValueError(f"Expected a valid PauliWord, got {observable}")
 
 
 @pauli_word_prefactor.register(PauliX)
@@ -147,23 +165,24 @@ def _pw_prefactor_tensor(observable: Tensor):
         from .conversion import pauli_sentence
 
         return list(pauli_sentence(observable).values())[0]  # only one term,
+    raise ValueError(f"Expected a valid PauliWord, got {observable}")
 
 
 @pauli_word_prefactor.register
 def _pw_prefactor_ham(observable: Hamiltonian):
     if is_pauli_word(observable):
-        if len(observable.ops) == 0:
-            return 0
-        if len(observable.ops) == 1:
-            return observable.coeffs[0]
+        return observable.coeffs[0]
     raise ValueError(f"Expected a valid PauliWord, got {observable}")
 
 
 @pauli_word_prefactor.register(Prod)
 @pauli_word_prefactor.register(SProd)
 def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
-    if ps := observable._pauli_rep:  # pylint:disable=protected-access
+    ps = observable._pauli_rep  # pylint:disable=protected-access
+    if ps is not None and len(ps) == 1:
         return list(ps.values())[0]
+
+    raise ValueError(f"Expected a valid PauliWord, got {observable}")
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):

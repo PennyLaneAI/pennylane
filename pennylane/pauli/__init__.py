@@ -17,6 +17,7 @@ from .pauli_arithmetic import PauliWord, PauliSentence
 
 from .utils import (
     is_pauli_word,
+    pauli_word_prefactor,
     are_identical_pauli_words,
     pauli_to_binary,
     binary_to_pauli,

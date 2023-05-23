@@ -39,6 +39,7 @@ from pennylane.pauli import (
     diagonalize_pauli_word,
     diagonalize_qwc_pauli_words,
     is_pauli_word,
+    pauli_word_prefactor,
     is_qwc,
     observables_to_binary_matrix,
     partition_pauli_group,
@@ -266,6 +267,7 @@ class TestGroupingUtils:
         (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
         (PauliX(1) @ Hadamard(4), False),
         (Hadamard(0), False),
+        (Hamiltonian([], []), False),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
         (Hamiltonian([1.0], [Hadamard(0)]), False),
@@ -289,6 +291,39 @@ class TestGroupingUtils:
             num_wires = 1
 
         assert not is_pauli_word(DummyOp(1))
+
+    ops_factors = (
+        (qml.PauliX(0), 1),
+        (qml.PauliY(1), 1),
+        (qml.PauliZ("a"), 1),
+        (qml.Identity(0), 1),
+        (qml.PauliX(0) @ qml.PauliY(1), 1),
+        (qml.PauliX(0) @ qml.PauliY(0), 1j),
+        (qml.Hamiltonian([-1.23], [qml.PauliZ(0)]), -1.23),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), 1),
+        (qml.s_prod(1.23, qml.s_prod(-1j, qml.PauliZ(0))), -1.23j),
+    )
+
+    @pytest.mark.parametrize("op, true_prefactor", ops_factors)
+    def test_pauli_word_prefactor(self, op, true_prefactor):
+        """Test that we can accurately determine the prefactor"""
+        assert pauli_word_prefactor(op) == true_prefactor
+
+    ops = (
+        qml.Hadamard(0),
+        qml.Hadamard(0) @ qml.PauliZ(1),
+        qml.Hamiltonian([], []),
+        qml.Hamiltonian([1.23, 0.45], [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(1)]),
+        qml.prod(qml.PauliX(0), qml.Hadamard(1)),
+        qml.prod(qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.PauliZ(1)),
+        qml.s_prod(1.23, qml.sum(qml.PauliX(0), qml.PauliY(0))),
+    )
+
+    @pytest.mark.parametrize("op", ops)
+    def test_pauli_word_prefactor_raises_error(self, op):
+        """Test that an error is raised when the operator provided is not a valid PauliWord."""
+        with pytest.raises(ValueError, match="Expected a valid PauliWord, got"):
+            pauli_word_prefactor(op)
 
     def test_are_identical_pauli_words(self):
         """Tests for determining if two Pauli words have the same ``wires`` and ``name`` attributes."""
