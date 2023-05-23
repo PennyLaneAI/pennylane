@@ -695,9 +695,10 @@ class Operator(abc.ABC):
             )
         )
 
+    # pylint: disable=useless-super-delegation
     def __eq__(self, other):
         """Equality dunder method to compare two operators.
-        
+
         This method is called when the ``==`` is used to compare two operators.
 
         .. warning::
@@ -712,9 +713,10 @@ class Operator(abc.ABC):
         """
         return super().__eq__(other)
 
+    # pylint: disable=useless-super-delegation
     def __hash__(self):
         """Hash dunder method to compute the hash of an operator.
-        
+
         This method is called when ``hash(op)`` is computed.
 
         .. warning::
