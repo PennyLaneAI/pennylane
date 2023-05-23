@@ -71,6 +71,8 @@ from .quantum import (
     mutual_info,
     purity,
     reduced_dm,
+    reduced_dm_from_dm,
+    reduced_dm_from_sv,
     relative_entropy,
     sqrt_matrix,
     vn_entropy,
