@@ -173,14 +173,22 @@ class TestQNode:
     def test_jacobian(self, interface, dev_name, diff_method, grad_on_execution, mocker, tol):
         """Test jacobian calculation"""
         num_wires = 2
-
+        kwargs = dict(
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution
+        )
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10
+            )
+            kwargs = kwargs | spsa_kwargs
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -191,9 +199,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=num_wires)
 
-        @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
-        )
+        @qnode(dev, **kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -484,9 +490,17 @@ class TestQNode:
     def test_differentiable_expand(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test that operation and nested tape expansion
         is differentiable"""
-
+        kwargs = dict(
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution
+        )
         if diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=20
+            )
+            kwargs = kwargs | spsa_kwargs
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -505,9 +519,7 @@ class TestQNode:
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
-        )
+        @qnode(dev, **kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -1623,16 +1635,25 @@ class TestTapeExpansion:
     ):
         """Test that if there are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            max_diff=max_diff,
+        )
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The diff method requested does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10
+            )
+            kwargs = kwargs | spsa_kwargs
 
         dev = qml.device(dev_name, wires=3, shots=None)
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, diff_method=diff_method, grad_on_execution=grad_on_execution, max_diff=max_diff)
+        @qnode(dev, **kwargs)
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
             qml.templates.AngleEmbedding(data, wires=[0, 1])

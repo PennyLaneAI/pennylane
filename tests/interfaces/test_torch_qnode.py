@@ -486,8 +486,17 @@ class TestQNode:
     def test_differentiable_expand(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface
+        )
         if diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10
+            )
+            kwargs = kwargs | spsa_kwargs
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -511,9 +520,7 @@ class TestQNode:
         p_val = [0.1, 0.2, 0.3]
         p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
 
-        @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        @qnode(dev, **kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -1437,10 +1444,20 @@ class TestTapeExpansion:
         """Test that if there
         are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            max_diff=max_diff,
+            interface="torch",
+        )
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10
+            )
+            kwargs = kwargs | spsa_kwargs
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
@@ -1448,13 +1465,7 @@ class TestTapeExpansion:
         dev = qml.device(dev_name, wires=3, shots=None)
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(
-            dev,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            max_diff=max_diff,
-            interface="torch",
-        )
+        @qnode(dev, **kwargs)
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])

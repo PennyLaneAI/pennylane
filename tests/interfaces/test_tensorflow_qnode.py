@@ -465,9 +465,17 @@ class TestQNode:
     def test_differentiable_expand(self, dev_name, diff_method, grad_on_execution, tol, interface):
         """Test that operation and nested tapes expansion
         is differentiable"""
-
+        kwargs = dict(
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface
+        )
         if diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10
+            )
+            kwargs = kwargs | spsa_kwargs
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -492,9 +500,7 @@ class TestQNode:
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-        @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        @qnode(dev, **kwargs)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -1380,22 +1386,26 @@ class TestTapeExpansion:
     ):
         """Test that if there are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
-        if diff_method in ["adjoint", "hadamard"]:
-            pytest.skip("The adjoint/hadamard method does not yet support Hamiltonians")
-        elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
-            tol = TOL_FOR_SPSA
-
-        dev = qml.device(dev_name, wires=3, shots=None)
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-
-        @qnode(
-            dev,
+        kwargs = dict(
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface=interface,
         )
+        if diff_method in ["adjoint", "hadamard"]:
+            pytest.skip("The adjoint/hadamard method does not yet support Hamiltonians")
+        elif diff_method == "spsa":
+            tol = TOL_FOR_SPSA
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10
+            )
+            kwargs = kwargs | spsa_kwargs
+
+        dev = qml.device(dev_name, wires=3, shots=None)
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+
+        @qnode(dev, **kwargs)
         def circuit(data, weights, coeffs):
             weights = tf.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
