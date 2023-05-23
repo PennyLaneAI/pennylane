@@ -12,6 +12,9 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
+* A function `pauli_word_prefactor()` is added to extract the prefactor for a given Pauliword.
+  [(#)]()
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
