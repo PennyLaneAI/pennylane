@@ -1245,6 +1245,39 @@ class TestClassicalShadows:
         assert qml.math.allclose(state, 0.5 * np.eye(2), atol=0.1)
         assert np.all(local_snapshots[:, 0] == global_snapshots)
 
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            [1000, 1000],
+            [(1000, 2)],
+            [1000, 2000],
+            [(1000, 2), 2000],
+            [(1000, 3), 2000, (3000, 2)],
+        ],
+    )
+    def test_shot_vectors(self, n_qubits, shots):
+        """Test that classical shadows works when given a shot vector"""
+        dev = DefaultQubit2()
+        shots = qml.measurements.Shots(shots)
+
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        qs = qml.tape.QuantumScript(ops, [qml.classical_shadow(range(n_qubits))], shots=shots)
+        res = dev.execute(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == len(list(shots))
+
+        for r, s in zip(res, shots):
+            assert r.shape == (2, s, n_qubits)
+            assert r.dtype == np.int8
+
+            # test that the bits are either 0 and 1
+            assert np.all(np.logical_or(r[0] == 0, r[0] == 1))
+
+            # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+            assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
+
 
 def test_broadcasted_parameter():
     """Test that DefaultQubit2 handles broadcasted parameters as expected."""
