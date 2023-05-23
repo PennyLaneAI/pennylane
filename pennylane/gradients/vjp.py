@@ -351,6 +351,8 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
+    if shots is None:
+        shots = tape.shots
 
     if num_params == 0:
         # The tape has no trainable parameters; the VJP
