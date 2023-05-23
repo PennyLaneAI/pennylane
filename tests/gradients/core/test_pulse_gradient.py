@@ -164,8 +164,6 @@ class TestSplitEvolOps:
             assert qml.equal(_ops[2], op)
 
             # Check that the inserted exponential is correct
-            print(exp_shift)
-            print(_ops[1].data)
             assert qml.equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
 

@@ -111,7 +111,7 @@ def _split_evol_ops(op, ob, tau):
         ]
         for insert_op in insert_ops
     )
-    return ops, qml.math.array(coeffs)
+    return ops, jnp.array(coeffs)
 
 
 def _split_evol_tape(tape, split_evolve_ops, op_idx):
