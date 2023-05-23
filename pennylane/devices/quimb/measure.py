@@ -15,10 +15,10 @@
 Code relevant for performing measurements on a state.
 """
 from typing import Callable
-
+from autograd.numpy.numpy_boxes import ArrayBox
 from scipy.sparse import csr_matrix
 
-from pennylane import math
+from pennylane import math, numpy as np
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
@@ -44,15 +44,12 @@ def state_diagonalizing_gates(
         "simplify_sequence": "ADCRS",
         "simplify_atol": 0.0,
     }
-    # make sure to return a real value for JAX-diff
-    return state.local_expectation(obs.matrix(), tuple(obs.wires), **fs_opts).real
-    # wires = obs.wires
-    # for op in measurementprocess.obs():
-    #     apply_operation(op, state)
+    expval = state.local_expectation(obs.matrix(), tuple(obs.wires), **fs_opts)
 
-    # total_indices = state.N
-    # wires = Wires(range(total_indices))
-    # return measurementprocess.process_state(state, wires)
+    # make sure to return a real value for JAX-diff
+    if isinstance(expval, ArrayBox):
+        return np.real(expval)
+    return expval.real
 
 
 def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
