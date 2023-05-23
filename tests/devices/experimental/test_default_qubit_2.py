@@ -1177,6 +1177,75 @@ class TestHamiltonianSamples:
         assert np.allclose(res, expected, atol=0.001)
 
 
+class TestClassicalShadows:
+    """Test that classical shadow measurements works with the new device"""
+
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
+    def test_shape_and_dtype(self, n_qubits):
+        """Test that the shape and dtype of the measurement is correct"""
+        dev = DefaultQubit2()
+
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        qs = qml.tape.QuantumScript(ops, [qml.classical_shadow(range(n_qubits))], shots=100)
+        res = dev.execute(qs)
+
+        assert res.shape == (2, 100, n_qubits)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+
+    def test_expval(self):
+        """Test that shadow expval measurements work as expected"""
+        dev = DefaultQubit2(seed=100)
+
+        ops = [qml.Hadamard(0), qml.Hadamard(1)]
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
+        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+        res = dev.execute(qs)
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+    def test_reconstruct_bell_state(self):
+        """Test that a bell state can be faithfully reconstructed"""
+        dev = DefaultQubit2(seed=100)
+
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
+        meas = [qml.classical_shadow(wires=[0, 1], seed=200)]
+        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+
+        # should prepare the bell state
+        bits, recipes = dev.execute(qs)
+        shadow = qml.shadows.ClassicalShadow(bits, recipes)
+        global_snapshots = shadow.global_snapshots()
+
+        state = np.sum(global_snapshots, axis=0) / shadow.snapshots
+        bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
+        assert qml.math.allclose(state, bell_state, atol=0.1)
+
+        # reduced state should yield maximally mixed state
+        local_snapshots = shadow.local_snapshots(wires=[0])
+        assert qml.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5 * np.eye(2), atol=0.05)
+
+        # alternative computation
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
+        meas = [qml.classical_shadow(wires=[0], seed=200)]
+        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+        bits, recipes = dev.execute(qs)
+
+        shadow = qml.shadows.ClassicalShadow(bits, recipes)
+        global_snapshots = shadow.global_snapshots()
+        local_snapshots = shadow.local_snapshots(wires=[0])
+
+        state = np.sum(global_snapshots, axis=0) / shadow.snapshots
+        assert qml.math.allclose(state, 0.5 * np.eye(2), atol=0.1)
+        assert np.all(local_snapshots[:, 0] == global_snapshots)
+
+
 def test_broadcasted_parameter():
     """Test that DefaultQubit2 handles broadcasted parameters as expected."""
     dev = DefaultQubit2()
