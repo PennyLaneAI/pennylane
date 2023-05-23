@@ -358,7 +358,7 @@ def test_control_wires(op, control_wires):
     "op, obs, grad_fn",
     [
         (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
-        (qml.TRY, qml.GellMann(0, 1), lambda phi: np.cos(phi)),
+        (qml.TRY, qml.GellMann(0, 1), np.cos),
     ],
 )
 class TestGrad:
