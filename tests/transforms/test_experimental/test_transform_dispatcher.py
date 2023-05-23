@@ -15,7 +15,7 @@
 import pytest
 import pennylane as qml
 from pennylane.transforms.experimental import transform
-from pennylane.devices.experimental import DefaultQubit2
+from collections.abc import Sequence
 
 # TODO: Replace with default qubit 2
 
@@ -52,12 +52,12 @@ def qfunc(a):
 non_callable = tape_circuit
 
 
-def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
+def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> Sequence[qml.tape.QuantumTape]:
     tape_copy = tape.copy()
     return [tape, tape_copy]
 
 
-def no_tape_sequence_transform(tape: qml.tape.QuantumTape) -> qml.tape.QuantumTape:
+def no_tape_sequence_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, callable):
     return tape, lambda x: x
 
 
@@ -67,7 +67,10 @@ non_valid_transforms = [non_callable, no_processing_fn_transform, no_tape_sequen
 ##########################################
 # Valid transforms
 
-def a_valid_transform(tape: qml.tape.QuantumTape, index: int) -> (qml.tape.QuantumTape, callable):
+
+def a_valid_transform(
+    tape: qml.tape.QuantumTape, index: int
+) -> (Sequence[qml.tape.QuantumTape], callable):
     tape.circuit.pop()
     return [tape], lambda x: x
 
@@ -88,11 +91,16 @@ def no_tape_sequence_expand_transform(tape: qml.tape.QuantumTape) -> qml.tape.Qu
     return tape, lambda x: x
 
 
-non_valid_expand_transforms = [non_callable, no_processing_fn_expand_transform, no_tape_sequence_expand_transform()]
+non_valid_expand_transforms = [
+    non_callable,
+    no_processing_fn_expand_transform,
+    no_tape_sequence_expand_transform,
+]
 
 
 ##########################################
 # Valid expand transforms
+
 
 def a_valid_expand_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, callable):
     return [tape], lambda x: x
@@ -109,3 +117,8 @@ class TestTransformDispatcher:
 
         dispatched_transform = transform(a_valid_transform)
         tapes, fn = dispatched_transform(tape_circuit, 0)
+
+    def test_dispatcher_signature_non_valid_transform(self):
+        """Test the signature"""
+
+        dispatched_transform = transform(no_tape_sequence_transform)
