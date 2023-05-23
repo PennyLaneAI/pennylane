@@ -610,6 +610,7 @@ def test_adjoint_method(op):
 
         assert qml.equal(adj_op, op)
 
+
 @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
 def test_map_wires(op_cls, _):
     """Test that we can get and set private wires in all operations."""
