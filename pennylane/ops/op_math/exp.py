@@ -175,6 +175,8 @@ class Exp(ScalarSymbolicOp, Operation):
         self.grad_recipe = [None]
         self.num_steps = num_steps
 
+        self.hyperparameters["num_steps"] = num_steps
+
     def __repr__(self):
         return (
             f"Exp({self.coeff} {self.base})"

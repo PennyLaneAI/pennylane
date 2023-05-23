@@ -15,25 +15,22 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
-from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pulse import ParametrizedEvolution
 
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
-from .parameter_shift import (
-    _reorder_grad_axes_multi_measure,
-    _reorder_grad_axes_single_measure_shot_vector,
-    _make_zero_rep,
-)
+from .parameter_shift import _make_zero_rep
 from .gradient_transform import (
+    _all_zero_grad,
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    reorder_grads,
 )
 
 has_jax = True
@@ -42,6 +39,19 @@ try:
     import jax.numpy as jnp
 except ImportError:
     has_jax = False
+
+
+def _assert_has_jax(transform_name):
+    """Check that JAX is installed and imported correctly, otherwise raise an error.
+
+    Args:
+        transform_name (str): Name of the gradient transform that queries the return system
+    """
+    if not has_jax:  # pragma: no cover
+        raise ImportError(
+            f"Module jax is required for the {transform_name} gradient transform. "
+            "You can install jax via: pip install jax jaxlib"
+        )
 
 
 def _split_evol_ops(op, word, word_wires, tau):
@@ -495,25 +505,11 @@ def _stoch_pulse_grad(
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the stochastic pulse parameter-shift gradient transform. "
-            "You can install jax via: pip install jax jaxlib"
-        )
-    if not qml.active_return():
-        raise NotImplementedError(
-            "The stochastic pulse parameter-shift gradient only supports the new "
-            "return type. Use qml.enable_return() to turn it on."
-        )
-    if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of variances with the stochastic pulse "
-            "parameter-shift gradient is not implemented."
-        )
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    transform_name = "stochastic pulse parameter-shift"
+    _assert_has_jax(transform_name)
+    assert_active_return(transform_name)
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_no_variance(tape.measurements, transform_name)
 
     if num_split_times < 1:
         raise ValueError(
@@ -521,18 +517,17 @@ def _stoch_pulse_grad(
             f"parameter-shift gradient, got {num_split_times}."
         )
 
+    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
 
-    gradient_analysis(tape, grad_fn=stoch_pulse_grad)
-    method = "analytic"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -601,10 +596,13 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor))
         tapes.extend(_tapes)
 
+    num_measurements = len(tape.measurements)
+    single_measure = num_measurements == 1
+    num_params = len(tape.trainable_params)
+    has_partitioned_shots = shots.has_partitioned_shots
+    tape_specs = (single_measure, num_params, num_measurements, shots)
+
     def processing_fn(results):
-        num_measurements = len(tape.measurements)
-        single_measure = num_measurements == 1
-        shot_vector = isinstance(shots, Sequence)
         start = 0
         grads = []
         for num_tapes, cjacs, avg_prefactor in gradient_data:
@@ -616,32 +614,18 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             # Apply the postprocessing of the parameter-shift rule and contract
             # with classical Jacobian, effectively computing the integral approximation
             g = _parshift_and_integrate(
-                res, cjacs, avg_prefactor, single_measure, shot_vector, use_broadcasting
+                res, cjacs, avg_prefactor, single_measure, has_partitioned_shots, use_broadcasting
             )
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        zero_rep = _make_zero_rep(g, single_measure, shot_vector)
+        zero_rep = _make_zero_rep(g, single_measure, has_partitioned_shots)
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        num_params = len(tape.trainable_params)
-        if single_measure and num_params == 1:
-            return grads[0]
-        len_shot_vec = _get_num_copies(shots) if shot_vector else None
-        if single_measure and shot_vector:
-            return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
-        if not single_measure:
-            return _reorder_grad_axes_multi_measure(
-                grads,
-                num_params,
-                num_measurements,
-                len_shot_vec,
-                shot_vector,
-            )
-        return tuple(grads)
+        return reorder_grads(grads, tape_specs)
 
     return tapes, processing_fn
 
