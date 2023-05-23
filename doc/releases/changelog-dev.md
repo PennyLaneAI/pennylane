@@ -134,6 +134,9 @@
 * Updated the `gradients` module to use the new `Shots` object internally.
   [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
 
+* The new device interface in integrated with `qml.execute` for Jax.
+  [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
