@@ -450,10 +450,10 @@ def _execute_bwd(
 
         if new_device_interface:
             # cant test until we integrate device with shot vector
-            partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
+            has_partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
         else:
-            partitioned_shots = device.shot_vector
-        return _to_jax_shot_vector(res) if partitioned_shots else _to_jax(res)
+            has_partitioned_shots = device.shot_vector
+        return _to_jax_shot_vector(res) if has_partitioned_shots else _to_jax(res)
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):

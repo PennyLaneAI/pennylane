@@ -434,7 +434,13 @@ def vjp(
         dy = dy[0]
 
         computing_jacobian = _n == max_diff
-        new_device_interface = isinstance(device, qml.devices.experimental.Device)
+        if new_device_interface := isinstance(
+            device, qml.devices.experimental.Device
+        ):  # pragma: no-cover
+            # assumes all tapes have the same shot vector
+            has_partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
+        else:
+            has_partitioned_shots = device.shot_vector
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -442,14 +448,9 @@ def vjp(
             jacs = ans[1]
 
         if jacs:
-            if new_device_interface:  # pragma: no-cover
-                # assumes all tapes have the same shot vector
-                partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
-            else:
-                partitioned_shots = device.shot_vector
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, partitioned_shots)
+            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -507,7 +508,7 @@ def vjp(
                 unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
                 jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
-                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
+                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
@@ -518,12 +519,12 @@ def vjp(
     return grad_fn
 
 
-def _compute_vjps_autograd(jacs, dy, multi_measurements, partitioned_shots):
+def _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        dy_ = dy[i] if partitioned_shots else (dy[i],)
-        jac_ = jacs[i] if partitioned_shots else (jacs[i],)
+        dy_ = dy[i] if has_partitioned_shots else (dy[i],)
+        jac_ = jacs[i] if has_partitioned_shots else (jacs[i],)
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):
