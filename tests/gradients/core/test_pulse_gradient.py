@@ -55,6 +55,7 @@ class TestSplitEvolOps:
         ),
         (ham_single_q_const, [0.3], 2.3, qml.Hamiltonian([0.2], [qml.PauliZ(0)]), "Z"),
         (ham_single_q_const, [0.3], 2.3, 1.2 * qml.PauliZ(0), "Z"),
+        (ham_single_q_const, [0.3], 2.3, qml.s_prod(1.2, qml.PauliZ(0)), "Z"),
         (ham_single_q_const, [0.3], 2.3, qml.dot([1.9], [qml.PauliZ(0)]), "Z"),
     ]
 
@@ -112,6 +113,8 @@ class TestSplitEvolOps:
             [np.linspace(0, 1, 13)],
             (0.6, 1.2),
             0.2 * qml.PauliX(1) + 0.9 * qml.PauliZ(1),
+            qml.sum(0.2 * qml.PauliX(1), 0.9 * qml.PauliZ(1)),
+            qml.sum(0.2 * qml.PauliX(1), qml.s_prod(0.9, qml.PauliZ(1))),
         ),
         (
             ham_two_q_pwc,
