@@ -284,6 +284,21 @@ def test_norm_error(n, eta, omega, error, br, charge):
             151664625909497,
             3331,
         ),
+        (
+            100000,
+            156,
+            None,
+            np.array(
+                [
+                    [9.44862994, 0.0, 0.0],
+                    [0.0, 10.39349294, 0.0],
+                    [0.0, 0.0, 11.33835593],
+                ]
+            ),
+            725147.0916537816,
+            134604911168852,
+            3331,
+        ),
     ],
 )
 def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
