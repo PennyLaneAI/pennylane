@@ -20,9 +20,9 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-from functools import lru_cache, reduce
+from functools import lru_cache, reduce, singledispatch
 from itertools import product
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
@@ -51,6 +51,7 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     return {label: i for i, label in enumerate(wire_labels)}
 
 
+@singledispatch
 def is_pauli_word(observable):
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
@@ -92,20 +93,77 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    return False
+
+
+@is_pauli_word.register(PauliX)
+@is_pauli_word.register(PauliY)
+@is_pauli_word.register(PauliZ)
+@is_pauli_word.register(Identity)
+def _is_pw_pauli(observable: Union[PauliX, PauliY, PauliZ, Identity]):
+    return True
+
+
+@is_pauli_word.register
+def _is_pw_tensor(observable: Tensor):
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
-    if isinstance(observable, Tensor):
-        return set(observable.name).issubset(pauli_word_names)
+    return set(observable.name).issubset(pauli_word_names)
 
-    if isinstance(observable, Hamiltonian):
-        return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
 
-    if isinstance(observable, Prod):
-        return all(is_pauli_word(op) for op in observable)
+@is_pauli_word.register
+def _is_pw_ham(observable: Hamiltonian):
+    return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
 
-    if isinstance(observable, SProd):
-        return is_pauli_word(observable.base)
 
-    return observable.name in pauli_word_names
+@is_pauli_word.register
+def _is_pw_prod(observable: Prod):
+    return all(is_pauli_word(op) for op in observable)
+
+
+@is_pauli_word.register
+def _is_pw_sprod(observable: SProd):
+    return is_pauli_word(observable.base)
+
+
+@singledispatch
+def pauli_word_prefactor(operator):
+    """If the operator provided is a valid Pauli word (i.e a single term which may be a tensor product
+    of pauli operators), then this function extracts the prefactor.
+    """
+    raise ValueError(f"Expected a valid PauliWord, got {operator}")
+
+
+@pauli_word_prefactor.register(PauliX)
+@pauli_word_prefactor.register(PauliY)
+@pauli_word_prefactor.register(PauliZ)
+@pauli_word_prefactor.register(Identity)
+def _pw_prefactor_pauli(observable: Union[PauliX, PauliY, PauliZ, Identity]):
+    return 1
+
+
+@pauli_word_prefactor.register
+def _pw_prefactor_tensor(observable: Tensor):
+    if is_pauli_word(observable):
+        from .conversion import pauli_sentence
+
+        return list(pauli_sentence(observable).values())[0]  # only one term,
+
+
+@pauli_word_prefactor.register
+def _pw_prefactor_ham(observable: Hamiltonian):
+    if is_pauli_word(observable):
+        if len(observable.ops) == 0:
+            return 0
+        if len(observable.ops) == 1:
+            return observable.coeffs[0]
+    raise ValueError(f"Expected a valid PauliWord, got {observable}")
+
+
+@pauli_word_prefactor.register(Prod)
+@pauli_word_prefactor.register(SProd)
+def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
+    if ps := observable._pauli_rep:  # pylint:disable=protected-access
+        return list(ps.values())[0]
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
