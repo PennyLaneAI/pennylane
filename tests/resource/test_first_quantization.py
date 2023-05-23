@@ -331,3 +331,17 @@ def test_init_error_2(n, eta, omega, error, br, charge, vectors):
     r"""Test that init raises an error when volume and vectors are None."""
     with pytest.raises(ValueError, match="lattice vectors and the unit cell volume should not be"):
         qml.resource.FirstQuantization(n, eta, omega, error, br, charge, vectors)
+
+
+@pytest.mark.parametrize(
+    ("n_p, n_m, n_dirty, n_tof, kappa, ms_cost_ref, beta_ref"),
+    [(6, 37, 3331, 500, 1, 13372.0, 90.0), (6, 37, 3331, 1, 1, 30686.0, 68.0)],
+)
+def test_momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa, ms_cost_ref, beta_ref):
+    r"""Test that the _momentum_state_qrom function returns correct values."""
+    ms_cost, beta = qml.resource.FirstQuantization._momentum_state_qrom(
+        n_p, n_m, n_dirty, n_tof, kappa
+    )
+
+    assert ms_cost == ms_cost_ref
+    assert beta == beta_ref
