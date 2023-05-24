@@ -15,7 +15,6 @@
 attribute metadata."""
 
 import itertools
-import json
 import typing
 import warnings
 from abc import ABC, abstractmethod
@@ -111,7 +110,7 @@ class AttributeInfo(MutableMapping):
         return self.attrs_bind.get("qml.__len__", 0)
 
     def _update_len(self, inc: int):
-        self.attrs_bind[f"qml.__len__"] = len(self) + inc
+        self.attrs_bind["qml.__len__"] = len(self) + inc
 
     def __setitem__(self, __name: str, __value: Any):
         if __value is None:
@@ -253,7 +252,7 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
 
         self._bind = self._set_value(value, info, parent, key)
         self._check_bind()
-        self.__post_init__(value, info)
+        self.__post_init__(value, self.info)
 
     @property
     def info(self) -> AttributeInfo:

@@ -28,7 +28,6 @@ from typing import (
     Literal,
     MutableMapping,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -151,6 +150,7 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     @property
     def info(self) -> AttributeInfo:
+        """Return attribute info associated with this dataset."""
         return AttributeInfo(self.bind.attrs)
 
     @property
@@ -318,6 +318,9 @@ _DatasetType = TypeVar("_DatasetType", bound=Dataset)
 class _DatasetAttributeType(
     Generic[_DatasetType], AttributeType[HDF5Group, _DatasetType, _DatasetType]
 ):
+    """Attribute type for loading and saving datasets as attributes of
+    datasets, or elements of collection types."""
+
     type_id = "dataset"
 
     def hdf5_to_value(self, bind: HDF5Group) -> _DatasetType:

@@ -19,7 +19,7 @@ from .json import DatasetJSON
 from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
-from .operator import DatasetHamiltonian, DatasetOperator, DatasetOperatorList
+from .operator import DatasetOperator
 from .pauli import DatasetPauliSentence, DatasetPauliWord
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
@@ -32,13 +32,11 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
-    "DatasetOperatorList",
     "DatasetNone",
-    "DatasetHamiltonian",
     "DatasetPauliSentence",
     "DatasetPauliWord",
     "DatasetSparseArray",
     "DatasetMolecule",
-    "DatasetHamiltonian",
+    "DatasetNone",
     "DatasetJSON",
 )

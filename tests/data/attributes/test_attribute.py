@@ -7,14 +7,11 @@ from pennylane.data.attributes import (
     DatasetScalar,
     DatasetString,
     DatasetSparseArray,
-    DatasetHamiltonian,
     DatasetOperator,
 )
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
-from pennylane.wires import Wires
 from pennylane.data.attributes.sparse_array import _ALL_SPARSE
-import pennylane as qml
 
 
 @pytest.mark.parametrize(
@@ -37,7 +34,6 @@ import pennylane as qml
         (None, DatasetNone),
         (type(None), DatasetNone),
         *((sp_cls, DatasetSparseArray) for sp_cls in _ALL_SPARSE),
-        (qml.Hamiltonian, DatasetHamiltonian),
         *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )

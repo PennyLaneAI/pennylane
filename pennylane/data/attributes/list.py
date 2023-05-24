@@ -15,7 +15,7 @@
 types."""
 
 import typing
-from collections.abc import MutableSequence, Sequence
+from collections.abc import Sequence
 from typing import Generic, List, Union, overload
 
 from pennylane.data.base.attribute import AttributeType
@@ -26,7 +26,7 @@ from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 class DatasetList(
     Generic[T],
     AttributeType[HDF5Group, typing.Sequence[T], typing.Iterable[T]],
-    MutableSequence,
+    typing.MutableSequence[T],
     MapperMixin,
 ):
     """Provides a list-like collection type for Dataset Attributes."""
@@ -89,7 +89,8 @@ class DatasetList(
         return str(list(self))
 
     def __repr__(self) -> str:
-        return repr(list(self))
+        items_repr = ", ".join(repr(elem) for elem in self)
+        return f"[{items_repr}]"
 
     @overload
     def __getitem__(self, index: slice) -> typing.List[T]:
@@ -106,7 +107,7 @@ class DatasetList(
         if index < 0:
             index = len(self) + index
 
-        if not (0 <= index < len(self)):
+        if not 0 <= index < len(self):
             raise IndexError(index)
 
         return self._mapper[str(index)].get_value()
@@ -114,11 +115,26 @@ class DatasetList(
     def __setitem__(self, index: int, value: Union[T, AttributeType[HDF5Any, T, T]]):
         if index < 0:
             index = len(self) + index
+        if not 0 <= index < len(self):
+            raise IndexError("list assignment index out of range")
 
-        if index < 0 or index >= len(self):
-            raise IndexError(index)
+        key = str(index)
+        if key in self._mapper:
+            del self._mapper[key]
 
-        self._mapper[str(index)] = value
+        self._mapper[key] = value
 
     def __delitem__(self, index: int):
+        init_len = len(self)
+
+        if index < 0:
+            index = init_len + index
+        if not 0 <= index < init_len:
+            raise IndexError(index)
+
         del self._mapper[str(index)]
+
+        # Move all the objects in front of the deleted object back one
+        if index < init_len:
+            for i in range(index, init_len - 1):
+                self._mapper.move(str(i + 1), str(i))

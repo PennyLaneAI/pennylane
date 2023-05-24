@@ -4,7 +4,6 @@ import numpy as np
 import scipy.sparse
 
 import pennylane as qml
-from pennylane.data.attributes import DatasetOperatorList
 from pennylane.data.base import Dataset, attribute
 from pennylane.operation import Operation, Operator
 from pennylane.qchem import Molecule
@@ -45,7 +44,7 @@ class QChemDataset(Dataset):
 
     # Feature: Tapering data
     symmetries: List[qml.Hamiltonian]
-    paulix_ops: DatasetOperatorList[qml.PauliX]
+    paulix_ops: List[qml.PauliX]
     optimal_sector: np.ndarray
 
     # Feature: Tapered observables data
@@ -57,6 +56,6 @@ class QChemDataset(Dataset):
     tapered_spinz_op: qml.Hamiltonian
 
     # VQE data
-    vqe_gates: DatasetOperatorList[Operation]
+    vqe_gates: List[Operation]
     vqe_params: np.ndarray
     vqe_energy: float
