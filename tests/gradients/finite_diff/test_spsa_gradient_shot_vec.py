@@ -20,9 +20,10 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane._device import _process_shot_sequence, _get_num_copies
+from pennylane._device import _process_shot_sequence
 from pennylane.gradients import spsa_grad
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
 h_val = 0.1
@@ -1306,7 +1307,7 @@ class TestReturn:
         tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == Shots(grad_transform_shots).num_copies
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -1340,7 +1341,7 @@ class TestReturn:
         tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == Shots(grad_transform_shots).num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -1374,7 +1375,7 @@ class TestReturn:
         tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == Shots(grad_transform_shots).num_copies
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -1413,7 +1414,7 @@ class TestReturn:
         tapes, fn = spsa_grad(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == Shots(grad_transform_shots).num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
