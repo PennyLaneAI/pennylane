@@ -29,10 +29,34 @@ pauli_ops = [
 
 identity = [qml.Identity(wires) for wires in [0, 1, "q", None, [1, "a"]]]
 
+hamiltonians = [
+    qml.Hamiltonian(*args)
+    for args in [
+        (
+            [
+                1.0,
+            ],
+            (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
+        ),
+        ((-0.8,), (qml.PauliZ(0),)),
+        ((0.6,), (qml.PauliX(0) @ qml.PauliX(1),)),
+        ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
+        ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
+        ((0.5, -1.6), (qml.PauliX("a"), qml.PauliY("b"))),
+        ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
+        ((-0.4, 0.15), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
+        ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
+        (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
+        ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
+        ((0.5 + 1.2j, 1.2 + 0.5j), (qml.PauliX(0), qml.PauliY(1))),
+        ((0.7 + 0j, 0 + 1.3j), (qml.PauliX(0), qml.PauliY(1))),
+    ]
+]
 
-@pytest.mark.parametrize(
-    "obs_in", [*hermitian_ops, *pauli_ops, *identity, Tensor(qml.PauliX(1), qml.PauliY(2))]
-)
+tensors = [Tensor(qml.PauliX(1), qml.PauliY(2))]
+
+
+@pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity, *hamiltonians, *tensors])
 class TestDatasetOperatorObservable:
     def test_value_init_observable(self, obs_in):
         """Test that a DatasetOperator can be value-initialized

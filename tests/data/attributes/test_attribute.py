@@ -6,7 +6,6 @@ from pennylane.data.attributes import (
     DatasetNone,
     DatasetScalar,
     DatasetString,
-    DatasetHamiltonian,
     DatasetOperator,
 )
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
@@ -33,7 +32,6 @@ import pennylane as qml
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
         (None, DatasetNone),
         (type(None), DatasetNone),
-        (qml.Hamiltonian, DatasetHamiltonian),
         *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )

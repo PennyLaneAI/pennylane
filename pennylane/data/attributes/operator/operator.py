@@ -17,7 +17,7 @@ of operators."""
 import json
 import typing
 from functools import lru_cache
-from typing import FrozenSet, Generic, List, Sequence, Type, TypeVar
+from typing import FrozenSet, Generic, List, Type, TypeVar
 
 import numpy as np
 
@@ -32,12 +32,28 @@ from ._wires import wires_to_json
 Op = TypeVar("Op", bound=Operator)
 
 
-class _DatasetOperatorMixin:
-    """Generic attribute type for ``pennylane.operation.Operator`` classes."""
+class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
+    """``AttributeType`` for ``pennylane.operation.Operator`` classes.
+
+    Supports all operator types that meet the following conditions:
+        - The ``__init__()`` method matches the signature of ``Operator.__init__``,
+            or any additional arguments are optional and do not affect the value of
+            the operator
+        - The ``data`` and ``wires`` attributes will produce an identical copy of
+            operator if passed into the classes' ``__init__()`` method. Generally,
+            this means ``__init__()`` do not mutate the ``params`` and ``wires``
+            arguments.
+        - Hyperparameters are not used or are automatically derived by ``__init__()``.
+
+    Almost all operators meet these conditions. This type also supports serializing the
+    ``Hamiltonian`` and ``Tensor`` operators.
+    """
+
+    type_id = "operator"
 
     @classmethod
     @lru_cache(1)
-    def supported_ops(cls) -> FrozenSet[Type[Operator]]:
+    def consumes_types(cls) -> FrozenSet[Type[Operator]]:
         return frozenset(
             (
                 # pennylane/operation/Tensor
@@ -45,6 +61,8 @@ class _DatasetOperatorMixin:
                 # pennylane/ops/qubit/arithmetic_qml.py
                 qml.QubitCarry,
                 qml.QubitSum,
+                # pennylane/ops/qubit/hamiltonian.py
+                qml.Hamiltonian,
                 # pennylane/ops/qubit/matrix_qml.py
                 qml.QubitUnitary,
                 qml.DiagonalQubitUnitary,
@@ -161,46 +179,40 @@ class _DatasetOperatorMixin:
             )
         )
 
-    def _hdf5_to_ops(self, bind: HDF5Group) -> List[Operator]:
-        ops = []
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Op) -> HDF5Group:
+        return self._ops_to_hdf5(bind_parent, key, [value])
 
-        op_class_names = bind["op_class_names"].asstr()
-        op_wire_labels = bind["op_wire_labels"].asstr()
-
-        for i in range(len(op_class_names)):
-            op_key = f"op_{i}"
-
-            op_cls = self._supported_ops_dict()[op_class_names[i]]
-            if op_cls is Tensor:
-                ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
-            else:
-                wire_labels = json.loads(op_wire_labels[i])
-                op_data = bind[op_key]
-                if op_data.shape is not None:
-                    params = np.zeros(shape=op_data.shape, dtype=op_data.dtype)
-                    op_data.read_direct(params)
-                    ops.append(op_cls(*params, wires=wire_labels))
-                else:
-                    ops.append(op_cls(wires=wire_labels))
-
-        return ops
+    def hdf5_to_value(self, bind: HDF5Group) -> Op:
+        return self._hdf5_to_ops(bind)[0]
 
     def _ops_to_hdf5(
         self, bind_parent: HDF5Group, key: str, value: typing.Sequence[Operator]
     ) -> HDF5Group:
+        """Serialize op sequence ``value``, and create nested sequences for any
+        composite ops in ``value``.
+
+        Since operators are commonly used in larger composite operations, we handle
+        sequences of operators as the default case. This allows for performant (in
+        time and space) serialization of large and nested operator sums, products, etc.
+        """
         bind = bind_parent.create_group(key)
 
         op_wire_labels = []
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
-            if type(op) not in self.supported_ops():
+            if type(op) not in self.consumes_types():
                 raise TypeError(
                     f"Serialization of operator type {type(op).__name__} is not supported."
                 )
 
             if isinstance(op, Tensor):
                 self._ops_to_hdf5(bind, op_key, op.obs)
+                op_wire_labels.append("null")
+            elif isinstance(op, qml.Hamiltonian):
+                coeffs, ops = op.terms()
+                ham_grp = self._ops_to_hdf5(bind, op_key, ops)
+                ham_grp["hamiltonian_coeffs"] = coeffs
                 op_wire_labels.append("null")
             else:
                 bind[op_key] = op.data if len(op.data) else h5py.Empty("f")
@@ -213,34 +225,40 @@ class _DatasetOperatorMixin:
 
         return bind
 
+    def _hdf5_to_ops(self, bind: HDF5Group) -> List[Operator]:
+        """Load list of serialized ops from ``bind``."""
+        ops = []
+
+        op_class_names = bind["op_class_names"].asstr()
+        op_wire_labels = bind["op_wire_labels"].asstr()
+
+        for i in range(len(op_class_names)):
+            op_key = f"op_{i}"
+
+            op_cls = self._supported_ops_dict()[op_class_names[i]]
+            if op_cls is Tensor:
+                ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
+            elif op_cls is qml.Hamiltonian:
+                ops.append(
+                    qml.Hamiltonian(
+                        coeffs=list(bind[op_key]["hamiltonian_coeffs"]),
+                        observables=self._hdf5_to_ops(bind[op_key]),
+                    )
+                )
+            else:
+                wire_labels = json.loads(op_wire_labels[i])
+                op_data = bind[op_key]
+                if op_data.shape is not None:
+                    params = np.zeros(shape=op_data.shape, dtype=op_data.dtype)
+                    op_data.read_direct(params)
+                    ops.append(op_cls(*params, wires=wire_labels))
+                else:
+                    ops.append(op_cls(wires=wire_labels))
+
+        return ops
+
     @classmethod
     @lru_cache(1)
     def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
-        return {op.__name__: op for op in cls.supported_ops()}
-
-
-class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op], _DatasetOperatorMixin):
-    type_id = "operator"
-
-    @classmethod
-    def consumes_types(cls) -> FrozenSet[Type[Operator]]:
-        return cls.supported_ops()
-
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Op) -> HDF5Group:
-        return self._ops_to_hdf5(bind_parent, key, [value])
-
-    def hdf5_to_value(self, bind: HDF5Group) -> Op:
-        return self._hdf5_to_ops(bind)[0]
-
-
-class DatasetOperatorList(
-    Generic[Op], AttributeType[HDF5Group, List[Op], typing.Sequence[Op]], _DatasetOperatorMixin
-):
-    type_id = "operator_list"
-
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Sequence[Op]) -> HDF5Group:
-        return self._ops_to_hdf5(bind_parent, key, value)
-
-    def hdf5_to_value(self, bind: HDF5Group) -> List[Op]:
-        return self._hdf5_to_ops(bind)
+        return {op.__name__: op for op in cls.consumes_types()}

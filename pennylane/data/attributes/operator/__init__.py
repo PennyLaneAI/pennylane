@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains AttributeType definitions for Pennylane operators."""
 
-from .hamiltonian import DatasetHamiltonian
-from .operator import DatasetOperator, DatasetOperatorList
+from .operator import DatasetOperator
 
-__all__ = ("DatasetHamiltonian", "DatasetOperator", "DatasetOperatorList")
+__all__ = ("DatasetOperator",)

@@ -16,12 +16,10 @@
 from .attributes import (
     DatasetArray,
     DatasetDict,
-    DatasetHamiltonian,
     DatasetJSON,
     DatasetList,
     DatasetNone,
     DatasetOperator,
-    DatasetOperatorList,
     DatasetScalar,
     DatasetString,
 )
@@ -39,8 +37,6 @@ __all__ = (
     "DatasetList",
     "DatasetDict",
     "DatasetOperator",
-    "DatasetOperatorList",
-    "DatasetHamiltonian",
     "DatasetNone",
     "DatasetJSON",
 )

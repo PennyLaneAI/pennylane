@@ -18,7 +18,6 @@ import typing
 from collections.abc import Sequence
 from typing import Generic, List, Union, overload
 
-
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
