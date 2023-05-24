@@ -38,6 +38,7 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     Counts,
     CountsMP,
+    DensityMatrixMP,
     Expectation,
     ExpectationMP,
     MeasurementProcess,
@@ -401,7 +402,7 @@ class QubitDevice(Device):
 
         if not circuit.is_sampled:
             if len(measurements) == 1:
-                if isinstance(measurements[0], StateMP):
+                if isinstance(measurements[0], (StateMP, DensityMatrixMP)):
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 else:
@@ -985,7 +986,7 @@ class QubitDevice(Device):
             elif isinstance(m, ProbabilityMP):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, StateMP):
+            elif isinstance(m, (StateMP, DensityMatrixMP)):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination "

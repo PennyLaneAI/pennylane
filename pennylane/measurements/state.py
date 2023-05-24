@@ -81,7 +81,7 @@ def state() -> "StateMP":
     return StateMP()
 
 
-def density_matrix(wires) -> "StateMP":
+def density_matrix(wires) -> "DensityMatrixMP":
     r"""Quantum density matrix in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its density
@@ -122,13 +122,57 @@ def density_matrix(wires) -> "StateMP":
         with a compatible device.
     """
     wires = Wires(wires)
-    return StateMP(wires=wires)
+    return DensityMatrixMP(wires=wires)
 
 
 class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state in the computational basis.
 
-    Please refer to :func:`state` and :func:`density_matrix` for detailed documentation.
+    Please refer to :func:`state`.
+
+    Args:
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    def __init__(self, id: Optional[str] = None):
+        super().__init__(wires=None, id=id)
+
+    @property
+    def return_type(self):
+        return State
+
+    @property
+    def numeric_type(self):
+        return complex
+
+    def _shape_legacy(self, device, shots):
+        num_shot_elements = (
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
+        )
+        # qml.state()
+        dim = 2 ** len(device.wires)
+        return (num_shot_elements, dim)
+
+    def shape(self, device, shots):
+        if not qml.active_return():
+            return self._shape_legacy(device, shots)
+        num_shot_elements = (
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
+        )
+        # qml.state()
+        dim = 2 ** len(device.wires)
+        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
+
+    # pylint: disable=redefined-outer-name
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        return state
+
+
+class DensityMatrixMP(StateMeasurement):
+    """Measurement process that returns the quantum state in the computational basis.
+
+    Please refer to :func:`density_matrix` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -153,14 +197,8 @@ class StateMP(StateMeasurement):
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
 
-        if self.wires:
-            # qml.density_matrix()
-            dim = 2 ** len(self.wires)
-            return (num_shot_elements, dim, dim)
-
-        # qml.state()
-        dim = 2 ** len(device.wires)
-        return (num_shot_elements, dim)
+        dim = 2 ** len(self.wires)
+        return (num_shot_elements, dim, dim)
 
     def shape(self, device, shots):
         if not qml.active_return():
@@ -169,25 +207,15 @@ class StateMP(StateMeasurement):
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
 
-        if self.wires:
-            # qml.density_matrix()
-            dim = 2 ** len(self.wires)
-            return (
-                (dim, dim)
-                if num_shot_elements == 1
-                else tuple((dim, dim) for _ in range(num_shot_elements))
-            )
-
-        # qml.state()
-        dim = 2 ** len(device.wires)
-        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
+        dim = 2 ** len(self.wires)
+        return (
+            (dim, dim)
+            if num_shot_elements == 1
+            else tuple((dim, dim) for _ in range(num_shot_elements))
+        )
 
     # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if self.wires:
-            # qml.density_matrix
-            wire_map = dict(zip(wire_order, range(len(wire_order))))
-            mapped_wires = [wire_map[w] for w in self.wires]
-            return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype=state.dtype)
-        # qml.state
-        return state
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype=state.dtype)

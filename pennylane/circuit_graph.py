@@ -22,10 +22,7 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
-import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.resource import ResourcesOperation
-from pennylane.measurements import SampleMP, StateMP
 
 
 def _by_idx(x):
@@ -116,20 +113,10 @@ class CircuitGraph:
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
-            meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
-            if isinstance(op, StateMP):
-                # State measurements contain no wires by default, but wires are
-                # required for the circuit drawer, so we recreate the state
-                # measurement with all wires
-                op = StateMP(wires=meas_wires)
-
-            elif isinstance(op, SampleMP) and op.wires == Wires([]):
-                # Sampling without specifying wires is treated as sampling all wires
-                op = qml.sample(wires=meas_wires)
 
             op.queue_idx = k  # store the queue index in the Operator
 
-            for w in op.wires:
+            for w in self.wires if len(op.wires) == 0 else op.wires:
                 # get the index of the wire on the device
                 wire = wires.index(w)
                 # add op to the grid, to the end of wire w
