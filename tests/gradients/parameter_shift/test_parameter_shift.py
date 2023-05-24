@@ -226,7 +226,7 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_single_measure_no_partitioned_shots(self, g, par_shapes):
+    def test_single_measure_no_partitioned_shots_par_shapes(self, g, par_shapes):
         """Test the zero-gradient representative with a single measurement and single shots
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
@@ -244,7 +244,7 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_single_measure_partitioned_shots(self, g, par_shapes):
+    def test_single_measure_partitioned_shots_par_shapes(self, g, par_shapes):
         """Test the zero-gradient representative with a single measurement and a shot vector
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
@@ -269,7 +269,7 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_multi_measure_no_partitioned_shots(self, g, par_shapes):
+    def test_multi_measure_no_partitioned_shots_par_shapes(self, g, par_shapes):
         """Test the zero-gradient representative with multiple measurements and single shots
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
@@ -295,7 +295,7 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_multi_measure_partitioned_shots(self, g, par_shapes):
+    def test_multi_measure_partitioned_shots_par_shapes(self, g, par_shapes):
         """Test the zero-gradient representative with multiple measurements and a shot vector
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
