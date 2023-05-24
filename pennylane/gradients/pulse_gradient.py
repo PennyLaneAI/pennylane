@@ -79,8 +79,8 @@ def _split_evol_ops(op, word, word_wires, tau):
         before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
         after_t = before_t.copy()
     else:
-        before_t = jnp.array([t0, tau])
-        after_t = jnp.array([tau, t1])
+        before_t = jax.numpy.array([t0, tau])
+        after_t = jax.numpy.array([tau, t1])
 
     before_plus, before_minus = (
         op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs) for _ in range(2)
@@ -240,7 +240,7 @@ def _stoch_pulse_grad(
         shots (None, int, list[int]): The shots of the device used to execute the tapes which are
             returned by this transform. Note that this argument does not *influence* the shots
             used for execution, but informs the transform about the shots to ensure a compatible
-            return value formatting.
+            return value structure.
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
             splitting times. If ``False`` (the default), one set of modified tapes per
             splitting time is created, if ``True`` only a single set of broadcasted, modified
