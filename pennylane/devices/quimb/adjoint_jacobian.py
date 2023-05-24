@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
 
+import copy
 import numpy as np
 
 import pennylane as qml
@@ -64,16 +65,16 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
 
     # Initialization of state
     prep_operation = None if len(tape._prep) == 0 else tape._prep[0]
-    ket = create_initial_state(
-        wires=tape.wires, prep_operation=prep_operation
-    )  #  ket(0) if prep_operation is None, else
+    ket = create_initial_state(wires=tape.wires, prep_operation=prep_operation)
+
     for op in tape._ops:
-        ket = apply_operation(op, ket)
+        apply_operation(op, ket)
 
     n_obs = len(tape.observables)
-    bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
-    for kk, obs in enumerate(tape.observables):
-        bras[kk, ...] = apply_operation(obs, ket)
+    bras = []
+    for obs in tape.observables:
+        bras.append(copy.deepcopy(ket))
+        apply_operation(obs, bras[-1])
 
     jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
 
@@ -81,21 +82,23 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
     trainable_param_number = len(tape.trainable_params) - 1
     for op in reversed(tape._ops):
         adj_op = qml.adjoint(op)
-        ket = apply_operation(adj_op, ket)
+        apply_operation(adj_op, ket)
 
         if op.grad_method is not None:
             if param_number in tape.trainable_params:
                 d_op_matrix = operation_derivative(op)
-                ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
-                jac[:, trainable_param_number] = 2 * _dot_product_real(
-                    bras, ket_temp, len(tape.wires)
-                )
+                ket_temp = copy.deepcopy(ket)
+                apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket_temp)
+                for k, bra in enumerate(bras):
+                    jac[k, trainable_param_number] = 2 * np.real(
+                        (bra.psi.H & ket_temp.psi).contract()
+                    )
 
                 trainable_param_number -= 1
             param_number -= 1
 
         for kk in range(n_obs):
-            bras[kk, ...] = apply_operation(adj_op, bras[kk, ...])
+            apply_operation(adj_op, bras[kk])
 
     # Post-process the Jacobian matrix for the new return
     jac = np.squeeze(jac)
