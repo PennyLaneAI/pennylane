@@ -20,7 +20,6 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane._device import _process_shot_sequence
 from pennylane.gradients import finite_diff
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import Shots
@@ -1196,11 +1195,11 @@ class TestReturn:
         # One trainable param
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == Shots(grad_transform_shots).num_copies
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -1230,11 +1229,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == Shots(grad_transform_shots).num_copies
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -1264,11 +1263,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == Shots(grad_transform_shots).num_copies
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -1306,11 +1305,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == Shots(grad_transform_shots).num_copies
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
