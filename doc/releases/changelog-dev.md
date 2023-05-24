@@ -178,6 +178,10 @@
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
+* `qml.pauli.are_identical_pauli_words` now treats all identities as equal. Identity terms on Hamiltonians with non-standard
+  wire orders are no longer eliminated.
+  [(#4161)](https://github.com/PennyLaneAI/pennylane/pull/4161)
+
 * Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
   an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
