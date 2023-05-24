@@ -344,6 +344,11 @@ class TestGroupingUtils:
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
 
+    def test_identities_always_pauli_words(self):
+        """Tests that identity terms are always identical."""
+        assert are_identical_pauli_words(qml.Identity(0), qml.Identity("a"))
+        assert are_identical_pauli_words(qml.Identity((-2, -3)), qml.Identity("wire"))
+
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
         """Tests TypeError raise for when non-Pauli word Pennylane operators/operations are given
