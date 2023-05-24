@@ -25,15 +25,6 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 
 # pylint: disable=protected-access, too-many-branches
-
-
-def _dot_product_real(bra, ket, num_wires):
-    """Helper for calculating the inner product for adjoint differentiation."""
-    # broadcasted inner product not summing over first dimension of the bra tensor
-    sum_axes = tuple(range(1, num_wires + 1))
-    return qml.math.real(qml.math.sum(qml.math.conj(bra) * ket, axis=sum_axes))
-
-
 def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
     """Implements the adjoint method outlined in
     `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.

@@ -113,15 +113,11 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
     Returns:
         ndarray[bool]: Sample values of the shape (shots, num_wires)
     """
-    # rng = np.random.default_rng(rng)
     state_wires = qml.wires.Wires(range(state.N))
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    # basis_states = np.arange(2**num_wires)
 
     samples_gen = state.sample(shots, seed=rng)
     samples = np.array([int(s, 2) for s in samples_gen])
-    # probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
-    # samples = rng.choice(basis_states, shots, p=probs)
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     return (samples[..., None] & powers_of_two).astype(np.bool8)

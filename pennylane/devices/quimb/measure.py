@@ -29,9 +29,6 @@ from pennylane.measurements import (
 )
 from pennylane.typing import TensorLike
 
-# from pennylane.wires import Wires
-# from .apply_operation import apply_operation
-
 
 def state_diagonalizing_gates(
     measurementprocess: StateMeasurement, state: TensorLike
