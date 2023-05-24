@@ -98,12 +98,15 @@ class TestInitialization:
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=None, t=2)
         assert ev.dense is False
+        assert ev(params=None, t=2).dense is False  # Test that calling inherits the dense keyword
 
         ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
         assert ev2.dense is True
+        assert ev2(params=None, t=2).dense is True  # Test that calling inherits the dense keyword
 
         ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
         assert ev3.dense is False
+        assert ev3(params=None, t=2).dense is False  # Test that calling inherits the dense keyword
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
