@@ -127,7 +127,7 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
 
 # pylint: disable=too-many-arguments
 def _parshift_and_integrate(
-    results, cjacs, int_prefactor, single_measure, shot_vector, use_broadcasting
+    results, cjacs, int_prefactor, single_measure, has_partitioned_shots, use_broadcasting
 ):
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
@@ -142,7 +142,7 @@ def _parshift_and_integrate(
         int_prefactor (float): prefactor of the numerical integration, corresponding to the size
             of the time range divided by the number of splitting time samples
         single_measure (bool): Whether the results contain a single measurement per shot setting
-        shot_vector (bool): Whether the results have a shot vector axis
+        has_partitioned_shots (bool): Whether the results have a shot vector axis
         use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
             ``results``.
     Returns:
@@ -162,8 +162,8 @@ def _parshift_and_integrate(
             diff = (res := qml.math.stack(res_list))[::2] - res[1::2]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
-    # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
-    if not single_measure + shot_vector == 1:
+    # If single measure xor has_partitioned_shots: One axis to pull out of the shift rule and integration
+    if single_measure is has_partitioned_shots:
         return tuple(_diff_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
     if single_measure:
         # Single measurement without shot vector
