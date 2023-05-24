@@ -83,16 +83,15 @@ def _measure_with_samples_diagonalizing_gates(
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
-        raise NotImplementedError
-        # processed_samples = []
-        # for s in shots:
-        #     # currently we call sample_state for each shot entry, but it may be
-        #     # better to call sample_state just once with total_shots, then use
-        #     # the shot_range keyword argument
-        #     samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
-        #     processed_samples.append(qml.math.squeeze(mp.process_samples(samples, wires)))
+        processed_samples = []
+        for s in shots:
+            # currently we call sample_state for each shot entry, but it may be
+            # better to call sample_state just once with total_shots, then use
+            # the shot_range keyword argument
+            samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
+            processed_samples.append(qml.math.squeeze(mp.process_samples(samples, wires)))
 
-        # return tuple(processed_samples)
+        return tuple(processed_samples)
 
     samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=wires, rng=rng)
     return qml.math.squeeze(mp.process_samples(samples, wires))
