@@ -305,16 +305,7 @@ def spsa_grad(
         # Skip the unshifted tape
         shifts = shifts[1:]
 
-    if sampler_rng is None:
-        sampler_rng = np.random.default_rng()
-    elif isinstance(sampler_rng, int):
-        sampler_rng = np.random.default_rng(sampler_rng)
-    elif not isinstance(sampler_rng, np.random.Generator):
-        err = (
-            'Argument sampler_rng has invalid type. Expected an integer, '
-            f'or np.random.Generator, or None. Received {type(sampler_rng)}'
-        )
-        raise ValueError(err)
+    sampler_rng = np.random.default_rng(sampler_rng)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
