@@ -455,7 +455,8 @@ class TestOperations:
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
-        np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
+        assert qml.equal(copied_op, op, atol=tol, rtol=0)
+        assert copied_op is not op
         assert qml.equal(copied_op, op, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
