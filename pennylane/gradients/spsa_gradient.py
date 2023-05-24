@@ -106,7 +106,7 @@ def spsa_grad(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
+        shots (None, int, list[int], list[ShotCopies]): The device shots that will be used to execute the tapes
             outputted by this transform. Note that this argument doesn't influence the shots used for tape execution,
             but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
@@ -418,7 +418,7 @@ def _spsa_grad_legacy(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the
+        shots (None, int, list[int], list[ShotCopies]): The device shots that will be used to execute the
             tapes outputted by this transform. Note that this argument doesn't influence the shots used for tape
             execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for

@@ -204,7 +204,7 @@ def finite_diff(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
+        shots (None, int, list[int], list[ShotCopies]): The device shots that will be used to execute the tapes outputted by this
             transform. Note that this argument doesn't influence the shots used for tape execution, but provides
             information about the shots.
 

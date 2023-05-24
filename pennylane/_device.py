@@ -18,7 +18,7 @@ This module contains the :class:`Device` abstract base class.
 import abc
 import types
 import warnings
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from collections.abc import Iterable, Sequence
 from functools import lru_cache
 
@@ -42,9 +42,6 @@ from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import WireError, Wires
-
-ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
-"""tuple[int, int]: Represents copies of a shot number."""
 
 
 class DeviceError(Exception):
@@ -218,7 +215,7 @@ class Device(abc.ABC):
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
             shot_obj = qml.measurements.Shots(shots)
-            self._shots, self._shot_vector = shot_obj.total_shots, shot_obj.shot_vector
+            self._shots, self._shot_vector = shot_obj.total_shots, list(shot_obj.shot_vector)
             self._raw_shot_sequence = shots
 
         else:
@@ -228,7 +225,7 @@ class Device(abc.ABC):
 
     @property
     def shot_vector(self):
-        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        """list[~.pennylane.measurements.ShotCopies[int, int]]: Returns the shot vector, a sparse
         representation of the shot sequence used by the device
         when evaluating QNodes.
 
@@ -238,14 +235,14 @@ class Device(abc.ABC):
         >>> dev.shots
         57
         >>> dev.shot_vector
-        [ShotTuple(shots=3, copies=1),
-         ShotTuple(shots=1, copies=1),
-         ShotTuple(shots=2, copies=4),
-         ShotTuple(shots=6, copies=1),
-         ShotTuple(shots=1, copies=2),
-         ShotTuple(shots=5, copies=1),
-         ShotTuple(shots=12, copies=1),
-         ShotTuple(shots=10, copies=2)]
+        [ShotCopies(3 shots x 1),
+         ShotCopies(1 shots x 1),
+         ShotCopies(2 shots x 4),
+         ShotCopies(6 shots x 1),
+         ShotCopies(1 shots x 2),
+         ShotCopies(5 shots x 1),
+         ShotCopies(12 shots x 1),
+         ShotCopies(10 shots x 2)]
 
         The sparse representation of the shot
         sequence is returned, where tuples indicate the number of times a shot
