@@ -38,7 +38,6 @@ from .gradient_transform import (
     reorder_grads,
 )
 
-
 try:
     import jax
 except ImportError:
@@ -421,8 +420,261 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
 def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
+    This method combines automatic differentiation of few-qubit operations with
+    hardware-compatible shift rules. Thus, it is limited to few-qubit pulses, but allows
+    for the evaluation of parameter-shift gradients for many-qubit pulse programs on hardware.
 
-    The docstring to this function will be added in a separate PR.
+    For this differentiation method, the unitary matrix corresponding to each pulse
+    is computed and differentiated with an autodiff framework. From this derivative,
+    the so-called effective generators :math:`\Omega_{k}` of the pulses
+    (one for each variational parameter) are extracted.
+    Afterwards, the generators are decomposed into the Pauli basis and the
+    standard parameter-shift rule is used to evaluate the derivatives of the pulse program
+    in this basis. To this end, shifted ``PauliRot`` operations are inserted in the program.
+    Finally, the Pauli basis derivatives are recombined into the gradient
+    of the pulse program with respect to its original parameters.
+    See the theoretical background section below for more details.
+
+    Args:
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
+            with respect to. If not provided, the derivatives with respect to all
+            trainable parameters are returned.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes
+            outputted by this transform. Note that this argument doesn't influence the shots
+            used for tape execution, but provides information about the shots.
+        atol (float): Precision parameter used to truncate the Pauli basis coefficients
+            of the effective generators. Coefficients ``x`` satisfying
+            ``qml.math.isclose(x, 0., atol=atol, rtol=0)=True`` are neglected.
+
+    Returns:
+        function or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
+          nested tuple depending on the nesting structure of the original QNode output.
+
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian.
+
+    **Example**
+
+    Consider the parameterized Hamiltonian
+    :math:`\theta_0 Y_{0}+f(\boldsymbol{\theta_1}, t) Y_{1} + \theta_2 Z_{0}X_{1}`
+    with parameters :math:`\theta_0 = \frac{1}{5}`,
+    :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
+    :math:`\theta_2 = \frac{2}{5}`, the time-dependent function
+    :math:`f(\boldsymbol{\theta_1}, t) = \theta_{1,0} t + \theta_{1,1}`
+    as well as a time interval :math:`t=\left[\frac{1}{10}, \frac{9}{10}\right]`.
+
+    .. code-block:: python
+
+        jax.config.update("jax_enable_x64", True)
+        H = (
+            qml.pulse.constant * qml.PauliY(0)
+            + jnp.polyval * qml.PauliY(1)
+            + qml.pulse.constant * (qml.PauliZ(0)@qml.PauliX(1))
+        )
+        params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
+        t = [0.1, 0.9]
+
+    For simplicity, consider a pulse program consisting of this single pulse and a
+    measurement of the expectation value of :math:`X_{0}`.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_generator)
+        def circuit(params):
+            op = qml.evolve(H)(params, t)
+            return qml.expval(qml.PauliX(0))
+
+    We registered the ``QNode`` to be differentiated with the ``pulse_generator`` method.
+    This allows us to simply differentiate it with ``jax.grad``, which internally
+    makes use of the pulse generator parameter-shift method.
+
+    >>> jax.grad(circuit)(params)
+    [Array(1.4189798, dtype=float32, weak_type=True),
+     Array([0.00164918, 0.00284802], dtype=float32),
+     Array(-0.09984542, dtype=float32, weak_type=True)]
+
+    Alternatively, we may apply the transform to the tape of the pulse program, obtaining
+    the tapes with inserted ``PauliRot`` gates together with the post-processing function:
+
+    >>> circuit.construct((params,), {}) # Build the tape of the circuit.
+    >>> tapes, fun = qml.gradients.pulse_generator(circuit.tape, argnums=[0, 1, 2])
+    >>> len(tapes)
+    12
+
+    Why are there :math:`12` tapes?
+    Consider the terms in the time-dependent pulse Hamiltonian: :math:`\{Y_0, Y_1, Z_0X_1\}`
+    Via the Lie bracket, which is just the standard matrix commutator, they
+    generate an algebra, the so-called *dynamical Lie algebra (DLA)* of the pulse.
+    In order to find all Pauli words that occur in the DLA, we need to (recursively)
+    calculate all possible commutators between the three words above and their
+    commutators. For the three words above, we obtain three additional words:
+
+    .. math::
+
+        [Y_0, Z_0X_1] &\propto X_0X_1 \\
+        [Y_1, Z_0X_1] &\propto Z_0Z_1 \\
+        [Y_0, Z_0Z_1] &\propto X_0Z_1
+
+    All other commutators result in expressions proportional to one of the six Pauli words.
+    For each of these six words, we need to compute the standard parameter-shift rule
+    requiring two shifted circuits, which yields :math:`12` tapes.
+
+    We may inspect one of the tapes, which differs from the original tape by the inserted
+    rotation gate ``"RIY"``, i.e. a ``PauliRot(np.pi/2, "IY", wires=[0, 1])`` gate.
+    Note that the order of the tapes follows lexicographical ordering of the inserted
+    Pauli rotations, so that :math:`Y_1` is the first of the six words.
+
+    >>> print(qml.drawer.tape_text(tapes[0]))
+    0: ─╭RIY─╭ParametrizedEvolution─┤  <X>
+    1: ─╰RIY─╰ParametrizedEvolution─┤
+
+    Executing the tapes and applying the post-processing function to the results then
+    yields the gradient:
+
+    >>> fun(qml.execute(tapes, dev))
+    (Array(1.41897933, dtype=float64),
+     Array([0.00164914, 0.00284789], dtype=float64),
+     Array(-0.09984585, dtype=float64))
+
+    .. note::
+
+        This function requires the JAX interface and does not work with other autodiff interfaces
+        commonly encountered with PennyLane.
+        In addition, this transform is only JIT-compatible with scalar pulse parameters.
+
+    .. note::
+
+        For pulse Hamiltonians with complex generating terms and few parameters,
+        the decomposition approach taken in this method may incur more
+        (quantum and classical) computational cost than strictly necessary.
+
+    .. details::
+        :title: Theoretical background
+        :href: theory
+
+        The pulse generator parameter-shift gradient method makes use of the *effective generator*
+        of a pulse for given parameters and duration. Consider the parametrized Hamiltonian
+
+        .. math::
+
+            H(\boldsymbol{\theta}, t) = \sum_{k=1}^K f_k(\boldsymbol{\theta}, t) H_k
+
+        where the Hamiltonian terms :math:`\{H_k\}` are constant and the :math:`\{f_k\}` are
+        parametrized time-dependent functions depending on the parameters
+        :math:`\boldsymbol{\theta}`.
+        The unitary time evolution operator associated with :math:`H` is the solution to the
+        Schrödinger equation
+
+        .. math::
+
+            \frac{\mathrm{d} U}{\mathrm{d} t}(t) =
+            -i H(\boldsymbol{\theta}, t) U(t), \quad U(0) = \mathbb{I}
+
+        For a fixed time interval :math:`[t_0, t_1]`, we associate a matrix function
+        :math:`U(\boldsymbol{\theta})` with the unitary evolution.
+        To compute the pulse generator parameter-shift gradient, we are interested in the partial
+        derivatives of this matrix function, usually with respect to the parameters
+        :math:`\boldsymbol{\theta}`. Provided that :math:`H` does not act on too many qubits,
+        or that we have an alternative sparse representation of
+        :math:`U(\boldsymbol{\theta})`, we may compute these partial derivatives
+
+        .. math::
+
+            \frac{\partial U(\boldsymbol{\theta})}{\partial \theta_{k}}
+
+        classically via automatic differentiation, where :math:`\theta_{k}` is
+        the :math:`k`\ -th (scalar) parameter in :math:`\boldsymbol{\theta}`.
+
+        Now, due to the compactness of the groups :math:`\mathrm{SU}(N)`\ , we know that
+        for each :math:`\theta_{k}` there is an *effective generator* :math:`\Omega_{k}`
+        such that
+
+        .. math::
+
+            \frac{\partial U(\boldsymbol{\theta})}{\partial \theta_{k}} =
+            U(\boldsymbol{\theta})\Omega_{k}.
+
+        Given that we can compute the left-hand side expression as well as the matrix
+        for :math:`U` itself, we can compute :math:`\Omega_{k}` for all parameters
+        :math:`\theta_{k}`.
+        In addition, we may decompose these generators into Pauli words:
+
+        .. math::
+
+            \Omega_{k} = \sum_{\ell=1}^{L} \omega_{k}^{(\ell)} P_{\ell}
+
+        The coefficients :math:`\omega_{k}^{(\ell)}` of the generators can be computed
+        by decomposing the anti-Hermitian matrix :math:`\Omega_{k}` into the Pauli
+        basis and only keeping the non-vanishing terms. This is possible via a tensor
+        contraction with the full Pauli basis (or alternative, more efficient methods):
+
+        .. math::
+
+            \omega_{k}^{(\ell)} = \frac{1}{2^N}\mathrm{Tr}\left[P_\ell \Omega_{k}\right]
+
+        where :math:`N` is the number of qubits.
+
+        Thus far, we discussed the derivative of the time evolution, or pulse.
+        Now, consider an objective function that is based on measuring an expectation
+        value after executing a pulse program:
+
+        .. math::
+            C(\boldsymbol{\theta})=
+            \langle\psi_0|U(\boldsymbol{\theta})^\dagger B
+            U(\boldsymbol{\theta}) |\psi_0\rangle
+
+        Using the derivative of :math:`U` and the decomposition of the effective
+        generator :math:`\Omega_k` above, we calculate the partial derivative of
+        :math:`C`:
+
+        .. math::
+
+            \frac{\partial C}{\partial \theta_{k}} (\boldsymbol{\theta})&=
+            \langle\psi_0|\left[U^\dagger B U, \Omega_{k}\right]|\psi_0\rangle\\
+            &=\sum_{\ell=1}^L \omega_{k}^{(\ell)}
+            \langle\psi_0|\left[U^\dagger B U, P_\ell \right]|\psi_0\rangle\\
+            &=\sum_{\ell=1}^L \tilde\omega_{k}^{(\ell)}
+            \langle\psi_0|\left[U^\dagger B U, -\frac{i}{2}P_\ell \right]|\psi_0\rangle\\
+            &=\sum_{\ell=1}^L \tilde\omega_{k}^{(\ell)}
+            \frac{\mathrm{d}}{\mathrm{d}x}
+            \langle\psi_0|\exp\left(i\frac{x}{2}P_\ell \right)U^\dagger B
+            U\exp\left(-i\frac{x}{2}P_\ell \right)|\psi_0\rangle\large|_{x=0}\\
+            &=\sum_{\ell=1}^L \tilde\omega_{k}^{(\ell)}
+            \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x)\large|_{x=0}
+
+        where we skipped the argument :math:`\boldsymbol{\theta}` of :math:`U` for readability
+        and introduced the modified coefficients
+        :math:`\tilde\omega_{k}^{(\ell)}=2i\omega_{k}^{(\ell)}`.
+        In the second to last step, we rewrote the commutator of :math:`U^\dagger BU` and
+        :math:`\frac{i}{2}P_\ell` as the derivative (at zero) of a modified cost function
+        :math:`C_\ell(x)` that executes a Pauli rotation about :math:`-i\frac{x}{2}P_\ell`
+        before the parametrized time evolution. Here, the variable :math:`x` is just a
+        convenient way to write the modified cost function. Note that its derivative with
+        respect to :math:`x` can be computed with the standard two-term parameter-shift
+        rule for Pauli rotation gates.
+
+        *Caching*
+
+        Considering the derivation above, we notice that the same modified cost function
+        :math:`C_\ell(x)` may appear in the derivatives of distinct parameters
+        :math:`\theta_k` and :math:`\theta_m`. In order to not evaluate the same
+        modified quantum circuit derivatives multiple times, we use an internal
+        cache that avoids repeated creation of the same parameter-shifted circuits.
+        In addition, all modified cost functions :math:`C_\ell` that would be multiplied
+        with a vanishing coefficient :math:`\tilde\omega_{k}^{(\ell)}` *for all* :math:`k`
+        are skipped altogether.
+        This approach requires a few additional classical coprocessing steps but allows
+        us to save quantum resources in many relevant pulse programs.
+
     """
     transform_name = "pulse generator parameter-shift"
     _assert_has_jax(transform_name)
