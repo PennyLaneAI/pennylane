@@ -100,7 +100,9 @@ def is_pauli_word(observable):
 @is_pauli_word.register(PauliY)
 @is_pauli_word.register(PauliZ)
 @is_pauli_word.register(Identity)
-def _is_pw_pauli(observable: Union[PauliX, PauliY, PauliZ, Identity]):
+def _is_pw_pauli(
+    observable: Union[PauliX, PauliY, PauliZ, Identity]
+):  # pylint:disable=unused-argument
     return True
 
 
@@ -155,7 +157,9 @@ def pauli_word_prefactor(observable):
 @pauli_word_prefactor.register(PauliY)
 @pauli_word_prefactor.register(PauliZ)
 @pauli_word_prefactor.register(Identity)
-def _pw_prefactor_pauli(observable: Union[PauliX, PauliY, PauliZ, Identity]):
+def _pw_prefactor_pauli(
+    observable: Union[PauliX, PauliY, PauliZ, Identity]
+):  # pylint:disable=unused-argument
     return 1
 
 
@@ -165,14 +169,14 @@ def _pw_prefactor_tensor(observable: Tensor):
         from .conversion import pauli_sentence
 
         return list(pauli_sentence(observable).values())[0]  # only one term,
-    raise ValueError(f"Expected a valid PauliWord, got {observable}")
+    raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
 @pauli_word_prefactor.register
 def _pw_prefactor_ham(observable: Hamiltonian):
     if is_pauli_word(observable):
         return observable.coeffs[0]
-    raise ValueError(f"Expected a valid PauliWord, got {observable}")
+    raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
 @pauli_word_prefactor.register(Prod)
@@ -182,7 +186,7 @@ def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
     if ps is not None and len(ps) == 1:
         return list(ps.values())[0]
 
-    raise ValueError(f"Expected a valid PauliWord, got {observable}")
+    raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):

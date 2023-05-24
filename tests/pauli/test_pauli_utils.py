@@ -322,7 +322,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize("op", ops)
     def test_pauli_word_prefactor_raises_error(self, op):
         """Test that an error is raised when the operator provided is not a valid PauliWord."""
-        with pytest.raises(ValueError, match="Expected a valid PauliWord, got"):
+        with pytest.raises(ValueError, match="Expected a valid Pauli word, got"):
             pauli_word_prefactor(op)
 
     def test_are_identical_pauli_words(self):
