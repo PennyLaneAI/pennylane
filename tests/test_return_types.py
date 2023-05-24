@@ -992,7 +992,7 @@ class TestMixMeasurementsShotVector:
             for i, r in enumerate(res[0][idx]):
                 if i % 2 == 0:
                     assert isinstance(r, np.ndarray)
-                    assert meas2.obs is not None
+                    assert meas2.obs is None
                     expected_shape = ()
                     assert r.shape == expected_shape
                 else:

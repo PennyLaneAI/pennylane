@@ -28,7 +28,7 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
 
-@pytest.fixture(name="obs")
+@pytest.fixture(name="ops")
 def ops_fixture():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
@@ -42,7 +42,7 @@ def ops_fixture():
     ]
 
 
-@pytest.fixture(name="ops")
+@pytest.fixture(name="obs")
 def obs_fixture():
     """A fixture of observables to go after the queue fixture."""
     return [
@@ -52,9 +52,9 @@ def obs_fixture():
 
 
 @pytest.fixture(name="circuit")
-def circuit_fixture(_ops, _obs):
+def circuit_fixture(ops, obs):
     """A fixture of a circuit generated based on the ops and obs fixtures above."""
-    return CircuitGraph(_ops, _obs, Wires([0, 1, 2]))
+    return CircuitGraph(ops, obs, Wires([0, 1, 2]))
 
 
 @pytest.fixture(name="parameterized_circuit_gaussian")
