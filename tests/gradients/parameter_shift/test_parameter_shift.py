@@ -163,9 +163,8 @@ class TestMakeZeroRep:
 
     # mimic an expectation value or variance, and a probs vector
     @pytest.mark.parametrize("g", [np.array(0.6), np.array([0.6, 0.9])])
-    def test_single_measure_no_shot_vector(self, g):
         """Test the zero-gradient representative with a single measurement and single shots."""
-        rep = _make_zero_rep(g, single_measure=True, shot_vector=False)
+        rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=False)
         assert isinstance(rep, np.ndarray) and rep.shape == g.shape
         assert qml.math.allclose(rep, 0.0)
 
@@ -173,9 +172,9 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "g", [(np.array(0.6), np.array(0.4)) * 3, (np.array([0.3, 0.1]), np.array([0.6, 0.9]))]
     )
-    def test_single_measure_shot_vector(self, g):
+    def test_single_measure_partitioned_shots(self, g):
         """Test the zero-gradient representative with a single measurement and a shot vector."""
-        rep = _make_zero_rep(g, single_measure=True, shot_vector=True)
+        rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=True)
         assert isinstance(rep, tuple) and len(rep) == len(g)
         for r, _g in zip(rep, g):
             assert isinstance(r, np.ndarray) and r.shape == _g.shape
@@ -190,9 +189,9 @@ class TestMakeZeroRep:
             (np.array(0.5), np.ones(4), np.array(0.2)),
         ],
     )
-    def test_multi_measure_no_shot_vector(self, g):
+    def test_multi_measure_no_partitioned_shots(self, g):
         """Test the zero-gradient representative with multiple measurements and single shots."""
-        rep = _make_zero_rep(g, single_measure=False, shot_vector=False)
+        rep = _make_zero_rep(g, single_measure=False, has_partitioned_shots=False)
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
         for r, _g in zip(rep, g):
@@ -208,9 +207,9 @@ class TestMakeZeroRep:
             ((np.array(0.5), np.ones(4), np.array(0.2)),) * 4,
         ],
     )
-    def test_multi_measure_shot_vector(self, g):
+    def test_multi_measure_partitioned_shots(self, g):
         """Test the zero-gradient representative with multiple measurements and a shot vector."""
-        rep = _make_zero_rep(g, single_measure=False, shot_vector=True)
+        rep = _make_zero_rep(g, single_measure=False, has_partitioned_shots=True)
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
         for _rep, _g in zip(rep, g):
@@ -226,12 +225,14 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_single_measure_no_shot_vector_parshapes(self, g, par_shapes):
+    def test_single_measure_no_partitioned_shots(self, g, par_shapes):
         """Test the zero-gradient representative with a single measurement and single shots
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
         exp_shape = new_shape + g.shape[len(old_shape) :]
-        rep = _make_zero_rep(g, single_measure=True, shot_vector=False, par_shapes=par_shapes)
+        rep = _make_zero_rep(
+            g, single_measure=True, has_partitioned_shots=False, par_shapes=par_shapes
+        )
         assert isinstance(rep, np.ndarray) and rep.shape == exp_shape
         assert qml.math.allclose(rep, 0.0)
 
@@ -242,11 +243,13 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_single_measure_shot_vector_parshapes(self, g, par_shapes):
+    def test_single_measure_partitioned_shots(self, g, par_shapes):
         """Test the zero-gradient representative with a single measurement and a shot vector
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
-        rep = _make_zero_rep(g, single_measure=True, shot_vector=True, par_shapes=par_shapes)
+        rep = _make_zero_rep(
+            g, single_measure=True, has_partitioned_shots=True, par_shapes=par_shapes
+        )
         assert isinstance(rep, tuple) and len(rep) == len(g)
         for r, _g in zip(rep, g):
             exp_shape = new_shape + _g.shape[len(old_shape) :]
@@ -265,11 +268,13 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_multi_measure_no_shot_vector_parshapes(self, g, par_shapes):
+    def test_multi_measure_no_partitioned_shots(self, g, par_shapes):
         """Test the zero-gradient representative with multiple measurements and single shots
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
-        rep = _make_zero_rep(g, single_measure=False, shot_vector=False, par_shapes=par_shapes)
+        rep = _make_zero_rep(
+            g, single_measure=False, has_partitioned_shots=False, par_shapes=par_shapes
+        )
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
         for r, _g in zip(rep, g):
@@ -289,11 +294,13 @@ class TestMakeZeroRep:
     @pytest.mark.parametrize(
         "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
     )
-    def test_multi_measure_shot_vector_parshapes(self, g, par_shapes):
+    def test_multi_measure_partitioned_shots(self, g, par_shapes):
         """Test the zero-gradient representative with multiple measurements and a shot vector
         as well as provided par_shapes."""
         old_shape, new_shape = par_shapes
-        rep = _make_zero_rep(g, single_measure=False, shot_vector=True, par_shapes=par_shapes)
+        rep = _make_zero_rep(
+            g, single_measure=False, has_partitioned_shots=True, par_shapes=par_shapes
+        )
 
         assert isinstance(rep, tuple) and len(rep) == len(g)
         for _rep, _g in zip(rep, g):
