@@ -52,7 +52,7 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
 
 
 @singledispatch
-def is_pauli_word(observable):
+def is_pauli_word(observable):  # pylint:disable=unused-argument
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
 
