@@ -63,7 +63,7 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
 
 def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Oeprator is supported by adjoint differentiation."""
-    return op.num_params <= 1
+    return op.num_params == 0 or op.num_params == 1 and op.has_generator
 
 
 def _operator_decomposition_gen(
