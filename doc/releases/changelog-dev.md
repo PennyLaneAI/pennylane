@@ -12,6 +12,10 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
+* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
+  given subspace.
+  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
@@ -123,9 +127,16 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* Updated the `gradients` module to use the new `Shots` object internally.
+  [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
+
+* The new device interface in integrated with `qml.execute` for Jax.
+  [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
+
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
+
 
 <h3>Breaking changes 💔</h3>
 
