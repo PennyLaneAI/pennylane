@@ -14,15 +14,15 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 import pennylane as qml
-import pennylane.numpy as np
+
+# import pennylane.numpy as np
 
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
-
-# from .sampling import measure_with_samples
+from .sampling import measure_with_samples
 
 
 def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
@@ -69,20 +69,19 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
 
         return tuple(measure(mp, state) for mp in circuit.measurements)
 
-    rng = np.random.default_rng(rng)
-    raise qml.DeviceError("Device does not support shots.")
-    # # finite-shot case
+    # raise qml.DeviceError("Device does not support shots.")
+    # finite-shot case
+    # rng = np.random.default_rng(rng)
+    if len(circuit.measurements) == 1:
+        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
 
-    # if len(circuit.measurements) == 1:
-    #     return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
+    results = tuple(
+        measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
+    )
 
-    # results = tuple(
-    #     measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
-    # )
+    # no shot vector
+    if not circuit.shots.has_partitioned_shots:
+        return results
 
-    # # no shot vector
-    # if not circuit.shots.has_partitioned_shots:
-    #     return results
-
-    # # shot vector case: move the shot vector axis before the measurement axis
-    # return tuple(zip(*results))
+    # shot vector case: move the shot vector axis before the measurement axis
+    return tuple(zip(*results))

@@ -103,6 +103,7 @@ class QuimbQubit(Device):
     def __init__(self, seed=None) -> None:
         super().__init__()
 
+        self._seed = seed
         self._rng = np.random.default_rng(seed)
 
     def supports_derivatives(
@@ -194,8 +195,7 @@ class QuimbQubit(Device):
                 self.tracker.update(resources=c.specs["resources"])
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
-
-        results = tuple(simulate(c, rng=self._rng) for c in circuits)
+        results = tuple(simulate(c, rng=self._seed) for c in circuits)
         return results[0] if is_single_circuit else results
 
     def compute_derivatives(

@@ -77,21 +77,22 @@ def _measure_with_samples_diagonalizing_gates(
     # apply diagonalizing gates
     pre_rotated_state = state
     for op in mp.diagonalizing_gates():
-        pre_rotated_state = apply_operation(op, pre_rotated_state)
+        apply_operation(op, pre_rotated_state)
 
-    wires = qml.wires.Wires(range(len(state.shape)))
+    wires = qml.wires.Wires(range(state.N))
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
-        processed_samples = []
-        for s in shots:
-            # currently we call sample_state for each shot entry, but it may be
-            # better to call sample_state just once with total_shots, then use
-            # the shot_range keyword argument
-            samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
-            processed_samples.append(qml.math.squeeze(mp.process_samples(samples, wires)))
+        raise NotImplementedError
+        # processed_samples = []
+        # for s in shots:
+        #     # currently we call sample_state for each shot entry, but it may be
+        #     # better to call sample_state just once with total_shots, then use
+        #     # the shot_range keyword argument
+        #     samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
+        #     processed_samples.append(qml.math.squeeze(mp.process_samples(samples, wires)))
 
-        return tuple(processed_samples)
+        # return tuple(processed_samples)
 
     samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=wires, rng=rng)
     return qml.math.squeeze(mp.process_samples(samples, wires))
@@ -112,13 +113,15 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
     Returns:
         ndarray[bool]: Sample values of the shape (shots, num_wires)
     """
-    rng = np.random.default_rng(rng)
-    state_wires = qml.wires.Wires(range(len(state.shape)))
+    # rng = np.random.default_rng(rng)
+    state_wires = qml.wires.Wires(range(state.N))
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    basis_states = np.arange(2**num_wires)
+    # basis_states = np.arange(2**num_wires)
 
-    probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
-    samples = rng.choice(basis_states, shots, p=probs)
+    samples_gen = state.sample(shots, seed=rng)
+    samples = np.array([int(s, 2) for s in samples_gen])
+    # probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
+    # samples = rng.choice(basis_states, shots, p=probs)
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     return (samples[..., None] & powers_of_two).astype(np.bool8)
