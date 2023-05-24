@@ -15,6 +15,7 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
+from collections.abc import Sequence
 from functools import partial
 import numpy as np
 
@@ -22,6 +23,21 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
+
+from .parameter_shift import _make_zero_rep
+from .pulse_gradient import _assert_has_jax
+from .gradient_transform import (
+    _all_zero_grad,
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
+    choose_grad_methods,
+    gradient_analysis_and_validation,
+    gradient_transform,
+    _no_trainable_grad,
+    reorder_grads,
+)
+
 
 try:
     import jax
