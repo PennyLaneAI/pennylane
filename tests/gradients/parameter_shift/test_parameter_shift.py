@@ -163,6 +163,7 @@ class TestMakeZeroRep:
 
     # mimic an expectation value or variance, and a probs vector
     @pytest.mark.parametrize("g", [np.array(0.6), np.array([0.6, 0.9])])
+    def test_single_measure_no_partitioned_shots(self, g):
         """Test the zero-gradient representative with a single measurement and single shots."""
         rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=False)
         assert isinstance(rep, np.ndarray) and rep.shape == g.shape
