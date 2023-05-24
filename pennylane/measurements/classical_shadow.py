@@ -347,7 +347,9 @@ class ClassicalShadowMP(MeasurementTransform):
                 qml.PauliZ.compute_matrix(),
             ]
         )
-        uni_list = np.stack(
+
+        # the diagonalizing matrices corresponding to the Pauli observables above
+        diag_list = np.stack(
             [
                 qml.Hadamard.compute_matrix(),
                 qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
@@ -355,7 +357,7 @@ class ClassicalShadowMP(MeasurementTransform):
             ]
         )
         obs = obs_list[recipes]
-        uni = uni_list[recipes]
+        uni = diag_list[recipes]
 
         # There's a significant speedup if we use the following iterative
         # process to perform the randomized Pauli measurements:
