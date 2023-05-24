@@ -15,6 +15,7 @@
 
 from .array import DatasetArray
 from .dictionary import DatasetDict
+from .json import DatasetJSON
 from .list import DatasetList
 from .none import DatasetNone
 from .operator import DatasetHamiltonian, DatasetOperator, DatasetOperatorList
@@ -31,4 +32,6 @@ __all__ = (
     "DatasetOperatorList",
     "DatasetNone",
     "DatasetHamiltonian",
+    "DatasetNone",
+    "DatasetJSON",
 )

@@ -13,20 +13,33 @@ def _generate_slices(list_len: int):
 
 
 class TestList:
+    def test_default_init(self):
+        """Test that a DatasetList can be initialized without arguments."""
+        dset_list = DatasetList()
+
+        assert dset_list == []
+        assert dset_list.info.type_id == "list"
+        assert dset_list.info.py_type == "list"
+        assert len(dset_list) == 0
+
+    @pytest.mark.parametrize("input_type", (list, tuple))
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_value_init(self, value):
+    def test_value_init(self, input_type, value):
         """Test that a DatasetList can be initialized from
         a list."""
 
-        lst = DatasetList(value)
+        lst = DatasetList(input_type(value))
         assert lst == value
+        assert repr(lst) == repr(value)
+        assert len(lst) == len(value)
 
+    @pytest.mark.parametrize("input_type", (list, tuple))
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_bind_init(self, value):
+    def test_bind_init(self, input_type, value):
         """Test that a DatasetList can be initialized from
         a previously initialized HDF5 group."""
 
-        bind = DatasetList(value).bind
+        bind = DatasetList(input_type(value)).bind
         assert DatasetList(bind=bind) == value
 
     @pytest.mark.parametrize("slc", _generate_slices(3))
@@ -45,6 +58,16 @@ class TestList:
         ds = DatasetList(builtin)
         assert builtin[index] == ds[index]
 
+    @pytest.mark.parametrize("index", (-4, 3))
+    def test_indexing_out_of_range(self, index):
+        """Test that DatasetList raises an IndexError if given an
+        index less than its negative length, or greater than or equal
+        to its length.
+        """
+        ds = DatasetList([1, 2, 3])
+        with pytest.raises(IndexError):
+            ds[index]
+
     @pytest.mark.parametrize("index", range(-5, 5))
     def test_insert(self, index):
         """Test that insert on a DatasetList works exactly like inserting
@@ -55,4 +78,39 @@ class TestList:
         builtin.insert(index, 10)
         ds.insert(index, 10)
 
-        assert ds[index] == builtin[index]
+        assert ds == builtin
+
+    @pytest.mark.parametrize("index", range(-4, 3))
+    def test_delitem(self, index):
+        """Test that __delitem__ can remove an object from any index while
+        preserving the list structure."""
+        builtin = [0, 1, 2, {"a": 1}]
+        ds = DatasetList(builtin)
+
+        del ds[index]
+        del builtin[index]
+
+        assert ds == builtin
+        assert len(ds) == len(builtin)
+
+    @pytest.mark.parametrize("index", range(-4, 3))
+    def test_setitem(self, index):
+        """Test that __setitem__ can replace an object at any index while preserving
+        the list structure."""
+        builtin = [0, 1, 2, {"a": 1}]
+        ds = DatasetList(builtin)
+
+        ds[index] = "test"
+        builtin[index] = "test"
+
+        assert ds == builtin
+        assert len(ds) == len(builtin)
+
+    @pytest.mark.parametrize("index", (-2, 1))
+    def test_setitem_out_of_range(self, index):
+        """Test that __setitem__ raises an IndexError when given an index
+        that is out of range of the list."""
+        ds = DatasetList([0])
+
+        with pytest.raises(IndexError):
+            ds[index] = 1

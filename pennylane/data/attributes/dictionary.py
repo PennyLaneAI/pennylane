@@ -16,8 +16,8 @@ of Dataset attributes."""
 
 
 import typing
-from collections.abc import Mapping, MutableMapping
-from typing import Dict, Generic, Optional, TypeVar, Union
+from collections.abc import Mapping
+from typing import Dict, Generic, TypeVar, Union
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
@@ -26,22 +26,22 @@ from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 
 class DatasetDict(
     Generic[T],
-    AttributeType[HDF5Group, typing.Mapping[str, T], Optional[typing.Mapping[str, T]]],
-    MutableMapping,
+    AttributeType[HDF5Group, typing.Mapping[str, T], typing.Mapping[str, T]],
+    typing.MutableMapping[str, T],
     MapperMixin,
 ):
-    """Provides a dict-like collection for Dataset attribute types."""
+    """Provides a dict-like collection for Dataset attribute types. Keys must
+    be strings."""
 
     Self = TypeVar("Self", bound="DatasetDict")
 
     type_id = "dict"
 
-    def __post_init__(self, value: Optional[typing.Mapping[str, T]], info):
-        if value:
-            self.update(value)
+    def __post_init__(self, value: typing.Mapping[str, T], info):
+        self.update(value)
 
-    def default_value(self) -> None:
-        return None
+    def default_value(self) -> Dict:
+        return {}
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableMapping[str, T]:
         return self
@@ -60,12 +60,21 @@ class DatasetDict(
         return self.copy_value()
 
     def __getitem__(self, __key: str) -> T:
+        self._check_key(__key)
+
         return self._mapper[__key].get_value()
 
     def __setitem__(self, __key: str, __value: Union[T, AttributeType[HDF5Any, T, T]]) -> None:
+        self._check_key(__key)
+
+        if __key in self:
+            del self[__key]
+
         self._mapper[__key] = __value
 
     def __delitem__(self, __key: str) -> None:
+        self._check_key(__key)
+
         del self._mapper[__key]
 
     def __len__(self) -> int:
@@ -92,3 +101,8 @@ class DatasetDict(
         items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
 
         return f"{{{items_repr}}}"
+
+    def _check_key(self, __key: str) -> None:
+        """Checks that __key is a string, and raises a ``TypeError`` if it isn't."""
+        if not isinstance(__key, str):
+            raise TypeError(f"'{type(self).__name__}' keys must be strings.")

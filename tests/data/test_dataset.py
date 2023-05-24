@@ -70,4 +70,4 @@ class TestDataset:
         ds_2 = Dataset(zgrp)
 
         assert ds_2.bind is not ds.bind
-        assert ds_2.attrs == ds.attrs
+        assert ds.attrs == ds_2.attrs
