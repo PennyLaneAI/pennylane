@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functions to sample a state."""
 
+import copy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops import Sum, Hamiltonian
@@ -75,7 +76,7 @@ def _measure_with_samples_diagonalizing_gates(
         TensorLike[Any]: Sample measurement results
     """
     # apply diagonalizing gates
-    pre_rotated_state = state
+    pre_rotated_state = copy.deepcopy(state)
     for op in mp.diagonalizing_gates():
         apply_operation(op, pre_rotated_state)
 

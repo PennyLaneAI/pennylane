@@ -43,21 +43,17 @@ def state_diagonalizing_gates(
     Returns:
         TensorLike: the result of the measurement
     """
+    fs_opts = {
+        "simplify_sequence": "ADCRS",
+        "simplify_atol": 0.0,
+    }
     if isinstance(measurementprocess, ExpectationMP):
-        fs_opts = {
-            "simplify_sequence": "ADCRS",
-            "simplify_atol": 0.0,
-        }
         obs = measurementprocess.obs
         return np.real(state.local_expectation(obs.matrix(), tuple(obs.wires), **fs_opts))
     if not isinstance(measurementprocess, ProbabilityMP):
         raise NotImplementedError
-    fs_opts = {
-        "simplify_sequence": "DC",
-        "simplify_atol": 0.0,
-    }
     wires = tuple(measurementprocess.wires)
-    rdm = state.partial_trace(wires, backend="numpy", **fs_opts)
+    rdm = state.partial_trace(wires, **fs_opts)
     return np.real(np.diag(rdm))
 
 

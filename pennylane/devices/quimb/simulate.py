@@ -62,16 +62,11 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
         apply_operation(op, state)
 
     if circuit.shots.total_shots is None:
-        # analytic case
-
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state)
-
         return tuple(measure(mp, state) for mp in circuit.measurements)
 
-    # raise qml.DeviceError("Device does not support shots.")
     # finite-shot case
-    # rng = np.random.default_rng(rng)
     if len(circuit.measurements) == 1:
         return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
 
@@ -80,8 +75,6 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
     )
 
     # no shot vector
-    if not circuit.shots.has_partitioned_shots:
-        return results
-
-    # shot vector case: move the shot vector axis before the measurement axis
-    return tuple(zip(*results))
+    if circuit.shots.has_partitioned_shots:
+        return tuple(zip(*results))
+    return results
