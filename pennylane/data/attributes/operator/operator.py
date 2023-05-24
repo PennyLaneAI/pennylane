@@ -232,10 +232,10 @@ class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
         op_class_names = bind["op_class_names"].asstr()
         op_wire_labels = bind["op_wire_labels"].asstr()
 
-        for i in range(len(op_class_names)):
+        for i, op_class_name in enumerate(op_class_names):
             op_key = f"op_{i}"
 
-            op_cls = self._supported_ops_dict()[op_class_names[i]]
+            op_cls = self._supported_ops_dict()[op_class_name]
             if op_cls is Tensor:
                 ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
             elif op_cls is qml.Hamiltonian:

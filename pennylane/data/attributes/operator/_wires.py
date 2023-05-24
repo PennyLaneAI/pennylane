@@ -21,6 +21,8 @@ from pennylane.wires import Wires
 
 
 class UnserializableWireError(TypeError):
+    """Raised if a wire label is not JSON-serializable."""
+
     def __init__(self, wire: Any) -> None:
         super().__init__(
             f"Cannot serialize wire label '{wire}': Type '{type(wire)}' is not json-serializable or cannot be converted."
@@ -31,6 +33,15 @@ _JSON_TYPES = {int, str, float, type(None), bool}
 
 
 def wires_to_json(wires: Wires) -> str:
+    """Converts ``wires`` to a JSON list, with wire labels in
+    order of their index.
+
+    Returns:
+        JSON list of wires
+
+    Raises:
+        UnserializableWireError, if any of the wires are not JSON-serializable.
+    """
     jsonable_wires = []
     for w in wires:
         if type(w) not in _JSON_TYPES:
