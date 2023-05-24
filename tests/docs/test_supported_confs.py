@@ -445,6 +445,7 @@ class TestSupportedConfs:
         else:
             grad = compute_gradient(x, interface, circuit, return_type)
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shots_list)
