@@ -6,7 +6,7 @@ Deprecations
 Pending deprecations
 --------------------
 
-* ``LieAlgebraOptimizer`` is deprecated. Please use ``RiemannianGradientOptimizer`` instead.
+* ``LieAlgebraOptimizer`` is renamed. Please use ``RiemannianGradientOptimizer`` instead.
   
   - Deprecated in v0.31
   - Will be removed in v0.32
