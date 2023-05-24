@@ -12,7 +12,7 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
-* A function `pauli_word_prefactor()` is added to extract the prefactor for a given Pauliword.
+* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
 * Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a

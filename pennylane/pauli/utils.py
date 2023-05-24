@@ -137,7 +137,7 @@ def pauli_word_prefactor(observable):
         Union[int, float, complex]: The scaling/phase coefficient of the Pauliword.
 
     Raises:
-        ValueError: If an operator is provided that is not a valid PauliWord.
+        ValueError: If an operator is provided that is not a valid Pauli word.
 
     **Example**
 
@@ -148,7 +148,7 @@ def pauli_word_prefactor(observable):
     >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(0))
     1j
     """
-    raise ValueError(f"Expected a valid PauliWord, got {observable}")
+    raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
 @pauli_word_prefactor.register(PauliX)
