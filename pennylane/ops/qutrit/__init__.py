@@ -37,6 +37,7 @@ ops = {
     "TSWAP",
     "THadamard",
     "TRX",
+    "TRY",
 }
 
 obs = {
