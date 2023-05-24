@@ -324,10 +324,14 @@ class ClassicalShadowMP(MeasurementTransform):
             rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
                 If no value is provided, a default RNG will be used.
+
+        Returns:
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
+            the measured bits and the second represents the recipes used.
         """
         mapped_wires = self.wires
         n_qubits = len(mapped_wires)
-        dev_qubits = len(state.shape)
+        num_dev_qubits = len(state.shape)
 
         # seed the random measurement generation so that recipes
         # are the same for different executions with the same seed
@@ -371,34 +375,39 @@ class ClassicalShadowMP(MeasurementTransform):
         # to a significant speed-up.
 
         # transpose the state so that the measured wires appear first
-        unmeasured_wires = [i for i in range(dev_qubits) if i not in mapped_wires]
+        unmeasured_wires = [i for i in range(num_dev_qubits) if i not in mapped_wires]
         transposed_state = np.transpose(state, axes=mapped_wires.tolist() + unmeasured_wires)
 
         outcomes = np.zeros((shots, n_qubits))
         stacked_state = np.stack([transposed_state for _ in range(shots)])
 
-        for i in range(n_qubits):
+        for active_qubit in range(n_qubits):
             # trace out every qubit except the first
             first_qubit_state = np.einsum(
-                f"{ABC[dev_qubits - i + 1]}{ABC[:dev_qubits - i]},{ABC[dev_qubits - i + 1]}{ABC[dev_qubits - i]}{ABC[1:dev_qubits - i]}"
-                f"->{ABC[dev_qubits - i + 1]}a{ABC[dev_qubits - i]}",
+                f"{ABC[num_dev_qubits - active_qubit + 1]}{ABC[:num_dev_qubits - active_qubit]},"
+                f"{ABC[num_dev_qubits - active_qubit + 1]}{ABC[num_dev_qubits - active_qubit]}{ABC[1:num_dev_qubits - active_qubit]}"
+                f"->{ABC[num_dev_qubits - active_qubit + 1]}a{ABC[num_dev_qubits - active_qubit]}",
                 stacked_state,
                 np.conj(stacked_state),
             )
 
             # sample the observables on the first qubit
-            probs = (np.einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
+            probs = (np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1) / 2
             samples = bit_rng.random(size=probs.shape) > probs
-            outcomes[:, i] = samples
+            outcomes[:, active_qubit] = samples
 
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
-            rotated_state = np.einsum("ab...,acb->ac...", stacked_state, uni[:, i])
+            rotated_state = np.einsum("ab...,acb->ac...", stacked_state, uni[:, active_qubit])
             stacked_state = rotated_state[np.arange(shots), samples.astype(np.int8)]
 
             # re-normalize the collapsed state
             norms = np.sqrt(
-                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, dev_qubits - i)), keepdims=True)
+                np.sum(
+                    np.abs(stacked_state) ** 2,
+                    tuple(range(1, num_dev_qubits - active_qubit)),
+                    keepdims=True,
+                )
             )
             stacked_state /= norms
 
@@ -477,6 +486,9 @@ class ShadowExpvalMP(MeasurementTransform):
             rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
                 If no value is provided, a default RNG will be used.
+
+        Returns:
+            float: The estimate of the expectation value.
         """
         bits, recipes = qml.classical_shadow(
             wires=self.wires, seed=self.seed
