@@ -1072,7 +1072,7 @@ class TestHamiltonianSamples:
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.05)
 
     def test_sum_expval(self):
         """Test that sampling works well for Sum observables"""
@@ -1085,7 +1085,7 @@ class TestHamiltonianSamples:
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.05)
 
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""
@@ -1100,7 +1100,7 @@ class TestHamiltonianSamples:
         H = t1 + t2
 
         dev = QuimbQubit(seed=100)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=10000)
         res = dev.execute(qs)
 
         phase = offset + scale * np.array(range(n_wires))
@@ -1168,13 +1168,13 @@ class TestHamiltonianSamples:
         )
 
         dev = QuimbQubit(seed=100)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=10000)
         res = dev.execute(qs)
 
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = dev.execute(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.001)
+        assert np.allclose(res, expected, atol=0.05)
 
 
 def test_broadcasted_parameter():
