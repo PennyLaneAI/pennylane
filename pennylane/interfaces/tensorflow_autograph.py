@@ -22,7 +22,6 @@ import numpy as np
 import tensorflow as tf
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
 from pennylane.measurements import SampleMP, StateMP
 from pennylane.transforms import convert_to_numpy_parameters
 
@@ -324,7 +323,15 @@ def execute(
     trainable = []
     output_types = []
 
-    num_shot_copies = _get_num_copies(device.shot_vector) if device.shot_vector else 1
+    if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
+        # assumes all tapes have the same shot vector
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+        num_shot_copies = tapes[0].num_copies
+        vjp_shots = legacy_shots = None
+    else:
+        has_partitioned_shots = vjp_shots = device.shot_vector
+        legacy_shots = qml.measurements.Shots(device.shot_vector or 1)
+        num_shot_copies = legacy_shots.num_copies
 
     for tape in tapes:
         # store the trainable parameters
@@ -399,7 +406,7 @@ def execute(
         res = res[: total_measurements * num_shot_copies]
 
         # reconstruct the nested structure of res
-        res = _res_restructured(res, tapes, shots=device.shot_vector)
+        res = _res_restructured(res, tapes, legacy_shots=legacy_shots)
 
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
@@ -418,10 +425,10 @@ def execute(
                     jacs = args[total_measurements * num_shot_copies : -len(tapes)]
                     multi_measurements = args[-len(tapes) :]
 
-                    dy = _res_restructured(dy, tapes, shots=device.shot_vector)
+                    dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
                     jacs = _jac_restructured(jacs, tapes)
 
-                    return _compute_vjp(dy, jacs, multi_measurements, device.shot_vector)
+                    return _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots)
 
                 vjps = tf.numpy_function(
                     func=_backward,
@@ -443,14 +450,14 @@ def execute(
                             all_params = all_params[:len_all_params]
                             params_unwrapped = _nest_params(all_params)
 
-                            dy = _res_restructured(dy, tapes, device.shot_vector)
+                            dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
 
                             new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 new_tapes,
                                 dy,
                                 gradient_fn,
-                                shots=device.shot_vector,
+                                shots=vjp_shots,
                                 reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
                                 gradient_kwargs=gradient_kwargs,
                             )
@@ -464,13 +471,13 @@ def execute(
                         )
 
                     else:
-                        dy = _res_restructured(dy, tapes, device.shot_vector)
+                        dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
 
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,
                             gradient_fn,
-                            shots=device.shot_vector,
+                            shots=vjp_shots,
                             reduction="append",
                             gradient_kwargs=gradient_kwargs,
                         )
@@ -515,7 +522,7 @@ def execute(
                         new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
                         jac = gradient_fn(new_tapes, **gradient_kwargs)
 
-                        vjps = _compute_vjp(dy, jac, multi_measurements, device.shot_vector)
+                        vjps = _compute_vjp(dy, jac, multi_measurements, has_partitioned_shots)
                         return vjps
 
                     vjps = tf.numpy_function(
