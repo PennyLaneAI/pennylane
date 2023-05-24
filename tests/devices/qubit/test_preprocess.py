@@ -193,11 +193,14 @@ class TestExpandFnValidation:
             num_wires = 1
 
             def decomposition(self):
-                return [InfiniteOp(self.wires)]
+                return [InfiniteOp(*self.parameters, self.wires)]
 
-        qs = qml.tape.QuantumScript([InfiniteOp(0)])
+        qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             expand_fn(qs)
+
+        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
+            validate_and_expand_adjoint(qs)
 
 
 class TestExpandFnTransformations:
