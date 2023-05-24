@@ -22,6 +22,8 @@ from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
     MeasurementProcess,
+    StateMP,
+    VnEntropyMP,
     ExpectationMP,
     ProbabilityMP,
 )
@@ -50,6 +52,14 @@ def state_diagonalizing_gates(
     if isinstance(measurementprocess, ExpectationMP):
         obs = measurementprocess.obs
         return np.real(state.local_expectation(obs.matrix(), tuple(obs.wires), **fs_opts))
+    if isinstance(measurementprocess, StateMP):
+        wires = tuple(measurementprocess.wires)
+        return state.partial_trace(wires, **fs_opts)
+    if isinstance(measurementprocess, VnEntropyMP):
+        wires = tuple(measurementprocess.wires)
+        rdm = state.partial_trace(wires, **fs_opts)
+        diag_rdm = np.diag(rdm)
+        return -np.sum(np.real(diag_rdm * np.log(diag_rdm)))
     if not isinstance(measurementprocess, ProbabilityMP):
         raise NotImplementedError
     wires = tuple(measurementprocess.wires)
