@@ -43,6 +43,11 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Any or Iterable[Any]): wires that the template acts on
         rotation (str): type of rotations used
+        do_queue (bool): indicates whether the operator should be recorded when created in
+            a tape context. This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     Example:
 

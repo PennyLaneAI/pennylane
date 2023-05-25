@@ -32,7 +32,10 @@ class Snapshot(Operation):
 
     Args:
         tag (str or None): An optional custom tag for the snapshot, used to index it
-                           in the snapshots dictionary.
+            in the snapshots dictionary.
+        do_queue (bool): indicates whether the operator should be recorded when created in
+            a tape context. This arguement is deprecated, instead of setting it to ``False``
+            use :meth:`~.QueuingManager.stop_recording`.
 
     **Example**
 
