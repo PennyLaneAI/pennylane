@@ -127,68 +127,6 @@ def _is_pw_sprod(observable: SProd):
     return is_pauli_word(observable.base)
 
 
-@singledispatch
-def pauli_word_prefactor(observable):
-    """If the operator provided is a valid Pauli word (i.e a single term which may be a tensor product
-    of pauli operators), then this function extracts the prefactor.
-
-    Args:
-        observable (~.Operator): the operator to be examined
-
-    Returns:
-        Union[int, float, complex]: The scaling/phase coefficient of the Pauliword.
-
-    Raises:
-        ValueError: If an operator is provided that is not a valid Pauli word.
-
-    **Example**
-
-    >>> pauli_word_prefactor(qml.Identity(0))
-    1
-    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(1))
-    1
-    >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(0))
-    1j
-    """
-    raise ValueError(f"Expected a valid Pauli word, got {observable}")
-
-
-@pauli_word_prefactor.register(PauliX)
-@pauli_word_prefactor.register(PauliY)
-@pauli_word_prefactor.register(PauliZ)
-@pauli_word_prefactor.register(Identity)
-def _pw_prefactor_pauli(
-    observable: Union[PauliX, PauliY, PauliZ, Identity]
-):  # pylint:disable=unused-argument
-    return 1
-
-
-@pauli_word_prefactor.register
-def _pw_prefactor_tensor(observable: Tensor):
-    if is_pauli_word(observable):
-        from .conversion import pauli_sentence
-
-        return list(pauli_sentence(observable).values())[0]  # only one term,
-    raise ValueError(f"Expected a valid Pauli word, got {observable}")
-
-
-@pauli_word_prefactor.register
-def _pw_prefactor_ham(observable: Hamiltonian):
-    if is_pauli_word(observable):
-        return observable.coeffs[0]
-    raise ValueError(f"Expected a valid Pauli word, got {observable}")
-
-
-@pauli_word_prefactor.register(Prod)
-@pauli_word_prefactor.register(SProd)
-def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
-    ps = observable._pauli_rep  # pylint:disable=protected-access
-    if ps is not None and len(ps) == 1:
-        return list(ps.values())[0]
-
-    raise ValueError(f"Expected a valid Pauli word, got {observable}")
-
-
 def are_identical_pauli_words(pauli_1, pauli_2):
     # pylint: disable=isinstance-second-argument-not-valid-type
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
