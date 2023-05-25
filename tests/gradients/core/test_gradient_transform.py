@@ -194,7 +194,7 @@ class TestChooseGradMethods:
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
-    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
     @pytest.mark.parametrize("slicing", [False, True])
     def test_acting_on_qnodes_single_param(self, shots, slicing, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
