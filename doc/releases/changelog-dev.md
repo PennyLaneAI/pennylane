@@ -182,6 +182,9 @@
   wire orders are no longer eliminated.
   [(#4161)](https://github.com/PennyLaneAI/pennylane/pull/4161)
 
+* `qml.pauli_sentence()` is now compatible with empty hamiltonians `qml.Hamiltonian([], [])`.
+  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
