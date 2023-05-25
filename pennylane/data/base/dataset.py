@@ -83,7 +83,10 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
 
 
 @dataclass_transform(
-    order_default=False, eq_default=False, field_specifiers=(attribute, field), kw_only_default=True
+    order_default=False,
+    eq_default=False,
+    field_specifiers=(attribute, property),
+    kw_only_default=True,
 )
 class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """This base class that tells the type system that ``Dataset`` behaves like a dataclass.
@@ -113,7 +116,10 @@ class Dataset(Generic[ParamsType], MapperMixin, _DatasetTransform):
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
     bind: HDF5Group = attribute(default=None, kw_only=False)  # type: ignore
-    params: ParamsType = attribute(default_factory=dict, kw_only=False)  # type: ignore
+    params: ParamsType = property(
+        lambda self: json.loads(self.info.get("params", "{}")),
+        lambda self, params: self.info.__setitem__("params", json.dumps(params)),
+    )
     validate: InitVar[bool] = attribute(default=True, kw_only=False)
 
     def __init__(
@@ -158,17 +164,6 @@ class Dataset(Generic[ParamsType], MapperMixin, _DatasetTransform):
     def category(self) -> Optional[str]:
         """Returns the category ID of this dataset."""
         return self.info.get("category_id")
-
-    @property
-    def params(self) -> ParamsType:
-        """Returns this dataset's parameters."""
-        json_params = self.info.get("params", "{}")
-
-        return json.loads(json_params)
-
-    @params.setter
-    def params(self, params: typing.Mapping[str, str]):
-        self.info["params"] = json.dumps(params)
 
     @property
     def info(self) -> AttributeInfo:
@@ -269,12 +264,12 @@ class Dataset(Generic[ParamsType], MapperMixin, _DatasetTransform):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
                 self.info["type_id"] = self.type_id
-            if "category" not in self.info and getattr(self, "category_id", None) is not None:
+            if "category_id" not in self.info and (getattr(self, "category_id", None) is not None):
                 self.info["category_id"] = self.category_id
 
     def __setattr__(self, __name: str, __value: Union[Any, AttributeType]) -> None:
-        if __name.startswith("_"):
-            super().__setattr__(__name, __value)
+        if __name.startswith("_") or __name in type(self).__dict__:
+            object.__setattr__(self, __name, __value)
             return
 
         if __name in self.fields:

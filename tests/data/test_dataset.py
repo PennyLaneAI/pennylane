@@ -43,6 +43,19 @@ class TestDataset:
         assert ds.attrs["x"].info.py_type == "numbers.Number"
         assert ds.attrs["x"].info.doc == "docstring"
 
+    def test_subclass_category_id(self):
+        """Test that a subclass of Dataset preserves the defined
+        category_id."""
+
+        class MyDataset(Dataset):
+            category_id = "my_dataset"
+
+            description: str = attribute(doc="description")
+
+        assert MyDataset.category_id == "my_dataset"
+        ds = MyDataset(description="test")
+        assert ds.category_id == "my_dataset"
+
     def test_setattr_preserves_field_info(self):
         """Test that __setattr__ preserves AttributeInfo for fields."""
 
@@ -71,3 +84,10 @@ class TestDataset:
 
         assert ds_2.bind is not ds.bind
         assert ds.attrs == ds_2.attrs
+
+    @pytest.mark.parametrize("params", [{}, {"x": "y", "z": "a"}])
+    def test_params(self, params):
+        """Test that dataset params can be set."""
+        ds = Dataset(params=params)
+
+        assert ds.params == params
