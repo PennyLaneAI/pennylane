@@ -1281,7 +1281,7 @@ class QubitDevice(Device):
         """
         state = getattr(self, "state", None)
         wires = self.map_wires(wires)
-        return qml.math.reduced_dm_from_sv(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qml.math.reduce_statevector(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
         r"""Returns the Von Neumann entropy prior to measurement.

@@ -253,7 +253,7 @@ class DefaultMixed(QubitDevice):
         """
         state = getattr(self, "state", None)
         wires = self.map_wires(wires)
-        return qml.math.reduced_dm_from_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def reset(self):
         """Resets the device"""

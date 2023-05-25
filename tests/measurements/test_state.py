@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import State, StateMP, Shots, density_matrix, expval, state
-from pennylane.math.quantum import reduced_dm_from_sv, reduced_dm_from_dm
+from pennylane.math.quantum import reduce_statevector, reduce_dm
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 
 # pylint: disable=no-member, comparison-with-callable, import-outside-toplevel
@@ -68,7 +68,7 @@ class TestStateMP:
         if len(wires) == num_wires:
             exp = np.outer(vec, vec.conj())
         else:
-            exp = reduced_dm_from_sv(vec, wires)
+            exp = reduce_statevector(vec, wires)
         assert qml.math.allclose(processed, exp)
 
     @pytest.mark.xfail(reason="StateMP.process_state no longer supports density matrix parameters")
@@ -97,7 +97,7 @@ class TestStateMP:
         if len(wires) == num_wires:
             exp = _permute_dense_matrix(mat, wires, order, None)
         else:
-            exp = reduced_dm_from_dm(mat, wires)
+            exp = reduce_dm(mat, wires)
         assert qml.math.allclose(processed, exp)
 
 

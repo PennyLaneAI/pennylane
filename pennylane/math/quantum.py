@@ -173,7 +173,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def reduced_dm_from_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
+def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state represented with a density matrix.
 
 
@@ -190,21 +190,21 @@ def reduced_dm_from_dm(density_matrix, indices, check_state=False, c_dtype="comp
     **Example**
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    >>> reduced_dm_from_dm(x, indices=[0])
+    >>> reduce_dm(x, indices=[0])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
-    >>> reduced_dm_from_dm(y, indices=[0])
+    >>> reduce_dm(y, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> reduced_dm_from_dm(y, indices=[1])
+    >>> reduce_dm(y, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> reduced_dm_from_dm(x, indices=[1])
+    >>> reduce_dm(x, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -357,7 +357,7 @@ def _partial_trace_autograd(density_matrix, indices):
     return reduced_density_matrix
 
 
-def reduced_dm_from_sv(state, indices, check_state=False, c_dtype="complex128"):
+def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -372,21 +372,21 @@ def reduced_dm_from_sv(state, indices, check_state=False, c_dtype="complex128"):
     **Example**
 
     >>> x = np.array([1, 0, 0, 0])
-    >>> reduced_dm_from_sv(x, indices=[0])
+    >>> reduce_statevector(x, indices=[0])
     [[1.+0.j 0.+0.j]
     [0.+0.j 0.+0.j]]
 
     >>> y = [1, 0, 1, 0] / np.sqrt(2)
-    >>> reduced_dm_from_sv(y, indices=[0])
+    >>> reduce_statevector(y, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> reduced_dm_from_sv(y, indices=[1])
+    >>> reduce_statevector(y, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> reduced_dm_from_sv(z, indices=[1])
+    >>> reduce_statevector(z, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -486,7 +486,7 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     .. seealso:: :func:`pennylane.qinfo.transforms.reduced_dm` and :func:`pennylane.density_matrix`
     """
     warnings.warn(
-        "reduced_dm has been deprecated. Please use reduced_dm_from_sv or reduced_dm_from_dm instead",
+        "reduced_dm has been deprecated. Please use reduce_statevector or reduce_dm instead",
         UserWarning,
     )
 
@@ -495,9 +495,9 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     len_state = state.shape[0]
     # State vector
     if state.shape == (len_state,):
-        return reduced_dm_from_sv(state, indices, check_state)
+        return reduce_statevector(state, indices, check_state)
 
-    return reduced_dm_from_dm(state, indices, check_state)
+    return reduce_dm(state, indices, check_state)
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):
@@ -561,11 +561,11 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     # If the state is a state vector but the system in question is a sub-system of the
     # overall state, then the purity of the sub-system still needs to be computed.
     if state.shape == (len_state,):
-        density_matrix = reduced_dm_from_sv(state, indices, check_state)
+        density_matrix = reduce_statevector(state, indices, check_state)
         return _compute_purity(density_matrix)
 
     # If the state is a density matrix, compute the purity.
-    density_matrix = reduced_dm_from_dm(state, indices, check_state)
+    density_matrix = reduce_dm(state, indices, check_state)
     return _compute_purity(density_matrix)
 
 
