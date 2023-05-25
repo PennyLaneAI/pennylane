@@ -71,8 +71,8 @@ class HilbertSchmidt(Operation):
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as u_tape:
-                with qml.QueuingManager.stop_recording():
+            with qml.QueuingManager.stop_recording():
+                with qml.tape.QuantumTape() as u_tape:
                     qml.Hadamard(wires=0)
 
             def v_function(params):
