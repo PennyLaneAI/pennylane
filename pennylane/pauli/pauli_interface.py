@@ -33,7 +33,7 @@ def pauli_word_prefactor(observable):
         observable (~.Operator): the operator to be examined
 
     Returns:
-        Union[int, float, complex]: The scaling/phase coefficient of the Pauliword.
+        Union[int, float, complex]: The scaling/phase coefficient of the Pauli word.
 
     Raises:
         ValueError: If an operator is provided that is not a valid Pauli word.
