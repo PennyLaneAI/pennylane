@@ -1028,8 +1028,8 @@ class Operator(abc.ABC):
 
         if do_queue is not None:
             do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. "
-                "Use qml.queuing.QueuingManager.stop_recording()"
+                "The do_queue keyword argument is deprecated. Instead of setting "
+                "it to false, use qml.queuing.QueuingManager.stop_recording()"
             )
             warnings.warn(do_queue_deprecation_warning, UserWarning)
 
