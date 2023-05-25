@@ -157,8 +157,8 @@
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
-* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Please
-  use the `qml.QueuingManager.stop_recording()` context instead.
+* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
 
 <h3>Documentation 📝</h3>

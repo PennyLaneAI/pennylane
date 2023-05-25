@@ -7,8 +7,8 @@ Pending deprecations
 --------------------
 
 * The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
-  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Please use
-  ``qml.QueuingManager.stop_recording()`` instead.
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
 
   - Still accessible in v0.31
   - Will be removed in v0.32
