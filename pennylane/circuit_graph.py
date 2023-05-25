@@ -22,10 +22,7 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
-import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.resource import ResourcesOperation
-from pennylane.measurements import SampleMP, StateMP
 
 
 def _by_idx(x):
