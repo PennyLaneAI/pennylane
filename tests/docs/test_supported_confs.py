@@ -453,7 +453,8 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("diff_method", ["finite-diff", "spsa"])
     def test_all_finitediff_state(self, interface, return_type, shots, wire_specs, diff_method):
         """Test diff_method in ['finite-diff', 'spsa'] fails for all interfaces and
-        the return_types State and DensityMatrix"""
+        the return_types State and DensityMatrix. This test is currently expected to fail
+        as `CircuitGraph.has_path` no longer raises the expected error."""
 
         # this error message is a bit cryptic, but it's consistent across
         # all the interfaces
