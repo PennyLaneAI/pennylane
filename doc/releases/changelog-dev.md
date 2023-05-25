@@ -133,6 +133,11 @@
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
+* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
+  and now inherits from `qml.ops.op_math.ControlledOp`.
+  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
+
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -175,6 +180,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
+  was not taken into account.
+  [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)
+
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
@@ -200,4 +209,5 @@ Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
