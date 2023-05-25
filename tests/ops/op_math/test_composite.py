@@ -215,7 +215,7 @@ class TestConstruction:
         factors = (qml.PauliX(0), qml.PauliY(0))
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
         )
 
         with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
