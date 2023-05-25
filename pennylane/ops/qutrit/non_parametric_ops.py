@@ -430,8 +430,8 @@ class THadamard(Operation):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        subspace (Sequence[int]): the 2D subspace on which to apply the operation. This should be
-            `None` for the generalized Hadamard.
+        subspace (Optional[Sequence[int]]): the 2D subspace on which to apply the operation.
+            This should be `None` for the generalized Hadamard.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
 
@@ -440,17 +440,17 @@ class THadamard(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.THadamard(wires=0, subspace=[0, 1]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(0, 1)).matrix()
     array([[ 0.70710678+0.j,  0.70710678+0.j,  0.        +0.j],
            [ 0.70710678+0.j, -0.70710678+0.j,  0.        +0.j],
            [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
 
-    >>> qml.THadamard(wires=0, subspace=[0, 2]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(0, 2)).matrix()
     array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
            [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
            [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
 
-    >>> qml.THadamard(wires=0, subspace=[1, 2]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(1, 2)).matrix()
     array([[ 1.        +0.j,  0.        +0.j,  0.        +0.j],
            [ 0.        +0.j,  0.70710678+0.j,  0.70710678+0.j],
            [ 0.        +0.j,  0.70710678+0.j, -0.70710678+0.j]])
@@ -507,7 +507,7 @@ class THadamard(Operation):
 
         **Example**
 
-        >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
+        >>> print(qml.THadamard.compute_matrix(subspace=(0, 2)))
         array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
                [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
                [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
