@@ -87,6 +87,79 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
+class TestOldDeviceDeprecations:
+    """Unit tests for deprecations due to `DefaultQubit2`."""
+
+    def test_stopping_condition_deprecation(self):
+        """Test that `DefaultQubit.stopping_condition raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.stopping_condition
+
+    def test_apply_deprecation(self):
+        """Test that `DefaultQubit.apply raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1)
+        ops = [qml.PauliZ(0)]
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.apply(ops)
+
+    def test_expval_deprecation(self):
+        """Test that `DefaultQubit.expval raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.expval(qml.PauliZ(0))
+
+    def test_state_deprecation(self):
+        """Test that `DefaultQubit.state raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.state
+
+    def test_reset_deprecation(self):
+        """Test that `DefaultQubit.reset raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.reset()
+
+    def test_analytic_probability_deprecation(self):
+        """Test that `DefaultQubit.analytic_probability raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.analytic_probability()
+
+    def test_classical_shadow_deprecation(self):
+        """Test that `DefaultQubit.classical_shadow raises the correct
+        deprecation warning."""
+        dev = qml.device("default.qubit", wires=1, shots=100)
+        obs = qml.classical_shadow(0)
+        circuit = qml.tape.QuantumScript([qml.S(0)], [obs])
+
+        with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
+            _ = dev.classical_shadow(obs, circuit)
+
+    @pytest.mark.filterwarnings("error:Directly calling DefaultQubit.:UserWarning")
+    def test_no_warning_with_execute(self):
+        """Test that no warnings are raised when using `qml.execute`."""
+        dev = qml.device("default.qubit", wires=2)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(0.123, 0), qml.CNOT([0, 1])], [qml.expval(qml.PauliZ(1))]
+        )
+
+        _ = qml.execute([qs], dev)
+
+
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "

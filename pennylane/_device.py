@@ -655,6 +655,9 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
+        warnings.filterwarnings(
+            "ignore", message="Directly calling DefaultQubit", category=UserWarning
+        )
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis

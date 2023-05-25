@@ -568,11 +568,11 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        _deprecation_warning("expval")
+
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        _deprecation_warning("expval")
-
         if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
             return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
