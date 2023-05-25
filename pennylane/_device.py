@@ -942,6 +942,9 @@ class Device(abc.ABC):
             DeviceError: if there are operations in the queue or observables that the device does
                 not support
         """
+        warnings.filterwarnings(
+            "ignore", message="Directly calling DefaultQubit", category=UserWarning
+        )
 
         for o in queue:
             operation_name = o.name

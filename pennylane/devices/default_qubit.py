@@ -45,10 +45,12 @@ SQRT2INV = 1 / np.sqrt(2)
 TPHASE = np.exp(1j * np.pi / 4)
 
 
-def deprecation_warning(func_name):
+def _deprecation_warning(func_name):
     warnings.warn(
-        f"DefaultQubit.{func_name} is deprecated. Use qml.devices.experimental.DefaultQubit2 "
-        "instead.",
+        f"Directly calling DefaultQubit.{func_name} is not recommended and should be avoided "
+        "where possible. The available methods of DefaultQubit will be updated soon to follow "
+        "a new API described here: "
+        "https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html",
         UserWarning,
     )
 
@@ -213,7 +215,7 @@ class DefaultQubit(QubitDevice):
 
     @property
     def stopping_condition(self):
-        deprecation_warning("stopping_condition")
+        _deprecation_warning("stopping_condition")
 
         def accepts_obj(obj):
             if obj.name == "QFT" and len(obj.wires) >= 6:
@@ -230,8 +232,6 @@ class DefaultQubit(QubitDevice):
 
     @functools.lru_cache()
     def map_wires(self, wires):
-        deprecation_warning("map_wires")
-
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         try:
@@ -244,8 +244,6 @@ class DefaultQubit(QubitDevice):
         return mapped_wires
 
     def define_wire_map(self, wires):
-        deprecation_warning("define_wire_map")
-
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
@@ -264,7 +262,7 @@ class DefaultQubit(QubitDevice):
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
-        deprecation_warning("apply")
+        _deprecation_warning("apply")
 
         rotations = rotations or []
 
@@ -573,7 +571,7 @@ class DefaultQubit(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        deprecation_warning("expval")
+        _deprecation_warning("expval")
 
         if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
             return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
@@ -667,8 +665,6 @@ class DefaultQubit(QubitDevice):
 
     @classmethod
     def capabilities(cls):
-        deprecation_warning("capabilities")
-
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -704,7 +700,7 @@ class DefaultQubit(QubitDevice):
 
     @property
     def state(self):
-        deprecation_warning("state")
+        _deprecation_warning("state")
 
         dim = 2**self.num_wires
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
@@ -924,7 +920,7 @@ class DefaultQubit(QubitDevice):
 
     def reset(self):
         """Reset the device"""
-        deprecation_warning("reset")
+        _deprecation_warning("reset")
 
         super().reset()
 
@@ -933,7 +929,7 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-        deprecation_warning("analytic_probability")
+        _deprecation_warning("analytic_probability")
 
         if self._state is None:
             return None
@@ -985,7 +981,7 @@ class DefaultQubit(QubitDevice):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-        deprecation_warning("classical_shadow")
+        _deprecation_warning("classical_shadow")
 
         wires = obs.wires
         seed = obs.seed
