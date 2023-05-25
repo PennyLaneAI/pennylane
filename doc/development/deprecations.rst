@@ -51,6 +51,11 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
+* The public methods of `DefaultQubit` that aren't present in `DefaultQubit2` now raise a deprecation
+  warning if called directly by users. The warning is not raised in normal workflows.
+
+  - Deprecated in v0.31
+
 
 Completed deprecation cycles
 ----------------------------

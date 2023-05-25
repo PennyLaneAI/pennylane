@@ -172,6 +172,10 @@
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
+* The public methods of `DefaultQubit` that aren't present in `DefaultQubit2` now raise a warning if called
+  directly by users. The warning is not raised in normal workflows.
+  [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
