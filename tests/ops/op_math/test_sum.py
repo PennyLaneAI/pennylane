@@ -118,7 +118,7 @@ class TestInitialization:
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=None, id=id)
+        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
