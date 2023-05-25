@@ -133,6 +133,9 @@
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
+* Added support for broadcasting in `qml.math.reduce_dm` and `qml.math.reduce_statevector`.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -166,6 +169,9 @@
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
+* `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Documentation 📝</h3>
 
