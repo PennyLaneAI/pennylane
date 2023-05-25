@@ -214,8 +214,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
             import numpy as np
 
-            with qml.tape.QuantumTape() as u_tape:
-                with qml.QueuingManager.stop_recording():
+            with qml.QueuingManager.stop_recording():
+                with qml.tape.QuantumTape() as u_tape:
                     qml.CZ(wires=[0,1])
 
             def v_function(params):
