@@ -117,10 +117,10 @@ class CircuitGraph:
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
-            meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
+            # meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
             op.queue_idx = k  # store the queue index in the Operator
 
-            for w in meas_wires if len(op.wires) == 0 else op.wires:
+            for w in wires if len(op.wires) == 0 else op.wires:
                 # get the index of the wire on the device
                 wire = wires.index(w)
                 # add op to the grid, to the end of wire w
