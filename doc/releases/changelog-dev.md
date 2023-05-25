@@ -177,10 +177,6 @@
   of `mult` that is supported.
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
-* The public methods of `DefaultQubit` that aren't present in `DefaultQubit2` now raise a warning if called
-  directly by users. The warning is not raised in normal workflows.
-  [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
-
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
