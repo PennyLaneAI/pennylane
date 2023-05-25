@@ -83,7 +83,7 @@ def _process_shot_sequence(shot_list):
         else:
             # Iterate through the shots, and group consecutive identical shots
             split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
-            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
+            shot_vector = [ShotTuple(shots=int(i[0]), copies=len(i)) for i in split_at_repeated]
 
     elif all(isinstance(s, (int, tuple)) for s in shot_list):
         # shot list contains tuples; assume it is already in a sparse representation
