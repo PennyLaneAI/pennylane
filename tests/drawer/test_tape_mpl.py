@@ -370,6 +370,7 @@ class TestSpecialGates:
         plt.close()
 
     def test_Prod(self):
+        """Test Prod gets correct special call."""
         with qml.queuing.AnnotatedQueue() as q_tape:
             qml.S(0) @ qml.T(0)
 
@@ -439,6 +440,8 @@ class TestControlledGates:
         assert ax.texts[2].get_text() == "RX\n(1.23)"
         plt.close()
 
+    @pytest.mark.filterwarnings("ignore:Specifying control values as a string")
+    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon")
     def test_control_values_str(self):
         """Test control values get displayed correctly when they are provided as a string."""
 

@@ -63,7 +63,7 @@ def unitary_to_rot(tape):
 
     >>> dev = qml.device('default.qubit', wires=1)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode, show_matrices=True)())
+    >>> print(qml.draw(qnode)())
     0: ──U(M0)─┤  <Z>
     M0 =
     [[-0.17111489+0.58564875j -0.69352236-0.38309524j]

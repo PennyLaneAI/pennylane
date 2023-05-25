@@ -1479,6 +1479,14 @@ class TestHamiltonianArithmeticJax:
 class TestGrouping:
     """Tests for the grouping functionality"""
 
+    def test_indentities_preserved(self):
+        """Tests that the grouping indices do not drop identity terms when the wire order is nonstandard."""
+
+        obs = [qml.PauliZ(1), qml.PauliZ(0), qml.Identity(0)]
+
+        H = qml.Hamiltonian([1.0, 1.0, 1.0], obs, grouping_type="qwc")
+        assert H.grouping_indices == [[0, 1, 2]]
+
     def test_grouping_is_correct_kwarg(self):
         """Basic test checking that grouping with a kwarg works as expected"""
         a = qml.PauliX(0)
