@@ -445,7 +445,7 @@ class TestSupportedConfs:
         else:
             grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="Finite diff for state measurement is being addressed.")
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shots_list)
@@ -453,8 +453,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("diff_method", ["finite-diff", "spsa"])
     def test_all_finitediff_state(self, interface, return_type, shots, wire_specs, diff_method):
         """Test diff_method in ['finite-diff', 'spsa'] fails for all interfaces and
-        the return_types State and DensityMatrix. This test is currently expected to fail
-        as `CircuitGraph.has_path` no longer raises the expected error."""
+        the return_types State and DensityMatrix."""
 
         # this error message is a bit cryptic, but it's consistent across
         # all the interfaces
