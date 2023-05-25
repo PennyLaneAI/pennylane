@@ -59,17 +59,17 @@ class TRX(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.TRX(0.5, wires=0, subspace=[0, 1]).matrix()
+    >>> qml.TRX(0.5, wires=0, subspace=(0, 1)).matrix()
     array([[0.96891242+0.j        , 0.        -0.24740396j, 0.        +0.j        ],
            [0.        -0.24740396j, 0.96891242+0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 1.        +0.j        ]])
 
-    >>> qml.TRX(0.5, wires=0, subspace=[0, 2]).matrix()
+    >>> qml.TRX(0.5, wires=0, subspace=(0, 2)).matrix()
     array([[0.96891242+0.j        , 0.        +0.j        , 0.        -0.24740396j],
            [0.        +0.j        , 1.        +0.j        , 0.        +0.j        ],
            [0.        -0.24740396j, 0.        +0.j        , 0.96891242+0.j        ]])
 
-    >>> qml.TRX(0.5, wires=0, subspace=[1, 2]).matrix()
+    >>> qml.TRX(0.5, wires=0, subspace=(1, 2)).matrix()
     array([[1.        +0.j        , 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.96891242+0.j        , 0.        -0.24740396j],
            [0.        +0.j        , 0.        -0.24740396j, 0.96891242+0.j        ]])
@@ -91,7 +91,7 @@ class TRX(Operation):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
-        self._subspace = Operation.validate_subspace(subspace)
+        self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
@@ -129,7 +129,7 @@ class TRX(Operation):
 
         **Example**
 
-        >>> qml.TRX.compute_matrix(torch.tensor(0.5), subspace=[0, 2])
+        >>> qml.TRX.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
@@ -184,9 +184,10 @@ class TRY(Operation):
     The construction of this operator is based on section 3 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
-    .. math:: TR_y^{jk}(\phi) = \exp(-i\phi\sigma_y^{jk}/2),
-                \sigma_y^{jk} = -i |j\rangle\langle k| + i |k\rangle\langle j|,
-                j, k \in \{0, 1, 2\}, j \neq k
+    .. math:: TRY^{jk}(\phi) = \exp(-i\phi\sigma_y^{jk}/2),
+
+    where :math:`\sigma_y^{jk} = -i |j\rangle\langle k| + i |k\rangle\langle j|;`
+    :math:`j, k \in \{0, 1, 2\}, j < k`.
 
     **Details:**
 
@@ -207,17 +208,17 @@ class TRY(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.TRY(0.5, wires=0, subspace=[0, 1]).matrix()
+    >>> qml.TRY(0.5, wires=0, subspace=(0, 1)).matrix()
     array([[ 0.96891242+0.j, -0.24740396-0.j,  0.        +0.j],
            [ 0.24740396+0.j,  0.96891242+0.j,  0.        +0.j],
            [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
 
-    >>> qml.TRY(0.5, wires=0, subspace=[0, 2]).matrix()
+    >>> qml.TRY(0.5, wires=0, subspace=(0, 2)).matrix()
     array([[ 0.96891242+0.j,  0.        +0.j, -0.24740396-0.j],
            [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
            [ 0.24740396+0.j,  0.        +0.j,  0.96891242+0.j]])
 
-    >>> qml.TRY(0.5, wires=0, subspace=[1, 2]).matrix()
+    >>> qml.TRY(0.5, wires=0, subspace=(1, 2)).matrix()
     array([[ 1.        +0.j,  0.        +0.j,  0.        +0.j],
            [ 0.        +0.j,  0.96891242+0.j, -0.24740396-0.j],
            [ 0.        +0.j,  0.24740396+0.j,  0.96891242+0.j]])
@@ -275,7 +276,7 @@ class TRY(Operation):
 
         **Example**
 
-        >>> qml.TRY.compute_matrix(torch.tensor(0.5), subspace=[0, 2])
+        >>> qml.TRY.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
         tensor([[ 0.9689+0.j,  0.0000+0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  1.0000+0.j,  0.0000+0.j],
                 [ 0.2474+0.j,  0.0000+0.j,  0.9689+0.j]])
@@ -329,9 +330,10 @@ class TRZ(Operation):
     The construction of this operator is based on section 3 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
-    .. math:: TR_z^{jk}(\phi) = \exp(-i\phi\sigma_z^{jk}/2),
-                \sigma_z^{jk} = |j\rangle\langle j| - |k\rangle\langle k|,
-                j, k \in \{0, 1, 2\}, j \neq k
+    .. math:: TRZ^{jk}(\phi) = \exp(-i\phi\sigma_z^{jk}/2),
+
+    where :math:`\sigma_z^{jk} = |j\rangle\langle j| - |k\rangle\langle k|;`
+    :math:`j, k \in \{0, 1, 2\}, j < k`.
 
     **Details:**
 
@@ -352,17 +354,17 @@ class TRZ(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.TRZ(0.5, wires=0, subspace=[0, 1]).matrix()
+    >>> qml.TRZ(0.5, wires=0, subspace=(0, 1)).matrix()
     array([[0.96891242-0.24740396j, 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.96891242+0.24740396j, 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 1.        +0.j        ]])
 
-    >>> qml.TRZ(0.5, wires=0, subspace=[0, 2]).matrix()
+    >>> qml.TRZ(0.5, wires=0, subspace=(0, 2)).matrix()
     array([[0.96891242-0.24740396j, 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 1.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 0.96891242+0.24740396j]])
 
-    >>> qml.TRZ(0.5, wires=0, subspace=[1, 2]).matrix()
+    >>> qml.TRZ(0.5, wires=0, subspace=(1, 2)).matrix()
     array([[1.        +0.j        , 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.96891242-0.24740396j, 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 0.96891242+0.24740396j]])
@@ -427,7 +429,7 @@ class TRZ(Operation):
 
         **Example**
 
-        >>> qml.TRZ.compute_matrix(torch.tensor(0.5), subspace=[0, 2])
+        >>> qml.TRZ.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
         tensor([[0.9689-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
