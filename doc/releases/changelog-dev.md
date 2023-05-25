@@ -137,6 +137,11 @@
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
+* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
+  and now inherits from `qml.ops.op_math.ControlledOp`.
+  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
+
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -190,6 +195,9 @@
   wire orders are no longer eliminated.
   [(#4161)](https://github.com/PennyLaneAI/pennylane/pull/4161)
 
+* `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
+  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -205,4 +213,5 @@ Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
