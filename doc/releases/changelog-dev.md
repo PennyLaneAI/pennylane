@@ -197,6 +197,9 @@
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4107)](https://github.com/PennyLaneAI/pennylane/issues/4107)
 
+* `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
+  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
