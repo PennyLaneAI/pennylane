@@ -208,7 +208,7 @@ class TestConstruction:
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
-    
+
     @pytest.mark.parametrize("do_queue", [True, False])
     def test_composite_do_queue_deprecation(self, do_queue):
         """Test that CompositeOp raises a deprecation warning when do_queue is not None."""
