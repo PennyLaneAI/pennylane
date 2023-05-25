@@ -353,7 +353,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.prod(qml.RX(x, 0), qml.PauliZ(1))
             qml.CNOT([0, 1])
 
-        prod_gen = prod(qfunc, do_queue=False, id=123987, lazy=False)
+        prod_gen = prod(qfunc, id=123987, lazy=False)
 
         with qml.queuing.AnnotatedQueue() as q:
             prod_op = prod_gen(1.1)
@@ -1195,10 +1195,9 @@ class TestWrapperFunc:
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "prod_op"
-        do_queue = False
 
-        prod_func_op = prod(*factors, id=op_id, do_queue=do_queue)
-        prod_class_op = Prod(*factors, id=op_id, do_queue=do_queue)
+        prod_func_op = prod(*factors, id=op_id)
+        prod_class_op = Prod(*factors, id=op_id)
 
         assert prod_class_op.operands == prod_func_op.operands
         assert np.allclose(prod_class_op.matrix(), prod_func_op.matrix())

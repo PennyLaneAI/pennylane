@@ -196,10 +196,15 @@ class TestQueuing:
 
     def test_do_queue_false(self):
         """Test that queuing can be avoided if `do_queue=False`."""
-
         base = Operator("c")
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+        )
+
         with qml.queuing.AnnotatedQueue() as q:
-            SymbolicOp(base, do_queue=False)
+            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+                SymbolicOp(base, do_queue=False)
 
         assert len(q) == 0
 

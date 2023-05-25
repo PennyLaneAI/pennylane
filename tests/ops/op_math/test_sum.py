@@ -914,10 +914,9 @@ class TestWrapperFunc:
 
         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "sum_op"
-        do_queue = False
 
-        sum_func_op = qml.sum(*summands, id=op_id, do_queue=do_queue)
-        sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = qml.sum(*summands, id=op_id)
+        sum_class_op = Sum(*summands, id=op_id)
 
         assert sum_class_op.operands == sum_func_op.operands
         assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())

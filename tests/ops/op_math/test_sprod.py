@@ -851,10 +851,9 @@ class TestWrapperFunc:
         coeff, op = op_scalar_tup
 
         op_id = "sprod_op"
-        do_queue = False
 
-        sprod_func_op = s_prod(coeff, op, id=op_id, do_queue=do_queue)
-        sprod_class_op = SProd(coeff, op, id=op_id, do_queue=do_queue)
+        sprod_func_op = s_prod(coeff, op, id=op_id)
+        sprod_class_op = SProd(coeff, op, id=op_id)
 
         assert sprod_class_op.scalar == sprod_func_op.scalar
         assert sprod_class_op.base == sprod_func_op.base
