@@ -1,10 +1,11 @@
-from typing import List, Tuple, TypedDict
+from typing import ClassVar, List, Tuple, TypedDict
 
 import numpy as np
 import scipy.sparse
 
 import pennylane as qml
 from pennylane.data.base import Dataset, attribute
+from pennylane.data.base.dataset import attribute
 from pennylane.operation import Operation, Operator
 from pennylane.qchem import Molecule
 
@@ -17,12 +18,10 @@ class QChemDatasetParameters(TypedDict):
     bondlength: str
 
 
-class QChemDataset(Dataset):
+class QChemDataset(Dataset[QChemDatasetParameters]):
     """A Dataset representing a chemical system."""
 
-    category = "qchem"
-
-    parameters: QChemDatasetParameters
+    category_id: ClassVar[str] = "qchem"
 
     molecule: Molecule = attribute(
         doc="PennyLane Molecule object containing description for the system and basis set"
@@ -37,7 +36,7 @@ class QChemDataset(Dataset):
     fci_spectrum: np.ndarray
 
     # Auxillary observables
-    dipole_op: qml.Hamiltonian
+    dipole_op: List[qml.Hamiltonian]
     number_op: qml.Hamiltonian
     spin2_op: qml.Hamiltonian
     spinz_op: qml.Hamiltonian
@@ -50,7 +49,7 @@ class QChemDataset(Dataset):
     # Feature: Tapered observables data
     tapered_hamiltonian: qml.Hamiltonian
     tapered_hf_state: np.ndarray
-    tapered_dipole_op: qml.Hamiltonian
+    tapered_dipole_op: List[qml.Hamiltonian]
     tapered_num_op: qml.Hamiltonian
     tapered_spin2_op: qml.Hamiltonian
     tapered_spinz_op: qml.Hamiltonian

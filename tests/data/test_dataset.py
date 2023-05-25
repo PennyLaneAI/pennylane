@@ -47,7 +47,7 @@ class TestDataset:
         """Test that __setattr__ preserves AttributeInfo for fields."""
 
         class MyDataset(Dataset):
-            type_id = "my_dataset"
+            category_id = "my_dataset"
 
             description: str = attribute(doc="description")
 
