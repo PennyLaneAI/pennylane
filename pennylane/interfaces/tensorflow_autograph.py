@@ -326,7 +326,7 @@ def execute(
     if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
         # assumes all tapes have the same shot vector
         has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        num_shot_copies = tapes[0].num_copies
+        num_shot_copies = tapes[0].shots.num_copies or 1
         vjp_shots = legacy_shots = None
     else:
         has_partitioned_shots = vjp_shots = device.shot_vector

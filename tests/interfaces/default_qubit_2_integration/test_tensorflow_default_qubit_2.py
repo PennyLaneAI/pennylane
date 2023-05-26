@@ -109,9 +109,12 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit2(seed=42)),
-    ({"gradient_fn": param_shift}, None, DefaultQubit2()),
-    ({"gradient_fn": "backprop"}, None, DefaultQubit2()),
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit2(seed=42)),
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit2()),
+    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit2()),
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit2(seed=42)),
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit2()),
+    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit2()),
     # no device gradient yet
 ]
 
@@ -716,8 +719,11 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, cost_fn, shots):
+    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, shots):
         """Test hamiltonian with trainable parameters."""
+        if shots and execute_kwargs["interface"] == "tf-autograph":
+            pytest.skip("Cannot train Hamiltonian with finite-shots and tf-autograph")
+
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
