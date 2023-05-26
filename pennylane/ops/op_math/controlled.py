@@ -87,6 +87,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     """
     custom_controlled_ops = {
         qml.PauliZ: qml.CZ,
+        qml.PauliY: qml.CY,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
