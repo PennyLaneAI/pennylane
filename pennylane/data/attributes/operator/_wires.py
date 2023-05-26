@@ -40,7 +40,7 @@ def wires_to_json(wires: Wires) -> str:
         JSON list of wires
 
     Raises:
-        UnserializableWireError, if any of the wires are not JSON-serializable.
+        UnserializableWireError: if any of the wires are not JSON-serializable.
     """
     jsonable_wires = []
     for w in wires:

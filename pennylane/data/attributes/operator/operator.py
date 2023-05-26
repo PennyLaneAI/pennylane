@@ -113,7 +113,7 @@ class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
                 qml.U1,
                 qml.U2,
                 qml.U3,
-                # pennylane/ops/qubit/qchem_qml.py
+                # pennylane/ops/qubit/qchem_ops.py
                 qml.SingleExcitation,
                 qml.SingleExcitationMinus,
                 qml.SingleExcitationPlus,
@@ -127,7 +127,7 @@ class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
                 qml.BasisState,
                 qml.QubitStateVector,
                 qml.QubitDensityMatrix,
-                # pennylane/ops/qutrit/matrix_qml.py
+                # pennylane/ops/qutrit/matrix_obs.py
                 qml.QutritUnitary,
                 # pennylane/ops/qutrit/non_parametric_qml.py
                 qml.TShift,
