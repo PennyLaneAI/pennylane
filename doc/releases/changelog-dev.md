@@ -141,7 +141,8 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
-* Added support for broadcasting in `qml.math.reduce_dm` and `qml.math.reduce_statevector`.
+* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
+  Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Breaking changes 💔</h3>
