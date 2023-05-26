@@ -421,8 +421,8 @@ class Operator(abc.ABC):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -1029,7 +1029,7 @@ class Operator(abc.ABC):
         if do_queue is not None:
             do_queue_deprecation_warning = (
                 "The do_queue keyword argument is deprecated. Instead of setting "
-                "it to false, use qml.queuing.QueuingManager.stop_recording()"
+                "it to False, use qml.queuing.QueuingManager.stop_recording()"
             )
             warnings.warn(do_queue_deprecation_warning, UserWarning)
 
@@ -1520,8 +1520,8 @@ class Operation(Operator):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This arguement is deprecated,
-            instead of setting it to ``False`` use :meth:`~.QueuingManager.stop_recording`.
+            recorded when created in a tape context. This argument is deprecated,
+            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1681,8 +1681,8 @@ class Channel(Operation, abc.ABC):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This arguement is deprecated,
-            instead of setting it to ``False`` use :meth:`~.QueuingManager.stop_recording`.
+            recorded when created in a tape context. This argument is deprecated,
+            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1753,8 +1753,8 @@ class Observable(Operator):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This arguement is deprecated,
-            instead of setting it to ``False`` use :meth:`~.QueuingManager.stop_recording`.
+            recorded when created in a tape context. This argument is deprecated,
+            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -2557,8 +2557,8 @@ class CVOperation(CV, Operation):
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This arguement is deprecated,
-            instead of setting it to ``False`` use :meth:`~.QueuingManager.stop_recording`.
+            recorded when created in a tape context. This argument is deprecated,
+            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -2683,8 +2683,8 @@ class CVObservable(CV, Observable):
        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
            If not given, args[-1] is interpreted as wires.
        do_queue (bool): indicates whether the operator should be
-           recorded when created in a tape context. This arguement is deprecated,
-           instead of setting it to ``False`` use :meth:`~.QueuingManager.stop_recording`.
+           recorded when created in a tape context. This argument is deprecated,
+           instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """

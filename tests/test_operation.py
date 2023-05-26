@@ -62,7 +62,7 @@ class TestOperatorConstruction:
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
         with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
             op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
@@ -80,7 +80,7 @@ class TestOperatorConstruction:
         """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
         with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
             Operator(wires=0, do_queue=do_queue)

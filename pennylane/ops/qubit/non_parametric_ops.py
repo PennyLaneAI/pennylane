@@ -1256,8 +1256,8 @@ class ECR(Operation):
         wires (int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
 

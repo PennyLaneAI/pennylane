@@ -61,7 +61,7 @@ class TestConstructor:
         """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
         with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
             qml.pow(TempOperator(0), 2, lazy=False, do_queue=do_queue)
@@ -618,7 +618,7 @@ class TestQueueing:
         base = qml.PauliX(0)
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
 
         with qml.queuing.AnnotatedQueue() as q:

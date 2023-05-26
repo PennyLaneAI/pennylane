@@ -103,8 +103,8 @@ class Rotation(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -156,8 +156,8 @@ class Squeezing(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -215,8 +215,8 @@ class Displacement(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -280,8 +280,8 @@ class Beamsplitter(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -346,8 +346,8 @@ class TwoModeSqueezing(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -412,8 +412,8 @@ class QuadraticPhase(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -470,8 +470,8 @@ class ControlledAddition(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -531,8 +531,8 @@ class ControlledPhase(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -579,8 +579,8 @@ class Kerr(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -612,8 +612,8 @@ class CrossKerr(CVOperation):
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -645,8 +645,8 @@ class CubicPhase(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -698,8 +698,8 @@ class InterferometerUnitary(CVOperation):
         wires (Sequence[Any] or Any): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -754,8 +754,8 @@ class CoherentState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -782,8 +782,8 @@ class SqueezedState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -820,8 +820,8 @@ class DisplacedSqueezedState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 4
@@ -847,8 +847,8 @@ class ThermalState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -879,8 +879,8 @@ class GaussianState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -909,8 +909,8 @@ class FockState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -963,8 +963,8 @@ class FockStateVector(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     .. details::
@@ -1056,8 +1056,8 @@ class FockDensityMatrix(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -1095,8 +1095,8 @@ class CatState(CVOperation):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 3
@@ -1304,8 +1304,8 @@ class QuadOperator(CVObservable):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -1385,8 +1385,8 @@ class PolyXP(CVObservable):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -1448,8 +1448,8 @@ class FockStateProjector(CVObservable):
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1

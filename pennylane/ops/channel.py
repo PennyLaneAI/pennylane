@@ -133,8 +133,8 @@ class GeneralizedAmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -300,8 +300,8 @@ class DepolarizingChannel(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -377,8 +377,8 @@ class BitFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -463,8 +463,8 @@ class ResetError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -557,8 +557,8 @@ class PauliError(Channel):
         wires (Sequence[int] or int): The wires the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -673,8 +673,8 @@ class PhaseFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -727,8 +727,8 @@ class QubitChannel(Channel):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -857,8 +857,8 @@ class ThermalRelaxationError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 4

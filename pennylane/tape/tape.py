@@ -245,8 +245,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             Note that this property is still experimental and under development.
         name (str): Deprecated way to give a name to the quantum tape. Avoid using.
         do_queue (bool): Whether or not to queue.
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -330,7 +330,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    To prevent the tape from being queued use :meth:`~.QueuingManager.stop_recording`.
+    To prevent the tape from being queued use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     .. code-block:: python
 

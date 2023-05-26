@@ -199,7 +199,7 @@ class TestQueuing:
         base = Operator("c")
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
 
         with qml.queuing.AnnotatedQueue() as q:

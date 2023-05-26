@@ -152,7 +152,7 @@ These three lists can be used to construct a :class:`~.QuantumScript`:
 <QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
-use the :meth:`~.QueuingManager.stop_recording` context upon construction:
+use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     with qml.QueuingManager.stop_recording():

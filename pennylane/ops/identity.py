@@ -35,8 +35,8 @@ class Identity(CVObservable, Operation):
     Kwargs:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 

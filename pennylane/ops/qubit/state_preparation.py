@@ -47,8 +47,8 @@ class BasisState(StatePrep):
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 
@@ -139,8 +139,8 @@ class QubitStateVector(StatePrep):
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 
@@ -260,8 +260,8 @@ class QubitDensityMatrix(Operation):
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 

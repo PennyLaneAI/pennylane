@@ -37,8 +37,8 @@ class CompositeOp(Operator):
 
     Keyword Args:
         do_queue (bool): determines if the operator will be queued.
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property
@@ -68,7 +68,7 @@ class CompositeOp(Operator):
         if do_queue is not None:
             do_queue_deprecation_warning = (
                 "The do_queue keyword argument is deprecated. "
-                "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
             )
             warnings.warn(do_queue_deprecation_warning, UserWarning)
 

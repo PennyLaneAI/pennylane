@@ -49,8 +49,8 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context.
-            This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -110,7 +110,7 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
     if do_queue is not None:
         do_queue_deprecation_warning = (
             "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to false, use qml.queuing.QueuingManager.stop_recording()"
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
         warnings.warn(do_queue_deprecation_warning, UserWarning)
 

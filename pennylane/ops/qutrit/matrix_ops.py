@@ -36,8 +36,8 @@ class QutritUnitary(Operation):
         U (array[complex]): square unitary matrix
         wires(Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 
@@ -168,8 +168,8 @@ class ControlledQutritUnitary(QutritUnitary):
         control_values (str): a string of trits representing the state of the control
             qutrits to control on (default is the all 2s state)
         do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This arguement is deprecated, instead of setting it to ``False``
-            use :meth:`~.QueuingManager.stop_recording`.
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     **Example**
 
