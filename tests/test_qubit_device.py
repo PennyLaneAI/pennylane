@@ -345,10 +345,8 @@ class TestExtractStatistics:
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         qscript = QuantumScript(measurements=[measurement])
-
-        with monkeypatch.context():
-            dev = mock_qubit_device_extract_stats()
-            results = dev.statistics(qscript)
+        dev = mock_qubit_device_extract_stats()
+        results = dev.statistics(qscript)
 
         assert results == [0]
 
@@ -356,14 +354,11 @@ class TestExtractStatistics:
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
         qscript = QuantumScript(measurements=[qml.state()])
-
-        with monkeypatch.context():
-            dev = mock_qubit_device_extract_stats()
-            delattr(dev.__class__, "state")
-            with pytest.raises(
-                qml.QuantumFunctionError, match="The state is not available in the current"
-            ):
-                dev.statistics(qscript)
+        dev = mock_qubit_device_extract_stats()
+        delattr(dev.__class__, "state")
+        _match = "The state is not available in the current"
+        with pytest.raises(qml.QuantumFunctionError, match=_match):
+            dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
@@ -375,10 +370,8 @@ class TestExtractStatistics:
                 return returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
-
-        with monkeypatch.context():
-            dev = mock_qubit_device_extract_stats()
-            results = dev.statistics(qscript)
+        dev = mock_qubit_device_extract_stats()
+        results = dev.statistics(qscript)
 
         assert results == []
 
@@ -727,9 +720,7 @@ class TestSample:
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
-
-        with monkeypatch.context():
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.shape(res) == (2,)
         assert np.allclose(res**2, 1, atol=tol, rtol=0)
@@ -741,9 +732,7 @@ class TestSample:
         obs = qml.PauliX(0) @ qml.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 0]])
-
-        with monkeypatch.context():
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.array_equal(res, np.array([-1, 1]))
 
@@ -795,9 +784,7 @@ class TestSampleWithBroadcasting:
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[0, 0], [0, 0]], [[1, 0], [1, 0]], [[0, 0], [1, 0]]])
-
-        with monkeypatch.context():
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.allclose(res, [[1, 1], [-1, -1], [1, -1]], atol=tol, rtol=0)
 
@@ -810,9 +797,7 @@ class TestSampleWithBroadcasting:
         dev = mock_qubit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 0]])
         dev._samples = np.array([[[1, 0], [0, 0]], [[0, 1], [1, 1]], [[1, 0], [0, 1]]])
-
-        with monkeypatch.context():
-            res = dev.sample(obs)
+        res = dev.sample(obs)
 
         assert np.array_equal(res, np.array([[-1, 1], [-1, 1], [-1, -1]]))
 
