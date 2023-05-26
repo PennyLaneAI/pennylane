@@ -16,12 +16,14 @@ Unit tests for Operators inheriting from Controlled.
 """
 
 import copy
+
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 from gate_data import (
+    CY,
     CZ,
 )
 
@@ -32,10 +34,14 @@ from pennylane.ops.qubit.matrix_ops import QubitUnitary
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
+    (qml.CY, CY),
     (qml.CZ, CZ),
 ]
 
-SPARSE_MATRIX_SUPPORTED_OPERATIONS = ((qml.CZ(wires=[0, 1]), CZ),)
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
+    (qml.CY(wires=[0, 1]), CY),
+    (qml.CZ(wires=[0, 1]), CZ),
+)
 
 X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
@@ -450,6 +456,8 @@ class TestOperations:
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
         assert qml.equal(copied_op, op, atol=tol, rtol=0)
+        assert copied_op is not op
+        assert qml.equal(copied_op, op, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
@@ -462,6 +470,16 @@ class TestOperations:
 
 
 class TestDecompositions:  # pylint: disable=too-few-public-methods
+    def test_CY_decomposition(self, tol):
+        """Tests that the decomposition of the CY gate is correct"""
+        op = qml.CY(wires=[0, 1])
+        gate1, gate2 = op.decomposition()
+        decomposed_matrix = qml.matrix(op.decomposition)()
+
+        assert qml.equal(gate1, qml.CRY(np.pi, wires=[0, 1]))
+        assert qml.equal(gate2, qml.S(0))
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_CZ_decomposition(self, tol):
         """Tests that the decomposition of the CZ gate is correct"""
         op = qml.CZ(wires=[0, 1])
@@ -484,7 +502,10 @@ class TestEigenval:  # pylint: disable=too-few-public-methods
         assert np.allclose(res, exp)
 
 
-period_two_ops = (qml.CZ(wires=(0, 1)),)
+period_two_ops = (
+    qml.CY(wires=(0, 1)),
+    qml.CZ(wires=(0, 1)),
+)
 
 
 class TestPowMethod:
@@ -492,6 +513,7 @@ class TestPowMethod:
     @pytest.mark.parametrize("n", (1, 5, -1, -5))
     def test_period_two_pow_odd(self, op, n):
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
+        assert qml.equal(op.pow(n)[0], op)
         assert np.allclose(op.pow(n)[0].matrix(), op.matrix())
         assert op.pow(n)[0].name == op.name
 
@@ -504,6 +526,11 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_two_ops)
     def test_period_two_noninteger_power(self, op):
         """Test that ops with a period of 2 raised to a non-integer power raise an error."""
+        if isinstance(op, (qml.PauliZ, qml.CZ)):
+            pytest.skip("PauliZ can be raised to any power.")
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(1.234)
+
         if op.__class__ is qml.CZ:
             pytest.skip("CZ can be raised to any power.")
         with pytest.raises(qml.operation.PowUndefinedError):
@@ -544,18 +571,20 @@ class TestSparseMatrix:  # pylint: disable=too-few-public-methods
 
 
 label_data = [
+    (qml.CY(wires=(0, 1)), "Y"),
     (qml.CZ(wires=(0, 1)), "Z"),
 ]
 
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
-    """Tests that the label method gives the expected r esult."""
+    """Tests that the label method gives the expected result."""
     assert op.label() == label
     assert op.label(decimals=2) == label
 
 
 control_data = [
+    (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CZ(wires=(0, 1)), Wires(0)),
 ]
 
@@ -568,6 +597,7 @@ def test_control_wires(op, control_wires):
 
 
 involution_ops = [  # ops who are their own inverses
+    qml.CY((0, 1)),
     qml.CZ(wires=(0, 1)),
 ]
 

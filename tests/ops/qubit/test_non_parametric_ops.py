@@ -225,21 +225,6 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    def test_CY_decomposition(self, tol):
-        """Tests that the decomposition of the CY gate is correct"""
-        op = qml.CY(wires=[0, 1])
-        res = op.decomposition()
-
-        mats = []
-        for i in reversed(res):
-            if len(i.wires) == 1:
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
     def test_CH_decomposition(self, tol):
         """Tests that the decomposition of the CH gate is correct"""
         op = qml.CH(wires=[0, 1])
@@ -1143,7 +1128,6 @@ period_two_ops = (
     qml.PauliZ(0),
     qml.Hadamard("a"),
     qml.CNOT(wires=(0, 1)),
-    qml.CY(wires=(0, 1)),
     qml.CH(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
@@ -1356,7 +1340,6 @@ label_data = [
     (qml.T(wires=0), "T"),
     (qml.SX(wires=0), "SX"),
     (qml.CNOT(wires=(0, 1)), "X"),
-    (qml.CY(wires=(0, 1)), "Y"),
     (qml.CH(wires=(0, 1)), "H"),
     (qml.SWAP(wires=(0, 1)), "SWAP"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP"),
@@ -1391,7 +1374,6 @@ control_data = [
     (qml.SISWAP(wires=(0, 1)), Wires([])),
     (qml.ECR(wires=(0, 1)), Wires([])),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
-    (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.CCZ(wires=(0, 1, 2)), Wires([0, 1])),
@@ -1414,7 +1396,6 @@ involution_ops = [  # ops who are their own inverses
     qml.PauliY(0),
     qml.PauliZ(0),
     qml.CNOT((0, 1)),
-    qml.CY((0, 1)),
     qml.CH((0, 1)),
     qml.SWAP((0, 1)),
     qml.ECR((0, 1)),
