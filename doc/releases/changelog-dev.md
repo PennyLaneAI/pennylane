@@ -85,6 +85,7 @@
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
   [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
+  [(#4172)](https://github.com/PennyLaneAI/pennylane/pull/4172)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -126,6 +127,10 @@
 
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
+
+* `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
+  equality or hash to work correctly.
+  [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
 * Updated the `gradients` module to use the new `Shots` object internally.
   [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
@@ -176,7 +181,7 @@
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
-  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -191,14 +196,14 @@
   wire orders are no longer eliminated.
   [(#4161)](https://github.com/PennyLaneAI/pennylane/pull/4161)
 
+* `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
+  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
 * Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
   an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4107)](https://github.com/PennyLaneAI/pennylane/issues/4107)
-
-* `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
-  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
 
 <h3>Contributors ✍️</h3>
 
