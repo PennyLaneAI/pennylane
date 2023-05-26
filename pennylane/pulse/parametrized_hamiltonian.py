@@ -241,7 +241,11 @@ class ParametrizedHamiltonian:
 
     def __repr__(self):
         terms = []
-        for i, (coeff, op) in enumerate(zip(self.coeffs_fixed + self.coeffs_parametrized, self.ops_fixed + self.ops_parametrized)):
+        for i, (coeff, op) in enumerate(
+            zip(
+                self.coeffs_fixed + self.coeffs_parametrized, self.ops_fixed + self.ops_parametrized
+            )
+        ):
             if callable(coeff):
                 term = f"({coeff.__name__}(params_{i}, t)*({op}))"
             else:
