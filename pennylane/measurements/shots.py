@@ -211,6 +211,9 @@ class Shots:
         self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
         self.total_shots = total_shots + current_shots * current_copies
 
+    def __bool__(self):
+        return self.total_shots is not None
+
     @property
     def has_partitioned_shots(self):
         """

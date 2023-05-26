@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autograd specific tests for execute and default qubit 2."""
-# pylint: disable=invalid-sequence-index
 import autograd
 import pytest
 from pennylane import numpy as np

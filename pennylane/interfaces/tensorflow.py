@@ -95,14 +95,14 @@ def _to_tensors(x):
     return tf.convert_to_tensor(x)
 
 
-def _res_restructured(res, tapes, legacy_shots: Shots = None):
+def _res_restructured(res, tapes, legacy_shots: Shots):
     """
     Reconstruct the nested tuple structure of the output of a list of tapes
     """
     start = 0
     res_nested = []
     for tape in tapes:
-        tape_shots = legacy_shots or tape.shots
+        tape_shots = legacy_shots or tape.shots or Shots(1)
         shot_res_nested = []
         num_meas = len(tape.measurements)
 

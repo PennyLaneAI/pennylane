@@ -11,18 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Autograd specific tests for execute and default qubit 2."""
-# pylint: disable=invalid-sequence-index
-import autograd
+"""Tensorflow specific tests for execute and default qubit 2."""
 import pytest
-from pennylane import numpy as np
+import numpy as np
 
 import pennylane as qml
 from pennylane.devices.experimental import DefaultQubit2
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 
-pytestmark = pytest.mark.autograd
+pytestmark = pytest.mark.tf
+tf = pytest.importorskip("tensorflow")
 
 
 # pylint: disable=too-few-public-methods
@@ -35,9 +34,9 @@ class TestCaching:
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
         dev = DefaultQubit2()
-        params = np.arange(1, num_params + 1) / 10
+        params = tf.Variable(tf.range(1, num_params + 1) / 10)
 
-        N = len(params)
+        N = num_params
 
         def cost(x, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -57,15 +56,19 @@ class TestCaching:
 
         # No caching: number of executions is not ideal
         with qml.Tracker(dev) as tracker:
-            hess1 = qml.jacobian(qml.grad(cost))(params, cache=False)
+            with tf.GradientTape() as jac_tape:
+                with tf.GradientTape() as grad_tape:
+                    res = cost(params, cache=False)
+                grad = grad_tape.gradient(res, params)
+            hess1 = jac_tape.jacobian(grad, params)
 
         if num_params == 2:
             # compare to theoretical result
             x, y, *_ = params
-            expected = np.array(
+            expected = tf.convert_to_tensor(
                 [
-                    [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
-                    [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+                    [2 * tf.cos(2 * x) * tf.sin(y) ** 2, tf.sin(2 * x) * tf.sin(2 * y)],
+                    [tf.sin(2 * x) * tf.sin(2 * y), -2 * tf.cos(x) ** 2 * tf.cos(2 * y)],
                 ]
             )
             assert np.allclose(expected, hess1)
@@ -88,7 +91,11 @@ class TestCaching:
         # Use caching: number of executions is ideal
 
         with qml.Tracker(dev) as tracker2:
-            hess2 = qml.jacobian(qml.grad(cost))(params, cache=True)
+            with tf.GradientTape() as jac_tape:
+                with tf.GradientTape() as grad_tape:
+                    res = cost(params, cache=True)
+                grad = grad_tape.gradient(res, params)
+            hess2 = jac_tape.jacobian(grad, params)
         assert np.allclose(hess1, hess2)
 
         expected_runs_ideal = 1  # forward pass
@@ -115,8 +122,8 @@ def atol_for_shots(shots):
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
-class TestAutogradExecuteIntegration:
-    """Test the autograd interface execute function
+class TestTensorflowExecuteIntegration:
+    """Test the tensorflow interface execute function
     integrates well for both forward and backward execution"""
 
     def test_execution(self, execute_kwargs, shots, device):
@@ -131,8 +138,8 @@ class TestAutogradExecuteIntegration:
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=False)
+        a = tf.Variable(0.1)
+        b = tf.constant(0.2)
         with device.tracker:
             res = cost(a, b)
 
@@ -143,18 +150,20 @@ class TestAutogradExecuteIntegration:
         assert res[0].shape == ()
         assert res[1].shape == ()
 
-        assert qml.math.allclose(res[0], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
-        assert qml.math.allclose(res[1], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[0], tf.cos(a) * tf.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], tf.cos(a) * tf.cos(b), atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, execute_kwargs, shots, device):
         """Test scalar jacobian calculation"""
-        a = np.array(0.1, requires_grad=True)
+        a = tf.Variable(0.1, dtype=tf.float64)
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
-        res = qml.jacobian(cost)(a)
+        with tf.GradientTape() as tape:
+            cost_res = cost(a)
+        res = tape.jacobian(cost_res, a)
         assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
@@ -165,33 +174,33 @@ class TestAutogradExecuteIntegration:
 
         assert expected.shape == ()
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-        assert np.allclose(res, -np.sin(a), atol=atol_for_shots(shots))
+        assert np.allclose(res, -tf.sin(a), atol=atol_for_shots(shots))
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = tf.Variable(0.1)
+        b = tf.Variable(0.2)
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        res = cost(a, b)
-        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
+        with tf.GradientTape() as tape:
+            res = cost(a, b)
+        expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = qml.jacobian(cost)(a, b)
-        assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (2,)
-        assert res[1].shape == (2,)
+        jac = tape.jacobian(res, [a, b])
+        assert isinstance(jac, list) and len(jac) == 2
+        assert jac[0].shape == (2,)
+        assert jac[1].shape == (2,)
 
-        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-        for _r, _e in zip(res, expected):
+        expected = ([-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)])
+        for _r, _e in zip(jac, expected):
             assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
@@ -205,7 +214,7 @@ class TestAutogradExecuteIntegration:
             )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), wires=0)],
+                [qml.RY(tf.constant(0.5), wires=0)],
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
@@ -217,33 +226,32 @@ class TestAutogradExecuteIntegration:
             )
 
             tape4 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), 0)],
+                [qml.RY(tf.constant(0.5), 0)],
                 [qml.probs(wires=[0, 1])],
                 shots=shots,
             )
-            return sum(
-                autograd.numpy.hstack(
-                    execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
+            return tf.reduce_sum(
+                qml.math.hstack(
+                    execute([tape1, tape2, tape3, tape4], device, **execute_kwargs),
+                    like="tensorflow",
                 )
             )
 
-        params = np.array([0.1, 0.2], requires_grad=True)
+        params = tf.Variable([0.1, 0.2])
         x, y = params
 
-        res = cost(params)
-        expected = 2 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        with tf.GradientTape() as tape:
+            res = cost(params)
+        expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        grad = qml.grad(cost)(params)
-        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        grad = tape.gradient(res, params)
+        expected = [-tf.cos(y) * tf.sin(x), -tf.cos(x) * tf.sin(y)]
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
-
-        if execute_kwargs["gradient_fn"] == "backprop":
-            pytest.xfail("backprop is not compatible with something about this situation.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -253,7 +261,7 @@ class TestAutogradExecuteIntegration:
             )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), 0)],
+                [qml.RY(tf.constant(0.5), 0)],
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
@@ -263,38 +271,42 @@ class TestAutogradExecuteIntegration:
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
-            return autograd.numpy.hstack(execute([tape1, tape2, tape3], device, **execute_kwargs))
+            return qml.math.hstack(
+                execute([tape1, tape2, tape3], device, **execute_kwargs), like="tensorflow"
+            )
 
-        params = np.array([0.1, 0.2], requires_grad=True)
+        params = tf.Variable([0.1, 0.2])
         x, y = params
 
-        res = cost(params)
-        assert isinstance(res, np.ndarray)
+        with tf.GradientTape() as tape:
+            res = cost(params)
+
+        assert isinstance(res, tf.Tensor)
         assert res.shape == (4,)
 
-        assert np.allclose(res[0], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+        assert np.allclose(res[0], tf.cos(x) * tf.cos(y), atol=atol_for_shots(shots))
         assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
-        assert np.allclose(res[2], np.cos(0.5), atol=atol_for_shots(shots))
-        assert np.allclose(res[3], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+        assert np.allclose(res[2], tf.cos(0.5), atol=atol_for_shots(shots))
+        assert np.allclose(res[3], tf.cos(x) * tf.cos(y), atol=atol_for_shots(shots))
 
-        jac = qml.jacobian(cost)(params)
-        assert isinstance(jac, np.ndarray)
+        jac = tape.jacobian(res, params)
+        assert isinstance(jac, tf.Tensor)
         assert jac.shape == (4, 2)  # pylint: disable=no-member
 
         assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
 
-        d1 = -np.sin(x) * np.cos(y)
+        d1 = -tf.sin(x) * tf.cos(y)
         assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
         assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
 
-        d2 = -np.cos(x) * np.sin(y)
+        d2 = -tf.cos(x) * tf.sin(y)
         assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
         assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = tf.Variable(0.1)
+        b = tf.Variable(0.2)
 
         tape = qml.tape.QuantumScript(
             [qml.RY(a, 0), qml.RX(b, 1), qml.CNOT((0, 1))],
@@ -304,50 +316,59 @@ class TestAutogradExecuteIntegration:
 
         def cost(a, b):
             tape.set_parameters([a, b])
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        jac_fn = qml.jacobian(cost)
-        jac = jac_fn(a, b)
+        with tf.GradientTape() as t:
+            res = cost(a, b)
 
-        a = np.array(0.54, requires_grad=True)
-        b = np.array(0.8, requires_grad=True)
+        jac = t.jacobian(res, [a, b])
+        a = tf.Variable(0.54, dtype=tf.float64)
+        b = tf.Variable(0.8, dtype=tf.float64)
 
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
-        res2 = cost(2 * a, b)
-        expected = [np.cos(2 * a), -np.cos(2 * a) * np.sin(b)]
+
+        with tf.GradientTape():
+            res2 = cost(2 * a, b)
+
+        expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
         assert np.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
 
-        jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
-        jac = jac_fn(a, b)
+        with tf.GradientTape() as t:
+            res = cost(2 * a, b)
+
+        jac = t.jacobian(res, [a, b])
         expected = (
-            [-2 * np.sin(2 * a), 2 * np.sin(2 * a) * np.sin(b)],
-            [0, -np.cos(2 * a) * np.cos(b)],
+            [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
+            [0, -tf.cos(2 * a) * tf.cos(b)],
         )
-        assert isinstance(jac, tuple) and len(jac) == 2
+        assert isinstance(jac, list) and len(jac) == 2
         for _j, _e in zip(jac, expected):
             assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device, shots):
         """Test classical processing within the quantum tape"""
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=False)
-        c = np.array(0.3, requires_grad=True)
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.constant(0.2, dtype=tf.float64)
+        c = tf.Variable(0.3, dtype=tf.float64)
 
         def cost(a, b, c):
             ops = [
                 qml.RY(a * c, wires=0),
                 qml.RZ(b, wires=0),
-                qml.RX(c + c**2 + np.sin(a), wires=0),
+                qml.RX(c + c**2 + tf.sin(a), wires=0),
             ]
 
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
-        res = qml.jacobian(cost)(a, b, c)
+        with tf.GradientTape() as tape:
+            cost_res = cost(a, b, c)
+
+        res = tape.jacobian(cost_res, [a, c])
 
         # Only two arguments are trainable
-        assert isinstance(res, tuple) and len(res) == 2
+        assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == ()
         assert res[1].shape == ()
 
@@ -355,48 +376,52 @@ class TestAutogradExecuteIntegration:
 
     def test_no_trainable_parameters(self, execute_kwargs, shots, device):
         """Test evaluation and Jacobian if there are no trainable parameters"""
-        a = np.array(0.1, requires_grad=False)
-        b = np.array(0.2, requires_grad=False)
+        a = tf.constant(0.1)
+        b = tf.constant(0.2)
 
         def cost(a, b):
             ops = [qml.RY(a, 0), qml.RX(b, 0), qml.CNOT((0, 1))]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        res = cost(a, b)
-        assert res.shape == (2,)
+        with tf.GradientTape() as tape:
+            cost_res = cost(a, b)
 
-        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            res = qml.jacobian(cost)(a, b)
-        assert len(res) == 0
+        assert cost_res.shape == (2,)
+
+        res = tape.jacobian(cost_res, [a, b])
+        assert len(res) == 2
+        assert all(r is None for r in res)
 
         def loss(a, b):
-            return np.sum(cost(a, b))
+            return tf.reduce_sum(cost(a, b))
 
-        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            res = qml.grad(loss)(a, b)
+        with tf.GradientTape() as tape:
+            loss_res = loss(a, b)
 
-        assert np.allclose(res, 0)
+        res = tape.gradient(loss_res, [a, b])
+        assert all(r is None for r in res)
 
     def test_matrix_parameter(self, execute_kwargs, device, shots):
-        """Test that the autograd interface works correctly
+        """Test that the tensorflow interface works correctly
         with a matrix parameter"""
-        U = np.array([[0, 1], [1, 0]], requires_grad=False)
-        a = np.array(0.1, requires_grad=True)
+        U = tf.constant([[0, 1], [1, 0]])
+        a = tf.Variable(0.1)
 
         def cost(a, U):
             ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
             return execute([tape], device, **execute_kwargs)[0]
 
-        res = cost(a, U)
-        assert np.allclose(res, -np.cos(a), atol=atol_for_shots(shots))
+        with tf.GradientTape() as tape:
+            res = cost(a, U)
 
-        jac_fn = qml.jacobian(cost)
-        jac = jac_fn(a, U)
-        assert isinstance(jac, np.ndarray)
-        assert np.allclose(jac, np.sin(a), atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(res, -tf.cos(a), atol=atol_for_shots(shots))
+
+        jac = tape.jacobian(res, a)
+        assert isinstance(jac, tf.Tensor)
+        assert np.allclose(jac, tf.sin(a), atol=atol_for_shots(shots), rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, device, shots):
         """Test that operation and nested tapes expansion
@@ -421,25 +446,26 @@ class TestAutogradExecuteIntegration:
             )
             return execute([tape], device, **execute_kwargs)[0]
 
-        a = np.array(0.1, requires_grad=False)
-        p = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        a = tf.constant(0.1)
+        p = tf.Variable([0.1, 0.2, 0.3])
 
-        res = cost_fn(a, p)
-        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        with tf.GradientTape() as tape:
+            cost_res = cost_fn(a, p)
+
+        expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
+            tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
         )
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        jac_fn = qml.jacobian(cost_fn)
-        res = jac_fn(a, p)
-        expected = np.array(
+        res = tape.jacobian(cost_res, p)
+        expected = tf.convert_to_tensor(
             [
-                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                - np.sin(p[1])
-                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                np.sin(a)
-                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+                tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
+                tf.cos(p[1]) * tf.cos(p[2]) * tf.sin(a)
+                - tf.sin(p[1])
+                * (tf.cos(a) * tf.sin(p[0]) + tf.cos(p[0]) * tf.sin(a) * tf.sin(p[2])),
+                tf.sin(a)
+                * (tf.cos(p[0]) * tf.cos(p[1]) * tf.cos(p[2]) - tf.sin(p[1]) * tf.sin(p[2])),
             ]
         )
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
@@ -452,44 +478,45 @@ class TestAutogradExecuteIntegration:
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m)
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        x = np.array(0.543, requires_grad=True)
-        y = np.array(-0.654, requires_grad=True)
+        x = tf.Variable(0.543)
+        y = tf.Variable(-0.654)
 
-        res = cost(x, y)
-        expected = np.array(
+        with tf.GradientTape() as tape:
+            cost_res = cost(x, y)
+
+        expected = tf.convert_to_tensor(
             [
                 [
-                    np.cos(x / 2) ** 2,
-                    np.sin(x / 2) ** 2,
-                    (1 + np.cos(x) * np.cos(y)) / 2,
-                    (1 - np.cos(x) * np.cos(y)) / 2,
+                    tf.cos(x / 2) ** 2,
+                    tf.sin(x / 2) ** 2,
+                    (1 + tf.cos(x) * tf.cos(y)) / 2,
+                    (1 - tf.cos(x) * tf.cos(y)) / 2,
                 ],
             ]
         )
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        jac_fn = qml.jacobian(cost)
-        res = jac_fn(x, y)
-        assert isinstance(res, tuple) and len(res) == 2
+        res = tape.jacobian(cost_res, [x, y])
+        assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (4,)
         assert res[1].shape == (4,)
 
         expected = (
-            np.array(
+            tf.convert_to_tensor(
                 [
                     [
-                        -np.sin(x) / 2,
-                        np.sin(x) / 2,
-                        -np.sin(x) * np.cos(y) / 2,
-                        np.sin(x) * np.cos(y) / 2,
+                        -tf.sin(x) / 2,
+                        tf.sin(x) / 2,
+                        -tf.sin(x) * tf.cos(y) / 2,
+                        tf.sin(x) * tf.cos(y) / 2,
                     ],
                 ]
             ),
-            np.array(
+            tf.convert_to_tensor(
                 [
-                    [0, 0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                    [0, 0, -tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
                 ]
             ),
         )
@@ -507,45 +534,48 @@ class TestAutogradExecuteIntegration:
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m)
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        x = np.array(0.543, requires_grad=True)
-        y = np.array(-0.654, requires_grad=True)
+        x = tf.Variable(0.543)
+        y = tf.Variable(-0.654)
 
-        res = cost(x, y)
-        expected = np.array(
-            [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        with tf.GradientTape() as tape:
+            cost_res = cost(x, y)
+
+        expected = tf.convert_to_tensor(
+            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]
         )
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        jac_fn = qml.jacobian(cost)
-        res = jac_fn(x, y)
-        assert isinstance(res, tuple) and len(res) == 2
+        res = tape.jacobian(cost_res, [x, y])
+        assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
 
         expected = (
-            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
-            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+            tf.convert_to_tensor(
+                [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.sin(x) * tf.cos(y) / 2]
+            ),
+            tf.convert_to_tensor([0, -tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2]),
         )
         assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
         assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
 
 class TestHigherOrderDerivatives:
-    """Test that the autograd execute function can be differentiated"""
+    """Test that the tensorflow execute function can be differentiated"""
 
     @pytest.mark.parametrize(
         "params",
         [
-            np.array([0.543, -0.654], requires_grad=True),
-            np.array([0, -0.654], requires_grad=True),
-            np.array([-2.0, 0], requires_grad=True),
+            tf.Variable([0.543, -0.654], dtype=tf.float64),
+            tf.Variable([0, -0.654], dtype=tf.float64),
+            tf.Variable([-2.0, 0], dtype=tf.float64),
         ],
     )
     def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
-        can be differentiated using autograd, yielding second derivatives."""
+        can be differentiated using tensorflow, yielding second derivatives."""
         dev = DefaultQubit2()
 
         def cost_fn(x):
@@ -557,31 +587,34 @@ class TestHigherOrderDerivatives:
             result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
             return result[0] + result[1][0]
 
-        res = cost_fn(params)
+        with tf.GradientTape() as jac_tape:
+            with tf.GradientTape() as grad_tape:
+                res = cost_fn(params)
+            grad = grad_tape.gradient(res, params)
+        hess = jac_tape.jacobian(grad, params)
+
         x, y = params
-        expected = 0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y))
+        expected = 0.5 * (3 + tf.cos(x) ** 2 * tf.cos(2 * y))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.grad(cost_fn)(params)
-        expected = np.array(
-            [-np.cos(x) * np.cos(2 * y) * np.sin(x), -np.cos(x) ** 2 * np.sin(2 * y)]
+        expected = tf.convert_to_tensor(
+            [-tf.cos(x) * tf.cos(2 * y) * tf.sin(x), -tf.cos(x) ** 2 * tf.sin(2 * y)]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(qml.grad(cost_fn))(params)
-        expected = np.array(
+        expected = tf.convert_to_tensor(
             [
-                [-np.cos(2 * x) * np.cos(2 * y), np.sin(2 * x) * np.sin(2 * y)],
-                [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
+                [-tf.cos(2 * x) * tf.cos(2 * y), tf.sin(2 * x) * tf.sin(2 * y)],
+                [tf.sin(2 * x) * tf.sin(2 * y), -2 * tf.cos(x) ** 2 * tf.cos(2 * y)],
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(hess, expected, atol=tol, rtol=0)
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
         dev = DefaultQubit2()
-        params = np.array([0.543, -0.654], requires_grad=True)
+        params = tf.Variable([0.543, -0.654])
 
         def cost_fn(x):
             ops = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
@@ -593,22 +626,21 @@ class TestHigherOrderDerivatives:
             result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=1)
             return result[0] + result[1][0]
 
-        res = cost_fn(params)
+        with tf.GradientTape() as jac_tape:
+            with tf.GradientTape() as grad_tape:
+                res = cost_fn(params)
+            grad = grad_tape.gradient(res, params)
+        hess = jac_tape.gradient(grad, params)
+
         x, y = params
-        expected = 0.5 * (3 + np.cos(x) ** 2 * np.cos(2 * y))
+        expected = 0.5 * (3 + tf.cos(x) ** 2 * tf.cos(2 * y))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.grad(cost_fn)(params)
-        expected = np.array(
-            [-np.cos(x) * np.cos(2 * y) * np.sin(x), -np.cos(x) ** 2 * np.sin(2 * y)]
+        expected = tf.convert_to_tensor(
+            [-tf.cos(x) * tf.cos(2 * y) * tf.sin(x), -tf.cos(x) ** 2 * tf.sin(2 * y)]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        with pytest.warns(UserWarning, match="Output seems independent"):
-            res = qml.jacobian(qml.grad(cost_fn))(params)
-
-        expected = np.zeros([2, 2])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert hess is None
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
@@ -635,7 +667,7 @@ class TestHamiltonianWorkflows:
                 qml.expval(H2)
 
             tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
         return _cost_fn
 
@@ -645,7 +677,7 @@ class TestHamiltonianWorkflows:
         a, b, c = coeffs1
         d = coeffs2[0]
         x, y = weights
-        return [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
+        return [-c * tf.sin(x) * tf.sin(y) + tf.cos(x) * (a + b * tf.sin(y)), d * tf.cos(x)]
 
     @staticmethod
     def cost_fn_jacobian(weights, coeffs1, coeffs2):
@@ -653,45 +685,49 @@ class TestHamiltonianWorkflows:
         a, b, c = coeffs1
         d = coeffs2[0]
         x, y = weights
-        return np.array(
+        return tf.convert_to_tensor(
             [
                 [
-                    -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
-                    b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-                    np.cos(x),
-                    np.cos(x) * np.sin(y),
-                    -(np.sin(x) * np.sin(y)),
+                    -c * tf.cos(x) * tf.sin(y) - tf.sin(x) * (a + b * tf.sin(y)),
+                    b * tf.cos(x) * tf.cos(y) - c * tf.cos(y) * tf.sin(x),
+                    tf.cos(x),
+                    tf.cos(x) * tf.sin(y),
+                    -(tf.sin(x) * tf.sin(y)),
                     0,
                 ],
-                [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
+                [-d * tf.sin(x), 0, 0, 0, 0, tf.cos(x)],
             ]
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
-        coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
-        coeffs2 = np.array([0.7], requires_grad=False)
-        weights = np.array([0.4, 0.5], requires_grad=True)
+        coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
+        coeffs2 = tf.constant([0.7], dtype=tf.float64)
+        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
 
-        res = cost_fn(weights, coeffs1, coeffs2)
+        with tf.GradientTape() as tape:
+            res = cost_fn(weights, coeffs1, coeffs2)
+
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = qml.jacobian(cost_fn)(weights, coeffs1, coeffs2)
+        jac = tape.jacobian(res, [weights])
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
-        coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        coeffs2 = np.array([0.7], requires_grad=True)
-        weights = np.array([0.4, 0.5], requires_grad=True)
+        coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
+        coeffs2 = tf.Variable([0.7], dtype=tf.float64)
+        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
 
-        res = cost_fn(weights, coeffs1, coeffs2)
+        with tf.GradientTape() as tape:
+            res = cost_fn(weights, coeffs1, coeffs2)
+
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
+        jac = qml.math.hstack(tape.jacobian(res, [weights, coeffs1, coeffs2]), like="tensorflow")
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
