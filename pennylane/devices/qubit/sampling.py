@@ -13,8 +13,8 @@
 # limitations under the License.
 """Functions to sample a state."""
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import SampleMeasurement, Shots, ExpectationMP
 from pennylane.typing import TensorLike

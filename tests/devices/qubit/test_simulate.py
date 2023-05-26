@@ -179,7 +179,7 @@ class TestSampleMeasurements:
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
         result = simulate(qs)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, np.float64)
         assert result.shape == ()
         assert np.allclose(result, np.cos(x), atol=0.1)
 
@@ -256,7 +256,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, np.float64) for res in result)
         assert all(res.shape == () for res in result)
         assert all(np.allclose(res, np.cos(x), atol=0.1) for res in result)
 
