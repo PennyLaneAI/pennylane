@@ -165,6 +165,11 @@ class CY(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): indicates whether the operator should be recorded when created in
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
     """
     num_wires = 2
     """int: Number of wires that the operator acts on."""
@@ -178,7 +183,7 @@ class CY(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, wires, do_queue=True, id=None):
+    def __init__(self, wires, do_queue=None, id=None):
         control_wire, wire = wires
         base = PauliY(wire)
 
