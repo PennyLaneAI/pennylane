@@ -365,7 +365,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         if do_queue is not None:
             do_queue_deprecation_warning = (
                 "The do_queue keyword argument is deprecated. "
-                "Use qml.queuing.QueuingManager.stop_recording()"
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
             )
             warnings.warn(UserWarning, do_queue_deprecation_warning)
         self.do_queue = do_queue

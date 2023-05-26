@@ -1156,7 +1156,7 @@ class QuantumScript:
         if self.do_queue is not None:
             do_queue_deprecation_warning = (
                 "The do_queue keyword argument is deprecated. "
-                "Use qml.queuing.QueuingManager.stop_recording()"
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
             )
             warnings.warn(do_queue_deprecation_warning, UserWarning)
 
