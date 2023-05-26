@@ -159,6 +159,19 @@ class TestOldDeviceDeprecations:
 
         _ = qml.execute([qs], dev)
 
+    @pytest.mark.filterwarnings("error:Directly calling DefaultQubit.:UserWarning")
+    def test_no_warning_with_qnode_execute(self):
+        """Test that no warnings are raised when using `qml.execute`."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            return qml.expval(qml.PauliZ(1))
+
+        _ = circuit(0.123)
+
 
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
