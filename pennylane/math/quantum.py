@@ -269,7 +269,6 @@ def _batched_partial_trace(density_matrix, indices):
     if get_interface(density_matrix) == "autograd":
         return _batched_partial_trace_autograd(density_matrix, indices)
 
-
     # Dimension and reshape
     batch_dim, dim = density_matrix.shape[:2]
     num_indices = int(np.log2(dim))
