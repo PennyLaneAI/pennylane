@@ -185,6 +185,10 @@ class TestPauliSentence:
 
     hamiltonian_ps = (
         (
+            qml.Hamiltonian([], []),
+            PauliSentence(),
+        ),
+        (
             qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
             PauliSentence({PauliWord({0: "Z"}): 2}),
         ),
