@@ -341,7 +341,7 @@ class TestExtractStatistics:
             StateMP(),
         ],
     )
-    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
+    def test_results_created(self, mock_qubit_device_extract_stats, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         qscript = QuantumScript(measurements=[measurement])
@@ -350,7 +350,7 @@ class TestExtractStatistics:
 
         assert results == [0]
 
-    def test_results_no_state(self, mock_qubit_device_extract_stats, monkeypatch):
+    def test_results_no_state(self, mock_qubit_device_extract_stats):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
         qscript = QuantumScript(measurements=[qml.state()])
@@ -361,7 +361,7 @@ class TestExtractStatistics:
             dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
-    def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created_empty(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class UnsupportedMeasurement(MeasurementProcess):
@@ -713,9 +713,7 @@ class TestVar:
 class TestSample:
     """Test the sample method"""
 
-    def test_only_ones_minus_ones(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
-    ):
+    def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples"""
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
@@ -725,9 +723,7 @@ class TestSample:
         assert np.shape(res) == (2,)
         assert np.allclose(res**2, 1, atol=tol, rtol=0)
 
-    def test_correct_custom_eigenvalues(
-        self, mock_qubit_device_with_original_statistics, monkeypatch
-    ):
+    def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics):
         """Test that sample for a product of Pauli observables produces samples of eigenvalues"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
@@ -776,9 +772,7 @@ class TestSample:
 class TestSampleWithBroadcasting:
     """Test the sample method when broadcasting is used"""
 
-    def test_only_ones_minus_ones(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
-    ):
+    def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples
         when using broadcasting"""
         obs = qml.PauliX(0)
@@ -788,9 +782,7 @@ class TestSampleWithBroadcasting:
 
         assert np.allclose(res, [[1, 1], [-1, -1], [1, -1]], atol=tol, rtol=0)
 
-    def test_correct_custom_eigenvalues(
-        self, mock_qubit_device_with_original_statistics, monkeypatch
-    ):
+    def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics):
         """Test that sample for a product of Pauli observables produces samples
         of eigenvalues when using broadcasting"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
