@@ -85,6 +85,7 @@
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
   [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
+  [(#4172)](https://github.com/PennyLaneAI/pennylane/pull/4172)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -127,11 +128,20 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
+  equality or hash to work correctly.
+  [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
+
 * Updated the `gradients` module to use the new `Shots` object internally.
   [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
 
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
+
+* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
+  and now inherits from `qml.ops.op_math.ControlledOp`.
+  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -171,12 +181,23 @@
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
-  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
+  was not taken into account.
+  [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)
+
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
+
+* `qml.pauli.are_identical_pauli_words` now treats all identities as equal. Identity terms on Hamiltonians with non-standard
+  wire orders are no longer eliminated.
+  [(#4161)](https://github.com/PennyLaneAI/pennylane/pull/4161)
+
+* `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
+  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
 
 <h3>Contributors ✍️</h3>
 
@@ -193,4 +214,5 @@ Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
