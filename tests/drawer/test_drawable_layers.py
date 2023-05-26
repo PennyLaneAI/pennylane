@@ -66,7 +66,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [set(ops)]
+        assert layers == [ops]
 
     def test_single_wires_blocking(self):
         """Test single wire gates blocking each other"""
@@ -75,7 +75,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     def test_barrier_only_visual(self):
         """Test the barrier is always drawn"""
@@ -87,21 +87,21 @@ class TestDrawableLayers:
             qml.PauliX(0),
         ]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}, {ops[3]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]], [ops[3]]]
 
     def test_barrier_block(self):
         """Test the barrier blocking operators"""
 
         ops = [qml.PauliX(0), qml.Barrier(wires=[0, 1]), qml.PauliX(1)]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     def test_wirecut_block(self):
         """Test the wirecut blocking operators"""
 
         ops = [qml.PauliX(0), qml.WireCut(wires=[0, 1]), qml.PauliX(1)]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     @pytest.mark.parametrize(
         "multiwire_gate",
@@ -124,7 +124,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops, wire_map=wire_map)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     @pytest.mark.parametrize("measurement", (qml.state(), qml.sample()))
     def test_all_wires_measurement(self, measurement):
@@ -134,4 +134,4 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
