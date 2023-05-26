@@ -14,7 +14,7 @@
 
 import pytest
 import pennylane as qml
-from pennylane.transforms.experimental import transform
+from pennylane.transforms.core import transform, TransformError
 from collections.abc import Sequence
 
 # TODO: Replace with default qubit 2
@@ -69,8 +69,7 @@ non_valid_transforms = [non_callable, no_processing_fn_transform, no_tape_sequen
 
 
 def a_valid_transform(
-    tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], callable):
+    tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
     tape.circuit.pop()
     return [tape], lambda x: x
 
@@ -110,15 +109,21 @@ valid_expand_transforms = [a_valid_expand_transform]
 
 
 class TestTransformDispatcher:
-    """Test that adjacent inverse gates are cancelled."""
+    """Test that the transforms types are checked correctly."""
 
-    def test_dispatcher_signature(self):
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_dispatcher_signature(self, valid_transform):
         """Test the signature"""
 
-        dispatched_transform = transform(a_valid_transform)
+        dispatched_transform = transform(valid_transform)
         tapes, fn = dispatched_transform(tape_circuit, 0)
 
-    def test_dispatcher_signature_non_valid_transform(self):
+        assert isinstance(tapes, Sequence)
+        assert callable(fn)
+
+    @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
+    def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
         """Test the signature"""
 
-        dispatched_transform = transform(no_tape_sequence_transform)
+        with pytest.raises(TransformError):
+            dispatched_transform = transform(non_valid_transform)

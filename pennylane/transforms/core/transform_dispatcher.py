@@ -112,6 +112,8 @@ def transform(transform, expand_transform=None, qnode_postprocessing=None):
 
     TODO: add example of what is expected from a transform.
     """
+    if not callable(transform):
+        raise TransformError("Your transform must be a valid Python callable function.")
     # Check signature of transform to force the fn style (tape, ...) - > (Sequence(tape), fn)
     signature_transform = get_type_hints(transform)
     _transform_signature_check(signature_transform)
@@ -156,7 +158,7 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
         )
 
-    if not isinstance(ret[0], Sequence):
+    if not ret[0] == Sequence[qml.tape.QuantumTape]:
         raise TransformError(
             "The first return of a transform must be a sequence of tapes: collections.abc.Sequence["
             "pennylane.tape.tape.QuantumTape]"
