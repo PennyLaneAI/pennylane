@@ -176,16 +176,15 @@ def marginal_prob(prob, axis):
 def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state represented with a density matrix.
 
-
     Args:
-        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
-            integer number of wires``N``.
+        density_matrix (tensor_like): 2D or 3D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` or
+            ``(batch_dim, 2**N, 2**N)``, for some integer number of wires``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))`` or ``(batch_dim, 2**len(indices), 2**len(indices))``
 
     **Example**
 
@@ -233,7 +232,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
 
     # Compute the partial trace
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = _partial_trace(density_matrix, traced_wires)
+    density_matrix = _batched_partial_trace(density_matrix, traced_wires)
 
     if batch_dim is None:
         density_matrix = density_matrix[0]
@@ -242,34 +241,33 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def _partial_trace(density_matrix, indices):
+def _batched_partial_trace(density_matrix, indices):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
-        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
-            integer number of wires ``N``.
+        density_matrix (tensor_like): 3D density matrix tensor. This tensor should be of size
+            ``(batch_dim, 2**N, 2**N)``, for some integer number of wires``N``.
         indices (list(int)): List of indices to be traced.
 
     Returns:
-        tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (reduced) Density matrix of size ``(batch_dim, 2**len(wires), 2**len(wires))``
 
     **Example**
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    >>> _partial_trace(x, indices=[0])
+    >>> _batched_partial_trace(x, indices=[0])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-
     >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> _partial_trace(x, indices=[1])
+    >>> _batched_partial_trace(x, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
     # Autograd does not support same indices sum in backprop
     if get_interface(density_matrix) == "autograd":
-        density_matrix = _partial_trace_autograd(density_matrix, indices)
+        density_matrix = _batched_partial_trace_autograd(density_matrix, indices)
         return density_matrix
 
     # Dimension and reshape
@@ -300,7 +298,7 @@ def _partial_trace(density_matrix, indices):
     return reduced_density_matrix
 
 
-def _partial_trace_autograd(density_matrix, indices):
+def _batched_partial_trace_autograd(density_matrix, indices):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
@@ -361,13 +359,14 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
-        state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
+        state (tensor_like): 1D or 2D tensor state vector. This tensor should of size ``(2**N,)``
+            or ``(batch_dim, 2**N)``, for some integer value ``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
+        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))`` or ``(batch_dim, 2**len(indices), 2**len(indices))``
 
     **Example**
 
