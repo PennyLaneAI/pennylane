@@ -149,8 +149,7 @@ class TestOldDeviceDeprecations:
         with pytest.warns(UserWarning, match="Directly calling DefaultQubit."):
             _ = dev.classical_shadow(obs, circuit)
 
-    @pytest.mark.filterwarnings("error:Directly calling DefaultQubit.:UserWarning")
-    def test_no_warning_with_execute(self):
+    def test_no_warning_with_execute(self, recwarn):
         """Test that no warnings are raised when using `qml.execute`."""
         dev = qml.device("default.qubit", wires=2)
         qs = qml.tape.QuantumScript(
@@ -158,9 +157,9 @@ class TestOldDeviceDeprecations:
         )
 
         _ = qml.execute([qs], dev)
+        assert len(recwarn) == 0
 
-    @pytest.mark.filterwarnings("error:Directly calling DefaultQubit.:UserWarning")
-    def test_no_warning_with_qnode_execute(self):
+    def test_no_warning_with_qnode_execute(self, recwarn):
         """Test that no warnings are raised when using `qml.execute`."""
         dev = qml.device("default.qubit", wires=2)
 
@@ -171,6 +170,7 @@ class TestOldDeviceDeprecations:
             return qml.expval(qml.PauliZ(1))
 
         _ = circuit(0.123)
+        assert len(recwarn) == 0
 
 
 def test_analytic_deprecation():
