@@ -267,8 +267,8 @@ def _batched_partial_trace(density_matrix, indices):
     """
     # Autograd does not support same indices sum in backprop
     if get_interface(density_matrix) == "autograd":
-        density_matrix = _batched_partial_trace_autograd(density_matrix, indices)
-        return density_matrix
+        return _batched_partial_trace_autograd(density_matrix, indices)
+
 
     # Dimension and reshape
     batch_dim, dim = density_matrix.shape[:2]
