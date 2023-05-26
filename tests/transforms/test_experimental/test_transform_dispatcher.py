@@ -18,7 +18,6 @@ from pennylane.transforms.core import transform, TransformError
 from collections.abc import Sequence
 
 # TODO: Replace with default qubit 2
-
 dev = qml.device("default.qubit", wires=2)
 
 with qml.tape.QuantumTape() as tape_circuit:
@@ -29,7 +28,7 @@ with qml.tape.QuantumTape() as tape_circuit:
     qml.expval(qml.PauliZ(wires=0))
 
 
-def qfunc(a):
+def qfunc_circuit(a):
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=0)
@@ -38,7 +37,7 @@ def qfunc(a):
 
 
 @qml.qnode(device=dev)
-def qfunc(a):
+def qnode_circuit(a):
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=0)
@@ -68,13 +67,22 @@ non_valid_transforms = [non_callable, no_processing_fn_transform, no_tape_sequen
 # Valid transforms
 
 
-def a_valid_transform(
-    tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
-    tape.circuit.pop()
+def first_valid_transform(tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
+    tape.circuit.pop(index)
     return [tape], lambda x: x
 
 
-valid_transforms = [a_valid_transform]
+def second_valid_transform(tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
+    tape1 = tape.copy()
+    tape2 = tape.circuit.pop(index)
+
+    def fn(results):
+        return qml.math.sum(results)
+
+    return [tape1, tape2], fn
+
+
+valid_transforms = [first_valid_transform, second_valid_transform]
 
 
 ##########################################
@@ -109,21 +117,34 @@ valid_expand_transforms = [a_valid_expand_transform]
 
 
 class TestTransformDispatcher:
-    """Test that the transforms types are checked correctly."""
+    """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_dispatcher_signature(self, valid_transform):
-        """Test the signature"""
+    def test_dispatcher_with_valid_transform(self, valid_transform):
+        """Test that no error is raised with the transform function and that the transform dispatcher returns
+        the right object."""
 
         dispatched_transform = transform(valid_transform)
+
+        # Applied on a tape
         tapes, fn = dispatched_transform(tape_circuit, 0)
 
         assert isinstance(tapes, Sequence)
         assert callable(fn)
 
+        # Applied on a qfunc (return a qfunc)
+        qfunc = dispatched_transform(qfunc_circuit, 0)
+        assert callable(qfunc)
+
+        # Applied on a qnode (return a qnode with populated the program)
+        qnode = dispatched_transform(qnode_circuit, 0)
+        assert isinstance(qnode, qml.QNode)
+        assert isinstance(qnode.transform_program, list)
+        assert isinstance(qnode.transform_program[0], qml.transforms.core.TransformContainer)
+
     @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
     def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
-        """Test the signature"""
+        """Test the non-valid transforms raises a Transform error."""
 
         with pytest.raises(TransformError):
-            dispatched_transform = transform(non_valid_transform)
+            transform(non_valid_transform)

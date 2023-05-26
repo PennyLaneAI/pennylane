@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the transform dispatcher.
+This module contains the transform function, the transform dispatcher and the transform container.
 """
 import functools
 from typing import get_type_hints
@@ -24,103 +24,93 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic"""
 
 
-class TransformDispatcher:
-    r"""This object is developer facing and should not be used directly.
+def transform(quantum_transform, expand_transform=None, classical_cotransform=None):
+    """The transform function is to be used to validate and dispatch a quantum transform on PennyLane objects (tape,
+    qfunc and Qnode). It can be used directly as a decorator on qfunc and qnodes.
 
-    Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
-    on tape, qfunc and qnode.
+    Args:
+        quantum_transform(callable): A quantum transform is defined as a function that has the following requirements:
+
+            * A quantum transform is a function that takes a quantum tape as first input and returns a sequence of tapes
+              and a processing function.
+
+            * The transform must have type hinting of the following form: my_quantum_transform(tape:
+              qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], callable)
+
+        expand_transform(callable): An expand transform is defined as a function that has the following requirements:
+
+            * A expand transform is a function that is applied before applying the defined quantum transform. It
+            takes a quantum tape as single input and returns a sequence of tapes and a processing function. It
+            returns a single tape in a sequence with a dummy processing function, lambda x: x.
+
+            * The transform must have the same type hinting as a quantum transform.
+
+        classical_cotransform(callable): A classical co-transform.
+
+    **Example**
+
+    First define your quantum_transform, with the necessary type hinting defined above. In this example we copy the
+    tape and sum the results of the execution of the two tapes.
+
+    .. code-block:: python
+
+        def my_quantum_transform(tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
+            tape1 = tape
+            tape2 = tape.copy()
+
+            def post_processing_fn(results):
+                return qml.math.sum(results)
+
+            return [tape1, tape2], post_processing_fn
+
+    Of course, we want to be able to apply this transform on `qfunc` and `qnodes`. That's where the `transform` function
+    comes into play. This function validates the signature of your quantum transform and dispatches it on the different
+    object. Let's define a circuit as a qfunc and as qnode.
+
+        .. code-block:: python
+
+            def qfunc_circuit(a):
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PauliX(wires=0)
+                qml.RZ(a, wires=1)
+                return qml.expval(qml.PauliZ(wires=0))
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(device=dev)
+            def qnode_circuit(a):
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PauliX(wires=0)
+                qml.RZ(a, wires=1)
+                return qml.expval(qml.PauliZ(wires=0))
+
+
+
+    >>> dispatched_transform = transform(my_quantum_transform)
+
+    >>> transformed_qfunc, post_processing = dispatched_transform(qfunc_circuit)
+
+    >>> transformed_qnode = dispatched_transform(qfunc_circuit)
     """
-
-    def __init__(self, transform, expand_transform=None, qnode_postprocessing=None):
-        if not callable(transform):
-            raise TransformError(
-                f"The function to register, {transform}, "
-                "does not appear to be a valid Python function or callable."
-            )
-
-        self._transform = transform
-        functools.update_wrapper(self, transform)
-        self._expand_transform = expand_transform
-        self._qnode_postprocessing = qnode_postprocessing
-
-    def __call__(self, *targs, **tkwargs):
-        obj = None
-
-        if targs:
-            # assume the first argument passed to the transform
-            # is the object we wish to transform
-            obj, *targs = targs
-
-        if isinstance(obj, qml.tape.QuantumTape):
-            return self._transform(obj, *targs, **tkwargs)
-        elif isinstance(obj, qml.QNode):
-            return self._qnode_transform(
-                obj,
-                targs,
-                tkwargs,
-                expand_transform=self._expand_transform,
-                qnode_postprocessing=self._qnode_postprocessing,
-            )
-        elif callable(obj):
-            return self.default_qfunc_transform(obj, targs, tkwargs)
-        else:
-            raise TransformError(
-                "The object on which is the transform is applied is not valid. It can only be a "
-                "tape, a QNode or a qfunc."
-            )
-
-    @property
-    def transform(self):
-        return self._transform
-
-    @property
-    def expand_transform(self):
-        return self._expand_transform
-
-    @property
-    def qnode_postprocessing(self):
-        return self._qnode_postprocessing
-
-    def _qfunc_transform(self, qfunc, targs, tkwargs):
-        """Apply the transform on a quantum function."""
-
-        def qfunc_transformed(*args, **kwargs):
-            tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
-            transformed_tapes, _ = self._transform(tape, *targs, **tkwargs)
-
-            for tape in transformed_tapes:
-                for op in tape.circuit:
-                    qml.apply(op)
-
-        return qfunc_transformed
-
-    def _qnode_transform(self, qnode, targs, tkwargs):
-        """Apply the transform on a QNode. It populates the transform program of a QNode"""
-        if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform))
-        qnode.add_transform(
-            TransformContainer(self._transform, targs, tkwargs, self._qnode_postprocessing)
+    # 1: Checks for the transform
+    if not callable(quantum_transform):
+        raise TransformError(
+            f"The function to register, {quantum_transform}, "
+            "does not appear to be a valid Python function or callable."
         )
-        return qnode
 
-
-def transform(transform, expand_transform=None, qnode_postprocessing=None):
-    """
-    Signature and type validation for the transform and its expand function and qnode post processing.
-
-    TODO: Make it clear what is a transform
-
-    TODO: add example of what is expected from a transform.
-    """
-    if not callable(transform):
-        raise TransformError("Your transform must be a valid Python callable function.")
+    signature_transform = get_type_hints(quantum_transform)
     # Check signature of transform to force the fn style (tape, ...) - > (Sequence(tape), fn)
-    signature_transform = get_type_hints(transform)
     _transform_signature_check(signature_transform)
 
-    # Check the signature of expand_transform to force the fn style tape - > (Sequence(tape), fn)
+    # 2: Checks for the expand transform
     if expand_transform is not None:
+        if not callable(expand_transform):
+            raise TransformError("The expand function must be a valid Python function.")
         signature_expand_transform = get_type_hints(expand_transform)
+        # Check the signature of expand_transform to force the fn style tape - > (Sequence(tape), fn)
         _transform_signature_check(signature_expand_transform)
 
         if len(signature_expand_transform) > 2:
@@ -128,18 +118,19 @@ def transform(transform, expand_transform=None, qnode_postprocessing=None):
                 "The expand transform does not support arg and kwargs other than tape."
             )
 
-    # Check that the qnode post processing is callable
-    if qnode_postprocessing is not None:
-        if not callable(qnode_postprocessing):
-            raise TransformError("The qnode post processing must be a valid Python function.")
+    # 3: CHeck the classical co-transform
+    if classical_cotransform is not None:
+        if not callable(classical_cotransform):
+            raise TransformError("The classical co-transform must be a valid Python function.")
+        # TODO: Add more verification in a future PR
 
     return TransformDispatcher(
-        transform, expand_transform=expand_transform, qnode_postprocessing=qnode_postprocessing
+        quantum_transform, expand_transform=expand_transform, classical_cotransform=classical_cotransform
     )
 
 
 def _transform_signature_check(signature):
-    """Check the signature of a transform (tape, ...) - > (Sequence(tape), fn)"""
+    """Check the signature of a quantum transform: (tape, ...) - > (Sequence(tape), fn)"""
     # Check that the arguments of the transforms follows: (tape: qml.tape.QuantumTape, ...)
     tape = signature.get("tape", None)
 
@@ -170,9 +161,105 @@ def _transform_signature_check(signature):
         )
 
 
+class TransformDispatcher:
+    r"""This object is developer facing and should not be used directly to create transforms.
+
+    Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
+    on tape, qfunc and qnode.
+    """
+
+    def __init__(self, transform, expand_transform=None, classical_cotransform=None):
+        self._transform = transform
+        functools.update_wrapper(self, transform)
+        self._expand_transform = expand_transform
+        self._classical_cotransform = classical_cotransform
+
+    def __call__(self, *targs, **tkwargs):
+        obj = None
+
+        if targs:
+            # assume the first argument passed to the transform
+            # is the object we wish to transform
+            obj, *targs = targs
+
+        if isinstance(obj, qml.tape.QuantumTape):
+            return self._transform(obj, *targs, **tkwargs)
+        elif isinstance(obj, qml.QNode):
+            return self._qnode_transform(
+                obj,
+                targs,
+                tkwargs,
+            )
+        elif callable(obj):
+            return self._qfunc_transform(obj, targs, tkwargs)
+        else:
+            raise TransformError(
+                "The object on which is the transform is applied is not valid. It can only be a "
+                "tape, a QNode or a qfunc."
+            )
+
+    @property
+    def transform(self):
+        return self._transform
+
+    @property
+    def expand_transform(self):
+        return self._expand_transform
+
+    @property
+    def classical_cotransform(self):
+        return self._classical_cotransform
+
+    def _qfunc_transform(self, qfunc, targs, tkwargs):
+        """Apply the transform on a quantum function."""
+
+        def qfunc_transformed(*args, **kwargs):
+            tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+            transformed_tapes, _ = self._transform(tape, *targs, **tkwargs)
+
+            for tape in transformed_tapes:
+                for op in tape.circuit:
+                    qml.apply(op)
+
+        return qfunc_transformed
+
+    def _qnode_transform(self, qnode, targs, tkwargs):
+        """Apply the transform on a QNode. It populates the transform program of a QNode"""
+        if self.expand_transform:
+            qnode.add_transform(TransformContainer(self._expand_transform))
+        qnode.add_transform(
+            TransformContainer(self._transform, targs, tkwargs, self._classical_cotransform)
+        )
+        return qnode
+
+
 class TransformContainer:
-    def __init__(self, transform, args=None, kwargs=None, qnode_processing=None):
-        self.transform = transform
-        self.targs = args if args else []
-        self.tkwargs = kwargs if kwargs else {}
-        self.qnode_processing = qnode_processing
+    """Class to store a quantum transform with its args, kwargs and classical co-transforms.
+    This class is developer-facing and should not be used directly.
+    """
+    def __init__(self, transform, args=None, kwargs=None, classical_cotransform=None):
+        self._transform = transform
+        self._targs = args if args else []
+        self._tkwargs = kwargs if kwargs else {}
+        self._classical_cotransform = classical_cotransform
+
+    def __iter__(self):
+        return iter((self._transform , self._targs, self._tkwargs, self._classical_cotransform))
+    @property
+    def transform(self):
+        """Return the stored quantum transform."""
+        return self._transform
+
+    @property
+    def targs(self):
+        """Return the stored quantum transform's args."""
+        return self._targs
+
+    @property
+    def tkwargs(self):
+        """Return the stored quantum transform's arkwgs."""
+        return self._tkwargs
+    @property
+    def classical_cotransforms(self):
+        """Return the stored quantum transform's classical co-transform."""
+        return self._classical_cotransform
