@@ -9,10 +9,13 @@ from pennylane.data.base.dataset import attribute
 from pennylane.operation import Operation, Operator
 from pennylane.qchem import Molecule
 
+# Type representing Qubit-Wise Commutativity data
 QWCGroupingData = Tuple[List[np.ndarray], List[List[Operator]], List[List[Operator]]]
 
 
 class QChemDatasetParameters(TypedDict):
+    """Parameters for a qchem dataset."""
+
     molname: str
     basis: str
     bondlength: str
