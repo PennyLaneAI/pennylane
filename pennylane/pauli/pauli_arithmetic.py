@@ -307,7 +307,7 @@ class PauliSentence(dict):
     def __str__(self):
         """String representation of the PauliSentence."""
         if len(self) == 0:
-            return "I"
+            return "0 * I"
         return "\n+ ".join(f"{coeff} * {str(pw)}" for pw, coeff in self.items())
 
     def __repr__(self):

@@ -25,6 +25,7 @@ import pennylane as qml
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
 from .utils import is_abstract, allclose, cast, convert_like, cast_like
+from .matrix_manipulation import _permute_dense_matrix
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -208,21 +209,23 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
 
 
     """
-    shape = density_matrix.shape[0]
-    num_indices = int(np.log2(shape))
+    dim = density_matrix.shape[0]
+    num_indices = int(np.log2(dim))
 
     if check_state:
         _check_density_matrix(density_matrix)
 
-    consecutive_indices = list(range(0, num_indices))
+    consecutive_indices = list(range(num_indices))
 
-    # Return the full density matrix if all the wires are given
-    if tuple(indices) == tuple(consecutive_indices):
-        return density_matrix
+    # Return the full density matrix if all the wires are given, potentially permuted
+    if len(indices) == num_indices:
+        return _permute_dense_matrix(density_matrix, consecutive_indices, indices, None)
 
+    # Compute the partial trace
     traced_wires = [x for x in consecutive_indices if x not in indices]
     density_matrix = _partial_trace(density_matrix, traced_wires)
-    return density_matrix
+    # Permute the remaining indices of the density matrix
+    return _permute_dense_matrix(density_matrix, sorted(indices), indices, None)
 
 
 def _partial_trace(density_matrix, indices):
@@ -374,16 +377,16 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
-    len_state = np.shape(state)[0]
+    dim = np.shape(state)[0]
 
     # Check the format and norm of the state vector
     if check_state:
         _check_state_vector(state)
 
     # Get dimension of the quantum system and reshape
-    num_indices = int(np.log2(len_state))
-    consecutive_wires = list(range(num_indices))
-    state = np.reshape(state, [2] * num_indices)
+    num_wires = int(np.log2(dim))
+    consecutive_wires = list(range(num_wires))
+    state = np.reshape(state, [2] * num_wires)
 
     # Get the system to be traced
     traced_system = [x for x in consecutive_wires if x not in indices]
@@ -392,7 +395,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     density_matrix = np.tensordot(state, np.conj(state), axes=(traced_system, traced_system))
     density_matrix = np.reshape(density_matrix, (2 ** len(indices), 2 ** len(indices)))
 
-    return density_matrix
+    return _permute_dense_matrix(density_matrix, sorted(indices), indices, None)
 
 
 def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
@@ -447,12 +450,9 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     len_state = state.shape[0]
     # State vector
     if state.shape == (len_state,):
-        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
-        return density_matrix
+        return _density_matrix_from_state_vector(state, indices, check_state)
 
-    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
-
-    return density_matrix
+    return _density_matrix_from_matrix(state, indices, check_state)
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):

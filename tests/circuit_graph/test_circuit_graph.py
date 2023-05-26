@@ -300,8 +300,8 @@ class TestCircuitGraph:
         assert circuit.max_simultaneous_measurements == expected
 
     def test_grid_when_sample_no_wires(self):
-        """A test to ensure the sample operation applies to all wires when
-        none are explicitly provided."""
+        """A test to ensure the sample operation applies to all wires on the
+        `CircuitGraph`s grid when none are explicitly provided."""
 
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
         obs_no_wires = [qml.sample(op=None, wires=None)]
@@ -311,21 +311,29 @@ class TestCircuitGraph:
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 
         sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
-        expected_grid = {
+        expected_grid_w_wires = {
             0: [ops[0], ops[1], sample_w_wires_op],
             1: [ops[1], sample_w_wires_op],
             2: [sample_w_wires_op],
         }
 
+        sample_no_wires_op = qml.sample(op=None, wires=None)
+        expected_grid_no_wires = {
+            0: [ops[0], ops[1], sample_no_wires_op],
+            1: [ops[1], sample_no_wires_op],
+            2: [sample_no_wires_op],
+        }
+
         for key in range(3):
             lst_w_wires = circuit_w_wires._grid[key]
             lst_no_wires = circuit_no_wires._grid[key]
-            lst_expected = expected_grid[key]
+            lst_expected_w_wires = expected_grid_w_wires[key]
+            lst_expected_no_wires = expected_grid_no_wires[key]
 
-            for el1, el2 in zip(lst_no_wires, lst_w_wires):
+            for el1, el2 in zip(lst_w_wires, lst_expected_w_wires):
                 assert qml.equal(el1, el2)
 
-            for el1, el2 in zip(lst_no_wires, lst_expected):
+            for el1, el2 in zip(lst_no_wires, lst_expected_no_wires):
                 assert qml.equal(el1, el2)
 
     def test_print_contents(self):

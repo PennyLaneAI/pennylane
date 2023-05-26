@@ -148,6 +148,9 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     pauli_1 = getattr(pauli_1, "prune", lambda: pauli_1)()
     pauli_2 = getattr(pauli_2, "prune", lambda: pauli_2)()
 
+    if isinstance(pauli_1, qml.Identity) and isinstance(pauli_2, qml.Identity):
+        return True
+
     if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, paulis_with_identity):
         return (pauli_1.wires, pauli_1.name) == (pauli_2.wires, pauli_2.name)
 
