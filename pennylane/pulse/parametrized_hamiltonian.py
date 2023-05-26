@@ -240,7 +240,14 @@ class ParametrizedHamiltonian:
         return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
-        return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+        terms = []
+        for i, (coeff, op) in enumerate(zip(self.coeffs_fixed + self.coeffs_parametrized, self.ops_fixed + self.ops_parametrized)):
+            if callable(coeff):
+                term = f"({coeff.__name__}(params_{i}, t)*({op}))"
+            else:
+                term = f"({coeff}*({op}))"
+            terms.append(term)
+        return " + ".join(terms)
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
