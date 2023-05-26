@@ -186,6 +186,9 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))`` or ``(batch_dim, 2**len(indices), 2**len(indices))``
 
+    .. seealso:: :func:`pennylane.math.reduce_statevector`, :func:`pennylane.qinfo.transforms.reduced_dm`,
+        and :func:`pennylane.density_matrix`
+
     **Example**
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
@@ -366,6 +369,9 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))`` or ``(batch_dim, 2**len(indices), 2**len(indices))``
+
+    .. seealso:: :func:`pennylane.math.reduce_dm`, :func:`pennylane.qinfo.transforms.reduced_dm`,
+        and :func:`pennylane.density_matrix`
 
     **Example**
 
