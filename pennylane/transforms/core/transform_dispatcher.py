@@ -86,11 +86,15 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
                 qml.RZ(a, wires=1)
                 return qml.expval(qml.PauliZ(wires=0))
 
-
-
     >>> dispatched_transform = transform(my_quantum_transform)
 
-    >>> transformed_qfunc, post_processing = dispatched_transform(qfunc_circuit)
+    Now you can use to dispatched transform directly on qfunc and qnode. One subtelty here, is that qfunc will not take
+    the post-processing function in to account, and it should only be used for single tape transform.
+
+    >>> transformed_qfunc = dispatched_transform(qfunc_circuit)
+
+    For QNodes, the dispatched transforms populates the `TransformProgram` of your QNode and the transform and its
+    processing function are applied in the execution.
 
     >>> transformed_qnode = dispatched_transform(qfunc_circuit)
     """
@@ -217,9 +221,14 @@ class TransformDispatcher:
             tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
             transformed_tapes, _ = self._transform(tape, *targs, **tkwargs)
 
-            for tape in transformed_tapes:
-                for op in tape.circuit:
-                    qml.apply(op)
+            if len(transformed_tapes) != 1:
+                raise TransformError("Impossible to dispatch your transform on quantum function, because more than "
+                                     "one tape is returned")
+
+            transformed_tape = transformed_tapes[0]
+
+            for op in transformed_tape.circuit:
+                qml.apply(op)
 
         return qfunc_transformed
 
