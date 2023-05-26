@@ -13,7 +13,15 @@
 # limitations under the License.
 """Datasets module. Documentation incoming."""
 
-from .attributes import DatasetArray, DatasetNone, DatasetScalar, DatasetString
+from .attributes import (
+    DatasetArray,
+    DatasetDict,
+    DatasetJSON,
+    DatasetList,
+    DatasetNone,
+    DatasetScalar,
+    DatasetString,
+)
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
 
@@ -25,5 +33,8 @@ __all__ = (
     "DatasetArray",
     "DatasetScalar",
     "DatasetString",
+    "DatasetList",
+    "DatasetDict",
     "DatasetNone",
+    "DatasetJSON",
 )

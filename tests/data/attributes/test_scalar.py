@@ -17,7 +17,7 @@ class TestDatasetScalar:
         assert scalar.info.type_id == "scalar"
 
     def test_bind_init(self, value, py_type):
-        """Test that DatasetScalar can be initialized from a Zarr array
+        """Test that DatasetScalar can be initialized from a HDF5 array
         that was created by a DatasetScalar."""
 
         bind = DatasetScalar(value).bind

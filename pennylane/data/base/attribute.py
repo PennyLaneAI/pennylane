@@ -107,12 +107,16 @@ class AttributeInfo(MutableMapping):
         self["py_type"] = get_type_str(type_)
 
     def __len__(self) -> int:
-        return self.get("__len__", 0)
+        return self.attrs_bind.get("qml.__len__", 0)
 
     def _update_len(self, inc: int):
-        self.attrs_bind[f"{self.attrs_namespace}__len__"] = len(self) + inc
+        self.attrs_bind["qml.__len__"] = len(self) + inc
 
     def __setitem__(self, __name: str, __value: Any):
+        if __value is None:
+            self.attrs_bind.pop(__name, None)
+            return
+
         key = f"{self.attrs_namespace}{__name}"
         exists = key in self.attrs_bind
         self.attrs_bind[key] = __value
@@ -123,6 +127,9 @@ class AttributeInfo(MutableMapping):
         try:
             return self.attrs_bind[f"{self.attrs_namespace}{__name}"]
         except KeyError as exc:
+            if __name in self.__annotations__:
+                return None
+
             raise KeyError(__name) from exc
 
     def __setattr__(self, __name: str, __value: Any) -> None:
@@ -245,7 +252,7 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
 
         self._bind = self._set_value(value, info, parent, key)
         self._check_bind()
-        self.__post_init__(value, info)
+        self.__post_init__(value, self.info)
 
     @property
     def info(self) -> AttributeInfo:
@@ -440,6 +447,9 @@ def match_obj_type(type_or_obj: Union[T, Type[T]]) -> Type[AttributeType[HDF5Any
     """
 
     type_ = _get_type(type_or_obj)
+    if hasattr(type_, "type_id"):
+        return AttributeType.registry[type_.type_id]
+
     ret = AttributeType.registry["array"]
 
     if type_ in AttributeType.type_consumer_registry:

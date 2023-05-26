@@ -11,10 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The base module contains the base class that defines the underlying
-type machinery, and the low-level HDF5 interface of the data module."""
+"""Contains an AttributeType for JSON-serializable data."""
 
-from .attribute import AttributeInfo, AttributeType
-from .dataset import Dataset, attribute
 
-__all__ = ("AttributeInfo", "AttributeType", "Dataset", "attribute")
+import json
+
+from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.typing_util import JSON, HDF5Array, HDF5Group
+
+
+class DatasetJSON(AttributeType[HDF5Array, JSON, JSON]):
+    """Dataset type for JSON-serializable data."""
+
+    type_id = "json"
+
+    def hdf5_to_value(self, bind: HDF5Array) -> JSON:
+        return json.loads(bind.asstr()[()])
+
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: JSON) -> HDF5Array:
+        bind_parent[key] = json.dumps(value)
+
+        return bind_parent[key]

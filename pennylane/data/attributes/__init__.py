@@ -14,6 +14,9 @@
 """Contains AttributeType definitions."""
 
 from .array import DatasetArray
+from .dictionary import DatasetDict
+from .json import DatasetJSON
+from .list import DatasetList
 from .none import DatasetNone
 from .scalar import DatasetScalar
 from .string import DatasetString
@@ -22,5 +25,8 @@ __all__ = (
     "DatasetArray",
     "DatasetScalar",
     "DatasetString",
+    "DatasetDict",
+    "DatasetList",
     "DatasetNone",
+    "DatasetJSON",
 )
