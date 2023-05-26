@@ -211,7 +211,14 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
+    >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
+    >>> reduce_dm(x, indices=[1])
+    array([[[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]],
 
+           [[0.+0.j, 0.+0.j],
+            [0.+0.j, 1.+0.j]]])
     """
     density_matrix = cast(density_matrix, dtype=c_dtype)
 
@@ -257,16 +264,24 @@ def _batched_partial_trace(density_matrix, indices):
 
     **Example**
 
-    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
     >>> _batched_partial_trace(x, indices=[0])
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]]
+    array([[[1, 0],
+            [0, 0]],
 
-    >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+           [[0, 0],
+            [0, 1]]])
+
+    >>> x = tf.Variable([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    ...                  [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]], dtype=tf.complex128)
     >>> _batched_partial_trace(x, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+    <tf.Tensor: shape=(2, 2, 2), dtype=complex128, numpy=
+    array([[[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]],
+
+           [[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]]])>
     """
     # Autograd does not support same indices sum in backprop
     if get_interface(density_matrix) == "autograd":
@@ -395,6 +410,13 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
+    >>> x = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
+    >>> reduce_statevector(x, indices=[1])
+    array([[[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]],
+
+           [[0.+0.j, 0.+0.j],
+            [0.+0.j, 1.+0.j]]])
     """
     state = cast(state, dtype=c_dtype)
 
