@@ -61,6 +61,7 @@ base_num_control_mats = [
 
 
 custom_controlled_ops = [  # operators with their own controlled class
+    (qml.PauliY, qml.CY),
     (qml.PauliZ, qml.CZ),
 ]
 

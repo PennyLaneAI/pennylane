@@ -480,7 +480,7 @@ class PauliY(Observable, Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        return CY(wires=Wires(wire) + self.wires)
+        return qml.CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
@@ -1033,106 +1033,6 @@ class CNOT(Operation):
 
     def _controlled(self, wire):
         return Toffoli(wires=wire + self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[0])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
-class CY(Operation):
-    r"""CY(wires)
-    The controlled-Y operator
-
-    .. math:: CY = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & 0 & -i\\
-            0 & 0 & i & 0
-        \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the wires the operation acts on
-    """
-    num_wires = 2
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "Y"
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Y"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CY.matrix`
-
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CY.compute_matrix())
-        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
-         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
-         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
-         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
-        """
-        return np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, -1j],
-                [0, 0, 1j, 0],
-            ]
-        )
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""Representation of the operator as a product of other operators (static method).
-
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CY.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.CY.compute_decomposition(0))
-        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
-
-        """
-        return [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
-
-    def adjoint(self):
-        return CY(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
 
     @property
     def control_wires(self):
