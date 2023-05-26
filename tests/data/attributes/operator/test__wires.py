@@ -19,6 +19,7 @@ import json
         (None, "[null]"),
         (1, "[1]"),
         ("a", '["a"]'),
+        (np.int64(1), '[1]')
     ],
 )
 class TestWiresToJson:
