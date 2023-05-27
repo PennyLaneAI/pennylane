@@ -38,7 +38,6 @@ from pennylane.devices.default_gaussian import (
     squeezed_state,
     displaced_squeezed_state,
     thermal_state,
-    DefaultGaussian,
 )
 from pennylane.wires import Wires
 
@@ -83,25 +82,25 @@ H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 hbar = 2
 
 
-@pytest.fixture(scope="function")
-def gaussian_device_1_wire():
+@pytest.fixture(scope="function", name="gaussian_device_1_wire")
+def gaussian_device_1_wire_fixture():
     """Fixture of a default.gaussian device with 1 wire."""
     return qml.device("default.gaussian", wires=1)
 
 
-@pytest.fixture(scope="function")
-def gaussian_device_2_wires():
+@pytest.fixture(scope="function", name="gaussian_device_2_wires")
+def gaussian_device_2_wires_fixture():
     """Fixture of a default.gaussian device with 2 wires."""
     return qml.device("default.gaussian", wires=2)
 
 
-@pytest.fixture(scope="function")
-def gaussian_device_3_wires():
+@pytest.fixture(scope="function", name="gaussian_device_3_wires")
+def gaussian_device_3_wires_fixture():
     """Fixture of a default.gaussian device with 3 wires."""
     return qml.device("default.gaussian", wires=3)
 
 
-gaussian_dev = gaussian_device_2_wires  # alias
+gaussian_dev_fixture = gaussian_device_2_wires_fixture  # alias
 
 
 def test_analytic_deprecation():
@@ -116,6 +115,7 @@ def test_analytic_deprecation():
         qml.device("default.gaussian", wires=1, shots=1, analytic=True)
 
 
+# pylint: disable=too-few-public-methods
 class TestExceptions:
     """Tests that default.gaussian throws the correct error messages"""
 
@@ -127,7 +127,6 @@ class TestExceptions:
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.NumberOperator(0))
-            raise NotImplementedError()
 
         with pytest.raises(
             NotImplementedError, match="default.gaussian does not support sampling NumberOperator"
@@ -680,6 +679,7 @@ class TestSample:
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
             assert input_logger.args[2] == gaussian_device_1_wire.shots
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
     def test_sampling_parameters_squeezed(self, tol, gaussian_device_1_wire, r, phi, monkeypatch):
         """Tests that the np.random.normal is called with the correct parameters that reflect
@@ -710,7 +710,7 @@ class TestSample:
         """Test that the sample function raises an error if multiple wires are given"""
 
         with pytest.raises(ValueError, match="Only one mode can be measured in homodyne"):
-            sample = gaussian_device_2_wires.sample("P", [0, 1], [])
+            gaussian_device_2_wires.sample("P", [0, 1], [])
 
     @pytest.mark.parametrize(
         "observable", sorted(set(qml.ops.cv.obs) - set(["P", "X", "QuadOperator"]))
@@ -719,7 +719,7 @@ class TestSample:
         """Test that the sample function raises an error if the given observable is not supported"""
 
         with pytest.raises(NotImplementedError, match="default.gaussian does not support sampling"):
-            sample = gaussian_device_2_wires.sample(observable, [0], [])
+            gaussian_device_2_wires.sample(observable, [0], [])
 
 
 class TestDefaultGaussianIntegration:
@@ -746,7 +746,7 @@ class TestDefaultGaussianIntegration:
 
         dev = qml.device("default.gaussian", wires=2, hbar=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.hbar == 2
         assert dev.short_name == "default.gaussian"
 
@@ -784,7 +784,7 @@ class TestDefaultGaussianIntegration:
 
         assert circuit(p) == pytest.approx(1, abs=tol)
 
-    def test_vacuum_x_squared_variance(self, tol):
+    def test_vacuum_x_squared_variance(self):
         """Test that variance of X^2 is correct for the vacuum
 
         The expected analytic expression of hbar^2/ 2 follows as:
