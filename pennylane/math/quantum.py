@@ -1125,3 +1125,116 @@ def _compute_max_entropy(density_matrix, base):
     maximum_entropy = qml.math.log(rank) / div_base
 
     return maximum_entropy
+
+def _compute_trace_distance(rho, sigma, both_pure):
+    r"""
+    Compute the trace distance between the two density matrices rho and sigma.
+
+    .. math::
+        T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
+        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right))
+
+    where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
+    """
+    if both_pure:
+        dot_product = qml.math.dot(rho, sigma)
+        # Compute the trace of rho*sigma, which is equal to the squared modulus of their overlap
+        dot_product = qml.math.sum(qml.math.where(np.eye(rho.shape[0]), dot_product, 0.0))
+
+        return qml.math.sqrt(1 - qml.math.real(dot_product))
+
+    # In the general case, the trace distance is half the sum of the absolute values of the
+    # eigenvalues of the difference between rho and sigma.
+    eigvals, _ = qml.math.linalg.eigh(rho - sigma)
+    return qml.math.sum(qml.math.abs(eigvals)) / 2
+
+def trace_distance(state0, state1, check_state=False, both_pure=False, c_dtype="complex128"):
+    r"""
+    Compute the trace distance between two quantum states.
+
+    .. math::
+        T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
+        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right))
+
+    where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
+
+    The trace distance measures how close two quantum states are. In particular, it upper-bounds
+    the probability of distinguishing two quantum states.
+
+    Each state can be given as a state vector in the computational basis or
+    as a density matrix.
+
+    Args:
+        state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        both_pure (bool): If True, the function will compute the trace distance using a simpler
+        and faster formula, which is only applicable to pure states. Note that if state0 and state1
+        are given as vectors, this argument is ignored.
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Trace distance between state0 and state1
+
+    **Examples**
+
+    The trace distance between two equal states is always zero:
+
+    >>> x = np.array([1, 0])
+    >>> qml.math.trace_distance(x, x)
+    0.0
+
+    The quantum states can be provided as density matrices, allowing for computation
+    of relative entropy between mixed states:
+
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+    >>> qml.math.trace_distance(rho, sigma)
+    0.19999999999999998
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.trace_distance`
+    """
+    # Cast as a c_dtype array
+    state0 = cast(state0, dtype=c_dtype)
+    len_state0 = state0.shape[0]
+
+    # Cannot be cast_like if jit
+    if not is_abstract(state0):
+        state1 = cast_like(state1, state0)
+
+    len_state1 = state1.shape[0]
+
+    if check_state:
+        if state0.shape == (len_state0,):
+            _check_state_vector(state0)
+        else:
+            _check_density_matrix(state0)
+
+        if state1.shape == (len_state1,):
+            _check_state_vector(state1)
+        else:
+            _check_density_matrix(state1)
+
+    # Get dimension of the quantum system and reshape
+    num_indices0 = round(np.log2(len_state0))
+    num_indices1 = round(np.log2(len_state1))
+
+    # Avoid doing the comparison multiple times
+    is_state0_a_vector = state0.shape == (len_state0,)
+    is_state1_a_vector = state1.shape == (len_state1,)
+
+    if num_indices0 != num_indices1:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    if is_state0_a_vector and is_state1_a_vector:
+        dot_product = qml.math.dot(state0, state1)
+
+        return qml.math.sqrt(1 - qml.math.real(dot_product * qml.math.conj(dot_product)))
+
+    if is_state0_a_vector:
+        state0 = qml.math.outer(state0, np.conj(state0))
+
+    if is_state1_a_vector:
+        state1 = qml.math.outer(state1, np.conj(state1))
+
+    return _compute_trace_distance(state0, state1, both_pure=both_pure)

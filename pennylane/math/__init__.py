@@ -75,6 +75,7 @@ from .quantum import (
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    trace_distance,
 )
 from .utils import (
     allclose,
@@ -157,4 +158,5 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
+    "trace_distance",
 ]
