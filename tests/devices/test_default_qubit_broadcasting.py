@@ -20,7 +20,36 @@ from itertools import product
 import math
 
 import pytest
-from gate_data import X, Y, Z, S, T, H, CNOT, SWAP, CZ, ISWAP, SISWAP, CSWAP, Rphi, Rotx,Roty, Rotz,MultiRZ1, Rot3, CRotx, CRoty, CRotz, MultiRZ2, IsingXX, IsingYY, IsingZZ, CRot3, I, Toffoli
+from gate_data import (
+    X,
+    Y,
+    Z,
+    S,
+    T,
+    H,
+    CNOT,
+    SWAP,
+    CZ,
+    ISWAP,
+    SISWAP,
+    CSWAP,
+    Rphi,
+    Rotx,
+    Roty,
+    Rotz,
+    MultiRZ1,
+    Rot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    MultiRZ2,
+    IsingXX,
+    IsingYY,
+    IsingZZ,
+    CRot3,
+    I,
+    Toffoli,
+)
 
 import pennylane as qml
 from pennylane import numpy as np, DeviceError

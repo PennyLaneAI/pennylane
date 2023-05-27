@@ -27,6 +27,7 @@ from pennylane.pulse import ParametrizedHamiltonian
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
 
+
 @pytest.mark.jax
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""

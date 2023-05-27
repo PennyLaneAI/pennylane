@@ -1403,7 +1403,9 @@ class TestVar:
         phi = phi.to(device=torch_device)
 
         # test correct variance for <H> of a rotated state
-        ham = torch.tensor([[4, -1 + 6j], [-1 - 6j, 2]], dtype=torch.complex128, device=torch_device)
+        ham = torch.tensor(
+            [[4, -1 + 6j], [-1 - 6j, 2]], dtype=torch.complex128, device=torch_device
+        )
 
         with qml.queuing.AnnotatedQueue() as q:
             _ = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
@@ -2326,9 +2328,7 @@ class TestSamplesBroadcasted:
         )
 
     @pytest.mark.parametrize("batch_size", [2, 3])
-    def test_estimating_marginal_probability_broadcasted(
-        self, torch_device, batch_size, tol
-    ):
+    def test_estimating_marginal_probability_broadcasted(self, torch_device, batch_size, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
 
