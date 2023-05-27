@@ -89,12 +89,20 @@ def _measure_with_samples_diagonalizing_gates(
             # better to call sample_state just once with total_shots, then use
             # the shot_range keyword argument
             samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
-            processed_samples.append(qml.math.squeeze(mp.process_samples(samples, wires)))
+
+            if not isinstance(processed := mp.process_samples(samples, wires), dict):
+                processed = qml.math.squeeze(processed)
+
+            processed_samples.append(processed)
 
         return tuple(processed_samples)
 
     samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=wires, rng=rng)
-    return qml.math.squeeze(mp.process_samples(samples, wires))
+
+    if not isinstance(processed := mp.process_samples(samples, wires), dict):
+        processed = qml.math.squeeze(processed)
+
+    return processed
 
 
 def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
