@@ -14,9 +14,10 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=protected-access,cell-var-from-loop
 import cmath
 
-# pylint: disable=protected-access,cell-var-from-loop
 import math
 
 import pytest
@@ -1209,6 +1210,7 @@ class TestDefaultQubitIntegration:
         assert np.array_equal(outcomes[0], outcomes[1])
 
 
+# pylint: disable=unused-argument
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
@@ -1739,7 +1741,7 @@ class TestDtypePreserved:
             qml.QubitCarry,
         ],
     )
-    def test_state_dtype_after_op(self, r_dtype, c_dtype, op, tol):
+    def test_state_dtype_after_op(self, r_dtype, c_dtype, op):
         """Test that the default qubit plugin preserves data types of states when an operation is
         applied. As TestApply class check most of operators, we here only check some subtle
         examples.
@@ -1772,7 +1774,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_measurement_real_dtype(self, r_dtype, c_dtype, measurement, tol):
+    def test_measurement_real_dtype(self, r_dtype, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
@@ -1790,7 +1792,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_measurement_complex_dtype(self, r_dtype, c_dtype, measurement, tol):
+    def test_measurement_complex_dtype(self, r_dtype, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
@@ -1808,6 +1810,7 @@ class TestDtypePreserved:
 class TestProbabilityIntegration:
     """Test probability method for when analytic is True/False"""
 
+    # pylint: disable=unused-argument
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0], dtype=float)
@@ -1831,6 +1834,7 @@ class TestProbabilityIntegration:
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
         assert not np.array_equal(prob_analytic(x), prob(x))
 
+    # pylint: disable=attribute-defined-outside-init
     def test_call_generate_samples(self, monkeypatch):
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
@@ -1900,14 +1904,14 @@ class TestWiresIntegration:
             dev.execute(tape)
 
     wires_to_try = [
-        (1, Wires([0]), Wires([0])),
-        (4, Wires([1, 3]), Wires([1, 3])),
-        (["a", 2], Wires([2]), Wires([1])),
-        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+        (1, Wires([0])),
+        (4, Wires([1, 3])),
+        (["a", 2], Wires([2])),
+        (["a", 2], Wires([2, "a"])),
     ]
 
-    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
-    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+    @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map):
         """Test that multiple calls to map_wires will use caching."""
         dev = qml.device("default.qubit", wires=dev_wires)
 
@@ -2148,7 +2152,7 @@ class TestApplyOperationUnit:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, mocker, monkeypatch):
+    def test_diagonal_operation_case(self, monkeypatch):
         """Tests the case when the operation to be applied is
         diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
@@ -2174,7 +2178,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, np.diag(op.matrix()))
             assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case(self, mocker, monkeypatch):
+    def test_apply_einsum_case(self, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -2187,6 +2191,7 @@ class TestApplyOperationUnit:
         class TestSGate(qml.operation.Operation):
             num_wires = 1
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return np.array([[1, 0], [0, 1j]])
@@ -2211,7 +2216,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
-    def test_apply_tensordot_case(self, mocker, monkeypatch):
+    def test_apply_tensordot_case(self, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=3)
@@ -2224,6 +2229,7 @@ class TestApplyOperationUnit:
         class TestToffoli(qml.operation.Operation):
             num_wires = 3
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return U_toffoli
@@ -2259,6 +2265,7 @@ class TestApplyOperationUnit:
             batch_size = 3
             num_params = 0
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return np.array([U_toffoli] * 3)

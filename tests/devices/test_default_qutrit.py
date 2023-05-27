@@ -14,16 +14,15 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 """
+# pylint: disable=protected-access,too-many-arguments,too-few-public-methods
 import math
 
 import pytest
 from flaky import flaky
+from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qutrit import DefaultQutrit
 from pennylane.wires import Wires, WireError
-
-from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
 
 
 U_thadamard_01 = np.multiply(
@@ -232,7 +231,7 @@ class TestApply:
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
-    def test_apply_rotations_one_wire(self, qutrit_device_1_wire, tol):
+    def test_apply_rotations_one_wire(self, qutrit_device_1_wire):
         """Tests that rotations are applied in correct order after operations"""
 
         state = [1, 0, 0]
@@ -927,6 +926,7 @@ class TestTensorSample:
 class TestProbabilityIntegration:
     """Test probability method for when computation is/is not analytic"""
 
+    # pylint: disable=unused-argument
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=float)
@@ -952,6 +952,7 @@ class TestProbabilityIntegration:
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
         assert not np.array_equal(prob_analytic(x), prob(x))
 
+    # pylint: disable=attribute-defined-outside-init
     def test_call_generate_samples(self, monkeypatch):
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
@@ -1035,14 +1036,14 @@ class TestWiresIntegration:
             dev.execute(tape)
 
     wires_to_try = [
-        (1, Wires([0]), Wires([0])),
-        (4, Wires([1, 3]), Wires([1, 3])),
-        (["a", 2], Wires([2]), Wires([1])),
-        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+        (1, Wires([0])),
+        (4, Wires([1, 3])),
+        (["a", 2], Wires([2])),
+        (["a", 2], Wires([2, "a"])),
     ]
 
-    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
-    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+    @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map):
         """Test that multiple calls to map_wires will use caching."""
         dev = qml.device("default.qutrit", wires=dev_wires)
 
@@ -1124,6 +1125,7 @@ class TestApplyOperationUnit:
         class TestSwap(qml.operation.Operation):
             num_wires = 2
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return TSWAP
