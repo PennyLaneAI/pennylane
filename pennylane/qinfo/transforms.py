@@ -805,6 +805,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     return evaluate_fidelity
 
+
 def relative_entropy(qnode0, qnode1, wires0, wires1):
     r"""
     Compute the relative entropy for two :class:`.QNode` returning a :func:`~pennylane.state` (a state can be a state vector
@@ -931,6 +932,7 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
         return qml.math.relative_entropy(state0, state1)
 
     return evaluate_relative_entropy
+
 
 def trace_distance(qnode0, qnode1, wires0, wires1):
     r"""

@@ -1126,6 +1126,7 @@ def _compute_max_entropy(density_matrix, base):
 
     return maximum_entropy
 
+
 def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     r"""
     Compute the trace distance between two quantum states.

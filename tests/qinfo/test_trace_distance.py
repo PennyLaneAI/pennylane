@@ -272,7 +272,9 @@ class TestTraceDistanceQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])((torch.tensor(param)))
+        td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (torch.tensor(param))
+        )
         expected_td = expected_trace_distance_rx_pauliz(param)
         assert qml.math.allclose(td, expected_td)
 
@@ -381,7 +383,9 @@ class TestTraceDistanceQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])((tf.Variable(param)))
+        td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (tf.Variable(param))
+        )
         expected_td = expected_trace_distance_rx_pauliz(param)
         assert qml.math.allclose(td, expected_td)
 
@@ -436,7 +440,9 @@ class TestTraceDistanceQnode:
         expected_td = expected_grad_trace_distance_rx_pauliz(param)
         param = tf.Variable(param)
         with tf.GradientTape() as tape:
-            entropy = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
+            entropy = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(
+                None, (param)
+            )
 
         td_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(td_grad, expected_td)
@@ -594,7 +600,9 @@ class TestTraceDistanceQnode:
             return qml.state()
 
         td_grad = jax.jit(
-            jax.grad(qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1)
+            jax.grad(
+                qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1
+            )
         )(None, (jax.numpy.array(param)))
         expected_td = expected_grad_trace_distance_rx_pauliz(param)
         assert qml.math.allclose(td_grad, expected_td, rtol=1e-04, atol=1e-03)
@@ -639,7 +647,9 @@ class TestTraceDistanceQnode:
             return qml.state()
 
         td_grad = jax.jit(
-            jax.grad(qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1])
+            jax.grad(
+                qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1]
+            )
         )((jax.numpy.array(param)), (jax.numpy.array(2 * param)))
         expected = expected_grad_trace_distance_rx_pauliz(param)
         expected_td = [-expected, expected]
@@ -796,7 +806,9 @@ class TestTraceDistanceQnode:
             return qml.state()
 
         td_grad = jax.jit(
-            jax.grad(qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=[0, 1])
+            jax.grad(
+                qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=[0, 1]
+            )
         )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
         expected_td_grad = expected_grad_trace_distance_rx_pauliz(param)
         assert qml.math.allclose(td_grad, (expected_td_grad, 0.0), rtol=1e-03, atol=1e-04)
