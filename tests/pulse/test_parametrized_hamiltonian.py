@@ -124,13 +124,12 @@ class TestInitialization:
 
     def test__repr__(self):
         """Test repr method returns expected string"""
-        coeffs = [2., f1, f2]
+        coeffs = [2.0, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         H = ParametrizedHamiltonian(coeffs, ops)
-        expected= "(2.0*(PauliX(wires=[0]))) + (f1(params_0, t)*(PauliY(wires=[0]))) + (f2(params_1, t)*(PauliZ(wires=[0])))"
-        
-        assert repr(H) == expected
+        expected = "(2.0*(PauliX(wires=[0]))) + (f1(params_0, t)*(PauliY(wires=[0]))) + (f2(params_1, t)*(PauliZ(wires=[0])))"
 
+        assert repr(H) == expected
 
     def test_wire_attribute(self):
         """Tests that the wires attribute contains the expected wires, in the expected order"""
