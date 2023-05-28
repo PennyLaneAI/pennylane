@@ -58,11 +58,15 @@ def reduced_dm(qnode, wires):
         if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc measurement needs to be State.")
 
+        # determine if the measurement is a state vector or a density matrix
+        # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
+        # line with isinstance checks
+        dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+        dm_func = qml.math.reduce_statevector if not dm_measurement else qml.math.reduce_dm
+
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = qml.math.reduced_dm(
-            state_built, indices=wires, c_dtype=qnode.device.C_DTYPE
-        )
+        density_matrix = dm_func(state_built, indices=wires, c_dtype=qnode.device.C_DTYPE)
         return density_matrix
 
     return wrapper
