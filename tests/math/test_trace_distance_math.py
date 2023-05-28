@@ -29,7 +29,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 class TestTraceDistanceMath:
-    """Tests for Fidelity function between two states (state vectors or density matrix)."""
+    """Tests for the trace distance function between two states (state vectors or density matrix)."""
 
     state0_state1_td = [
         # Vector-Vector-TD
@@ -55,10 +55,8 @@ class TestTraceDistanceMath:
         ([[0, 0], [0, 1]], [[0.5, 0.5], [0.5, 0.5]], np.sqrt(2) / 2),
         (
             [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
-            #[[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
             [[0.25, 0.25, 0.25, 0.25], [0.25, 0.25, 0.25, 0.25], [0.25, 0.25, 0.25, 0.25], [0.25, 0.25, 0.25, 0.25]],
             np.sqrt(2) / 2
-            #0
         ),
     ]
 

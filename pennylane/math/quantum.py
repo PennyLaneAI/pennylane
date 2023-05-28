@@ -1126,29 +1126,7 @@ def _compute_max_entropy(density_matrix, base):
 
     return maximum_entropy
 
-def _compute_trace_distance(rho, sigma, both_pure):
-    r"""
-    Compute the trace distance between the two density matrices rho and sigma.
-
-    .. math::
-        T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
-        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right))
-
-    where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
-    """
-    if both_pure:
-        dot_product = qml.math.dot(rho, sigma)
-        # Compute the trace of rho*sigma, which is equal to the squared modulus of their overlap
-        dot_product = qml.math.sum(qml.math.where(np.eye(rho.shape[0]), dot_product, 0.0))
-
-        return qml.math.sqrt(1 - qml.math.real(dot_product))
-
-    # In the general case, the trace distance is half the sum of the absolute values of the
-    # eigenvalues of the difference between rho and sigma.
-    eigvals, _ = qml.math.linalg.eigh(rho - sigma)
-    return qml.math.sum(qml.math.abs(eigvals)) / 2
-
-def trace_distance(state0, state1, check_state=False, both_pure=False, c_dtype="complex128"):
+def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     r"""
     Compute the trace distance between two quantum states.
 
@@ -1168,7 +1146,6 @@ def trace_distance(state0, state1, check_state=False, both_pure=False, c_dtype="
         state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        both_pure (bool): If True, the function will compute the trace distance using a simpler
         and faster formula, which is only applicable to pure states. Note that if state0 and state1
         are given as vectors, this argument is ignored.
         c_dtype (str): Complex floating point precision type.
@@ -1227,7 +1204,7 @@ def trace_distance(state0, state1, check_state=False, both_pure=False, c_dtype="
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
     if is_state0_a_vector and is_state1_a_vector:
-        dot_product = qml.math.dot(state0, state1)
+        dot_product = qml.math.dot(state0, qml.math.conj(state1))
 
         return qml.math.sqrt(1 - qml.math.real(dot_product * qml.math.conj(dot_product)))
 
@@ -1237,4 +1214,6 @@ def trace_distance(state0, state1, check_state=False, both_pure=False, c_dtype="
     if is_state1_a_vector:
         state1 = qml.math.outer(state1, np.conj(state1))
 
-    return _compute_trace_distance(state0, state1, both_pure=both_pure)
+    eigvals, _ = qml.math.linalg.eigh(state0 - state1)
+
+    return qml.math.sum(qml.math.abs(eigvals)) / 2
