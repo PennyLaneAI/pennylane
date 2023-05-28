@@ -1132,7 +1132,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
 
     .. math::
         T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
-        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right))
+        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right)
 
     where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
 
@@ -1146,8 +1146,6 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
         state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        and faster formula, which is only applicable to pure states. Note that if state0 and state1
-        are given as vectors, this argument is ignored.
         c_dtype (str): Complex floating point precision type.
 
     Returns:
@@ -1162,7 +1160,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     0.0
 
     The quantum states can be provided as density matrices, allowing for computation
-    of relative entropy between mixed states:
+    of the trace distance between mixed states:
 
     >>> rho = np.array([[0.3, 0], [0, 0.7]])
     >>> sigma = np.array([[0.5, 0], [0, 0.5]])

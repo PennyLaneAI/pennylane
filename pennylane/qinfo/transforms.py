@@ -939,7 +939,7 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
 
     .. math::
         T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
-        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right))
+        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right)
 
     where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
 
