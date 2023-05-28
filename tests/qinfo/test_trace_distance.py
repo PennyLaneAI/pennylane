@@ -120,7 +120,9 @@ class TestTraceDistanceQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=(np.pi))
+        td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(
+            all_args1=(np.pi,)
+        )
         assert qml.math.allclose(td, 1.0)
 
     @pytest.mark.parametrize("device", devices)
@@ -163,7 +165,7 @@ class TestTraceDistanceQnode:
     @pytest.mark.parametrize("wire", wires)
     def test_trace_distance_qnodes_rx_pauliz(self, device, param, wire):
         """Test the trace distance between Rx and PauliZ circuits."""
-        dev = qml.device(device, wires=1)
+        dev = qml.device(device, wires=wire)
 
         @qml.qnode(dev)
         def circuit0(x):
@@ -480,7 +482,7 @@ class TestTraceDistanceQnode:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
     @pytest.mark.parametrize("interface", interfaces)
-    def test_trace_distance_qnodes_rx_pauliz_jax_jit(self, param, wire, interface):
+    def test_trace_distance_qnodes_rx_pauliz_jax_jit(self, param, wire):
         """Test the trace distance between Rx and PauliZ circuits with Jax jit."""
         import jax
 
