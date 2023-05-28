@@ -241,16 +241,20 @@ class ParametrizedHamiltonian:
 
     def __repr__(self):
         terms = []
-        for i, (coeff, op) in enumerate(
-            zip(
-                self.coeffs_fixed + self.coeffs_parametrized, self.ops_fixed + self.ops_parametrized
-            )
-        ):
-            if callable(coeff):
+
+        for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
+            term = f"({coeff}*({op}))"
+            terms.append(term)
+
+        for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
+            if callable(coeff) and hasattr(coeff, "__name__"):
                 term = f"({coeff.__name__}(params_{i}, t)*({op}))"
+            elif hasattr(coeff, "__class__") and hasattr(coeff.__class__, "__name__"):
+                term = f"({coeff.__class__.__name__}(params_{i}, t)*({op}))"
             else:
                 term = f"({coeff}*({op}))"
             terms.append(term)
+
         return " + ".join(terms)
 
     def H_fixed(self):
