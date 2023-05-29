@@ -413,7 +413,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
             # re-normalize the collapsed state
             sum_indices = tuple(range(1, num_remaining_qubits))
-            state_squared = np.abs(stacked_state) ** 2,
+            state_squared = np.abs(stacked_state) ** 2
             norms = np.sqrt(np.sum(state_squared, sum_indices, keepdims=True))
             stacked_state /= norms
 
