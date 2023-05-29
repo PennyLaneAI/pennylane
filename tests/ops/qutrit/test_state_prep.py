@@ -21,7 +21,6 @@ from pennylane import numpy as np
 from pennylane.wires import WireError
 
 
-
 class TestDecomposition:
     def test_QutritBasisState_decomposition(self):
         """Test the decomposition for QutritBasisState"""
