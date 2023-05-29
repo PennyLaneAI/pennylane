@@ -176,7 +176,7 @@ class TestTransformDispatcher:
         assert transformed_tape.circuit is not None
 
     def test_qnode_with_expand_transform(self):
-        """Test that queuing works with the transformed quantum function."""
+        """Test qnode with a transform program and expand transform."""
 
         dispatched_transform = transform(first_valid_transform, expand_transform=expand_transform)
 
