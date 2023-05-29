@@ -18,7 +18,6 @@ from collections.abc import Iterable
 from typing import Optional, Text
 
 import pennylane as qml
-from pennylane.measurements import StateMP, VnEntropyMP, MutualInfoMP, PurityMP
 
 try:
     import tensorflow as tf

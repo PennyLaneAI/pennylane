@@ -20,7 +20,6 @@ from collections.abc import Iterable
 from typing import Callable, Dict, Union, Any, Text
 
 import pennylane as qml
-from pennylane.measurements import StateMP, VnEntropyMP, MutualInfoMP, PurityMP
 from pennylane.qnode import QNode
 
 try:
