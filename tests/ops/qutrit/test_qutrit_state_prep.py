@@ -21,18 +21,17 @@ from pennylane import numpy as np
 from pennylane.wires import WireError
 
 
-class TestDecomposition:
-    def test_QutritBasisState_decomposition(self):
-        """Test the decomposition for QutritBasisState"""
+def test_QutritBasisState_decomposition(self):
+    """Test the decomposition for QutritBasisState"""
 
-        n = np.array([0, 1, 0])
-        wires = (0, 1, 2)
-        ops1 = qml.QutritBasisState.compute_decomposition(n, wires)
-        ops2 = qml.QutritBasisState(n, wires=wires).decomposition()
+    n = np.array([0, 1, 0])
+    wires = (0, 1, 2)
+    ops1 = qml.QutritBasisState.compute_decomposition(n, wires)
+    ops2 = qml.QutritBasisState(n, wires=wires).decomposition()
 
-        assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.QutritBasisStatePreparation)
-        assert isinstance(ops2[0], qml.QutritBasisStatePreparation)
+    assert len(ops1) == len(ops2) == 1
+    assert isinstance(ops1[0], qml.QutritBasisStatePreparation)
+    assert isinstance(ops2[0], qml.QutritBasisStatePreparation)
 
 
 class TestStateVector:
