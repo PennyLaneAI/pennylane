@@ -198,13 +198,13 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.tape.QuantumTape):
             return self._transform(obj, *targs, **tkwargs)
-        elif isinstance(obj, qml.QNode):
+        if isinstance(obj, qml.QNode):
             return self._qnode_transform(
                 obj,
                 targs,
                 tkwargs,
             )
-        elif callable(obj):
+        if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
         raise TransformError(
