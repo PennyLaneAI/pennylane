@@ -33,6 +33,8 @@ except ImportError:
 def _one_parameter_generators(op):
     r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
     reproduce the partial derivatives of a parameterized evolution.
+    In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
+    and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
     Args:
         op (`~.ParametrizedEvolution`): Parametrized evolution for which to compute the generator
@@ -94,8 +96,6 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
     the partial derivatives of a parametrized evolution. The coefficients correspond
     to the decomposition into (rescaled) Pauli word generators as used by ``PauliRot``
     gates.
-    In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
-    and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
     Args:
         generators (tuple[tensor_like]): Generators of the one-parameter groups that
@@ -114,13 +114,6 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
         number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qml.PauliRot``
         in the pulse generator differentiation pipeline.
 
-    .. note::
-
-        Currently, this function work via tensor multiplication, costing
-        :math:`\mathcal{O}(n16^N)` scalar multiplications, where :math:`N` is the
-        number of qubits the evolution acts on and :math:`n` is the number of (scalar) parameters
-        of the evolution. This can be improved to :math:`\mathcal{O}(nN4^N}` by using the
-        fast Walsh-Hadamard transform.
     """
     # The generators are skew-Hermitian. Therefore _pauli_decompose will return a purely
     # imaginary tensor. Multiplying with 2i results in a real-valued tensor, which
@@ -207,7 +200,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
         # only ParametrizedEvolution can be treated with this gradient transform
         raise ValueError(
             "pulse_generator does not support differentiating parameters of "
-            "other operations than pulses."
+            f"other operations than pulses, but received operation {op}."
         )
 
     num_wires = len(op.wires)
