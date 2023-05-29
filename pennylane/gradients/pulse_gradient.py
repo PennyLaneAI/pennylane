@@ -162,10 +162,10 @@ def _parshift_and_integrate(
             diff = (res := qml.math.stack(res_list))[::2] - res[1::2]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
-    # If single measure xor has_partitioned_shots: One axis to pull out of the shift rule and integration
-    if single_measure is has_partitioned_shots:
+    nesting_layers = (not single_measure) + has_partitioned_shots
+    if nesting_layers == 1:
         return tuple(_diff_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
-    if single_measure:
+    if nesting_layers == 0:
         # Single measurement without shot vector
         return _diff_and_contract(results, cjacs, int_prefactor)
 
