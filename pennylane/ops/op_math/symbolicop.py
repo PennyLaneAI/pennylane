@@ -207,6 +207,16 @@ class ScalarSymbolicOp(SymbolicOp):
             )
         return scalar_size
 
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                str(self.scalar),
+                self.base.hash,
+            )
+        )
+
     @staticmethod
     @abstractmethod
     def _matrix(scalar, mat):
