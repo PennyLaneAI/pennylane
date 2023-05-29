@@ -14,9 +14,10 @@
 """
 Tests for the Fourier reconstruction transform.
 """
+# pylint: disable=too-many-arguments
 import pytest
 from inspect import signature
-from itertools import chain, combinations
+from itertools import chain
 from functools import reduce
 import numpy as np
 import pennylane as qml

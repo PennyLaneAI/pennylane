@@ -951,6 +951,7 @@ class TestDefaultQubitIntegrationBroadcasted:
         assert np.array_equal(outcomes[0], outcomes[1])
 
 
+# pylint: disable=unused-argument
 @pytest.mark.parametrize(
     "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
@@ -1115,7 +1116,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian_identity_expectation_broadcasted(self, theta, phi, tol):
+    def test_hermitian_identity_expectation_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -1139,7 +1140,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian_two_wires_identity_expectation_broadcasted(self, theta, phi, tol):
+    def test_hermitian_two_wires_identity_expectation_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit", wires=3)
 

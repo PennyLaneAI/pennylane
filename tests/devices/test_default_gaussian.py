@@ -100,7 +100,10 @@ def gaussian_device_3_wires_fixture():
     return qml.device("default.gaussian", wires=3)
 
 
-gaussian_dev_fixture = gaussian_device_2_wires_fixture  # alias
+@pytest.fixture(scope="function", name="gaussian_dev")
+def gaussian_dev_fixture():  # alias
+    """Fixture of a default.gaussian device with 2 wires."""
+    return qml.device("default.gaussian", wires=2)
 
 
 def test_analytic_deprecation():
