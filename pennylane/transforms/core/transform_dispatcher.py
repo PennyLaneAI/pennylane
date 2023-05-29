@@ -296,13 +296,3 @@ class TransformContainer:
     def classical_cotransform(self):
         """Return the stored quantum transform's classical co-transform."""
         return self._classical_cotransform
-
-
-class TransformProgram:
-    """Class to create a transform program.
-
-    .. warning::
-
-        This class is developer-facing and should not be used directly.
-
-    """
