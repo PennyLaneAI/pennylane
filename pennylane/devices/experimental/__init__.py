@@ -19,3 +19,4 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .device_api import Device
 from .default_qubit_2 import DefaultQubit2
 from .quimb_qubit import QuimbQubit
+from .mps_qubit import MPSQubit

@@ -1,0 +1,80 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Simulate a quantum script."""
+# pylint: disable=protected-access
+import pennylane as qml
+
+# import pennylane.numpy as np
+
+from pennylane.typing import Result
+
+from .initialize_state import create_initial_state
+from .apply_operation import apply_operation
+from .measure import measure
+from .sampling import measure_with_samples
+
+
+def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
+    """Simulate a single quantum script.
+
+    This is an internal function that will be called by the successor to ``default.qubit``.
+
+    Args:
+        circuit (.QuantumScript): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+
+    Returns:
+        tuple(TensorLike): The results of the simulation
+
+    Note that this function can return measurements for non-commuting observables simultaneously.
+
+    It does currently not support sampling or observables without diagonalizing gates.
+
+    This function assumes that all operations provide matrices.
+
+    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+    >>> simulate(qs)
+    (0.36235775447667357,
+    tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
+
+    """
+
+    if set(circuit.wires) != set(range(circuit.num_wires)):
+        wire_map = {w: i for i, w in enumerate(circuit.wires)}
+        circuit = qml.map_wires(circuit, wire_map)
+
+    state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
+
+    for op in circuit._ops:
+        apply_operation(op, state)
+
+    if circuit.shots.total_shots is None:
+        if len(circuit.measurements) == 1:
+            return measure(circuit.measurements[0], state)
+        return tuple(measure(mp, state) for mp in circuit.measurements)
+
+    # finite-shot case
+    if len(circuit.measurements) == 1:
+        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
+
+    results = tuple(
+        measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
+    )
+
+    # no shot vector
+    if circuit.shots.has_partitioned_shots:
+        return tuple(zip(*results))
+    return results
