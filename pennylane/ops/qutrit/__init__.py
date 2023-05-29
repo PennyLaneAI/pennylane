@@ -25,10 +25,12 @@ from .observables import *
 from .non_parametric_ops import *
 from .parametric_ops import *
 from ..identity import Identity
+from .state_preparation import *
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
 ops = {
     "Identity",
+    "QutritBasisState",
     "QutritUnitary",
     "ControlledQutritUnitary",
     "TShift",
