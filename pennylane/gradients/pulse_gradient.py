@@ -15,7 +15,6 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
-from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
@@ -543,6 +542,7 @@ def _stoch_pulse_grad(
             f"parameter-shift gradient, got {num_split_times}."
         )
 
+    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 
@@ -618,8 +618,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
-    shot_vector = isinstance(shots, Sequence)
-    tape_specs = (single_measure, num_params, num_measurements, shot_vector, shots)
+    has_partitioned_shots = shots.has_partitioned_shots
+    tape_specs = (single_measure, num_params, num_measurements, shots)
 
     def processing_fn(results):
         start = 0
@@ -633,13 +633,19 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             # Apply the postprocessing of the parameter-shift rule and contract
             # with classical Jacobian, effectively computing the integral approximation
             g = _parshift_and_integrate(
-                res, cjacs, avg_prefactor, psr_coeffs, single_measure, shot_vector, use_broadcasting
+                res,
+                cjacs,
+                avg_prefactor,
+                psr_coeffs,
+                single_measure,
+                has_partitioned_shots,
+                use_broadcasting,
             )
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        zero_rep = _make_zero_rep(g, single_measure, shot_vector)
+        zero_rep = _make_zero_rep(g, single_measure, has_partitioned_shots)
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
