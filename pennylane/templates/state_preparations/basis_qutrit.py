@@ -16,7 +16,6 @@ Contains the BasisStatePreparation template.
 """
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 
 
@@ -92,6 +91,9 @@ class QutritBasisStatePreparation(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
+
+         .. seealso:: :meth:`~.BasisState.decomposition`.
+
         Args:
             basis_state (array): Input array of shape ``(len(wires),)``
             wires (Any or Iterable[Any]): wires that the operator acts on
@@ -106,10 +108,9 @@ class QutritBasisStatePreparation(Operation):
         Tshift(wires=['b']),
         TShift(wires=['b'])]
         """
-        
+
         op_list = []
         for wire, state in zip(wires, basis_state):
-            for _ in range(0,state):
+            for _ in range(0, state):
                 op_list.append(qml.TShift(wire))
         return op_list
-

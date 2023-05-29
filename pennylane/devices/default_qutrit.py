@@ -130,7 +130,6 @@ class DefaultQutrit(QutritDevice):
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
-
             if i > 0 and isinstance(operation, (QutritBasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
@@ -147,7 +146,6 @@ class DefaultQutrit(QutritDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
-
 
     def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.

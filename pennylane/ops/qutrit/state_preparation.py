@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the qutrit device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
 from pennylane.operation import AnyWires, StatePrep
@@ -24,6 +23,7 @@ from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"QutritBasisState"}
+
 
 class QutritBasisState(StatePrep):
     r"""QutritBasisState(n, wires)
@@ -70,6 +70,7 @@ class QutritBasisState(StatePrep):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
+        .. seealso:: :meth:`~.BasisState.decomposition`.
 
         Args:
             n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
