@@ -481,7 +481,6 @@ class TestTraceDistanceQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    @pytest.mark.parametrize("interface", interfaces)
     def test_trace_distance_qnodes_rx_pauliz_jax_jit(self, param, wire):
         """Test the trace distance between Rx and PauliZ circuits with Jax jit."""
         import jax
