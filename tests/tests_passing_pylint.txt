@@ -33,6 +33,7 @@ tests/ops/qutrit/test_qutrit_observables.py
 tests/ops/qutrit/test_qutrit_parametric_ops.py
 tests/pulse/**
 tests/qchem/test_givens_rotations.py
+tests/qnn/**
 tests/tape/test_qscript.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/templates/test_subroutines/test_qsvt.py
