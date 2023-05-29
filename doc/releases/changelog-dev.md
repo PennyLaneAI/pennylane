@@ -146,6 +146,10 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* Added broadcasting support for `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, `qml.math.max_entropy`, and `qml.math.sqrt_matrix`.
+  [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -182,6 +186,10 @@
 
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
+* `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
+  input. Please call `qml.math.dm_from_state_vector` on the input before passing to any of these functions.
 
 <h3>Documentation 📝</h3>
 

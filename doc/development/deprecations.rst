@@ -16,6 +16,13 @@ Pending deprecations
   - Still accessible in v0.31
   - Removed in v0.32
 
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
+  - Removed in v0.32
+
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:
