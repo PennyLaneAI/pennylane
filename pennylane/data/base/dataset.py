@@ -17,12 +17,14 @@ for declaratively defining dataset classes.
 """
 
 import json
+import operator
 import typing
 from dataclasses import InitVar, dataclass
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Generic,
     List,
@@ -33,9 +35,7 @@ from typing import (
     Union,
     cast,
     get_origin,
-    Callable,
 )
-import operator
 
 from typing_extensions import dataclass_transform
 
