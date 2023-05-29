@@ -228,8 +228,6 @@ class KerasLayer(Layer):
         self.qnode = qnode
         self.qnode.interface = "tf"
 
-        self.split_batches = None
-
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
         # are passed as integer 5 and [5, 2] will be passes as tuple (5, 2)
@@ -267,21 +265,6 @@ class KerasLayer(Layer):
             if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
                 raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
-    @staticmethod
-    def _broadcasting_supported(qtape):
-        """
-        Returns whether broadcasting is supported on the given tape
-        """
-        for m in qtape.measurements:
-            if isinstance(m, (VnEntropyMP, MutualInfoMP, PurityMP)):
-                return False
-
-            if isinstance(m, StateMP) and m.wires:
-                # density matrix
-                return False
-
-        return True
-
     def build(self, input_shape):
         """Initializes the QNode weights.
 
@@ -291,17 +274,6 @@ class KerasLayer(Layer):
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
             self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
-
-        inputs = tf.zeros(input_shape[-1])
-
-        kwargs = {
-            **{self.input_arg: inputs},
-            **{k: 1.0 * w for k, w in self.qnode_weights.items()},
-        }
-        self.qnode.construct((), kwargs)
-        self.split_batches = (
-            not self._broadcasting_supported(self.qnode.tape) or not qml.active_return()
-        )
 
         super().build(input_shape)
 
@@ -321,17 +293,17 @@ class KerasLayer(Layer):
             batch_dims = tf.shape(inputs)[:-1]
             inputs = tf.reshape(inputs, (-1, tf.shape(inputs)[-1]))
 
-        if self.split_batches and has_batch_dim:
+        if not qml.active_return() and has_batch_dim:
             # If the input has a batch dimension and we want to execute each data point separately,
             # unstack the input along its first dimension, execute the QNode on each of the yielded
             # tensors, and then stack the outputs back into the correct shape
             batch_results = []
+
             for x in tf.unstack(inputs):
                 batch_results.append(self._evaluate_qnode(x))
 
             results = tf.stack(batch_results)
         else:
-            # If the input has no batch_dim or we want to use broadcasting,
             # calculate the forward pass as usual
             results = self._evaluate_qnode(inputs)
 
@@ -361,6 +333,7 @@ class KerasLayer(Layer):
                 # multi-return and batch dim case
                 res = [tf.reshape(r, (tf.shape(x)[0], -1)) for r in res]
 
+            # multi-return and no batch dim
             return tf.experimental.numpy.hstack(res)
 
         return res
