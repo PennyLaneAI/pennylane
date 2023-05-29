@@ -38,7 +38,7 @@ class QutritBasisState(StatePrep):
 
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
-            array of integers from the set :math:`\{0, 1\}`, i.e.,
+            array of integers from the set :math:`\{0, 1, 2\}`, i.e.,
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
@@ -66,11 +66,11 @@ class QutritBasisState(StatePrep):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.BasisState.decomposition`.
+        .. seealso:: :meth:`~.QutritBasisState.decomposition`.
 
         Args:
             n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
-                array of integers from the set :math:`\{0, 1\}`
+                array of integers from the set :math:`\{0, 1, 2\}`
             wires (Iterable, Wires): the wire(s) the operation acts on
 
         Returns:
@@ -78,8 +78,8 @@ class QutritBasisState(StatePrep):
 
         **Example:**
 
-        >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [BasisStatePreparation([1, 0], wires=[0, 1])]
+        >>> qml.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
+        [QutritBasisStatePreparation([1, 0], wires=[0, 1])]
 
         """
         return [QutritBasisStatePreparation(n, wires)]

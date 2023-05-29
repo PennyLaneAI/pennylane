@@ -34,19 +34,19 @@ class QutritBasisStatePreparation(Operation):
             the state preparation acts on.
         wires (Iterable): wires that the template acts on
 
-    **Example**
+    # **Example**
 
-    .. code-block:: python
+    # .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=4)
+    #     dev = qml.device("default.qutrit", wires=4)
 
-        @qml.qnode(dev)
-        def circuit(basis_state):
-            qml.QutritBasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.TShift(wires=i)) for i in range(4)]
+    #     @qml.qnode(dev)
+    #     def circuit(basis_state):
+    #         qml.QutritBasisStatePreparation(basis_state, wires=range(4))
+    #         return [qml.expval(qml.TShift(wires=i)) for i in range(4)]
 
-        basis_state = [0, 1, 1, 0]
-        print(circuit(basis_state)) # [ 1. -1. -1.  1.]
+    #     basis_state = [0, 1, 1, 0]
+    #     print(circuit(basis_state)) # [ 1. -1. -1.  1.] #TODO: calculate this for qutrit.
     """
     num_params = 1
     num_wires = AnyWires
@@ -102,9 +102,9 @@ class QutritBasisStatePreparation(Operation):
 
         **Example**
 
-        >>> qml.BasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
-        [PauliX(wires=['a']),
-        PauliX(wires=['b'])]
+        >>> qml.QutritBasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
+        [TShift(wires=['a']),
+        TShift(wires=['b'])]
         """
         if not qml.math.is_abstract(basis_state):
             op_list = []
