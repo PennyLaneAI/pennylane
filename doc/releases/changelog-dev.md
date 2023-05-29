@@ -18,6 +18,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
+  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
   instead of a `QubitUnitary` operation with a dense matrix.
   [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
