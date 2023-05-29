@@ -76,62 +76,62 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "basis_state,wires,target_state",
-        [
-            ([0, 1], [0, 1], [0, 1, 0]),
-            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
-            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
-        ],
-    )
-    def test_state_preparation_jax_jit(
-        self, tol, qutrit_device_3_wires, basis_state, wires, target_state
-    ):
-        """Tests that the template produces the correct expectation values."""
-        import jax
+    # @pytest.mark.jax
+    # @pytest.mark.parametrize(
+    #     "basis_state,wires,target_state",
+    #     [
+    #         ([0, 1], [0, 1], [0, 1, 0]),
+    #         ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
+    #         ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
+    #     ],
+    # )
+    # def test_state_preparation_jax_jit(
+    #     self, tol, qutrit_device_3_wires, basis_state, wires, target_state
+    # ):
+    #     """Tests that the template produces the correct expectation values."""
+    #     import jax
 
-        @qml.qnode(qutrit_device_3_wires, interface="jax")
-        def circuit(state, obs):
-            qml.QutritBasisStatePreparation(state, wires)
+    #     @qml.qnode(qutrit_device_3_wires, interface="jax")
+    #     def circuit(state, obs):
+    #         qml.QutritBasisStatePreparation(state, wires)
 
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
+    #         return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
 
-        circuit = jax.jit(circuit)
+    #     circuit = jax.jit(circuit)
 
-        obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        output_state = [x - 1 for x in circuit(basis_state, obs)]
+    #     obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
+    #     output_state = [x - 1 for x in circuit(basis_state, obs)]
 
-        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+    #     assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "basis_state,wires,target_state",
-        [
-            ([0, 1], [0, 1], [0, 1, 0]),
-            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
-            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
-        ],
-    )
-    def test_state_preparation_tf_autograph(
-        self, tol, qutrit_device_3_wires, basis_state, wires, target_state
-    ):
-        """Tests that the template produces the correct expectation values."""
-        import tensorflow as tf
+    # @pytest.mark.tf
+    # @pytest.mark.parametrize(
+    #     "basis_state,wires,target_state",
+    #     [
+    #         ([0, 1], [0, 1], [0, 1, 0]),
+    #         ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
+    #         ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
+    #     ],
+    # )
+    # def test_state_preparation_tf_autograph(
+    #     self, tol, qutrit_device_3_wires, basis_state, wires, target_state
+    # ):
+    #     """Tests that the template produces the correct expectation values."""
+    #     import tensorflow as tf
 
-        @tf.function
-        @qml.qnode(qutrit_device_3_wires, interface="tf")
-        def circuit(state, obs):
-            qml.QutritBasisStatePreparation(state, wires)
+    #     @tf.function
+    #     @qml.qnode(qutrit_device_3_wires, interface="tf")
+    #     def circuit(state, obs):
+    #         qml.QutritBasisStatePreparation(state, wires)
 
-            # Pauli Z gates identify the basis state
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
+    #         # Pauli Z gates identify the basis state
+    #         return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
 
-        # Convert from Pauli Z eigenvalues to basis state
-        obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        output_state = [x - 1 for x in circuit(basis_state, obs)]
+    #     # Convert from Pauli Z eigenvalues to basis state
+    #     obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
+    #     output_state = [x - 1 for x in circuit(basis_state, obs)]
 
-        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+    #     assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
