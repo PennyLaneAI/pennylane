@@ -71,7 +71,7 @@ class TestDecomposition:
 
             return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
 
-        # Convert from Pauli Z eigenvalues to basis state
+        # Convert to basis states
         obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
         output_state = [x - 1 for x in circuit(obs)]
 

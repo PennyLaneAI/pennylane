@@ -164,10 +164,10 @@ class DefaultQutrit(QutritDevice):
         n_basis_state = len(state)
 
         if not set(state.tolist()).issubset({0, 1, 2}):
-            raise ValueError("BasisState parameter must consist of 0, 1 or 2 integers.")
+            raise ValueError("QutritBasisState parameter must consist of 0, 1 or 2 integers.")
 
         if n_basis_state != len(device_wires):
-            raise ValueError("BasisState parameter and wires must be of equal length.")
+            raise ValueError("QutritBasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
         basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
