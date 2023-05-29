@@ -16,6 +16,9 @@
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
+* Added the `QutritBasisState` function to support qutrit state preparation for `default.qutrit` device
+  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
+
 <h3>Improvements 🛠</h3>
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates

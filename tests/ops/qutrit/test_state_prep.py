@@ -21,8 +21,6 @@ from pennylane import numpy as np
 from pennylane.wires import WireError
 
 
-densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
-
 
 class TestDecomposition:
     def test_QutritBasisState_decomposition(self):
