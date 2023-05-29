@@ -153,21 +153,6 @@ class TestFidelityMath:
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
-    def test_state_vector_fidelity(self, check_state, func):
-        """Test broadcasting works for fidelity and state vectors"""
-        state0 = func([[1, 0], [0, 1], [1, 0]])
-        state1 = func([[0, 1], [0, 1], [1, 1] / np.sqrt(2)])
-        expected = [0, 1, 0.5]
-
-        with pytest.warns(
-            UserWarning, match="Passing a state vector to fidelity has been deprecated"
-        ):
-            fidelity = qml.math.fidelity(state0, state1, check_state)
-
-        assert qml.math.allclose(fidelity, expected)
-
-    @pytest.mark.parametrize("check_state", check_state)
-    @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_sv_sv(self, check_state, func):
         """Test broadcasting works for fidelity and state vectors"""
         state0 = func([[1, 0], [0, 1], [1, 0]])
