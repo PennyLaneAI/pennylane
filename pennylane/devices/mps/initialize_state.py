@@ -39,4 +39,6 @@ def create_initial_state(
     if prep_operation:
         raise qml.DeviceError("Device does not support prep.")
 
-    return qtn.MPS_computational_state("0" * len(wires), tags=[str(l) for l in wires.labels])
+    return qtn.MPS_computational_state(
+        "0" * max(1, len(wires)), tags=[str(l) for l in wires.labels]
+    )
