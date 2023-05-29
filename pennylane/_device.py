@@ -225,7 +225,7 @@ class Device(abc.ABC):
 
     @property
     def shot_vector(self):
-        """list[~.pennylane.measurements.ShotCopies[int, int]]: Returns the shot vector, a sparse
+        """list[~pennylane.measurements.ShotCopies]: Returns the shot vector, a sparse
         representation of the shot sequence used by the device
         when evaluating QNodes.
 
