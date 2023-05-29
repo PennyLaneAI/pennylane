@@ -155,6 +155,51 @@ class TorchLayer(Module):
 
             qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes, init_method=init_method)
 
+        **Model saving**
+
+        Instances of ``TorchLayer`` can be saved using the usual ``torch.save()`` utility:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            torch.save(qlayer.state_dict(), SAVE_PATH)
+
+        To load the layer again, an instance of the class must be created first before calling ``torch.load()``,
+        as required by PyTorch:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            qlayer.load_state_dict(torch.load(SAVE_PATH))
+            qlayer.eval()
+
+        .. note::
+
+            Currently ``TorchLayer`` objects cannot be saved using the ``torch.save(qlayer, SAVE_PATH)``
+            syntax. In order to save a ``TorchLayer`` object, the object's ``state_dict`` should be
+            saved instead.
+
+        PyTorch modules that contain ``TorchLayer`` objects can also be saved and loaded.
+
+        Saving:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            clayer = torch.nn.Linear(2, 2)
+            model = torch.nn.Sequential(qlayer, clayer)
+            torch.save(model.state_dict(), SAVE_PATH)
+
+        Loading:
+
+        .. code-block::
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes)
+            clayer = torch.nn.Linear(2, 2)
+            model = torch.nn.Sequential(qlayer, clayer)
+            model.load_state_dict(torch.load(SAVE_PATH))
+            model.eval()
+
         **Full code example**
 
         The code block below shows how a circuit composed of templates from the

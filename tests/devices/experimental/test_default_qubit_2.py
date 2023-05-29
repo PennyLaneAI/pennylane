@@ -551,6 +551,41 @@ class TestSampleMeasurements:
         assert results[0].shape == (100, 2)
         assert results[1].shape == (50,)
 
+    def test_counts_wires(self):
+        """Test that a Counts measurement with wires works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.counts(wires=[0, 1])], shots=10000)
+
+        dev = DefaultQubit2(seed=123)
+        result = dev.execute(qs)
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {"00", "10"}
+
+        # check that the count values match the expected
+        values = list(result.values())
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_obs(self, all_outcomes):
+        """Test that a Counts measurement with an observable works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(qml.PauliZ(0), all_outcomes=all_outcomes)],
+            shots=10000,
+        )
+
+        dev = DefaultQubit2(seed=123)
+        result = dev.execute(qs)
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {1, -1}
+
+        # check that the count values match the expected
+        values = list(result.values())
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+
 
 class TestExecutingBatches:
     """Tests involving executing multiple circuits at the same time."""

@@ -11,6 +11,11 @@ Pending deprecations
   - Still accessible in v0.31
   - Removed in v0.32
 
+* ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:
@@ -22,6 +27,12 @@ Pending deprecations
   - ``depth`` will no longer be supported, use ``specs_dict["resources"].depth``
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
+
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
