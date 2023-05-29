@@ -29,7 +29,6 @@ from .attributes import (
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
-from .qchem import QChemDataset
 
 __all__ = (
     "AttributeType",
@@ -48,5 +47,4 @@ __all__ = (
     "DatasetMolecule",
     "DatasetSparseArray",
     "DatasetJSON",
-    "QChemDataset",
 )
