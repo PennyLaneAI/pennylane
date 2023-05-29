@@ -23,8 +23,7 @@ import numpy as np
 from scipy.special import factorial
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
-from pennylane.measurements import ProbabilityMP
+from pennylane.measurements import ProbabilityMP, Shots
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
@@ -157,21 +156,15 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def _processing_fn(results, shots=None, single_shot_batch_fn=None):
-    shot_vector = isinstance(shots, Sequence)
-
-    if not shot_vector:
-        grads_tuple = single_shot_batch_fn(results)
-    else:
-        grads_tuple = []
-        len_shot_vec = _get_num_copies(shots)
-        for idx in range(len_shot_vec):
-            res = [tape_res[idx] for tape_res in results]
-            g_tuple = single_shot_batch_fn(res)
-            grads_tuple.append(g_tuple)
-        grads_tuple = tuple(grads_tuple)
-
-    return grads_tuple
+def _processing_fn(results, shots: Shots = Shots(None), single_shot_batch_fn=None):
+    if not shots.has_partitioned_shots:
+        return single_shot_batch_fn(results)
+    grads_tuple = []
+    for idx in range(shots.num_copies):
+        res = [tape_res[idx] for tape_res in results]
+        g_tuple = single_shot_batch_fn(res)
+        grads_tuple.append(g_tuple)
+    return tuple(grads_tuple)
 
 
 @gradient_transform
@@ -345,6 +338,7 @@ def finite_diff(
             validate_params=validate_params,
             shots=shots,
         )
+    shots = Shots(shots)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 

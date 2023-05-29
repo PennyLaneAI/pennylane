@@ -60,6 +60,12 @@ base_num_control_mats = [
 ]
 
 
+custom_controlled_ops = [  # operators with their own controlled class
+    (qml.PauliY, qml.CY),
+    (qml.PauliZ, qml.CZ),
+]
+
+
 class TempOperator(Operator):
     num_wires = 1
 
@@ -1620,6 +1626,36 @@ def test_ctrl_template_and_operations():
     tape = tape.expand(depth=2, stop_at=lambda obj: not isinstance(obj, Controlled))
     assert len(tape.operations) == 10
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
+
+
+class TestCtrlCustomOperator:
+    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
+    def test_ctrl_custom_operators(self, op_cls, custom_op_cls):
+        """Test that ctrl returns operators with their own controlled class."""
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, control=1)
+        custom_op = custom_op_cls(wires=[1, 0])
+        assert qml.equal(ctrl_op, custom_op)
+        assert ctrl_op.name == custom_op.name
+
+    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when there are multiple control wires."""
+        control_wires = [1, 2]
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, control=control_wires)
+        expected = Controlled(op, control_wires=control_wires)
+        assert not isinstance(ctrl_op, custom_op_cls)
+        assert qml.equal(ctrl_op, expected)
+
+    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_control_values(self, op_cls, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when the control value is not `True`."""
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, 1, control_values=False)
+        expected = Controlled(op, 1, control_values=False)
+        assert not isinstance(ctrl_op, custom_op_cls)
+        assert qml.equal(ctrl_op, expected)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])

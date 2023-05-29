@@ -24,8 +24,8 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math as qmlmath
 from pennylane import operation
+from pennylane import math as qmlmath
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -85,9 +85,20 @@ def ctrl(op, control, control_values=None, work_wires=None):
     Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
 
     """
-    control_values = [control_values] if isinstance(control_values, int) else control_values
+    custom_controlled_ops = {
+        qml.PauliZ: qml.CZ,
+        qml.PauliY: qml.CY,
+    }
+    control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
 
+    if (
+        isinstance(op, tuple(custom_controlled_ops))
+        and len(control) == 1
+        and (control_values is None or control_values[0])
+    ):
+        qml.QueuingManager.remove(op)
+        return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
@@ -147,10 +158,6 @@ class Controlled(SymbolicOp):
         This class, ``Controlled``, denotes a controlled version of any individual operation.
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
-
-        The :class:`~.ControlledOperation` currently constructed by the :func:`~.ctrl` transform wraps
-        an entire tape and does not provide as many representations and attributes as ``Controlled``,
-        but :class:`~.ControlledOperation` does decompose.
 
     .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
@@ -545,6 +552,7 @@ class Controlled(SymbolicOp):
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
             )
+
         return ctrl(
             op=self.base.simplify(),
             control=self.control_wires,

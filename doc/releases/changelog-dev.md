@@ -12,10 +12,18 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
+* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
+  given subspace.
+  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
+
 <h3>Improvements 🛠</h3>
 
 * The `data.Dataset` class now uses HDF5 for serialization
   [(4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
+  
+* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
+  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
   instead of a `QubitUnitary` operation with a dense matrix.
@@ -73,6 +81,10 @@
   the hash of any operators/measurement processes.
   [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
 
+* All drawing methods changed their default value for the keyword argument `show_matrices`
+  to `True`. This allows quick insights into broadcasted tapes for example.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
+
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
 
@@ -80,6 +92,7 @@
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
   [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
+  [(#4172)](https://github.com/PennyLaneAI/pennylane/pull/4172)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -99,13 +112,51 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
+  ```python
+  def U(params):
+      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
+      Um = qml.evolve(H)(params, t=10., dense=False)
+      return qml.matrix(Um)
+  params = jnp.array([[0.5]], dtype=complex)
+  jac = jax.jacobian(U, holomorphic=True)(params)
+  ```
+  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
+
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
 
 * The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
+* `CZ` now inherits from the `ControlledOp` class. It now supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
+  [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
+
+* The construction of the pauli representation for the `Sum` class is now faster.
+  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
+
+* `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
+  equality or hash to work correctly.
+  [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
+
+* Updated the `gradients` module to use the new `Shots` object internally.
+  [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
+
+* The new device interface in integrated with `qml.execute` for Jax.
+  [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
+
+* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
+  and now inherits from `qml.ops.op_math.ControlledOp`.
+  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
+
+* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
+  Both functions have broadcasting support.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
 <h3>Breaking changes 💔</h3>
+
+* All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
 
 * `DiagonalQubitUnitary` does not decompose into `QubitUnitary` any longer, but into `RZ`, `IsingZZ`
   and `MultiRZ` gates.
@@ -130,20 +181,41 @@
 
 <h3>Deprecations 👋</h3>
 
+* `LieAlgebraOptimizer` is renamed. Please use `RiemannianGradientOptimizer` instead.
+  [(#4153)(https://github.com/PennyLaneAI/pennylane/pull/4153)]
+
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
+* `QuantumScript`'s `name` keyword argument and property are deprecated.
+  This also affects `QuantumTape` and `OperationRecorder`.
+  [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
+
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
+* `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
-  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
+  was not taken into account.
+  [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)
+
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
+
+* `qml.pauli.are_identical_pauli_words` now treats all identities as equal. Identity terms on Hamiltonians with non-standard
+  wire orders are no longer eliminated.
+  [(#4161)](https://github.com/PennyLaneAI/pennylane/pull/4161)
+
+* `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
+  [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
 
 <h3>Contributors ✍️</h3>
 
@@ -155,15 +227,21 @@ Soran Jahangiri,
 <<<<<<< HEAD
 =======
 Edward Jiang,
+<<<<<<< HEAD
 >>>>>>> master
 Korbinian Kottmann
 =======
 Romain Moyard,
 >>>>>>> remove_python38
+=======
+Korbinian Kottmann,
+>>>>>>> master
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
+Borja Requena,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Frederik Wilde.
