@@ -128,10 +128,12 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    if shots.has_partitioned_shots:
-        return tuple(mp.process_state_with_shots(state, s) for s in shots)
+    wires = qml.wires.Wires(range(len(state.shape)))
 
-    return mp.process_state_with_shots(state, shots.total_shots, rng=rng)
+    if shots.has_partitioned_shots:
+        return tuple(mp.process_state_with_shots(state, wires, s, rng=rng) for s in shots)
+
+    return mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)
 
 
 def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:

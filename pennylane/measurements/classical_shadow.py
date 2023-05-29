@@ -315,11 +315,15 @@ class ClassicalShadowMP(MeasurementTransform):
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
-    def process_state_with_shots(self, state: Sequence[complex], shots: int, rng=None):
+    def process_state_with_shots(
+        self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
+    ):
         """Process the given quantum state with the given number of shots
 
         Args:
             state (Sequence[complex]): quantum state
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
             shots (int): The number of shots
             rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
@@ -329,7 +333,8 @@ class ClassicalShadowMP(MeasurementTransform):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-        mapped_wires = self.wires
+        wire_map = {w: i for i, w in enumerate(wire_order)}
+        mapped_wires = [wire_map[w] for w in self.wires]
         n_qubits = len(mapped_wires)
         num_dev_qubits = len(state.shape)
 
@@ -378,7 +383,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         # transpose the state so that the measured wires appear first
         unmeasured_wires = [i for i in range(num_dev_qubits) if i not in mapped_wires]
-        transposed_state = np.transpose(state, axes=mapped_wires.tolist() + unmeasured_wires)
+        transposed_state = np.transpose(state, axes=mapped_wires + unmeasured_wires)
 
         outcomes = np.zeros((shots, n_qubits))
         stacked_state = np.stack([transposed_state for _ in range(shots)])
@@ -483,11 +488,15 @@ class ShadowExpvalMP(MeasurementTransform):
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
-    def process_state_with_shots(self, state: Sequence[complex], shots: int, rng=None):
+    def process_state_with_shots(
+        self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
+    ):
         """Process the given quantum state with the given number of shots
 
         Args:
             state (Sequence[complex]): quantum state
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
             shots (int): The number of shots
             rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
@@ -498,7 +507,7 @@ class ShadowExpvalMP(MeasurementTransform):
         """
         bits, recipes = qml.classical_shadow(
             wires=self.wires, seed=self.seed
-        ).process_state_with_shots(state, shots, rng=rng)
+        ).process_state_with_shots(state, wire_order, shots, rng=rng)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
