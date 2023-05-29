@@ -64,4 +64,6 @@ def apply_operation(op: qml.operation.Operator, state, is_state_batched: bool = 
         [1., 0.]], requires_grad=True)
 
     """
-    state.gate_(op.matrix(), *op.wires, contract="swap+split")
+    wires = tuple(op.wires)
+    gate_opts = {"contract": "swap+split", "cutoff": 0.0, "max_bond": None}
+    state.gate_(op.matrix(), wires, **gate_opts)

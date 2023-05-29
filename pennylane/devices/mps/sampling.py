@@ -14,6 +14,7 @@
 """Functions to sample a state."""
 
 import copy
+from quimb.tensor import Circuit
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops import Sum, Hamiltonian
@@ -80,7 +81,7 @@ def _measure_with_samples_diagonalizing_gates(
     for op in mp.diagonalizing_gates():
         apply_operation(op, pre_rotated_state)
 
-    wires = qml.wires.Wires(range(state.N))
+    wires = qml.wires.Wires(range(state.L))
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -113,11 +114,11 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
     Returns:
         ndarray[bool]: Sample values of the shape (shots, num_wires)
     """
-    state_wires = qml.wires.Wires(range(state.N))
+    state_wires = qml.wires.Wires(range(state.L))
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
 
-    samples_gen = state.sample(shots, seed=rng)
+    samples_gen = Circuit(psi0=state).sample(shots, seed=rng)
     samples = np.array([int(s, 2) for s in samples_gen])
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     return (samples[..., None] & powers_of_two).astype(np.bool8)

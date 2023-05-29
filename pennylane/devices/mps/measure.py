@@ -39,6 +39,15 @@ def local_expectation(state, matrix, wires):
     return np.real((pH & p).contract(all, output_inds=()))
 
 
+def mps_2_rdm(state, wires):
+    """Returns the reduce density matrix of an MPS state."""
+    rdm = copy.deepcopy(state)
+    rdm = rdm.partial_trace(wires).contract()
+    binds = (f"b{i}" for i in range(len(wires)))
+    kinds = (f"k{i}" for i in range(len(wires)))
+    return rdm.to_dense(binds, kinds)
+
+
 def state_diagonalizing_gates(
     measurementprocess: StateMeasurement, state: TensorLike
 ) -> TensorLike:
@@ -51,25 +60,21 @@ def state_diagonalizing_gates(
     Returns:
         TensorLike: the result of the measurement
     """
-    fs_opts = {
-        "simplify_sequence": "ADCRS",
-        "simplify_atol": 0.0,
-    }
     if isinstance(measurementprocess, ExpectationMP):
         obs = measurementprocess.obs
         return local_expectation(state, obs.matrix(), tuple(obs.wires))
     if isinstance(measurementprocess, StateMP):
         wires = tuple(measurementprocess.wires)
-        return state.partial_trace(wires, **fs_opts)
+        return mps_2_rdm(state, wires)
     if isinstance(measurementprocess, VnEntropyMP):
         wires = tuple(measurementprocess.wires)
-        rdm = state.partial_trace(wires, **fs_opts)
+        rdm = mps_2_rdm(state, wires)
         diag_rdm = np.diag(rdm)
         return -np.sum(np.real(diag_rdm * np.log(diag_rdm)))
     if not isinstance(measurementprocess, ProbabilityMP):
         raise NotImplementedError
     wires = tuple(measurementprocess.wires)
-    rdm = state.partial_trace(wires, **fs_opts)
+    rdm = mps_2_rdm(state, wires)
     return np.real(np.diag(rdm))
 
 
