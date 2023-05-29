@@ -124,6 +124,10 @@ def multiple_args_expand_transform(
     return [tape], lambda x: x
 
 
+def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    return [tape], lambda x: x
+
+
 class TestTransformDispatcher:
     """Test the transform function (validate and dispatch)."""
 
@@ -149,6 +153,54 @@ class TestTransformDispatcher:
         assert isinstance(qnode, qml.QNode)
         assert isinstance(qnode.transform_program, list)
         assert isinstance(qnode.transform_program[0], qml.transforms.core.TransformContainer)
+
+    def test_queuing_qfunc_transform(self):
+        """Test that queuing works with the transformed quantum function."""
+
+        dispatched_transform = transform(first_valid_transform)
+
+        # Applied on a tape
+        tapes, fn = dispatched_transform(tape_circuit, 0)
+
+        assert isinstance(tapes, Sequence)
+        assert callable(fn)
+
+        # Applied on a qfunc (return a qfunc)
+        qfunc_transformed = dispatched_transform(qfunc_circuit, 0)
+        assert callable(qfunc_transformed)
+
+        with qml.tape.QuantumTape() as transformed_tape:
+            qfunc_transformed(0.42)
+
+        assert isinstance(transformed_tape, qml.tape.QuantumTape)
+        assert transformed_tape.circuit is not None
+
+    def test_qnode_with_expand_transform(self):
+        """Test that queuing works with the transformed quantum function."""
+
+        dispatched_transform = transform(first_valid_transform, expand_transform=expand_transform)
+
+        # Applied on a tape
+        tapes, fn = dispatched_transform(tape_circuit, 0)
+
+        assert isinstance(tapes, Sequence)
+        assert callable(fn)
+
+        # Applied on a qfunc (return a qfunc)
+        qnode_transformed = dispatched_transform(qnode_circuit, 0)
+
+        assert isinstance(qnode_transformed.transform_program, list)
+        expand_transform_container = qnode_transformed.transform_program[0]
+        assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
+        assert expand_transform_container.args == []
+        assert expand_transform_container.kwargs == {}
+        assert expand_transform_container.classical_cotransform is None
+
+        transform_container = qnode_transformed.transform_program[1]
+        assert isinstance(transform_container, qml.transforms.core.TransformContainer)
+        assert transform_container.args == [0]
+        assert transform_container.kwargs == {}
+        assert transform_container.classical_cotransform is None
 
     @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
     def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
