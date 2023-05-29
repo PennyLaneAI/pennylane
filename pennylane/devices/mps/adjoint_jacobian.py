@@ -82,9 +82,7 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
                 ket_temp = copy.deepcopy(ket)
                 apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket_temp)
                 for k, bra in enumerate(bras):
-                    jac[k, trainable_param_number] = 2 * np.real(
-                        (bra.psi.H & ket_temp.psi).contract()
-                    )
+                    jac[k, trainable_param_number] = 2 * np.real((bra.H & ket_temp).contract())
 
                 trainable_param_number -= 1
             param_number -= 1
