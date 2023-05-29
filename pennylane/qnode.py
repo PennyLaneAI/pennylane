@@ -473,6 +473,7 @@ class QNode:
         return self._transform_program
 
     def add_transform(self, transform_container):
+        """Add a transform container to the transform program."""
         # Temporary append until TransformProgram is added.
         self._transform_program.append(transform_container)
 

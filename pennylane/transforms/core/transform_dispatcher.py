@@ -15,8 +15,7 @@
 This module contains the transform function, the transform dispatcher and the transform container.
 """
 import functools
-from typing import get_type_hints
-from collections.abc import Sequence
+from typing import get_type_hints, Sequence, Callable
 import pennylane as qml
 
 
@@ -39,11 +38,11 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
         expand_transform(callable): An expand transform is defined as a function that has the following requirements:
 
-            * A expand transform is a function that is applied before applying the defined quantum transform. It
-            takes a quantum tape as single input and returns a sequence of tapes and a processing function. It
-            returns a single tape in a sequence with a dummy processing function, lambda x: x.
+            * An expand transform is a function that is applied before applying the defined quantum transform. It
+              takes a quantum tape as single input and returns a sequence of tapes and a processing function. It
+              returns a single tape in a sequence with a dummy processing function, lambda x: x.
 
-            * The transform must have the same type hinting as a quantum transform.
+            * The expand transform must have the same type hinting as a quantum transform.
 
         classical_cotransform(callable): A classical co-transform.
 
@@ -89,14 +88,17 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
     >>> dispatched_transform = transform(my_quantum_transform)
 
     Now you can use to dispatched transform directly on qfunc and qnode. One subtelty here, is that qfunc will not take
-    the post-processing function in to account, and it should only be used for single tape transform.
+    the post-processing function into account, and it should only be used for single tape transform.
 
-    >>> transformed_qfunc = dispatched_transform(qfunc_circuit)
+    >>> dispatched_transform(qfunc_circuit)
+    <function TransformDispatcher._qfunc_transform.<locals>.qfunc_transformed at 0x7f4432c4f9a0>
 
     For QNodes, the dispatched transforms populates the `TransformProgram` of your QNode and the transform and its
     processing function are applied in the execution.
 
     >>> transformed_qnode = dispatched_transform(qfunc_circuit)
+    <QNode: wires=2, device='default.qubit', interface='auto', diff_method='best'>
+
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):
@@ -124,12 +126,14 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     # 3: CHeck the classical co-transform
     if classical_cotransform is not None:
+        # TODO: Add more verification in a future PR
         if not callable(classical_cotransform):
             raise TransformError("The classical co-transform must be a valid Python function.")
-        # TODO: Add more verification in a future PR
 
     return TransformDispatcher(
-        quantum_transform, expand_transform=expand_transform, classical_cotransform=classical_cotransform
+        quantum_transform,
+        expand_transform=expand_transform,
+        classical_cotransform=classical_cotransform,
     )
 
 
@@ -142,7 +146,7 @@ def _transform_signature_check(signature):
         raise TransformError("The first argument of a transform must be tape.")
 
     if tape != qml.tape.QuantumTape:
-        raise TransformError("The type of the tape argument must be a QuantumTape")
+        raise TransformError("The type of the tape argument must be a QuantumTape.")
 
     # Check return is (qml.tape.QuantumTape, callable):
     ret = signature.get("return", None)
@@ -153,13 +157,13 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
         )
 
-    if not ret[0] == Sequence[qml.tape.QuantumTape]:
+    if not ret[0] == Sequence[qml.tape.QuantumTape]:  # pylint:disable=unsubscriptable-object
         raise TransformError(
             "The first return of a transform must be a sequence of tapes: collections.abc.Sequence["
             "pennylane.tape.tape.QuantumTape]"
         )
 
-    if not callable(ret[1]):
+    if ret[1] != Callable:
         raise TransformError(
             "The second return of a transform must be a callable: <built-in function callable>"
         )
@@ -170,9 +174,15 @@ class TransformDispatcher:
 
     Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
     on tape, qfunc and qnode.
+
+    .. warning::
+
+        This class is developer-facing and should not be used directly.
     """
 
-    def __init__(self, transform, expand_transform=None, classical_cotransform=None):
+    def __init__(
+        self, transform, expand_transform=None, classical_cotransform=None
+    ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         functools.update_wrapper(self, transform)
         self._expand_transform = expand_transform
@@ -196,22 +206,25 @@ class TransformDispatcher:
             )
         elif callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
-        else:
-            raise TransformError(
-                "The object on which is the transform is applied is not valid. It can only be a "
-                "tape, a QNode or a qfunc."
-            )
+
+        raise TransformError(
+            "The object on which is the transform is applied is not valid. It can only be a "
+            "tape, a QNode or a qfunc."
+        )
 
     @property
     def transform(self):
+        """Return the quantum transform."""
         return self._transform
 
     @property
     def expand_transform(self):
+        """Return the expand transform."""
         return self._expand_transform
 
     @property
     def classical_cotransform(self):
+        """Return the classical co-transform."""
         return self._classical_cotransform
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
@@ -222,8 +235,10 @@ class TransformDispatcher:
             transformed_tapes, _ = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
-                raise TransformError("Impossible to dispatch your transform on quantum function, because more than "
-                                     "one tape is returned")
+                raise TransformError(
+                    "Impossible to dispatch your transform on quantum function, because more than "
+                    "one tape is returned"
+                )
 
             transformed_tape = transformed_tapes[0]
 
@@ -244,31 +259,40 @@ class TransformDispatcher:
 
 class TransformContainer:
     """Class to store a quantum transform with its args, kwargs and classical co-transforms.
-    This class is developer-facing and should not be used directly.
+
+    .. warning::
+
+        This class is developer-facing and should not be used directly.
+
     """
-    def __init__(self, transform, args=None, kwargs=None, classical_cotransform=None):
+
+    def __init__(
+        self, transform, args=None, kwargs=None, classical_cotransform=None
+    ):  # pylint:disable=redefined-outer-name
         self._transform = transform
-        self._targs = args if args else []
-        self._tkwargs = kwargs if kwargs else {}
+        self._args = args if args else []
+        self._kwargs = kwargs if kwargs else {}
         self._classical_cotransform = classical_cotransform
 
     def __iter__(self):
-        return iter((self._transform , self._targs, self._tkwargs, self._classical_cotransform))
+        return iter((self._transform, self._args, self._kwargs, self._classical_cotransform))
+
     @property
     def transform(self):
         """Return the stored quantum transform."""
         return self._transform
 
     @property
-    def targs(self):
+    def args(self):
         """Return the stored quantum transform's args."""
-        return self._targs
+        return self._args
 
     @property
-    def tkwargs(self):
+    def kwargs(self):
         """Return the stored quantum transform's arkwgs."""
-        return self._tkwargs
+        return self._kwargs
+
     @property
-    def classical_cotransforms(self):
+    def classical_cotransform(self):
         """Return the stored quantum transform's classical co-transform."""
         return self._classical_cotransform
