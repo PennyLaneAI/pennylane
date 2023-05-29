@@ -30,6 +30,5 @@ __all__ = (
     "DatasetList",
     "DatasetOperator",
     "DatasetNone",
-    "DatasetNone",
     "DatasetJSON",
 )
