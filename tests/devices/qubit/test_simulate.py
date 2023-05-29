@@ -217,10 +217,10 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
+        assert isinstance(result[0], np.float64)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
-        assert all(isinstance(res, np.ndarray) for res in result)
-
-        assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
 
         assert result[1].shape == (4,)
@@ -316,9 +316,10 @@ class TestSampleMeasurements:
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
-            assert all(isinstance(meas_res, np.ndarray) for meas_res in shot_res)
+            assert isinstance(shot_res[0], np.float64)
+            assert isinstance(shot_res[1], np.ndarray)
+            assert isinstance(shot_res[2], np.ndarray)
 
-            assert shot_res[0].shape == ()
             assert np.allclose(shot_res[0], np.cos(x), atol=0.1)
 
             assert shot_res[1].shape == (4,)
@@ -351,10 +352,10 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
+        assert isinstance(result[0], np.float64)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
-        assert all(isinstance(res, np.ndarray) for res in result)
-
-        assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
 
         assert result[1].shape == (4,)
