@@ -200,6 +200,7 @@ use the provided optimizers:
     ~pennylane.MomentumOptimizer
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
+    ~pennylane.RiemannianGradientOptimizer
     ~pennylane.RMSPropOptimizer
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
