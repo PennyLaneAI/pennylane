@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit and integration tests for the transform dispatcher."""
+from typing import Sequence, Callable
 
 import pytest
 import pennylane as qml
 from pennylane.transforms.core import transform, TransformError
-from typing import Sequence, Callable
 
 # TODO: Replace with default qubit 2
 dev = qml.device("default.qubit", wires=2)
@@ -29,15 +30,7 @@ with qml.tape.QuantumTape() as tape_circuit:
 
 
 def qfunc_circuit(a):
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.PauliX(wires=0)
-    qml.RZ(a, wires=1)
-    return qml.expval(qml.PauliZ(wires=0))
-
-
-@qml.qnode(device=dev)
-def qnode_circuit(a):
+    """Qfunc circuit/"""
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=0)
@@ -54,6 +47,7 @@ non_callable = tape_circuit
 def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Transform without tape."""
     circuit.circuit.pop(index)
     return [circuit], lambda x: x
 
@@ -61,22 +55,26 @@ def no_tape_transform(
 def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Transform with wrong hinting."""
     tape.circuit.pop(index)
     return [tape], lambda x: x
 
 
 def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> Sequence[qml.tape.QuantumTape]:
+    """Transform without processing fn."""
     tape_copy = tape.copy()
     return [tape, tape_copy]
 
 
 def no_tape_sequence_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, Callable):
+    """Transform wihtout Sequence return."""
     return tape, lambda x: x
 
 
 def no_callable_return(
     tape: qml.tape.QuantumTape,
 ) -> (Sequence[qml.tape.QuantumTape], qml.tape.QuantumTape):
+    """Transform without callable return."""
     return tape, lambda x: x
 
 
@@ -97,6 +95,7 @@ non_valid_transforms = [
 def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid transform."""
     tape.circuit.pop(index)
     return [tape], lambda x: x
 
@@ -104,6 +103,7 @@ def first_valid_transform(
 def second_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.circuit.pop(index)
 
@@ -117,14 +117,18 @@ valid_transforms = [first_valid_transform, second_valid_transform]
 
 
 ##########################################
-# Non-valid expand transforms
+# Non-valid expand transform
 def multiple_args_expand_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Multiple args expand fn."""
+    tape.circuit.pop(index)
     return [tape], lambda x: x
 
 
+# Valid expand transform
 def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid expand transform."""
     return [tape], lambda x: x
 
 
@@ -149,6 +153,15 @@ class TestTransformDispatcher:
         assert callable(qfunc)
 
         # Applied on a qnode (return a qnode with populated the program)
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
         qnode = dispatched_transform(qnode_circuit, 0)
         assert isinstance(qnode, qml.QNode)
         assert isinstance(qnode.transform_program, list)
@@ -185,6 +198,15 @@ class TestTransformDispatcher:
 
         assert isinstance(tapes, Sequence)
         assert callable(fn)
+
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
 
         # Applied on a qfunc (return a qfunc)
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
@@ -299,7 +321,7 @@ class TestTransformDispatcher:
         """Test the dispatcher attributes."""
         dispatched_transform = transform(first_valid_transform)
 
-        assert dispatched_transform.transform == first_valid_transform
+        assert dispatched_transform.transform is first_valid_transform
         assert dispatched_transform.expand_transform is None
         assert dispatched_transform.classical_cotransform is None
 
@@ -309,14 +331,14 @@ class TestTransformDispatcher:
             first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
         )
 
-        transform, args, kwargs, cotransform = container
+        q_transform, args, kwargs, cotransform = container
 
-        assert transform == first_valid_transform
+        assert q_transform is first_valid_transform
         assert args == [0]
         assert kwargs == {}
         assert cotransform is None
 
-        assert container.transform == first_valid_transform
+        assert container.transform is first_valid_transform
         assert container.args == [0]
-        assert container.kwargs == {}
+        assert not container.kwargs
         assert container.classical_cotransform is None
