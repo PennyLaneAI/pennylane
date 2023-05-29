@@ -53,9 +53,6 @@ class TorchLayer(Module):
             initializing all QNode weights or a dictionary specifying the callable/value used for
             each weight. If not specified, weights are randomly initialized using the uniform
             distribution over :math:`[0, 2 \pi]`.
-        split_batches (bool): If True, any batch dimension in the input tensor will be unstacked
-            and split into multiple QNode executions. Otherwise (default), internal PennyLane
-            broadcasting will be used.
 
     **Example**
 

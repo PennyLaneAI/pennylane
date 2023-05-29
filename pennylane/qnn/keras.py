@@ -53,9 +53,6 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
-        split_batches (bool): If True, any batch dimension in the input tensor will be unstacked
-            and split into multiple QNode executions. Otherwise (default), internal PennyLane
-            broadcasting will be used.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
