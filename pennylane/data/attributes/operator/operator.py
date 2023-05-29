@@ -121,6 +121,7 @@ class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
                 qml.DoubleExcitationMinus,
                 qml.DoubleExcitationPlus,
                 qml.OrbitalRotation,
+                qml.FermionicSWAP,
                 # pennylane/ops/special_unitary.py
                 qml.SpecialUnitary,
                 # pennylane/ops/state_preparation.py
