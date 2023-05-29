@@ -25,7 +25,7 @@ class UnserializableWireError(TypeError):
 
     def __init__(self, wire: Any) -> None:
         super().__init__(
-            f"Cannot serialize wire label '{wire}': Type '{type(wire)}' is not json-serializable or cannot be converted."
+            f"Cannot serialize wire label '{wire}': Type '{type(wire)}' is not json-serializable."
         )
 
 
@@ -44,14 +44,14 @@ def wires_to_json(wires: Wires) -> str:
     """
     jsonable_wires = []
     for w in wires:
-        if type(w) not in _JSON_TYPES:
-            if isinstance(w, numbers.Integral):
-                w_converted = int(w)
-                if hash(w_converted) != hash(w):
-                    raise UnserializableWireError(w)
-
-                jsonable_wires.append(w_converted)
-        else:
+        if type(w) in _JSON_TYPES:
             jsonable_wires.append(w)
+        elif isinstance(w, numbers.Integral):
+            w_converted = int(w)
+            if hash(w_converted) != hash(w):
+                raise UnserializableWireError(w)
+            jsonable_wires.append(w_converted)
+        else:
+            raise UnserializableWireError(w)
 
     return json.dumps(jsonable_wires)
