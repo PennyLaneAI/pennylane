@@ -58,7 +58,11 @@ class TestPurity:
         if interface:
             state_vector = qml.math.asarray(state_vector, like=interface)
 
-        purity = qml.math.purity(state_vector, wires, check_state=check_state)
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to purity has been deprecated"
+        ):
+            purity = qml.math.purity(state_vector, wires, check_state=check_state)
+
         assert qml.math.allclose(purity, subsystems_purity)
 
     @pytest.mark.parametrize("wires", full_wires_list)
@@ -73,7 +77,11 @@ class TestPurity:
         if interface:
             state_vector = qml.math.asarray(state_vector, like=interface)
 
-        purity = qml.math.purity(state_vector, wires, check_state=check_state)
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to purity has been deprecated"
+        ):
+            purity = qml.math.purity(state_vector, wires, check_state=check_state)
+
         assert qml.math.allclose(purity, full_purity)
 
     @pytest.mark.parametrize("density_matrix,subsystems_purity,full_purity", density_matrices)
@@ -88,7 +96,9 @@ class TestPurity:
         if interface:
             density_matrix = qml.math.asarray(density_matrix, like=interface)
 
-        purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+        with pytest.warns(UserWarning, match="passing state vectors to purity is deprecated"):
+            purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+
         assert qml.math.allclose(purity, subsystems_purity)
 
     @pytest.mark.parametrize("density_matrix,subsystems_purity,full_purity", density_matrices)
@@ -103,7 +113,9 @@ class TestPurity:
         if interface:
             density_matrix = qml.math.asarray(density_matrix, like=interface)
 
-        purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+        with pytest.warns(UserWarning, match="passing state vectors to purity is deprecated"):
+            purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+
         assert qml.math.allclose(purity, full_purity)
 
 
@@ -132,7 +144,10 @@ class TestVonNeumannEntropy:
         if interface:
             state_vector = qml.math.asarray(state_vector, like=interface)
 
-        entropy = qml.math.vn_entropy(state_vector, wires, check_state=check_state)
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to vn_entropy has been deprecated"
+        ):
+            entropy = qml.math.vn_entropy(state_vector, wires, check_state=check_state)
 
         if pure:
             expected_entropy = 0
@@ -149,7 +164,11 @@ class TestVonNeumannEntropy:
         """Test entropy for different state vectors."""
         if interface:
             state_vector = qml.math.asarray(state_vector, like=interface)
-        entropy = qml.math.vn_entropy(state_vector, wires, base, check_state)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to vn_entropy has been deprecated"
+        ):
+            entropy = qml.math.vn_entropy(state_vector, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
@@ -174,7 +193,9 @@ class TestVonNeumannEntropy:
         """Test entropy for different density matrices."""
         if interface:
             density_matrix = qml.math.asarray(density_matrix, like=interface)
-        entropy = qml.math.vn_entropy(density_matrix, wires, base, check_state)
+
+        with pytest.warns(UserWarning, match="passing state vectors to vn_entropy is deprecated"):
+            entropy = qml.math.vn_entropy(density_matrix, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
@@ -200,7 +221,12 @@ class TestMutualInformation:
     def test_state(self, interface, state, expected):
         """Test that mutual information works for states"""
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to vn_entropy has been deprecated"
+        ):
+            actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
         assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
@@ -216,7 +242,9 @@ class TestMutualInformation:
     def test_density_matrix(self, interface, state, expected):
         """Test that mutual information works for density matrices"""
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
+        with pytest.warns(UserWarning, match="passing state vectors to vn_entropy is deprecated"):
+            actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)
 
@@ -236,7 +264,7 @@ class TestMutualInformation:
         ):
             qml.math.mutual_info(state, indices0=wires0, indices1=wires1)
 
-    @pytest.mark.parametrize("state", [np.array(5), np.ones((3, 4)), np.ones((2, 2, 2))])
+    @pytest.mark.parametrize("state", [np.array(5)])
     def test_invalid_type(self, state):
         """Test that an error is raised when an unsupported type is passed"""
         with pytest.raises(
@@ -262,7 +290,11 @@ class TestRelativeEntropy:
         """Test that mutual information works for states"""
         state0 = qml.math.asarray(state0, like=interface)
         state1 = qml.math.asarray(state1, like=interface)
-        actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to relative_entropy has been deprecated"
+        ):
+            actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
 
         div = 1 if base is None else np.log(base)
         assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
@@ -283,7 +315,11 @@ class TestRelativeEntropy:
         """Test that mutual information works for density matrices"""
         state0 = qml.math.asarray(state0, like=interface)
         state1 = qml.math.asarray(state1, like=interface)
-        actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
+
+        with pytest.warns(
+            UserWarning, match="passing state vectors to relative_entropy is deprecated"
+        ):
+            actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
 
         div = 1 if base is None else np.log(base)
         assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
@@ -304,7 +340,8 @@ class TestRelativeEntropy:
         msg = "The two states must have the same number of wires"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            qml.math.relative_entropy(state0, state1)
+            with pytest.warns(UserWarning):
+                qml.math.relative_entropy(state0, state1)
 
 
 class TestMaxEntropy:
@@ -332,7 +369,10 @@ class TestMaxEntropy:
         if interface:
             state_vector = qml.math.asarray(state_vector, like=interface)
 
-        entropy = qml.math.max_entropy(state_vector, wires, check_state=check_state)
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to max_entropy has been deprecated"
+        ):
+            entropy = qml.math.max_entropy(state_vector, wires, check_state=check_state)
 
         if pure:
             expected_max_entropy = 0
@@ -351,7 +391,11 @@ class TestMaxEntropy:
         """Test maximum entropy for different state vectors and log bases."""
         if interface:
             state_vector = qml.math.asarray(state_vector, like=interface)
-        entropy = qml.math.max_entropy(state_vector, wires, base, check_state)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to max_entropy has been deprecated"
+        ):
+            entropy = qml.math.max_entropy(state_vector, wires, base, check_state)
 
         if pure:
             expected_max_entropy = 0
@@ -376,7 +420,9 @@ class TestMaxEntropy:
         """Test maximum entropy for different density matrices."""
         if interface:
             density_matrix = qml.math.asarray(density_matrix, like=interface)
-        entropy = qml.math.max_entropy(density_matrix, wires, base, check_state)
+
+        with pytest.warns(UserWarning, match="passing state vectors to max_entropy is deprecated"):
+            entropy = qml.math.max_entropy(density_matrix, wires, base, check_state)
 
         if pure:
             expected_max_entropy = 0
@@ -386,7 +432,6 @@ class TestMaxEntropy:
         assert qml.math.allclose(entropy, expected_max_entropy)
 
     parameters = [
-        [1, 0, 0, 1] / np.sqrt(2),
         [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
     ]
 
@@ -399,7 +444,8 @@ class TestMaxEntropy:
         """Test `max_entropy` differentiability with autograd."""
         params = np.tensor(params)
 
-        gradient = qml.grad(qml.math.max_entropy)(params, wires, base, check_state)
+        with pytest.warns(UserWarning, match="passing state vectors to max_entropy is deprecated"):
+            gradient = qml.grad(qml.math.max_entropy)(params, wires, base, check_state)
 
         assert qml.math.allclose(gradient, 0.0)
 
@@ -414,7 +460,8 @@ class TestMaxEntropy:
 
         params = torch.tensor(params, requires_grad=True)
 
-        max_entropy = qml.math.max_entropy(params, wires, base, check_state)
+        with pytest.warns(UserWarning, match="passing state vectors to max_entropy is deprecated"):
+            max_entropy = qml.math.max_entropy(params, wires, base, check_state)
         max_entropy.backward()
         gradient = params.grad
 
@@ -431,8 +478,9 @@ class TestMaxEntropy:
 
         params = tf.Variable(params)
 
-        with tf.GradientTape() as tape:
-            max_entropy = qml.math.max_entropy(params, wires, base, check_state)
+        with pytest.warns(UserWarning, match="passing state vectors to max_entropy is deprecated"):
+            with tf.GradientTape() as tape:
+                max_entropy = qml.math.max_entropy(params, wires, base, check_state)
 
         gradient = tape.gradient(max_entropy, params)
 
@@ -453,11 +501,207 @@ class TestMaxEntropy:
 
         max_entropy_grad = jax.grad(qml.math.max_entropy)
 
-        if jit:
-            gradient = jax.jit(max_entropy_grad, static_argnums=[1, 2, 3])(
-                params, tuple(wires), base, check_state
-            )
-        else:
-            gradient = max_entropy_grad(params, wires, base, check_state)
+        with pytest.warns(UserWarning, match="passing state vectors to max_entropy is deprecated"):
+            if jit:
+                gradient = jax.jit(max_entropy_grad, static_argnums=[1, 2, 3])(
+                    params, tuple(wires), base, check_state
+                )
+            else:
+                gradient = max_entropy_grad(params, wires, base, check_state)
 
         assert qml.math.allclose(gradient, 0.0)
+
+
+class TestEntropyBroadcasting:
+    """Test that broadcasting works as expected for the entropy functions"""
+
+    single_wires_list = [[0], [1]]
+    full_wires_list = [[0, 1]]
+    check_state = [True, False]
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_purity_broadcast_sv(self, wires, check_state, interface):
+        """Test broadcasting for purity and state vectors"""
+        state_vector = [[1, 0, 0, 1] / np.sqrt(2), [1 / 2, 1 / 2, 1 / 2, 1 / 2]]
+        expected = [0.5, 1]
+
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to purity has been deprecated"
+        ):
+            purity = qml.math.purity(state_vector, wires, check_state=check_state)
+
+        assert qml.math.allclose(purity, expected)
+
+    @pytest.mark.parametrize("wires", full_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_purity_broadcast_sv_full_wires(self, wires, check_state, interface):
+        """Test broadcasting for purity and state vectors"""
+        state_vector = [[1, 0, 0, 1] / np.sqrt(2), [1 / 2, 1 / 2, 1 / 2, 1 / 2]]
+        expected = [1, 1]
+
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to purity has been deprecated"
+        ):
+            purity = qml.math.purity(state_vector, wires, check_state=check_state)
+
+        assert qml.math.allclose(purity, expected)
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_purity_broadcast_dm(self, wires, check_state, interface):
+        """Test broadcasting for purity and density matrices"""
+        density_matrix = [
+            [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
+            [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]],
+            [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        ]
+        expected = [0.5, 0.5, 1]
+
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+
+        purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+        assert qml.math.allclose(purity, expected)
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_vn_entropy_broadcast_sv(self, wires, check_state, interface):
+        """Test broadcasting for vn_entropy and state vectors"""
+        state_vector = [[1, 0, 0, 1] / np.sqrt(2), [1, 0, 0, 0]]
+        expected = [np.log(2), 0]
+
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to vn_entropy has been deprecated"
+        ):
+            entropy = qml.math.vn_entropy(state_vector, wires, check_state=check_state)
+
+        assert qml.math.allclose(entropy, expected)
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_vn_entropy_broadcast_dm(self, wires, check_state, interface):
+        """Test broadcasting for vn_entropy and density matrices"""
+        density_matrix = [
+            [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
+            [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        ]
+        expected = [np.log(2), 0]
+
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+
+        entropy = qml.math.vn_entropy(density_matrix, wires, check_state=check_state)
+        assert qml.math.allclose(entropy, expected)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_mutual_info_broadcast_sv(self, interface):
+        """Test broadcasting for mutual_info and state vectors"""
+        state = [[1, 0, 0, 0], [np.sqrt(2) / 2, 0, 0, np.sqrt(2) / 2], np.ones(4) * 0.5]
+        expected = [0, 2 * np.log(2), 0]
+
+        state = qml.math.asarray(state, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to vn_entropy has been deprecated"
+        ):
+            actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_mutual_info_broadcast_dm(self, interface):
+        """Test broadcasting for mutual_info and density matrices"""
+        state = [
+            [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+            [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]],
+            [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
+            np.ones((4, 4)) * 0.25,
+        ]
+        expected = [0, 0, 2 * np.log(2), 0]
+
+        state = qml.math.asarray(state, like=interface)
+
+        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_relative_entropy_broadcast_sv(self, interface, check_state):
+        """Test broadcasting for relative entropy and state vectors"""
+        state0 = [[1, 0], [1, 0], [0, 1]]
+        state1 = [[0, 1], [1, 1] / np.sqrt(2), [0, 1]]
+        expected = [np.inf, np.inf, 0]
+
+        state0 = qml.math.asarray(state0, like=interface)
+        state1 = qml.math.asarray(state1, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to relative_entropy has been deprecated"
+        ):
+            actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
+
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_relative_entropy_broadcast_dm(self, interface, check_state):
+        """Test broadcasting for relative entropy and density matrices"""
+        state0 = [[[1, 0], [0, 0]], [[1, 0], [0, 0]], [[0, 0], [0, 1]], [[1, 0], [0, 0]]]
+        state1 = [[[0, 0], [0, 1]], np.ones((2, 2)) / 2, [[0, 0], [0, 1]], np.eye(2) / 2]
+        expected = [np.inf, np.inf, 0, np.log(2)]
+
+        state0 = qml.math.asarray(state0, like=interface)
+        state1 = qml.math.asarray(state1, like=interface)
+
+        actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_max_entropy_broadcast_sv(self, wires, check_state, interface):
+        """Test broadcasting for max entropy and state vectors"""
+        state_vector = [[1, 0, 0, 1] / np.sqrt(2), [1, 0, 0, 0]]
+        expected = [np.log(2), 0]
+
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to max_entropy has been deprecated"
+        ):
+            entropy = qml.math.max_entropy(state_vector, wires, check_state=check_state)
+
+        assert qml.math.allclose(entropy, expected)
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_max_entropy_broadcast_dm(self, wires, check_state, interface):
+        """Test broadcasting for max entropy and density matrices"""
+        density_matrix = [
+            [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
+            [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        ]
+        expected = [np.log(2), 0]
+
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+
+        entropy = qml.math.max_entropy(density_matrix, wires, check_state=check_state)
+        assert qml.math.allclose(entropy, expected)

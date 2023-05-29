@@ -488,7 +488,7 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
-def einsum(indices, *operands, like=None):
+def einsum(indices, *operands, like=None, optimize=None):
     """Evaluates the Einstein summation convention on the operands.
 
     Args:
@@ -537,6 +537,11 @@ def einsum(indices, *operands, like=None):
     if like is None:
         like = get_interface(*operands)
     operands = np.coerce(operands, like=like)
+
+    if optimize is not None and like != "torch":
+        # torch einsum doesn't support the optimize keyword argument
+        return np.einsum(indices, *operands, like=like, optimize=optimize)
+
     return np.einsum(indices, *operands, like=like)
 
 

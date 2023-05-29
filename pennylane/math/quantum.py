@@ -31,6 +31,58 @@ from .matrix_manipulation import _permute_dense_matrix
 ABC_ARRAY = np.array(list(ABC))
 
 
+def _state_param_deprecation_warning(func_name):
+    """Raise a warning that passing a state vector as a parameter is deprecated"""
+    warnings.warn(
+        f"Passing a state vector to {func_name} has been deprecated. "
+        f"Please call qml.math.dm_from_state_vector first.",
+        UserWarning,
+    )
+
+
+def _interpret_dm_warning(x, func_name):
+    """Raise a warning that x will be interpreted as a density matrix rather
+    than a batched state vector"""
+    warnings.warn(
+        f"Argument passed to {func_name} has shape {qml.math.shape(x)} and will be interpreted "
+        f"as a density matrix. If a batched state vector was intended, please "
+        f"call qml.math.dm_from_state_vector first, as passing state vectors to "
+        f"{func_name} is deprecated."
+    )
+
+
+def _dispatch_as_state_vector(x, func_name):
+    """
+    Return True if x is dispatched as a state vector, and False if
+    it is dispatched as a density matrix.
+
+    This function is only used in the deprecation cycle for state vector params
+    (between 0.31 and 0.32), after which it should be removed.
+    """
+    shape = np.shape(x)
+
+    if len(shape) == 1:
+        # 1D arrays are always state vectors
+        _state_param_deprecation_warning(func_name)
+        return True
+
+    if len(shape) == 3:
+        # 3D arrays are always batched density matrices
+        return False
+
+    if not len(shape) == 2:
+        raise ValueError("The state is not a state vector or a density matrix.")
+
+    if shape[0] != shape[1]:
+        # 2D arrays with different dims is a batched state vector
+        _state_param_deprecation_warning(func_name)
+        return True
+
+    # 2D arrays with same dims can be either; here we opt for density matrices
+    _interpret_dm_warning(x, func_name)
+    return False
+
+
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.
@@ -449,7 +501,9 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     target = "".join(
         [ABC[i + 1] for i in sorted(indices)] + [ABC[num_wires + i + 1] for i in sorted(indices)]
     )
-    density_matrix = einsum(f"a{indices1},a{indices2}->a{target}", state, np.conj(state))
+    density_matrix = einsum(
+        f"a{indices1},a{indices2}->a{target}", state, np.conj(state), optimize="greedy"
+    )
 
     # Return the reduced density matrix by using numpy tensor product
     # density_matrix = np.tensordot(state, np.conj(state), axes=(traced_system, traced_system))
@@ -462,6 +516,36 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
         )
 
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
+
+
+def dm_from_state_vector(state, check_state=False, c_dtype="complex128"):
+    """
+    Convenience function to compute a (full) density matrix from
+    a state vector.
+
+    Args:
+        state (tensor_like): 1D or 2D tensor state vector. This tensor should of size ``(2**N,)``
+            or ``(batch_dim, 2**N)``, for some integer value ``N``.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        tensor_like: Density matrix of size ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``
+
+    **Example**
+
+    >>> x = np.array([1, 0, 1j, 0]) / np.sqrt(2)
+    >>> dm_from_state_vector(x)
+    array([[0.5+0.j , 0. +0.j , 0. -0.5j, 0. +0.j ],
+           [0. +0.j , 0. +0.j , 0. +0.j , 0. +0.j ],
+           [0. +0.5j, 0. +0.j , 0.5+0.j , 0. +0.j ],
+           [0. +0.j , 0. +0.j , 0. +0.j , 0. +0.j ]])
+
+    """
+    num_wires = int(np.log2(np.shape(state)[-1]))
+    return reduce_statevector(
+        state, indices=list(range(num_wires)), check_state=check_state, c_dtype=c_dtype
+    )
 
 
 def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
@@ -565,12 +649,14 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
 
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
-    len_state = state.shape[0]
+    len_state = state.shape[-1]
     num_wires = int(np.log2(len_state))
+
+    is_state_vector = _dispatch_as_state_vector(state, "purity")
 
     # If the state is a state vector and the system in question is the entire system,
     # return 1 directly because a valid state vector always represents a pure state.
-    if state.shape == (len_state,) and len(indices) == num_wires:
+    if is_state_vector and len(indices) == num_wires:
         if check_state:
             _check_state_vector(state)
 
@@ -582,11 +668,14 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
         # in the return value, such that these properties are transferred to the result
         # as well. Adding 2 instead of 1 because state[0] could be -1 in some cases, and
         # converting to a real number for jax grad compatibility.
-        return np.real((state[0] + 2.0) / (state[0] + 2.0))
+        if len(np.shape(state)) == 1:
+            return np.real((state[0] + 2.0) / (state[0] + 2.0))
+
+        return np.real((state[0][0] + 2.0) / (state[0][0] + 2.0))
 
     # If the state is a state vector but the system in question is a sub-system of the
     # overall state, then the purity of the sub-system still needs to be computed.
-    if state.shape == (len_state,):
+    if is_state_vector:
         density_matrix = reduce_statevector(state, indices, check_state)
         return _compute_purity(density_matrix)
 
@@ -615,8 +704,12 @@ def _compute_purity(density_matrix):
     1
 
     """
-    matrix_pow = qml.math.dot(density_matrix, density_matrix)
-    return qml.math.real(qml.math.trace(matrix_pow))
+    batched = len(qml.math.shape(density_matrix)) > 2
+
+    if batched:
+        return qml.math.real(qml.math.einsum("abc,acb->a", density_matrix, density_matrix))
+
+    return qml.math.real(qml.math.einsum("ab,ba", density_matrix, density_matrix))
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
@@ -659,9 +752,12 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
 
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`
     """
-    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
-    entropy = _compute_vn_entropy(density_matrix, base)
+    if _dispatch_as_state_vector(state, "vn_entropy"):
+        density_matrix = reduce_statevector(state, indices, check_state, c_dtype)
+    else:
+        density_matrix = reduce_dm(state, indices, check_state, c_dtype)
 
+    entropy = _compute_vn_entropy(density_matrix, base)
     return entropy
 
 
@@ -754,18 +850,9 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     if len([index for index in indices0 if index in indices1]) > 0:
         raise ValueError("Subsystems for computing mutual information must not overlap.")
 
-    # Cast to a complex array
-    state = cast(state, dtype=c_dtype)
-
-    state_shape = state.shape
-    if len(state_shape) > 0:
-        len_state = state_shape[0]
-        if state_shape in [(len_state,), (len_state, len_state)]:
-            return _compute_mutual_info(
-                state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
-            )
-
-    raise ValueError("The state is not a state vector or a density matrix.")
+    return _compute_mutual_info(
+        state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
+    )
 
 
 # pylint: disable=too-many-arguments
@@ -852,49 +939,61 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
-    len_state0 = state0.shape[0]
 
     # Cannot be cast_like if jit
     if not is_abstract(state0):
         state1 = cast_like(state1, state0)
 
-    len_state1 = state1.shape[0]
+    is_state_vector0 = _dispatch_as_state_vector(state0, "fidelity")
+    is_state_vector1 = _dispatch_as_state_vector(state1, "fidelity")
 
     if check_state:
-        if state0.shape == (len_state0,):
-            _check_state_vector(state0)
-        else:
-            _check_density_matrix(state0)
-
-        if state1.shape == (len_state1,):
-            _check_state_vector(state1)
-        else:
-            _check_density_matrix(state1)
+        # pylint: disable=expression-not-assigned
+        _check_state_vector(state0) if is_state_vector0 else _check_density_matrix(state0)
+        _check_state_vector(state1) if is_state_vector1 else _check_density_matrix(state1)
 
     # Get dimension of the quantum system and reshape
-    num_indices0 = int(np.log2(len_state0))
-    num_indices1 = int(np.log2(len_state1))
-
+    num_indices0 = int(np.log2(qml.math.shape(state0)[-1]))
+    num_indices1 = int(np.log2(qml.math.shape(state1)[-1]))
     if num_indices0 != num_indices1:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    batched = (is_state_vector0 and len(qml.math.shape(state0)) > 1) or (
+        not is_state_vector0 and len(qml.math.shape(state0)) > 2
+    )
+
     # Two pure states, squared overlap
-    if state1.shape == (len_state1,) and state0.shape == (len_state0,):
-        overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
+    if is_state_vector0 and is_state_vector1:
+        if batched:
+            overlap = qml.math.einsum("ab,ab->a", state0, np.conj(state1))
+        else:
+            overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
+
         overlap = np.abs(overlap) ** 2
         return overlap
+
     # First state mixed, second state pure
-    if state1.shape == (len_state1,) and state0.shape != (len_state0,):
-        overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
-        overlap = np.tensordot(state1, overlap, axes=1)
+    if not is_state_vector0 and is_state_vector1:
+        if batched:
+            overlap = qml.math.einsum("ab,abc,ac->a", np.conj(state1), state0, state1)
+        else:
+            overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
+            overlap = np.tensordot(state1, overlap, axes=1)
+
         overlap = np.real(overlap)
         return overlap
+
     # First state pure, second state mixed
-    if state0.shape == (len_state0,) and state1.shape != (len_state1,):
-        overlap = np.tensordot(state1, np.transpose(np.conj(state0)), axes=1)
-        overlap = np.tensordot(state0, overlap, axes=1)
+    if is_state_vector0 and not is_state_vector1:
+        if batched:
+            overlap = qml.math.einsum("ab,abc,ac->a", np.conj(state0), state1, state0)
+        else:
+            overlap = np.tensordot(state1, np.transpose(np.conj(state0)), axes=1)
+            overlap = np.tensordot(state0, overlap, axes=1)
+
         overlap = np.real(overlap)
         return overlap
+
     # Two mixed states
     fid = _compute_fidelity(state0, state1)
     return fid
@@ -912,6 +1011,13 @@ def sqrt_matrix(density_matrix):
     evs = qml.math.where(evs > 0.0, evs, 0.0)
     if not is_abstract(evs):
         evs = qml.math.cast_like(evs, vecs)
+
+    shape = qml.math.shape(density_matrix)
+    if len(shape) > 2:
+        # broadcasting case
+        sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * qml.math.eye(shape[-1])
+        return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
+
     return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
 
 
@@ -932,7 +1038,7 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     evs = np.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
 
-    trace = (qml.math.sum(qml.math.sqrt(evs))) ** 2
+    trace = (qml.math.sum(qml.math.sqrt(evs), -1)) ** 2
 
     return trace
 
@@ -967,10 +1073,15 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     # the matrix of inner products between eigenvectors of rho and eigenvectors
     # of sigma; this is a doubly stochastic matrix
-    rel = np.abs(qml.math.dot(np.transpose(np.conj(u_rho)), u_sig)) ** 2
+    if len(qml.math.shape(rho)) > 2:
+        # batched case
+        rel = np.abs(qml.math.einsum("acb,acd->abd", np.conj(u_rho), u_sig)) ** 2
+        evs_sig = qml.math.expand_dims(evs_sig, 1)
+    else:
+        rel = np.abs(qml.math.dot(np.transpose(np.conj(u_rho)), u_sig)) ** 2
 
-    rel = qml.math.sum(qml.math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), axis=1)
-    rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0))
+    rel = qml.math.sum(qml.math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), -1)
+    rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0), -1)
 
     return (rel - ent) / div_base
 
@@ -1030,37 +1141,30 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
-    len_state0 = state0.shape[0]
 
     # Cannot be cast_like if jit
     if not is_abstract(state0):
         state1 = cast_like(state1, state0)
 
-    len_state1 = state1.shape[0]
+    is_state_vector0 = _dispatch_as_state_vector(state0, "relative_entropy")
+    is_state_vector1 = _dispatch_as_state_vector(state1, "relative_entropy")
 
     if check_state:
-        if state0.shape == (len_state0,):
-            _check_state_vector(state0)
-        else:
-            _check_density_matrix(state0)
+        # pylint: disable=expression-not-assigned
+        _check_state_vector(state0) if is_state_vector0 else _check_density_matrix(state0)
+        _check_state_vector(state1) if is_state_vector1 else _check_density_matrix(state1)
 
-        if state1.shape == (len_state1,):
-            _check_state_vector(state1)
-        else:
-            _check_density_matrix(state1)
-
-    # Get dimension of the quantum system and reshape
-    num_indices0 = int(np.log2(len_state0))
-    num_indices1 = int(np.log2(len_state1))
-
+    # Compare the number of wires on both subsystems
+    num_indices0 = int(np.log2(qml.math.shape(state0)[-1]))
+    num_indices1 = int(np.log2(qml.math.shape(state1)[-1]))
     if num_indices0 != num_indices1:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    if state0.shape == (len_state0,):
-        state0 = qml.math.outer(state0, np.conj(state0))
+    if is_state_vector0:
+        state0 = dm_from_state_vector(state0, check_state=False, c_dtype=c_dtype)
 
-    if state1.shape == (len_state1,):
-        state1 = qml.math.outer(state1, np.conj(state1))
+    if is_state_vector1:
+        state1 = dm_from_state_vector(state1, check_state=False, c_dtype=c_dtype)
 
     return _compute_relative_entropy(state0, state1, base=base)
 
@@ -1168,9 +1272,12 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     0.6931472
 
     """
-    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
-    maximum_entropy = _compute_max_entropy(density_matrix, base)
+    if _dispatch_as_state_vector(state, "max_entropy"):
+        density_matrix = reduce_statevector(state, indices, check_state, c_dtype)
+    else:
+        density_matrix = reduce_dm(state, indices, check_state, c_dtype)
 
+    maximum_entropy = _compute_max_entropy(density_matrix, base)
     return maximum_entropy
 
 
@@ -1201,9 +1308,9 @@ def _compute_max_entropy(density_matrix, base):
     else:
         div_base = 1
 
-    evs, _ = qml.math.linalg.eigh(density_matrix)
+    evs = qml.math.eigvalsh(density_matrix)
     evs = qml.math.real(evs)
-    rank = qml.math.sum(evs / qml.math.where(evs > 1e-8, evs, 1.0))
+    rank = qml.math.sum(evs / qml.math.where(evs > 1e-8, evs, 1.0), -1)
     maximum_entropy = qml.math.log(rank) / div_base
 
     return maximum_entropy
