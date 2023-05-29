@@ -85,6 +85,7 @@
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
   [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
   [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
+  [(#4172)](https://github.com/PennyLaneAI/pennylane/pull/4172)
 
 * Added a keyword argument `seed` to the `DefaultQubit2` device.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
@@ -141,6 +142,9 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
+* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
+  Both functions have broadcasting support.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Breaking changes 💔</h3>
 
@@ -175,6 +179,9 @@
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
+* `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Documentation 📝</h3>
 
