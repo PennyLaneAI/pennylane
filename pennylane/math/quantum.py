@@ -1222,13 +1222,10 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     The trace distance measures how close two quantum states are. In particular, it upper-bounds
     the probability of distinguishing two quantum states.
 
-    Each state can be given as a state vector in the computational basis or
-    as a density matrix.
-
     Args:
-        state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
-        state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
-        check_state (bool): If True, the function will check the state validity (shape and norm).
+        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        check_state (bool): If True, the function will check the states' validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
     Returns:
@@ -1238,63 +1235,54 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
 
     The trace distance between two equal states is always zero:
 
-    >>> x = np.array([1, 0])
+    >>> x = np.array([[1, 0], [0, 0]])
     >>> qml.math.trace_distance(x, x)
     0.0
 
-    The quantum states can be provided as density matrices, allowing for computation
-    of the trace distance between mixed states:
+    The quantum states can also be provided as batches of density matrices:
 
-    >>> rho = np.array([[0.3, 0], [0, 0.7]])
-    >>> sigma = np.array([[0.5, 0], [0, 0.5]])
-    >>> qml.math.trace_distance(rho, sigma)
-    0.19999999999999998
+    >>> batch0 = np.array([np.eye(2) / 2, np.ones((2, 2)) / 2, np.array([[1, 0],[0, 0]])])
+    >>> batch1 = np.array([np.ones((2, 2)) / 2, np.ones((2, 2)) / 2, np.array([[1, 0],[0, 0]])])
+    >>> qml.math.trace_distance(batch0, batch1)
+    array([0.5, 0. , 0. ])
+
+    If only one of the two states represent a single element, then the trace distances are taken
+    with respect to that element:
+
+    >>> rho = np.ones((2, 2)) / 2
+    >>> sigma = rho.reshape(1, 2, 2)
+    >>> qml.math.trace_distance(rho, batch0)
+    array([0.5       , 0.        , 0.70710678])
+    >>> qml.math.trace_distance(sigma, batch0)
+    array([0.5       , 0.        , 0.70710678])
 
     .. seealso:: :func:`pennylane.qinfo.transforms.trace_distance`
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
-    len_state0 = state0.shape[0]
 
     # Cannot be cast_like if jit
     if not is_abstract(state0):
         state1 = cast_like(state1, state0)
 
-    len_state1 = state1.shape[0]
-
     if check_state:
-        if state0.shape == (len_state0,):
-            _check_state_vector(state0)
-        else:
-            _check_density_matrix(state0)
+        _check_density_matrix(state0)
+        _check_density_matrix(state1)
 
-        if state1.shape == (len_state1,):
-            _check_state_vector(state1)
-        else:
-            _check_density_matrix(state1)
-
-    # Get dimension of the quantum system and reshape
-    num_indices0 = round(np.log2(len_state0))
-    num_indices1 = round(np.log2(len_state1))
-
-    # Avoid doing the comparison multiple times
-    is_state0_a_vector = state0.shape == (len_state0,)
-    is_state1_a_vector = state1.shape == (len_state1,)
-
-    if num_indices0 != num_indices1:
+    if state0.shape[-1] != state1.shape[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    if is_state0_a_vector and is_state1_a_vector:
-        dot_product = qml.math.dot(state0, qml.math.conj(state1))
-
-        return qml.math.sqrt(1 - qml.math.real(dot_product * qml.math.conj(dot_product)))
-
-    if is_state0_a_vector:
-        state0 = qml.math.outer(state0, np.conj(state0))
-
-    if is_state1_a_vector:
-        state1 = qml.math.outer(state1, np.conj(state1))
+    if len(state0.shape) == len(state1.shape) == 3:
+        if state0.shape[0] != 1 and state1.shape[0] != 1 and state0.shape[0] != state1.shape[0]:
+            raise ValueError(
+                "The two states must be batches of the same size, or one of them must contain a "
+                "single element."
+            )
 
     eigvals, _ = qml.math.linalg.eigh(state0 - state1)
+    eigvals = qml.math.abs(eigvals)
 
-    return qml.math.sum(qml.math.abs(eigvals)) / 2
+    if len(state0.shape) == len(state1.shape) == 2:
+        return qml.math.sum(eigvals) / 2
+
+    return qml.math.sum(eigvals, axis=1) / 2

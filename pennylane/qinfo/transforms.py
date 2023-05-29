@@ -1005,17 +1005,8 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    # Get the state vector if all wires are selected
-    if len(wires0) == len(qnode0.device.wires):
-        state_qnode0 = qnode0
-    else:
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-
-    # Get the state vector if all wires are selected
-    if len(wires1) == len(qnode1.device.wires):
-        state_qnode1 = qnode1
-    else:
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_trace_distance(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the relative entropy between two states computed from

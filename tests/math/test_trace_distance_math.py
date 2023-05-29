@@ -32,23 +32,7 @@ class TestTraceDistanceMath:
     """Tests for the trace distance function between two states (state vectors or density matrix)."""
 
     state0_state1_td = [
-        # Vector-Vector-TD
-        ([1, 0], [0, 1], 1.0),
-        ([0, 1], [0, 1], 0),
-        ([1, 0], [1, 1] / np.sqrt(2), np.sqrt(2) / 2),
-        # Vector-Density mat-TD
-        ([1, 0], [[0, 0], [0, 1]], 1.0),
-        ([1, 0], [[1, 0], [0, 0]], 0),
-        ([1, 0], [[0.5, 0], [0, 0.5]], 0.5),
-        ([0, 1], [[0.5, 0], [0, 0.5]], 0.5),
-        ([1, 0], [[0.5, 0.5], [0.5, 0.5]], np.sqrt(2) / 2),
-        ([0, 1], [[0.5, 0.5], [0.5, 0.5]], np.sqrt(2) / 2),
-        # Density mat-Vector-TD
-        ([[0.5, 0], [0, 0.5]], [1, 0], 0.5),
-        ([[0.5, 0], [0, 0.5]], [0, 1], 0.5),
-        ([[0.5, 0.5], [0.5, 0.5]], [1, 0], np.sqrt(2) / 2),
-        ([[0.5, 0.5], [0.5, 0.5]], [0, 1], np.sqrt(2) / 2),
-        # Density mat-Density mat-TD
+        # Mat-Mat-TD
         ([[1, 0], [0, 0]], [[0.5, 0], [0, 0.5]], 0.5),
         ([[0, 0], [0, 1]], [[0.5, 0], [0, 0.5]], 0.5),
         ([[1, 0], [0, 0]], [[0.5, 0.5], [0.5, 0.5]], np.sqrt(2) / 2),
@@ -62,6 +46,75 @@ class TestTraceDistanceMath:
                 [0.25, 0.25, 0.25, 0.25],
             ],
             np.sqrt(2) / 2,
+        ),
+        # Batch-Mat-TD
+        ([[[1, 0], [0, 0]]], [[0.5, 0], [0, 0.5]], 0.5),
+        ([[[0, 0], [0, 1]]], [[0.5, 0], [0, 0.5]], 0.5),
+        ([[[1, 0], [0, 0]]], [[0.5, 0.5], [0.5, 0.5]], np.sqrt(2) / 2),
+        ([[[0, 0], [0, 1]]], [[0.5, 0.5], [0.5, 0.5]], np.sqrt(2) / 2),
+        (
+            [[[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]],
+            [
+                [0.25, 0.25, 0.25, 0.25],
+                [0.25, 0.25, 0.25, 0.25],
+                [0.25, 0.25, 0.25, 0.25],
+                [0.25, 0.25, 0.25, 0.25],
+            ],
+            np.sqrt(2) / 2,
+        ),
+        (
+            [[[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0.2, 0], [0, 0.8]]],
+            [[0.5, 0], [0, 0.5]],
+            [0.5, 0.5, 0.3],
+        ),
+        # Mat-Batch-TD
+        ([[1, 0], [0, 0]], [[[0.5, 0], [0, 0.5]]], 0.5),
+        ([[0, 0], [0, 1]], [[[0.5, 0], [0, 0.5]]], 0.5),
+        ([[1, 0], [0, 0]], [[[0.5, 0.5], [0.5, 0.5]]], np.sqrt(2) / 2),
+        ([[0, 0], [0, 1]], [[[0.5, 0.5], [0.5, 0.5]]], np.sqrt(2) / 2),
+        (
+            [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
+            [
+                [
+                    [0.25, 0.25, 0.25, 0.25],
+                    [0.25, 0.25, 0.25, 0.25],
+                    [0.25, 0.25, 0.25, 0.25],
+                    [0.25, 0.25, 0.25, 0.25],
+                ]
+            ],
+            np.sqrt(2) / 2,
+        ),
+        (
+            [[0.5, 0], [0, 0.5]],
+            [[[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0.2, 0], [0, 0.8]]],
+            [0.5, 0.5, 0.3],
+        ),
+        # Batch-Batch-TD
+        ([[[1, 0], [0, 0]]], [[[0.5, 0], [0, 0.5]]], 0.5),
+        ([[[0, 0], [0, 1]]], [[[0.5, 0], [0, 0.5]]], 0.5),
+        ([[[1, 0], [0, 0]]], [[[0.5, 0.5], [0.5, 0.5]]], np.sqrt(2) / 2),
+        ([[[0, 0], [0, 1]]], [[[0.5, 0.5], [0.5, 0.5]]], np.sqrt(2) / 2),
+        (
+            [[[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]],
+            [
+                [
+                    [0.25, 0.25, 0.25, 0.25],
+                    [0.25, 0.25, 0.25, 0.25],
+                    [0.25, 0.25, 0.25, 0.25],
+                    [0.25, 0.25, 0.25, 0.25],
+                ]
+            ],
+            np.sqrt(2) / 2,
+        ),
+        (
+            [[[0.5, 0], [0, 0.5]]],
+            [[[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0.2, 0], [0, 0.8]]],
+            [0.5, 0.5, 0.3],
+        ),
+        (
+            [[[0.5, 0], [0, 0.5]], [[0, 0], [0, 1]], [[0.1, 0], [0, 0.9]]],
+            [[[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0.2, 0], [0, 0.8]]],
+            [0.5, 0, 0.1],
         ),
     ]
 
@@ -88,25 +141,20 @@ class TestTraceDistanceMath:
 
         assert qml.math.allclose(td, trace_distance)
 
-    state_wrong_amp = [([0.5, 0], [0, 1]), ([0, 1], [0.5, 0])]
-
-    @pytest.mark.parametrize("state0,state1", state_wrong_amp)
-    def test_state_vector_wrong_amplitudes(self, state0, state1):
-        """Test that a message is raised when a state does not have right norm"""
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qml.math.trace_distance(state0, state1, check_state=True)
-
-    state_wrong_shape = [([0, 1, 1], [0, 1]), ([0, 1], [0, 1, 1])]
-
-    @pytest.mark.parametrize("state0,state1", state_wrong_shape)
-    def test_state_vector_wrong_shape(self, state0, state1):
-        """Test that a message is raised when the state does not have the right shape."""
-        with pytest.raises(ValueError, match="State vector must be of shape"):
-            qml.math.trace_distance(state0, state1, check_state=True)
-
     d_mat_wrong_shape = [
-        ([[1, 0, 0], [0, 0, 0], [0, 0, 0]], [0, 1]),
-        ([0, 1], [[1, 0, 0], [0, 0, 0], [0, 0, 0]]),
+        # Shape that is not a power of 2
+        ([[1, 0, 0], [0, 0, 0], [0, 0, 0]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[1, 0, 0], [0, 0, 0], [0, 0, 0]]),
+        ([[[1, 0, 0], [0, 0, 0], [0, 0, 0]]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[[1, 0, 0], [0, 0, 0], [0, 0, 0]]]),
+        # Len of shape that is not in (2, 3)
+        ([1, 0], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [1, 0]),
+        # Shapes with different dimensions
+        ([[1, 0, 0], [0, 0, 0]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[1, 0, 0], [0, 0, 0]]),
+        ([[[1, 0, 0], [0, 0, 0]]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[[1, 0, 0], [0, 0, 0]]]),
     ]
 
     @pytest.mark.parametrize("state0,state1", d_mat_wrong_shape)
@@ -115,7 +163,12 @@ class TestTraceDistanceMath:
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
             qml.math.trace_distance(state0, state1, check_state=True)
 
-    d_mat_wrong_trace = [([[1, 0], [0, -1]], [0, 1]), ([0, 1], [[1, 0], [0, -1]])]
+    d_mat_wrong_trace = [
+        ([[1, 0], [0, -1]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[1, 0], [0, -1]]),
+        ([[[1, 0], [0, -1]], [[1, 0], [0, 0]]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[[1, 0], [0, -1]], [[1, 0], [0, 0]]]),
+    ]
 
     @pytest.mark.parametrize("state0,state1", d_mat_wrong_trace)
     def test_density_matrix_wrong_trace(self, state0, state1):
@@ -123,7 +176,12 @@ class TestTraceDistanceMath:
         with pytest.raises(ValueError, match="The trace of the density matrix should be one"):
             qml.math.trace_distance(state0, state1, check_state=True)
 
-    d_mat_not_hermitian = [([[1, 1], [0, 0]], [0, 1]), ([0, 1], [[1, 1], [0, 0]])]
+    d_mat_not_hermitian = [
+        ([[1, 1], [0, 0]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[1, 1], [0, 0]]),
+        ([[[1, 1], [0, 0]], [[1, 0], [0, 0]]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[[1, 1], [0, 0]], [[1, 0], [0, 0]]]),
+    ]
 
     @pytest.mark.parametrize("state0,state1", d_mat_not_hermitian)
     def test_density_matrix_not_hermitian(self, state0, state1):
@@ -131,7 +189,12 @@ class TestTraceDistanceMath:
         with pytest.raises(ValueError, match="The matrix is not Hermitian"):
             qml.math.trace_distance(state0, state1, check_state=True)
 
-    d_mat_not_positive = [([[2, 0], [0, -1]], [0, 1]), ([0, 1], [[2, 0], [0, -1]])]
+    d_mat_not_positive = [
+        ([[2, 0], [0, -1]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[2, 0], [0, -1]]),
+        ([[[2, 0], [0, -1]], [[1, 0], [0, 0]]], [[1, 0], [0, 0]]),
+        ([[1, 0], [0, 0]], [[[2, 0], [0, -1]], [[1, 0], [0, 0]]]),
+    ]
 
     @pytest.mark.parametrize("state0,state1", d_mat_not_positive)
     def test_density_matrix_not_positive_semi_def(self, state0, state1):
@@ -139,10 +202,16 @@ class TestTraceDistanceMath:
         with pytest.raises(ValueError, match="The matrix is not positive semi"):
             qml.math.trace_distance(state0, state1, check_state=True)
 
-    def test_same_number_wires(self):
+    d_mat_different_wires = [
+        ([[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+        ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[1, 0], [0, 0]]),
+        ([[[1, 0], [0, 0]]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+        ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], [[[1, 0], [0, 0]]]),
+    ]
+
+    @pytest.mark.parametrize("state0,state1", d_mat_different_wires)
+    def test_same_number_wires(self, state0, state1):
         """Test that the two states must act on the same number of wires"""
-        state0 = [0, 1, 0, 0]
-        state1 = [[1, 0], [0, 0]]
         with pytest.raises(
             qml.QuantumFunctionError, match="The two states must have the same number of wires"
         ):

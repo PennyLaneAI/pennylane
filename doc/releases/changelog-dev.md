@@ -150,6 +150,42 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+
+<h4>Trace distance is now available in qml.qinfo 💥</h4>
+
+* The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
+  [(#4181)](https://github.com/PennyLaneAI/pennylane/pull/4181)
+
+  We've enabled two cases for calculating the trace distance:
+  
+  - A QNode transform via `qml.qinfo.trace_distance`:
+
+    ```python
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(param):
+        qml.RY(param, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.state()
+    ```
+
+    ```pycon
+    >>> trace_distance_circuit = qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[0])
+    >>> x, y = np.array(0.4), np.array(0.6)
+    >>> trace_distance_circuit((x,), (y,))
+    0.047862689546603415
+    ```
+
+  - Support in `qml.math` for flexible post-processing:
+
+    ```pycon
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+    >>> qml.math.relative_entropy(rho, sigma)
+    0.19999999999999998
+    ```
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
