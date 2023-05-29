@@ -164,8 +164,8 @@ class TestTransformDispatcher:
 
         qnode = dispatched_transform(qnode_circuit, 0)
         assert isinstance(qnode, qml.QNode)
-        assert isinstance(qnode.transform_program, list)
-        assert isinstance(qnode.transform_program[0], qml.transforms.core.TransformContainer)
+        assert isinstance(qnode.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(qnode.transform_program.pop(), qml.transforms.core.TransformContainer)
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -211,14 +211,14 @@ class TestTransformDispatcher:
         # Applied on a qfunc (return a qfunc)
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
 
-        assert isinstance(qnode_transformed.transform_program, list)
-        expand_transform_container = qnode_transformed.transform_program[0]
+        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
+        expand_transform_container = qnode_transformed.transform_program.pop()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
         assert expand_transform_container.args == []
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
 
-        transform_container = qnode_transformed.transform_program[1]
+        transform_container = qnode_transformed.transform_program.pop()
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
         assert transform_container.args == [0]
         assert transform_container.kwargs == {}

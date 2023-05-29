@@ -296,3 +296,32 @@ class TransformContainer:
     def classical_cotransform(self):
         """Return the stored quantum transform's classical co-transform."""
         return self._classical_cotransform
+
+
+class TransformProgram:
+    def __init__(self):
+        self._transform_program = []
+
+    def push(self, transform_container):
+        if not isinstance(transform_container, TransformContainer):
+            raise TransformError("Only transform container can be added to the transform program.")
+        self._transform_program.append(transform_container)
+        self.check_validity()
+
+    def insert(self, transform_container):
+        self._transform_program.insert(0, transform_container)
+
+    def pop(self):
+        first_container = self._transform_program.pop(0)
+        return first_container
+
+    def add_device_pre_processing(self, device):
+        device_preprocessing_container = TransformContainer(device.preprocessing)
+        # Device pre processing is first.
+        self.insert(0, device_preprocessing_container)
+
+    def check_validity(self):
+        return True
+
+    def empty(self):
+        return len(self._transform_program) == 0
