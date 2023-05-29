@@ -32,7 +32,7 @@ class Identity(CVObservable, Operation):
     .. math::
         E[\I] = \text{Tr}(\I \rho)
 
-    Kwargs:
+    Args:
         wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
         do_queue (bool): indicates whether the operator should be recorded when created in
             a tape context. This argument is deprecated, instead of setting it to ``False``
@@ -40,7 +40,7 @@ class Identity(CVObservable, Operation):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 
-    corresponds to the trace of the quantum state, which in exact
+    Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
     num_params = 0
