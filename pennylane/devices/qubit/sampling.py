@@ -129,11 +129,7 @@ def _measure_classical_shadow(
         TensorLike[Any]: Sample measurement results
     """
     if shots.has_partitioned_shots:
-        results = []
-        for s in shots:
-            results.append(mp.process_state_with_shots(state, s))
-
-        return tuple(results)
+        return tuple(mp.process_state_with_shots(state, s) for s in shots)
 
     return mp.process_state_with_shots(state, shots.total_shots, rng=rng)
 

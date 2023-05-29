@@ -384,11 +384,19 @@ class ClassicalShadowMP(MeasurementTransform):
         stacked_state = np.stack([transposed_state for _ in range(shots)])
 
         for active_qubit in range(n_qubits):
+            # stacked_state loses a dimension each loop
+
             # trace out every qubit except the first
+            num_remaining_qubits = num_dev_qubits - active_qubit
+            conj_state_first_qubit = ABC[num_remaining_qubits]
+            stacked_dim = ABC[num_remaining_qubits + 1]
+
+            state_str = f"{stacked_dim}{ABC[:num_remaining_qubits]}"
+            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ABC[1:num_remaining_qubits]}"
+            target_str = f"{stacked_dim}a{conj_state_first_qubit}"
+
             first_qubit_state = np.einsum(
-                f"{ABC[num_dev_qubits - active_qubit + 1]}{ABC[:num_dev_qubits - active_qubit]},"
-                f"{ABC[num_dev_qubits - active_qubit + 1]}{ABC[num_dev_qubits - active_qubit]}{ABC[1:num_dev_qubits - active_qubit]}"
-                f"->{ABC[num_dev_qubits - active_qubit + 1]}a{ABC[num_dev_qubits - active_qubit]}",
+                f"{state_str},{conj_state_str}->{target_str}",
                 stacked_state,
                 np.conj(stacked_state),
             )
@@ -404,13 +412,9 @@ class ClassicalShadowMP(MeasurementTransform):
             stacked_state = rotated_state[np.arange(shots), samples.astype(np.int8)]
 
             # re-normalize the collapsed state
-            norms = np.sqrt(
-                np.sum(
-                    np.abs(stacked_state) ** 2,
-                    tuple(range(1, num_dev_qubits - active_qubit)),
-                    keepdims=True,
-                )
-            )
+            sum_indices = tuple(range(1, num_remaining_qubits))
+            state_squared = np.abs(stacked_state) ** 2,
+            norms = np.sqrt(np.sum(state_squared, sum_indices, keepdims=True))
             stacked_state /= norms
 
         return np.stack([outcomes, recipes]).astype(np.int8)
