@@ -216,3 +216,20 @@ class TestTraceDistanceMath:
             qml.QuantumFunctionError, match="The two states must have the same number of wires"
         ):
             qml.math.trace_distance(state0, state1, check_state=True)
+
+    d_mat_different_batch_sizes = [
+        (
+            [[[1, 0], [0, 0]], [[1, 0], [0, 0]]],
+            [[[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0], [0, 0]]],
+        ),
+        (
+            [[[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0], [0, 0]]],
+            [[[1, 0], [0, 0]], [[1, 0], [0, 0]]],
+        ),
+    ]
+
+    @pytest.mark.parametrize("state0,state1", d_mat_different_batch_sizes)
+    def test_same_number_wires(self, state0, state1):
+        """Test that the two states have batches size that are compatible"""
+        with pytest.raises(ValueError, match="The two states must be batches of the same size"):
+            qml.math.trace_distance(state0, state1, check_state=True)
