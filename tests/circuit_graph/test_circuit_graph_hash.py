@@ -115,7 +115,7 @@ class TestCircuitGraphHash:
     returntype6 = qml.state
 
     numeric_observable_queue = [
-        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
+        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
