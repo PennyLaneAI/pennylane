@@ -106,6 +106,48 @@ class TorchLayer(Module):
         - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
           or ``**kwargs`` present in the signature.
 
+        **Output shape**
+
+        If the QNode returns a single measurement, then the output of the ``KerasLayer`` will have
+        shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
+        of the measurement:
+
+        .. code-block::
+
+            def print_output_shape(measurements):
+                n_qubits = 2
+                dev = qml.device("default.qubit", wires=n_qubits, shots=100)
+
+                @qml.qnode(dev)
+                def qnode(inputs, weights):
+                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                    qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
+                    if len(measurements) == 1:
+                        return qml.apply(measurements[0])
+                    return [qml.apply(m) for m in measurements]
+
+                weight_shapes = {"weights": (3, n_qubits, 3)}
+                qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+
+                batch_dim = 5
+                x = torch.zeros((batch_dim, n_qubits))
+                return qlayer(x).shape
+
+        >>> print_output_shape([qml.expval(qml.PauliZ(0))])
+        torch.Size([5])
+        >>> print_output_shape([qml.probs(wires=[0, 1])])
+        torch.Size([5, 4])
+        >>> print_output_shape([qml.sample(wires=[0, 1])])
+        torch.Size([5, 100, 2])
+
+        If the QNode returns multiple measurements, then the measurement results will be flattened
+        and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
+
+        >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
+        torch.Size([5, 5])
+        >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
+        torch.Size([5, 204])
+
         **Initializing weights**
 
         If ``init_method`` is not specified, weights are randomly initialized from the uniform
