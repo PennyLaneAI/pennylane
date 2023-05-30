@@ -395,8 +395,8 @@ class TestAdjointDiffTapeValidation:
             qs, "Adjoint differentiation method does not support measurement VarianceMP."
         )
 
-    def test_unsupported_op(self):
-        """Test that a device supported by the forward pass but"""
+    def test_unsupported_op_decomposed(self):
+        """Test that an operation supported on the forward pass but not adjoint is decomposed when adjoint is requested."""
 
         qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
         res = validate_and_expand_adjoint(qs)
