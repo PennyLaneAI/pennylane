@@ -13,7 +13,6 @@
 # limitations under the License.
 """The Fermionic representation classes"""
 from copy import copy
-from pennylane.pauli import PauliSentence
 
 
 class FermiSentence(dict):
