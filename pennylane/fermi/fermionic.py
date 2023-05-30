@@ -14,7 +14,6 @@
 """The Fermionic representation classes."""
 from copy import copy
 
-
 class FermiWord(dict):
     """Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
     annihilation operators, associating wires with their respective operators. Can be constructed
