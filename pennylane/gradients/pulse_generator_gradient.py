@@ -59,20 +59,20 @@ def _one_parameter_generators(op):
     See the documentation of pulse_generator for more details and a mathematical derivation.
     """
 
-    def _compute_matrix(*args):
+    def _compute_matrix(op_data):
         """Parametrized computation of the matrix for the given pulse ``op``."""
-        return op(*args, t=op.t, **op.odeint_kwargs).matrix()
+        return op(op_data, t=op.t, **op.odeint_kwargs).matrix()
 
-    def _compute_matrix_split(*args):
+    def _compute_matrix_split(op_data):
         """Parametrized computation of the matrix for the given pulse ``op``.
         Return the real and imaginary parts separately."""
-        mat = _compute_matrix(*args)
+        mat = _compute_matrix(op_data)
         return mat.real, mat.imag
 
     # Compute the Jacobian of _compute_matrix, giving the Jacobian of the real and imag parts
     # The output is a tuple, with one entry per parameter, each of which has the axes
     # (mat_dim, mat_dim, *parameter_shape)
-    jac_real, jac_imag = jax.jacobian(_compute_matrix_split, argnums=0)(op.data)
+    jac_real, jac_imag = jax.jacobian(_compute_matrix_split)(op.data)
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
@@ -92,8 +92,7 @@ def _one_parameter_generators(op):
 
 
 def _one_parameter_paulirot_coeffs(generators, num_wires):
-    r"""Compute the Pauli coefficients of the one-parameter group generators that reproduce
-    the partial derivatives of a parametrized evolution. The coefficients correspond
+    r"""Compute the Pauli coefficients of effective generators. The coefficients correspond
     to the decomposition into (rescaled) Pauli word generators as used by ``PauliRot``
     gates.
 

@@ -328,7 +328,22 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
 
 def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
-    of a gradient computation, where g is a previously computed non-zero gradient entry."""
+    of a gradient computation, where g is a previously computed non-zero gradient entry.
+
+    Args:
+        g (tensor_like): Gradient entry that was computed for a different parameter, from which
+            we inherit the shape and data type of the zero-valued entry to create
+        single_measure (bool): Whether the differentiated function returned a single measurement.
+        has_partitioned_shots (bool): Whether the differentiated function used a shot vector.
+        par_shapes (tuple(tuple)): Shapes of the parameter for which ``g`` is the gradient entry,
+            and of the parameter for which to create a zero-valued gradient entry, in this order.
+
+    Returns:
+        tensor_like or tuple(tensor_like) or tuple(tuple(tensor_like)): Zero-valued gradient entry
+        similar to the non-zero gradient entry ``g``, potentially adapted to differences between
+        parameter shapes if ``par_shapes`` were provided.
+
+    """
     cut_dims, par_shape = (0, ()) if par_shapes is None else (len(par_shapes[0]), par_shapes[1])
 
     if par_shapes is None:

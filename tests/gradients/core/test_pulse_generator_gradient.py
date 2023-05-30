@@ -251,6 +251,70 @@ class TestOneParameterGenerators:
             )
             assert qml.math.allclose(gen, expected)
 
+    @pytest.mark.slow
+    @pytest.mark.parametrize(
+        "terms",
+        [
+            [X(0), Z(1), Y(0) @ Y(1)],
+            [X(0), Z(0)],
+            [X(0), Z(0), Y(0)],
+            [
+                Y("a") @ X(3),
+                Y(3) @ Z(0),
+                X("a") @ X(0),
+            ],
+        ],
+    )
+    @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, -0.05]))
+    def test_with_noncommuting_timedep_terms_ham(self, terms, t):
+        """Test that the generators are correct for a Hamiltonian with multiple
+        commuting time-dependent terms."""
+        import jax
+        import jax.numpy as jnp
+        from jax.experimental.ode import odeint
+
+        jax.config.update("jax_enable_x64", True)
+
+        num_terms = len(terms)
+        H = qml.math.dot([jnp.polyval for _ in range(num_terms)], terms)
+        mats = [expand_matrix(term.matrix(), term.wires, H.wires) for term in terms]
+        t = jnp.array(t)
+
+        def manual_matrix(params):
+            def apply_mat(y, t):
+                H = jnp.sum(
+                    jnp.array([jnp.polyval(p, t) * mat for p, mat in zip(params, mats)]), axis=0
+                )
+                return (-1j * H) @ y
+
+            return odeint(apply_mat, jnp.eye(2 ** len(H.wires), dtype=complex), t, atol=1e-7)[-1]
+
+        params = [jnp.array([0.4, 0.1, 0.2]), jnp.array([0.9, -0.2, 0.5]), jnp.array([-0.5, 0.2])]
+        params = params[:num_terms]
+
+        op = qml.evolve(H, dense=True, atol=1e-7)(params, t)
+        gens = _one_parameter_generators(op)
+
+        # op has as many parameters in its parameter input list as there are terms,
+        # so generators should be a tuple with as many entries as Hamiltonian terms.
+        assert isinstance(gens, tuple)
+        assert len(gens) == num_terms
+        dim = 2 ** len(H.wires)
+
+        params = [p.astype(jnp.complex128) for p in params]
+        # Manually compute the matrix of the pulse and its derivative. Compose the two into the
+        # effective generator. Omega = U* @ dU
+        U = manual_matrix(params)
+        expected = [
+            jnp.transpose(jnp.tensordot(U.conj().T, j, 1), (2, 0, 1))
+            for j in jax.jacobian(manual_matrix, holomorphic=True)(params)
+        ]
+        for gen, expec, p in zip(gens, expected, params):
+            # Each effective generator should have the shape of the pulse, and there should be
+            # as many as values in the respective parameter
+            assert gen.shape == (len(p), dim, dim)
+            assert qml.math.allclose(gen, expec, atol=1e-6)
+
 
 @pytest.mark.jax
 class TestOneParameterPauliRotCoeffs:
