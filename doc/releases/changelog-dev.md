@@ -219,6 +219,8 @@
 * `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
   [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
 
+* Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
