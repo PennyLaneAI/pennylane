@@ -221,6 +221,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Emiliano Godinez Ramirez
+Nikhil Harle
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann,

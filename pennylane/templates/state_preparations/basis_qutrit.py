@@ -42,7 +42,7 @@ class QutritBasisStatePreparation(Operation):
         @qml.qnode(dev)
         def circuit(basis_state, obs):
             qml.QutritBasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.THermitian(wires=i)) for i in range(4)]
+            return [qml.expval(qml.THermitian(obs, wires=i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
         obs = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
@@ -74,11 +74,10 @@ class QutritBasisStatePreparation(Operation):
                     f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
                 )
 
-            if not qml.math.is_abstract(state):
-                if any(bit not in [0, 1, 2] for bit in state):
-                    raise ValueError(
-                        f"Basis states must only consist of 0s, 1s, and 2s; state {i} is {state}"
-                    )
+            if any(bit not in [0, 1, 2] for bit in state):
+                raise ValueError(
+                    f"Basis states must only consist of 0s, 1s, and 2s; state {i} is {state}"
+                )
 
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
