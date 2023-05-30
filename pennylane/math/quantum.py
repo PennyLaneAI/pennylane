@@ -611,7 +611,7 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):
-    r"""Computes the purity from a state vector or density matrix.
+    r"""Computes the purity of a density matrix.
 
     .. math::
         \gamma = \text{Tr}(\rho^2)
@@ -624,7 +624,7 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     the overall state, include all wires in the ``indices`` argument.
 
     Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state (tensor_like): Density matrix of shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If ``True``, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
@@ -634,7 +634,7 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
 
     **Example**
 
-    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> x = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> purity(x, [0, 1])
     1.0
     >>> purity(x, [0])
@@ -688,7 +688,7 @@ def _compute_purity(density_matrix):
     """Compute the purity from a density matrix
 
     Args:
-        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        density_matrix (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` tensor for an integer `N`.
 
     Returns:
         float: Purity of the density matrix.
@@ -713,14 +713,14 @@ def _compute_purity(density_matrix):
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem. It supports all
+    r"""Compute the Von Neumann entropy from a density matrix on a given subsystem. It supports all
     interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state (tensor_like): Density matrix of shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
         indices (list(int)): List of indices in the considered subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
@@ -734,8 +734,8 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     The entropy of a subsystem for any state vectors can be obtained. Here is an example for the
     maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
 
-
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> x = dm_from_state_vector(x)
     >>> vn_entropy(x, indices=[0])
     0.6931472
 
@@ -743,12 +743,6 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
 
     >>> vn_entropy(x, indices=[0], base=2)
     1.0
-
-    The entropy can be obtained by providing a quantum state as a density matrix, for example:
-
-    >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-    >>> vn_entropy(y, indices=[0])
-    0.6931472
 
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`
     """
@@ -765,7 +759,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     """Compute the Von Neumann entropy from a density matrix
 
     Args:
-        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        density_matrix (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` tensor for an integer `N`.
         base (float, int): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
@@ -810,11 +804,11 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     one system by measuring the other system. It supports all interfaces
     (Numpy, Autograd, Torch, Tensorflow and Jax).
 
-    Each state can be given as a state vector in the computational basis, or
-    as a density matrix.
+    Each state must be given as a density matrix. To find the mutual information given
+    a pure state, call :func:`~.math.dm_from_state_vector` first.
 
     Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
         indices0 (list[int]): List of indices in the first subsystem.
         indices1 (list[int]): List of indices in the second subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
@@ -829,6 +823,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     The mutual information between subsystems for a state vector can be returned as follows:
 
     >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
+    >>> x = qml.math.dm_from_state_vector(x)
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
     1.3862943611198906
 
@@ -875,7 +870,7 @@ def _compute_mutual_info(
 
 
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
-    r"""Compute the fidelity for two states (a state can be a state vector or a density matrix) acting on quantum
+    r"""Compute the fidelity for two states (given as density matrices) acting on quantum
     systems with the same size.
 
     The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
@@ -884,28 +879,16 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     .. math::
         F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
-    If one of the states is pure, say :math:`\rho=\ket{\psi}\bra{\psi}`, then the expression
-    for fidelity simplifies to
-
-    .. math::
-        F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}
-
-    Finally, if both states are pure, :math:`\sigma=\ket{\phi}\bra{\phi}`, then the
-    fidelity is simply
-
-    .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
-
     .. note::
         It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
         to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
         first state.
 
     Args:
-        state0 (tensor_like): 1D state vector or 2D density matrix
-        state1 (tensor_like): 1D state vector or 2D density matrix
-        check_state (bool): If True, the function will check the validity of both states; it checks (shape, norm) for
-            state vectors or (shape, trace, positive-definitiveness) for density matrices.
+        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        check_state (bool): If True, the function will check the validity of both states; that is,
+            (shape, trace, positive-definitiveness) for density matrices.
         c_dtype (str): Complex floating point precision type.
 
     Returns:
@@ -913,21 +896,15 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     **Example**
 
-    Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
+    To find the fidelity between two state vectors, call :func:`~.math.dm_from_state_vector` on the
+    inputs first, e.g.:
 
-    >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
-    >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
+    >>> state0 = qml.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
+    >>> state1 = qml.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
     >>> qml.math.fidelity(state0, state1)
     0.9905158135644924
 
-    Alternatively one can give a state vector and a density matrix as arguments, e.g.:
-
-    >>> state0 = [0, 1]
-    >>> state1 = [[0, 0], [0, 1]]
-    >>> qml.math.fidelity(state0, state1)
-    1.0
-
-    It also works with two density matrices, e.g.:
+    To find the fidelity between two density matrices, they can be passed directly:
 
     >>> state0 = [[1, 0], [0, 0]]
     >>> state1 = [[0, 0], [0, 1]]
@@ -1001,8 +978,10 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
 def sqrt_matrix(density_matrix):
     r"""Compute the square root matrix of a density matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
+
     Args:
-        density_matrix (tensor_like): 2D density matrix of the quantum system.
+        density_matrix (tensor_like): 2D or 3D (with batching) density matrix of the quantum system.
+
     Returns:
         (tensor_like): Square root of the density matrix.
     """
@@ -1097,12 +1076,12 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     Roughly speaking, quantum relative entropy is a measure of distinguishability between two
     quantum states. It is the quantum mechanical analog of relative entropy.
 
-    Each state can be given as a state vector in the computational basis or
-    as a density matrix.
+    Each state must be given as a density matrix. To find the relative entropy given
+    a pure state, call :func:`~.math.dm_from_state_vector` first.
 
     Args:
-        state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
-        state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
@@ -1115,12 +1094,14 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     The relative entropy between two equal states is always zero:
 
     >>> x = np.array([1, 0])
+    >>> x = qml.math.dm_from_state_vector(x)
     >>> qml.math.relative_entropy(x, x)
     0.0
 
     and the relative entropy between two non-equal pure states is always infinity:
 
     >>> y = np.array([1, 1]) / np.sqrt(2)
+    >>> y = qml.math.dm_from_state_vector(y)
     >>> qml.math.relative_entropy(x, y)
     inf
 
@@ -1220,14 +1201,14 @@ def _check_state_vector(state_vector):
 
 
 def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    r"""Compute the maximum entropy from a state vector or density matrix on a given subsystem. It supports all
+    r"""Compute the maximum entropy of a density matrix on a given subsystem. It supports all
     interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
     .. math::
         S_{\text{max}}( \rho ) = \log( \text{rank} ( \rho ))
 
     Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state (tensor_like): Density matrix of shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
         indices (list(int)): List of indices in the considered subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
@@ -1238,11 +1219,12 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
 
     **Example**
 
-    The maximum entropy of a subsystem for any state vector can be obtained. Here is an example for the
+    The maximum entropy of a subsystem for any state vector can be obtained by first calling
+    :func:`~.math.dm_from_state_vector` on the input. Here is an example for the
     maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
 
-
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> x = dm_from_state_vector(x)
     >>> max_entropy(x, indices=[0])
     0.6931472
 
@@ -1266,6 +1248,7 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     However, in general, the Von Neumann entropy is lower:
 
     >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
+    >>> x = dm_from_state_vector(x)
     >>> vn_entropy(x, indices=[1])
     0.4164955
     >>> max_entropy(x, indices=[1])
@@ -1285,7 +1268,7 @@ def _compute_max_entropy(density_matrix, base):
     """Compute the maximum entropy from a density matrix
 
     Args:
-        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        density_matrix (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` tensor for an integer `N`.
         base (float, int): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
