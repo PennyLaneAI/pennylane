@@ -11,24 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definitions."""
+"""Contains AttributeType definitions for Pennylane operators."""
 
-from .array import DatasetArray
-from .dictionary import DatasetDict
-from .json import DatasetJSON
-from .list import DatasetList
-from .none import DatasetNone
 from .operator import DatasetOperator
-from .scalar import DatasetScalar
-from .string import DatasetString
 
-__all__ = (
-    "DatasetArray",
-    "DatasetScalar",
-    "DatasetString",
-    "DatasetDict",
-    "DatasetList",
-    "DatasetOperator",
-    "DatasetNone",
-    "DatasetJSON",
-)
+__all__ = ("DatasetOperator",)

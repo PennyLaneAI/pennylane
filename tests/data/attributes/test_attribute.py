@@ -6,6 +6,7 @@ from pennylane.data.attributes import (
     DatasetNone,
     DatasetScalar,
     DatasetString,
+    DatasetOperator,
 )
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
@@ -30,6 +31,7 @@ from pennylane.data.base.attribute import match_obj_type
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
         (None, DatasetNone),
         (type(None), DatasetNone),
+        *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
