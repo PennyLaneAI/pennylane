@@ -205,9 +205,11 @@ class KerasLayer(Layer):
         In this case, loading the model requires no knowledge of the original source code:
 
         .. code-block::
+
             model = tf.keras.models.load_model(SAVE_PATH)
 
         .. note::
+
             Currently ``KerasLayer`` objects cannot be saved in the ``HDF5`` file format. In order
             to save a model using the latter method above, the ``SavedModel`` file format (default
             in TensorFlow 2.x) should be used.
