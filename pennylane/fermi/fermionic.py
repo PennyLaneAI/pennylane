@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Fermionic representation classes"""
+"""The Fermionic representation classes."""
 from copy import copy
 
 
@@ -34,6 +34,10 @@ class FermiWord(dict):
         """Return wires in a FermiWord."""
         return [i[1] for i in self.sorted_dic.keys()]
 
+    def __missing__(self, key):
+        """Return empty string for a missing jey in FermiWord."""
+        return ""
+
     def update(self, item):
         """Restrict updating FermiWord after instantiation."""
         raise TypeError("FermiWord object does not support assignment")
@@ -48,7 +52,6 @@ class FermiWord(dict):
 
     def __deepcopy__(self, memo):
         """Deep copy the FermiWord instance."""
-        res = self.__copy__()
         res = self.__copy__()
         memo[id(self)] = res
         return res
