@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains AttributeType definition for ``scipy.sparse.csr_array``."""
 
+from functools import lru_cache
 from typing import Generic, Tuple, Type, TypeVar, Union, cast
 
 import numpy as np
@@ -36,57 +37,48 @@ from scipy.sparse import (
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
 from pennylane.data.base.typing_util import HDF5Group
 
-_ALL_SPARSE = (
-    bsr_array,
-    coo_array,
-    csc_array,
-    csr_array,
-    dia_array,
-    dok_array,
-    lil_array,
-    csc_matrix,
-    csr_matrix,
-    bsr_matrix,
-    coo_matrix,
-    dia_matrix,
-    dok_matrix,
-    lil_matrix,
-)
-_ALL_SPARSE_MAP = {type_.__qualname__: type_ for type_ in _ALL_SPARSE}
-
 SparseArray = Union[bsr_array, coo_array, csc_array, csr_array, dia_array, dok_array, lil_array]
-SparseArrayT = TypeVar("SparseArrayT", bound=SparseArray)
+SparseMatrix = Union[
+    bsr_matrix, coo_matrix, csc_matrix, csr_matrix, dia_matrix, dok_matrix, lil_matrix
+]
+
+SparseT = TypeVar("SparseT", bound=Union[SparseArray, SparseMatrix])
 
 
-class DatasetSparseArray(
-    Generic[SparseArrayT], AttributeType[HDF5Group, SparseArrayT, SparseArrayT]
-):
+class DatasetSparseArray(Generic[SparseT], AttributeType[HDF5Group, SparseT, SparseT]):
     """Attribute type for Scipy sparse arrays. Can accept values of any type in
     ``scipy.sparse``. Arrays are stored in CSR format."""
 
     type_id = "sparse_array"
 
-    def __post_init__(self, value: SparseArrayT, info) -> None:
+    def __post_init__(self, value: SparseT, info) -> None:
         super().__post_init__(value, info)
         self.info["sparse_array_class"] = type(value).__qualname__
 
     @property
-    def sparse_array_class(self) -> Type[SparseArrayT]:
-        return cast(Type[SparseArrayT], _ALL_SPARSE_MAP[self.info["sparse_array_class"]])
+    def sparse_array_class(self) -> Type[SparseT]:
+        return cast(Type[SparseT], self._supported_sparse_dict[self.info["sparse_array_class"]])
 
     @classmethod
     def consumes_types(
         cls,
-    ) -> Tuple[
-        Type[bsr_array],
-        Type[coo_array],
-        Type[csc_array],
-        Type[csr_array],
-        Type[dia_array],
-        Type[dok_array],
-        Type[lil_array],
-    ]:
-        return _ALL_SPARSE
+    ) -> Tuple[Type[Union[SparseArray, SparseMatrix]], ...]:
+        return (
+            bsr_array,
+            coo_array,
+            csc_array,
+            csr_array,
+            dia_array,
+            dok_array,
+            lil_array,
+            csc_matrix,
+            csr_matrix,
+            bsr_matrix,
+            coo_matrix,
+            dia_matrix,
+            dok_matrix,
+            lil_matrix,
+        )
 
     @classmethod
     def py_type(cls, value_type: Type[SparseArray]) -> str:
@@ -95,7 +87,7 @@ class DatasetSparseArray(
 
         return f"scipy.sparse.{value_type.__qualname__}"
 
-    def hdf5_to_value(self, bind: HDF5Group) -> SparseArrayT:
+    def hdf5_to_value(self, bind: HDF5Group) -> SparseT:
         info = AttributeInfo(bind.attrs)
 
         value = csr_array(
@@ -103,13 +95,15 @@ class DatasetSparseArray(
             shape=tuple(bind["shape"]),
         )
 
-        sparse_array_class = cast(Type[SparseArrayT], _ALL_SPARSE_MAP[info["sparse_array_class"]])
+        sparse_array_class = cast(
+            Type[SparseT], self._supported_sparse_dict()[info["sparse_array_class"]]
+        )
         if not isinstance(value, sparse_array_class):
             value = sparse_array_class(value)
 
         return value
 
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: SparseArrayT) -> HDF5Group:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: SparseT) -> HDF5Group:
         if not isinstance(value, csr_array):
             csr_value = csr_array(value)
         else:
@@ -123,3 +117,9 @@ class DatasetSparseArray(
         bind["shape"] = csr_value.shape
 
         return bind
+
+    @classmethod
+    @lru_cache(1)
+    def _supported_sparse_dict(cls) -> dict[str, Type[Union[SparseArray, SparseMatrix]]]:
+        """Returns a dict mapping ``Operator`` subclass names to the class."""
+        return {op.__name__: op for op in cls.consumes_types()}

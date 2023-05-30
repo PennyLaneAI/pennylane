@@ -11,7 +11,6 @@ from pennylane.data.attributes import (
 )
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
 from pennylane.data.base.attribute import match_obj_type
-from pennylane.data.attributes.sparse_array import _ALL_SPARSE
 
 
 @pytest.mark.parametrize(
@@ -33,7 +32,7 @@ from pennylane.data.attributes.sparse_array import _ALL_SPARSE
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
         (None, DatasetNone),
         (type(None), DatasetNone),
-        *((sp_cls, DatasetSparseArray) for sp_cls in _ALL_SPARSE),
+        *((sp_cls, DatasetSparseArray) for sp_cls in DatasetSparseArray.consumes_types()),
         *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )
