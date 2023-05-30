@@ -495,3 +495,182 @@ class Projector(Observable):
 
     def pow(self, z):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
+
+
+class StateVectorProjector(Projector):
+    r"""
+    Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
+
+    The expectation of this observable returns the value
+
+    .. math::
+        |\langle \psi | i \rangle |^2
+
+    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
+
+    For example, the projector :math:`\ket{+}\bra{+}` is created by ``state_vector=np.array([1, 1])/np.sqrt(2)``.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        state_vector (tensor-like): state vector of shape ``(n, )``
+        wires (Iterable): wires that the projector acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+    """
+    num_wires = AnyWires
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def __init__(self, state_vector, wires, do_queue=True, id=None):
+        wires = Wires(wires)
+        shape = qml.math.shape(state_vector)
+        state_vector = list(qml.math.toarray(state_vector))
+
+        if len(shape) != 1:
+            raise ValueError(f"State vector must be one-dimensional; got shape {shape}.")
+
+        n_state_vector = shape[0]
+        if n_state_vector != 2 ** len(wires):
+            raise ValueError(
+                f"State vector must be of length {2**len(wires)}; got length {n_state_vector}."
+            )
+
+        super(Projector, self).__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
+        >>> qml.StateVectorProjector(state_vector, wires=(0, 1, 2)).label()
+        '(0.71|01> + 0.71|10>)(0.71<01| + 0.71<10|)'
+
+        """
+        state_vector = self.parameters[0]
+        n_wires = int(qml.math.log2(len(state_vector)))
+        basis_state_idx = qml.math.nonzero(state_vector)[0]
+
+        basis_strings = []
+        coefficients = []
+        for idx in basis_state_idx:
+            prob_ampl = state_vector[idx]
+            basis_strings.append(f"{idx:0{n_wires}b}")
+            if qml.math.iscomplex(prob_ampl):
+                coefficients.append(f"({prob_ampl:.2f})")
+            else:
+                coefficients.append(f"{qml.math.real(prob_ampl):.2f}")
+
+        if len(basis_strings) == 1:
+            return f"|{basis_strings[0]}><{basis_strings[0]}|"
+
+        kets = " + ".join([f"{c}|{b}>" for c, b in zip(coefficients, basis_strings)])
+        bras = " + ".join([f"{c}<{b}|" for c, b in zip(coefficients, basis_strings)])
+        return f"({kets})({bras})"
+
+    @staticmethod
+    def compute_matrix(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Projector.matrix`
+
+        Args:
+            state_vector (Iterable): state vector to project on
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        The projector of the state :math:`\frac{1}{\sqrt{2}}(\ket{01}+\ket{10})`
+
+        >>> qml.StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
+        [[0. 0.  0.  0.]
+         [0. 0.5 0.5 0.]
+         [0. 0.5 0.5 0.]
+         [0. 0.  0.  0.]]
+        """
+        return qml.math.outer(state_vector)
+
+    @staticmethod
+    def compute_eigvals(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.StateVectorProjector.eigvals`
+
+        Args:
+            state_vector (Iterable): state vector to project on
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.StateVectorProjector.compute_eigvals([0, 0, 1, 0])
+        [0. 0. 0. 1.]
+        """
+        w = qml.math.zeros_like(state_vector)
+        w[-1] = 1
+        return w
+
+    @staticmethod
+    def compute_diagonalizing_gates(
+        state_vector, wires
+    ):  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.StateVectorProjector.diagonalizing_gates`.
+
+        Args:
+            basis_state (Iterable): basis state that the operator projects on
+            wires (Iterable[Any], Wires): wires that the operator acts on
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.StateVectorProjector.compute_diagonalizing_gates([1, 0, 0, 0], wires=[0, 1])
+        [QubitUnitary(array([[0., 1., 0., 0.],
+                             [0., 0., 1., 0.],
+                             [0., 0., 0., 1.],
+                             [1., 0., 0., 0.]]), wires=[0, 1])]
+        """
+        # Brute force for now
+        projector = qml.math.outer(state_vector)
+        _, evecs = qml.math.linalg.eigh(projector)
+        return [qml.QubitUnitary(evecs.T, wires=wires)]
