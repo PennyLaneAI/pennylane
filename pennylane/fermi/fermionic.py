@@ -89,7 +89,7 @@ class FermiWord(dict):
 
             order_other = [i[0] for i in other.sorted_dic.keys()]
             order_final = [
-                i[0] + max([i[0] for i in self.sorted_dic.keys()]) + 1
+                i[0] + max(i[0] for i in self.sorted_dic.keys()) + 1
                 for i in other.sorted_dic.keys()
             ]
 
