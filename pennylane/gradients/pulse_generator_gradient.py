@@ -410,7 +410,6 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
                 # Fill in zero-valued gradient entry
                 grads[i] = zero_rep
 
-        grads = [zero_rep if g is None else g for g in grads]
 
         # Reformat the flat list of gradients into an output that fits the original tape specs.
         return reorder_grads(grads, tape_specs)
