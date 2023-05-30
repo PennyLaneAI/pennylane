@@ -131,14 +131,20 @@ class TestJaxExecuteUnitTests:
         spy = mocker.spy(dev, "execute_and_gradients")
 
         def cost(a):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.expval(qml.PauliZ(0))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape1 = qml.tape.QuantumScript(
+                [qml.RY(a[0], wires=0), qml.RX(a[1], wires=0)],
+                [qml.expval(qml.PauliZ(0))],
+            )
+            tape2 = qml.tape.QuantumScript(
+                [qml.RZ(a[0], wires=0), qml.RY(a[1], wires=0)],
+                [qml.expval(qml.PauliZ(0))],
+            )
+            tape3 = qml.tape.QuantumScript(
+                [qml.Hadamard(0)],
+                [qml.expval(qml.PauliZ(0))],
+            )
             return execute(
-                [tape],
+                [tape1, tape2, tape3],
                 dev,
                 gradient_fn="device",
                 gradient_kwargs={
@@ -150,8 +156,8 @@ class TestJaxExecuteUnitTests:
         a = jax.numpy.array([0.1, 0.2])
         cost(a)
 
-        # adjoint method only performs a single device execution, but gets both result and gradient
-        assert dev.num_executions == 1
+        # adjoint method only performs a single device execution per tape, but gets both result and gradient
+        assert dev.num_executions == 3
         spy.assert_called()
 
     def test_no_grad_on_execution(self, mocker):
