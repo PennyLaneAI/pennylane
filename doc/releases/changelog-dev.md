@@ -18,6 +18,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
+  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
   instead of a `QubitUnitary` operation with a dense matrix.
   [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
@@ -142,6 +146,12 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
+* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
+  Both functions have broadcasting support.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
+* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
+  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
 <h3>Breaking changes 💔</h3>
 
@@ -169,13 +179,19 @@
 
 <h3>Deprecations 👋</h3>
 
+* `LieAlgebraOptimizer` is renamed. Please use `RiemannianGradientOptimizer` instead.
+  [(#4153)(https://github.com/PennyLaneAI/pennylane/pull/4153)]
+
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
-* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
-  This also affects ``QuantumTape`` and ``OperationRecorder``.
+* `QuantumScript`'s `name` keyword argument and property are deprecated.
+  This also affects `QuantumTape` and `OperationRecorder`.
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
+* `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Documentation 📝</h3>
 

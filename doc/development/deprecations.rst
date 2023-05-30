@@ -6,7 +6,17 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``LieAlgebraOptimizer`` is renamed. Please use ``RiemannianGradientOptimizer`` instead.
+  
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
 * The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
 
   - Still accessible in v0.31
   - Removed in v0.32
