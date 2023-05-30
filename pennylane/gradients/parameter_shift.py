@@ -329,7 +329,8 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
 def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
     of a gradient computation, where g is a previously computed non-zero gradient entry."""
-    cut_dims, par_shape = (0, ()) if par_shapes is None else (len(par_shapes[0]), par_shapes[1])
+    cut_dims, par_shape = (len(par_shapes[0]), par_shapes[1]) if par_shapes else (0, ())
+
 
     if par_shapes is None:
         zero_entry = qml.math.zeros_like

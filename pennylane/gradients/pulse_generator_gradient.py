@@ -42,7 +42,7 @@ def _one_parameter_generators(op):
     Returns:
         tuple[tensor_like]: The generators for one-parameter groups that reproduce the
         partial derivatives of the parametrized evolution.
-        The ``k``\ th entry of the returned ``tuple`` has the shape ``(2**N, 2**N, *par_shape)``
+        The ``k``\ th entry of the returned ``tuple`` has the shape ``(*par_shape, 2**N, 2**N)``
         where ``N`` is the number of qubits the evolution acts on and ``par_shape`` is the
         shape of the ``k``\ th parameter of the evolution.
 
@@ -171,8 +171,8 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
 
     Args:
         tape (`~.QuantumTape`): Tape to differentiate.
-        idx (int): Index of the parameter with respect to which to differentiate
-            into ``tape.trainable_parameters``.
+        idx (int): Index (referring to ``tape.trainable_parameters``) of the parameter
+            with respect to which to differentiate.
         atol (float): absolute tolerance used to determine whether a coefficient is zero.
         cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
 
