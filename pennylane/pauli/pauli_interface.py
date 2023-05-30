@@ -24,7 +24,6 @@ from .utils import is_pauli_word
 from .conversion import pauli_sentence
 
 
-@singledispatch
 def pauli_word_prefactor(observable):
     """If the operator provided is a valid Pauli word (i.e a single term which may be a tensor product
     of pauli operators), then this function extracts the prefactor.
@@ -47,35 +46,41 @@ def pauli_word_prefactor(observable):
     >>> pauli_word_prefactor(qml.PauliX(0) @ qml.PauliY(0))
     1j
     """
+    return _pauli_word_prefactor(observable)
+
+
+@singledispatch
+def _pauli_word_prefactor(observable):
+    """Private wrapper function for pauli_word_prefactor."""
     raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
-@pauli_word_prefactor.register(PauliX)
-@pauli_word_prefactor.register(PauliY)
-@pauli_word_prefactor.register(PauliZ)
-@pauli_word_prefactor.register(Identity)
+@_pauli_word_prefactor.register(PauliX)
+@_pauli_word_prefactor.register(PauliY)
+@_pauli_word_prefactor.register(PauliZ)
+@_pauli_word_prefactor.register(Identity)
 def _pw_prefactor_pauli(
     observable: Union[PauliX, PauliY, PauliZ, Identity]
 ):  # pylint:disable=unused-argument
     return 1
 
 
-@pauli_word_prefactor.register
+@_pauli_word_prefactor.register
 def _pw_prefactor_tensor(observable: Tensor):
     if is_pauli_word(observable):
         return list(pauli_sentence(observable).values())[0]  # only one term,
     raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
-@pauli_word_prefactor.register
+@_pauli_word_prefactor.register
 def _pw_prefactor_ham(observable: Hamiltonian):
     if is_pauli_word(observable):
         return observable.coeffs[0]
     raise ValueError(f"Expected a valid Pauli word, got {observable}")
 
 
-@pauli_word_prefactor.register(Prod)
-@pauli_word_prefactor.register(SProd)
+@_pauli_word_prefactor.register(Prod)
+@_pauli_word_prefactor.register(SProd)
 def _pw_prefactor_prod_sprod(observable: Union[Prod, SProd]):
     ps = observable._pauli_rep  # pylint:disable=protected-access
     if ps is not None and len(ps) == 1:
