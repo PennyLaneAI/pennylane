@@ -52,6 +52,41 @@ class TestSnapshot:
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
+    @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
+    def test_default_qubit2(self, method):
+        """Test that multiple snapshots are returned correctly on the new
+        state-vector simulator."""
+        dev = qml.devices.experimental.DefaultQubit2()
+
+        # TODO: change this to use QNodes once the new device supports it
+
+        ops = [
+            qml.Snapshot(),
+            qml.Hadamard(wires=0),
+            qml.Snapshot("very_important_state"),
+            qml.CNOT(wires=[0, 1]),
+            qml.Snapshot(),
+        ]
+        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliX(0))])
+
+        dev.execute(qs)
+        assert dev._debugger is None
+
+        with qml.debugging._Debugger(dev) as dbg:
+            dev.execute(qs)
+
+        result = dbg.snapshots
+
+        expected = {
+            0: np.array([1, 0, 0, 0]),
+            "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
+            2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
+            "execution_results": np.array(0),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
@@ -175,6 +210,19 @@ class TestSnapshot:
 
         # need to revert change to not affect other tests (since operations a static attribute)
         dev.operations.add("Snapshot")
+
+    def test_unsupported_device_new(self):
+        """Test that an error is raised on unsupported devices."""
+
+        class DummyDevice(qml.devices.experimental.Device):
+            def execute(self, *args, **kwargs):
+                return None
+
+        dev = DummyDevice()
+
+        with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
+            with qml.debugging._Debugger(dev) as dbg:
+                dev.execute([])
 
     def test_empty_snapshots(self):
         """Test that snapshots function in the absence of any Snapshot operations."""
