@@ -636,10 +636,15 @@ class TestQueuing:
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
-
         base = qml.PauliX(0)
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+
         with qml.queuing.AnnotatedQueue() as q:
-            _ = Controlled(base, 1, do_queue=False)
+            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+                _ = Controlled(base, 1, do_queue=False)
 
         assert len(q) == 0
 
