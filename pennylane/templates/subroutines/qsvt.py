@@ -121,7 +121,8 @@ def qsvt(A, angles, wires, convention=None):
 
     c, r = qml.math.shape(A)
 
-    UA = BlockEncode(A, wires=wires, do_queue=False)
+    with qml.QueuingManager.stop_recording():
+        UA = BlockEncode(A, wires=wires)
     projectors = []
 
     if convention == "Wx":
@@ -133,7 +134,8 @@ def qsvt(A, angles, wires, convention=None):
 
     for idx, phi in enumerate(angles):
         dim = c if idx % 2 else r
-        projectors.append(PCPhase(phi, dim=dim, wires=wires, do_queue=False))
+        with qml.QueuingManager.stop_recording():
+            projectors.append(PCPhase(phi, dim=dim, wires=wires))
 
     projectors = projectors[::-1]  # reverse order to match equation
     return QSVT(UA, projectors)
@@ -255,7 +257,7 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, UA, projectors, do_queue=True, id=None):
+    def __init__(self, UA, projectors, do_queue=None, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
 

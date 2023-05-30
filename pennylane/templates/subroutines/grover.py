@@ -101,7 +101,7 @@ class GroverOperator(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):
+    def __init__(self, wires=None, work_wires=None, do_queue=None, id=None):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 

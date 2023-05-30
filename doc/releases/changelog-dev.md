@@ -229,6 +229,10 @@
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
+  [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
