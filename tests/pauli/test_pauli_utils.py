@@ -266,6 +266,7 @@ class TestGroupingUtils:
         (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
         (PauliX(1) @ Hadamard(4), False),
         (Hadamard(0), False),
+        (Hamiltonian([], []), False),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
         (Hamiltonian([1.0], [Hadamard(0)]), False),
