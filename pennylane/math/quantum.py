@@ -935,38 +935,53 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     if num_indices0 != num_indices1:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    batched = (is_state_vector0 and len(qml.math.shape(state0)) > 1) or (
+    batched0 = (is_state_vector0 and len(qml.math.shape(state0)) > 1) or (
         not is_state_vector0 and len(qml.math.shape(state0)) > 2
+    )
+    batched1 = (is_state_vector1 and len(qml.math.shape(state1)) > 1) or (
+        not is_state_vector1 and len(qml.math.shape(state1)) > 2
     )
 
     # Two pure states, squared overlap
     if is_state_vector0 and is_state_vector1:
-        if batched:
-            overlap = qml.math.einsum("ab,ab->a", state0, np.conj(state1))
-        else:
-            overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
+        indices0 = "ab" if batched0 else "b"
+        indices1 = "ab" if batched1 else "b"
+        target = "a" if batched0 or batched1 else ""
+        overlap = qml.math.einsum(
+            f"{indices0},{indices1}->{target}", state0, np.conj(state1), optimize="greedy"
+        )
 
         overlap = np.abs(overlap) ** 2
         return overlap
 
     # First state mixed, second state pure
     if not is_state_vector0 and is_state_vector1:
-        if batched:
-            overlap = qml.math.einsum("ab,abc,ac->a", np.conj(state1), state0, state1)
-        else:
-            overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
-            overlap = np.tensordot(state1, overlap, axes=1)
+        indices0 = "abc" if batched0 else "bc"
+        indices10, indices11 = ("ab", "ac") if batched1 else ("b", "c")
+        target = "a" if batched0 or batched1 else ""
+        overlap = qml.math.einsum(
+            f"{indices10},{indices0},{indices11}->{target}",
+            np.conj(state1),
+            state0,
+            state1,
+            optimize="greedy",
+        )
 
         overlap = np.real(overlap)
         return overlap
 
     # First state pure, second state mixed
     if is_state_vector0 and not is_state_vector1:
-        if batched:
-            overlap = qml.math.einsum("ab,abc,ac->a", np.conj(state0), state1, state0)
-        else:
-            overlap = np.tensordot(state1, np.transpose(np.conj(state0)), axes=1)
-            overlap = np.tensordot(state0, overlap, axes=1)
+        indices00, indices01 = ("ab", "ac") if batched0 else ("b", "c")
+        indices1 = "abc" if batched1 else "bc"
+        target = "a" if batched0 or batched1 else ""
+        overlap = qml.math.einsum(
+            f"{indices00},{indices1},{indices01}->{target}",
+            np.conj(state0),
+            state1,
+            state0,
+            optimize="greedy",
+        )
 
         overlap = np.real(overlap)
         return overlap
@@ -1050,14 +1065,23 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0))
 
+    # whether the inputs are batched
+    rho_batched = len(qml.math.shape(rho)) > 2
+    sig_batched = len(qml.math.shape(sigma)) > 2
+
+    indices_rho = "abc" if rho_batched else "bc"
+    indices_sig = "abd" if sig_batched else "bd"
+    target = "acd" if rho_batched or sig_batched else "cd"
+
     # the matrix of inner products between eigenvectors of rho and eigenvectors
     # of sigma; this is a doubly stochastic matrix
-    if len(qml.math.shape(rho)) > 2:
-        # batched case
-        rel = np.abs(qml.math.einsum("acb,acd->abd", np.conj(u_rho), u_sig)) ** 2
+    rel = qml.math.einsum(
+        f"{indices_rho},{indices_sig}->{target}", np.conj(u_rho), u_sig, optimize="greedy"
+    )
+    rel = np.abs(rel) ** 2
+
+    if sig_batched:
         evs_sig = qml.math.expand_dims(evs_sig, 1)
-    else:
-        rel = np.abs(qml.math.dot(np.transpose(np.conj(u_rho)), u_sig)) ** 2
 
     rel = qml.math.sum(qml.math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), -1)
     rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0), -1)

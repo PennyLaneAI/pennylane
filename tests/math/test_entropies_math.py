@@ -659,11 +659,43 @@ class TestEntropyBroadcasting:
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("check_state", check_state)
+    def test_relative_entropy_broadcast_sv_unbatched(self, interface, check_state):
+        """Test broadcasting for relative entropy and state vectors when one input is unbatched"""
+        state0 = [1, 0]
+        state1 = [[0, 1], [1, 1] / np.sqrt(2), [1, 0]]
+        expected = [np.inf, np.inf, 0]
+
+        state0 = qml.math.asarray(state0, like=interface)
+        state1 = qml.math.asarray(state1, like=interface)
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to relative_entropy has been deprecated"
+        ):
+            actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
+
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("check_state", check_state)
     def test_relative_entropy_broadcast_dm(self, interface, check_state):
         """Test broadcasting for relative entropy and density matrices"""
         state0 = [[[1, 0], [0, 0]], [[1, 0], [0, 0]], [[0, 0], [0, 1]], [[1, 0], [0, 0]]]
         state1 = [[[0, 0], [0, 1]], np.ones((2, 2)) / 2, [[0, 0], [0, 1]], np.eye(2) / 2]
         expected = [np.inf, np.inf, 0, np.log(2)]
+
+        state0 = qml.math.asarray(state0, like=interface)
+        state1 = qml.math.asarray(state1, like=interface)
+
+        actual = qml.math.relative_entropy(state0, state1, check_state=check_state)
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_relative_entropy_broadcast_dm_unbatched(self, interface, check_state):
+        """Test broadcasting for relative entropy and density matrices when one input is unbatched"""
+        state0 = [[[0, 0], [0, 1]], np.ones((2, 2)) / 2, [[1, 0], [0, 0]], np.eye(2) / 2]
+        state1 = np.eye(2) / 2
+        expected = [np.log(2), np.log(2), np.log(2), 0]
 
         state0 = qml.math.asarray(state0, like=interface)
         state1 = qml.math.asarray(state1, like=interface)

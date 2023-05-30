@@ -168,6 +168,21 @@ class TestFidelityMath:
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
+    def test_broadcast_sv_sv_unbatched(self, check_state, func):
+        """Test broadcasting works for fidelity and state vectors when one input is unbatched"""
+        state0 = func([1, 0])
+        state1 = func([[0, 1], [1, 0], [1, 1] / np.sqrt(2)])
+        expected = [0, 1, 0.5]
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to fidelity has been deprecated"
+        ):
+            fidelity = qml.math.fidelity(state0, state1, check_state)
+
+        assert qml.math.allclose(fidelity, expected)
+
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_sv_dm(self, check_state, func):
         """Test broadcasting works for fidelity and state vector/density matrix combinations"""
         state0 = func([[1, 0], [1, 0], [1, 0], [0, 1], [1, 0], [0, 1]])
@@ -182,6 +197,29 @@ class TestFidelityMath:
             ]
         )
         expected = [0, 1, 0.5, 0.5, 0.5, 0.5]
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to fidelity has been deprecated"
+        ):
+            fidelity = qml.math.fidelity(state0, state1, check_state)
+
+        assert qml.math.allclose(fidelity, expected)
+
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("func", array_funcs)
+    def test_broadcast_sv_dm_unbatched(self, check_state, func):
+        """Test broadcasting works for fidelity and state vector/density matrix combinations
+        when one input is unbatched"""
+        state0 = func([1, 0])
+        state1 = func(
+            [
+                [[0, 0], [0, 1]],
+                [[1, 0], [0, 0]],
+                [[0.5, 0], [0, 0.5]],
+                [[0.5, 0.5], [0.5, 0.5]],
+            ]
+        )
+        expected = [0, 1, 0.5, 0.5]
 
         with pytest.warns(
             UserWarning, match="Passing a state vector to fidelity has been deprecated"
@@ -214,6 +252,22 @@ class TestFidelityMath:
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
+    def test_broadcast_dm_sv_unbatched(self, check_state, func):
+        """Test broadcasting works for fidelity and state vector/density matrix combinations
+        when one input is unbatched"""
+        state0 = func([[0.5, 0.5], [0.5, 0.5]])
+        state1 = func([[1, 0], [0, 1], [1, 1] / np.sqrt(2)])
+        expected = [0.5, 0.5, 1]
+
+        with pytest.warns(
+            UserWarning, match="Passing a state vector to fidelity has been deprecated"
+        ):
+            fidelity = qml.math.fidelity(state0, state1, check_state)
+
+        assert qml.math.allclose(fidelity, expected)
+
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_dm_dm(self, check_state, func):
         """Test broadcasting works for fidelity and density matrices"""
         state0 = func([[[1, 0], [0, 0]], [[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0], [0, 1]]])
@@ -226,6 +280,25 @@ class TestFidelityMath:
             ]
         )
         expected = [0.5, 0.5, 0.5, 0.5]
+
+        fidelity = qml.math.fidelity(state0, state1, check_state)
+        assert qml.math.allclose(fidelity, expected)
+
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("func", array_funcs)
+    def test_broadcast_dm_dm_unbatched(self, check_state, func):
+        """Test broadcasting works for fidelity and density matrices when one input is unbatched"""
+        state0 = func(
+            [
+                [[0.5, -0.5], [-0.5, 0.5]],
+                [[0.5, 0.5], [0.5, 0.5]],
+                [[1, 0], [0, 0]],
+                [[0, 0], [0, 1]],
+            ]
+        )
+        state1 = func([[0.5, 0.5], [0.5, 0.5]])
+
+        expected = [0, 1, 0.5, 0.5]
 
         fidelity = qml.math.fidelity(state0, state1, check_state)
         assert qml.math.allclose(fidelity, expected)
