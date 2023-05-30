@@ -73,6 +73,17 @@ class TestFermiWord:
         """Test that the wires are tracked correctly."""
         assert fw.wires == wires
 
+    tup_fw_compact = (
+        (fw1, "0+ 1-"),
+        (fw2, "0+ 0-"),
+        (fw3, "0+ 3- 0+ 4-"),
+        (fw4, ""),
+    )
+
+    @pytest.mark.parametrize("fw, str_rep", tup_fw_compact)
+    def test_compact(self, fw, str_rep):
+        assert fw.to_string() == str_rep
+
     tup_fw_str = (
         (fw1, "<FermiWord = '0+ 1-'>"),
         (fw2, "<FermiWord = '0+ 0-'>"),
