@@ -120,6 +120,7 @@ obs = {
     "PauliZ",
     "Hermitian",
     "Projector",
+    "StateVectorProjector",
     "SparseHamiltonian",
     "Hamiltonian",
 }

@@ -541,7 +541,7 @@ class StateVectorProjector(Projector):
                 f"State vector must be of length {2**len(wires)}; got length {n_state_vector}."
             )
 
-        super(Projector, self).__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+        super(Observable, self).__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -609,7 +609,7 @@ class StateVectorProjector(Projector):
          [0. 0.5 0.5 0.]
          [0. 0.  0.  0.]]
         """
-        return qml.math.outer(state_vector)
+        return qml.math.outer(state_vector, state_vector)
 
     @staticmethod
     def compute_eigvals(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
@@ -670,7 +670,9 @@ class StateVectorProjector(Projector):
                              [0., 0., 0., 1.],
                              [1., 0., 0., 0.]]), wires=[0, 1])]
         """
+        if set(state_vector).issubset({0, 1}):
+            return []
         # Brute force for now
-        projector = qml.math.outer(state_vector)
+        projector = qml.math.outer(state_vector, state_vector)
         _, evecs = qml.math.linalg.eigh(projector)
-        return [qml.QubitUnitary(evecs.T, wires=wires)]
+        return [QubitUnitary(evecs.T, wires=wires)]
