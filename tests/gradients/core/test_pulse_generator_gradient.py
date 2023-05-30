@@ -379,8 +379,9 @@ class TestNonzeroCoeffsAndWords:
     def test_separate_nonzero(self, num_wires):
         """Test that a single coefficient in any of the coefficients is sufficient
         to keep the Pauli word in the filter."""
-        # Create many coefficients, each just with one ``1`` entry at distinct places.
-        coeffs = tuple(np.eye(4**num_wires - 1))
+        # Create many coefficients, each greater or equal ``1`` at distinct places.
+        rng = np.random.default_rng(42)
+        coeffs = tuple(rng.uniform(1, 2, size=4**num_wires - 1))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
         # The coefficients should not have changed and all words should be returned

@@ -344,7 +344,7 @@ def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
         parameter shapes if ``par_shapes`` were provided.
 
     """
-    cut_dims, par_shape = (0, ()) if par_shapes is None else (len(par_shapes[0]), par_shapes[1])
+    cut_dims, par_shape = (len(par_shapes[0]), par_shapes[1]) if par_shapes else (0, ())
 
     if par_shapes is None:
         zero_entry = qml.math.zeros_like
