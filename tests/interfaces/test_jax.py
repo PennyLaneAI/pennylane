@@ -157,7 +157,6 @@ class TestJaxExecuteUnitTests:
 
         a = jax.numpy.array([0.1, 0.2])
         res = cost(a)
-        print(res)
 
         x, y = a
         assert np.allclose(res[0][0], np.cos(x) * np.cos(y))
