@@ -306,11 +306,11 @@ class Dataset(MapperMixin, _DatasetTransform):
         except KeyError as exc:
             raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
 
-    def __repr_items__(self) -> dict[str, str]:
-        return {**self.params, "attributes": str(list(self.attrs))}
-
     def __repr__(self) -> str:
-        repr_items = ", ".join(f"{name}: {value}" for name, value in self.__repr_items__().items())
+        repr_items = ", ".join(
+            f"{name}: {value}"
+            for name, value in {**self.params, "attributes": (str(list(self.attrs)))}
+        )
 
         return f"<{type(self).__name__} = {repr_items}>"
 
