@@ -1152,7 +1152,15 @@ class QuantumScript:
         adj = self.__class__(
             ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
         )
-        if self.do_queue:
+
+        if self.do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+        if self.do_queue or self.do_queue is None:
             qml.QueuingManager.append(adj)
         return adj
 
