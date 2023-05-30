@@ -15,6 +15,123 @@
 from copy import copy
 
 
+class FermiWord(dict):
+    """Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
+    annihilation operators, associating wires with their respective operators. Can be constructed
+    from a standard dictionary.
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w
+    '0+ 1-'
+    """
+
+    def __init__(self, operator):
+        self.sorted_dic = dict(sorted(operator.items()))
+        super().__init__(operator)
+
+    @property
+    def wires(self):
+        """Return wires in a FermiWord."""
+        return [i[1] for i in self.sorted_dic.keys()]
+
+    def __missing__(self, key):
+        """Return empty string for a missing jey in FermiWord."""
+        return ""
+
+    def update(self, item):
+        """Restrict updating FermiWord after instantiation."""
+        raise TypeError("FermiWord object does not support assignment")
+
+    def __setitem__(self, key, item):
+        """Restrict setting items after instantiation."""
+        raise TypeError("FermiWord object does not support assignment")
+
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a FermiWord. Otherwise, un-pickling
+        would cause __setitem__ to be called, which is forbidden on PauliWord.
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+        """
+        return FermiWord, (dict(self),)
+
+    def __copy__(self):
+        """Copy the FermiWord instance."""
+        return FermiWord(dict(self.items()))
+
+    def __deepcopy__(self, memo):
+        """Deep copy the FermiWord instance."""
+        res = self.__copy__()
+        memo[id(self)] = res
+        return res
+
+    def __hash__(self):
+        """Hash value of a FermiWord."""
+        return hash(frozenset(self.items()))
+
+    def to_string(self):
+        """Return a compact string representation of a FermiWord."""
+        string = " ".join(
+            [
+                i + j
+                for i, j in zip(
+                    [str(i[1]) for i in self.sorted_dic.keys()], self.sorted_dic.values()
+                )
+            ]
+        )
+        return string
+
+    def __str__(self):
+        """String representation of a FermiWord."""
+        return f"<FermiWord = '{self.to_string()}'>"
+
+    def __repr__(self):
+        """Terminal representation of a FermiWord"""
+        return str(self)
+
+    def __mul__(self, other):
+        """Multiply two Fermi words together."""
+
+        if isinstance(other, FermiWord):
+            if len(self) == 0:
+                return copy(other)
+
+            if len(other) == 0:
+                return copy(self)
+
+            order_other = [i[0] for i in other.sorted_dic.keys()]
+            order_final = [
+                i[0] + max(i[0] for i in self.sorted_dic.keys()) + 1
+                for i in other.sorted_dic.keys()
+            ]
+
+            dict_other = dict(
+                zip([(order_final[o], other.wires[o]) for o in order_other], other.values())
+            )
+            dict_self = dict(zip(self.keys(), self.values()))
+
+            dict_self.update(dict_other)
+
+            return FermiWord(dict_self)
+
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}")
+
+    def __pow__(self, value):
+        """Exponentiate a Fermi word to an integer power."""
+
+        if not isinstance(value, int):
+            raise TypeError("The exponent must be integer.")
+
+        operator = FermiWord({})
+
+        for _ in range(value):
+            operator *= self
+
+        return operator
+
+
+# TODO: create __add__ method when PauliSentence is merged.
+# TODO: create mapping method when the ne jordan_wigner function is added.
+
+
 class FermiSentence(dict):
     """Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
     as FermiWord instances and the values correspond to coefficients.
