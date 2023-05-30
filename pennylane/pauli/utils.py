@@ -92,6 +92,8 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    if getattr(observable, "_pauli_rep", None):
+        return len(observable._pauli_rep) == 1
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
         return set(observable.name).issubset(pauli_word_names)
@@ -138,6 +140,8 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(3))
     False
     """
+    if getattr(pauli_1, "_pauli_rep", None) and getattr(pauli_2, "_pauli_rep", None):
+        return pauli_1._pauli_rep == pauli_2._pauli_rep
 
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
@@ -1197,7 +1201,7 @@ def diagonalize_pauli_word(pauli_word):
 
 def diagonalize_qwc_pauli_words(
     qwc_grouping,
-):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type
+):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type, protected-access
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
@@ -1229,6 +1233,23 @@ def diagonalize_qwc_pauli_words(
 
     if not are_pauli_words_qwc(qwc_grouping):
         raise ValueError("The list of Pauli words are not qubit-wise commuting.")
+
+    if all(getattr(o, "_pauli_rep", None) is not None for o in qwc_grouping):
+        basis_word = {}
+        for o in qwc_grouping:
+            if len(o._pauli_rep) > 1:
+                raise NotImplementedError
+            basis_word.update(next(iter(o._pauli_rep)))
+        basis_word = qml.pauli.PauliWord(basis_word)
+
+        diagonal_terms = []
+        for o in qwc_grouping:
+            _, coeff = next(iter(o._pauli_rep.items()))
+            ops = [qml.PauliZ(w) for w in o.wires]
+            op = ops[0] if len(ops) == 1 else qml.prod(*ops)
+            diagonal_terms.append(qml.s_prod(coeff, op))
+
+        return basis_word.operation().diagonalizing_gates(), diagonal_terms
 
     if not all(isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity)) for op in qwc_grouping):
         raise ValueError("This function only supports Tensor products of pauli ops.")

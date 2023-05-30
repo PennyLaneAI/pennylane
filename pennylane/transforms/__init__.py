@@ -213,6 +213,7 @@ from .split_non_commuting import split_non_commuting
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
+from .measurement_shot_reuse import measurement_shot_reuse
 
 from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
