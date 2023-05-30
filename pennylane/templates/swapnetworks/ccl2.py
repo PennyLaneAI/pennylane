@@ -91,7 +91,7 @@ class TwoLocalSwapNetwork(Operation):
         weights=None,
         fermionic=True,
         shift=False,
-        do_queue=True,
+        do_queue=None,
         id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments

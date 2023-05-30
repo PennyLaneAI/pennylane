@@ -168,7 +168,7 @@ class UCCSD(Operation):
     grad_method = None
 
     def __init__(
-        self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True, id=None
+        self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=None, id=None
     ):
         if (not s_wires) and (not d_wires):
             raise ValueError(
