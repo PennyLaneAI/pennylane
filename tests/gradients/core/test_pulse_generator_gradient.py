@@ -381,7 +381,7 @@ class TestNonzeroCoeffsAndWords:
         to keep the Pauli word in the filter."""
         # Create many coefficients, each greater or equal ``1`` at distinct places.
         rng = np.random.default_rng(42)
-        coeffs = tuple(rng.uniform(1, 2, size=4**num_wires - 1))
+        coeffs = tuple(rng.uniform(1, 2, size=(4**num_wires - 1, 4**num_wires - 1)))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
         # The coefficients should not have changed and all words should be returned
