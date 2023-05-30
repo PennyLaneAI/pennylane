@@ -64,7 +64,7 @@ class TestConstructor:
             "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
         )
         with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            qml.pow(TempOperator(0), 2, lazy=False, do_queue=do_queue)
+            qml.pow(qml.PauliX(0), 2, lazy=False, do_queue=do_queue)
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
     def test_nonlazy_identity_simplification(self, op):
