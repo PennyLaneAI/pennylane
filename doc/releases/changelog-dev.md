@@ -141,7 +141,7 @@
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
 * `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#)]()
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
 
 
 <h3>Breaking changes 💔</h3>
