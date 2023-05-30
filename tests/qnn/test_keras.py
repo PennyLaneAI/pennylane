@@ -573,12 +573,12 @@ class TestKerasLayerIntegration:
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_save_weights(
+    def test_save_model_weights(
         self, get_circuit, n_qubits, output_dim, tmpdir
     ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
-        clayer = tf.keras.layers.Dense(n_qubits, input_shape=(n_qubits,))
+        clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         qlayer = KerasLayer(*get_circuit, output_dim)
         model = tf.keras.models.Sequential([clayer, qlayer])
         weights = model.get_weights()
@@ -586,7 +586,7 @@ class TestKerasLayerIntegration:
         file = str(tmpdir) + "/model"
         model.save_weights(file)
 
-        new_clayer = tf.keras.layers.Dense(n_qubits, input_shape=(n_qubits,))
+        new_clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         new_qlayer = KerasLayer(*get_circuit, output_dim)
         new_model = tf.keras.models.Sequential([new_clayer, new_qlayer])
         new_weights = new_model.get_weights()
@@ -606,8 +606,17 @@ class TestKerasLayerIntegration:
         # assert that the new model's weights are now the same
         assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
 
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model(x)
+        new_res = new_model(x)
+        assert tf.math.reduce_all(res == new_res)
+
+    # the test is slow since TensorFlow needs to compile the execution graph
+    # in order to save the model
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_save_model(self, model, n_qubits, tmpdir):
+    def test_save_whole_model(self, model, n_qubits, tmpdir):
         """Test if the entire model can be successfully saved and reloaded
         using the .save() method"""
         weights = model.get_weights()
@@ -618,8 +627,15 @@ class TestKerasLayerIntegration:
         new_model = tf.keras.models.load_model(file)
         new_weights = new_model.get_weights()
 
-        for w, nw in zip(weights, new_weights):
-            assert np.allclose(w, nw)
+        assert len(weights) == len(new_weights)
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model(x)
+        new_res = new_model(x)
+        assert tf.math.reduce_all(res == new_res)
 
 
 @pytest.mark.tf
@@ -662,12 +678,12 @@ class TestKerasLayerIntegrationDM:
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_model_save_weights_dm(
+    def test_save_model_weights_dm(
         self, get_circuit_dm, n_qubits, output_dim, tmpdir
     ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
-        clayer = tf.keras.layers.Dense(n_qubits, input_shape=(n_qubits,))
+        clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         qlayer = KerasLayer(*get_circuit_dm, output_dim)
         model = tf.keras.models.Sequential([clayer, qlayer])
         weights = model.get_weights()
@@ -675,7 +691,7 @@ class TestKerasLayerIntegrationDM:
         file = str(tmpdir) + "/model"
         model.save_weights(file)
 
-        new_clayer = tf.keras.layers.Dense(n_qubits, input_shape=(n_qubits,))
+        new_clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
         new_qlayer = KerasLayer(*get_circuit_dm, output_dim)
         new_model = tf.keras.models.Sequential([new_clayer, new_qlayer])
         new_weights = new_model.get_weights()
@@ -695,8 +711,17 @@ class TestKerasLayerIntegrationDM:
         # assert that the new model's weights are now the same
         assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
 
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model(x)
+        new_res = new_model(x)
+        assert tf.math.reduce_all(res == new_res)
+
+    # the test is slow since TensorFlow needs to compile the execution graph
+    # in order to save the model
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_save_model_dm(self, model_dm, n_qubits, tmpdir):
+    def test_save_whole_model_dm(self, model_dm, n_qubits, tmpdir):
         """Test if the entire model can be successfully saved and reloaded
         using the .save() method"""
         weights = model_dm.get_weights()
@@ -709,6 +734,12 @@ class TestKerasLayerIntegrationDM:
 
         for w, nw in zip(weights, new_weights):
             assert np.allclose(w, nw)
+
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model_dm(x)
+        new_res = new_model_dm(x)
+        assert tf.math.reduce_all(res == new_res)
 
 
 @pytest.mark.tf

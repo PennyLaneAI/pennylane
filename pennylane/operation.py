@@ -1039,9 +1039,6 @@ class Operator(abc.ABC):
         """
         self._batch_size = None
 
-        if any(qml.math.is_abstract(p) and len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
-            return
-
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
@@ -1056,6 +1053,12 @@ class Operator(abc.ABC):
             if any(qml.math.is_abstract(p) for p in params):
                 return
             raise e
+
+        if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
+            # if the batch dimension is unknown, then skip the validation
+            # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
+            # typically during compilation of a function decorated with jax.jit or tf.function
+            return
 
         self._ndim_params = ndims
         if ndims != self.ndim_params:

@@ -191,10 +191,9 @@ class KerasLayer(Layer):
             model = tf.keras.Sequential([clayer, qlayer])
             model.load_weights(SAVE_PATH)
 
-        If the ``KerasLayer`` is created with ``dynamic=False`` (the default), then models
-        containing the layer can be saved directly using ``tf.keras.Model.save``. This
-        method also saves the model architecture, weights, and training configuration, including
-        the optimizer state:
+        Models containing ``KerasLayer`` objects can also be saved directly using
+        ``tf.keras.Model.save``. This method also saves the model architecture, weights,
+        and training configuration, including the optimizer state:
 
         .. code-block::
 
@@ -354,7 +353,8 @@ class KerasLayer(Layer):
         """Initializes the QNode weights.
 
         Args:
-            input_shape (tuple or tf.TensorShape): shape of input data
+            input_shape (tuple or tf.TensorShape): shape of input data; this is unused since
+                the weight shapes are already known in the __init__ method.
         """
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
@@ -371,12 +371,12 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        has_batch_dim = len(tf.shape(inputs)) > 1
+        has_batch_dim = len(inputs.shape) > 1
 
         # in case the input has more than one batch dimension
         if has_batch_dim:
             batch_dims = tf.shape(inputs)[:-1]
-            inputs = tf.reshape(inputs, (-1, tf.shape(inputs)[-1]))
+            inputs = tf.reshape(inputs, (-1, inputs.shape[-1]))
 
         if not qml.active_return() and has_batch_dim:
             # If the input has a batch dimension and we want to execute each data point separately,
@@ -394,11 +394,11 @@ class KerasLayer(Layer):
 
         # reshape to the correct number of batch dims
         if has_batch_dim:
-            results = tf.reshape(results, (*batch_dims, *results.shape[1:]))
+            new_shape = tf.concat([batch_dims, tf.shape(results)[1:]], axis=0)
+            results = tf.reshape(results, new_shape)
 
         return results
 
-    @tf.autograph.experimental.do_not_convert
     def _evaluate_qnode(self, x):
         """Evaluates a QNode for a single input datapoint.
 
@@ -415,9 +415,9 @@ class KerasLayer(Layer):
         res = self.qnode(**kwargs)
 
         if isinstance(res, (list, tuple)):
-            if len(tf.shape(x)) > 1:
+            if len(x.shape) > 1:
                 # multi-return and batch dim case
-                res = [tf.reshape(r, (tf.shape(x)[0], -1)) for r in res]
+                res = [tf.reshape(r, (tf.shape(x)[0], tf.reduce_prod(r.shape[1:]))) for r in res]
 
             # multi-return and no batch dim
             return tf.experimental.numpy.hstack(res)
