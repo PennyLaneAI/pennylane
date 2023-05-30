@@ -527,6 +527,13 @@ class TestGenerateTapesAndCoeffs:
         assert isinstance(coeffs[0], jnp.ndarray) and coeffs[0].shape == exp_coeffs[0].shape
         assert qml.math.allclose(coeffs[0], exp_coeffs[0], atol=self.atol)
 
+    def test_raises_non_pulse_op(self):
+        """Test that an error is raised for an operation that is not a pulse."""
+        tape = qml.tape.QuantumScript([qml.RX(0.4, 0)], [qml.expval(qml.PauliZ(0))])
+        cache = {"total_num_tapes": 0}
+        with pytest.raises(ValueError, match="pulse_generator does not support differentiating"):
+            _generate_tapes_and_coeffs(tape, 0, 1e-6, cache)
+
     @pytest.mark.parametrize("add_constant", [False, True])
     def test_single_op_single_term(self, add_constant):
         """Test the tape generation for a single parameter and Hamiltonian term in a tape."""
