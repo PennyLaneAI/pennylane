@@ -46,6 +46,13 @@ class FermiWord(dict):
         """Copy the FermiWord instance."""
         return FermiWord(dict(self.items()))
 
+    def __deepcopy__(self, memo):
+        """Deep copy the FermiWord instance."""
+        res = self.__copy__()
+        res = self.__copy__()
+        memo[id(self)] = res
+        return res
+
     def __hash__(self):
         """Hash value of a FermiWord."""
         return hash(frozenset(self.items()))
@@ -64,7 +71,7 @@ class FermiWord(dict):
 
     def __str__(self):
         """String representation of a FermiWord."""
-        return f"<Operator = '{self.to_string()}'>"
+        return f"<FermiWord = '{self.to_string()}'>"
 
     def __repr__(self):
         """Terminal representation of a FermiWord"""
