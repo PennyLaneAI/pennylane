@@ -33,11 +33,14 @@ def f2(p, t):
     """Compute the function p * cos(t**2)."""
     return p * np.cos(t**2)
 
+
 class f3:
     def __init__(self, hyper_param):
         self.hyper = hyper_param
+
     def __call__(self, p, t):
         return self.hyper * p * t
+
 
 param = [1.2, 2.3]
 
