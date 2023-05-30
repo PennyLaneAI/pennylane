@@ -24,6 +24,7 @@ from pennylane.tape import QuantumTape
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 
+
 # pylint: disable=protected-access, too-many-branches
 def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
     """Implements the adjoint method outlined in
