@@ -13,7 +13,6 @@
 # limitations under the License.
 """The Fermionic representation classes"""
 from copy import copy
-from pennylane.pauli import PauliWord, PauliSentence
 from numbers import Number
 from pennylane.numpy.tensor import tensor
 
@@ -28,24 +27,33 @@ class FermiWord(dict):
     '0+ 1-'
     """
 
-    def __init__(self, mapping):
-        self.sorted_dic = dict(sorted(mapping.items()))
-        super().__init__(mapping)
+    def __init__(self, operator):
+        self.sorted_dic = dict(sorted(operator.items()))
+        super().__init__(operator)
+
+    @property
+    def wires(self):
+        """Return wires in a FermiWord."""
+        return [i[1] for i in self.sorted_dic.keys()]
+
+    def update(self, item):
+        """Restrict updating FermiWord after instantiation."""
+        raise TypeError("FermiWord object does not support assignment")
+
+    def __setitem__(self, key, item):
+        """Restrict setting items after instantiation."""
+        raise TypeError("FermiWord object does not support assignment")
 
     def __copy__(self):
         """Copy the FermiWord instance."""
         return FermiWord(dict(self.items()))
 
-    @property
-    def wires(self):
-        """Wires in a FermiWord."""
-        return [i[1] for i in self.sorted_dic.keys()]
-
-    def name(self):
-        return self.__class__.__name__
+    def __hash__(self):
+        """Hash value of a FermiWord."""
+        return hash(frozenset(self.items()))
 
     def to_string(self):
-        """String representation of the fermionic operator."""
+        """Return a compact string representation of a FermiWord."""
         string = " ".join(
             [
                 i + j
@@ -56,30 +64,18 @@ class FermiWord(dict):
         )
         return string
 
-    def update(self, item):
-        """Restrict updating FermiWord after instantiation."""
-        raise TypeError("FermiWord object does not support assignment")
-
-    def __setitem__(self, key, item):
-        """Restrict setting items after instantiation."""
-        raise TypeError("FermiWord object does not support assignment")
-
-    def __hash__(self):
-        """Hash value of a FermiWord."""
-        return hash(frozenset(self.items()))
-
     def __str__(self):
         """String representation of a FermiWord."""
-        return f"<Operator = '{self.to_string()}', Wire: {self.wires}, Rep: {self.name()}>"
+        return f"<Operator = '{self.to_string()}'>"
 
     def __repr__(self):
         """Terminal representation of a FermiWord"""
         return str(self)
 
     def __mul__(self, other):
-        """Multiply two Ferm words together."""
+        """Multiply two Fermi words together."""
 
-        if isinstance(other, FermiWord) or isinstance(other, FermiC) or isinstance(other, FermiA):
+        if isinstance(other, FermiWord):
             if len(self) == 0:
                 return copy(other)
 
@@ -101,33 +97,11 @@ class FermiWord(dict):
 
             return FermiWord(dict_self)
 
-        elif isinstance(other, Number) or isinstance(other, tensor):
-            return FermiSentence({self: other})
-
-        raise TypeError("Cannot multiply FermiWord by ...")
-
-    def __rmul__(self, other):
-        """Multiply two Ferm words together."""
-
-        if isinstance(other, Number):
-            return FermiSentence({self: other})
-
-        if isinstance(other, tensor):
-            return FermiSentence({self: other})
-
-        raise TypeError("__rmul__ Cannot multiply FermiWord by ...")
-
-    def to_qubit(self):
-        """Map to qubit."""
-        return mapping(self)
-
-    def __add__(self, other):
-        """Add two Fermi two Ferm words together."""
-        if self == other:
-            return FermiSentence({self: 2.0})
-        return FermiSentence({self: 1.0, other: 1.0})
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}")
 
     def __pow__(self, value):
+        """Exponentiate a Fermi word to an integer power."""
+
         if not isinstance(value, int):
             raise TypeError("The exponent must be integer.")
 
@@ -137,3 +111,7 @@ class FermiWord(dict):
             operator *= self
 
         return operator
+
+
+# TODO: create __add__ method when PauliSentence is merged.
+# TODO: create mapping method when the ne jordan_wigner function is added.
