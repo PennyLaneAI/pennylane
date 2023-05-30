@@ -106,7 +106,7 @@ class CommutingEvolution(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=None, id=None):
         # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import (
             generate_shift_rule,

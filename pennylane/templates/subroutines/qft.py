@@ -66,7 +66,7 @@ class QFT(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, do_queue=None, id=None):
         wires = qml.wires.Wires(wires)
         self.hyperparameters["n_wires"] = len(wires)
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)

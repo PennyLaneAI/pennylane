@@ -102,7 +102,7 @@ class TestInitialization:
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
-        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=True, id=test_id)
+        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=None, id=test_id)
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
@@ -851,10 +851,9 @@ class TestWrapperFunc:
         coeff, op = op_scalar_tup
 
         op_id = "sprod_op"
-        do_queue = False
 
-        sprod_func_op = s_prod(coeff, op, id=op_id, do_queue=do_queue)
-        sprod_class_op = SProd(coeff, op, id=op_id, do_queue=do_queue)
+        sprod_func_op = s_prod(coeff, op, id=op_id)
+        sprod_class_op = SProd(coeff, op, id=op_id)
 
         assert sprod_class_op.scalar == sprod_func_op.scalar
         assert sprod_class_op.base == sprod_func_op.base

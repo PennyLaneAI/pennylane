@@ -152,7 +152,7 @@ class ParticleConservingU2(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
+    def __init__(self, weights, wires, init_state=None, do_queue=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than one;"
