@@ -188,6 +188,6 @@ class StateMP(StateMeasurement):
             # qml.density_matrix
             wire_map = dict(zip(wire_order, range(len(wire_order))))
             mapped_wires = [wire_map[w] for w in self.wires]
-            return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype=state.dtype)
+            return qml.math.reduce_statevector(state, indices=mapped_wires, c_dtype=state.dtype)
         # qml.state
         return state

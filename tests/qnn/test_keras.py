@@ -300,10 +300,14 @@ class TestKerasLayer:
         values that are the input keyword arguments, and we check that the specified weight_specs
         keywords are there."""
 
-        def add_weight_dummy(*args, **kwargs):  # pylint: disable=unused-argument
-            """Dummy function for mocking out the add_weight method to simply return the input
-            keyword arguments"""
-            return kwargs
+        add_weight = KerasLayer.add_weight
+
+        specs = {}
+
+        def add_weight_dummy(self, **kwargs):
+            """Dummy function for mocking out the add_weight method to store the kwargs in a dict"""
+            specs[kwargs["name"]] = kwargs
+            return add_weight(self, **kwargs)
 
         weight_specs = {
             "w1": {"initializer": "random_uniform", "trainable": False},
@@ -322,10 +326,7 @@ class TestKerasLayer:
             layer.build(input_shape=(10, n_qubits))
 
             for weight in layer.weight_shapes:
-                assert all(
-                    item in layer.qnode_weights[weight].items()
-                    for item in weight_specs[weight].items()
-                )
+                assert all(item in specs[weight].items() for item in weight_specs[weight].items())
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
     @pytest.mark.parametrize("input_shape", [(10, 4), (8, 3)])
@@ -435,7 +436,6 @@ class TestKerasLayer:
         (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly.
         """
         c, w = get_circuit
-
         layer = KerasLayer(c, w, output_dim)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
@@ -637,6 +637,7 @@ class TestKerasLayerIntegrationDM:
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+
         x = np.zeros((batch_size, n_qubits))
         y = np.zeros((batch_size, output_dim[0] * output_dim[1]))
 
@@ -718,7 +719,7 @@ def test_no_attribute():
 
 
 @pytest.mark.tf
-def test_batch_input():
+def test_batch_input_single_measure():
     """Test input batching in keras"""
     dev = qml.device("default.qubit.tf", wires=4)
 
@@ -730,6 +731,41 @@ def test_batch_input():
         return qml.probs(op=qml.PauliZ(1))
 
     KerasLayer.set_input_argument("x")
-    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
     layer.build((None, 2))
-    assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
+
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 2)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]))
+
+
+@pytest.mark.tf
+def test_batch_input_multi_measure():
+    """Test input batching in keras for multiple measurements"""
+    dev = qml.device("default.qubit.tf", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return [qml.expval(qml.PauliZ(1)), qml.probs(wires=range(2))]
+
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(5,))
+    layer.build((None, 4))
+
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 5)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
+        assert qml.math.allclose(r, exp)
