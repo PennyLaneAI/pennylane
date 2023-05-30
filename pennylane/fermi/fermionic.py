@@ -13,8 +13,6 @@
 # limitations under the License.
 """The Fermionic representation classes"""
 from copy import copy
-from numbers import Number
-from pennylane.numpy.tensor import tensor
 
 
 class FermiWord(dict):
