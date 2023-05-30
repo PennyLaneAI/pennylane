@@ -14,7 +14,6 @@
 """Functions to apply an operation to a state vector."""
 # pylint: disable=unused-argument
 
-import copy
 from functools import singledispatch
 import numpy as np
 import quimb.tensor as qtn
@@ -70,21 +69,21 @@ def apply_operation(op: qml.operation.Operator, state, is_state_batched: bool = 
     wires = tuple(op.wires)
     gate_opts = {"contract": "swap+split", "cutoff": 0.0, "max_bond": None}
     if len(wires) <= 2:
-        m = np.transpose(np.conj(op.matrix()))
+        m = op.matrix()
         state.gate_(m, wires, **gate_opts)
         return
-    if op.has_decomposition:
-        try:
-            newstate = copy.deepcopy(state)
-            for d in op.decomposition():
-                m = np.transpose(np.conj(d.matrix()))
-                newstate.gate_(m, tuple(d.wires), **gate_opts)
-            state.__dict__.update(newstate.__dict__)
-            return
-        except:  # pylint: disable=bare-except
-            pass
+    # if op.has_decomposition:
+    #     # try:
+    #     newstate = copy.deepcopy(state)
+    #     for d in op.decomposition():
+    #         m = d.matrix()
+    #         newstate.gate_(m, tuple(d.wires), **gate_opts)
+    #     state.__dict__.update(newstate.__dict__)
+    #     return
+    #     # except:  # pylint: disable=bare-except
+    #     #     pass
     mpo = op_2_mpo(op, state)
-    newstate = mpo.apply(state)
+    newstate = mpo.apply(state, compress=True)
     state.__dict__.update(newstate.__dict__)
 
 
