@@ -46,6 +46,13 @@ class FermiWord(dict):
         """Restrict setting items after instantiation."""
         raise TypeError("FermiWord object does not support assignment")
 
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a FermiWord. Otherwise, un-pickling
+        would cause __setitem__ to be called, which is forbidden on PauliWord.
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+        """
+        return FermiWord, (dict(self),)
+
     def __copy__(self):
         """Copy the FermiWord instance."""
         return FermiWord(dict(self.items()))

@@ -12,40 +12,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
-import pytest
+import pickle
 from copy import copy, deepcopy
+
+import pytest
+
 from pennylane.fermi.fermionic import FermiWord
 
-fw1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-fw2 = FermiWord({(0, 0) : '+', (1, 0) : '-'})
-fw3 = FermiWord({(0, 0) : '+', (1, 3) : '-', (2, 0) : '+', (3, 4) : '-'})
+fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
+
 
 class TestFermiWord:
     def test_missing(self):
         """Test that empty string is returned for missing key."""
-        fw = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
         assert (2, 3) not in fw.keys()
-        assert fw[(2, 3)] == ''
+        assert fw[(2, 3)] == ""
 
     def test_set_items(self):
         """Test that setting items raises an error"""
-        fw = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
-            fw[(2, 2)] = '+'
+            fw[(2, 2)] = "+"
 
     def test_update_items(self):
         """Test that updating items raises an error"""
-        fw = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
-            fw.update({(2, 2): '+'})
+            fw.update({(2, 2): "+"})
 
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
-        fw_1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-        fw_2 = FermiWord({(0, 0) : '+', (1, 1) : '-'})  # same as 1
-        fw_3 = FermiWord({(1, 1) : '-', (0, 0) : '+'})  # same as 1 but reordered
-        fw_4 = FermiWord({(0, 0) : '+', (2, 2) : '-'})  # distinct from above
+        fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+        fw_2 = FermiWord({(0, 0): "+", (1, 1): "-"})  # same as 1
+        fw_3 = FermiWord({(1, 1): "-", (0, 0): "+"})  # same as 1 but reordered
+        fw_4 = FermiWord({(0, 0): "+", (2, 2): "-"})  # distinct from above
 
         assert fw_1.__hash__() == fw_2.__hash__()
         assert fw_1.__hash__() == fw_3.__hash__()
@@ -80,3 +84,43 @@ class TestFermiWord:
     def test_str(self, fw, str_rep):
         assert str(fw) == str_rep
         assert repr(fw) == str_rep
+
+    tup_fws_mult = (
+        (fw1, fw1, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
+        (
+            fw1,
+            fw3,
+            FermiWord(
+                {(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 3): "-", (4, 0): "+", (5, 4): "-"}
+            ),
+        ),
+        (fw2, fw1, FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-"})),
+    )
+
+    @pytest.mark.parametrize("f1, f2, result_fw", tup_fws_mult)
+    def test_mul(self, f1, f2, result_fw):
+        assert f1 * f2 == result_fw
+
+    tup_fws_pow = (
+        (fw1, 0, FermiWord({})),
+        (fw1, 1, FermiWord({(0, 0): "+", (1, 1): "-"})),
+        (fw1, 2, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
+        (
+            fw2,
+            3,
+            FermiWord(
+                {(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 0): "-", (4, 0): "+", (5, 0): "-"}
+            ),
+        ),
+    )
+
+    @pytest.mark.parametrize("f1, pow, result_fw", tup_fws_pow)
+    def test_pow(self, f1, pow, result_fw):
+        assert f1**pow == result_fw
+
+    def test_pickling(self):
+        """Check that FermiWords can be pickled and unpickled."""
+        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
+        serialization = pickle.dumps(fw)
+        new_fw = pickle.loads(serialization)
+        assert fw == new_fw
