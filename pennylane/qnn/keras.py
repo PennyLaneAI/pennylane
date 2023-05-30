@@ -15,9 +15,9 @@
 API."""
 import inspect
 from collections.abc import Iterable
-from typing import Optional, Sequence, Text, Union
+from typing import Optional, Text
 
-from pennylane.transforms.batch_input import batch_input
+import pennylane as qml
 
 try:
     import tensorflow as tf
@@ -34,8 +34,7 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
-    Converts a :func:`~.QNode` to a Keras
+    """Converts a :func:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras
@@ -54,10 +53,6 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
-        batch_idx (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
-            the circuit. This allows batch execution by creating executable circuits for each
-            input example with the same trainable weights. Default ``None``.
-            See :func:`~.pennylane.transforms.batch_input` for more details.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
@@ -109,6 +104,48 @@ class KerasLayer(Layer):
           respect to ``inputs`` is not required.
         - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
           or ``**kwargs`` present in the signature.
+
+        **Output shape**
+
+        If the QNode returns a single measurement, then the output of the ``KerasLayer`` will have
+        shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
+        of the measurement:
+
+        .. code-block::
+
+            def print_output_shape(measurements):
+                n_qubits = 2
+                dev = qml.device("default.qubit", wires=n_qubits, shots=100)
+
+                @qml.qnode(dev)
+                def qnode(inputs, weights):
+                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                    qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
+                    if len(measurements) == 1:
+                        return qml.apply(measurements[0])
+                    return [qml.apply(m) for m in measurements]
+
+                weight_shapes = {"weights": (3, n_qubits, 3)}
+                qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=None)
+
+                batch_dim = 5
+                x = tf.zeros((batch_dim, n_qubits))
+                return qlayer(x).shape
+
+        >>> print_output_shape([qml.expval(qml.PauliZ(0))])
+        (5,)
+        >>> print_output_shape([qml.probs(wires=[0, 1])])
+        (5, 4)
+        >>> print_output_shape([qml.sample(wires=[0, 1])])
+        (5, 100, 2)
+
+        If the QNode returns multiple measurements, then the measurement results will be flattened
+        and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
+
+        >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
+        (5, 5)
+        >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
+        (5, 204)
 
         **Initializing weights**
 
@@ -208,7 +245,6 @@ class KerasLayer(Layer):
         weight_shapes: dict,
         output_dim,
         weight_specs: Optional[dict] = None,
-        batch_idx: Union[Sequence[int], int] = None,
         **kwargs,
     ):
         # pylint: disable=too-many-arguments
@@ -227,12 +263,7 @@ class KerasLayer(Layer):
 
         self._signature_validation(qnode, weight_shapes)
 
-        self.argnum = batch_idx
-        if batch_idx is None:
-            self.qnode = qnode
-        else:
-            self.qnode = batch_input(qnode, argnum=batch_idx)
-
+        self.qnode = qnode
         self.qnode.interface = "tf"
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
@@ -293,16 +324,32 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if len(tf.shape(inputs)) > 1 and self.argnum is None:
-            # If the input size is not 1-dimensional, unstack the input along its first dimension,
-            # recursively call the forward pass on each of the yielded tensors, and then stack the
-            # outputs back into the correct shape
-            reconstructor = []
-            for x in tf.unstack(inputs):
-                reconstructor.append(self.call(x))
-            return tf.stack(reconstructor)
+        has_batch_dim = len(tf.shape(inputs)) > 1
 
-        return self._evaluate_qnode(inputs)
+        # in case the input has more than one batch dimension
+        if has_batch_dim:
+            batch_dims = tf.shape(inputs)[:-1]
+            inputs = tf.reshape(inputs, (-1, tf.shape(inputs)[-1]))
+
+        if not qml.active_return() and has_batch_dim:
+            # If the input has a batch dimension and we want to execute each data point separately,
+            # unstack the input along its first dimension, execute the QNode on each of the yielded
+            # tensors, and then stack the outputs back into the correct shape
+            batch_results = []
+
+            for x in tf.unstack(inputs):
+                batch_results.append(self._evaluate_qnode(x))
+
+            results = tf.stack(batch_results)
+        else:
+            # calculate the forward pass as usual
+            results = self._evaluate_qnode(inputs)
+
+        # reshape to the correct number of batch dims
+        if has_batch_dim:
+            results = tf.reshape(results, (*batch_dims, *results.shape[1:]))
+
+        return results
 
     def _evaluate_qnode(self, x):
         """Evaluates a QNode for a single input datapoint.
@@ -318,8 +365,15 @@ class KerasLayer(Layer):
             **{k: 1.0 * w for k, w in self.qnode_weights.items()},
         }
         res = self.qnode(**kwargs)
+
         if isinstance(res, (list, tuple)):
+            if len(tf.shape(x)) > 1:
+                # multi-return and batch dim case
+                res = [tf.reshape(r, (tf.shape(x)[0], -1)) for r in res]
+
+            # multi-return and no batch dim
             return tf.experimental.numpy.hstack(res)
+
         return res
 
     def compute_output_shape(self, input_shape):
@@ -373,7 +427,6 @@ class KerasLayer(Layer):
                 "output_dim": self.output_dim,
                 "weight_specs": self.weight_specs,
                 "weight_shapes": self.weight_shapes,
-                "argnum": self.argnum,
             }
         )
         return config

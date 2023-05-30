@@ -174,7 +174,7 @@ class Hamiltonian(Observable):
         grouping_type=None,
         method="rlf",
         id=None,
-        do_queue=True,
+        do_queue=None,
     ):
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
