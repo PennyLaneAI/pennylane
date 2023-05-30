@@ -58,7 +58,9 @@ tensors = [Tensor(qml.PauliX(1), qml.PauliY(2))]
 
 @pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity, *hamiltonians, *tensors])
 class TestDatasetOperatorObservable:
-    def test_value_init_observable(self, obs_in):
+    """Tests serializing Observable operators using the ``compare()`` method."""
+
+    def test_value_init(self, obs_in):
         """Test that a DatasetOperator can be value-initialized
         from an observable, and that the deserialized operator
         is equivalent."""
@@ -71,7 +73,7 @@ class TestDatasetOperatorObservable:
         assert repr(obs_out) == repr(obs_in)
         assert obs_in.compare(obs_out)
 
-    def test_bind_init_observable(self, obs_in):
+    def test_bind_init(self, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
         that contains a operator attribute."""
         bind = DatasetOperator(obs_in).bind
@@ -84,3 +86,38 @@ class TestDatasetOperatorObservable:
         obs_out = dset_op.get_value()
         assert repr(obs_out) == repr(obs_in)
         assert obs_in.compare(obs_out)
+
+
+@pytest.mark.parametrize(
+    "op_in", [qml.RX(1.1, 0), qml.FermionicSWAP(1.3, [1, "a"]), qml.Toffoli([1, "a", None])]
+)
+class TestDatasetOperator:
+    def test_value_init(self, op_in):
+        """Test that a DatasetOperator can be value-initialized
+        from an operator, and that the deserialized operator
+        is equivalent."""
+        dset_op = DatasetOperator(op_in)
+
+        assert dset_op.info["type_id"] == "operator"
+        assert dset_op.info["py_type"] == get_type_str(type(op_in))
+
+        op_out = dset_op.get_value()
+        assert repr(op_out) == repr(op_in)
+        assert op_in.data == op_out.data
+
+    def test_bind_init(self, op_in):
+        """Test that a DatasetOperator can be bind-initialized
+        from an operator, and that the deserialized operator
+        is equivalent."""
+        bind = DatasetOperator(op_in).bind
+
+        dset_op = DatasetOperator(bind=bind)
+
+        assert dset_op.info["type_id"] == "operator"
+        assert dset_op.info["py_type"] == get_type_str(type(op_in))
+
+        op_out = dset_op.get_value()
+        assert repr(op_out) == repr(op_in)
+        assert op_in.data == op_out.data
+        assert op_in.wires == op_out.wires
+        assert repr(op_in) == repr(op_out)
