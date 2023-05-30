@@ -173,7 +173,7 @@ class GateFabric(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state, include_pi=False, do_queue=True, id=None):
+    def __init__(self, weights, wires, init_state, include_pi=False, do_queue=None, id=None):
         if len(wires) < 4:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than four; got wires {wires}"

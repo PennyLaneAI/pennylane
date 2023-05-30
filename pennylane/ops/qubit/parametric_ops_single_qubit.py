@@ -56,7 +56,9 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -73,7 +75,7 @@ class RX(Operation):
     def generator(self):
         return -0.5 * PauliX(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -153,7 +155,9 @@ class RY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -170,7 +174,7 @@ class RY(Operation):
     def generator(self):
         return -0.5 * PauliY(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -249,7 +253,9 @@ class RZ(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -266,7 +272,7 @@ class RZ(Operation):
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -386,7 +392,9 @@ class PhaseShift(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -403,7 +411,7 @@ class PhaseShift(Operation):
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -562,7 +570,9 @@ class Rot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -575,7 +585,7 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+    def __init__(self, phi, theta, omega, wires, do_queue=None, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -727,7 +737,9 @@ class U1(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -743,7 +755,7 @@ class U1(Operation):
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -856,7 +868,9 @@ class U2(Operation):
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -869,7 +883,7 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    def __init__(self, phi, delta, wires, do_queue=True, id=None):
+    def __init__(self, phi, delta, wires, do_queue=None, id=None):
         super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -999,7 +1013,9 @@ class U3(Operation):
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -1012,7 +1028,7 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
+    def __init__(self, theta, phi, delta, wires, do_queue=None, id=None):
         super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

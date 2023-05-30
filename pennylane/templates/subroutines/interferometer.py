@@ -169,7 +169,7 @@ class Interferometer(CVOperation):
         wires,
         mesh="rectangular",
         beamsplitter="pennylane",
-        do_queue=True,
+        do_queue=None,
         id=None,
     ):
         wires = Wires(wires)

@@ -164,7 +164,7 @@ class TTN(Operation):
         block,
         n_params_block,
         template_weights=None,
-        do_queue=True,
+        do_queue=None,
         id=None,
     ):
         ind_gates = compute_indices(wires, n_block_wires)
