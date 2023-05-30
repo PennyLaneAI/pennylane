@@ -14,6 +14,7 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
+import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
@@ -937,6 +938,7 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     return evaluate_relative_entropy
 
 
+<<<<<<< HEAD
 def trace_distance(qnode0, qnode1, wires0, wires1):
     r"""
     Compute the trace distance for two :class:`.QNode` returning a :func:`~pennylane.state` (a state can be a state vector
@@ -1056,3 +1058,39 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
         return qml.math.trace_distance(state0, state1)
 
     return evaluate_trace_distance
+=======
+def expressibility(qnode: qml.QNode, rng: np.random.Generator):
+    '''
+    Expressibility of a paramtrized quantum circuit given by the (estimated) KL-divergence
+    of the output probabilities of the circuit and the Haar measure.
+
+    Args:
+        qnode:
+        rng:
+
+    Returns:
+        float:
+    '''
+    num_wires = qnode.num_wires
+
+    def qr_haar(N):
+        """Generate a Haar-random matrix using the QR decomposition."""
+        A, B = rng.normal(size=(N, N)), rng.normal(size=(N, N))
+        Z = A + 1j * B
+        Q, R = np.linalg.qr(Z)
+        Lambda = np.diag([R[i, i] / np.abs(R[i, i]) for i in range(N)])
+        return np.dot(Q, Lambda)
+
+    @qml.qnode(dev)
+    def qr_haar_random_unitary():
+        qml.QubitUnitary(qr_haar(2), wires=0)
+        return qml.state()
+
+    prob_circuit: np.ndarray
+    '''The probability distribution over fidelities given by the paramtrized circuit.'''
+
+    prob_haar: np.ndarray
+    '''The probability distribution over fidelities under the Haar measure.'''
+
+    return kl_estimate(prob_circuit, prob_haar)
+>>>>>>> 2209369f6 (Initial layout.)
