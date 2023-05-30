@@ -33,6 +33,11 @@ def f2(p, t):
     """Compute the function p * cos(t**2)."""
     return p * np.cos(t**2)
 
+class f3:
+    def __init__(self, hyper_param):
+        self.hyper = hyper_param
+    def __call__(self, p, t):
+        return self.hyper * p * t
 
 param = [1.2, 2.3]
 
@@ -127,9 +132,15 @@ class TestInitialization:
         coeffs = [2.0, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         H = ParametrizedHamiltonian(coeffs, ops)
-        expected = "(2.0*(PauliX(wires=[0]))) + (f1(params_0, t)*(PauliY(wires=[0]))) + (f2(params_1, t)*(PauliZ(wires=[0])))"
+        expected = "(2.0*(PauliX(wires=[0])))+(f1(params_0,t)*(PauliY(wires=[0])))+(f2(params_1,t)*(PauliZ(wires=[0])))"
 
-        assert repr(H) == expected
+        assert repr(H).replace("\n", "").replace(" ", "") == expected
+
+        coeffs = [2.0, f1, f2, f3(0.5)]
+        observables = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0), qml.PauliX(0)]
+        H = ParametrizedHamiltonian(coeffs, observables)
+        expected = "(2.0*(PauliX(wires=[0])))+(f1(params_0,t)*(PauliY(wires=[0])))+(f2(params_1,t)*(PauliZ(wires=[0])))+(f3(params_2,t)*(PauliX(wires=[0])))"
+        assert repr(H).replace("\n", "").replace(" ", "") == expected
 
     def test_wire_attribute(self):
         """Tests that the wires attribute contains the expected wires, in the expected order"""

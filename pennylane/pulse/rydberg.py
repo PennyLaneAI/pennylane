@@ -193,9 +193,26 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
-    ParametrizedHamiltonian: terms=6
+          (1323.3498859010638*(Projector(array([1]), wires=[0]) @ Projector(array([1]), wires=[1])))
+        + (1323.3498859010638*(Projector(array([1]), wires=[0]) @ Projector(array([1]), wires=[2])))
+        + (165.4187357376329*(Projector(array([1]), wires=[0]) @ Projector(array([1]), wires=[3])))
+        + (165.4187357376329*(Projector(array([1]), wires=[1]) @ Projector(array([1]), wires=[2])))
+        + (1323.3498859010638*(Projector(array([1]), wires=[1]) @ Projector(array([1]), wires=[3])))
+        + (1323.3498859010638*(Projector(array([1]), wires=[2]) @ Projector(array([1]), wires=[3])))
     >>> H_d
-    ParametrizedHamiltonian: terms=3
+          (1.0*((-12.566370614359172) [I0]
+        + (3.141592653589793) [Z0]
+        + (3.141592653589793) [Z1]
+        + (3.141592653589793) [Z2]
+        + (3.141592653589793) [Z3]))
+        + (AmplitudeAndPhase(params_0, t)*(  (0.5) [X0]
+        + (0.5) [X1]
+        + (0.5) [X2]
+        + (0.5) [X3]))
+        + (AmplitudeAndPhase(params_1, t)*(  (-0.5) [Y0]
+        + (-0.5) [Y1]
+        + (-0.5) [Y2]
+        + (-0.5) [Y3]))
 
     The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
     describing drive between the ground and excited states. The third term corresponds to the shift term

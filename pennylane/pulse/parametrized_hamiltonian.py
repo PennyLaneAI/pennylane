@@ -251,11 +251,9 @@ class ParametrizedHamiltonian:
                 term = f"({coeff.__name__}(params_{i}, t)*({op}))"
             elif hasattr(coeff, "__class__") and hasattr(coeff.__class__, "__name__"):
                 term = f"({coeff.__class__.__name__}(params_{i}, t)*({op}))"
-            else:
-                term = f"({coeff}*({op}))"
             terms.append(term)
 
-        return " + ".join(terms)
+        return "  " + "\n+ ".join(terms)
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
