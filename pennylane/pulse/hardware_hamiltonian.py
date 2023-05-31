@@ -322,6 +322,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         params = self.reorder_fn(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
+    def __repr__(self):
+        return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
