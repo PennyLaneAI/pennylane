@@ -115,7 +115,7 @@ jobs:
     strategy:
       matrix:
         group: [1, 2]
-        python-version: [3.9, '3.10']
+        python-version: [3.8, '3.10']
 
     steps:
       - name: Cancel Previous Runs
@@ -164,7 +164,7 @@ jobs:
     strategy:
       matrix:
         group: [1, 2]
-        python-version: [3.9, '3.11']
+        python-version: [3.8, '3.11']
 
     steps:
       - name: Cancel Previous Runs
@@ -213,7 +213,7 @@ jobs:
     strategy:
       matrix:
         group: [1, 2]
-        python-version: [3.9, '3.10', '3.11']
+        python-version: [3.8, 3.9, '3.10', '3.11']
 
     steps:
       - name: Cancel Previous Runs
@@ -272,7 +272,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -366,7 +366,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -468,7 +468,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -527,7 +527,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -585,9 +585,9 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
-      - name: Install datasets dependencies
-        run: pip install h5py zstd
-        
+      - name: Install h5py
+        run: pip3 install h5py
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
@@ -630,7 +630,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
