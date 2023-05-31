@@ -708,3 +708,74 @@ def test_batch_input_multi_measure():
     for x_, r in zip(x, res):
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
         assert qml.math.allclose(r, exp)
+
+
+@pytest.mark.tf
+def test_draw():
+    """Test that a KerasLayer can be drawn using qml.draw"""
+
+    dev = qml.device("default.qubit", wires=2)
+    weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
+
+    @qml.qnode(dev, interface="tensorflow")
+    def circuit(inputs, w1, w2):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        qml.templates.StronglyEntanglingLayers(w2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
+
+    # make the rotation angle positive to prevent the extra minus sign messing up the alignment
+    qlayer.qnode_weights["w1"] = tf.abs(qlayer.qnode_weights["w1"])
+
+    batch_size = 5
+    x = tf.constant(np.random.uniform(0, 1, (batch_size, 2)))
+
+    actual = qml.draw(qlayer)(x)
+
+    w1 = f"{qlayer.qnode_weights['w1'].numpy():.2f}"
+    m1 = f"{qlayer.qnode_weights['w2'].numpy()}"
+    expected = (
+        f"0: ─╭AngleEmbedding(M0)──RX({w1})─╭StronglyEntanglingLayers(M1)─┤  <Z>\n"
+        f"1: ─╰AngleEmbedding(M0)───────────╰StronglyEntanglingLayers(M1)─┤  <Z>\n"
+        f"M0 = \n{x}\n"
+        f"M1 = \n{m1}"
+    )
+
+    assert actual == expected
+
+
+@pytest.mark.tf
+def test_draw_mpl():
+    """Test that a KerasLayer can be drawn using qml.draw_mpl"""
+
+    dev = qml.device("default.qubit", wires=2)
+    weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
+
+    @qml.qnode(dev, interface="tensorflow")
+    def circuit(inputs, w1, w2):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        qml.templates.StronglyEntanglingLayers(w2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
+
+    # make the rotation angle positive to prevent the extra minus sign messing up the alignment
+    qlayer.qnode_weights["w1"] = tf.abs(qlayer.qnode_weights["w1"])
+
+    batch_size = 5
+    x = tf.constant(np.random.uniform(0, 1, (batch_size, 2)))
+
+    _, ax = qml.draw_mpl(qlayer)(x)
+
+    assert len(ax.patches) == 9  # 3 boxes, 3 patches for each measure
+    assert len(ax.lines) == 2  # 2 wires
+    assert len(ax.texts) == 5  # 2 wire labels, 3 box labels
+
+    assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "1"
+    assert ax.texts[2].get_text() == "AngleEmbedding"
+    assert ax.texts[3].get_text() == "RX"
+    assert ax.texts[4].get_text() == "StronglyEntanglingLayers"

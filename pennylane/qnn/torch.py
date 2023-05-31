@@ -435,6 +435,43 @@ class TorchLayer(Module):
 
         return torch.hstack(res).type(x.dtype)
 
+    def construct(self, args, kwargs):
+        """Constructs the wrapped QNode on input data using the initialized weights.
+
+        This method was added to match the QNode interface. The provided args
+        must contain a single item, which is the input to the layer. The provided
+        kwargs is unused.
+
+        Args:
+            args (tuple): A tuple containing one entry that is the input to this layer
+            kwargs (dict): Unused
+        """
+        x = args[0]
+        kwargs = {
+            self.input_arg: x,
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
+        }
+        self.qnode.construct((), kwargs)
+
+    @property
+    def qtape(self):
+        """Get the quantum tape executed by the wrapped QNode"""
+        return self.qnode.qtape
+
+    @property
+    def device(self):
+        """Get the device of the wrapped QNode"""
+        return self.qnode.device
+
+    @property
+    def expansion_strategy(self):
+        """Get the expansion strategy of the wrapped QNode"""
+        return self.qnode.expansion_strategy
+
+    @expansion_strategy.setter
+    def expansion_strategy(self, value):
+        self.qnode.expansion_strategy = value
+
     def _init_weights(
         self,
         weight_shapes: Dict[str, tuple],
