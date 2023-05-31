@@ -47,7 +47,7 @@ def opt(opt_name):
 
 @pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam"])
 class TestOverOpts:
-    """Tests keywords, multiple arguements, and non-training arguments in relevant optimizers"""
+    """Tests keywords, multiple arguments, and non-training arguments in relevant optimizers"""
 
     def test_kwargs(self, mocker, opt, opt_name, tol):
         """Test that the keywords get passed and alter the function"""
