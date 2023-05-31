@@ -20,9 +20,9 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-from functools import lru_cache, reduce
+from functools import lru_cache, reduce, singledispatch
 from itertools import product
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
@@ -51,7 +51,8 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     return {label: i for i, label in enumerate(wire_labels)}
 
 
-def is_pauli_word(observable):
+@singledispatch
+def is_pauli_word(observable):  # pylint:disable=unused-argument
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
 
@@ -92,20 +93,38 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    return False
+
+
+@is_pauli_word.register(PauliX)
+@is_pauli_word.register(PauliY)
+@is_pauli_word.register(PauliZ)
+@is_pauli_word.register(Identity)
+def _is_pw_pauli(
+    observable: Union[PauliX, PauliY, PauliZ, Identity]
+):  # pylint:disable=unused-argument
+    return True
+
+
+@is_pauli_word.register
+def _is_pw_tensor(observable: Tensor):
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
-    if isinstance(observable, Tensor):
-        return set(observable.name).issubset(pauli_word_names)
+    return set(observable.name).issubset(pauli_word_names)
 
-    if isinstance(observable, Hamiltonian):
-        return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
 
-    if isinstance(observable, Prod):
-        return all(is_pauli_word(op) for op in observable)
+@is_pauli_word.register
+def _is_pw_ham(observable: Hamiltonian):
+    return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
-    if isinstance(observable, SProd):
-        return is_pauli_word(observable.base)
 
-    return observable.name in pauli_word_names
+@is_pauli_word.register
+def _is_pw_prod(observable: Prod):
+    return all(is_pauli_word(op) for op in observable)
+
+
+@is_pauli_word.register
+def _is_pw_sprod(observable: SProd):
+    return is_pauli_word(observable.base)
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
