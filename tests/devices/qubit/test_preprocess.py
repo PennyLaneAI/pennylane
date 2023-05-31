@@ -72,7 +72,7 @@ class TestPrivateHelpers:
         [
             (qml.PauliX(0), True),
             (qml.CRX(0.1, wires=[0, 1]), True),
-            (qml.Snapshot(), False),
+            (qml.Snapshot(), True),
             (qml.Barrier(), False),
             (qml.QFT(wires=range(5)), True),
             (qml.QFT(wires=range(10)), False),
