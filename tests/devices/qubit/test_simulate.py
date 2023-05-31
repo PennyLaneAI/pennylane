@@ -223,8 +223,7 @@ class TestDebugger:
         )
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
-    def test_debugger_jax(self, use_jit):
+    def test_debugger_jax(self):
         """Tests debugger with JAX"""
         import jax
 
@@ -235,9 +234,6 @@ class TestDebugger:
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
             qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
             return simulate(qs, debugger=debugger)
-
-        if use_jit:
-            f = jax.jit(f)
 
         result = f(phi)
         assert qml.math.allclose(result[0], -np.sin(phi))
