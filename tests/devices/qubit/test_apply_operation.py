@@ -210,7 +210,7 @@ class TestTwoQubitStateSpecialCases:
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
-    class Debugger:
+    class Debugger:  # pylint: disable=too-few-public-methods
         """A dummy debugger class"""
 
         def __init__(self):
