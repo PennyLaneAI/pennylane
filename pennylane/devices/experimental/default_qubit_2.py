@@ -208,6 +208,10 @@ class DefaultQubit2(Device):
             is_single_circuit = True
             circuits = [circuits]
 
+        if self.tracker.active:
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
         if execution_config.gradient_method == "adjoint":
             res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
             return res[0] if is_single_circuit else res
