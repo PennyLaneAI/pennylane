@@ -14,7 +14,7 @@
 """Contains AttributeType definition for ``scipy.sparse.csr_array``."""
 
 from functools import lru_cache
-from typing import Generic, Tuple, Type, TypeVar, Union, cast
+from typing import Dict, Generic, Tuple, Type, TypeVar, Union, cast
 
 import numpy as np
 from scipy.sparse import (
@@ -47,7 +47,7 @@ SparseT = TypeVar("SparseT", bound=Union[SparseArray, SparseMatrix])
 
 class DatasetSparseArray(Generic[SparseT], AttributeType[HDF5Group, SparseT, SparseT]):
     """Attribute type for Scipy sparse arrays. Can accept values of any type in
-    ``scipy.sparse``. Arrays are stored in CSR format."""
+    ``scipy.sparse``. Arrays are serialized using the CSR format."""
 
     type_id = "sparse_array"
 
@@ -57,7 +57,9 @@ class DatasetSparseArray(Generic[SparseT], AttributeType[HDF5Group, SparseT, Spa
 
     @property
     def sparse_array_class(self) -> Type[SparseT]:
-        return cast(Type[SparseT], self._supported_sparse_dict[self.info["sparse_array_class"]])
+        """Returns the class of sparse array that will be returned by the ``get_value()``
+        method."""
+        return cast(Type[SparseT], self._supported_sparse_dict()[self.info["sparse_array_class"]])
 
     @classmethod
     def consumes_types(
@@ -120,6 +122,6 @@ class DatasetSparseArray(Generic[SparseT], AttributeType[HDF5Group, SparseT, Spa
 
     @classmethod
     @lru_cache(1)
-    def _supported_sparse_dict(cls) -> dict[str, Type[Union[SparseArray, SparseMatrix]]]:
-        """Returns a dict mapping ``Operator`` subclass names to the class."""
+    def _supported_sparse_dict(cls) -> Dict[str, Type[Union[SparseArray, SparseMatrix]]]:
+        """Returns a dict mapping sparse array class names to the class."""
         return {op.__name__: op for op in cls.consumes_types()}
