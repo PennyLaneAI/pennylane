@@ -27,6 +27,7 @@ SUPPORTED_GRADIENT_METHODS = [
     "finite-diff",
     "device",
     "adjoint",
+    "gradient-transform",
 ]
 
 
