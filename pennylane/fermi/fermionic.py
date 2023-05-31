@@ -149,37 +149,38 @@ class FermiWord(dict):
 
 
 class FermiSentence(dict):
-    """Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
+    r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
     as FermiWord instances and the values correspond to coefficients.
 
     >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
     >>> s
-    1.2 * '0+ 1-' + 3.1 * '1+ 2-'
+    1.2 * '0+ 1-'
+    + 3.1 * '1+ 2-'
     """
 
     @property
     def wires(self):
-        """Return wires of the FermiSentence."""
+        r"""Return wires of the FermiSentence."""
         return set().union(*(fw.wires for fw in self.keys()))
 
     def __str__(self):
-        """String representation of a FermiSentence."""
+        r"""String representation of a FermiSentence."""
         if len(self) == 0:
             return "0 * ''"
         return "\n+ ".join(f"{coeff} * '{fw.to_string()}'" for fw, coeff in self.items())
 
     def __repr__(self):
-        """Terminal representation for FermiSentence."""
+        r"""Terminal representation for FermiSentence."""
         return str(self)
 
     def __missing__(self, key):
-        """If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
+        r"""If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
         return 0.0
 
     def __add__(self, other):
-        """Add two Fermi sentence together by iterating over the smaller one and adding its terms
+        r"""Add two Fermi sentence together by iterating over the smaller one and adding its terms
         to the larger one."""
         smaller_fs, larger_fs = (
             (self, copy(other)) if len(self) < len(other) else (other, copy(self))
@@ -190,7 +191,7 @@ class FermiSentence(dict):
         return larger_fs
 
     def __mul__(self, other):
-        """Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
+        r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
         words pair-wise"""
 
         if len(self) == 0:
@@ -205,7 +206,7 @@ class FermiSentence(dict):
         return FermiSentence(dict(zip(keys, vals)))
 
     def __pow__(self, value):
-        """Exponentiate a Fermi sentence to an integer power."""
+        r"""Exponentiate a Fermi sentence to an integer power."""
         if value < 0 or not isinstance(value, int):
             raise ValueError("The exponent must be a positive integer.")
 
@@ -217,7 +218,7 @@ class FermiSentence(dict):
         return operator
 
     def simplify(self, tol=1e-8):
-        """Remove any FermiWords in the FermiSentence with coefficients less than the threshold
+        r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold
         tolerance."""
         items = list(self.items())
         for fw, coeff in items:
