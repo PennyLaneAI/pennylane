@@ -12,6 +12,9 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
+* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
+  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
+
 * Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
@@ -223,6 +226,9 @@
 
 * `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
   [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
+* Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
+  [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
 
 <h3>Contributors ✍️</h3>
 

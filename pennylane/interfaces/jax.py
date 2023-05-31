@@ -532,25 +532,9 @@ def _execute_fwd(
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-        return res, jvps
+        return (res, jacs), (jvps, jacs)
 
-    res = execute_wrapper(params)
-
-    tracing = []
-    for i, tape in enumerate(tapes):
-        if len(tape.measurements) == 1:
-            tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
-        else:
-            tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
-
-    tracing = any(tracing)
-
-    # When there are no tracers (not differentiating), we have the result of
-    # the forward pass and the jacobian, but only need the result of the
-    # forward pass
-    if len(res) == 2 and not tracing:
-        res = res[0]
-
+    res, _jacs = execute_wrapper(params)
     return res
 
 
