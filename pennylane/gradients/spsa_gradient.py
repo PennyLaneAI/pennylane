@@ -46,8 +46,6 @@ def _rademacher_sampler(indices, num_params, *args, rng):
     Args:
         indices (Sequence[int]): Indices of the trainable tape parameters that will be perturbed.
         num_params (int): Total number of trainable tape parameters.
-
-    Kwargs:
         rng (np.random.Generator): A NumPy pseudo-random number generator.
 
     Returns:
