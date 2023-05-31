@@ -85,7 +85,7 @@ def _get_pw(w, pauli_op):
 
 
 # pylint: disable=unused-argument
-def sum_using_dunder_method(*summands, do_queue=False, id=None):
+def sum_using_dunder_method(*summands, id=None):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
     return sum(summands)
@@ -118,7 +118,7 @@ class TestInitialization:
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True, id=id)
+        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
@@ -914,10 +914,9 @@ class TestWrapperFunc:
 
         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "sum_op"
-        do_queue = False
 
-        sum_func_op = qml.sum(*summands, id=op_id, do_queue=do_queue)
-        sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = qml.sum(*summands, id=op_id)
+        sum_class_op = Sum(*summands, id=op_id)
 
         assert sum_class_op.operands == sum_func_op.operands
         assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
