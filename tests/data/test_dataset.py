@@ -1,3 +1,21 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for :mod:`pennylane.data.base.dataset`.
+"""
+
+
 from numbers import Number
 from pathlib import Path
 
@@ -9,6 +27,8 @@ from pennylane.data.base._hdf5 import h5py
 
 
 class TestDataset:
+    """Tests initialization and instance methods of the ``Dataset`` class."""
+
     def test_init(self):
         """Test that initializing a Dataset with keyword arguments
         creates the expected attributes.
@@ -48,6 +68,8 @@ class TestDataset:
         category_id."""
 
         class MyDataset(Dataset):
+            """Temporary dataset."""
+
             category_id = "my_dataset"
 
             description: str = attribute(doc="description")
@@ -60,6 +82,8 @@ class TestDataset:
         """Test that __setattr__ preserves AttributeInfo for fields."""
 
         class MyDataset(Dataset):
+            """Temporary dataset."""
+
             category_id = "my_dataset"
 
             description: str = attribute(doc="description")

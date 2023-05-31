@@ -1,3 +1,21 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for the ``DatasetList`` attribute type.
+"""
+
+
 from itertools import combinations
 
 import pytest
@@ -5,14 +23,20 @@ import pytest
 from pennylane.data import DatasetList
 
 
-def _generate_slices(list_len: int):
-    for x, y in combinations(range(-list_len, list_len), 2):
-        for step in range(1, list_len):
+def _generate_slices(len_: int):
+    """Generates slices ``[{start}:{stop}:{step}]`` with all valid
+    combinations of start,stop,step for a list of length ``len_``.
+    """
+    for x, y in combinations(range(-len_, len_), 2):
+        for step in range(1, len_):
             yield slice(x, y, step)
             yield slice(y, x, step)
 
 
 class TestList:
+    """Test bind and value initialization for ``DatasetList``, and test
+    that indexing, slicing and delete behaviour matches the built in ``list``."""
+
     def test_default_init(self):
         """Test that a DatasetList can be initialized without arguments."""
         dset_list = DatasetList()
