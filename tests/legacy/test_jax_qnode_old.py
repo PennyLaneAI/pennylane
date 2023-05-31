@@ -193,11 +193,7 @@ class TestQNode:
         """Test that operation and nested tape expansion
         is differentiable"""
 
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            mode=mode
-        )
+        kwargs = dict(diff_method=diff_method, interface=interface, mode=mode)
         if diff_method == "spsa":
             spsa_kwargs = dict(
                 sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
@@ -1333,10 +1329,21 @@ class TestTapeExpansion:
         """Test that the Hamiltonian is not expanded if there
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
+        kwargs = dict(
+            interface=interface,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+        )
+
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10,
+            )
+            kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
         if max_diff > 1:
@@ -1346,13 +1353,7 @@ class TestTapeExpansion:
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            mode=mode,
-            max_diff=max_diff,
-        )
+        @qnode(dev, **kwargs)
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
             qml.templates.AngleEmbedding(data, wires=[0, 1])

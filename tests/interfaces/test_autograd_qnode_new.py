@@ -174,9 +174,7 @@ class TestQNode:
         """Test jacobian calculation"""
         num_wires = 2
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
@@ -184,10 +182,7 @@ class TestQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10)
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
@@ -491,15 +486,10 @@ class TestQNode:
         """Test that operation and nested tape expansion
         is differentiable"""
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         if diff_method == "spsa":
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=20
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=20)
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
@@ -1644,10 +1634,7 @@ class TestTapeExpansion:
             pytest.skip("The diff method requested does not yet support Hamiltonians")
         elif diff_method == "spsa":
             tol = TOL_FOR_SPSA
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10)
             kwargs = {**kwargs, **spsa_kwargs}
 
         dev = qml.device(dev_name, wires=3, shots=None)
@@ -1709,8 +1696,11 @@ class TestTapeExpansion:
         if diff_method in ("adjoint", "backprop", "hadamard"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "spsa":
-            gradient_kwargs = {"h": H_FOR_SPSA}
-            np.random.seed(SEED_FOR_SPSA)
+            gradient_kwargs = dict(
+                h=H_FOR_SPSA,
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10,
+            )
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":
             gradient_kwargs = {"h": 0.05}

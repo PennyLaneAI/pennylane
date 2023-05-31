@@ -18,6 +18,7 @@ of a quantum tape.
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 from functools import partial
 from collections.abc import Sequence
+from types import NoneType
 
 import numpy as np
 
@@ -306,6 +307,8 @@ def spsa_grad(
         # Skip the unshifted tape
         shifts = shifts[1:]
 
+    if not isinstance(sampler_rng, (int, np.random.Generator, NoneType)):
+        raise ValueError("Argument sampler_rng has invalid type.")
     sampler_rng = np.random.default_rng(sampler_rng)
 
     method_map = choose_grad_methods(diff_methods, argnum)

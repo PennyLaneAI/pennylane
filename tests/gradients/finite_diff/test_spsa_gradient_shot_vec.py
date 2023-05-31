@@ -410,7 +410,7 @@ class TestSpsaGradient:
             num_directions=n1,
             shots=many_shots_shot_vector,
             h=h_val,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         j1 = fn(dev.batch_execute(tapes))
 
@@ -424,7 +424,7 @@ class TestSpsaGradient:
             h=h_val,
             shots=default_shot_vector,
             num_directions=n2,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         j2 = fn(dev.batch_execute(tapes))
 
@@ -589,7 +589,7 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             shots=many_shots_shot_vector,
             num_directions=3,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
         assert isinstance(all_res, tuple)
@@ -634,7 +634,7 @@ class TestSpsaGradientIntegration:
             num_directions=10,
             sampler=coordinate_sampler,
             shots=default_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -684,7 +684,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -738,7 +738,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -793,7 +793,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -834,7 +834,7 @@ class TestSpsaGradientIntegration:
             h=h_val,
             num_directions=4,
             shots=many_shots_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -889,7 +889,7 @@ class TestSpsaGradientIntegration:
             num_directions=6,
             sampler=coordinate_sampler,
             shots=many_shots_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -945,7 +945,7 @@ class TestSpsaGradientIntegration:
             num_directions=4,
             h=h_val,
             shots=many_shots_shot_vector,
-            sampler_rng=rng
+            sampler_rng=rng,
         )
         all_res = fn(dev.batch_execute(tapes))
 
@@ -1028,7 +1028,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
                 shots=many_shots_shot_vector,
-                sampler_rng=rng
+                sampler_rng=rng,
             )
             jac = np.array(fn(dev.batch_execute(tapes)))
             return jac
@@ -1074,7 +1074,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
                 shots=many_shots_shot_vector,
-                sampler_rng=rng
+                sampler_rng=rng,
             )
             jac = fn(dev.batch_execute(tapes))
             return jac[1][0]
@@ -1116,7 +1116,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
                 shots=many_shots_shot_vector,
-                sampler_rng=rng
+                sampler_rng=rng,
             )
             jac_0, jac_1 = fn(dev.batch_execute(tapes))
 
@@ -1160,7 +1160,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
                 shots=many_shots_shot_vector,
-                sampler_rng=rng
+                sampler_rng=rng,
             )
 
             jac_01 = fn(dev.batch_execute(tapes))[1][0]
@@ -1198,7 +1198,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
                 shots=many_shots_shot_vector,
-                sampler_rng=rng
+                sampler_rng=rng,
             )
             jac = fn(dev.batch_execute(tapes))
             return jac
@@ -1247,7 +1247,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
                 shots=many_shots_shot_vector,
-                sampler_rng=rng
+                sampler_rng=rng,
             )
             jac = fn(dev.batch_execute(tapes))
             return jac

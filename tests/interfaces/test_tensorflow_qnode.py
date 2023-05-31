@@ -466,15 +466,10 @@ class TestQNode:
         """Test that operation and nested tapes expansion
         is differentiable"""
         kwargs = dict(
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            interface=interface
+            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
         )
         if diff_method == "spsa":
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10)
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
@@ -1396,10 +1391,7 @@ class TestTapeExpansion:
             pytest.skip("The adjoint/hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
             tol = TOL_FOR_SPSA
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10)
             kwargs = {**kwargs, **spsa_kwargs}
 
         dev = qml.device(dev_name, wires=3, shots=None)

@@ -199,9 +199,7 @@ class TestQNode:
         is differentiable"""
 
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         if diff_method == "spsa":
             spsa_kwargs = dict(

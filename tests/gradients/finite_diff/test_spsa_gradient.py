@@ -42,16 +42,15 @@ class TestSpsaGradient:
 
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method='spsa', sampler_rng='foo')
+        @qml.qnode(dev, diff_method="spsa", sampler_rng="foo")
         def circuit(param):
             qml.RX(param, wires=0)
             return qml.expval(qml.PauliZ(0))
-        
-        with pytest.raises(ValueError, match='Argument sampler_rng has invalid type.'):
-            qml.grad(circuit)(np.array(1.))
-        
+
+        with pytest.raises(ValueError, match="Argument sampler_rng has invalid type."):
+            qml.grad(circuit)(np.array(1.0))
 
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
@@ -372,11 +371,7 @@ class TestSpsaGradient:
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         n1 = 5
         tapes, fn = spsa_grad(
-            tape1,
-            approx_order=1,
-            strategy="forward",
-            num_directions=n1,
-            sampler_rng=rng
+            tape1, approx_order=1, strategy="forward", num_directions=n1, sampler_rng=rng
         )
         j1 = fn(dev.batch_execute(tapes))
 
@@ -904,11 +899,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                num_directions=num_directions,
-                sampler=sampler,
-                sampler_rng=rng
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
             jac = np.array(fn(dev.batch_execute(tapes)))
             if sampler is coordinate_sampler:
@@ -945,11 +936,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                num_directions=num_directions,
-                sampler=sampler,
-                sampler_rng=rng
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
@@ -982,11 +969,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                num_directions=num_directions,
-                sampler=sampler,
-                sampler_rng=rng
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
             jac_0, jac_1 = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
@@ -1028,11 +1011,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                num_directions=num_directions,
-                sampler=sampler,
-                sampler_rng=rng
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
 
             jac_01 = fn(dev.batch_execute(tapes))[1][0]
@@ -1066,11 +1045,7 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                num_directions=num_directions,
-                sampler=sampler,
-                sampler_rng=rng
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
@@ -1115,11 +1090,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                num_directions=num_directions,
-                sampler=sampler,
-                sampler_rng=rng
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:

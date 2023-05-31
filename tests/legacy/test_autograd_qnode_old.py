@@ -412,10 +412,7 @@ class TestQNode:
         is differentiable"""
         kwargs = dict(diff_method=diff_method, interface=interface, mode=mode)
         if diff_method == "spsa":
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10)
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
@@ -1380,10 +1377,7 @@ class TestTapeExpansion:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10
-            )
+            spsa_kwargs = dict(sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10)
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
