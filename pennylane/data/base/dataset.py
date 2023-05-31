@@ -24,7 +24,6 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Generic,
     List,
@@ -173,6 +172,7 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     @cached_property
     def params(self) -> typing.Mapping[str, str]:
+        """Returns this dataset's parameters."""
         return json.loads(self.info.get("params", "{}"))
 
     @property
