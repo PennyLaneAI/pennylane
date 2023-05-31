@@ -90,7 +90,7 @@ class TestList:
         """
         ds = DatasetList([1, 2, 3])
         with pytest.raises(IndexError):
-            ds[index]
+            _ = ds[index]
 
     @pytest.mark.parametrize("index", range(-5, 5))
     def test_insert(self, index):

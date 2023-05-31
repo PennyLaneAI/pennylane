@@ -26,6 +26,14 @@ from pennylane.data import AttributeInfo, Dataset, DatasetScalar, attribute
 from pennylane.data.base._hdf5 import h5py
 
 
+class MyDataset(Dataset):  # pylint: disable=too-few-public-methods
+    """A dataset subclass for testing."""
+
+    category_id = "my_dataset"
+
+    description: str = attribute(doc="description")
+
+
 class TestDataset:
     """Tests initialization and instance methods of the ``Dataset`` class."""
 
@@ -67,26 +75,12 @@ class TestDataset:
         """Test that a subclass of Dataset preserves the defined
         category_id."""
 
-        class MyDataset(Dataset):
-            """Temporary dataset."""
-
-            category_id = "my_dataset"
-
-            description: str = attribute(doc="description")
-
         assert MyDataset.category_id == "my_dataset"
         ds = MyDataset(description="test")
         assert ds.category_id == "my_dataset"
 
     def test_setattr_preserves_field_info(self):
         """Test that __setattr__ preserves AttributeInfo for fields."""
-
-        class MyDataset(Dataset):
-            """Temporary dataset."""
-
-            category_id = "my_dataset"
-
-            description: str = attribute(doc="description")
 
         ds = MyDataset(description="test")
 
