@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains the experimental transforms building blocks (core).
-"""
+"""Unit and integration tests for the transform program."""
+from typing import Sequence, Callable
 
-from .transform_dispatcher import transform, TransformError, TransformContainer
-from .transform_program import TransformProgram
+import pytest
+import pennylane as qml
+from pennylane.transforms.core import transform, TransformError

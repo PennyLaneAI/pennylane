@@ -475,7 +475,7 @@ class QNode:
     def add_transform(self, transform_container):
         """Add a transform container to the transform program."""
         # Temporary append until TransformProgram is added.
-        self._transform_program.push(transform_container=transform_container)
+        self._transform_program.push_back(transform_container=transform_container)
 
     def _update_gradient_fn(self):
         if self.diff_method is None:

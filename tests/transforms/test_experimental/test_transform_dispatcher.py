@@ -165,7 +165,9 @@ class TestTransformDispatcher:
         qnode = dispatched_transform(qnode_circuit, 0)
         assert isinstance(qnode, qml.QNode)
         assert isinstance(qnode.transform_program, qml.transforms.core.TransformProgram)
-        assert isinstance(qnode.transform_program.pop(), qml.transforms.core.TransformContainer)
+        assert isinstance(
+            qnode.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -212,17 +214,19 @@ class TestTransformDispatcher:
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
 
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
-        expand_transform_container = qnode_transformed.transform_program.pop()
+        expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
         assert expand_transform_container.args == []
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
+        assert not expand_transform_container.is_informative
 
-        transform_container = qnode_transformed.transform_program.pop()
+        transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
         assert transform_container.args == [0]
         assert transform_container.kwargs == {}
         assert transform_container.classical_cotransform is None
+        assert not expand_transform_container.is_informative
 
     @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
     def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
@@ -331,14 +335,16 @@ class TestTransformDispatcher:
             first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
         )
 
-        q_transform, args, kwargs, cotransform = container
+        q_transform, args, kwargs, cotransform, is_informative = container
 
         assert q_transform is first_valid_transform
         assert args == [0]
         assert kwargs == {}
         assert cotransform is None
+        assert not is_informative
 
         assert container.transform is first_valid_transform
         assert container.args == [0]
         assert not container.kwargs
         assert container.classical_cotransform is None
+        assert not container.is_informative
