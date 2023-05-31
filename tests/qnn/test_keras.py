@@ -709,6 +709,9 @@ def test_batch_input_multi_measure():
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
         assert qml.math.allclose(r, exp)
 
+    # reset back to the old name
+    KerasLayer.set_input_argument("inputs")
+
 
 @pytest.mark.tf
 def test_draw():
