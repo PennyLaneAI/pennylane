@@ -50,8 +50,8 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
         f = self.File(str(uuid4()), mode="w-", driver="core", backing_store=False)
         return f
 
+    @staticmethod
     def copy(
-        self,
         source: HDF5Any,
         dest: HDF5Group,
         key: str,

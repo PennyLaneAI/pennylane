@@ -37,7 +37,8 @@ from typing import (
     get_origin,
 )
 
-from typing_extensions import dataclass_transform
+# pylint doesn't think this exists
+from typing_extensions import dataclass_transform  # pylint: disable=no-name-in-module
 
 from pennylane.data.base._hdf5 import h5py
 from pennylane.data.base.attribute import AttributeInfo, AttributeType

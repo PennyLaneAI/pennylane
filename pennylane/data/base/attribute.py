@@ -41,7 +41,6 @@ from pennylane.data.base.typing_util import (
     UNSET,
     HDF5Any,
     HDF5Group,
-    T,
     get_type_str,
     resolve_special_type,
 )
@@ -154,11 +153,13 @@ class AttributeInfo(MutableMapping):
         )
 
 
-# Type variable for 'value' argument to 'AttributeType.__init__()'
+# Type variable for value returned by ``AttributeType.get_value()``
+ValueType = TypeVar("ValueType")
+# Type variable for ``value`` argument to ``AttributeType.__init__()``
 InitValueType = TypeVar("InitValueType")
 
 
-class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
+class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
     """
     The AttributeType class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
@@ -171,9 +172,17 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
         type_consumer_registry: Maps types to their default AttributeType
     """
 
+    Self = TypeVar("Self", bound="AttributeType")
+
     type_id: ClassVar[str]
 
-    Self = TypeVar("Self", bound="AttributeType")
+    @abstractmethod
+    def hdf5_to_value(self, bind: HDF5) -> ValueType:
+        """Parses bind into Python object."""
+
+    @abstractmethod
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: InitValueType) -> HDF5:
+        """Converts value into a HDF5 Array or Group under bind_parent[key]."""
 
     @overload
     def __init__(
@@ -265,14 +274,11 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
         data."""
         return self._bind
 
-    def default_value(self) -> Union[InitValueType, Literal[UNSET]]:
+    @classmethod
+    def default_value(cls) -> Union[InitValueType, Literal[UNSET]]:
         """Returns a valid default value for this type, or ``UNSET`` if this type
         must be initialized with a value."""
         return UNSET
-
-    def __post_init__(self, value: InitValueType, info: Optional[AttributeInfo]) -> None:
-        """Called after __init__(), only during value initialization. Can be implemented
-        in subclasses to implement additional initialization"""
 
     @classmethod
     def py_type(cls, value_type: Type[InitValueType]) -> str:
@@ -291,20 +297,16 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
         """
         return ()
 
-    @abstractmethod
-    def hdf5_to_value(self, bind: HDF5) -> T:
-        """Parses bind into Python object."""
+    def __post_init__(self, value: InitValueType, info: Optional[AttributeInfo]) -> None:
+        """Called after __init__(), only during value initialization. Can be implemented
+        in subclasses that require additional initialization."""
 
-    @abstractmethod
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: InitValueType) -> HDF5:
-        """Converts value into a HDF5 Array or Group under bind_parent[key]."""
-
-    def get_value(self) -> T:
-        """Parses the mapped value from ``bind``."""
+    def get_value(self) -> ValueType:
+        """Deserializes the mapped value from ``bind``."""
         return self.hdf5_to_value(self.bind)
 
-    def copy_value(self) -> T:
-        """Parse the mapped value from ``bind``, and also perform a 'deep-copy'
+    def copy_value(self) -> ValueType:
+        """Deserializes the mapped value from ``bind``, and also perform a 'deep-copy'
         of any nested values contained in ``bind``."""
         return self.get_value()
 
@@ -344,14 +346,23 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
                 f"HDF5 '{type(self.bind).__qualname__}' is bound to another attribute type {existing_type_id}"
             )
 
-    def __str__(self) -> str:
-        return str(self.get_value())
+    def __copy__(self: Self) -> Self:
+        impl_group = h5py.group()
+        h5py.copy(self.bind, impl_group, "_")
+
+        return type(self)(bind=impl_group["_"])
+
+    def __deepcopy__(self: Self, memo) -> Self:
+        return self.__copy__()
+
+    def __eq__(self, __value: object) -> bool:
+        return self.get_value() == __value
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({repr(self.get_value())})"
 
-    def __eq__(self, __value: object) -> bool:
-        return self.get_value() == __value
+    def __str__(self) -> str:
+        return str(self.get_value())
 
     __registry: typing.Mapping[str, Type["AttributeType"]] = {}
     __type_consumer_registry: typing.Mapping[type, Type["AttributeType"]] = {}
@@ -384,15 +395,6 @@ class AttributeType(ABC, Generic[HDF5, T, InitValueType]):
             AttributeType.__type_consumer_registry[type_] = cls
 
         return super().__init_subclass__()
-
-    def __copy__(self: Self) -> Self:
-        impl_group = h5py.group()
-        h5py.copy(self.bind, impl_group, "_")
-
-        return type(self)(bind=impl_group["_"])
-
-    def __deepcopy__(self: Self, memo) -> Self:
-        return self.__copy__()
 
 
 def get_attribute_type(zobj: HDF5) -> Type[AttributeType[HDF5, Any, Any]]:
@@ -430,7 +432,9 @@ def _get_type(type_or_obj: Union[object, Type]) -> Type:
     return type_
 
 
-def match_obj_type(type_or_obj: Union[T, Type[T]]) -> Type[AttributeType[HDF5Any, T, T]]:
+def match_obj_type(
+    type_or_obj: Union[ValueType, Type[ValueType]]
+) -> Type[AttributeType[HDF5Any, ValueType, ValueType]]:
     """
     Returns an ``AttributeType`` that can accept an object of type ``type_or_obj``
     as a value.

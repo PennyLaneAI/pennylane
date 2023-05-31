@@ -24,7 +24,7 @@ from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
 
 
-class DatasetDict(
+class DatasetDict(  # pylint: disable=too-many-ancestors
     Generic[T],
     AttributeType[HDF5Group, typing.Mapping[str, T], typing.Mapping[str, T]],
     typing.MutableMapping[str, T],
