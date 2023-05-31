@@ -706,7 +706,8 @@ class FirstQuantization(Operation):
 
         n_m = int(
             np.ceil(
-                np.log2(  # taken from Eq. (3) of arXiv:2302.07981 (2023)
+                np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021) with
+                    # modifications taken from arXiv:2302.07981 (2023)
                     (8 * np.pi * eta)
                     / (error_uv * omega * bmin**2)
                     * (eta - 1 + 2 * l_z)
@@ -720,9 +721,10 @@ class FirstQuantization(Operation):
             + 3
             - 3 / n ** (1 / 3)
             + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
-        ) / bmin**2
+        ) / bmin**2  # bmin**2 is needed for non-cubic systems, Eq. (F3) of arXiv:2302.07981 (2023)
 
         # computed using error term derived in Eq. (113) of PRX Quantum 2, 040332 (2021)
+        # bmin**2 is needed for non-cubic systems, from Eq. (F3) of arXiv:2302.07981 (2023)
         lambda_nu_1 = lambda_nu + 4 / (2**n_m * bmin**2) * (
             7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
         )
@@ -740,7 +742,8 @@ class FirstQuantization(Operation):
                 aa_steps = i
                 p_nu_amp = probability
 
-        # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021)
+        # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021) with
+        # modifications taken from arXiv:2302.07981 (2023)
         lambda_u = 4 * np.pi * eta * l_z * lambda_nu / omega
         lambda_v = 2 * np.pi * eta * (eta - 1) * lambda_nu / omega
 
@@ -757,7 +760,8 @@ class FirstQuantization(Operation):
         else:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 2
 
-        # taken from Eq. (63) of PRX Quantum 2, 040332 (2021)
+        # taken from Eq. (63) of PRX Quantum 2, 040332 (2021) with
+        # modifications taken from arXiv:2302.07981 (2023)
         p_eq = (
             FirstQuantization.success_prob(3 * eta + 2 * charge, br)
             * FirstQuantization.success_prob(eta, br) ** 2
@@ -860,7 +864,7 @@ class FirstQuantization(Operation):
         # taken from Eq. (J7) of arXiv:2302.07981 (2023)
         n_b = np.ceil(
             np.log2(
-                2
+                4
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
