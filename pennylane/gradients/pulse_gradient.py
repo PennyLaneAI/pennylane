@@ -15,6 +15,7 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -95,7 +96,12 @@ def _split_evol_ops(op, ob, tau):
         insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
         coeffs = [prefactor, -prefactor]
     else:
-        eigvals = qml.eigvals(ob)
+        with warnings.catch_warnings():
+            if len(ob.wires) <= 4:
+                warnings.filterwarnings(
+                    "ignore", ".*the eigenvalues will be computed numerically.*"
+                )
+            eigvals = qml.eigvals(ob)
         coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
         insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
 
