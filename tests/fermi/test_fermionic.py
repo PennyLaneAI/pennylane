@@ -293,256 +293,52 @@ class TestFermiSentence:
         ),
     )
 
-    @pytest.mark.parametrize("f1, f2, res", tup_fs_mult)
-    def test_mul(self, f1, f2, res):
+    @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
+    def test_mul(self, f1, f2, result):
         """Test that the correct result of multiplication is produced."""
         simplified_product = f1 * f2
         simplified_product.simplify()
 
-        assert f1 * f2 == res
-        assert simplified_product == res
+        assert simplified_product == result
 
-    #
-    # tup_fs_add = (  # computed by hand
-    #     (fs1, fs1, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
-    #     (fs1, fs2, FermiSentence({})),
-    #     (fs1, fs3, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -1, fw4: 1})),
-    #     (fs2, fs5, fs2),
-    # )
-    #
-    # @pytest.mark.parametrize("fs1, fs2, result", tup_fs_add)
-    # def test_add(self, fs1, fs2, result):
-    #     """Test that the correct result of addition is produced."""
-    #     copy_fs1 = copy(fs1)
-    #     copy_fs2 = copy(fs2)
-    #
-    #     simplified_product = fs1 + fs2
-    #     simplified_product.simplify()
-    #
-    #     assert simplified_product == result
-    #     assert fs1 == copy_fs1
-    #     assert fs2 == copy_fs2
-    #
-    # fs_match = (
-    #     (fs4, "Can't get the matrix of an empty FermiWord."),
-    #     (fs5, "Can't get the matrix of an empty FermiSentence."),
-    # )
-    #
-    # @pytest.mark.parametrize("fs, match", fs_match)
-    # def test_to_mat_error(self, fs, match):
-    #     """Test that an appropriate error is raised when an empty
-    #     FermiSentence or FermiWord is cast to matrix."""
-    #     with pytest.raises(ValueError, match=match):
-    #         fs.to_mat(wire_order=None)
-    #
-    #     with pytest.raises(ValueError, match=match):
-    #         fs.to_mat(wire_order=Wires([]))
-    #
-    # def test_to_mat_identity(self):
-    #     """Test that an identity matrix is return if wire_order is provided."""
-    #     assert np.allclose(fs5.to_mat(wire_order=[0, 1]), np.eye(4))
-    #     assert sparse.issparse(fs5.to_mat(wire_order=[0, 1], format="csr"))
-    #
-    # tup_fs_mat = (
-    #     (
-    #         fs1,
-    #         [0, 1, 2, "a", "b", "c"],
-    #         1.23 * np.kron(np.kron(matI, np.kron(matX, matY)), np.eye(8))
-    #         + 4j * np.kron(np.eye(8), np.kron(matX, np.kron(matX, matZ)))
-    #         - 0.5 * np.kron(matZ, np.kron(np.eye(8), np.kron(matZ, matZ))),
-    #     ),
-    #     (
-    #         fs2,
-    #         ["a", "b", "c", 0, 1, 2],
-    #         -1.23 * np.kron(np.eye(8), np.kron(matI, np.kron(matX, matY)))
-    #         - 4j * np.kron(np.kron(matX, np.kron(matX, matZ)), np.eye(8))
-    #         + 0.5 * np.kron(np.kron(matI, np.kron(matZ, np.kron(matZ, matZ))), np.eye(4)),
-    #     ),
-    #     (
-    #         fs3,
-    #         [0, "b", "c"],
-    #         -0.5 * np.kron(matZ, np.kron(matZ, matZ)) + 1 * np.eye(8),
-    #     ),
-    # )
-    #
-    # @pytest.mark.parametrize("fs, wire_order, true_matrix", tup_fs_mat)
-    # def test_to_mat_wire_order(self, fs, wire_order, true_matrix):
-    #     """Test that the wire_order is correctly incorporated in computing the
-    #     matrix representation."""
-    #     assert np.allclose(fs.to_mat(wire_order), true_matrix)
-    #
-    # @pytest.mark.parametrize("fs, wire_order, true_matrix", tup_fs_mat)
-    # def test_to_mat_format(self, fs, wire_order, true_matrix):
-    #     """Test that the correct type of matrix is returned given the format kwarg."""
-    #     sparse_mat = fs.to_mat(wire_order, format="csr")
-    #     assert sparse.issparse(sparse_mat)
-    #     assert np.allclose(sparse_mat.toarray(), true_matrix)
-    #
-    # def test_simplify(self):
-    #     """Test that simplify removes terms in the FermiSentence with
-    #     coefficient less than the threshold"""
-    #     un_simplified_fs = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
-    #
-    #     expected_simplified_fs0 = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
-    #     expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
-    #     expected_simplified_fs2 = FermiSentence({fw3: 1})
-    #
-    #     un_simplified_fs.simplify()
-    #     assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
-    #     un_simplified_fs.simplify(tol=1e-2)
-    #     assert un_simplified_fs == expected_simplified_fs1
-    #     un_simplified_fs.simplify(tol=1e-1)
-    #     assert un_simplified_fs == expected_simplified_fs2
-    #
-    # tup_fs_operation = (
-    #     (FermiSentence({FermiWord({0: X}): 1}), qml.s_prod(1, qml.FermiX(wires=0))),
-    #     (
-    #         fs1_hamiltonian,
-    #         qml.sum(
-    #             1.23 * qml.prod(qml.FermiX(wires=1), qml.FermiY(wires=2)),
-    #             4 * qml.prod(qml.FermiX(wires="a"), qml.FermiX(wires="b"), qml.FermiZ(wires="c")),
-    #             -0.5 * qml.prod(qml.FermiZ(wires=0), qml.FermiZ(wires="b"), qml.FermiZ(wires="c")),
-    #         ),
-    #     ),
-    #     (
-    #         fs2_hamiltonian,
-    #         qml.sum(
-    #             -1.23 * qml.prod(qml.FermiX(wires=1), qml.FermiY(wires=2)),
-    #             -4 * qml.prod(qml.FermiX(wires="a"), qml.FermiX(wires="b"), qml.FermiZ(wires="c")),
-    #             0.5 * qml.prod(qml.FermiZ(wires=0), qml.FermiZ(wires="b"), qml.FermiZ(wires="c")),
-    #         ),
-    #     ),
-    # )
-    #
-    # @pytest.mark.parametrize("fs, op", tup_fs_operation)
-    # def test_operation(self, fs, op):
-    #     """Test that a FermiSentence can be cast to a PL operation."""
-    #
-    #     def _compare_ofs(op1, op2):
-    #         assert op1.name == op2.name
-    #         assert op1.wires == op2.wires
-    #
-    #     fs_op = fs.operation()
-    #     if len(fs) > 1:
-    #         for fs_summand, op_summand in zip(fs_op.operands, op.operands):
-    #             assert fs_summand.scalar == op_summand.scalar
-    #             if isinstance(fs_summand.base, qml.ofs.Prod):
-    #                 for fw_factor, op_factor in zip(fs_summand.base, op_summand.base):
-    #                     _compare_ofs(fw_factor, op_factor)
-    #             else:
-    #                 fs_base, op_base = (fs_summand.base, op_summand.base)
-    #                 _compare_ofs(fs_base, op_base)
-    #
-    # def test_operation_with_identity(self):
-    #     """Test that a FermiSentence with an empty FermiWord can be cast to
-    #     operation correctly."""
-    #     full_fs_op = fs3.operation()
-    #     full_op = qml.sum(
-    #         -0.5 * qml.prod(qml.FermiZ(wires=0), qml.FermiZ(wires="b"), qml.FermiZ(wires="c")),
-    #         qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
-    #     )
-    #
-    #     fs_op, op = (
-    #         full_fs_op.operands[1],
-    #         full_op.operands[1],
-    #     )  # testing that the identity term is constructed well
-    #     if op.scalar != 1:
-    #         assert fs_op.scalar == op.scalar
-    #         fs_base, op_base = (fs_op.base, op.base)
-    #     else:
-    #         fs_base, op_base = fs_op, op.base
-    #
-    #     assert fs_base.name == op_base.name
-    #     assert set(fs_base.wires) == set(op_base.wires)
-    #     # in constructing the identity wires are cast from set -> list and the order is not preserved
-    #
-    # def test_operation_empty(self):
-    #     """Test that an empty FermiSentence with wire_order returns Identity."""
-    #     op = fs5.operation(wire_order=[0, 1])
-    #     id = qml.s_prod(0.0, qml.Identity(wires=[0, 1]))
-    #
-    #     assert op.name == id.name
-    #     assert op.wires == id.wires
-    #
-    # def test_operation_empty_error(self):
-    #     """Test that a ValueError is raised if an empty FermiSentence is
-    #     cast to a PL operation."""
-    #     with pytest.raises(ValueError, match="Can't get the operation for an empty FermiWord."):
-    #         fs4.operation()
-    #     with pytest.raises(ValueError, match="Can't get the operation for an empty FermiSentence."):
-    #         fs5.operation()
-    #
-    # def test_operation_wire_order(self):
-    #     """Test that the wire_order parameter is used when the Fermi representation is empty"""
-    #     op = fs5.operation(wire_order=["a", "b"])
-    #     id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
-    #
-    #     assert qml.equal(op, id)
-    #
-    # tup_fs_hamiltonian = (
-    #     (FermiSentence({FermiWord({0: X}): 1}), 1 * qml.FermiX(wires=0)),
-    #     (
-    #         fs1_hamiltonian,
-    #         +1.23 * qml.FermiX(wires=1) @ qml.FermiY(wires=2)
-    #         + 4 * qml.FermiX(wires="a") @ qml.FermiX(wires="b") @ qml.FermiZ(wires="c")
-    #         - 0.5 * qml.FermiZ(wires=0) @ qml.FermiZ(wires="b") @ qml.FermiZ(wires="c"),
-    #     ),
-    #     (
-    #         fs2_hamiltonian,
-    #         -1.23 * qml.FermiX(wires=1) @ qml.FermiY(wires=2)
-    #         - 4 * qml.FermiX(wires="a") @ qml.FermiX(wires="b") @ qml.FermiZ(wires="c")
-    #         + 0.5 * qml.FermiZ(wires=0) @ qml.FermiZ(wires="b") @ qml.FermiZ(wires="c"),
-    #     ),
-    #     (
-    #         fs3,
-    #         -0.5 * qml.FermiZ(wires=0) @ qml.FermiZ(wires="b") @ qml.FermiZ(wires="c")
-    #         + 1 * qml.Identity(wires=[0, "b", "c"]),
-    #     ),
-    # )
-    #
-    # @pytest.mark.parametrize("fs, h", tup_fs_hamiltonian)
-    # def test_hamiltonian(self, fs, h):
-    #     """Test that a FermiSentence can be cast to a Hamiltonian."""
-    #     fs_h = fs.hamiltonian()
-    #     assert fs_h.compare(h)
-    #
-    # def test_hamiltonian_empty(self):
-    #     """Test that an empty FermiSentence with wire_order returns Identity."""
-    #     op = fs5.hamiltonian(wire_order=[0, 1])
-    #     id = qml.Hamiltonian([], [])
-    #     assert op.compare(id)
-    #
-    # def test_hamiltonian_empty_error(self):
-    #     """Test that a ValueError is raised if an empty FermiSentence is
-    #     cast to a Hamiltonian."""
-    #     with pytest.raises(
-    #         ValueError, match="Can't get the Hamiltonian for an empty FermiSentence."
-    #     ):
-    #         fs5.hamiltonian()
-    #
-    # def test_hamiltonian_wire_order(self):
-    #     """Test that the wire_order parameter is used when the Fermi representation is empty"""
-    #     op = fs5.hamiltonian(wire_order=["a", "b"])
-    #     id = qml.Hamiltonian([], [])
-    #
-    #     assert qml.equal(op, id)
-    #
-    # def test_pickling(self):
-    #     """Check that Fermisentences can be pickled and unpickled."""
-    #     fw1 = FermiWord({2: "X", 3: "Y", 4: "Z"})
-    #     fw2 = FermiWord({2: "Y", 3: "Z"})
-    #     fs = FermiSentence({fw1: 1.5, fw2: -0.5})
-    #
-    #     serialization = pickle.dumfs(fs)
-    #     new_fs = pickle.loads(serialization)
-    #     assert fs == new_fs
-    #
-    # def test_map_wires(self):
-    #     """Test the map_wires conversion method."""
-    #     assert fs1.map_wires({1: "u", 2: "v", "a": 1, "b": 2, "c": 3}) == FermiSentence(
-    #         {
-    #             FermiWord({"u": X, "v": Y}): 1.23,
-    #             FermiWord({1: X, 2: X, 3: Z}): 4j,
-    #             FermiWord({0: Z, 2: Z, 3: Z}): -0.5,
-    #         }
-    #     )
+    tup_fs_add = (  # computed by hand
+        (fs1, fs1, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
+        (fs1, fs2, FermiSentence({})),
+        (fs1, fs3, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -1, fw4: 1})),
+        (fs2, fs5, fs2),
+    )
+
+    @pytest.mark.parametrize("f1, f2, result", tup_fs_add)
+    def test_add(self, f1, f2, result):
+        """Test that the correct result of addition is produced."""
+
+        simplified_product = f1 + f2
+        simplified_product.simplify()
+
+        assert simplified_product == result
+
+    def test_simplify(self):
+        """Test that simplify removes terms in the FermiSentence with coefficient less than the
+        threshold."""
+        un_simplified_fs = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+
+        expected_simplified_fs0 = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+        expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
+        expected_simplified_fs2 = FermiSentence({fw3: 1})
+
+        un_simplified_fs.simplify()
+        assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
+        un_simplified_fs.simplify(tol=1e-2)
+        assert un_simplified_fs == expected_simplified_fs1
+        un_simplified_fs.simplify(tol=1e-1)
+        assert un_simplified_fs == expected_simplified_fs2
+
+    def test_pickling(self):
+        """Check that FermiSentences can be pickled and unpickled."""
+        fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+        fw2 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
+        fs = FermiSentence({fw1: 1.5, fw2: -0.5})
+
+        serialization = pickle.dumps(fs)
+        new_fs = pickle.loads(serialization)
+        assert fs == new_fs
