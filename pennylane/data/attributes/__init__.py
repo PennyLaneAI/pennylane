@@ -17,9 +17,11 @@ from .array import DatasetArray
 from .dictionary import DatasetDict
 from .json import DatasetJSON
 from .list import DatasetList
+from .molecule import DatasetMolecule
 from .none import DatasetNone
 from .operator import DatasetOperator
 from .scalar import DatasetScalar
+from .sparse_array import DatasetSparseArray
 from .string import DatasetString
 
 __all__ = (
@@ -29,6 +31,8 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
+    "DatasetSparseArray",
+    "DatasetMolecule",
     "DatasetNone",
     "DatasetJSON",
 )

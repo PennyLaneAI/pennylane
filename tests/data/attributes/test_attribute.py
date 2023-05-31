@@ -6,6 +6,7 @@ from pennylane.data.attributes import (
     DatasetNone,
     DatasetScalar,
     DatasetString,
+    DatasetSparseArray,
     DatasetOperator,
 )
 from pennylane.data.attributes import DatasetArray, DatasetScalar, DatasetString, DatasetNone
@@ -31,6 +32,7 @@ from pennylane.data.base.attribute import match_obj_type
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
         (None, DatasetNone),
         (type(None), DatasetNone),
+        *((sp_cls, DatasetSparseArray) for sp_cls in DatasetSparseArray.consumes_types()),
         *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
     ],
 )

@@ -16,12 +16,15 @@ Contains the :class:`~pennylane.data.DatasetBase` class, and `qml.data.Attribute
 for declaratively defining dataset classes.
 """
 
+import json
+import operator
 import typing
 from dataclasses import InitVar, dataclass
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
     Any,
+    Callable,
     ClassVar,
     Generic,
     List,
@@ -65,7 +68,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     py_type: Optional[Any] = None,
     **kwargs,
 ) -> Any:
-    """Used to define fields on a declarative Dataclass.
+    """Used to define fields on a declarative Dataset.
 
     Args:
         attribute_type: ``AttributeType`` class for this attribute. If not provided,
@@ -81,8 +84,28 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     )
 
 
+def dataset_property(  # pylint: disable=unused-argument, unused-variable
+    fget: Callable[["Dataset"], T],
+    fset: Optional[Callable[["Dataset", T], None]] = None,
+    *,
+    kw_only: bool = True,
+) -> T:
+    """Used to define a property on a Dataset class, that will be included in the
+    generated ``__init__()`` method.
+
+    Args:
+        fget: Property getter
+        fset: Property setter
+        kw_only: If False, the property will appear as a positional argument on
+            the generated ``__init__()``."""
+    return cast(T, property(fget, fset))
+
+
 @dataclass_transform(
-    order_default=False, eq_default=False, field_specifiers=(attribute,), kw_only_default=True
+    order_default=False,
+    eq_default=False,
+    field_specifiers=(attribute, dataset_property),
+    kw_only_default=True,
 )
 class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """This base class that tells the type system that ``Dataset`` behaves like a dataclass.
@@ -98,33 +121,45 @@ class Dataset(MapperMixin, _DatasetTransform):
         fields: A mapping of attribute names to their ``Attribute`` information. Note that
             this contains attributes declared on the class, not attributes added to
             an instance. Use ``attrs`` to view all attributes on an instance.
-        bind: The HDF5 group that contains this dataset.
+        bind: The HDF5 group that contains this dataset's attributes
+        params: The parameters of this Dataset
     """
 
     Self = TypeVar("Self", bound="Dataset")
 
     type_id = "dataset"
-    category: ClassVar[str] = "generic"
+    category_id: ClassVar[str]
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
-    bind: HDF5Group = attribute(default=None, kw_only=False)  # type: ignore
+    bind: HDF5Group = dataset_property(
+        cast(
+            Callable[["Dataset"], HDF5Group],
+            lambda self: self._bind,  # pylint: disable=protected-access
+        ),
+        kw_only=False,
+    )  # type: ignore
+    params: typing.Mapping[str, str] = dataset_property(
+        lambda self: json.loads(self.info.get("params", "{}")),
+        lambda self, params: operator.setitem(self.info, "params", json.dumps(params)),
+        kw_only=False,
+    )
     validate: InitVar[bool] = attribute(default=True, kw_only=False)
 
     def __init__(
         self,
         bind: Optional[HDF5Group] = None,
-        validate: bool = True,
+        params: Optional[typing.Mapping[str, str]] = None,
+        validate: bool = False,
         **attrs: Any,
     ):
         """
         Load a dataset from a HDF5 Group or initialize a new Dataset.
 
         Args:
-            bind: The HDF5 group, or path to hdf5 file, that will contain this dataset.
-                If None, the dataset will be stored in memory. Any attributes that
-                already exist in ``bind`` will be loaded into this dataset.
-            info: Additional info to attach to this dataset
+            bind: The HDF5 group that contains this dataset. If None, a new
+                group will be created in memory. Any attributes that already exist
+                in ``bind`` will be loaded into this dataset.
             validate: If ``True``, all declared fields of this dataset must
                 be provided in ``attrs`` or contained in ``bind``.
             **attrs: Attributes to add to this dataset.
@@ -135,6 +170,8 @@ class Dataset(MapperMixin, _DatasetTransform):
             self._bind = h5py.group()
 
         self._init_bind()
+        if params:
+            self.params = params
 
         for name, attr in attrs.items():
             setattr(self, name, attr)
@@ -143,9 +180,9 @@ class Dataset(MapperMixin, _DatasetTransform):
             self._validate_attrs()
 
     @property
-    def bind(self) -> HDF5Group:
-        """The HDF5 group that contains this dataset's attributes."""
-        return self._bind
+    def category(self) -> Optional[str]:
+        """Returns the category ID of this dataset."""
+        return self.info.get("category_id")
 
     @property
     def info(self) -> AttributeInfo:
@@ -163,8 +200,11 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     @classmethod
     def open(
-        cls: Type[Self], filepath: Union[str, Path], mode: Literal["w", "w-", "a", "r"] = "r"
-    ) -> Self:
+        cls,
+        filepath: Union[str, Path],
+        mode: Literal["w", "w-", "a", "r"] = "r",
+        validate: bool = False,
+    ) -> "Dataset":
         """Open existing dataset or create a new one file at ``filepath``.
 
         Args:
@@ -175,9 +215,12 @@ class Dataset(MapperMixin, _DatasetTransform):
         Returns:
             Dataset object from file
         """
+        if mode in ("w-", "w"):
+            validate = False
+
         f = h5py.File(filepath, mode)
 
-        return cls(bind=f)
+        return cls(bind=f, validate=validate)
 
     def read(
         self,
@@ -215,7 +258,6 @@ class Dataset(MapperMixin, _DatasetTransform):
                 create if doesn't exist). Default is "w-".
         """
         # TODO: better error message for 'ContainsGroupError'
-
         with h5py.open_group(filepath, mode=mode) as grp:
             h5py.copy_all(self.bind, grp)
             grp.attrs.update(self.bind.attrs)
@@ -238,12 +280,12 @@ class Dataset(MapperMixin, _DatasetTransform):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
                 self.info["type_id"] = self.type_id
-            if "category" not in self.bind:
-                self.info["category"] = self.category
+            if "category_id" not in self.info and (getattr(self, "category_id", None) is not None):
+                self.info["category_id"] = self.category_id
 
     def __setattr__(self, __name: str, __value: Union[Any, AttributeType]) -> None:
-        if __name.startswith("_"):
-            super().__setattr__(__name, __value)
+        if __name.startswith("_") or __name in type(self).__dict__:
+            object.__setattr__(self, __name, __value)
             return
 
         if __name in self.fields:
@@ -265,24 +307,23 @@ class Dataset(MapperMixin, _DatasetTransform):
             raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
 
     def __repr__(self) -> str:
-        attrs_repr = ", ".join(
-            (f"{attr_name}={repr(attr.get_value())}" for attr_name, attr in self.attrs.items())
+        repr_items = ", ".join(
+            f"{name}: {value}"
+            for name, value in {**self.params, "attributes": (str(list(self.attrs)))}
         )
 
-        return f"Dataset({attrs_repr})"
-
-    __registry = {}
-    registry = MappingProxyType(__registry)
+        return f"<{type(self).__name__} = {repr_items}>"
 
     def __init_subclass__(cls, **kwargs) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
 
         fields = {}
+        reserved_names = ("params", "bind", "validate")
 
         for name, annotated_type in cls.__annotations__.items():
             if (
-                name.startswith("_")
+                name in reserved_names
                 or isinstance(annotated_type, InitVar)
                 or get_origin(annotated_type) is ClassVar
             ):
@@ -302,33 +343,17 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         cls.fields = MappingProxyType(fields)
 
-        existing_dataset_cls = Dataset.__registry.get(cls.category)
-        if existing_dataset_cls is not None:
-            raise TypeError(
-                f"Dataset class with category {cls.category} already exists: {type(existing_dataset_cls)}"
-            )
 
-        Dataset.__registry[cls.category] = cls
-
-
-_DatasetType = TypeVar("_DatasetType", bound=Dataset)
-
-
-class _DatasetAttributeType(
-    Generic[_DatasetType], AttributeType[HDF5Group, _DatasetType, _DatasetType]
-):
+class _DatasetAttributeType(AttributeType[HDF5Group, Dataset, Dataset]):
     """Attribute type for loading and saving datasets as attributes of
     datasets, or elements of collection types."""
 
     type_id = "dataset"
 
-    def hdf5_to_value(self, bind: HDF5Group) -> _DatasetType:
-        category = AttributeInfo(bind.attrs)["category"]
-        dataset_cls = Dataset.registry.get(category, Dataset)
+    def hdf5_to_value(self, bind: HDF5Group) -> Dataset:
+        return Dataset(bind)
 
-        return dataset_cls(bind)
-
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: _DatasetType) -> HDF5Group:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Dataset) -> HDF5Group:
         h5py.copy(value.bind, bind_parent, key)
 
         return bind_parent[key]

@@ -18,9 +18,11 @@ from .attributes import (
     DatasetDict,
     DatasetJSON,
     DatasetList,
+    DatasetMolecule,
     DatasetNone,
     DatasetOperator,
     DatasetScalar,
+    DatasetSparseArray,
     DatasetString,
 )
 from .base.attribute import AttributeInfo, AttributeType
@@ -38,5 +40,7 @@ __all__ = (
     "DatasetDict",
     "DatasetOperator",
     "DatasetNone",
+    "DatasetMolecule",
+    "DatasetSparseArray",
     "DatasetJSON",
 )
