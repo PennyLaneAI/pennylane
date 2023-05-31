@@ -190,8 +190,8 @@ class FermiSentence(dict):
 
     def __pow__(self, value):
         """Exponentiate a Fermi sentence to an integer power."""
-        if not isinstance(value, int):
-            raise TypeError("The exponent must be integer.")
+        if value < 0 or not isinstance(value, int):
+            raise ValueError("The exponent must be a positive integer.")
 
         operator = FermiSentence({})
 

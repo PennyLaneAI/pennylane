@@ -358,3 +358,10 @@ class TestFermiSentence:
     @pytest.mark.parametrize("f1, pow, result", tup_fs_pow)
     def test_pow(self, f1, pow, result):
         assert f1**pow == result
+
+    tup_fs_pow_error = ((fs1, -1), (fs3, 1.5))
+
+    @pytest.mark.parametrize("f1, pow", tup_fs_pow_error)
+    def test_pow_error(self, f1, pow):
+        with pytest.raises(ValueError, match="The exponent must be a positive integer."):
+            f1**pow
