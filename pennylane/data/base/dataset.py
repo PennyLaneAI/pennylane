@@ -17,9 +17,9 @@ for declaratively defining dataset classes.
 """
 
 import json
-import operator
 import typing
 from dataclasses import InitVar, dataclass
+from functools import cached_property
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -85,27 +85,10 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     )
 
 
-def dataset_property(  # pylint: disable=unused-argument, unused-variable
-    fget: Callable[["Dataset"], T],
-    fset: Optional[Callable[["Dataset", T], None]] = None,
-    *,
-    kw_only: bool = True,
-) -> T:
-    """Used to define a property on a Dataset class, that will be included in the
-    generated ``__init__()`` method.
-
-    Args:
-        fget: Property getter
-        fset: Property setter
-        kw_only: If False, the property will appear as a positional argument on
-            the generated ``__init__()``."""
-    return cast(T, property(fget, fset))
-
-
 @dataclass_transform(
     order_default=False,
     eq_default=False,
-    field_specifiers=(attribute, dataset_property),
+    field_specifiers=(attribute,),
     kw_only_default=True,
 )
 class _DatasetTransform:  # pylint: disable=too-few-public-methods
@@ -133,19 +116,12 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
-    bind: HDF5Group = dataset_property(
-        cast(
-            Callable[["Dataset"], HDF5Group],
-            lambda self: self._bind,  # pylint: disable=protected-access
-        ),
+    bind: HDF5Group = attribute(  # type: ignore
         kw_only=False,
+        default=None,
     )  # type: ignore
-    params: typing.Mapping[str, str] = dataset_property(
-        lambda self: json.loads(self.info.get("params", "{}")),
-        lambda self, params: operator.setitem(self.info, "params", json.dumps(params)),
-        kw_only=False,
-    )
-    validate: InitVar[bool] = attribute(default=True, kw_only=False)
+    params: typing.Mapping[str, str] = attribute(kw_only=False, default=None)  # type: ignore
+    validate: InitVar[bool] = attribute(default=False, kw_only=False)
 
     def __init__(
         self,
@@ -171,8 +147,8 @@ class Dataset(MapperMixin, _DatasetTransform):
             self._bind = h5py.group()
 
         self._init_bind()
-        if params:
-            self.params = params
+        if params is not None:
+            self.info["params"] = json.dumps(params)
 
         for name, attr in attrs.items():
             setattr(self, name, attr)
@@ -189,6 +165,15 @@ class Dataset(MapperMixin, _DatasetTransform):
     def info(self) -> AttributeInfo:
         """Return attribute info associated with this dataset."""
         return AttributeInfo(self.bind.attrs)
+
+    @property
+    def bind(self) -> HDF5Group:
+        """Return the HDF5 group that contains this dataset."""
+        return self._bind
+
+    @cached_property
+    def params(self) -> typing.Mapping[str, str]:
+        return json.loads(self.info.get("params", "{}"))
 
     @property
     def attrs(self) -> typing.Mapping[str, AttributeType]:

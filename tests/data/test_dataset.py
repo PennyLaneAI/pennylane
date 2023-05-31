@@ -29,7 +29,7 @@ from pennylane.data.base._hdf5 import h5py
 class MyDataset(Dataset):  # pylint: disable=too-few-public-methods
     """A dataset subclass for testing."""
 
-    category_id = "my_dataset"
+    category_id = "testing"
 
     description: str = attribute(doc="description")
 
@@ -75,9 +75,19 @@ class TestDataset:
         """Test that a subclass of Dataset preserves the defined
         category_id."""
 
-        assert MyDataset.category_id == "my_dataset"
         ds = MyDataset(description="test")
-        assert ds.category_id == "my_dataset"
+        assert ds.category == "testing"
+
+    def test_dataset_bind_init_from_subclass(self):
+        """Test that Dataset can be bind-initialized from a HDF5 group that
+        was initialized by a subclass of Dataset."""
+
+        bind = MyDataset(description="test", params={"x": "y"}).bind
+
+        ds = Dataset(bind)
+
+        assert ds.category == MyDataset.category_id
+        assert ds.params == {"x": "y"}
 
     def test_setattr_preserves_field_info(self):
         """Test that __setattr__ preserves AttributeInfo for fields."""
@@ -107,5 +117,12 @@ class TestDataset:
     def test_params(self, params):
         """Test that dataset params can be set."""
         ds = Dataset(params=params)
+
+        assert ds.params == params
+
+    @pytest.mark.parametrize("params", [{}, {"x": "y", "z": "a"}])
+    def test_subclass_params(self, params):
+        """Test that dataset subclasses' params can be set."""
+        ds = MyDataset(params=params, description="abc")
 
         assert ds.params == params
