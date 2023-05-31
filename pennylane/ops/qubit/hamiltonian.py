@@ -174,10 +174,6 @@ class Hamiltonian(Observable):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1])
 
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data)
-
     def __init__(
         self,
         coeffs,
