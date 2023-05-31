@@ -129,4 +129,5 @@ class FermiWord(dict):
 
 
 # TODO: create __add__ method when PauliSentence is merged.
+# TODO: support multiply by number in __mul__ when PauliSentence is merged.
 # TODO: create mapping method when the ne jordan_wigner function is added.
