@@ -20,7 +20,6 @@ from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
 from .operator import DatasetOperator
-from .pauli import DatasetPauliSentence, DatasetPauliWord
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
 from .string import DatasetString
@@ -32,9 +31,6 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
-    "DatasetNone",
-    "DatasetPauliSentence",
-    "DatasetPauliWord",
     "DatasetSparseArray",
     "DatasetMolecule",
     "DatasetNone",
