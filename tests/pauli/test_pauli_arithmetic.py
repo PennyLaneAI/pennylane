@@ -277,7 +277,7 @@ class TestPauliSentence:
         ),
         (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * I"),
         (ps4, "1 * I"),
-        (ps5, "I"),
+        (ps5, "0 * I"),
     )
 
     @pytest.mark.parametrize("ps, str_rep", tup_ps_str)
