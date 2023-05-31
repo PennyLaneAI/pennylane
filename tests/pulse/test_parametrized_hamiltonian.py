@@ -17,7 +17,6 @@ Unit tests for the ParametrizedHamiltonian class
 """
 # pylint: disable=no-member, import-outside-toplevel
 import pytest
-
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pulse import ParametrizedHamiltonian
@@ -133,7 +132,12 @@ class TestInitialization:
         assert repr(H).replace("\n", "").replace(" ", "") == expected
 
     def test_repr_with_class_objects(self):
-        class f3:
+        """Test repr method with class objects r
+        eturns expected string"""
+
+        class f3:  # pylint: disable=too-few-public-methods
+            """Dummy class"""
+
             def __init__(self, hyper_param):
                 self.hyper = hyper_param
 
