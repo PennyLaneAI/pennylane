@@ -115,11 +115,13 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
-    bind: HDF5Group = attribute(  # type: ignore
+    bind: HDF5Group = attribute(  # type: ignore # pylint: disable=function-redefined
         kw_only=False,
         default=None,
-    )  # type: ignore
-    params: typing.Mapping[str, str] = attribute(kw_only=False, default=None)  # type: ignore
+    )
+    params: typing.Mapping[str, str] = attribute(  # type: ignore # pylint: disable=function-redefined
+        kw_only=False, default=None
+    )
     validate: InitVar[bool] = attribute(default=False, kw_only=False)
 
     def __init__(

@@ -17,7 +17,7 @@ of operators."""
 import json
 import typing
 from functools import lru_cache
-from typing import FrozenSet, Generic, List, Type, TypeVar
+from typing import Dict, FrozenSet, Generic, List, Type, TypeVar
 
 import numpy as np
 
@@ -260,6 +260,6 @@ class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
+    def _supported_ops_dict(cls) -> Dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
         return {op.__name__: op for op in cls.consumes_types()}
