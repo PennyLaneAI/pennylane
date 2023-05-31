@@ -1009,7 +1009,7 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
     state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_trace_distance(all_args0=None, all_args1=None):
-        """Wrapper used for evaluation of the relative entropy between two states computed from
+        """Wrapper used for evaluation of the trace distance between two states computed from
         QNodes. It allows giving the args and kwargs to each :class:`.QNode`.
 
         Args:
@@ -1053,7 +1053,7 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
             # No args
             state1 = state_qnode1()
 
-        # From the two generated states, compute the relative entropy
+        # From the two generated states, compute the trace distance
         return qml.math.trace_distance(state0, state1)
 
     return evaluate_trace_distance
