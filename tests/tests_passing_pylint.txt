@@ -33,6 +33,7 @@ tests/ops/qutrit/test_qutrit_observables.py
 tests/ops/qutrit/test_qutrit_parametric_ops.py
 tests/optimize/test_riemannian_gradient_optimizer.py
 tests/pulse/**
+tests/pauli/test_pauli_interface.py
 tests/qchem/test_givens_rotations.py
 tests/qinfo/test_trace_distance.py
 tests/tape/test_qscript.py
