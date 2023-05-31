@@ -14,6 +14,7 @@
 """The Fermionic representation classes."""
 from copy import copy
 
+
 class FermiWord(dict):
     """Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
     annihilation operators, associating wires with their respective operators. Can be constructed
@@ -149,7 +150,8 @@ class FermiSentence(dict):
 
     def __str__(self):
         """String representation of a FermiSentence."""
-
+        if len(self) == 0:
+            return "0 * ''"
         return "\n+ ".join(f"{coeff} * '{fw.to_string()}'" for fw, coeff in self.items())
 
     def __repr__(self):

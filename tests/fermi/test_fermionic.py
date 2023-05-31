@@ -19,6 +19,8 @@ import pytest
 
 from pennylane.fermi.fermionic import FermiWord, FermiSentence
 
+from pennylane import numpy as np
+
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
@@ -170,9 +172,9 @@ class TestFermiSentence:
     tup_fs_str = (
         (fs1, "1.23 * '0+ 1-'\n" "+ 4j * '0+ 0-'\n" "+ -0.5 * '0+ 3- 0+ 4-'"),
         (fs2, "-1.23 * '0+ 1-'\n" "+ (-0-4j) * '0+ 0-'\n" "+ 0.5 * '0+ 3- 0+ 4-'"),
-        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" "+ 1 * I"),
-        # (fs4, "1 * I"),
-        # (fs5, "0 * I"),
+        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" "+ 1 * ''"),
+        (fs4, "1 * ''"),
+        (fs5, "0 * ''"),
     )
 
     @pytest.mark.parametrize("fs, str_rep", tup_fs_str)
@@ -182,86 +184,124 @@ class TestFermiSentence:
         assert str(fs) == str_rep
         assert repr(fs) == str_rep
 
-    #
-    # tup_fs_wires = (
-    #     (fs1, {0, 1, 2, "a", "b", "c"}),
-    #     (fs2, {0, 1, 2, "a", "b", "c"}),
-    #     (fs3, {0, "b", "c"}),
-    #     (fs4, set()),
-    # )
-    #
-    # @pytest.mark.parametrize("fs, wires", tup_fs_wires)
-    # def test_wires(self, fs, wires):
-    #     """Test the correct wires are given for the FermiSentence."""
-    #     assert fs.wires == wires
-    #
-    # @pytest.mark.parametrize("fs", (fs1, fs2, fs3, fs4))
-    # def test_copy(self, fs):
-    #     """Test that the copy is identical to the original."""
-    #     copy_fs = copy(fs)
-    #     deep_copy_fs = deepcopy(fs)
-    #
-    #     assert copy_fs == fs
-    #     assert deep_copy_fs == fs
-    #     assert copy_fs is not fs
-    #     assert deep_copy_fs is not fs
-    #
-    # tup_fs_mult = (  # computed by hand
-    #     (
-    #         fs1,
-    #         fs1,
-    #         FermiSentence(
-    #             {
-    #                 FermiWord({}): -14.2371,
-    #                 FermiWord({1: X, 2: Y, "a": X, "b": X, "c": Z}): 9.84j,
-    #                 FermiWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}): -1.23,
-    #             }
-    #         ),
-    #     ),
-    #     (
-    #         fs1,
-    #         fs3,
-    #         FermiSentence(
-    #             {
-    #                 FermiWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}): -0.615,
-    #                 FermiWord({0: Z, "a": X, "b": Y}): -2,
-    #                 FermiWord({}): 0.25,
-    #                 FermiWord({0: I, 1: X, 2: Y}): 1.23,
-    #                 FermiWord({"a": X, "b": X, "c": Z}): 4j,
-    #                 FermiWord({0: Z, "b": Z, "c": Z}): -0.5,
-    #             }
-    #         ),
-    #     ),
-    #     (fs3, fs4, fs3),
-    #     (fs4, fs3, fs3),
-    #     (fs1, fs5, fs1),
-    #     (fs5, fs1, fs1),
-    #     (
-    #         FermiSentence(
-    #             {FermiWord({0: "Z"}): np.array(1.0), FermiWord({0: "Z", 1: "X"}): np.array(1.0)}
-    #         ),
-    #         FermiSentence({FermiWord({1: "Z"}): np.array(1.0), FermiWord({1: "Y"}): np.array(1.0)}),
-    #         FermiSentence(
-    #             {
-    #                 FermiWord({0: "Z", 1: "Z"}): np.array(1.0 + 1.0j),
-    #                 FermiWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
-    #             }
-    #         ),
-    #     ),
-    # )
-    #
-    # @pytest.mark.parametrize("fs1, fs2, res", tup_fs_mult)
-    # def test_mul(self, fs1, fs2, res):
-    #     """Test that the correct result of multiplication is produced."""
-    #     copy_fs1 = copy(fs1)
-    #     copy_fs2 = copy(fs2)
-    #
-    #     simplified_product = fs1 * fs2
-    #     simplified_product.simplify()
-    #
-    #     assert simplified_product == res
-    #     assert fs1 == copy_fs1
-    #     assert fs2 == copy_fs2
+    tup_fs_wires = (
+        (fs1, {0, 1, 3, 4}),
+        (fs2, {0, 1, 3, 4}),
+        (fs3, {0, 3, 4}),
+        (fs4, set()),
+    )
+
+    @pytest.mark.parametrize("fs, wires", tup_fs_wires)
+    def test_wires(self, fs, wires):
+        """Test the correct wires are given for the FermiSentence."""
+        assert fs.wires == wires
+
+    @pytest.mark.parametrize("fs", (fs1, fs2, fs3, fs4))
+    def test_copy(self, fs):
+        """Test that the copy is identical to the original."""
+        copy_fs = copy(fs)
+        deep_copy_fs = deepcopy(fs)
+
+        assert copy_fs == fs
+        assert deep_copy_fs == fs
+        assert copy_fs is not fs
+        assert deep_copy_fs is not fs
+
+    tup_fs_mult = (  # computed by hand
+        (
+            fs1,
+            fs1,
+            FermiSentence(
+                {
+                    FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}): 1.5129,
+                    FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 0): "-"}): 4.92j,
+                    FermiWord(
+                        {
+                            (0, 0): "+",
+                            (1, 1): "-",
+                            (2, 0): "+",
+                            (3, 3): "-",
+                            (4, 0): "+",
+                            (5, 4): "-",
+                        }
+                    ): -0.615,
+                    FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-"}): 4.92j,
+                    FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 0): "-"}): -16,
+                    FermiWord(
+                        {
+                            (0, 0): "+",
+                            (1, 0): "-",
+                            (2, 0): "+",
+                            (3, 3): "-",
+                            (4, 0): "+",
+                            (5, 4): "-",
+                        }
+                    ): (-0 - 2j),
+                    FermiWord(
+                        {
+                            (0, 0): "+",
+                            (1, 3): "-",
+                            (2, 0): "+",
+                            (3, 4): "-",
+                            (4, 0): "+",
+                            (5, 1): "-",
+                        }
+                    ): -0.615,
+                    FermiWord(
+                        {
+                            (0, 0): "+",
+                            (1, 3): "-",
+                            (2, 0): "+",
+                            (3, 4): "-",
+                            (4, 0): "+",
+                            (5, 0): "-",
+                        }
+                    ): (-0 - 2j),
+                    FermiWord(
+                        {
+                            (0, 0): "+",
+                            (1, 3): "-",
+                            (2, 0): "+",
+                            (3, 4): "-",
+                            (4, 0): "+",
+                            (5, 3): "-",
+                            (6, 0): "+",
+                            (7, 4): "-",
+                        }
+                    ): 0.25,
+                }
+            ),
+        ),
+        (
+            fs3,
+            fs4,
+            FermiSentence(
+                {
+                    FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"}): -0.5,
+                    FermiWord({}): 1,
+                }
+            ),
+        ),
+        (
+            fs4,
+            fs4,
+            FermiSentence(
+                {
+                    FermiWord({}): 1,
+                }
+            ),
+        ),
+    )
+
+    @pytest.mark.parametrize("f1, f2, res", tup_fs_mult)
+    def test_mul(self, f1, f2, res):
+        """Test that the correct result of multiplication is produced."""
+        simplified_product = f1 * f2
+        simplified_product.simplify()
+
+        assert f1 * f2 == res
+        assert simplified_product == res
+
     #
     # tup_fs_add = (  # computed by hand
     #     (fs1, fs1, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
