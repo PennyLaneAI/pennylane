@@ -40,7 +40,8 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
     def __post_init__(self, value: typing.Mapping[str, T], info):
         self.update(value)
 
-    def default_value(self) -> Dict:
+    @classmethod
+    def default_value(cls) -> Dict:
         return {}
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableMapping[str, T]:

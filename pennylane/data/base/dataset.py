@@ -319,6 +319,8 @@ class Dataset(MapperMixin, _DatasetTransform):
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
 
+        super().__init_subclass__()
+
         fields = {}
         reserved_names = ("params", "bind", "validate")
 

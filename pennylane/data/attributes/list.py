@@ -36,7 +36,8 @@ class DatasetList(  # pylint: disable=too-many-ancestors
     def __post_init__(self, value: typing.Iterable[T], info):
         self.extend(value)
 
-    def default_value(self) -> typing.Iterable[T]:
+    @classmethod
+    def default_value(cls) -> typing.Iterable[T]:
         return []
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableSequence[T]:

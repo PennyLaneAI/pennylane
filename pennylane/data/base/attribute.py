@@ -19,6 +19,7 @@ import typing
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, MutableMapping, Sequence
+from functools import lru_cache
 from numbers import Number
 from types import MappingProxyType
 from typing import (
@@ -41,8 +42,8 @@ from pennylane.data.base.typing_util import (
     UNSET,
     HDF5Any,
     HDF5Group,
+    get_type,
     get_type_str,
-    resolve_special_type,
 )
 
 
@@ -61,7 +62,7 @@ class AttributeInfo(MutableMapping):
             or numpy array
     """
 
-    attrs_namespace: ClassVar[str] = "qml.data."
+    attrs_namespace: ClassVar[str] = "qml.data"
     attrs_bind: typing.MutableMapping[str, Any]
 
     doc: Optional[str]
@@ -106,17 +107,17 @@ class AttributeInfo(MutableMapping):
         self["py_type"] = get_type_str(type_)
 
     def __len__(self) -> int:
-        return self.attrs_bind.get("qml.__len__", 0)
+        return self.attrs_bind.get("qml.__data_len__", 0)
 
     def _update_len(self, inc: int):
-        self.attrs_bind["qml.__len__"] = len(self) + inc
+        self.attrs_bind["qml.__data_len__"] = len(self) + inc
 
     def __setitem__(self, __name: str, __value: Any):
+        key = self.bind_key(__name)
         if __value is None:
-            self.attrs_bind.pop(__name, None)
+            self.attrs_bind.pop(key, None)
             return
 
-        key = f"{self.attrs_namespace}{__name}"
         exists = key in self.attrs_bind
         self.attrs_bind[key] = __value
         if not exists:
@@ -124,7 +125,7 @@ class AttributeInfo(MutableMapping):
 
     def __getitem__(self, __name: str) -> Any:
         try:
-            return self.attrs_bind[f"{self.attrs_namespace}{__name}"]
+            return self.attrs_bind[self.bind_key(__name)]
         except KeyError as exc:
             if __name in self.__annotations__:
                 return None
@@ -144,13 +145,20 @@ class AttributeInfo(MutableMapping):
             return None
 
     def __delitem__(self, __name: str) -> None:
-        del self.attrs_bind[f"{self.attrs_namespace}{__name}"]
+        del self.attrs_bind[self.bind_key(__name)]
         self._update_len(-1)
 
     def __iter__(self) -> Iterator[str]:
+        ns = f"{self.attrs_namespace}."
         return itertools.chain.from_iterable(
-            key.split(self.attrs_namespace, maxsplit=1)[1:2] for key in self.attrs_bind
+            key.split(ns, maxsplit=1)[1:2] for key in self.attrs_bind
         )
+
+    @classmethod
+    @lru_cache()
+    def bind_key(cls, __name: str) -> str:
+        """Returns ``__name`` dot-prefixed with ``attrs_namespace``."""
+        return ".".join((cls.attrs_namespace, __name))
 
 
 # Type variable for value returned by ``AttributeType.get_value()``
@@ -402,34 +410,9 @@ def get_attribute_type(zobj: HDF5) -> Type[AttributeType[HDF5, Any, Any]]:
     Returns the ``AttributeType`` of the dataset attribute contained
     in ``zobj``.
     """
-    type_id = zobj.attrs[f"{AttributeInfo.attrs_namespace}type_id"]
+    type_id = zobj.attrs[AttributeInfo.bind_key("type_id")]
 
     return AttributeType.registry[type_id]
-
-
-def _get_type(type_or_obj: Union[object, Type]) -> Type:
-    """Given an object or an object type, returns the underlying class.
-
-    Examples:
-        >>> _get_type(list)
-        <class 'list'>
-        >>> _get_type(List[int])
-        <class 'list'>
-        >>> _get_type([])
-        <class 'list'>
-    """
-
-    # First, check if this is a special type, e.g a parametrized
-    # generic like List[int]
-    special_args = resolve_special_type(type_or_obj)
-    if special_args is not None:
-        type_, _ = special_args
-    elif isinstance(type_or_obj, type):
-        type_ = type_or_obj
-    else:
-        type_ = type(type_or_obj)
-
-    return type_
 
 
 def match_obj_type(
@@ -450,7 +433,7 @@ def match_obj_type(
         TypeError, if no AttributeType can accept an object of that type
     """
 
-    type_ = _get_type(type_or_obj)
+    type_ = get_type(type_or_obj)
     if hasattr(type_, "type_id"):
         return AttributeType.registry[type_.type_id]
 

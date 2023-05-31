@@ -25,6 +25,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     _SpecialForm,
@@ -61,6 +62,31 @@ class UnsetType(Enum):
 
 
 UNSET = UnsetType.UNSET
+
+
+def get_type(type_or_obj: Union[object, Type]) -> Type:
+    """Given an object or an object type, returns the underlying class.
+
+    Examples:
+        >>> _get_type(list)
+        <class 'list'>
+        >>> _get_type(List[int])
+        <class 'list'>
+        >>> _get_type([])
+        <class 'list'>
+    """
+
+    # First, check if this is a special type, e.g a parametrized
+    # generic like List[int]
+    special_args = resolve_special_type(type_or_obj)
+    if special_args is not None:
+        type_, _ = special_args
+    elif isinstance(type_or_obj, type):
+        type_ = type_or_obj
+    else:
+        type_ = type(type_or_obj)
+
+    return type_
 
 
 @lru_cache

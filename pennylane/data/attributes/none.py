@@ -24,7 +24,8 @@ class DatasetNone(AttributeType[HDF5Array, type(None), type(None)]):
 
     type_id = "none"
 
-    def default_value(self) -> Literal[None]:
+    @classmethod
+    def default_value(cls) -> Literal[None]:
         return None
 
     @classmethod
@@ -36,7 +37,7 @@ class DatasetNone(AttributeType[HDF5Array, type(None), type(None)]):
         return None
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: None) -> HDF5Array:
-        """Creates an empty array under 'key'."""
+        """Creates an empty HDF5 array under 'key'."""
         return bind_parent.create_dataset(key, dtype="f")
 
     def __bool__(self) -> Literal[False]:
