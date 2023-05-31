@@ -299,6 +299,9 @@ class Dataset(MapperMixin, _DatasetTransform):
         try:
             return self._mapper[__name].get_value()
         except KeyError as exc:
+            if __name in self.fields:
+                return UNSET
+
             raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
 
     def __delattr__(self, __name: str) -> None:
@@ -315,7 +318,7 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         return f"<{type(self).__name__} = {repr_items}>"
 
-    def __init_subclass__(cls, **kwargs) -> None:
+    def __init_subclass__(cls) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
 
