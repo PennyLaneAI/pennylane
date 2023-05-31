@@ -154,7 +154,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         grad_method = "A"
 
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                           do_queue=True, id=None):
+                           do_queue=None, id=None):
 
             # checking the inputs --------------
 
@@ -184,6 +184,8 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # The id keyword argument allows users to give their instance a custom name.
             # The do_queue keyword argument specifies whether or not
             # the operator is queued when created in a tape context.
+            # Note that do_queue is deprecated. In the future, please use
+            # qml.QueuingManager.stop_recording().
             super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
 
         @property

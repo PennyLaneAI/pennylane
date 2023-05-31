@@ -52,7 +52,7 @@ class BasisStatePreparation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, basis_state, wires, do_queue=True, id=None):
+    def __init__(self, basis_state, wires, do_queue=None, id=None):
         basis_state = qml.math.stack(basis_state)
 
         # check if the `basis_state` param is batched
