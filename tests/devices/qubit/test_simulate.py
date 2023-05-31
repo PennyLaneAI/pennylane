@@ -170,6 +170,134 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
 
+class TestDebugger:
+    """Tests that the debugger works for a simple circuit"""
+
+    class Debugger:
+        """A dummy debugger class"""
+
+        def __init__(self):
+            self.active = True
+            self.snapshots = {}
+
+    def test_debugger_numpy(self):
+        """Test debugger with numpy"""
+        phi = np.array(0.397)
+        ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
+        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
+
+        debugger = self.Debugger()
+        result = simulate(qs, debugger=debugger)
+
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+        assert np.allclose(result[0], -np.sin(phi))
+        assert np.allclose(result[1], np.cos(phi))
+
+        assert list(debugger.snapshots.keys()) == [0, "final_state"]
+        assert np.allclose(debugger.snapshots[0], [1, 0])
+        assert np.allclose(
+            debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
+        )
+
+    @pytest.mark.autograd
+    def test_debugger_autograd(self):
+        """Tests debugger with autograd"""
+        phi = qml.numpy.array(-0.52)
+        debugger = self.Debugger()
+
+        def f(x):
+            ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
+            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
+            return qml.numpy.array(simulate(qs, debugger=debugger))
+
+        result = f(phi)
+        expected = np.array([-np.sin(phi), np.cos(phi)])
+        assert qml.math.allclose(result, expected)
+
+        assert list(debugger.snapshots.keys()) == [0, "final_state"]
+        assert qml.math.allclose(debugger.snapshots[0], [1, 0])
+        assert qml.math.allclose(
+            debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
+        )
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_debugger_jax(self, use_jit):
+        """Tests debugger with JAX"""
+        import jax
+
+        phi = jax.numpy.array(0.678)
+        debugger = self.Debugger()
+
+        def f(x):
+            ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
+            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
+            return simulate(qs, debugger=debugger)
+
+        if use_jit:
+            f = jax.jit(f)
+
+        result = f(phi)
+        assert qml.math.allclose(result[0], -np.sin(phi))
+        assert qml.math.allclose(result[1], np.cos(phi))
+
+        assert list(debugger.snapshots.keys()) == [0, "final_state"]
+        assert qml.math.allclose(debugger.snapshots[0], [1, 0])
+        assert qml.math.allclose(
+            debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
+        )
+
+    @pytest.mark.torch
+    def test_debugger_torch(self):
+        """Tests debugger with torch"""
+
+        import torch
+
+        phi = torch.tensor(-0.526, requires_grad=True)
+        debugger = self.Debugger()
+
+        def f(x):
+            ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
+            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
+            return simulate(qs, debugger=debugger)
+
+        result = f(phi)
+        assert qml.math.allclose(result[0], -torch.sin(phi))
+        assert qml.math.allclose(result[1], torch.cos(phi))
+
+        assert list(debugger.snapshots.keys()) == [0, "final_state"]
+        assert qml.math.allclose(debugger.snapshots[0], [1, 0])
+        print(debugger.snapshots["final_state"])
+        assert qml.math.allclose(
+            debugger.snapshots["final_state"],
+            torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
+        )
+
+    # pylint: disable=invalid-unary-operand-type
+    @pytest.mark.tf
+    def test_debugger_tf(self):
+        """Tests debugger with tensorflow."""
+        import tensorflow as tf
+
+        phi = tf.Variable(4.873)
+        debugger = self.Debugger()
+
+        ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
+        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
+        result = simulate(qs, debugger=debugger)
+
+        assert qml.math.allclose(result[0], -tf.sin(phi))
+        assert qml.math.allclose(result[1], tf.cos(phi))
+
+        assert list(debugger.snapshots.keys()) == [0, "final_state"]
+        assert qml.math.allclose(debugger.snapshots[0], [1, 0])
+        assert qml.math.allclose(
+            debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
+        )
+
+
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
 
