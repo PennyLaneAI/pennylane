@@ -198,7 +198,10 @@ class TestQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {
+                "sampler_rng": SEED_FOR_SPSA,
+                "num_directions": 10,
+            }
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -299,7 +302,7 @@ class TestVectorValuedQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -375,7 +378,7 @@ class TestVectorValuedQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -470,7 +473,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         num_wires = 2
@@ -523,7 +526,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         num_wires = 3
@@ -609,7 +612,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         num_wires = 2
@@ -739,7 +742,7 @@ class TestVectorValuedQNode:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3)
@@ -1036,7 +1039,7 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         num_wires = 1
@@ -1650,7 +1653,7 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The Hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "h": H_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA, "h": H_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3, shots=50000)

@@ -475,7 +475,7 @@ class TestQNode:
                 sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
                 num_directions=10
             )
-            kwargs = kwargs | spsa_kwargs
+            kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -1400,7 +1400,7 @@ class TestTapeExpansion:
                 sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
                 num_directions=10
             )
-            kwargs = kwargs | spsa_kwargs
+            kwargs = {**kwargs, **spsa_kwargs}
 
         dev = qml.device(dev_name, wires=3, shots=None)
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]

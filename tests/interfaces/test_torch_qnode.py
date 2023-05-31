@@ -1457,7 +1457,7 @@ class TestTapeExpansion:
                 sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
                 num_directions=10
             )
-            kwargs = kwargs | spsa_kwargs
+            kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
