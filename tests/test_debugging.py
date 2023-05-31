@@ -58,7 +58,7 @@ class TestSnapshot:
         state-vector simulator."""
         dev = qml.devices.experimental.DefaultQubit2()
 
-        # TODO: change this to use QNodes once the new device supports it
+        # TODO: add additional QNode test once the new device supports it
 
         ops = [
             qml.Snapshot(),
