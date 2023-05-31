@@ -298,7 +298,7 @@ class QubitDevice(Device):
 
         * :meth:`~.probability`
 
-        Additional keyword arguments may be passed to the this method
+        Additional keyword arguments may be passed to this method
         that can be utilised by :meth:`apply`. An example would be passing
         the ``QNode`` hash that can be used later for parametric compilation.
 
