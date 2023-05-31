@@ -496,7 +496,7 @@ class TestQNode:
                 sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
                 num_directions=10
             )
-            kwargs = kwargs | spsa_kwargs
+            kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
