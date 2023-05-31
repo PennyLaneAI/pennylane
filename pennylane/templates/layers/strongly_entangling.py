@@ -132,7 +132,7 @@ class StronglyEntanglingLayers(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=None, id=None):
         shape = qml.math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
