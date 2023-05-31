@@ -113,7 +113,7 @@ class FirstQuantization(Operation):
 
         if self.vectors is not None:
             self.omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
-            recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
+            recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
                 2
                 * np.pi
                 / self.omega
@@ -675,7 +675,7 @@ class FirstQuantization(Operation):
         """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
-        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
+        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
             * np.pi
             / omega
@@ -701,13 +701,13 @@ class FirstQuantization(Operation):
 
         n0 = n ** (1 / 3)
 
-        # defined in Eq. (F3) of arXiv:2302.07981 (2023)
+        # defined in Eq. (F3) of arXiv:2302.07981v1 (2023)
         bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
         n_m = int(
             np.ceil(
                 np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021) with
-                    # modifications taken from arXiv:2302.07981 (2023)
+                    # modifications taken from arXiv:2302.07981v1 (2023)
                     (8 * np.pi * eta)
                     / (error_uv * omega * bmin**2)
                     * (eta - 1 + 2 * l_z)
@@ -717,19 +717,20 @@ class FirstQuantization(Operation):
         )
 
         lambda_nu = (  # expression is taken from Eq. (F6) of PRX 8, 011044 (2018)
+            # bmin**2 is needed for non-cubic systems, from Eq. (F3) of arXiv:2302.07981v1 (2023)
             4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
             + 3
             - 3 / n ** (1 / 3)
             + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
-        ) / bmin**2  # bmin**2 is needed for non-cubic systems, Eq. (F3) of arXiv:2302.07981 (2023)
+        ) / bmin**2
 
         # computed using error term derived in Eq. (113) of PRX Quantum 2, 040332 (2021)
-        # bmin**2 is needed for non-cubic systems, from Eq. (F3) of arXiv:2302.07981 (2023)
+        # bmin**2 is needed for non-cubic systems, from Eq. (F3) of arXiv:2302.07981v1 (2023)
         lambda_nu_1 = lambda_nu + 4 / (2**n_m * bmin**2) * (
             7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
         )
 
-        # taken from Eq. (I7) of arXiv:2302.07981 (2023)
+        # taken from Eq. (I7) of arXiv:2302.07981v1 (2023)
         p_nu = lambda_nu_1 * bmin**2 / 2 ** (n_p + 6)
 
         # amplitude amplification steps, taken from Eq. (117) of PRX Quantum 2, 040332 (2021)
@@ -743,7 +744,7 @@ class FirstQuantization(Operation):
                 p_nu_amp = probability
 
         # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021) with
-        # modifications taken from arXiv:2302.07981 (2023)
+        # modifications taken from arXiv:2302.07981v1 (2023)
         lambda_u = 4 * np.pi * eta * l_z * lambda_nu / omega
         lambda_v = 2 * np.pi * eta * (eta - 1) * lambda_nu / omega
 
@@ -754,14 +755,14 @@ class FirstQuantization(Operation):
         b_mat = np.matrix(recip_vectors)
         abs_sum = np.abs(b_mat @ b_mat.T).flatten().sum()
 
-        # taken from Appendix I.1 of arXiv:2302.07981 (2023)
+        # taken from Appendix I.1 of arXiv:2302.07981v1 (2023)
         if orthogonal:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 4
         else:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 2
 
         # taken from Eq. (63) of PRX Quantum 2, 040332 (2021) with
-        # modifications taken from arXiv:2302.07981 (2023)
+        # modifications taken from arXiv:2302.07981v1 (2023)
         p_eq = (
             FirstQuantization.success_prob(3 * eta + 2 * charge, br)
             * FirstQuantization.success_prob(eta, br) ** 2
@@ -803,7 +804,7 @@ class FirstQuantization(Operation):
 
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
-        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
+        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
             * np.pi
             / omega
@@ -816,18 +817,18 @@ class FirstQuantization(Operation):
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
         n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
 
-        # defined in Eq. (F3) of arXiv:2302.07981 (2023)
+        # defined in Eq. (F3) of arXiv:2302.07981v1 (2023)
         bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
         alpha = 0.0248759298  # optimal value for lower resource estimates
 
-        # errors derived according to the strategy in Appendix M.1 of arXiv:2302.07981 (2023)
+        # errors derived according to the strategy in Appendix M.1 of arXiv:2302.07981v1 (2023)
         error_t, error_r, error_m, error_b = [alpha * error] * 4
 
         # parameters taken from PRX Quantum 2, 040332 (2021)
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
         n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
-        n_m = int(  # taken from Eq. (J13) arXiv:2302.07981 (2023)
+        n_m = int(  # taken from Eq. (J13) arXiv:2302.07981v1 (2023)
             np.ceil(
                 np.log2(
                     (8 * np.pi * eta)
@@ -843,7 +844,7 @@ class FirstQuantization(Operation):
         n_errors = 4
         error_qpe = np.sqrt(error**2 * (1 - (n_errors * alpha) ** 2))
 
-        # adapted from equations (L1, L2) in Appendix L of arXiv:2302.07981 (2023)
+        # adapted from equations (L1, L2) in Appendix L of arXiv:2302.07981v1 (2023)
         clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + max([5, n_m + 3 * n_p])
         reflection_cost = (
             np.ceil(np.log2(eta + 2 * l_z)) + 2 * np.ceil(np.log2(eta)) + 6 * n_p + n_m + 16 + 3
@@ -852,7 +853,7 @@ class FirstQuantization(Operation):
 
         # the expression for computing the cost is taken from Appendix C of
         # PRX Quantum 2, 040332 (2021) and adapting to non-cubic using Appendix L of
-        # arXiv:2302.07981 (2023)
+        # arXiv:2302.07981v1 (2023)
         clean_cost = 3 * eta * n_p
         clean_cost += np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
         clean_cost += 1 + 1 + np.ceil(np.log2(eta + 2 * l_z)) + 3 + 3
@@ -861,7 +862,7 @@ class FirstQuantization(Operation):
 
         clean_cost += clean_temp_cost
 
-        # taken from Eq. (J7) of arXiv:2302.07981 (2023)
+        # taken from Eq. (J7) of arXiv:2302.07981v1 (2023)
         n_b = np.ceil(
             np.log2(
                 4
@@ -904,7 +905,7 @@ class FirstQuantization(Operation):
 
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
-        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
+        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
             * np.pi
             / omega
@@ -931,10 +932,10 @@ class FirstQuantization(Operation):
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
         n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
 
-        # defined in Eq. (F3) of arXiv:2302.07981 (2023)
+        # defined in Eq. (F3) of arXiv:2302.07981v1 (2023)
         bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
-        # equivalent to Eq. (J13) of arXiv:2302.07981 (2023)
+        # equivalent to Eq. (J13) of arXiv:2302.07981v1 (2023)
         n_m = int(
             np.ceil(
                 np.log2(
@@ -955,7 +956,7 @@ class FirstQuantization(Operation):
         cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p * n_r + 18
         cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
 
-        # taken from Eq. (J7) of arXiv:2302.07981 (2023)
+        # taken from Eq. (J7) of arXiv:2302.07981v1 (2023)
         error_b = alpha * error
         n_b = np.ceil(
             np.log2(
@@ -972,7 +973,7 @@ class FirstQuantization(Operation):
         ms_cost = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
 
         # adapted Eq. (125) of PRX Quantum 2, 040332 (2021) to the noncubic case using Appendix K of
-        # arXiv:2302.07981 (2023)
+        # arXiv:2302.07981v1 (2023)
         cost -= 2 * (3 * 2 + 2 * br - 9)
         cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
         cost += 8
@@ -985,7 +986,7 @@ class FirstQuantization(Operation):
     def _momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa):
         r"""Returns the Toffoli cost for preparing the momentum state superposition.
 
-        Derived from Section D.1 item (6) and Appendix K.1.f of arXiv:2302.07981 (2023)"""
+        Derived from Section D.1 item (6) and Appendix K.1.f of arXiv:2302.07981v1 (2023)"""
 
         x = 2 ** (3 * n_p)
 
