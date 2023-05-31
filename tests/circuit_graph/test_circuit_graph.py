@@ -58,7 +58,7 @@ def circuit_fixture(ops, obs):
 
 
 @pytest.fixture(name="parameterized_circuit_gaussian")
-def parameterized_circuit_gaussian_name(wires):
+def parameterized_circuit_gaussian_fixture(wires):
     def qfunc(a, b, c, d, e, f):
         qml.Rotation(a, wires=wires[0])
         qml.Rotation(b, wires=wires[1])
