@@ -487,7 +487,6 @@ def _execute_bwd(
                         max_diff=max_diff,
                     )
                 )
-
             res = execute_wrapper(primals[0])
         else:
             # Execution: execute the function first
