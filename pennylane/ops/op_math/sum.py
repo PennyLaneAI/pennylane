@@ -17,7 +17,6 @@ computing the sum of operations.
 """
 import itertools
 from copy import copy
-from functools import reduce
 from typing import List
 
 import numpy as np
@@ -31,7 +30,7 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def sum(*summands, do_queue=True, id=None, lazy=True):
+def sum(*summands, do_queue=None, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -39,7 +38,8 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
@@ -80,7 +80,7 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
         id=id,
     )
 
-    if do_queue:
+    if do_queue or do_queue is None:
         for op in summands:
             QueuingManager.remove(op)
 
@@ -94,7 +94,9 @@ class Sum(CompositeOp):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        do_queue (bool): determines if the sum operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::
@@ -259,7 +261,11 @@ class Sum(CompositeOp):
                 op._pauli_rep for op in self.operands  # pylint: disable=protected-access
             ]
         ):
-            return reduce((lambda a, b: a + b), operand_pauli_reps)
+            new_rep = qml.pauli.PauliSentence()
+            for operand_rep in operand_pauli_reps:
+                for pw, coeff in operand_rep.items():
+                    new_rep[pw] += coeff
+            return new_rep
         return None
 
     @classmethod

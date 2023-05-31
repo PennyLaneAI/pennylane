@@ -39,7 +39,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=True, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=None, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -68,7 +68,9 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
+        do_queue (bool): determines if the scalar product operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
@@ -371,7 +373,7 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        do_queue=True,
+        do_queue=None,
         id=None,
         **odeint_kwargs
     ):
@@ -424,7 +426,7 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
-            do_queue=True,
+            do_queue=None,
             id=self.id,
             **odeint_kwargs
         )

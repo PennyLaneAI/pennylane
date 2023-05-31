@@ -6,6 +6,28 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
+* ``LieAlgebraOptimizer`` is renamed. Please use ``RiemannianGradientOptimizer`` instead.
+  
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
+* The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:
@@ -18,22 +40,18 @@ Pending deprecations
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
 
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
 
   - Still accessible in v0.28, v0.29, v0.30
   - Will be removed in v0.31
-
-* The ``grouping`` module is deprecated. The functionality has been moved and
-  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
-
-  - Still accessible in v0.27, v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
-  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
-  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
-  have been consolidated in the ``pauli/grouping/`` directory.
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
@@ -91,7 +109,17 @@ Completed deprecation cycles
   - The old signature is replaced with the new one in v0.30
 
 
-* ``qml.VQECost`` is removed. 
+* The ``grouping`` module is removed. The functionality has been moved and
+  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
+
+  - Still accessible in v0.27, v0.28, v0.29, v0.30
+  - Will be removed in v0.31
+
+  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
+  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
+  have been consolidated in the ``pauli/grouping/`` directory.
+
+* ``qml.VQECost`` is removed.
 
    - Deprecated in 0.13
    - Removed in 0.29

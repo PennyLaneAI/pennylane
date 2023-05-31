@@ -281,6 +281,7 @@ class CountsMP(SampleMeasurement):
 
         if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
+            samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
@@ -299,9 +300,10 @@ class CountsMP(SampleMeasurement):
         base_dict = {k: qml.math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
         results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
-            for state, count in zip(states, _counts):
+            for state, count in zip(qml.math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
         return outcome_dicts if batched else outcome_dicts[0]

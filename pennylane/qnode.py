@@ -752,7 +752,7 @@ class QNode:
             return qml.gradients.param_shift, {}, device
         model = device.capabilities().get("model", None)
 
-        if model == "qubit":
+        if model in {"qubit", "qutrit"}:
             return qml.gradients.param_shift, {}, device
 
         if model == "cv":

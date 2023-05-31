@@ -60,6 +60,16 @@ def TestOperationMonkeypatching():
 class TestConstruction:
     """Test for queuing and construction"""
 
+    @pytest.mark.parametrize("do_queue", [True, False])
+    def test_tape_do_queue_deprecation(self, do_queue):
+        """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            qml.tape.QuantumTape(do_queue=do_queue)
+
     @pytest.fixture
     def make_tape(self):
         ops = []
@@ -1031,6 +1041,7 @@ class TestExpand:
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
+    @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
         """Test that gates specified in the stop_at
         argument are not expanded."""

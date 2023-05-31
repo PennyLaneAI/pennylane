@@ -99,54 +99,61 @@ class TestCaching:
         assert expected_runs_ideal < expected_runs
 
 
-execute_kwargs_iterable = [
-    {"gradient_fn": param_shift},
-    {"gradient_fn": "backprop"},
-    # no device gradient yet
+# add tests for lightning 2 when possible
+# set rng for device when possible
+test_matrix = [
+    ({"gradient_fn": param_shift}, 100000, DefaultQubit2(seed=42)),
+    ({"gradient_fn": param_shift}, None, DefaultQubit2()),
+    ({"gradient_fn": "backprop"}, None, DefaultQubit2()),
+    ({"gradient_fn": "adjoint", "grad_on_execution": True}, None, DefaultQubit2()),
+    ({"gradient_fn": "adjoint", "grad_on_execution": False}, None, DefaultQubit2()),
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs_iterable)
+def atol_for_shots(shots):
+    """Return higher tolerance if finite shots."""
+    return 1e-2 if shots else 1e-6
+
+
+@pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
 class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs):
+    def test_execution(self, execute_kwargs, shots, device):
         """Test execution"""
-        dev = DefaultQubit2()
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))])
+            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
 
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))])
+            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
-            return execute([tape1, tape2], dev, **execute_kwargs)
+            return execute([tape1, tape2], device, **execute_kwargs)
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
-        with dev.tracker:
+        with device.tracker:
             res = cost(a, b)
 
-        assert dev.tracker.totals["batches"] == 1
-        assert dev.tracker.totals["executions"] == 2  # different wires so different hashes
+        assert device.tracker.totals["batches"] == 1
+        assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
         assert res[0].shape == ()
         assert res[1].shape == ()
 
-        assert qml.math.allclose(res[0], np.cos(a) * np.cos(b))
-        assert qml.math.allclose(res[1], np.cos(a) * np.cos(b))
+        assert qml.math.allclose(res[0], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
 
-    def test_scalar_jacobian(self, execute_kwargs, tol):
+    def test_scalar_jacobian(self, execute_kwargs, shots, device):
         """Test scalar jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
-        dev = DefaultQubit2()
 
         def cost(a):
-            tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))])
-            return execute([tape], dev, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+            return execute([tape], device, **execute_kwargs)[0]
 
         res = qml.jacobian(cost)(a)
         assert res.shape == ()  # pylint: disable=no-member
@@ -155,63 +162,70 @@ class TestAutogradExecuteIntegration:
         tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
         tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
-        expected = fn(dev.execute(tapes))
+        expected = fn(device.execute(tapes))
 
         assert expected.shape == ()
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-        assert np.allclose(res, -np.sin(a))
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(res, -np.sin(a), atol=atol_for_shots(shots))
 
-    def test_jacobian(self, execute_kwargs, tol):
+    def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        def cost(a, b, device):
+        def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-            tape = qml.tape.QuantumScript(ops, m)
+            tape = qml.tape.QuantumScript(ops, m, shots=shots)
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
-        dev = DefaultQubit2()
-
-        res = cost(a, b, device=dev)
+        res = cost(a, b)
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = qml.jacobian(cost)(a, b, device=dev)
+        res = qml.jacobian(cost)(a, b)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2,)
         assert res[1].shape == (2,)
 
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        for _r, _e in zip(res, expected):
+            assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    def test_tape_no_parameters(self, execute_kwargs, tol):
+    def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
-        if execute_kwargs["gradient_fn"] == "device":
+        if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        dev = DefaultQubit2()
-
         def cost(params):
-            tape1 = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliX(0))])
+            tape1 = qml.tape.QuantumScript(
+                [qml.Hadamard(0)], [qml.expval(qml.PauliX(0))], shots=shots
+            )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), wires=0)], [qml.expval(qml.PauliZ(0))]
+                [qml.RY(np.array(0.5, requires_grad=False), wires=0)],
+                [qml.expval(qml.PauliZ(0))],
+                shots=shots,
             )
 
             tape3 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)], [qml.expval(qml.PauliZ(0))]
+                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
+                [qml.expval(qml.PauliZ(0))],
+                shots=shots,
             )
 
             tape4 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), 0)], [qml.probs(wires=[0, 1])]
+                [qml.RY(np.array(0.5, requires_grad=False), 0)],
+                [qml.probs(wires=[0, 1])],
+                shots=shots,
             )
             return sum(
-                autograd.numpy.hstack(execute([tape1, tape2, tape3, tape4], dev, **execute_kwargs))
+                autograd.numpy.hstack(
+                    execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
+                )
             )
 
         params = np.array([0.1, 0.2], requires_grad=True)
@@ -219,35 +233,38 @@ class TestAutogradExecuteIntegration:
 
         res = cost(params)
         expected = 2 + np.cos(0.5) + np.cos(x) * np.cos(y)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         grad = qml.grad(cost)(params)
         expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    def test_tapes_with_different_return_size(self, execute_kwargs):
+    def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
 
         if execute_kwargs["gradient_fn"] == "backprop":
             pytest.xfail("backprop is not compatible with something about this situation.")
 
-        dev = DefaultQubit2()
-
         def cost(params):
             tape1 = qml.tape.QuantumScript(
                 [qml.RY(params[0], 0), qml.RX(params[1], 0)],
                 [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))],
+                shots=shots,
             )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), 0)], [qml.expval(qml.PauliZ(0))]
+                [qml.RY(np.array(0.5, requires_grad=False), 0)],
+                [qml.expval(qml.PauliZ(0))],
+                shots=shots,
             )
 
             tape3 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)], [qml.expval(qml.PauliZ(0))]
+                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
+                [qml.expval(qml.PauliZ(0))],
+                shots=shots,
             )
-            return autograd.numpy.hstack(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+            return autograd.numpy.hstack(execute([tape1, tape2, tape3], device, **execute_kwargs))
 
         params = np.array([0.1, 0.2], requires_grad=True)
         x, y = params
@@ -256,31 +273,29 @@ class TestAutogradExecuteIntegration:
         assert isinstance(res, np.ndarray)
         assert res.shape == (4,)
 
-        assert np.allclose(res[0], np.cos(x) * np.cos(y))
-        assert np.allclose(res[1], 1)
-        assert np.allclose(res[2], np.cos(0.5))
-        assert np.allclose(res[3], np.cos(x) * np.cos(y))
+        assert np.allclose(res[0], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+        assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
+        assert np.allclose(res[2], np.cos(0.5), atol=atol_for_shots(shots))
+        assert np.allclose(res[3], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
 
         jac = qml.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (4, 2)  # pylint: disable=no-member
 
-        assert np.allclose(jac[1:3], 0)
+        assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
 
         d1 = -np.sin(x) * np.cos(y)
-        assert np.allclose(jac[0, 0], d1)
-        assert np.allclose(jac[3, 0], d1)
+        assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
+        assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
 
         d2 = -np.cos(x) * np.sin(y)
-        assert np.allclose(jac[0, 1], d2)
-        assert np.allclose(jac[3, 1], d2)
+        assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
+        assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
-    def test_reusing_quantum_tape(self, execute_kwargs, tol):
+    def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
-
-        dev = DefaultQubit2()
 
         tape = qml.tape.QuantumScript(
             [qml.RY(a, 0), qml.RX(b, 1), qml.CNOT((0, 1))],
@@ -290,7 +305,7 @@ class TestAutogradExecuteIntegration:
 
         def cost(a, b):
             tape.set_parameters([a, b])
-            return autograd.numpy.hstack(execute([tape], dev, **execute_kwargs)[0])
+            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
@@ -302,7 +317,7 @@ class TestAutogradExecuteIntegration:
         # values of the parameters for subsequent calls
         res2 = cost(2 * a, b)
         expected = [np.cos(2 * a), -np.cos(2 * a) * np.sin(b)]
-        assert np.allclose(res2, expected, atol=tol, rtol=0)
+        assert np.allclose(res2, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
         jac = jac_fn(a, b)
@@ -311,26 +326,26 @@ class TestAutogradExecuteIntegration:
             [0, -np.cos(2 * a) * np.cos(b)],
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
+        for _j, _e in zip(jac, expected):
+            assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
-    def test_classical_processing(self, execute_kwargs):
+    def test_classical_processing(self, execute_kwargs, device, shots):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
         c = np.array(0.3, requires_grad=True)
 
-        def cost(a, b, c, device):
+        def cost(a, b, c):
             ops = [
                 qml.RY(a * c, wires=0),
                 qml.RZ(b, wires=0),
                 qml.RX(c + c**2 + np.sin(a), wires=0),
             ]
 
-            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
-        dev = DefaultQubit2()
-        res = qml.jacobian(cost)(a, b, c, device=dev)
+        res = qml.jacobian(cost)(a, b, c)
 
         # Only two arguments are trainable
         assert isinstance(res, tuple) and len(res) == 2
@@ -339,54 +354,52 @@ class TestAutogradExecuteIntegration:
 
         # I tried getting analytic results for this circuit but I kept being wrong and am giving up
 
-    def test_no_trainable_parameters(self, execute_kwargs):
+    def test_no_trainable_parameters(self, execute_kwargs, shots, device):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
 
-        def cost(a, b, device):
+        def cost(a, b):
             ops = [qml.RY(a, 0), qml.RX(b, 0), qml.CNOT((0, 1))]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-            tape = qml.tape.QuantumScript(ops, m)
+            tape = qml.tape.QuantumScript(ops, m, shots=shots)
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
-        dev = DefaultQubit2()
-        res = cost(a, b, device=dev)
+        res = cost(a, b)
         assert res.shape == (2,)
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            res = qml.jacobian(cost)(a, b, device=dev)
+            res = qml.jacobian(cost)(a, b)
         assert len(res) == 0
 
         def loss(a, b):
-            return np.sum(cost(a, b, device=dev))
+            return np.sum(cost(a, b))
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.grad(loss)(a, b)
 
         assert np.allclose(res, 0)
 
-    def test_matrix_parameter(self, execute_kwargs, tol):
+    def test_matrix_parameter(self, execute_kwargs, device, shots):
         """Test that the autograd interface works correctly
         with a matrix parameter"""
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
         a = np.array(0.1, requires_grad=True)
 
-        def cost(a, U, device):
+        def cost(a, U):
             ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
             return execute([tape], device, **execute_kwargs)[0]
 
-        dev = DefaultQubit2()
-        res = cost(a, U, device=dev)
-        assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
+        res = cost(a, U)
+        assert np.allclose(res, -np.cos(a), atol=atol_for_shots(shots))
 
         jac_fn = qml.jacobian(cost)
-        jac = jac_fn(a, U, device=dev)
+        jac = jac_fn(a, U)
         assert isinstance(jac, np.ndarray)
-        assert np.allclose(jac, np.sin(a), atol=tol, rtol=0)
+        assert np.allclose(jac, np.sin(a), atol=atol_for_shots(shots), rtol=0)
 
-    def test_differentiable_expand(self, execute_kwargs, tol):
+    def test_differentiable_expand(self, execute_kwargs, device, shots):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
@@ -403,7 +416,7 @@ class TestAutogradExecuteIntegration:
                     ]
                 )
 
-        def cost_fn(a, p, device):
+        def cost_fn(a, p):
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
@@ -412,15 +425,14 @@ class TestAutogradExecuteIntegration:
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        dev = DefaultQubit2()
-        res = cost_fn(a, p, device=dev)
+        res = cost_fn(a, p)
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = qml.jacobian(cost_fn)
-        res = jac_fn(a, p, device=dev)
+        res = jac_fn(a, p)
         expected = np.array(
             [
                 np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
@@ -431,23 +443,25 @@ class TestAutogradExecuteIntegration:
                 * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_probability_differentiation(self, execute_kwargs, tol):
+    def test_probability_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        def cost(x, y, device):
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("adjoint differentiation does not suppport probabilities.")
+
+        def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m)
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
-        dev = DefaultQubit2()
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        res = cost(x, y, device=dev)
+        res = cost(x, y)
         expected = np.array(
             [
                 [
@@ -458,10 +472,10 @@ class TestAutogradExecuteIntegration:
                 ],
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = qml.jacobian(cost)
-        res = jac_fn(x, y, device=dev)
+        res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (4,)
         assert res[1].shape == (4,)
@@ -484,33 +498,32 @@ class TestAutogradExecuteIntegration:
             ),
         )
 
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
-    def test_ragged_differentiation(self, execute_kwargs, tol):
+    def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "device":
+        if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        def cost(x, y, device):
+        def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m)
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
-        dev = DefaultQubit2()
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        res = cost(x, y, device=dev)
+        res = cost(x, y)
         expected = np.array(
             [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = qml.jacobian(cost)
-        res = jac_fn(x, y, device=dev)
+        res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
@@ -519,8 +532,8 @@ class TestAutogradExecuteIntegration:
             np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
             np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
 
 class TestHigherOrderDerivatives:
@@ -602,21 +615,26 @@ class TestHigherOrderDerivatives:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs_iterable)
+@pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("use_new_op_math", (True, False))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs):
+    def cost_fn(self, execute_kwargs, shots, device, use_new_op_math):
         """Cost function for gradient tests"""
 
-        def _cost_fn(weights, coeffs1, coeffs2, dev=None):
+        def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
+            if use_new_op_math:
+                H1 = qml.pauli.pauli_sentence(H1).operation()
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
+            if use_new_op_math:
+                H2 = qml.pauli.pauli_sentence(H2).operation()
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -625,8 +643,8 @@ class TestHamiltonianWorkflows:
                 qml.expval(H1)
                 qml.expval(H2)
 
-            tape = qml.tape.QuantumScript.from_queue(q)
-            return autograd.numpy.hstack(execute([tape], dev, **execute_kwargs)[0])
+            tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
         return _cost_fn
 
@@ -658,32 +676,41 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, cost_fn, tol):
+    def test_multiple_hamiltonians_not_trainable(
+        self, execute_kwargs, cost_fn, shots, use_new_op_math
+    ):
         """Test hamiltonian with no trainable parameters."""
+
+        if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
+            pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
         weights = np.array([0.4, 0.5], requires_grad=True)
-        dev = DefaultQubit2()
 
-        res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = qml.jacobian(cost_fn)(weights, coeffs1, coeffs2, dev=dev)
+        res = qml.jacobian(cost_fn)(weights, coeffs1, coeffs2)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, cost_fn, tol):
+    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
+        if execute_kwargs["gradient_fn"] != param_shift:
+            pytest.skip("trainable hamiltonians only supported with parameter shift")
+        if use_new_op_math:
+            pytest.skip("parameter shift derivatives do not yet support sums.")
+
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
-        dev = DefaultQubit2()
 
-        res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2, dev=dev))
+        res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

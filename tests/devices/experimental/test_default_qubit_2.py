@@ -88,16 +88,25 @@ class TestTracking:
         qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
 
         dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
         with qml.Tracker(dev) as tracker:
             dev.execute(qs)
+            dev.compute_derivatives(qs, config)
             dev.execute([qs, qs])  # and a second time
 
         assert tracker.history == {
             "batches": [1, 1],
             "executions": [1, 2],
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
+            "derivative_batches": [1],
+            "derivatives": [1],
         }
-        assert tracker.totals == {"batches": 2, "executions": 3}
+        assert tracker.totals == {
+            "batches": 2,
+            "executions": 3,
+            "derivative_batches": 1,
+            "derivatives": 1,
+        }
         assert tracker.latest == {"batches": 1, "executions": 2}
 
     def test_tracking_resources(self):
@@ -550,6 +559,41 @@ class TestSampleMeasurements:
         assert all(isinstance(res, np.ndarray) for res in results)
         assert results[0].shape == (100, 2)
         assert results[1].shape == (50,)
+
+    def test_counts_wires(self):
+        """Test that a Counts measurement with wires works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.counts(wires=[0, 1])], shots=10000)
+
+        dev = DefaultQubit2(seed=123)
+        result = dev.execute(qs)
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {"00", "10"}
+
+        # check that the count values match the expected
+        values = list(result.values())
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_obs(self, all_outcomes):
+        """Test that a Counts measurement with an observable works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(qml.PauliZ(0), all_outcomes=all_outcomes)],
+            shots=10000,
+        )
+
+        dev = DefaultQubit2(seed=123)
+        result = dev.execute(qs)
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {1, -1}
+
+        # check that the count values match the expected
+        values = list(result.values())
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
 
 
 class TestExecutingBatches:
@@ -1053,6 +1097,128 @@ class TestRandomSeed:
             result1, result2 = [result1], [result2]
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+
+
+class TestHamiltonianSamples:
+    """Test that the measure_with_samples function works as expected for
+    Hamiltonian and Sum observables
+
+    This is a copy of the tests in test_sampling.py, but using the device instead"""
+
+    def test_hamiltonian_expval(self):
+        """Test that sampling works well for Hamiltonian observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = dev.execute(qs)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_sum_expval(self):
+        """Test that sampling works well for Sum observables"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
+        res = dev.execute(qs)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+        assert np.allclose(res, expected, atol=0.01)
+
+    def test_multi_wires(self):
+        """Test that sampling works for Sums with large numbers of wires"""
+        n_wires = 10
+        scale = 0.05
+        offset = 0.8
+
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        res = dev.execute(qs)
+
+        phase = offset + scale * np.array(range(n_wires))
+        cosines = qml.math.cos(phase)
+        sines = qml.math.sin(phase)
+        expected = 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
+
+        assert np.allclose(res, expected, atol=0.05)
+
+    def test_complex_hamiltonian(self):
+        """Test that sampling works for complex Hamiltonians"""
+        scale = 0.05
+        offset = 0.4
+
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(4)]
+
+        # taken from qml.data
+        H = qml.Hamiltonian(
+            [
+                -0.3796867241618816,
+                0.1265398827193729,
+                0.1265398827193729,
+                0.15229282586796247,
+                0.05080559325437572,
+                -0.05080559325437572,
+                -0.05080559325437572,
+                0.05080559325437572,
+                -0.10485523662149618,
+                0.10102818539518765,
+                -0.10485523662149615,
+                0.15183377864956338,
+                0.15183377864956338,
+                0.10102818539518765,
+                0.1593698831813122,
+            ],
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+        )
+
+        dev = DefaultQubit2(seed=100)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        res = dev.execute(qs)
+
+        qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        expected = dev.execute(qs_exp)
+
+        assert np.allclose(res, expected, atol=0.001)
 
 
 def test_broadcasted_parameter():
