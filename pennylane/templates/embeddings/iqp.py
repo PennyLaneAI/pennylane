@@ -166,7 +166,7 @@ class IQPEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
+    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=None, id=None):
         shape = qml.math.shape(features)
 
         if len(shape) not in {1, 2}:

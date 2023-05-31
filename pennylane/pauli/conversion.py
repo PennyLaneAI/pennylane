@@ -214,7 +214,7 @@ def _(op: Hamiltonian):
             ps[pw] = coeff * sub_coeff
         summands.append(ps)
 
-    return reduce(lambda a, b: a + b, summands)
+    return reduce(lambda a, b: a + b, summands) if len(summands) > 0 else PauliSentence()
 
 
 @pauli_sentence.register

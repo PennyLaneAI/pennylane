@@ -242,11 +242,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 continue
 
             # set the QNode device shots
-            h.device.shots = [(1, int(s))]
+            h.device.shots = 1 if s == 1 else [(1, int(s))]
 
             jacs = []
             for i in argnums:
-                if qml.active_return():
+                if qml.active_return() and s > 1:
 
                     def cost(*args, **kwargs):
                         # pylint: disable=cell-var-from-loop
@@ -257,7 +257,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
                 j = qml.jacobian(cost, argnum=i)(*args, **kwargs)
 
-                if s == 1 and not qml.active_return():
+                if s == 1:
                     j = np.expand_dims(j, 0)
                 # Divide each term by the probability per shot. This is
                 # because we are sampling one at a time.
