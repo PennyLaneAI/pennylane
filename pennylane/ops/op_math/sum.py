@@ -179,7 +179,7 @@ class Sum(CompositeOp):
         return (
             all(s.is_hermitian for s in self)
             if self._pauli_rep is None
-            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
+            else not math.any(math.iscomplex(self._pauli_rep.values()))
         )
 
     def terms(self):

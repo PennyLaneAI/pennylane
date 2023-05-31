@@ -697,8 +697,8 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
-        if execute_kwargs["gradient_fn"] != param_shift:
-            pytest.skip("trainable hamiltonians only supported with parameter shift")
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("trainable hamiltonians not supported with adjoint")
         if use_new_op_math:
             pytest.skip("parameter shift derivatives do not yet support sums.")
 

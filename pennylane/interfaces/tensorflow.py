@@ -355,10 +355,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
     res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
-
-    for i, r in enumerate(res):
-        # convert output to TensorFlow tensors
-        res[i] = _to_tensors(r)
+    res = tuple(_to_tensors(r) for r in res)  # convert output to TensorFlow tensors
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument

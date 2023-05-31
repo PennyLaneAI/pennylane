@@ -112,10 +112,11 @@ test_matrix = [
     ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit2(seed=42)),
     ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit2()),
     ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit2()),
+    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit2()),
     ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit2(seed=42)),
     ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit2()),
     ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit2()),
-    # no device gradient yet
+    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit2()),
 ]
 
 
@@ -208,7 +209,7 @@ class TestTensorflowExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
-        if execute_kwargs["gradient_fn"] == "device":
+        if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(params):
@@ -252,9 +253,14 @@ class TestTensorflowExecuteIntegration:
         expected = [-tf.cos(y) * tf.sin(x), -tf.cos(x) * tf.sin(y)]
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
+
+        if (
+            execute_kwargs["gradient_fn"] == "adjoint"
+            and execute_kwargs["interface"] == "tf-autograph"
+        ):
+            pytest.skip("Cannot compute the jacobian with adjoint-differentation and tf-autograph")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -409,7 +415,7 @@ class TestTensorflowExecuteIntegration:
     def test_matrix_parameter(self, execute_kwargs, device, shots):
         """Test that the tensorflow interface works correctly
         with a matrix parameter"""
-        U = tf.constant([[0, 1], [1, 0]])
+        U = tf.constant([[0, 1], [1, 0]], dtype=tf.complex128)
         a = tf.Variable(0.1)
 
         def cost(a, U):
@@ -477,6 +483,9 @@ class TestTensorflowExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("adjoint differentiation does not support probabilities")
+
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -530,7 +539,7 @@ class TestTensorflowExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "device":
+        if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
@@ -647,20 +656,25 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("use_new_op_math", (True, False))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device):
+    def cost_fn(self, execute_kwargs, shots, device, use_new_op_math):
         """Cost function for gradient tests"""
 
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
+            if use_new_op_math:
+                H1 = qml.pauli.pauli_sentence(H1).operation()
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
+            if use_new_op_math:
+                H2 = qml.pauli.pauli_sentence(H2).operation()
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -702,8 +716,13 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
+    def test_multiple_hamiltonians_not_trainable(
+        self, execute_kwargs, cost_fn, shots, use_new_op_math
+    ):
         """Test hamiltonian with no trainable parameters."""
+
+        if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
+            pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
         coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.constant([0.7], dtype=tf.float64)
@@ -719,10 +738,12 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, shots):
+    def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
-        if shots and execute_kwargs["interface"] == "tf-autograph":
-            pytest.skip("Cannot train Hamiltonian with finite-shots and tf-autograph")
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("trainable hamiltonians not supported with adjoint")
+        if use_new_op_math:
+            pytest.skip("parameter shift derivatives do not yet support sums.")
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)

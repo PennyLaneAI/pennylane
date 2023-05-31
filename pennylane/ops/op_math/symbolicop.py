@@ -263,7 +263,7 @@ class ScalarSymbolicOp(SymbolicOp):
             base_matrix = qml.math.convert_like(base_matrix, self.scalar)
         elif scalar_interface == "tensorflow" and not qml.math.iscomplex(self.scalar):
             # cast scalar to complex to avoid an error
-            self.scalar = qml.math.cast_like(self.scalar, base_matrix)
+            self.scalar = qml.math.cast(self.scalar, "complex128")
 
         # compute scalar operation on base matrix taking batching into account
         scalar_size = qml.math.size(self.scalar)
