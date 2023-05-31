@@ -16,13 +16,13 @@ from copy import copy
 
 
 class FermiWord(dict):
-    """Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
+    r"""Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
     annihilation operators, associating wires with their respective operators. Can be constructed
     from a standard dictionary.
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
-    '0+ 1-'
+    <FermiWord = '0+ 1-'>
     """
 
     def __init__(self, operator):
@@ -31,44 +31,49 @@ class FermiWord(dict):
 
     @property
     def wires(self):
-        """Return wires in a FermiWord."""
+        r"""Return wires in a FermiWord."""
         return [i[1] for i in self.sorted_dic.keys()]
 
     def __missing__(self, key):
-        """Return empty string for a missing jey in FermiWord."""
+        r"""Return empty string for a missing jey in FermiWord."""
         return ""
 
     def update(self, item):
-        """Restrict updating FermiWord after instantiation."""
+        r"""Restrict updating FermiWord after instantiation."""
         raise TypeError("FermiWord object does not support assignment")
 
     def __setitem__(self, key, item):
-        """Restrict setting items after instantiation."""
+        r"""Restrict setting items after instantiation."""
         raise TypeError("FermiWord object does not support assignment")
 
     def __reduce__(self):
-        """Defines how to pickle and unpickle a FermiWord. Otherwise, un-pickling
+        r"""Defines how to pickle and unpickle a FermiWord. Otherwise, un-pickling
         would cause __setitem__ to be called, which is forbidden on PauliWord.
         For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
         """
         return FermiWord, (dict(self),)
 
     def __copy__(self):
-        """Copy the FermiWord instance."""
+        r"""Copy the FermiWord instance."""
         return FermiWord(dict(self.items()))
 
     def __deepcopy__(self, memo):
-        """Deep copy the FermiWord instance."""
+        r"""Deep copy the FermiWord instance."""
         res = self.__copy__()
         memo[id(self)] = res
         return res
 
     def __hash__(self):
-        """Hash value of a FermiWord."""
+        r"""Hash value of a FermiWord."""
         return hash(frozenset(self.items()))
 
     def to_string(self):
-        """Return a compact string representation of a FermiWord."""
+        r"""Return a compact string representation of a FermiWord.
+
+        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w.to_string()
+        '0+ 1-'
+        """
         string = " ".join(
             [
                 i + j
@@ -80,15 +85,20 @@ class FermiWord(dict):
         return string
 
     def __str__(self):
-        """String representation of a FermiWord."""
+        r"""String representation of a FermiWord."""
         return f"<FermiWord = '{self.to_string()}'>"
 
     def __repr__(self):
-        """Terminal representation of a FermiWord"""
+        r"""Terminal representation of a FermiWord"""
         return str(self)
 
     def __mul__(self, other):
-        """Multiply two Fermi words together."""
+        r"""Multiply two Fermi words together.
+
+        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w * w
+        <FermiWord = '0+ 1- 0+ 1-'>
+        """
 
         if isinstance(other, FermiWord):
             if len(self) == 0:
@@ -112,13 +122,18 @@ class FermiWord(dict):
 
             return FermiWord(dict_self)
 
-        raise TypeError(f"Cannot multiply FermiWord by {type(other)}")
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
 
     def __pow__(self, value):
-        """Exponentiate a Fermi word to an integer power."""
+        r"""Exponentiate a Fermi word to an integer power.
 
-        if not isinstance(value, int):
-            raise TypeError("The exponent must be integer.")
+        >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w**3
+        <FermiWord = '0+ 1- 0+ 1- 0+ 1-'>
+        """
+
+        if value < 0 or not isinstance(value, int):
+            raise ValueError("The exponent must be a positive integer.")
 
         operator = FermiWord({})
 
@@ -129,6 +144,7 @@ class FermiWord(dict):
 
 
 # TODO: create __add__ method when PauliSentence is merged.
+# TODO: support multiply by number in __mul__ when PauliSentence is merged.
 # TODO: create mapping method when the ne jordan_wigner function is added.
 
 
