@@ -707,6 +707,11 @@ class QNode:
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
         # cannot be done here since we don't yet know the composition of the circuit.
 
+        if isinstance(device, qml.devices.experimental.Device):
+            config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+            if device.supports_derivatives(config):
+                return "adjoint", {}, device
+            raise ValueError(f"The {device} device does not support adjoint differentiation.")
         required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
         supported_device = all(hasattr(device, attr) for attr in required_attrs)
         supported_device = supported_device and device.capabilities().get("returns_state")
@@ -743,6 +748,8 @@ class QNode:
 
     @staticmethod
     def _validate_parameter_shift(device):
+        if isinstance(device, qml.devices.experimental.Device):
+            return qml.gradients.param_shift, {}, device
         model = device.capabilities().get("model", None)
 
         if model == "qubit":

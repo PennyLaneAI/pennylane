@@ -241,6 +241,20 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix over the given wires.
+
+        Args:
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
+        return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+
     def reset(self):
         """Resets the device"""
         super().reset()
@@ -563,7 +577,7 @@ class DefaultMixed(QubitDevice):
             operation (.Operation): operation to apply on the device
         """
         wires = operation.wires
-        if operation.base_name == "Identity":
+        if operation.name == "Identity":
             return
 
         if isinstance(operation, QubitStateVector):

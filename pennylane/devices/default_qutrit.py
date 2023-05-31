@@ -61,6 +61,8 @@ class DefaultQutrit(QutritDevice):
         "TAdd",
         "TSWAP",
         "THadamard",
+        "TRX",
+        "TRY",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
@@ -146,13 +148,13 @@ class DefaultQutrit(QutritDevice):
         Returns:
             array[complex]: output state
         """
-        if operation.base_name == "Identity":
+        if operation.name == "Identity":
             return state
         wires = operation.wires
 
-        if operation.base_name in self._apply_ops:
+        if operation.name in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.base_name](state, axes)
+            return self._apply_ops[operation.name](state, axes)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
