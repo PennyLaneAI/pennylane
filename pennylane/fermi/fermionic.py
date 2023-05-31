@@ -112,13 +112,13 @@ class FermiWord(dict):
 
             return FermiWord(dict_self)
 
-        raise TypeError(f"Cannot multiply FermiWord by {type(other)}")
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
 
     def __pow__(self, value):
         """Exponentiate a Fermi word to an integer power."""
 
-        if not isinstance(value, int):
-            raise TypeError("The exponent must be integer.")
+        if value < 0 or not isinstance(value, int):
+            raise ValueError("The exponent must be a positive integer.")
 
         operator = FermiWord({})
 

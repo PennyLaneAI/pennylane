@@ -96,7 +96,7 @@ class TestFermiWord:
         assert str(fw) == str_rep
         assert repr(fw) == str_rep
 
-    tup_fws_mult = (
+    tup_fw_mult = (
         (fw1, fw1, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
         (
             fw1,
@@ -106,13 +106,26 @@ class TestFermiWord:
             ),
         ),
         (fw2, fw1, FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-"})),
+        (fw1, fw4, fw1),
+        (fw4, fw3, fw3),
+        (fw4, fw4, fw4),
     )
 
-    @pytest.mark.parametrize("f1, f2, result_fw", tup_fws_mult)
+    @pytest.mark.parametrize("f1, f2, result_fw", tup_fw_mult)
     def test_mul(self, f1, f2, result_fw):
         assert f1 * f2 == result_fw
 
-    tup_fws_pow = (
+    tup_fw_mult_error = (
+        (fw1, [1.5]),
+        (fw4, "string"),
+    )
+
+    @pytest.mark.parametrize("f1, f2", tup_fw_mult_error)
+    def test_mul(self, f1, f2):
+        with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(f2)}."):
+            f1 * f2  # pylint: disable=pointless-statement
+
+    tup_fw_pow = (
         (fw1, 0, FermiWord({})),
         (fw1, 1, FermiWord({(0, 0): "+", (1, 1): "-"})),
         (fw1, 2, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
@@ -125,9 +138,16 @@ class TestFermiWord:
         ),
     )
 
-    @pytest.mark.parametrize("f1, pow, result_fw", tup_fws_pow)
+    @pytest.mark.parametrize("f1, pow, result_fw", tup_fw_pow)
     def test_pow(self, f1, pow, result_fw):
         assert f1**pow == result_fw
+
+    tup_fw_pow_error = ((fw1, -1), (fw3, 1.5))
+
+    @pytest.mark.parametrize("f1, pow", tup_fw_pow_error)
+    def test_pow_error(self, f1, pow):
+        with pytest.raises(ValueError, match="The exponent must be a positive integer."):
+            f1**pow  # pylint: disable=pointless-statement
 
     def test_pickling(self):
         """Check that FermiWords can be pickled and unpickled."""
