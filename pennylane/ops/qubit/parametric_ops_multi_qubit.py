@@ -263,6 +263,13 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
+    def _flatten(self):
+        return tuple(self.data), (self.wires, self.hyperparameters["pauli_word"])
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, pauli_word=metadata[1], wires=metadata[0])
+
     def __init__(self, theta, pauli_word, wires=None, do_queue=None, id=None):
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters["pauli_word"] = pauli_word
@@ -587,6 +594,13 @@ class PCPhase(Operation):
         dim, shape = self.hyperparameters["dimension"]
         mat = np.diag([1 if index < dim else -1 for index in range(shape)])
         return qml.Hermitian(mat, wires=self.wires)
+
+    def _flatten(self):
+        return tuple(self.data), (self.wires, self.hyperparameters["dimension"])
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*self.data, dim=metadata[1], wires=metadata[0])
 
     def __init__(self, phi, dim, wires, do_queue=None, id=None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)

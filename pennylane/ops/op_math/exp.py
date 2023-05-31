@@ -171,6 +171,13 @@ class Exp(ScalarSymbolicOp, Operation):
     control_wires = Wires([])
     _name = "Exp"
 
+    def _flatten(self):
+        return tuple(self.base, self.coeff), (self.num_steps,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], coeff=data[1], num_steps=metadata[0])
+
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, do_queue=None, id=None):
         super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)

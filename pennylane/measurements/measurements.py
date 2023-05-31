@@ -128,6 +128,27 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    def __init_subclass__(cls, **kwargs):
+        # for the sake of prototypetyping, I assume jax is installed
+        import jax
+
+        def flatten(op):
+            return op._flatten()
+
+        def unflatten(aux, parameters):
+            return cls._unflatten(parameters, aux)
+
+        jax.tree_util.register_pytree_node(cls, flatten, unflatten)
+
+    def _flatten(self):
+        metadata = (self.wires,) if self.obs is None else tuple()
+        return (self.obs, self._eigvals), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        wires = metadata[0] if data[0] is None else None
+        return cls(obs=data[0], wires=wires, eigvals=data[1])
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,

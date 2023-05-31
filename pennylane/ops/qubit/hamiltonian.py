@@ -166,6 +166,18 @@ class Hamiltonian(Observable):
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
 
+    def _flatten(self):
+        # note that we are unable to restore grouping type or method without creating new properties
+        return (self.data, self._ops), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1])
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data)
+
     def __init__(
         self,
         coeffs,

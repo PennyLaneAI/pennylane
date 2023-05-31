@@ -686,6 +686,18 @@ class Operator(abc.ABC):
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
 
+    def __init_subclass__(cls, **kwargs):
+        # for the sake of prototypetyping, I assume jax is installed
+        import jax
+
+        def flatten(op):
+            return op._flatten()
+
+        def unflatten(aux, parameters):
+            return cls._unflatten(parameters, aux)
+
+        jax.tree_util.register_pytree_node(cls, flatten, unflatten)
+
     @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
@@ -1488,6 +1500,13 @@ class Operator(abc.ABC):
             return qml.pow(self, z=other)
         return NotImplemented
 
+    def _flatten(self):
+        return tuple(self.data), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, wires=metadata[0])
+
 
 # =============================================================================
 # Base Operation class
@@ -1931,6 +1950,13 @@ class Tensor(Observable):
     return_type = None
     tensor = True
     has_matrix = True
+
+    def _flatten(self):
+        return tuple(self.obs), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         wires = [op.wires for op in args]
