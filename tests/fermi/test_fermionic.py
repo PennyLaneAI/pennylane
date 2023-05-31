@@ -17,9 +17,7 @@ from copy import copy, deepcopy
 
 import pytest
 
-from pennylane.fermi.fermionic import FermiWord, FermiSentence
-
-from pennylane import numpy as np
+from pennylane.fermi.fermionic import FermiSentence, FermiWord
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
@@ -231,9 +229,9 @@ class TestFermiSentence:
         assert new_fw in fs.keys() and fs[new_fw] == 3.45
 
     tup_fs_str = (
-        (fs1, "1.23 * '0+ 1-'\n" "+ 4j * '0+ 0-'\n" "+ -0.5 * '0+ 3- 0+ 4-'"),
-        (fs2, "-1.23 * '0+ 1-'\n" "+ (-0-4j) * '0+ 0-'\n" "+ 0.5 * '0+ 3- 0+ 4-'"),
-        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" "+ 1 * ''"),
+        (fs1, "1.23 * '0+ 1-'\n" + "+ 4j * '0+ 0-'\n" + "+ -0.5 * '0+ 3- 0+ 4-'"),
+        (fs2, "-1.23 * '0+ 1-'\n" + "+ (-0-4j) * '0+ 0-'\n" + "+ 0.5 * '0+ 3- 0+ 4-'"),
+        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" + "+ 1 * ''"),
         (fs4, "1 * ''"),
         (fs5, "0 * ''"),
     )
@@ -337,9 +335,9 @@ class TestFermiSentence:
 
     def test_pickling(self):
         """Check that FermiSentences can be pickled and unpickled."""
-        fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
-        fw2 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
-        fs = FermiSentence({fw1: 1.5, fw2: -0.5})
+        f1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+        f2 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
+        fs = FermiSentence({f1: 1.5, f2: -0.5})
 
         serialization = pickle.dumps(fs)
         new_fs = pickle.loads(serialization)
@@ -364,4 +362,4 @@ class TestFermiSentence:
     @pytest.mark.parametrize("f1, pow", tup_fs_pow_error)
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
-            f1**pow
+            f1**pow  # pylint: disable=pointless-statement
