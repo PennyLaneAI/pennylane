@@ -220,7 +220,7 @@ class TestGradientTransformIntegration:
         else:
             assert np.allclose(res, expected, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 3e-1)])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
     def test_acting_on_qnodes_multi_param(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
         np.random.seed(412)
