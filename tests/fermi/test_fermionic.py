@@ -311,6 +311,8 @@ class TestFermiSentence:
                 }
             ),
         ),
+        (fs5, fs3, fs3),
+        (fs3, fs5, fs3),
     )
 
     @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
