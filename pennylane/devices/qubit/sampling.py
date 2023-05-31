@@ -43,13 +43,9 @@ def measure_with_samples(
     # if the measurement process involves a Sum or a Hamiltonian, measure each
     # of the terms separately and sum
     if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Hamiltonian):
-        coeffs, terms = mp.obs.terms()
-        if qml.math.get_interface(coeffs[0]) == "tensorflow":
-            vals = [measure_with_samples(ExpectationMP(t), state, shots, rng=rng) for t in terms]
-            return qml.math.sum(qml.math.multiply(coeffs, vals))
         return sum(
             c * measure_with_samples(ExpectationMP(t), state, shots, rng=rng)
-            for c, t in zip(coeffs, terms)
+            for c, t in zip(*mp.obs.terms())
         )
 
     if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Sum):
