@@ -28,14 +28,18 @@ class TestDecomposition:
         ([0], [0], []),
         ([0], [1], []),
         ([1], [0], [0]),
-        ([1], [1], [1]),
+        ([2], [1], [1, 1]),
         ([0, 1], [0, 1], [1]),
-        ([1, 0], [1, 4], [1]),
-        ([1, 1], [0, 2], [0, 2]),
+        ([2, 0], [1, 4], [1, 1]),
         ([1, 0], [4, 5], [4]),
+        ([0, 2], [4, 5], [5, 5]),
+        ([1, 2], [0, 2], [0, 2, 2]),
         ([0, 0, 1, 0], [1, 2, 3, 4], [3]),
+        ([2, 0, 0, 0], [1, 2, 3, 4], [1, 1]),
         ([1, 1, 1, 0], [1, 2, 6, 8], [1, 2, 6]),
+        ([0, 2, 1, 2], [1, 2, 6, 8], [2, 2, 6, 8, 8]),
         ([1, 0, 1, 1], [1, 2, 6, 8], [1, 6, 8]),
+        ([2, 1, 0, 2], [1, 2, 6, 8], [1, 1, 2, 8, 8]),
     ])
     # fmt: on
     def test_correct_pl_gates(self, basis_state, wires, target_wires):
@@ -54,12 +58,20 @@ class TestDecomposition:
         ([0], [1], [0, 0, 0]),
         ([1], [0], [1, 0, 0]),
         ([1], [1], [0, 1, 0]),
+        ([2], [0], [2, 0, 0]),
+        ([2], [2], [0, 0, 2]),
         ([0, 1], [0, 1], [0, 1, 0]),
+        ([0, 2], [0, 1], [0, 2, 0]),
         ([1, 1], [0, 2], [1, 0, 1]),
         ([1, 1], [1, 2], [0, 1, 1]),
+        ([2, 2], [0, 2], [2, 0, 2]),
+        ([2, 2], [1, 2], [0, 2, 2]),
         ([1, 0], [0, 2], [1, 0, 0]),
+        ([2, 0], [0, 2], [2, 0, 0]),
         ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
         ([1, 0, 1], [0, 1, 2], [1, 0, 1]),
+        ([2, 1, 0], [0, 1, 2], [2, 1, 0]),
+        ([1, 0, 2], [0, 1, 2], [1, 0, 2]),
     ])
     # fmt: on
     def test_state_preparation(self, tol, qutrit_device_3_wires, basis_state, wires, target_state):
@@ -115,6 +127,7 @@ class TestDecomposition:
             ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
         ],
     )
+    @pytest.mark.xfail(reason="TensorFlow comptability not yet implemented")
     def test_state_preparation_tf_autograph(
         self, tol, qutrit_device_3_wires, basis_state, wires, target_state
     ):
@@ -126,10 +139,8 @@ class TestDecomposition:
         def circuit(state, obs):
             qml.QutritBasisStatePreparation(state, wires)
 
-            # Pauli Z gates identify the basis state
             return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
 
-        # Convert from Pauli Z eigenvalues to basis state
         obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
         output_state = [x - 1 for x in circuit(basis_state, obs)]
 
@@ -137,7 +148,7 @@ class TestDecomposition:
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        basis_state = [0, 1, 0]
+        basis_state = [0, 1, 2]
 
         dev = qml.device("default.qutrit", wires=3)
         dev2 = qml.device("default.qutrit", wires=["z", "a", "k"])
@@ -165,7 +176,9 @@ class TestInputs:
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
         ([0], [0, 1]),
+        ([2], [0, 1]),
         ([0, 1], [0]),
+        ([2, 0], [0]),
     ])
     # fmt: on
     def test_error_num_qutrits(self, basis_state, wires):
@@ -178,7 +191,7 @@ class TestInputs:
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
         ([3], [0]),
-        ([1, 0, 4], [0, 1, 2]),
+        ([2, 0, 4], [0, 1, 2]),
     ])
     # fmt: on
     def test_error_basis_state_format(self, basis_state, wires):
@@ -201,11 +214,11 @@ class TestInputs:
         obs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
         with pytest.raises(ValueError, match="Basis states must be one-dimensional"):
-            basis_state = np.array([[[0, 1]]])
+            basis_state = np.array([[[0, 2]]])
             circuit(basis_state, obs)
 
         with pytest.raises(ValueError, match="Basis states must be of length"):
-            basis_state = np.array([0, 1, 0])
+            basis_state = np.array([0, 1, 2])
             circuit(basis_state, obs)
 
         with pytest.raises(ValueError, match="Basis states must only consist of"):
@@ -214,5 +227,5 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.QutritBasisStatePreparation(np.array([0, 1]), wires=[0, 1], id="a")
+        template = qml.QutritBasisStatePreparation(np.array([0, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
