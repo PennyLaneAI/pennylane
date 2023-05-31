@@ -121,7 +121,7 @@ class TestFermiWord:
     )
 
     @pytest.mark.parametrize("f1, f2", tup_fw_mult_error)
-    def test_mul(self, f1, f2):
+    def test_mul_error(self, f1, f2):
         with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(f2)}."):
             f1 * f2  # pylint: disable=pointless-statement
 
