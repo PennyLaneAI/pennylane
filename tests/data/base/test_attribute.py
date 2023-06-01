@@ -48,8 +48,14 @@ from pennylane.data.base.attribute import match_obj_type
         (np.zeros(shape=(5, 5, 7)), DatasetArray),
         (None, DatasetNone),
         (type(None), DatasetNone),
-        *((sp_cls, DatasetSparseArray) for sp_cls in DatasetSparseArray.consumes_types()),
-        *((op, DatasetOperator) for op in DatasetOperator.consumes_types()),
+        *(
+            (sp_cls, DatasetSparseArray)
+            for sp_cls in sorted(DatasetSparseArray.consumes_types(), key=lambda t: str(t))
+        ),
+        *(
+            (op, DatasetOperator)
+            for op in sorted(DatasetOperator.consumes_types(), key=lambda t: str(t))
+        ),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
