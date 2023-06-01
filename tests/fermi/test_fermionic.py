@@ -155,3 +155,16 @@ class TestFermiWord:
         serialization = pickle.dumps(fw)
         new_fw = pickle.loads(serialization)
         assert fw == new_fw
+
+    @pytest.mark.parametrize(
+        "operator",
+        [
+            ({(0, 0): "+", (2, 1): "-"}),
+            ({(0, 0): "+", (1, 1): "-", (3, 0): "+", (4, 1): "-"}),
+            ({(-1, 0): "+", (0, 1): "-", (1, 0): "+", (2, 1): "-"}),
+        ],
+    )
+    def test_init_error(self, operator):
+        """Test that an error is raised if the operator orders are not correct."""
+        with pytest.raises(ValueError, match="The operator indices must belong to the set"):
+            FermiWord(operator)

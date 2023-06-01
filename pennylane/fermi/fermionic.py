@@ -35,7 +35,7 @@ class FermiWord(dict):
         if indices:
             if list(range(max(indices) + 1)) != indices:
                 raise ValueError(
-                    "The operator indices must belong to" " the set {0, ..., len(operator)-1}."
+                    "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
 
         super().__init__(operator)
