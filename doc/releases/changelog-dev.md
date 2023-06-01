@@ -145,7 +145,7 @@
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
-* The new device now supports `qml.Snapshot`.
+* The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
   [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
 
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
