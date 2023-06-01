@@ -139,6 +139,20 @@ class TestDtypePreserved:
         res = circuit(p)
         assert res.dtype == c_dtype
 
+    def test_no_ops(self):
+        """Test that the return value of the QNode matches in the interface
+        even if there are no ops"""
+
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.state()
+
+        res = circuit()
+        assert isinstance(res, jnp.ndarray)
+
 
 class TestOps:
     """Unit tests for operations supported by the default.mixed device with JAX"""
