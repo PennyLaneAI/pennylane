@@ -179,7 +179,7 @@ class Sum(CompositeOp):
         return (
             all(s.is_hermitian for s in self)
             if self._pauli_rep is None
-            else not math.any(math.iscomplex(self._pauli_rep.values()))
+            else not math.any(math.iscomplex(list(self._pauli_rep.values())))
         )
 
     def terms(self):
