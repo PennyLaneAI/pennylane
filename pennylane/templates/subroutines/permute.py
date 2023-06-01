@@ -141,7 +141,7 @@ class Permute(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, permutation, wires, do_queue=True, id=None):
+    def __init__(self, permutation, wires, do_queue=None, id=None):
         if len(permutation) <= 1 or len(wires) <= 1:
             raise ValueError("Permutations must involve at least 2 qubits.")
 

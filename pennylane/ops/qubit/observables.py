@@ -53,7 +53,9 @@ class Hermitian(Observable):
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -66,7 +68,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A, wires, do_queue=True, id=None):
+    def __init__(self, A, wires, do_queue=None, id=None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -220,7 +222,9 @@ class SparseHamiltonian(Observable):
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
         wires (Sequence[int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -244,7 +248,7 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H, wires=None, do_queue=True, id=None):
+    def __init__(self, H, wires=None, do_queue=None, id=None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
@@ -348,14 +352,16 @@ class Projector(Observable):
         basis_state (tensor-like): binary input of shape ``(n, )``
         wires (Iterable): wires that the projector acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, basis_state, wires, do_queue=True, id=None):
+    def __init__(self, basis_state, wires, do_queue=None, id=None):
         wires = Wires(wires)
         shape = qml.math.shape(basis_state)
 

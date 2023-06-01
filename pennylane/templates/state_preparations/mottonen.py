@@ -287,7 +287,7 @@ class MottonenStatePreparation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, state_vector, wires, do_queue=True, id=None):
+    def __init__(self, state_vector, wires, do_queue=None, id=None):
         # check if the `state_vector` param is batched
         batched = len(qml.math.shape(state_vector)) > 1
 
