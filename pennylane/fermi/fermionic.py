@@ -152,12 +152,32 @@ from pennylane.pauli import PauliWord, PauliSentence
 
 
 def mapping(operator):
-    """JW mapping of a FW to PS.
+    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
-    w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    mapping(w)
+    The fermionic creation and annihilation operators are mapped to the Pauli operators as
+
+    .. math::
+
+        c^{\dagger}_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X-iY}{2} \right ),
+        c_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X+iY}{2} \right ),
+
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+
+    Args:
+        operator (FermiWord): the fermionic operator
+
+    Returns:
+        PauliSentence: a linear combination of qubit operators
+
+    **Example**
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> mapping(w)
+    -0.25j * Y(0) @ X(1)
+    + (0.25+0j) * Y(0) @ Y(1)
+    + (0.25+0j) * X(0) @ X(1)
+    + 0.25j * X(0) @ Y(1)
     """
-
     coeffs = {"+": -0.5j, "-": 0.5j}
     qubit_operator = PauliSentence()
 
@@ -170,8 +190,10 @@ def mapping(operator):
         z_string = dict(zip(range(wire), ["Z"] * wire))
         qubit_operator *= PauliSentence(
             {
-                PauliWord(z_string | {wire: "X"}): 0.5,
-                PauliWord(z_string | {wire: "Y"}): coeffs[sign],
+                # PauliWord(z_string | {wire: "X"}): 0.5,
+                # PauliWord(z_string | {wire: "Y"}): coeffs[sign],
+                PauliWord({**z_string, **{wire: "X"}}): 0.5,
+                PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
             }
         )
 

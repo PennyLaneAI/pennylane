@@ -155,3 +155,157 @@ class TestFermiWord:
         serialization = pickle.dumps(fw)
         new_fw = pickle.loads(serialization)
         assert fw == new_fw
+
+
+import pennylane as qml
+from pennylane.fermi.fermionic import mapping
+
+
+@pytest.mark.parametrize(
+    ("fermionic_op", "result"),
+    [
+        (
+            FermiWord({(0, 0): "+"}),
+            # trivial case of a creation operator, 0^ -> (X_0 - iY_0) / 2
+            ([(0.5 + 0j), (0.0 - 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
+        ),
+        (
+            FermiWord({(0, 0): "-"}),
+            # trivial case of an annihilation operator, 0 -> (X_0 + iY_0) / 2
+            ([(0.5 + 0j), (0.0 + 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
+        ),
+        (
+            FermiWord({(0, 0): "+", (1, 0): "-"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
+            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
+            ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
+        ),
+        (
+            FermiWord({(0, 3): "+", (1, 0): "-"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 0', 1))
+            # reformatted the original openfermion output
+            (
+                [(0.25 + 0j), -0.25j, 0.25j, (0.25 + 0j)],
+                [
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                ],
+            ),
+        ),
+        # (
+        #     [1, 4],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 4', 1))
+        #     # reformatted the original openfermion output
+        #     (
+        #         [(0.25 + 0j), 0.25j, -0.25j, (0.25 + 0j)],
+        #         [
+        #             qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliX(4),
+        #             qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliY(4),
+        #             qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliX(4),
+        #             qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliY(4),
+        #         ],
+        #     ),
+        # ),
+        # (
+        #     [1, 1, 1, 1],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1^ 1 1', 1))
+        #     ([0], [qml.Identity(1)]),
+        # ),
+        # (
+        #     [3, 1, 3, 1],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1^ 3 1', 1))
+        #     # reformatted the original openfermion output
+        #     (
+        #         [(-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j), (0.25 + 0j)],
+        #         [qml.Identity(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(3), qml.PauliZ(3)],
+        #     ),
+        # ),
+        # (
+        #     [3, 1, 3, 1],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1 3^ 1', 1))
+        #     ([0], [qml.Identity(1)]),
+        # ),
+        # (
+        #     [1, 0, 1, 1],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 0 1^ 1', 1))
+        #     ([0], [qml.Identity(0)]),
+        # ),
+        # (
+        #     [1, 1, 0, 0],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1 0^ 0', 1))
+        #     (
+        #         [(0.25 + 0j), (-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j)],
+        #         [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1)],
+        #     ),
+        # ),
+        # (
+        #     [5, 5, 5, 5],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('5^ 5 5^ 5', 1))
+        #     (
+        #         [(0.5 + 0j), (-0.5 + 0j)],
+        #         [qml.Identity(0), qml.PauliZ(5)],
+        #     ),
+        # ),
+        # (
+        #     [3, 3, 3, 1],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 3 3^ 1', 1))
+        #     (
+        #         [(0.25 + 0j), (-0.25j), (0.25j), (0.25 + 0j)],
+        #         [
+        #             qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+        #             qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+        #             qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+        #             qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+        #         ],
+        #     ),
+        # ),
+        # (
+        #     [3, 0, 2, 1],
+        #     # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 0 2^ 1', 1))
+        #     (
+        #         [
+        #             (-0.0625 + 0j),
+        #             0.0625j,
+        #             0.0625j,
+        #             (0.0625 + 0j),
+        #             -0.0625j,
+        #             (-0.0625 + 0j),
+        #             (-0.0625 + 0j),
+        #             0.0625j,
+        #             -0.0625j,
+        #             (-0.0625 + 0j),
+        #             (-0.0625 + 0j),
+        #             0.0625j,
+        #             (0.0625 + 0j),
+        #             -0.0625j,
+        #             -0.0625j,
+        #             (-0.0625 + 0j),
+        #         ],
+        #         [
+        #             qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+        #             qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+        #             qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+        #             qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+        #             qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+        #             qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+        #             qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+        #             qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+        #             qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+        #             qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+        #             qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+        #             qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+        #             qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+        #             qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+        #             qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+        #             qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+        #         ],
+        #     ),
+        # ),
+    ],
+)
+def test_mapping(fermionic_op, result):
+    r"""Test that the mapping function returns the correct qubit operator."""
+    qubit_op = mapping(fermionic_op)
+    assert qml.Hamiltonian(result[0], result[1]).compare(qubit_op.hamiltonian())
