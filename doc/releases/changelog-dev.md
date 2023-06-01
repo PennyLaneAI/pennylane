@@ -12,18 +12,15 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
-* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
-  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
-
 * Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
 <h3>Improvements 🛠</h3>
 
-* The `data.Dataset` class now uses HDF5 for serialization
+* `data.Dataset` now uses HDF5 instead of pickle for serialization.
   [(4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
-  
+
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
@@ -156,9 +153,6 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
-* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
-  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
-
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -180,8 +174,6 @@
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
-* Support for python 3.8 is removed.
-  [(#4077)](https://github.com/PennyLaneAI/pennylane/pull/4077)
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
@@ -200,10 +192,6 @@
 
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
-
-* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
-  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
-  [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
 
 <h3>Documentation 📝</h3>
 
@@ -227,28 +215,14 @@
 * `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
   [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
 
-* Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
-  [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 Edward Jiang,
-<<<<<<< HEAD
->>>>>>> master
-Korbinian Kottmann
-=======
-Romain Moyard,
->>>>>>> remove_python38
-=======
 Korbinian Kottmann,
->>>>>>> master
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
