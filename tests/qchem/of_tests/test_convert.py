@@ -23,10 +23,14 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 # TODO: Bring pytest skip to relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
+
+
+pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
 
 
 def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
@@ -359,6 +363,56 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     assert qml.qchem.convert._openfermion_pennylane_equivalent(qOp, vqe_observable, custom_wires)
 
 
+ops_wires = (
+    (
+        ([0.1, 0.2], [qml.PauliZ(0), qml.Identity(1)]),
+        (0.1 * openfermion.QubitOperator("Z0") + 0.2 * openfermion.QubitOperator("")),
+        [0, 1],
+    ),
+    (
+        ([0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+        (
+            0.1 * openfermion.QubitOperator("X0")
+            + 0.2 * openfermion.QubitOperator("Y1")
+            + 0.3 * openfermion.QubitOperator("Z2")
+        ),
+        [0, 1, 2],
+    ),
+    (
+        ([0.1], [qml.s_prod(0.5, qml.PauliZ(0))]),
+        0.05 * openfermion.QubitOperator("Z0"),
+        [0],
+    ),
+    (
+        ([0.1, 0.2], [qml.PauliX(0), qml.prod(qml.PauliY(1), qml.PauliZ(2))]),
+        (0.1 * openfermion.QubitOperator("X0") + 0.2 * openfermion.QubitOperator("Y1 Z2")),
+        [0, 1, 2],
+    ),
+    (
+        ([0.1, 0.2, 0.3], [qml.PauliX(0), qml.sum(qml.PauliY(1), qml.PauliZ(2)), qml.PauliY(1)]),
+        (
+            0.1 * openfermion.QubitOperator("X0")
+            + 0.5 * openfermion.QubitOperator("Y1")
+            + 0.2 * openfermion.QubitOperator("Z2")
+        ),
+        [0, 1, 2],
+    ),
+)
+
+
+@pytest.mark.parametrize("pl_op, of_op, wire_order", ops_wires)
+def test_operation_conversion(pl_op, of_op, wire_order):
+    """Assert that the conversion between pennylane and openfermion operators"""
+    converted_pl_op = qml.qchem.convert._pennylane_to_openfermion(*pl_op)  # coeffs, ops lists
+    assert of_op == converted_pl_op
+
+    converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
+    assert np.allclose(
+        qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
+        qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
+    )
+
+
 @pytest.mark.parametrize(
     ("terms_ref", "lib_name"),
     [
@@ -376,18 +430,25 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
         qml.qchem.convert.import_operator(qOp, format=lib_name)
 
 
-def test_not_xyz_pennylane_to_openfermion():
+invalid_ops = (
+    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+    qml.prod(qml.PauliX(0), qml.Hadamard(1)),
+    qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
+)
+
+
+@pytest.mark.parametrize("op", invalid_ops)
+def test_not_xyz_pennylane_to_openfermion(op):
     r"""Test if the conversion complains about non Pauli matrix observables"""
     with pytest.raises(
         ValueError,
-        match="Expected only PennyLane observables PauliX/Y/Z or Identity, but also got {"
-        "'QuadOperator'}.",
+        match=f"Expected a Pennylane operator with a valid Pauli word representation,",
     ):
         qml.qchem.convert._pennylane_to_openfermion(
             np.array([0.1 + 0.0j, 0.0]),
             [
                 qml.operation.Tensor(qml.PauliX(0)),
-                qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+                op,
             ],
         )
 
@@ -428,6 +489,57 @@ def test_types_consistency():
     for i, op in enumerate(ops):
         assert op.name == ops_ref[i].name
         assert type(op) == type(ops_ref[i])
+
+
+of_pl_ops = (
+    (
+        (
+            0.1 * openfermion.QubitOperator("X0")
+            + 0.2 * openfermion.QubitOperator("Y1")
+            + 0.3 * openfermion.QubitOperator("Z2")
+            + 0.4 * openfermion.QubitOperator("")
+        ),
+        qml.Hamiltonian(
+            [0.1, 0.2, 0.3, 0.4],
+            [qml.PauliX("w0"), qml.PauliY("w1"), qml.PauliZ("w2"), qml.Identity("w0")],
+        ),
+        qml.sum(
+            qml.s_prod(0.1, qml.PauliX("w0")),
+            qml.s_prod(0.2, qml.PauliY("w1")),
+            qml.s_prod(0.3, qml.PauliZ("w2")),
+            qml.s_prod(0.4, qml.Identity("w0")),
+        ),
+        ["w0", "w1", "w2"],
+    ),
+    (
+        (0.1 * openfermion.QubitOperator("X0 Y1") + 0.2 * openfermion.QubitOperator("Z2")),
+        qml.Hamiltonian([0.1, 0.2], [qml.PauliX("w0") @ qml.PauliY("w1"), qml.PauliZ("w2")]),
+        qml.sum(
+            qml.s_prod(0.1, qml.prod(qml.PauliX("w0"), qml.PauliY("w1"))),
+            qml.s_prod(0.2, qml.PauliZ("w2")),
+        ),
+        ["w0", "w1", "w2"],
+    ),
+)
+
+
+@pytest.mark.parametrize("of_op, pl_h, pl_op, wires", of_pl_ops)
+def test_import_operator(of_op, pl_h, pl_op, wires):
+    of_h = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
+    assert qml.equal(of_h, pl_h)
+
+    enable_new_opmath()
+    of_arithmetic_op = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
+    disable_new_opmath()
+
+    assert isinstance(of_arithmetic_op, qml.ops.Sum)
+    assert all(
+        isinstance(term, qml.ops.SProd) and isinstance(term.base, pauli_ops_and_prod)
+        for term in of_arithmetic_op.operands
+    )
+    assert np.allclose(
+        qml.matrix(of_arithmetic_op, wire_order=wires), qml.matrix(pl_op, wire_order=wires)
+    )
 
 
 op_1 = (
