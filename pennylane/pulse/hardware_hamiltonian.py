@@ -87,7 +87,7 @@ def drive(amplitude, phase, wires):
     + (1) [X2 X3]
     + (1) [X3 X0]
     >>> H_d
-    ParametrizedHamiltonian: terms=2
+    HardwareHamiltonian:: terms=2
 
     The terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
