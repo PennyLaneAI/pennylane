@@ -15,7 +15,6 @@
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
 import warnings
-from functools import singledispatch
 
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
@@ -258,11 +257,11 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
         if isinstance(op, Tensor):
             try:
                 ps = pauli_sentence(op)
-            except ValueError:
+            except ValueError as e:
                 raise ValueError(
                     f"Expected a Pennylane operator with a valid Pauli word representation, "
                     f"but got {op}."
-                )
+                ) from e
 
         elif (ps := op._pauli_rep) is None:  # pylint: disable=protected-access
             raise ValueError(
