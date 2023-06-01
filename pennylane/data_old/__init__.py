@@ -20,10 +20,6 @@ Pre-computed datasets are available for download and can be accessed using the :
 Additionally, users can easily create, write to disk, and read custom datasets using functions within the
 :class:`~pennylane.data.Dataset` class.
 
-.. currentmodule:: pennylane.data
-.. autosummary::
-   :toctree: api
-
 """
 
 from .dataset import Dataset
