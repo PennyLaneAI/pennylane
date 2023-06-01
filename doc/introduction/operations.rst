@@ -477,7 +477,7 @@ Qutrit parametrized gates
 
 :html:`</div>`
 
-.. _intro_ref_ops_qutrit_obs:
+.. _intro_ref_ops_qutrit_stateprep:
 
 Qutrit State preparation
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -492,6 +492,7 @@ Qutrit State preparation
 
 :html:`</div>`
 
+.. _intro_ref_ops_qutrit_obs:
 
 Qutrit Observables
 ^^^^^^^^^^^^^^^^^^
