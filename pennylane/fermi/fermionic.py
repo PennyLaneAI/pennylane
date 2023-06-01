@@ -152,7 +152,7 @@ class FermiC(FermiWord):
     r"""FermiC(wire)
     The fermionic creation operator
 
-    .. math:: a\datter \ket{n} = \sqrt(n + 1) \ket{n+1}
+    .. math:: c^\dagger \ket{n} = \sqrt(n + 1) \ket{n+1}
 
     **Details:**
 
@@ -190,7 +190,7 @@ class FermiA(FermiWord):
     r"""FermiA(wire)
     The fermionic annihilation operator
 
-    .. math:: a \ket{n} = \sqrt(n) \ket{n-1}
+    .. math:: c \ket{n} = \sqrt(n) \ket{n-1}
 
     **Details:**
 
