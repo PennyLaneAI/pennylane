@@ -146,3 +146,40 @@ class FermiWord(dict):
 # TODO: create __add__ method when PauliSentence is merged.
 # TODO: support multiply by number in __mul__ when PauliSentence is merged.
 # TODO: create mapping method when the ne jordan_wigner function is added.
+
+
+class FermiC(FermiWord):
+    r"""The fermionic creation operator.
+
+    Args:
+        wire (int): the wire the operation acts on
+
+    >>> FermiC(0)
+    <FermiWord = '0+'>
+    """
+
+    def __init__(self, wire):
+        operator = {(0, wire): "+"}
+        self.sorted_dic = dict(sorted(operator.items()))
+        super().__init__(operator)
+
+    # TODO: create mapping method when the tne jordan_wigner function is added.
+    # def to_qubit(self):
+    #     return mapping(self)
+
+
+class FermiA(FermiWord):
+    r"""The fermionic annihilation operator.
+
+    >>> FermiA(0)
+    <FermiWord = '0-'>
+    """
+
+    def __init__(self, wire):
+        operator = {(0, wire): "-"}
+        self.sorted_dic = dict(sorted(operator.items()))
+        super().__init__(operator)
+
+    # TODO: create mapping method when the tne jordan_wigner function is added.
+    # def to_qubit(self):
+    #     return mapping(self)
