@@ -49,7 +49,7 @@ class TestFermiWord:
         fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
         fw_2 = FermiWord({(0, 0): "+", (1, 1): "-"})  # same as 1
         fw_3 = FermiWord({(1, 1): "-", (0, 0): "+"})  # same as 1 but reordered
-        fw_4 = FermiWord({(0, 0): "+", (2, 2): "-"})  # distinct from above
+        fw_4 = FermiWord({(0, 0): "+", (1, 2): "-"})  # distinct from above
 
         assert fw_1.__hash__() == fw_2.__hash__()
         assert fw_1.__hash__() == fw_3.__hash__()
@@ -66,7 +66,7 @@ class TestFermiWord:
         assert copy_fw is not fw
         assert deep_copy_fw is not fw
 
-    tup_fws_wires = ((fw1, [0, 1]), (fw2, [0, 0]), (fw3, [0, 3, 0, 4]), (fw4, []))
+    tup_fws_wires = ((fw1, {0, 1}), (fw2, {0}), (fw3, {0, 3, 4}), (fw4, set()))
 
     @pytest.mark.parametrize("fw, wires", tup_fws_wires)
     def test_wires(self, fw, wires):
