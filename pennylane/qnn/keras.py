@@ -281,6 +281,7 @@ class KerasLayer(Layer):
         super().__init__(dynamic=True, **kwargs)
 
         self.build(None)
+        self._initialized = True
 
     def _signature_validation(self, qnode, weight_shapes):
         sig = inspect.signature(qnode.func).parameters
@@ -389,28 +390,30 @@ class KerasLayer(Layer):
             args (tuple): A tuple containing one entry that is the input to this layer
             kwargs (dict): Unused
         """
-        inputs = args[0]
-        kwargs = {self.input_arg: inputs, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
-        self.qnode.construct((), kwargs)
+        # GradientTape required to ensure that the weights show up as trainable on the qtape
+        with tf.GradientTape() as tape:
+            tape.watch(list(self.qnode_weights.values()))
 
-    @property
-    def qtape(self):
-        """Get the quantum tape executed by the wrapped QNode"""
-        return self.qnode.qtape
+            inputs = args[0]
+            kwargs = {self.input_arg: inputs, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+            self.qnode.construct((), kwargs)
 
-    @property
-    def device(self):
-        """Get the device of the wrapped QNode"""
-        return self.qnode.device
+    def __getattr__(self, item):
+        """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
+        if self._initialized:
+            return getattr(self.qnode, item)
+        else:
+            try:
+                return self.__dict__[item]
+            except KeyError:
+                raise AttributeError(item)
 
-    @property
-    def expansion_strategy(self):
-        """Get the expansion strategy of the wrapped QNode"""
-        return self.qnode.expansion_strategy
-
-    @expansion_strategy.setter
-    def expansion_strategy(self, value):
-        self.qnode.expansion_strategy = value
+    def __setattr__(self, item, val):
+        """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
+        if self._initialized:
+            setattr(self.qnode, item, val)
+        else:
+            self.__dict__[item] = val
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
@@ -431,6 +434,7 @@ class KerasLayer(Layer):
     __repr__ = __str__
 
     _input_arg = "inputs"
+    _initialized = False
 
     @property
     def input_arg(self):

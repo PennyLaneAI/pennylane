@@ -354,6 +354,7 @@ class TorchLayer(Module):
         self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
 
         self._init_weights(init_method=init_method, weight_shapes=weight_shapes)
+        self._initialized = True
 
     def _signature_validation(self, qnode: QNode, weight_shapes: dict):
         sig = inspect.signature(qnode.func).parameters
@@ -453,24 +454,22 @@ class TorchLayer(Module):
         }
         self.qnode.construct((), kwargs)
 
-    @property
-    def qtape(self):
-        """Get the quantum tape executed by the wrapped QNode"""
-        return self.qnode.qtape
+    def __getattr__(self, item):
+        """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
+        if self._initialized:
+            return getattr(self.qnode, item)
+        else:
+            try:
+                return self.__dict__[item]
+            except KeyError:
+                raise AttributeError(item)
 
-    @property
-    def device(self):
-        """Get the device of the wrapped QNode"""
-        return self.qnode.device
-
-    @property
-    def expansion_strategy(self):
-        """Get the expansion strategy of the wrapped QNode"""
-        return self.qnode.expansion_strategy
-
-    @expansion_strategy.setter
-    def expansion_strategy(self, value):
-        self.qnode.expansion_strategy = value
+    def __setattr__(self, item, val):
+        """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
+        if self._initialized:
+            setattr(self.qnode, item, val)
+        else:
+            self.__dict__[item] = val
 
     def _init_weights(
         self,
@@ -530,6 +529,7 @@ class TorchLayer(Module):
     __repr__ = __str__
 
     _input_arg = "inputs"
+    _initialized = False
 
     @property
     def input_arg(self):
