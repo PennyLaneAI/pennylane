@@ -146,3 +146,33 @@ class FermiWord(dict):
 # TODO: create __add__ method when PauliSentence is merged.
 # TODO: support multiply by number in __mul__ when PauliSentence is merged.
 # TODO: create mapping method when the ne jordan_wigner function is added.
+
+
+from pennylane.pauli import PauliWord, PauliSentence
+
+
+def mapping(operator):
+    """JW mapping of a FW to PS.
+
+    w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    mapping(w)
+    """
+
+    coeffs = {"+": -0.5j, "-": 0.5j}
+    qubit_operator = PauliSentence()
+
+    if len(operator) == 0:
+        return PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
+
+    for item in operator.items():
+        (order, wire), sign = item
+
+        z_string = dict(zip(range(wire), ["Z"] * wire))
+        qubit_operator *= PauliSentence(
+            {
+                PauliWord(z_string | {wire: "X"}): 0.5,
+                PauliWord(z_string | {wire: "Y"}): coeffs[sign],
+            }
+        )
+
+    return qubit_operator
