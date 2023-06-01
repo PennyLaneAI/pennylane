@@ -43,7 +43,7 @@ class FermiWord(dict):
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
-        return set([i[1] for i in self.sorted_dic.keys()])
+        return set(i[1] for i in self.sorted_dic.keys())
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in FermiWord."""
