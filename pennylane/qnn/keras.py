@@ -402,11 +402,11 @@ class KerasLayer(Layer):
         """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
         if self._initialized:
             return getattr(self.qnode, item)
-        else:
-            try:
-                return self.__dict__[item]
-            except KeyError:
-                raise AttributeError(item)
+
+        try:
+            return self.__dict__[item]
+        except KeyError as exc:
+            raise AttributeError(item) from exc
 
     def __setattr__(self, item, val):
         """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
