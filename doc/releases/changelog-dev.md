@@ -185,7 +185,7 @@
     ```pycon
     >>> rho = np.array([[0.3, 0], [0, 0.7]])
     >>> sigma = np.array([[0.5, 0], [0, 0.5]])
-    >>> qml.math.relative_entropy(rho, sigma)
+    >>> qml.math.trace_distance(rho, sigma)
     0.19999999999999998
     ```
 
@@ -272,6 +272,7 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Tristan Nemoz,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,

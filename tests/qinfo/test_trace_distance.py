@@ -37,7 +37,7 @@ def expected_grad_trace_distance_rx_pauliz(param):
 
 
 class TestTraceDistanceQnode:
-    """Tests for Fidelity function between two QNodes."""
+    """Tests for the Trace Distance function between two QNodes."""
 
     devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
@@ -175,9 +175,7 @@ class TestTraceDistanceQnode:
         ("jax-jit", jax.numpy.array),
     ]
 
-    @pytest.mark.torch
-    @pytest.mark.tf
-    @pytest.mark.jax
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
