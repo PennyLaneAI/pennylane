@@ -12,6 +12,9 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
+* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
+  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
+
 * Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
@@ -153,6 +156,9 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
+  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -193,6 +199,10 @@
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
+  [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
+
 <h3>Documentation 📝</h3>
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
@@ -214,6 +224,9 @@
 
 * `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
   [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
+* Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
+  [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
 
 <h3>Contributors ✍️</h3>
 
