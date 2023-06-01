@@ -46,7 +46,8 @@ class QutritBasisStatePreparation(Operation):
 
         basis_state = [0, 1, 1, 0]
         obs = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-        print(circuit(basis_state, obs)) # [array(0.70710678), array(-0.70710678), array(-0.70710678), array(0.70710678)]
+    >>> print(circuit(basis_state, obs))
+    [array(0.70710678), array(-0.70710678), array(-0.70710678), array(0.70710678)]
     """
     num_params = 1
     num_wires = AnyWires

@@ -46,7 +46,9 @@ class BasisStatePreparation(Operation):
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
-        print(circuit(basis_state)) # [ 1. -1. -1.  1.]
+    >>> print(circuit(basis_state))
+    [ 1. -1. -1.  1.]
+
     """
     num_params = 1
     num_wires = AnyWires
