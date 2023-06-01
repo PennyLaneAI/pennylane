@@ -35,8 +35,8 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
             self.__h5 = importlib.import_module("h5py")
         except ImportError as Error:
             raise ImportError(
-                "This feature requires the 'h5py' and 'zstd' packages. "
-                "They can be installed with:\n\n pip install h5py zstd"
+                "This feature requires the 'h5py' package. "
+                "They can be installed with:\n\n pip install h5py"
             ) from Error
 
     def __getattr__(self, resource: str) -> Any:

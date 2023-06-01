@@ -17,6 +17,7 @@ Tests for :mod:`pennylane.data.base.attribute`.
 
 import numpy as np
 import pytest
+from typing import Iterable, List
 
 from pennylane.data.attributes import (
     DatasetArray,
@@ -27,6 +28,15 @@ from pennylane.data.attributes import (
     DatasetString,
 )
 from pennylane.data.base.attribute import match_obj_type
+
+
+def _sort_types(types: Iterable[type]) -> List[type]:
+    """
+    pytest-split requires that test parameters are always in the same
+    order between runs. This function ensures that collections of types
+    used in test parameters are ordered.
+    """
+    return sorted(types, key=str)
 
 
 @pytest.mark.parametrize(
@@ -50,12 +60,9 @@ from pennylane.data.base.attribute import match_obj_type
         (type(None), DatasetNone),
         *(
             (sp_cls, DatasetSparseArray)
-            for sp_cls in sorted(DatasetSparseArray.consumes_types(), key=lambda t: str(t))
+            for sp_cls in _sort_types(DatasetSparseArray.consumes_types())
         ),
-        *(
-            (op, DatasetOperator)
-            for op in sorted(DatasetOperator.consumes_types(), key=lambda t: str(t))
-        ),
+        *((op, DatasetOperator) for op in _sort_types(DatasetOperator.consumes_types())),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
