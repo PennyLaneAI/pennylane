@@ -127,31 +127,45 @@ class TestJaxExecuteUnitTests:
 
     def test_grad_on_execution(self, mocker):
         """Test that grad_on_execution uses the `device.execute_and_gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(dev, "execute_and_gradients")
 
-        def cost(a):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.expval(qml.PauliZ(0))
+        def cost(params):
+            tape1 = qml.tape.QuantumScript(
+                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
+                [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))],
+            )
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape2 = qml.tape.QuantumScript(
+                [qml.RY(np.array(0.5), 0)],
+                [qml.expval(qml.PauliZ(0))],
+            )
+
+            tape3 = qml.tape.QuantumScript(
+                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
+                [qml.expval(qml.PauliZ(0))],
+            )
             return execute(
-                [tape],
+                [tape1, tape2, tape3],
                 dev,
                 gradient_fn="device",
                 gradient_kwargs={
                     "method": "adjoint_jacobian",
                     "use_device_state": True,
                 },
-            )[0]
+            )
 
         a = jax.numpy.array([0.1, 0.2])
-        cost(a)
+        res = cost(a)
 
-        # adjoint method only performs a single device execution, but gets both result and gradient
-        assert dev.num_executions == 1
+        x, y = a
+        assert np.allclose(res[0][0], np.cos(x) * np.cos(y))
+        assert np.allclose(res[0][1], 1)
+        assert np.allclose(res[1], np.cos(0.5))
+        assert np.allclose(res[2], np.cos(x) * np.cos(y))
+
+        # adjoint method only performs a single device execution per tape, but gets both result and gradient
+        assert dev.num_executions == 3
         spy.assert_called()
 
     def test_no_grad_on_execution(self, mocker):
