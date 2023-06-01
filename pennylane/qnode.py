@@ -812,15 +812,6 @@ class QNode:
                     "differentiation method"
                 )
 
-        if (
-            self.tape.batch_size is not None
-            and self.diff_method == "adjoint"
-            and isinstance(self.device, qml.devices.DefaultQubit)
-        ):
-            raise qml.QuantumFunctionError(
-                "Parameter broadcasting is not supported with adjoint differentiation on DefaultQubit"
-            )
-
         # Apply the deferred measurement principle if the device doesn't
         # support mid-circuit measurements natively
         # TODO:

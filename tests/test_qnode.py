@@ -471,21 +471,6 @@ class TestValidation:
         ):
             circ()
 
-    def test_adjoint_broadcasting_error(self):
-        """Tests that parameter broadcasting is not supported with adjoint on DefaultQubit"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, diff_method="adjoint")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="broadcasting is not supported with adjoint differentiation on DefaultQubit",
-        ):
-            circuit([0.1, 0.2])
-
     @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
