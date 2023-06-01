@@ -205,6 +205,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for `qml.grad` now states that it should be used with the Autograd interface only.
+  [(#4202)](https://github.com/PennyLaneAI/pennylane/pull/4202)
+
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
@@ -224,6 +227,9 @@
 
 * `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
   [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
+
+* Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
+  [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
 
 <h3>Contributors ✍️</h3>
 
