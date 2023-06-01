@@ -163,7 +163,7 @@ class FermiC(FermiWord):
         wire(int): the positve integer indicating the energy level the operator acts on. The lowest
             energy level is designated 0, and subsequent energy levels are numbered chronologically.
 
-    .. note:: While the `FermiA` class represents a mathematical operator, it is not a PennyLane `Operator`
+    .. note:: While the `FermiC` class represents a mathematical operator, it is not a PennyLane `Operator`
 
     **Example**
 
