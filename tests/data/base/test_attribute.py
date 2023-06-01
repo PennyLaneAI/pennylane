@@ -15,9 +15,10 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
+from typing import Iterable, List
+
 import numpy as np
 import pytest
-from typing import Iterable, List
 
 from pennylane.data.attributes import (
     DatasetArray,
