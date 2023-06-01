@@ -149,16 +149,34 @@ class FermiWord(dict):
 
 
 class FermiC(FermiWord):
-    r"""The fermionic creation operator.
+    r"""FermiC(wire)
+    The fermionic creation operator
+
+    .. math:: a\datter \ket{n} = \sqrt(n + 1) \ket{n+1}
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
 
     Args:
-        wire (int): the wire the operation acts on
+        wire(int): the positve integer indicating the energy level the operator acts on. The lowest
+            energy level is designated 0, and subsequent energy levels are numbered chronologically.
+
+    .. note:: While the `FermiA` class represents a mathematical operator, it is not a PennyLane `Operator`
+
+    **Example**
 
     >>> FermiC(0)
     <FermiWord = '0+'>
     """
 
     def __init__(self, wire):
+
+        if not isinstance(wire, int) or wire < 0:
+            raise ValueError(
+                f"FermiC: expected a single, positive integer value for wire, but received {wire}"
+            )
         operator = {(0, wire): "+"}
         self.sorted_dic = dict(sorted(operator.items()))
         super().__init__(operator)
@@ -169,13 +187,34 @@ class FermiC(FermiWord):
 
 
 class FermiA(FermiWord):
-    r"""The fermionic annihilation operator.
+    r"""FermiA(wire)
+    The fermionic annihilation operator
+
+    .. math:: a \ket{n} = \sqrt(n) \ket{n-1}
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wire(int): the positve integer indicating the energy level the operator acts on. The lowest
+            energy level is designated 0, and subsequent energy levels are numbered chronologically.
+
+    .. note:: While the `FermiA` class represents a mathematical operator, it is not a PennyLane `Operator`
+
+    **Example**
 
     >>> FermiA(0)
     <FermiWord = '0-'>
     """
 
     def __init__(self, wire):
+
+        if not isinstance(wire, int) or wire < 0:
+            raise ValueError(
+                f"FermiA: expected a single, positive integer value for wire, but received {wire}"
+            )
         operator = {(0, wire): "-"}
         self.sorted_dic = dict(sorted(operator.items()))
         super().__init__(operator)
