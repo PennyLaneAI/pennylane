@@ -2380,4 +2380,4 @@ def test_no_ops(dev_name):
         return qml.state()
 
     res = circuit()
-    assert isinstance(res, np.ndarray)
+    assert isinstance(res, np.tensor)

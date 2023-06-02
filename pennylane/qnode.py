@@ -35,7 +35,7 @@ def _convert_to_interface(res, interface):
     """
     interface = INTERFACE_MAP[interface]
 
-    if interface in ["Numpy", "autograd"]:
+    if interface in ["Numpy"]:
         return res
 
     if isinstance(res, (list, tuple)):
@@ -911,7 +911,8 @@ class QNode:
             res = res[0]
 
             # convert result to the interface in case the qfunc has no operations
-            res = _convert_to_interface(res, self.interface)
+            if len(self.tape.get_parameters(trainable_only=False)) == 0:
+                res = _convert_to_interface(res, self.interface)
 
             if old_interface == "auto":
                 self.interface = "auto"
