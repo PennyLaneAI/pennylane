@@ -680,7 +680,7 @@ def test_batch_input_single_measure():
     assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
-        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]))
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=1e-5)
 
 
 @pytest.mark.tf

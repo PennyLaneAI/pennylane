@@ -1909,6 +1909,11 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        if tape.batch_size is not None:
+            raise qml.QuantumFunctionError(
+                "Parameter broadcasting is not supported with adjoint differentiation"
+            )
+
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment
