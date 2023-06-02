@@ -183,7 +183,6 @@ class TransformDispatcher:
         self, transform, expand_transform=None, classical_cotransform=None
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
-        functools.update_wrapper(self, transform)
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
 
