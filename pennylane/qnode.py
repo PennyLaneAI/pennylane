@@ -910,7 +910,8 @@ class QNode:
 
             res = res[0]
 
-            # convert result to the interface in case the qfunc has no operations
+            # convert result to the interface in case the qfunc has no parameters
+
             if len(self.tape.get_parameters(trainable_only=False)) == 0:
                 res = _convert_to_interface(res, self.interface)
 
