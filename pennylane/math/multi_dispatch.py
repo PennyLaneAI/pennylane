@@ -537,12 +537,10 @@ def einsum(indices, *operands, like=None, optimize=None):
     if like is None:
         like = get_interface(*operands)
     operands = np.coerce(operands, like=like)
-
-    if optimize is not None and like != "torch":
+    if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
-        return np.einsum(indices, *operands, like=like, optimize=optimize)
-
-    return np.einsum(indices, *operands, like=like)
+        return np.einsum(indices, *operands, like=like)
+    return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
 def where(condition, x=None, y=None):
