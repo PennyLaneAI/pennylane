@@ -39,7 +39,7 @@ def _convert_to_interface(res, interface):
         return res
 
     if isinstance(res, (list, tuple)):
-        return type(res)([_convert_to_interface(r, interface) for r in res])
+        return type(res)(_convert_to_interface(r, interface) for r in res)
 
     if isinstance(res, dict):
         return {k: _convert_to_interface(v, interface) for k, v in res.items()}
