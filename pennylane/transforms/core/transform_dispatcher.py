@@ -167,7 +167,7 @@ def _transform_signature_check(signature):
 
 
 class TransformDispatcher:
-    r"""This object is developer facing and should not be used directly to create transforms.
+    r"""This object is developer facing and should not be used directly to create transforms. Use :func:`~.pennylane.transforms.core.transform`.
 
     Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
     on tape, qfunc and qnode.
@@ -204,7 +204,7 @@ class TransformDispatcher:
             return self._qfunc_transform(obj, targs, tkwargs)
 
         raise TransformError(
-            "The object on which is the transform is applied is not valid. It can only be a "
+            "The object on which the transform is applied is not valid. It can only be a "
             "tape, a QNode or a qfunc."
         )
 
