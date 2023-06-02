@@ -421,8 +421,9 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
-    hardware-compatible shift rules. Thus, it is limited to few-qubit pulses, but allows
-    for the evaluation of parameter-shift gradients for many-qubit pulse programs on hardware.
+    hardware-compatible shift rules.
+    It allows for the evaluation of parameter-shift gradients for many-qubit pulse programs
+    on hardware, with the limitation that the program must be composed of few-qubit pulses.
 
     For this differentiation method, the unitary matrix corresponding to each pulse
     is computed and differentiated with an autodiff framework. From this derivative,
