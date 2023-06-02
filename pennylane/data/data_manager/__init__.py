@@ -23,11 +23,11 @@ from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union
 
-import fsspec
 import requests
 
 from pennylane.data.base import Dataset
-from pennylane.data.base._hdf5 import h5py
+
+from pennylane.data.base._hdf5 import open_hdf5_s3
 
 from ._params import DEFAULT, FULL, resolve_params
 from .types import DataPath, FolderMapView, ParamArg
@@ -56,17 +56,13 @@ def _get_data_struct():
 
 
 def _download_partial(
-    s3_path: str, dest: Path, attributes: typing.Iterable[str], cache_dir: Optional[Path]
+    s3_url: str, dest: Path, attributes: typing.Iterable[str], cache_dir: Optional[Path]
 ) -> None:
     """Download only the requested attributes of the Dataset at ``s3_path``."""
-    if cache_dir is not None:
-        fs = fsspec.open(f"blockcache::{s3_path}", blockcache={"cache_storage": str(cache_dir)})
-    else:
-        fs = fsspec.open(s3_path)
 
-    with h5py.File(fs.open()) as f:
-        remote_dataset = Dataset(f)
-        remote_dataset.write(dest, "w", attributes)
+    h5_file = open_hdf5_s3(s3_url, cache_dir=cache_dir)
+    remote_dataset = Dataset(h5_file)
+    remote_dataset.write(dest, "w", attributes)
 
 
 def _download_dataset(
@@ -80,7 +76,8 @@ def _download_dataset(
     s3_path = f"{S3_URL}/{data_path}"
 
     if attributes is not None:
-        return _download_partial(s3_path, dest, attributes, cache_dir)
+        _download_partial(s3_path, dest, attributes, cache_dir)
+        return
 
     with open(dest, "wb") as f:
         resp = requests.get(s3_path, timeout=5.0)
@@ -89,7 +86,7 @@ def _download_dataset(
         f.write(resp.content)
 
 
-def load(  # pylint: ignore=too-many-arguments
+def load(  # pylint: disable=too-many-arguments
     data_name: str,
     attributes: Optional[typing.Iterable[str]] = None,
     folder_path: Path = Path("./datasets/"),
@@ -105,7 +102,9 @@ def load(  # pylint: ignore=too-many-arguments
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
         attributes (list[str]) : An optional list to specify individual data element that are required
+        force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
         download_dir (str) : Path to the directory used for saving datasets
+        num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
@@ -128,7 +127,7 @@ def load(  # pylint: ignore=too-many-arguments
         for local_path in (folder_path / data_path for data_path in data_paths)
         if force or not local_path.exists()
     ]
-    if not data_paths:
+    if not dest_paths:
         return []
 
     for path_parents in set(path.parent for path in dest_paths):

@@ -16,16 +16,21 @@
 import importlib
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Literal, Union
+from typing import Any, Literal, Union, Optional
 from uuid import uuid4
+from functools import lru_cache
+
 
 from .typing_util import HDF5Any, HDF5Group
+
+_MISSING_MODULES_EXC = ImportError(
+    "This feature requires the 'aiohttp', 'h5py' and 'fsspec' packages. "
+    "They can be installed with:\n\n pip install aiohttp fsspec h5py"
+)
 
 
 class _h5py_lazy:  # pylint: disable=too-few-public-methods
     """Provides a lazy-loaded interface to the H5Py module, and convenience methods."""
-
-    convenience: ModuleType
 
     def __init__(self):
         self.__h5 = None
@@ -33,11 +38,9 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
     def _do_import(self):
         try:
             self.__h5 = importlib.import_module("h5py")
-        except ImportError as Error:
-            raise ImportError(
-                "This feature requires the 'h5py' package. "
-                "They can be installed with:\n\n pip install h5py"
-            ) from Error
+
+        except ImportError as exc:
+            raise _MISSING_MODULES_EXC from exc
 
     def __getattr__(self, resource: str) -> Any:
         if self.__h5 is None:
@@ -93,3 +96,30 @@ class _h5py_lazy:  # pylint: disable=too-few-public-methods
 
 
 h5py = _h5py_lazy()
+
+
+@lru_cache(maxsize=1)
+def _import_fsspec() -> ModuleType:
+    """Import and return the ``fsspec`` module."""
+    try:
+        fsspec = importlib.import_module("fsspec")
+        importlib.import_module("aiohttp")  # make sure it's installed
+    except ImportError as exc:
+        raise _MISSING_MODULES_EXC from exc
+
+    return fsspec
+
+
+def open_hdf5_s3(s3_url: str, cache_dir: Optional[Path]) -> HDF5Group:
+    """Uses ``fsspec`` module to open the HDF5 file at ``s3_url``.
+
+    This requires both ``fsspec`` and ``aiohttp`` to be installed.
+    """
+    fsspec = _import_fsspec()
+
+    if cache_dir is not None:
+        fs = fsspec.open(f"blockcache::{s3_url}", blockcache={"cache_storage": str(cache_dir)})
+    else:
+        fs = fsspec.open(s3_url)
+
+    return h5py.File(fs.open())
