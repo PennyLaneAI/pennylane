@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 
-wires = [2, 3, 4]
+test_wires = [2, 3, 4]
 devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
 
 
@@ -37,7 +37,7 @@ def qutrit_ansatz(x):
 class TestIntegrationSingleReturn:
     """Test that single measurements return behavior does not change."""
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
         dev = qml.device("default.qubit", wires=wires)
@@ -52,7 +52,7 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2**wires,)
         assert isinstance(res, np.ndarray)
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires):
         """Return state with default.mixed."""
         dev = qml.device("default.mixed", wires=wires)
@@ -68,7 +68,7 @@ class TestIntegrationSingleReturn:
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("d_wires", wires)
+    @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
         """Return density matrix with default.qubit."""
         dev = qml.device(device, wires=4)
@@ -201,7 +201,7 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
-        if device == "lightning.qubit" or device == "default.qutrit":
+        if device in ("lightning.qubit", "default.qutrit"):
             pytest.skip(
                 "Skip Lightning (wire reordering unsupported) and Qutrit (unsuported observables)."
             )
@@ -319,7 +319,7 @@ devices = ["default.qubit.tf", "default.mixed"]
 class TestIntegrationSingleReturnTensorFlow:
     """Test that single measurements return behavior does not change for Torch device."""
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
         import tensorflow as tf
@@ -337,7 +337,7 @@ class TestIntegrationSingleReturnTensorFlow:
         assert res.shape == (2**wires,)
         assert isinstance(res, tf.Tensor)
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires):
         """Return state with default.mixed."""
         import tensorflow as tf
@@ -535,7 +535,7 @@ devices = ["default.qubit.torch", "default.mixed"]
 class TestIntegrationSingleReturnTorch:
     """Test that single measurements return behavior does not change for Torch device."""
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
         import torch
@@ -553,7 +553,7 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == (2**wires,)
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires):
         """Return state with default.mixed."""
         import torch
@@ -572,7 +572,7 @@ class TestIntegrationSingleReturnTorch:
         assert isinstance(res, torch.Tensor)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("d_wires", wires)
+    @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
         """Return density matrix."""
         import torch
@@ -750,7 +750,7 @@ devices = ["default.qubit.jax", "default.mixed"]
 class TestIntegrationSingleReturnJax:
     """Test that single measurements return behavior does not change for Jax device."""
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
         from jax.config import config
@@ -771,7 +771,7 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == (2**wires,)
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("wires", wires)
+    @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires):
         """Return state with default.mixed."""
         from jax.config import config
@@ -793,7 +793,7 @@ class TestIntegrationSingleReturnJax:
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("d_wires", wires)
+    @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
         """Return density matrix."""
         from jax.config import config
@@ -987,7 +987,7 @@ class TestIntegrationSingleReturnJax:
         assert sum(res.values()) == shots
 
 
-wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
+multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
 devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
 
@@ -1067,6 +1067,7 @@ class TestIntegrationMultipleReturns:
         (qml.PauliZ(1), None, qml.PauliZ(0), None),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1136,9 +1137,10 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (3 ** len(wires2),)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    @pytest.mark.parametrize("wires3, wires4", wires)
+    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         if device == "default.qutrit":
@@ -1179,8 +1181,9 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[3], np.ndarray)
         assert res[3].shape == ()
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
-    @pytest.mark.parametrize("wires3, wires4", wires)
+    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas_qutrit(self, op1, wires1, op2, wires2, wires3, wires4):
         """Return multiple different measurements."""
         pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
@@ -1466,6 +1469,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         (qml.PauliZ(1), None, qml.PauliZ(0), None),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1497,9 +1501,10 @@ class TestIntegrationMultipleReturnsTensorflow:
         assert isinstance(res[1], tf.Tensor)
         assert res[1].shape == (2 ** len(wires2),)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    @pytest.mark.parametrize("wires3, wires4", wires)
+    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         import tensorflow as tf
@@ -1728,6 +1733,7 @@ class TestIntegrationMultipleReturnsTorch:
         (qml.PauliZ(1), None, qml.PauliZ(0), None),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1759,9 +1765,10 @@ class TestIntegrationMultipleReturnsTorch:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == (2 ** len(wires2),)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    @pytest.mark.parametrize("wires3, wires4", wires)
+    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         import torch
@@ -1994,6 +2001,7 @@ class TestIntegrationMultipleReturnJax:
         (qml.PauliZ(1), None, qml.PauliZ(0), None),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -2028,9 +2036,10 @@ class TestIntegrationMultipleReturnJax:
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    @pytest.mark.parametrize("wires3, wires4", wires)
+    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         from jax.config import config
@@ -2254,6 +2263,7 @@ class TestIntegrationShotVectors:
         assert len(res) == all_shots
         assert all(r.shape == () for r in res)
 
+    # pylint: disable=unused-argument
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
@@ -2379,6 +2389,7 @@ class TestIntegrationSameMeasurementShotVector:
         (qml.Hermitian(herm, wires=[3, 2]), None),
     ]
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
@@ -2576,7 +2587,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[idx]):
                 if i % 2 == 0 or shots == 1:
-                    obs_provided = meas2.obs is not None
+                    assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
                 else:
@@ -2606,9 +2617,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
         for shot_tuple in dev.shot_vector:
             for idx in range(shot_tuple.copies):
                 for i, r in enumerate(res[idx]):
-                    expected_sample_shape_item = len(meas2.wires)
                     if i % 2 == 0 or shot_tuple.shots == 1:
-                        obs_provided = meas2.obs is not None
+                        assert meas2.obs is not None
                         expected_shape = ()
                         assert r.shape == expected_shape
                     else:
@@ -2646,7 +2656,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[idx]):
                 if i % 2 == 0:
-                    obs_provided = meas2.obs is not None
+                    assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
                 else:
@@ -2681,9 +2691,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[idx]):
-                expected_sample_shape_item = len(meas2.wires)
                 if i % 2 == 0 or shots == 1:
-                    obs_provided = meas2.obs is not None
+                    assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
                 else:
@@ -2723,7 +2732,6 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[idx]):
-                expected_sample_shape_item = len(meas2_wires)
                 if i % 2 == 0:
                     expected_shape = (len(meas1_wires) ** 2,)
                     assert r.shape == expected_shape
