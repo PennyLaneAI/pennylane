@@ -585,7 +585,7 @@ class StateVectorProjector(Observable):
         label = f"({kets})({bras})"
 
         if len(label) > 42:
-            return Observable.label(self, base_label=base_label or "P", cache={"info": label})
+            return super().label(base_label=base_label or "P", cache={"info": label})
 
         return label
 
@@ -614,7 +614,7 @@ class StateVectorProjector(Observable):
          [0. 0.5 0.5 0.]
          [0. 0.  0.  0.]]
         """
-        return qml.math.outer(state_vector, state_vector)
+        return qml.math.outer(state_vector, qml.math.conj(state_vector))
 
     @staticmethod
     def compute_eigvals(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
@@ -643,7 +643,7 @@ class StateVectorProjector(Observable):
         [0. 0. 0. 1.]
         """
         w = qml.math.zeros_like(state_vector)
-        w[-1] = 1
+        w[0] = 1
         return w
 
     @staticmethod
@@ -677,10 +677,16 @@ class StateVectorProjector(Observable):
         """
         if set(state_vector).issubset({0, 1}):
             return []
-        # Brute force for now
-        projector = qml.math.outer(state_vector, state_vector)
-        _, evecs = qml.math.linalg.eigh(projector)
-        return [QubitUnitary(evecs.T, wires=wires)]
+
+        # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
+        # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
+        phase = qml.math.exp(-1j * qml.math.angle(state_vector[0]))
+        psi = phase * state_vector
+        denominator = qml.math.sqrt(2 + 2 * psi[0])
+        psi = qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
+        psi /= denominator
+        u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
+        return [QubitUnitary(u, wires=wires)]
 
     def pow(self, z):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
