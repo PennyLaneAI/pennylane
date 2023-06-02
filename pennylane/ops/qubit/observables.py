@@ -497,7 +497,7 @@ class Projector(Observable):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
-class StateVectorProjector(Projector):
+class StateVectorProjector(Observable):
     r"""
     Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
 
@@ -541,7 +541,7 @@ class StateVectorProjector(Projector):
                 f"State vector must be of length {2**len(wires)}; got length {n_state_vector}."
             )
 
-        super(Observable, self).__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -582,7 +582,12 @@ class StateVectorProjector(Projector):
 
         kets = " + ".join([f"{c}|{b}>" for c, b in zip(coefficients, basis_strings)])
         bras = " + ".join([f"{c}<{b}|" for c, b in zip(coefficients, basis_strings)])
-        return f"({kets})({bras})"
+        label = f"({kets})({bras})"
+
+        if len(label) > 42:
+            return Observable.label(self, base_label=base_label or "P", cache={"info": label})
+
+        return label
 
     @staticmethod
     def compute_matrix(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
@@ -676,3 +681,6 @@ class StateVectorProjector(Projector):
         projector = qml.math.outer(state_vector, state_vector)
         _, evecs = qml.math.linalg.eigh(projector)
         return [QubitUnitary(evecs.T, wires=wires)]
+
+    def pow(self, z):
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
