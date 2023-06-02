@@ -39,6 +39,7 @@ from .attributes import (
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
+from .data_manager import load, load_interactive, list_attributes, list_datasets, DEFAULT
 
 __all__ = (
     "AttributeType",
@@ -55,4 +56,9 @@ __all__ = (
     "DatasetMolecule",
     "DatasetSparseArray",
     "DatasetJSON",
+    "load",
+    "load_interactive",
+    "list_attributes",
+    "list_datasets",
+    "DEFAULT",
 )

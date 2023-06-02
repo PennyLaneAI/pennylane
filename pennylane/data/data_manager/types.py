@@ -110,3 +110,13 @@ class FolderMapView(Mapping):
 
     def __len__(self) -> int:
         return sum(1 for _ in self.__iter__())
+
+    def __repr__(self) -> str:
+        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
+
+        return f"{{{items_repr}}}"
+
+    def __str__(self) -> str:
+        items_str = ", ".join((f"{str(k)}: {str(v)}") for k, v in self.items())
+
+        return f"{{{items_str}}}"
