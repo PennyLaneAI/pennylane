@@ -153,6 +153,23 @@ class TestFermiWord:
         assert fw * fs == result_fs1
         assert fs * fw == result_fs2
 
+    WORDS_AND_NUMBERS_MUL = (
+        (fw1, 2, FermiSentence({fw1: 2})),
+        (fw2, 3.7, FermiSentence({fw2: 3.7})),
+    )
+
+    @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
+    def test_mul_fermi_sentences(self, fw, number, result):
+        """Test that a FermiWord can be multiplied onto a number (from the left)
+        and return a FermiSentence"""
+        assert fw * number == result
+
+    @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
+    def test_rmul_fermi_sentences(self, fw, number, result):
+        """Test that a FermiWord can be multiplied onto a number (from the right)
+        and return a FermiSentence"""
+        assert number * fw == result
+
     tup_fw_mult_error = (
         (fw1, [1.5]),
         (fw4, "string"),

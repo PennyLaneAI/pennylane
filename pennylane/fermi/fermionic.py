@@ -138,6 +138,22 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return FermiSentence({self: 1}) * other
 
+        if isinstance(other, (int, float)):
+            return FermiSentence({self: other})
+
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+
+    def __rmul__(self, other):
+        r"""Reverse multiply a FermiWord
+
+        Multiplies a FermiWord "from the left" with an object that can't be modified
+        to support __mul__ for FermiWord. Will be defaulted in for example
+        ``2 * FermiWord({(0, 0): "+"})``, where the ``__mul__`` operator on an integer
+        will fail to multiply with a FermiWord"""
+
+        if isinstance(other, (int, float)):
+            return FermiSentence({self: other})
+
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
 
     def __pow__(self, value):
