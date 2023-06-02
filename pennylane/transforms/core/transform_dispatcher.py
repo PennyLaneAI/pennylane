@@ -14,7 +14,6 @@
 """
 This module contains the transform function, the transform dispatcher and the transform container.
 """
-import functools
 from typing import get_type_hints, Sequence, Callable
 import pennylane as qml
 
@@ -39,7 +38,8 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
         expand_transform(callable): An expand transform is defined as a function that has the following requirements:
 
             * An expand transform is a function that is applied before applying the defined quantum transform. It
-              takes a quantum tape as single input and returns a single tape in a sequence with a dummy processing function, lambda x: x.
+              takes a quantum tape as single input and returns a single tape in a sequence with a dummy processing
+              function, lambda x: x.
 
             * The expand transform must have the same type hinting as a quantum transform.
 
@@ -52,7 +52,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     .. code-block:: python
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
+        def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], callable):
             tape1 = tape
             tape2 = tape.copy()
 
@@ -86,11 +86,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     >>> dispatched_transform = transform(my_quantum_transform)
 
-    Now you can use the dispatched transform directly on qfunc and qnodes. One subtlety here, is that qfunc will not take
-    the post-processing function into account, and it should only be used for single tape transforms.
-
-    >>> dispatched_transform(qfunc_circuit)
-    <function TransformDispatcher._qfunc_transform.<locals>.qfunc_transformed at 0x7f4432c4f9a0>
+    Now you can use the dispatched transform directly on qfunc and qnodes.
 
     For QNodes, the dispatched transform populates the `TransformProgram` of your QNode. The transform and its
     processing function are applied in the execution.
@@ -98,6 +94,8 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
     >>> transformed_qnode = dispatched_transform(qfunc_circuit)
     <QNode: wires=2, device='default.qubit', interface='auto', diff_method='best'>
 
+    One subtlety here, this transform would not work for a qfunc because our transform return more than one case. If
+    it was not the case you would be able to dispatch on quantum functions.
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):
