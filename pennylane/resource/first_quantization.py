@@ -28,7 +28,7 @@ class FirstQuantization(Operation):
     algorithm in first quantization using a plane-wave basis.
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
-    the number of electrons and the lattive vectors need to be defined. The costs can then be
+    the number of electrons and the lattice vectors need to be defined. The costs can then be
     computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
     :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
     value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
