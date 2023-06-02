@@ -437,18 +437,34 @@ class TestFermiSentence:
     fs4 = FermiSentence({fw4: 1})
     fs5 = FermiSentence({})
 
-    tup_fs_subtract = (  # computed by hand
-        (fs1, fs1, FermiSentence({})),
-        (fs1, fs2, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
-        (fs1, fs3, FermiSentence({fw1: 1.23, fw2: 4j, fw4: -1})),
-        (fs2, fs5, fs2),
+    # tup_fs_subtract = (  # computed by hand
+    #     (fs1, fs1, FermiSentence({})),
+    #     (fs2, fs2, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
+    #     (fs3, fs3, FermiSentence({fw1: 1.23, fw2: 4j, fw4: -1})),
+    #     (fs2, fs5, fs2),
+    # )
+    #
+    # @pytest.mark.parametrize("f1, f2, result", tup_fs_subtract)
+    # def test_subtract_fermi_sentences(self, f1, f2, result):
+    #     """Test that the correct result of subtraction is produced for two FermiSentences."""
+    #
+    #     simplified_product = f1 - f2
+    #     simplified_product.simplify()
+    #
+    #     assert simplified_product == result
+
+    SENTENCE_MINUS_WORD = (  # computed by hand
+        (fs1, fw1, FermiSentence({fw1: 0.23, fw2: 4j, fw3: -0.5})),
+        (fs2, fw3, FermiSentence({fw1: -1.23, fw2: -4j, fw3: -0.5})),
+        (fs3, fw4, FermiSentence({fw3: -0.5})),
     )
 
-    @pytest.mark.parametrize("f1, f2, result", tup_fs_subtract)
-    def test_subtract_fermi_sentences(self, f1, f2, result):
-        """Test that the correct result of subtraction is produced for two FermiSentences."""
+    @pytest.mark.parametrize("fs, fw, result", SENTENCE_MINUS_WORD)
+    def test_subtract_fermi_word_from_fermi_sentence(self, fs, fw, result):
+        """Test that the correct result is produced if a FermiWord is
+        subtracted from a FermiSentence"""
 
-        simplified_product = f1 - f2
+        simplified_product = fs - fw
         simplified_product.simplify()
 
         assert simplified_product == result

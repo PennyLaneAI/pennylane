@@ -105,6 +105,32 @@ class FermiWord(dict):
         r"""Terminal representation of a FermiWord"""
         return str(self)
 
+    def __add__(self, other):
+
+        self_fs = FermiSentence({self: 1.0})
+
+        if isinstance(other, FermiWord):
+            other = FermiSentence({other: 1.0})
+            return self_fs + other
+
+        if isinstance(other, FermiSentence):
+            return self_fs + other
+
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+
+    def __sub__(self, other):
+        self_fs = FermiSentence({self: 1.0})
+
+        if isinstance(other, FermiWord):
+            other = FermiSentence({other: -1.0})
+            return self_fs + other
+
+        if isinstance(other, FermiSentence):
+            other = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
+            return self_fs + other
+
+        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+
     def __mul__(self, other):
         r"""Multiply a FermiWord with another FermiWord or a FermiSentence.
 
@@ -229,6 +255,10 @@ class FermiSentence(dict):
     def __sub__(self, other):
         r"""Subtract one FermiSentence from the other by reversing the sign of
         any coefficients and then adding"""
+        if isinstance(other, FermiWord):
+            other = FermiSentence({other: -1})
+            return self.__add__(other)
+
         if isinstance(other, FermiSentence):
             other = FermiSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
             return self.__add__(other)
