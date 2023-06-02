@@ -234,7 +234,12 @@ class Dataset(MapperMixin, _DatasetTransform):
             if_exists = "overwrite" if overwrite_attrs else "raise"
             h5py.copy_all(zgrp, self.bind, if_exists=if_exists)
 
-    def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w-") -> None:
+    def write(
+        self,
+        filepath: Union[str, Path],
+        mode: Literal["w", "w-", "a"] = "w-",
+        attributes: Optional[typing.Iterable[str]] = None,
+    ) -> None:
         """Write dataset to HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
@@ -242,11 +247,17 @@ class Dataset(MapperMixin, _DatasetTransform):
             mode: File handling mode. Possible values are "w-" (create, fail if file
                 exists), "w" (create, overwrite existing), and "a" (append existing,
                 create if doesn't exist). Default is "w-".
+            attributes: Optional list of attributes to copy. If None, all attributes
+                will be copied.
         """
         # TODO: better error message for 'ContainsGroupError'
+        if attributes is None:
+            attributes = self.attrs
+
         with h5py.open_group(filepath, mode=mode) as grp:
-            h5py.copy_all(self.bind, grp)
             grp.attrs.update(self.bind.attrs)
+            for attr in attributes:
+                h5py.copy(self.bind[attr], grp, attr)
 
     def _validate_attrs(self) -> None:
         """Validates that ``attrs`` matched the delcared fields of this
@@ -298,7 +309,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     def __repr__(self) -> str:
         repr_items = ", ".join(
             f"{name}: {value}"
-            for name, value in {**self.params, "attributes": (str(list(self.attrs)))}
+            for name, value in {**self.params, "attributes": (str(list(self.attrs)))}.items()
         )
 
         return f"<{type(self).__name__} = {repr_items}>"
