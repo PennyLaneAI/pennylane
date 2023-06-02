@@ -97,23 +97,61 @@ class TestFermiWord:
         assert repr(fw) == str_rep
 
     tup_fw_mult = (
-        (fw1, fw1, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
+        (
+            fw1,
+            fw1,
+            FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
+            FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
+        ),
         (
             fw1,
             fw3,
             FermiWord(
                 {(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 3): "-", (4, 0): "+", (5, 4): "-"}
             ),
+            FermiWord(
+                {(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-", (4, 0): "+", (5, 1): "-"}
+            ),
         ),
-        (fw2, fw1, FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-"})),
-        (fw1, fw4, fw1),
-        (fw4, fw3, fw3),
-        (fw4, fw4, fw4),
+        (
+            fw2,
+            fw1,
+            FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-"}),
+            FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 0): "-"}),
+        ),
+        (fw1, fw4, fw1, fw1),
+        (fw4, fw3, fw3, fw3),
+        (fw4, fw4, fw4, fw4),
     )
 
-    @pytest.mark.parametrize("f1, f2, result_fw", tup_fw_mult)
-    def test_mul(self, f1, f2, result_fw):
-        assert f1 * f2 == result_fw
+    @pytest.mark.parametrize("f1, f2, result_fw_right, result_fw_left", tup_fw_mult)
+    def test_mul_fermi_words(self, f1, f2, result_fw_right, result_fw_left):
+        """Test that two FermiWords can be multiplied together and return a new
+        FermiWord, with operators in the expected order"""
+        assert f1 * f2 == result_fw_right
+        assert f2 * f1 == result_fw_left
+
+    WORDS_AND_SENTENCES_MUL = (
+        (
+            fw1,
+            FermiSentence({fw3: 1.2}),
+            FermiSentence({fw1 * fw3: 1.2}),
+            FermiSentence({fw3 * fw1: 1.2}),
+        ),
+        (
+            fw2,
+            FermiSentence({fw3: 1.2, fw1: 3.7}),
+            FermiSentence({fw2 * fw3: 1.2, fw2 * fw1: 3.7}),
+            FermiSentence({fw3 * fw2: 1.2, fw1 * fw2: 3.7}),
+        ),
+    )
+
+    @pytest.mark.parametrize("fw, fs, result_fs1, result_fs2", WORDS_AND_SENTENCES_MUL)
+    def test_mul_fermi_sentences(self, fw, fs, result_fs1, result_fs2):
+        """Test that a FermiWord and a FermiSentence can be multiplied together
+        and return a new FermiSentence"""
+        assert fw * fs == result_fs1
+        assert fs * fw == result_fs2
 
     tup_fw_mult_error = (
         (fw1, [1.5]),
@@ -155,7 +193,7 @@ class TestFermiWord:
         serialization = pickle.dumps(fw)
         new_fw = pickle.loads(serialization)
         assert fw == new_fw
-        
+
     @pytest.mark.parametrize(
         "operator",
         [
@@ -168,7 +206,7 @@ class TestFermiWord:
         """Test that an error is raised if the operator orders are not correct."""
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
-            
+
 
 fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
 fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
