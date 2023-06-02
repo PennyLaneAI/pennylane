@@ -231,6 +231,9 @@
 * Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
   [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
 
+* A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
+  [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
