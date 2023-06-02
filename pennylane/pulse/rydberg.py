@@ -75,7 +75,7 @@ def rydberg_interaction(
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
 
     >>> H_i
-    ParametrizedHamiltonian: terms=36
+    HardwareHamiltonian: terms=36
 
     As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=9 atoms.
 
@@ -193,9 +193,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
-    ParametrizedHamiltonian: terms=6
+    HardwareHamiltonian: terms=6
     >>> H_d
-    ParametrizedHamiltonian: terms=3
+    HardwareHamiltonian: terms=3
 
     The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
     describing drive between the ground and excited states. The third term corresponds to the shift term

@@ -159,6 +159,9 @@
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
+* Updated repr for ParametrizedHamiltonian.
+[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -205,6 +208,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for `qml.grad` now states that it should be used with the Autograd interface only.
+  [(#4202)](https://github.com/PennyLaneAI/pennylane/pull/4202)
+
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
@@ -228,10 +234,14 @@
 * Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
   [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
 
+* A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
+  [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
