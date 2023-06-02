@@ -147,7 +147,7 @@ class FermiWord(dict):
 # TODO: support multiply by number in __mul__ when PauliSentence is merged.
 # TODO: create mapping method when the ne jordan_wigner function is added.
 
-
+# pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(wire)
     The fermionic creation operator
