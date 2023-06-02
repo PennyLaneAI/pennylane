@@ -54,8 +54,7 @@ class TestSnapshot:
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
     # pylint: disable=protected-access
-    @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit2(self, method):
+    def test_default_qubit2(self):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
         dev = qml.devices.experimental.DefaultQubit2()
@@ -218,14 +217,14 @@ class TestSnapshot:
     def test_unsupported_device_new(self):
         """Test that an error is raised on unsupported devices."""
 
-        class DummyDevice(qml.devices.experimental.Device):
+        class DummyDevice(qml.devices.experimental.Device):  # pylint: disable=too-few-public-methods
             def execute(self, *args, **kwargs):
-                return None
+                return args, kwargs
 
         dev = DummyDevice()
 
         with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
-            with qml.debugging._Debugger(dev) as dbg:
+            with qml.debugging._Debugger(dev):
                 dev.execute([])
 
     def test_empty_snapshots(self):
