@@ -206,7 +206,7 @@ class TransformDispatcher:
             return self._qfunc_transform(obj, targs, tkwargs)
 
         raise TransformError(
-            "The object on which is the transform is applied is not valid. It can only be a "
+            "The object on which the transform is applied is not valid. It can only be a "
             "tape, a QNode or a qfunc."
         )
 
