@@ -1281,7 +1281,6 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
             "element."
         )
 
-    eigvals, _ = qml.math.linalg.eigh(state0 - state1)
-    eigvals = qml.math.abs(eigvals)
+    eigvals = qml.math.abs(qml.math.eigvalsh(state0 - state1))
 
     return qml.math.sum(eigvals, axis=-1) / 2
