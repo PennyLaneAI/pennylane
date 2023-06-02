@@ -242,6 +242,24 @@ class FermiSentence(dict):
 
             return FermiSentence(dict(zip(keys, vals)))
 
+        if isinstance(other, (int, float)):
+            vals = [i * other for i in self.values()]
+            return FermiSentence(dict(zip(self.keys(), vals)))
+
+        raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
+
+    def __rmul__(self, other):
+        r"""Reverse multiply a FermiSentence
+
+        Multiplies a FermiSentence "from the left" with an object that can't be modified
+        to support __mul__ for FermiSentence. Will be defaulted in for example when
+        multiplying ``2 * fermi_sentence``, since the ``__mul__`` operator on an integer
+        will fail to multiply with a FermiSentence"""
+
+        if isinstance(other, (int, float)):
+            vals = [i * other for i in self.values()]
+            return FermiSentence(dict(zip(self.keys(), vals)))
+
         raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
 
     def __pow__(self, value):
