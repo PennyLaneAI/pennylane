@@ -106,7 +106,7 @@ class FermiWord(dict):
         return str(self)
 
     def __mul__(self, other):
-        r"""Multiply two Fermi words together.
+        r"""Multiply a FermiWord with another FermiWord or a FermiSentence.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w * w
@@ -134,6 +134,9 @@ class FermiWord(dict):
             dict_self.update(dict_other)
 
             return FermiWord(dict_self)
+
+        if isinstance(other, FermiSentence):
+            return FermiSentence({self: 1}) * other
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
 
@@ -208,16 +211,22 @@ class FermiSentence(dict):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
         words pair-wise"""
 
-        if len(self) == 0:
-            return copy(other)
+        if isinstance(other, FermiWord):
+            other = FermiSentence({other: 1})
 
-        if len(other) == 0:
-            return copy(self)
+        if isinstance(other, FermiSentence):
+            if len(self) == 0:
+                return copy(other)
 
-        keys = [i * j for i in self.keys() for j in other.keys()]
-        vals = [i * j for i in self.values() for j in other.values()]
+            if len(other) == 0:
+                return copy(self)
 
-        return FermiSentence(dict(zip(keys, vals)))
+            keys = [i * j for i in self.keys() for j in other.keys()]
+            vals = [i * j for i in self.values() for j in other.values()]
+
+            return FermiSentence(dict(zip(keys, vals)))
+
+        raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
