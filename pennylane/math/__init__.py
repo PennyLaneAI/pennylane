@@ -150,6 +150,7 @@ __all__ = [
     "mutual_info",
     "ones_like",
     "purity",
+    "reduce_dm",
     "reduced_dm",
     "relative_entropy",
     "reduce_statevector",
