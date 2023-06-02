@@ -433,7 +433,9 @@ class THadamard(Operation):
         subspace (Sequence[int]): the 2D subspace on which to apply the operation. This should be
             `None` for the generalized Hadamard.
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     **Example**
 
@@ -467,7 +469,7 @@ class THadamard(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "TH"
 
-    def __init__(self, wires, subspace=None, do_queue=True):
+    def __init__(self, wires, subspace=None, do_queue=None):
         self._subspace = Operation.validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,

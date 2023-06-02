@@ -125,7 +125,7 @@ class BasicEntanglerLayers(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires=None, rotation=None, do_queue=True, id=None):
+    def __init__(self, weights, wires=None, rotation=None, do_queue=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = qml.math.get_interface(weights)
         weights = qml.math.asarray(weights, like=interface)
