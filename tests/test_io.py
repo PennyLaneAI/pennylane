@@ -14,8 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.io` module.
 """
-import pytest
 from unittest.mock import Mock
+import pytest
 
 import pennylane as qml
 
@@ -36,6 +36,7 @@ class MockPluginConverter:
         """True if the mocked loader was called."""
         return self.mock_loader.called
 
+    # pylint: disable=unsubscriptable-object
     @property
     def last_args(self):
         """The last call arguments of the mocked loader."""
@@ -45,8 +46,8 @@ class MockPluginConverter:
 load_entry_points = ["qiskit", "qasm", "qasm_file", "pyquil_program", "quil", "quil_file"]
 
 
-@pytest.fixture
-def mock_plugin_converters(monkeypatch):
+@pytest.fixture(name="mock_plugin_converters")
+def mock_plugin_converters_fixture(monkeypatch):
     mock_plugin_converter_dict = {
         entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
     }
@@ -79,7 +80,7 @@ class TestLoad:
     def test_convenience_functions(self, method, entry_point_name, mock_plugin_converters):
         """Test that the convenience load functions access the correct entrypoint."""
 
-        res = method("Test")
+        method("Test")
 
         assert mock_plugin_converters[entry_point_name].called
         assert mock_plugin_converters[entry_point_name].last_args == ("Test",)
