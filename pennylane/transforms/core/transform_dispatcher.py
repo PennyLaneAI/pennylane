@@ -52,7 +52,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     .. code-block:: python
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], callable):
+        def my_quantum_transform(tape: qml.tape.QuantumTape, index: int) -> (Sequence[qml.tape.QuantumTape], Callable):
             tape1 = tape
             tape2 = tape.copy()
 
