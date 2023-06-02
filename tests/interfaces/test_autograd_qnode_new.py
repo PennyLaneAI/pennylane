@@ -2365,3 +2365,19 @@ class TestReturn:
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (3, 2, 2)
+
+
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+def test_no_ops(dev_name):
+    """Test that the return value of the QNode matches in the interface
+    even if there are no ops"""
+
+    dev = qml.device(dev_name, wires=1)
+
+    @qml.qnode(dev, interface="autograd")
+    def circuit():
+        qml.Hadamard(wires=0)
+        return qml.state()
+
+    res = circuit()
+    assert isinstance(res, np.ndarray)

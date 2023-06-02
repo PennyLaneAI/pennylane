@@ -83,20 +83,6 @@ class TestQNodeIntegration:
 
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
-    def test_no_ops(self):
-        """Test that the return value of the QNode matches in the interface
-        even if there are no ops"""
-
-        dev = qml.device("default.mixed", wires=1)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit():
-            qml.Hadamard(wires=0)
-            return qml.state()
-
-        res = circuit()
-        assert isinstance(res, torch.Tensor)
-
 
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
