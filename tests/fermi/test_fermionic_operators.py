@@ -18,6 +18,16 @@ import pytest
 from pennylane.fermi.fermionic import FermiWord, FermiC, FermiA
 
 
+@pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
+def test_bad_wire_raises_error(wire):
+    """Test that passing a value for wire that is not a positive integer raises an error"""
+    with pytest.raises(ValueError, match="expected a single, positive integer value for wire"):
+        _ = FermiC(wire)
+
+    with pytest.raises(ValueError, match="expected a single, positive integer value for wire"):
+        _ = FermiA(wire)
+
+
 class TestFermiC:
     """Test the methods of the creation operator FermiC"""
 
@@ -34,16 +44,11 @@ class TestFermiC:
 
         assert op.sorted_dic == op_dict
 
-    @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
-    def test_bad_wire_raises_error(self, wire):
-        """Test that passing a value for wire that is not a positive integer raises an error"""
-        with pytest.raises(ValueError, "expected a single, positive integer value for wire"):
-            _ = FermiC(wire)
-
 
 class TestFermiA:
     """Test the methods of the annihilation operator FermiA"""
 
+    @pytest.mark.parametrize("wire", [1, 3])
     def test_initialization(self, wire):
         """Test __init__ function returns the expected FermiWord object"""
         op = FermiA(wire)
@@ -55,9 +60,3 @@ class TestFermiA:
         assert list(op.values()) == ["-"]
 
         assert op.sorted_dic == op_dict
-
-    @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
-    def test_bad_wire_raises_error(self, wire):
-        """Test that passing a value for wire that is not a positive integer raises an error"""
-        with pytest.raises(ValueError, "expected a single, positive integer value for wire"):
-            _ = FermiA(wire)
