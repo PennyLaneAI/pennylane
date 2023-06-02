@@ -86,13 +86,13 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     >>> dispatched_transform = transform(my_quantum_transform)
 
-    Now you can use to dispatched transform directly on qfunc and qnode. One subtelty here, is that qfunc will not take
-    the post-processing function into account, and it should only be used for single tape transform.
+    Now you can use the dispatched transform directly on qfunc and qnodes. One subtlety here, is that qfunc will not take
+    the post-processing function into account, and it should only be used for single tape transforms.
 
     >>> dispatched_transform(qfunc_circuit)
     <function TransformDispatcher._qfunc_transform.<locals>.qfunc_transformed at 0x7f4432c4f9a0>
 
-    For QNodes, the dispatched transforms populates the `TransformProgram` of your QNode and the transform and its
+    For QNodes, the dispatched transform populates the `TransformProgram` of your QNode. The transform and its
     processing function are applied in the execution.
 
     >>> transformed_qnode = dispatched_transform(qfunc_circuit)
