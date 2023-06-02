@@ -177,7 +177,6 @@ class FermiWord(dict):
 
 # TODO: create __add__ method when PauliSentence is merged.
 # TODO: create __sub__ method when PauliSentence is merged.
-# TODO: support multiply by number in __mul__ when PauliSentence is merged.
 # TODO: create mapping method when the ne jordan_wigner function is added.
 
 
@@ -215,13 +214,26 @@ class FermiSentence(dict):
     def __add__(self, other):
         r"""Add two Fermi sentence together by iterating over the smaller one and adding its terms
         to the larger one."""
-        smaller_fs, larger_fs = (
-            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-        )
-        for key in smaller_fs:
-            larger_fs[key] += smaller_fs[key]
 
-        return larger_fs
+        if isinstance(other, FermiSentence):
+            smaller_fs, larger_fs = (
+                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+            )
+            for key in smaller_fs:
+                larger_fs[key] += smaller_fs[key]
+
+            return larger_fs
+
+        raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
+
+    def __sub__(self, other):
+        r"""Subtract one FermiSentence from the other by reversing the sign of
+        any coefficients and then adding"""
+        if isinstance(other, FermiSentence):
+            other = FermiSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
+            return self.__add__(other)
+
+        raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
 
     def __mul__(self, other):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
