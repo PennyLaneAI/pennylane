@@ -147,7 +147,7 @@ class TestFermiWord:
     )
 
     @pytest.mark.parametrize("fw, fs, result_fs1, result_fs2", WORDS_AND_SENTENCES_MUL)
-    def test_mul_fermi_sentences(self, fw, fs, result_fs1, result_fs2):
+    def test_mul_fermi_sentence(self, fw, fs, result_fs1, result_fs2):
         """Test that a FermiWord and a FermiSentence can be multiplied together
         and return a new FermiSentence"""
         assert fw * fs == result_fs1
@@ -159,13 +159,13 @@ class TestFermiWord:
     )
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
-    def test_mul_fermi_sentences(self, fw, number, result):
+    def test_mul_number(self, fw, number, result):
         """Test that a FermiWord can be multiplied onto a number (from the left)
         and return a FermiSentence"""
         assert fw * number == result
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
-    def test_rmul_fermi_sentences(self, fw, number, result):
+    def test_rmul_number(self, fw, number, result):
         """Test that a FermiWord can be multiplied onto a number (from the right)
         and return a FermiSentence"""
         assert number * fw == result
@@ -179,6 +179,11 @@ class TestFermiWord:
     def test_mul_error(self, f1, f2):
         with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(f2)}."):
             f1 * f2  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("f1, f2", tup_fw_mult_error)
+    def test_rmul_error(self, f1, f2):
+        with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(f2)}."):
+            f2 * f1  # pylint: disable=pointless-statement
 
     tup_fw_pow = (
         (fw1, 0, FermiWord({})),
@@ -385,11 +390,30 @@ class TestFermiSentence:
 
     @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
     def test_mul(self, f1, f2, result):
-        """Test that the correct result of multiplication is produced."""
+        """Test that the correct result of multiplication between two
+        FermiSentences is produced."""
         simplified_product = f1 * f2
         simplified_product.simplify()
 
         assert simplified_product == result
+
+    SENTENCES_AND_NUMBERS_MUL = (
+        (fs1, 2, FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),
+        (fs2, 3.4, FermiSentence({fw1: -1.23 * 3.4, fw2: -4j * 3.4, fw3: 0.5 * 3.4})),
+        (fs5, 10, FermiSentence({})),  # ToDo: is this the desire behaviour?
+    )
+
+    @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
+    def test_mul_number(self, fs, number, result):
+        """Test that a FermiSentence can be multiplied onto a number (from the left)
+        and return a FermiSentence"""
+        assert fs * number == result
+
+    @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
+    def test_rmul_number(self, fs, number, result):
+        """Test that a FermiSentence can be multiplied onto a number (from the right)
+        and return a FermiSentence"""
+        assert number * fs == result
 
     tup_fs_add = (  # computed by hand
         (fs1, fs1, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
@@ -443,13 +467,13 @@ class TestFermiSentence:
         (fs4, 3, fs4),
     )
 
-    @pytest.mark.parametrize("f1, pow, result", tup_fs_pow)
-    def test_pow(self, f1, pow, result):
-        assert f1**pow == result
+    @pytest.mark.parametrize("f1, exponent, result", tup_fs_pow)
+    def test_pow(self, f1, exponent, result):
+        assert f1**exponent == result
 
     tup_fs_pow_error = ((fs1, -1), (fs3, 1.5))
 
-    @pytest.mark.parametrize("f1, pow", tup_fs_pow_error)
-    def test_pow_error(self, f1, pow):
+    @pytest.mark.parametrize("f1, exponent", tup_fs_pow_error)
+    def test_pow_error(self, f1, exponent):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
-            f1**pow  # pylint: disable=pointless-statement
+            f1**exponent  # pylint: disable=pointless-statement
