@@ -169,7 +169,7 @@ def _transform_signature_check(signature):
 
 
 class TransformDispatcher:
-    r"""This object is developer facing and should not be used directly to create transforms.
+    r"""This object is developer facing and should not be used directly to create transforms. Use :func:`~.pennylane.transforms.core.transform`.
 
     Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
     on tape, qfunc and qnode.
