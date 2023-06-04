@@ -109,11 +109,11 @@ def transmon_interaction(
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
         H = qml.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
 
-    The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubits
+    The resulting :class:`~.HardwareHamiltonian:` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
 
     >>> print(H)
-    ParametrizedHamiltonian: terms=10
+    HardwareHamiltonian: terms=10
 
     We can also provide individual values for each of the qubit energies and coupling strengths, here of order :math:`0.1 \times 2\pi\text{GHz}` and :math:`1 \times 2\pi\text{GHz}`, respectively.
 

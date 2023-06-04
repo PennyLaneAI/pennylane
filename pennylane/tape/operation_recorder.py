@@ -50,7 +50,6 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
         prep=None,
         shots=None,
         name=None,
-        do_queue=False,
         _update=True,
     ):  # pylint: disable=unused-argument, too-many-arguments
         AnnotatedQueue.__init__(self)
