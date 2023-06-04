@@ -22,9 +22,8 @@ from typing import Dict, FrozenSet, Generic, List, Type, TypeVar
 import numpy as np
 
 import pennylane as qml
-from pennylane.data.base._hdf5 import h5py
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import HDF5Group
+from pennylane.data.base.hdf5 import HDF5Group, h5py
 from pennylane.operation import Operator, Tensor
 
 from ._wires import wires_to_json

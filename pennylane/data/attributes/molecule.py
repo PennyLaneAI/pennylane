@@ -18,7 +18,7 @@ from typing import Tuple, Type
 import numpy as np
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import HDF5Group
+from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.qchem import Molecule
 
 

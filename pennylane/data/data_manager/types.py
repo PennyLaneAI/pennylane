@@ -21,7 +21,7 @@ import typing
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import PurePosixPath
-from typing import Any, Dict, FrozenSet, List, Literal, Union
+from typing import Any, Dict, FrozenSet, List, Literal, Tuple, TypedDict, Union
 
 
 class ParamArg(enum.Enum):
@@ -53,26 +53,77 @@ class ParamArg(enum.Enum):
 DEFAULT = ParamArg.DEFAULT
 FULL = ParamArg.FULL
 
+# Type for the name of a parameter, e.g 'molname', 'bondlength'
 ParamName = str
+# Type for a concrete paramter value, e.g 'H2', '0.5'
 ParamVal = str
-ParamArgs = Dict[ParamName, Union[ParamArg, List[ParamVal]]]
+# TODO: needed?
+ParamArgs = Dict[ParamName, Union[ParamArg, typing.Iterable[ParamVal]]]
+# Description is a dictionary that contains all the parameter values
+# for a dataset
 Description = Dict[ParamName, ParamVal]
+# Type for a dataset path, relative to the foldermap.json file
 DataPath = PurePosixPath
 
 
-class FolderMapView(Mapping):
+class DataStuct(TypedDict):
+    params: List[str]
+    attributes: List[str]
+
+
+class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     """Provides a read-only view of the ``foldermap.json`` file in
     the datasets bucket. The folder map is a nested mapping of
-    dataset parameters to their path, relative to ``foldermap.json``.
+    dataset parameters to their path, relative to the ``foldermap.json``
+    file.
 
     A dictionary in the folder map can optionally specify a default
     paramater using the '__default' key. This view hides that
     key, and allows the default parameter to be accessed.
+
+    For example:
+
+        {
+            "qchem": {
+                "__data_struct": {
+                    "params": ["molname", "basis", "bondlength"],
+                    "attributes": [
+                        "attributes":
+                        "molecule",
+                        "hamiltonian",
+                        "sparse_hamiltonian",
+                        "hf_state",
+                        "meas_groupings",
+                        "fci_energy",
+                        "fci_spectrum",
+                        "dipole_op",
+                        ...
+                        "vqe_params",
+                        "vqe_energy"
+                    ]
+                }
+                "O2": {
+                    "__default": "STO-3G",
+                    "STO-3G": {
+                        "__default": "0.5",
+                        "0.5": "qchem/O2/STO-3G/0.5.h5",
+                        "0.6": "qchem/O2/STO-3G/0.6.h5"
+                    }
+                },
+                "H2": {
+                    "__default": "STO-3G",
+                    "STO-3G": {
+                        "__default": "0.7",
+                        "0.7": "qchem/H2/STO-3G/0.7.h5"
+                    }
+                }
+            },
+        }
     """
 
-    __PRIVATE_KEYS = {"__default"}
+    __PRIVATE_KEYS = {"__default", "__data_struct"}
 
-    def __init__(self, __foldermap: typing.Mapping[Any, Any]) -> None:
+    def __init__(self, __foldermap: typing.Mapping[str, Any]) -> None:
         """Initialize the mapping.
 
         Args:
@@ -89,7 +140,15 @@ class FolderMapView(Mapping):
         except KeyError as exc:
             raise ValueError("No default available") from exc
 
-    def __getitem__(self, __key: Union[str, Literal[ParamArg.DEFAULT]]) -> Any:
+    def find(
+        self, category: str, **params: Union[typing.Iterable[ParamVal], ParamArg]
+    ) -> List[Tuple[Description, DataPath]]:
+        """Returns a 2-tuple of dataset description and paths, for each dataset that
+        matches ``params``."""
+
+    def __getitem__(
+        self, __key: Union[str, Literal[ParamArg.DEFAULT]]
+    ) -> Union["FolderMapView", DataPath]:
         """Gets the item with key. If key is ``ParamArg.DEFAULT``, return the
         item under the default parameter, or raise a ``ValueError`` if no
         default exists."""

@@ -26,7 +26,7 @@ from pennylane.data.base.attribute import (
     get_attribute_type,
     match_obj_type,
 )
-from pennylane.data.base.typing_util import HDF5Group
+from pennylane.data.base.hdf5 import HDF5Group
 
 
 class AttributeTypeMapper(MutableMapping):

@@ -17,7 +17,8 @@
 import json
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import JSON, HDF5Array, HDF5Group
+from pennylane.data.base.typing_util import JSON
+from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
 
 class DatasetJSON(AttributeType[HDF5Array, JSON, JSON]):

@@ -39,10 +39,11 @@ from typing import (
 # pylint doesn't think this exists
 from typing_extensions import dataclass_transform  # pylint: disable=no-name-in-module
 
-from pennylane.data.base._hdf5 import h5py
+from pennylane.data.base import hdf5
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
+from pennylane.data.base.hdf5 import HDF5Any, HDF5Group, h5py
 from pennylane.data.base.mapper import MapperMixin, match_obj_type
-from pennylane.data.base.typing_util import UNSET, HDF5Any, HDF5Group, T
+from pennylane.data.base.typing_util import UNSET, T
 
 
 @dataclass
@@ -143,7 +144,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         if isinstance(bind, (h5py.Group, h5py.File)):
             self._bind = bind
         else:
-            self._bind = h5py.group()
+            self._bind = hdf5.create_group()
 
         self._init_bind()
         if params is not None:
@@ -226,13 +227,13 @@ class Dataset(MapperMixin, _DatasetTransform):
                 dataset.
         """
         # TODO: better error message when overwriting attribute fails
-        zgrp = h5py.open_group(filepath, mode="r")
+        zgrp = hdf5.open_group(filepath, mode="r")
 
         if assign_to:
-            h5py.copy(zgrp, self.bind, assign_to)
+            hdf5.copy(zgrp, self.bind, assign_to)
         else:
             if_exists = "overwrite" if overwrite_attrs else "raise"
-            h5py.copy_all(zgrp, self.bind, if_exists=if_exists)
+            hdf5.copy_all(zgrp, self.bind, if_exists=if_exists)
 
     def write(
         self,
@@ -254,10 +255,10 @@ class Dataset(MapperMixin, _DatasetTransform):
         if attributes is None:
             attributes = self.attrs
 
-        with h5py.open_group(filepath, mode=mode) as grp:
+        with hdf5.open_group(filepath, mode=mode) as grp:
             grp.attrs.update(self.bind.attrs)
             for attr in attributes:
-                h5py.copy(self.bind[attr], grp, attr)
+                hdf5.copy(self.bind[attr], grp, attr)
 
     def _validate_attrs(self) -> None:
         """Validates that ``attrs`` matched the delcared fields of this
@@ -356,6 +357,6 @@ class _DatasetAttributeType(AttributeType[HDF5Group, Dataset, Dataset]):
         return Dataset(bind)
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Dataset) -> HDF5Group:
-        h5py.copy(value.bind, bind_parent, key)
+        hdf5.copy(value.bind, bind_parent, key)
 
         return bind_parent[key]

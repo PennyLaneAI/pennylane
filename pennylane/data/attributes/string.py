@@ -17,7 +17,7 @@
 from typing import Tuple, Type
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.typing_util import HDF5Array, HDF5Group
+from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
 
 class DatasetString(AttributeType[HDF5Array, str, str]):

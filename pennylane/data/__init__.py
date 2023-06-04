@@ -39,7 +39,13 @@ from .attributes import (
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
-from .data_manager import load, load_interactive, list_attributes, list_datasets, DEFAULT
+from .data_manager import (
+    DEFAULT,
+    list_attributes,
+    list_datasets,
+    load,
+    load_interactive,
+)
 
 __all__ = (
     "AttributeType",

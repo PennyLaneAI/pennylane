@@ -20,7 +20,8 @@ from typing import Generic, List, Union, overload
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
+from pennylane.data.base.typing_util import T
+from pennylane.data.base.hdf5 import HDF5Group, HDF5Any
 
 
 class DatasetList(  # pylint: disable=too-many-ancestors
