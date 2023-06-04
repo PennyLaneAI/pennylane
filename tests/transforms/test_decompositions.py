@@ -28,6 +28,8 @@ from pennylane.wires import Wires
 
 from pennylane.transforms.decompositions import zyz_decomposition
 from pennylane.transforms.decompositions import xyx_decomposition
+from pennylane.transforms.decompositions import zxz_decomposition
+from pennylane.transforms.decompositions import one_qubit_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
 from pennylane.transforms.decompositions.two_qubit_unitary import (
     _convert_to_su4,

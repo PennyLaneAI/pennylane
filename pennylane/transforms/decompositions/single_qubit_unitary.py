@@ -179,3 +179,84 @@ def xyx_decomposition(U, wire, return_global_phase=False):
         Operations += [qml.s_prod(math.exp(1j * gamma)[0], qml.Identity(wire))]
 
     return Operations
+
+def zxz_decomposition(U, wire, return_global_phase=False):
+    r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
+    of elementary operations, as a product of X and Y rotations in the form
+    :math:`e^{i\alpha} RZ(\phi) RX(\theta) RZ(\psi)`.
+
+    Args:
+        U (array[complex]): A 2 x 2 unitary matrix.
+        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        return_global_phase (bool): Whether to return the global phase
+            as a `qml.s_prod` between `exp(1j)*alpha` and `qml.Identity` as the last
+            element of the returned list of operations.
+
+    Returns:
+        list[Operation]: Returns a list of of gates, an ``RZ``, an ``RX`` and
+        another ``RZ`` gate, which when applied in the order of appearance in the list is equivalent
+        to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        the global phase is returned as the last element of the list.
+
+    **Example**
+
+    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
+    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
+    >>> decomp = zxz_decomposition(U, 0, return_global_phase=True)
+    >>> decomp
+        [RZ(array(4.47029367), wires=[0]),
+        RX(array(1.14938178), wires=[0]),
+        RZ(array(-0.62748677), wires=[0]),
+        (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    """
+
+    # Small number to add to denominators to avoid division by zero
+    EPS = 1e-64
+
+    #Get global phase \alpha and U in SU(2) form (determinant is 1)
+    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+    U_det1, alpha = _convert_to_su2(U, return_global_phase=True)
+
+    #Use top row to solve for \phi and \psi
+    phi_plus_psi_by_two = math.arctan2(-math.imag(U[:, 0, 0]), math.real(U[:, 0, 0]) + EPS)
+    phi_minus_psi_by_two = math.arctan2(math.real(U[:, 0, 1]), -math.imag(U[:, 0, 1]) + EPS)
+    phi = phi_plus_psi_by_two + phi_minus_psi_by_two
+    psi = phi_plus_psi_by_two - phi_minus_psi_by_two
+
+    #Conditional to avoid divide by 0 errors
+    if math.allclose(phi_plus_psi_by_two, 0):
+        theta = 2 * math.arccos(math.real(U[:, 0, 0]) / (math.cos(phi_plus_psi_by_two) + EPS))
+    else:
+        theta = 2 * math.arccos(-math.imag(U[:, 0, 0]) / (math.sin(phi_plus_psi_by_two) + EPS))
+    
+    phi, theta, psi = map(math.squeeze, [phi, theta, psi])
+
+    Operations = [qml.RZ(phi, wire), qml.RX(theta, wire), qml.RZ(psi, wire)]
+    if return_global_phase:
+        Operations += [qml.s_prod(math.exp(1j * alpha)[0], qml.Identity(wire))]
+
+    return Operations
+
+def one_qubit_decomposition(U, rotations, wire):
+    r"""Decompose a one-qubit unitary :math:`U` in terms of specified rotations.
+
+    Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
+    and RZ gates.
+
+    Args:
+        U (tensor): A :math:`2 \times 2` unitary matrix.
+        rotations (string): A string defining the sequence of rotations to decompose :math:`U` into. 
+        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+
+    Returns:
+        list[Operation]: Returns a list of of gates which when applied in the order of appearance
+        in the list is equivalent to the unitary :math:`U` up to global phase.
+    """
+    supported_rotations = {"ZYZ": zyz_decomposition,
+                           "XYX": xyx_decomposition,
+                           "ZXZ": zxz_decomposition}
+
+    if rotations in supported_rotations:
+        return supported_rotations[rotations](U, wire)
+    else:
+        raise ValueError("Value passed to rotations is either invalid or currently unsupported.")
