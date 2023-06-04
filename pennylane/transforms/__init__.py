@@ -82,6 +82,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.xyx_decomposition
     ~transforms.zxz_decomposition
+    ~transforms.one_qubit_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
