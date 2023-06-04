@@ -218,17 +218,17 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     U_det1, alpha = _convert_to_su2(U, return_global_phase=True)
 
     #Use top row to solve for \phi and \psi
-    phi_plus_psi_by_two = math.arctan2(-math.imag(U[:, 0, 0]), math.real(U[:, 0, 0]) + EPS)
-    phi_minus_psi_by_two = math.arctan2(math.real(U[:, 0, 1]), -math.imag(U[:, 0, 1]) + EPS)
+    phi_plus_psi_by_two = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
+    phi_minus_psi_by_two = math.arctan2(math.real(U_det1[:, 0, 1]), -math.imag(U_det1[:, 0, 1]) + EPS)
     phi = phi_plus_psi_by_two + phi_minus_psi_by_two
     psi = phi_plus_psi_by_two - phi_minus_psi_by_two
 
     #Conditional to avoid divide by 0 errors
     if math.allclose(phi_plus_psi_by_two, 0):
-        theta = 2 * math.arccos(math.real(U[:, 0, 0]) / (math.cos(phi_plus_psi_by_two) + EPS))
+        theta = 2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phi_plus_psi_by_two) + EPS))
     else:
-        theta = 2 * math.arccos(-math.imag(U[:, 0, 0]) / (math.sin(phi_plus_psi_by_two) + EPS))
-    
+        theta = 2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phi_plus_psi_by_two) + EPS))
+
     phi, theta, psi = map(math.squeeze, [phi, theta, psi])
 
     Operations = [qml.RZ(phi, wire), qml.RX(theta, wire), qml.RZ(psi, wire)]
@@ -258,5 +258,5 @@ def one_qubit_decomposition(U, rotations, wire):
 
     if rotations in supported_rotations:
         return supported_rotations[rotations](U, wire)
-    else:
-        raise ValueError("Value passed to rotations is either invalid or currently unsupported.")
+
+    raise ValueError("Value passed to rotations is either invalid or currently unsupported.")
