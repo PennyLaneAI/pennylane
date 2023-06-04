@@ -20,8 +20,8 @@ from collections.abc import Mapping
 from typing import Dict, Generic, TypeVar, Union
 
 from pennylane.data.base.attribute import AttributeType
-from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
+from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
 
 

@@ -19,6 +19,7 @@ from typing import Literal, Optional, TypeVar, Union
 from uuid import uuid4
 
 from numpy.typing import ArrayLike
+
 from ._lazy_modules import fsspec, h5py
 
 # Type aliases for HDF5 objects.

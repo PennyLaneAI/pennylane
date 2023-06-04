@@ -17,11 +17,27 @@ folder map.
 """
 
 import enum
+import json
 import typing
 from collections.abc import Mapping
 from functools import lru_cache
-from pathlib import PurePosixPath
-from typing import Any, Dict, FrozenSet, List, Literal, Tuple, TypedDict, Union
+from pathlib import Path, PurePosixPath
+from typing import (
+    Any,
+    Dict,
+    FrozenSet,
+    Hashable,
+    Iterator,
+    KeysView,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypedDict,
+    Union,
+)
+
+from pennylane.data.base._lazy_modules import fsspec
 
 
 class ParamArg(enum.Enum):
@@ -59,11 +75,38 @@ ParamName = str
 ParamVal = str
 # TODO: needed?
 ParamArgs = Dict[ParamName, Union[ParamArg, typing.Iterable[ParamVal]]]
-# Description is a dictionary that contains all the parameter values
-# for a dataset
-Description = Dict[ParamName, ParamVal]
 # Type for a dataset path, relative to the foldermap.json file
 DataPath = PurePosixPath
+
+
+class Description(typing.Mapping[ParamName, ParamVal], Hashable):
+    """An immutable and hashable dictionary that contains all the parameter
+    values for a dataset."""
+
+    def __init__(self, params: typing.Iterable[Tuple[ParamName, ParamVal]]):
+        self.__data = dict(params)
+        self.__hash = None
+
+    def __getitem__(self, __key: ParamName) -> ParamVal:
+        return self.__data[__key]
+
+    def __iter__(self) -> Iterator[ParamName]:
+        return iter(self.__data)
+
+    def __len__(self) -> int:
+        return len(self.__data)
+
+    def __hash__(self) -> int:
+        if not self.__hash:
+            self.__hash = hash(tuple(self.__data))
+
+        return self.__hash
+
+    def __str__(self) -> str:
+        return str(self.__data)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({repr(self.__data)})"
 
 
 class DataStuct(TypedDict):
@@ -84,35 +127,24 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     For example:
 
         {
+            "__name": "category",
             "qchem": {
-                "__data_struct": {
-                    "params": ["molname", "basis", "bondlength"],
-                    "attributes": [
-                        "attributes":
-                        "molecule",
-                        "hamiltonian",
-                        "sparse_hamiltonian",
-                        "hf_state",
-                        "meas_groupings",
-                        "fci_energy",
-                        "fci_spectrum",
-                        "dipole_op",
-                        ...
-                        "vqe_params",
-                        "vqe_energy"
-                    ]
-                }
+                "__name": "molname",
                 "O2": {
+                    "__name": "basis",
                     "__default": "STO-3G",
                     "STO-3G": {
+                        "__name": "bondlength",
                         "__default": "0.5",
                         "0.5": "qchem/O2/STO-3G/0.5.h5",
                         "0.6": "qchem/O2/STO-3G/0.6.h5"
                     }
                 },
                 "H2": {
+                    "__name": "molname",
                     "__default": "STO-3G",
                     "STO-3G": {
+                        "__name": "bondlength",
                         "__default": "0.7",
                         "0.7": "qchem/H2/STO-3G/0.7.h5"
                     }
@@ -121,30 +153,78 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         }
     """
 
-    __PRIVATE_KEYS = {"__default", "__data_struct"}
+    __PRIVATE_KEYS = {"__default", "__name"}
 
-    def __init__(self, __foldermap: typing.Mapping[str, Any]) -> None:
+    def __init__(self, __curr_level: typing.Mapping[str, Any]) -> None:
         """Initialize the mapping.
 
         Args:
-            __foldermap: The raw foldermap
+            __data_struct: The top level foldermap
         """
-        self.__foldermap = __foldermap
+        self.__curr_level = __curr_level
+
+    @property
+    def name(self) -> str:
+        """Returns the the name of the current parameter, e.g 'category', 'molname'."""
+        return self.__curr_level["__name"]
 
     def get_default_key(self) -> str:
         """Get the default key for this level of the foldermap.
         Raises a ValueError if it does not have a default.
         """
         try:
-            return self.__foldermap["__default"]
+            return self.__curr_level["__default"]
         except KeyError as exc:
-            raise ValueError("No default available") from exc
+            raise ValueError(f"No default available for parameter '{self.name}'") from exc
 
     def find(
-        self, category: str, **params: Union[typing.Iterable[ParamVal], ParamArg]
+        self,
+        category: str,
+        missing_default: Optional[ParamArg] = ParamArg.DEFAULT,
+        **params: Union[typing.Iterable[ParamVal], ParamArg],
     ) -> List[Tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
+        if self.name != "category":
+            raise RuntimeError("Can only call 'find()' from top level.")
+
+        try:
+            category_map = self[category]
+        except KeyError as exc:
+            raise ValueError(f"No such category: '{category}'") from exc
+
+        todo: List[
+            Tuple[Union[FolderMapView, DataPath], Tuple[Tuple[ParamName, ParamVal], ...]]
+        ] = []
+        done: List[Tuple[Description, DataPath]] = []
+
+        todo.append((category_map, tuple()))
+
+        while todo:
+            curr_level, params_acc = todo.pop()
+            if isinstance(curr_level, DataPath):
+                done.append((Description(params_acc), curr_level))
+                continue
+
+            param_arg = params.get(curr_level.name, missing_default)
+            if param_arg is None:
+                raise ValueError(f"Missing argument for parameter '{curr_level.name}'")
+
+            if param_arg == ParamArg.FULL:
+                next_params = curr_level
+            elif param_arg == ParamArg.DEFAULT:
+                next_params = (curr_level.get_default_key(),)
+            elif isinstance(param_arg, str):
+                next_params = (param_arg,)
+            else:
+                next_params = param_arg
+
+            todo.extend(
+                (curr_level[next_param], (*params_acc, (curr_level.name, next_param)))
+                for next_param in next_params
+            )
+
+        return done
 
     def __getitem__(
         self, __key: Union[str, Literal[ParamArg.DEFAULT]]
@@ -158,14 +238,14 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         if __key == ParamArg.DEFAULT:
             return self[self.get_default_key()]
 
-        elem = self.__foldermap[__key]
+        elem = self.__curr_level[__key]
         if isinstance(elem, Mapping):
             return FolderMapView(elem)
 
-        return elem
+        return DataPath(elem)
 
     def __iter__(self) -> typing.Iterator[str]:
-        return (key for key in self.__foldermap if key not in self.__PRIVATE_KEYS)
+        return (key for key in self.__curr_level if key not in self.__PRIVATE_KEYS)
 
     def __len__(self) -> int:
         return sum(1 for _ in self.__iter__())
