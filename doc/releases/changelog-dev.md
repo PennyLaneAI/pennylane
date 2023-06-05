@@ -43,10 +43,13 @@
   {'Hadamard': 1}
   gate_sizes:
   {1: 1}
+  >>> [r.num_wires for r in resources]
+  [1, 2, 3, 4]
   ```
   
   Moreover, it is possible to predict the resource requirements without evaluating circuits
-  using the `null.qubit` device. Consider the following workflow that takes the gradient of a
+  using the `null.qubit` device, which follows the standard execution pipeline but returns numeric
+  zeros. Consider the following workflow that takes the gradient of a
   `50`-qubit circuit:
 
   ```python
