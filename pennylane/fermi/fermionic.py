@@ -163,9 +163,9 @@ class FermiWord(dict):
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(wire)
-    The fermionic creation operator
+    The fermionic creation operator :math:`\hat{c}^\dagger`, such that
 
-    .. math:: c^\dagger \ket{n} = \sqrt(n + 1) \ket{n+1}
+    .. math:: \hat{c}^\dagger \ket{n} = \sqrt{n + 1} \ket{n+1}
 
     **Details:**
 
@@ -173,15 +173,25 @@ class FermiC(FermiWord):
     * Number of parameters: 0
 
     Args:
-        wire(int): the positve integer indicating the energy level the operator acts on. The lowest
+        wire(int): the positive integer indicating the energy level the operator acts on. The lowest
             energy level is designated 0, and subsequent energy levels are numbered chronologically.
 
-    .. note:: While the `FermiC` class represents a mathematical operator, it is not a PennyLane `Operator`
+    .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane ``Operator``
+
+    .. seealso:: :class:`~pennylane.FermiA`
 
     **Example**
 
+    To construct the operator :math:`\hat{c}\dagger_0`:
+
     >>> FermiC(0)
     <FermiWord = '0+'>
+
+    This can be combined with the annihilation operator :class:`~pennylane.FermiC`. For example,
+    :math:`\hat{c}\dagger_0 \hat{c}_1` can be constructed as:
+
+    >>> qml.FermiC(0) * qml.FermiA(1)
+    <FermiWord = '0+ 1-'>
     """
 
     def __init__(self, wire):
@@ -202,7 +212,7 @@ class FermiA(FermiWord):
     r"""FermiA(wire)
     The fermionic annihilation operator
 
-    .. math:: c \ket{n} = \sqrt(n) \ket{n-1}
+    .. math:: \hat{c} \ket{n} = \sqrt{n} \ket{n-1}
 
     **Details:**
 
@@ -210,15 +220,25 @@ class FermiA(FermiWord):
     * Number of parameters: 0
 
     Args:
-        wire(int): the positve integer indicating the energy level the operator acts on. The lowest
+        wire(int): the positive integer indicating the energy level the operator acts on. The lowest
             energy level is designated 0, and subsequent energy levels are numbered chronologically.
 
-    .. note:: While the `FermiA` class represents a mathematical operator, it is not a PennyLane `Operator`
+    .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane ``Operator``
+
+    .. seealso:: :class:`~pennylane.FermiC`
 
     **Example**
 
+    To construct the operator :math:`\hat{c}_0`:
+
     >>> FermiA(0)
     <FermiWord = '0-'>
+
+    This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
+    :math:`\hat{c}\dagger_0 \hat{c}_1` can be constructed as:
+
+    >>> qml.FermiC(0) * qml.FermiA(1)
+    <FermiWord = '0+ 1-'>
     """
 
     def __init__(self, wire):
