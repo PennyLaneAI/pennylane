@@ -616,7 +616,7 @@ class TestKerasLayerIntegration:
     # in order to save the model
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_save_whole_model(self, model, n_qubits, tmpdir):
+    def test_save_whole_model(self, model, n_qubits, tmpdir):  # pylint: redefined-outer-name
         """Test if the entire model can be successfully saved and reloaded
         using the .save() method"""
         weights = model.get_weights()
@@ -721,7 +721,7 @@ class TestKerasLayerIntegrationDM:
     # in order to save the model
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_save_whole_model_dm(self, model_dm, n_qubits, tmpdir):
+    def test_save_whole_model_dm(self, model_dm, n_qubits, tmpdir):  # pylint: redefined-outer-name
         """Test if the entire model can be successfully saved and reloaded
         using the .save() method"""
         weights = model_dm.get_weights()
