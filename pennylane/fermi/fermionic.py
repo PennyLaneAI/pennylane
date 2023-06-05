@@ -158,6 +158,13 @@ class FermiWord(dict):
 
         return operator
 
+    # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
+    # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
+    # TODO: create __imul__ method.
+    # TODO: support multiply by number in __mul__ when FermiSentence is merged.
+    # TODO: create mapping method when the jordan_wigner function is added.
+    # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
+
 
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
@@ -235,10 +242,3 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
-
-
-# TODO: create __add__ and __iadd__ method when FermiSentence is merged.
-# TODO: create __sub__ and __isub__ method when FermiSentence is merged.
-# TODO: create __imul__ method.
-# TODO: support multiply by number in __mul__ when FermiiSentence is merged.
-# TODO: create mapping method when the jordan_wigner function is added.
