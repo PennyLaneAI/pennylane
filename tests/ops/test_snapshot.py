@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
+# pylint: disable=protected-access
 from pennylane import Snapshot
 import pennylane as qml
 
