@@ -149,6 +149,9 @@
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
+* The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
+  [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
+
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
@@ -159,6 +162,9 @@
 
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+
+* Updated repr for ParametrizedHamiltonian.
+[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
 
 <h3>Breaking changes 💔</h3>
 
@@ -215,6 +221,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
+  generating terms of a pulse Hamiltonian.
+  [(4156)](https://github.com/PennyLaneAI/pennylane/pull/4156)
+  
 * Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
   was not taken into account.
   [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)
@@ -232,10 +242,14 @@
 * Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
   [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
 
+* A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
+  [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
