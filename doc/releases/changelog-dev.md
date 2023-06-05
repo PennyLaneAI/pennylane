@@ -12,7 +12,7 @@
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
 * `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
-  [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+  [(#4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
   [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
