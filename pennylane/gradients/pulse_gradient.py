@@ -609,26 +609,37 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
     op, op_idx, term_idx = op_id
     # Map a simple enumeration of numbers from HardwareHamiltonian input parameters to
     # ParametrizedHamiltonian parameters. This is typically a fan-out function.
-    fake_params = jnp.arange(op.num_params)
+    fake_params, allowed_outputs = jnp.arange(op.num_params), set(range(op.num_params))
     reordered = op.H.reorder_fn(fake_params, op.H.coeffs_parametrized)
-    cjacs = []
-    tapes = []
-    psr_coeffs = []
+
+    def _raise():
+        raise ValueError(
+            "Only permutations, fan-out or fan-in functions are allowed as reordering functions "
+            "in HardwareHamiltonians treated by stoch_pulse_grad. The reordering function of "
+            f"{op.H} mapped {fake_params} to {reordered}."
+        )
+
+    cjacs, tapes, psr_coeffs = [], [], []
     for coeff_idx, x in enumerate(reordered):
         # Find out whether the value term_idx, corresponding to the current parameter of interest,
         # has been mapped to x (for scalar x) or into x (for 1d x). If so, generate tapes and data
+        # Also check that only allowed outputs have been produced by the reordering function.
         if not hasattr(x, "__len__"):
+            if x not in allowed_outputs:
+                _raise()
             if x != term_idx:
                 continue
             cjac_idx = None
-        elif term_idx in x:
-            cjac_idx = jnp.argwhere(x == term_idx)[0][0]
         else:
-            continue
+            if set(x).difference(set(range(op.num_params))):
+                _raise()
+            if term_idx not in x:
+                continue
+            cjac_idx = jnp.argwhere(x == term_idx)[0][0]
 
         _op_id = (op, op_idx, coeff_idx)
         # Overwriting int_prefactor does not matter, it is equal for all parameters in this op,
-        # because it
+        # because it only consists of the duration `op.t[-1]-op.t[0]` and `num_split_times`
         _cjacs, _tapes, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
             tape, _op_id, key, num_split_times, use_broadcasting, cjac_idx
         )
