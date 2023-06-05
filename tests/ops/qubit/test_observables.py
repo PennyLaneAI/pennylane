@@ -65,6 +65,34 @@ PROJECTOR_EIGVALS_TEST_DATA = [
     (np.array([1, 0, 1])),
 ]
 
+STATEVECTORPROJECTOR_TEST_STATES = [
+    np.array([1, 0]),
+    np.array([1j, 0, 0, 0]),
+    np.array([1j, 0, 0, 1, 0, 0, 0, 0]) / np.sqrt(2),
+]
+
+STATEVECTORPROJECTOR_TEST_MATRICES = [
+    np.array([[1, 0], [0, 0]]),
+    np.array([[1, 0], [0, 0]]),
+    np.array(
+        [
+            [0.5, 0, 0, 1j * 0.5, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [-1j * 0.5, 0, 0, 0.5, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+    ),
+]
+
+STATEVECTORPROJECTOR_TEST_DATA = (
+    STATEVECTORPROJECTOR_TEST_STATES,
+    STATEVECTORPROJECTOR_TEST_MATRICES,
+)
+
 
 class TestSimpleObservables:
     """Tests for simple single-qubit observables"""
@@ -439,7 +467,7 @@ class TestProjector:
         )
 
     @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
-    def test_projector_diagonalization(self, basis_state, tol):
+    def test_projector_diagonalization(self, basis_state):
         """Test that the projector has an empty list of diagonalizing gates."""
         num_wires = len(basis_state)
         diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
@@ -535,9 +563,91 @@ class TestProjector:
         assert qml.math.allclose(pow_op.data[0], op.data[0])
 
 
+class TestStateVectorProjector:
+    """Tests for state vector projector observable."""
+
+    @pytest.mark.parametrize("state_vector", STATEVECTORPROJECTOR_TEST_STATES)
+    def test_sv_projector_eigvals(self, state_vector, tol):
+        """Tests that the eigvals property of the StateVectorProjector class returns the correct results."""
+        num_wires = np.log2(len(state_vector)).astype(int)
+        eigvals = qml.StateVectorProjector(state_vector, wires=range(num_wires)).eigvals()
+
+        observable = np.outer(state_vector, state_vector.conj())
+        expected_eigvals, _ = np.linalg.eig(observable)
+
+        assert np.allclose(np.sort(eigvals), np.sort(expected_eigvals), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("state_vector", STATEVECTORPROJECTOR_TEST_STATES)
+    def test_projector_diagonalization(self, state_vector, tol):
+        """Test that the projector returns valid diagonalizing gates consistent with eigvals."""
+        num_wires = np.log2(len(state_vector)).astype(int)
+        proj = qml.StateVectorProjector(state_vector, wires=range(num_wires))
+        diag_gates = proj.diagonalizing_gates()
+        diag_gates_static = qml.StateVectorProjector.compute_diagonalizing_gates(
+            state_vector, wires=range(num_wires)
+        )
+
+        if state_vector[0] == 1:  # The projector is diagonal already
+            assert diag_gates == []
+            assert diag_gates_static == []
+        else:
+            diagonalizing_matrices = [diag_gates[0].matrix(), diag_gates_static[0].matrix()]
+            for u in diagonalizing_matrices:
+                diagonal_matrix = u.conj().T @ proj.matrix() @ u
+                assert np.allclose(
+                    diagonal_matrix - np.diag(np.diagonal(diagonal_matrix)), 0, atol=tol, rtol=0
+                )
+                assert np.allclose(np.diagonal(diagonal_matrix), proj.eigvals(), atol=tol, rtol=0)
+
+    def test_projector_exceptions(self):
+        """Tests that the state vector projector construction raises the proper errors on incorrect inputs."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(state_vector):
+            obs = qml.StateVectorProjector(state_vector, wires=range(2))
+            return qml.expval(obs)
+
+        with pytest.raises(ValueError, match="State vector must be one-dimensional"):
+            state_vector = np.random.randint(2, size=(2, 4))
+            circuit(state_vector)
+
+        with pytest.raises(ValueError, match="State vector must be of length"):
+            state_vector = np.random.randint(2, size=(3))
+            circuit(state_vector)
+
+    @pytest.mark.parametrize("state_vector,expected", STATEVECTORPROJECTOR_TEST_DATA)
+    def test_matrix_representation(self, state_vector, expected, tol):
+        """Test that the matrix representation is defined correctly"""
+        num_wires = np.log2(len(state_vector)).astype(int)
+        res_dynamic = qml.StateVectorProjector(state_vector, wires=range(num_wires)).matrix()
+        res_static = qml.StateVectorProjector.compute_matrix(state_vector)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+        assert np.allclose(res_static, expected, atol=tol)
+
+    def test_pow_zero(self):
+        """Assert that the state vector projector raised to zero is an empty list."""
+        state_vector = np.array([0, 1])
+        op = qml.StateVectorProjector(state_vector, wires=(0, 1))
+        assert len(op.pow(0)) == 0
+
+    @pytest.mark.parametrize("n", (1, 3))
+    def test_pow_non_zero_positive_int(self, n):
+        """Test that the state vector projector raised to a positive integer is just a copy."""
+        basis_state = np.array([0, 1])
+        op = qml.StateVectorProjector(basis_state, wires=(0, 1))
+        pow_op = op.pow(n)[0]
+        assert pow_op.__class__ is qml.StateVectorProjector
+        assert qml.math.allclose(pow_op.data[0], op.data[0])
+
+
 label_data = [
     (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
     (qml.Projector([1, 0, 1], wires=(0, 1, 2)), "|101⟩⟨101|"),
+    (
+        qml.StateVectorProjector(np.array([1, 1]) / np.sqrt(2), wires=[0]),
+        "(0.71|0⟩ + 0.71|1⟩)(0.71⟨0| + 0.71⟨1|)",
+    ),
 ]
 
 
