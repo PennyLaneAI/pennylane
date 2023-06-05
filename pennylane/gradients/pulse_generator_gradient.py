@@ -361,7 +361,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
     shot_vector = isinstance(shots, Sequence)
-    tape_specs = (single_measure, num_params, num_measurements, shot_vector, shots)
+    tape_specs = (single_measure, num_params, num_measurements, shots)
 
     def processing_fn(results):
         """Post-process the results of the parameter-shifted tapes of the pulse
