@@ -167,7 +167,8 @@ def _transform_signature_check(signature):
 
 
 class TransformDispatcher:
-    r"""This object is developer facing and should not be used directly to create transforms. Use :func:`~.pennylane.transforms.core.transform`.
+    r"""This object is developer facing and should not be used directly to create transforms. Use
+    :func:`~.pennylane.transforms.core.transform`.
 
     Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
     on tape, qfunc and qnode.
@@ -175,6 +176,8 @@ class TransformDispatcher:
     .. warning::
 
         This class is developer-facing and should not be used directly.
+
+    .. seealso:: :func:`~.pennylane.transforms.core.transform`
     """
 
     def __init__(
@@ -254,12 +257,14 @@ class TransformDispatcher:
 
 
 class TransformContainer:
-    """Class to store a quantum transform with its args, kwargs and classical co-transforms.
+    """Class to store a quantum transform with its args, kwargs and classical co-transforms.  Use
+    :func:`~.pennylane.transforms.core.transform`.
 
     .. warning::
 
         This class is developer-facing and should not be used directly.
 
+    .. seealso:: :func:`~.pennylane.transforms.core.transform`
     """
 
     def __init__(
