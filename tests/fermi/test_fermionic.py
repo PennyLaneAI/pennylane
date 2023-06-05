@@ -269,7 +269,7 @@ class TestFermiSentence:
         (fs2, "-1.23 * '0+ 1-'\n" + "+ (-0-4j) * '0+ 0-'\n" + "+ 0.5 * '0+ 3- 0+ 4-'"),
         (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" + "+ 1 * 'I'"),
         (fs4, "1 * 'I'"),
-        (fs5, "0 * ''"),
+        (fs5, "0 * 'I'"),
     )
 
     @pytest.mark.parametrize("fs, str_rep", tup_fs_str)
@@ -311,12 +311,7 @@ class TestFermiSentence:
         (
             fs3,
             fs4,
-            FermiSentence(
-                {
-                    FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"}): -0.5,
-                    FermiWord({}): 1,
-                }
-            ),
+            fs3,
         ),
         (
             fs4,
@@ -327,8 +322,10 @@ class TestFermiSentence:
                 }
             ),
         ),
-        (fs5, fs3, fs3),
-        (fs3, fs5, fs3),
+        (fs5, fs3, fs5),
+        (fs3, fs5, fs5),
+        (fs4, fs3, fs3),
+        (fs3, fs4, fs3),
     )
 
     @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
@@ -382,12 +379,12 @@ class TestFermiSentence:
         assert fs == new_fs
 
     tup_fs_pow = (
-        (fs1, 0, FermiSentence({})),
+        (fs1, 0, FermiSentence({FermiWord({}): 1})),
         (fs1, 1, fs1),
         (fs1, 2, fs1_x_fs2),
-        (fs3, 0, FermiSentence({})),
+        (fs3, 0, FermiSentence({FermiWord({}): 1})),
         (fs3, 1, fs3),
-        (fs4, 0, FermiSentence({})),
+        (fs4, 0, FermiSentence({FermiWord({}): 1})),
         (fs4, 3, fs4),
     )
 

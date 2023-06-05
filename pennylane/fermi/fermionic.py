@@ -186,7 +186,7 @@ class FermiSentence(dict):
     def __str__(self):
         r"""String representation of a FermiSentence."""
         if len(self) == 0:
-            return "0 * ''"
+            return "0 * 'I'"
         return "\n+ ".join(f"{coeff} * '{fw.to_string()}'" for fw, coeff in self.items())
 
     def __repr__(self):
@@ -212,11 +212,12 @@ class FermiSentence(dict):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
         words pair-wise"""
 
+        # an empty FermiSentence represents the Null operator
         if len(self) == 0:
-            return copy(other)
+            return FermiSentence({FermiWord({}): 0})
 
         if len(other) == 0:
-            return copy(self)
+            return FermiSentence({FermiWord({}): 0})
 
         keys = [i * j for i in self.keys() for j in other.keys()]
         vals = [i * j for i in self.values() for j in other.values()]
@@ -228,7 +229,7 @@ class FermiSentence(dict):
         if value < 0 or not isinstance(value, int):
             raise ValueError("The exponent must be a positive integer.")
 
-        operator = FermiSentence({})
+        operator = FermiSentence({FermiWord({}): 1})  # 1 times Identity
 
         for _ in range(value):
             operator *= self
