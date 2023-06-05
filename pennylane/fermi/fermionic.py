@@ -162,9 +162,9 @@ class FermiWord(dict):
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(wire)
-    The fermionic creation operator :math:`\hat{c}^\dagger`
+    The fermionic creation operator :math:`a^\dagger`
 
-    .. math:: \hat{c}^\dagger \ket{n} = \sqrt{n + 1} \ket{n+1}
+    .. math:: a^\dagger \ket{n} = \sqrt{n + 1} \ket{n+1}
 
     **Details:**
 
@@ -172,8 +172,10 @@ class FermiC(FermiWord):
     * Number of parameters: 0
 
     Args:
-        wire(int): the positive integer indicating the energy level the operator acts on. The lowest
-            energy level is designated 0, and subsequent energy levels are numbered chronologically.
+        wire(int): the non-negative integer indicating the energy level the operator acts on.
+
+    The first state is designated 0, and subsequent states are numbered chronologically. For
+    instance, ``qml.FermiC(3)``=:math:`a^\dagger_3` operates on the 3rd state in :math:`\ket{0000}`.
 
     .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane ``Operator``
 
@@ -181,13 +183,13 @@ class FermiC(FermiWord):
 
     **Example**
 
-    To construct the operator :math:`\hat{c}^\dagger_0`:
+    To construct the operator :math:`a^\dagger_0`:
 
     >>> FermiC(0)
     <FermiWord = '0+'>
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiC`. For example,
-    :math:`\hat{c}^\dagger_0 \hat{c}_1` can be constructed as:
+    :math:`a^\dagger_0 a_1` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1)
     <FermiWord = '0+ 1-'>
@@ -209,9 +211,9 @@ class FermiC(FermiWord):
 
 class FermiA(FermiWord):
     r"""FermiA(wire)
-    The fermionic annihilation operator \hat{c}
+    The fermionic annihilation operator :math:`a`
 
-    .. math:: \hat{c} \ket{n} = \sqrt{n} \ket{n-1}
+    .. math:: a \ket{n} = \sqrt{n} \ket{n-1}
 
     **Details:**
 
@@ -219,8 +221,10 @@ class FermiA(FermiWord):
     * Number of parameters: 0
 
     Args:
-        wire(int): the positive integer indicating the energy level the operator acts on. The lowest
-            energy level is designated 0, and subsequent energy levels are numbered chronologically.
+        wire(int): the non-negative integer indicating the state the operator acts on.
+
+    The first state is designated 0, and subsequent states are numbered chronologically. For
+    instance, ``qml.FermiA(3)``=:math:`a_3` operates on the 3rd state in :math:`\ket{1111}`.
 
     .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane ``Operator``
 
@@ -228,13 +232,13 @@ class FermiA(FermiWord):
 
     **Example**
 
-    To construct the operator :math:`\hat{c}_0`:
+    To construct the operator :math:`a_0`:
 
     >>> FermiA(0)
     <FermiWord = '0-'>
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
-    :math:`\hat{c}^\dagger_0 \hat{c}_1` can be constructed as:
+    :math:`a^\dagger_0 a_1` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1)
     <FermiWord = '0+ 1-'>
