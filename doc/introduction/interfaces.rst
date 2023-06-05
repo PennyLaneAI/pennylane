@@ -30,8 +30,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
         ...
 
 .. note::
-    If no interface is specified, PennyLane will default to the NumPy interface (powered by the
-    `autograd <https://github.com/HIPS/autograd>`_ library).
+    If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
