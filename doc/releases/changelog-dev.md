@@ -19,6 +19,14 @@
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
+<h4>Fermionic operators 🔬</h4>
+
+<h4>Workflow-level resource estimation 🧮</h4>
+
+<h4>Community contributions from UnitaryHack 🤝</h4>
+
+<h4>Batching and other tweaks to Torch and Keras layers 🦾</h4>
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
@@ -161,6 +169,10 @@
 
 * Updated repr for ParametrizedHamiltonian.
 [(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+<h4>Extended support for differentiating pulses</h4>
+
+<h4>A more flexible projector</h4>
 
 <h3>Breaking changes 💔</h3>
 
