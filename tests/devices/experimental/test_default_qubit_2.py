@@ -66,6 +66,15 @@ def test_no_device_derivatives():
         dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
 
 
+def test_debugger_attribute():
+    """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
+    # pylint: disable=protected-access
+    dev = DefaultQubit2()
+
+    assert hasattr(dev, "_debugger")
+    assert dev._debugger is None
+
+
 class TestTracking:
     """Testing the tracking capabilities of DefaultQubit2."""
 
@@ -88,16 +97,25 @@ class TestTracking:
         qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
 
         dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
         with qml.Tracker(dev) as tracker:
             dev.execute(qs)
+            dev.compute_derivatives(qs, config)
             dev.execute([qs, qs])  # and a second time
 
         assert tracker.history == {
             "batches": [1, 1],
             "executions": [1, 2],
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
+            "derivative_batches": [1],
+            "derivatives": [1],
         }
-        assert tracker.totals == {"batches": 2, "executions": 3}
+        assert tracker.totals == {
+            "batches": 2,
+            "executions": 3,
+            "derivative_batches": 1,
+            "derivatives": 1,
+        }
         assert tracker.latest == {"batches": 1, "executions": 2}
 
     def test_tracking_resources(self):

@@ -87,7 +87,7 @@ def drive(amplitude, phase, wires):
     + (1) [X2 X3]
     + (1) [X3 X0]
     >>> H_d
-    ParametrizedHamiltonian: terms=2
+    HardwareHamiltonian:: terms=2
 
     The terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
@@ -322,6 +322,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         params = self.reorder_fn(params, self.coeffs_parametrized)
         print(f"reordered: {params=}")
         return super().__call__(params, t)
+
+    def __repr__(self):
+        return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):

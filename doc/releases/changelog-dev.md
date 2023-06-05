@@ -12,6 +12,9 @@
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
+* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
+  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
+
 * Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
@@ -142,6 +145,9 @@
 * The new device interface in integrated with `qml.execute` for Jax.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
+* The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
+  [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
+
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
@@ -149,6 +155,12 @@
 * Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
+* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
+  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+
+* Updated repr for ParametrizedHamiltonian.
+[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
 
 <h3>Breaking changes 💔</h3>
 
@@ -176,10 +188,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* `LieAlgebraOptimizer` is renamed. Please use `RiemannianGradientOptimizer` instead.
+  [(#4153)(https://github.com/PennyLaneAI/pennylane/pull/4153)]
+
 * `Operation.base_name` is deprecated. Please use `Operation.name` or `type(op).__name__` instead.
 
-* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
-  This also affects ``QuantumTape`` and ``OperationRecorder``.
+* `QuantumScript`'s `name` keyword argument and property are deprecated.
+  This also affects `QuantumTape` and `OperationRecorder`.
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
@@ -187,7 +202,14 @@
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
+  [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
+
 <h3>Documentation 📝</h3>
+
+* The docstring for `qml.grad` now states that it should be used with the Autograd interface only.
+  [(#4202)](https://github.com/PennyLaneAI/pennylane/pull/4202)
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
@@ -209,10 +231,17 @@
 * `qml.pauli_sentence()` is now compatible with empty Hamiltonians `qml.Hamiltonian([], [])`.
   [(#4171)](https://github.com/PennyLaneAI/pennylane/pull/4171)
 
+* Fixes a bug with Jax where executing multiple tapes with `gradient_fn="device"` would fail.
+  [(#4190)](https://github.com/PennyLaneAI/pennylane/pull/4190)
+
+* A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
+  [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,

@@ -401,6 +401,7 @@ class TestCountsIntegration:
 
         res = circuit()
         assert res == {basis_state: n_shots}
+        assert qml.math.get_interface(res[basis_state]) == interface
 
         custom_measurement_process(dev, spy)
 
@@ -715,6 +716,7 @@ def test_counts_no_op_finite_shots(interface, wires, basis_state, mocker):
 
     res = circuit()
     assert res == {basis_state: n_shots}
+    assert qml.math.get_interface(res[basis_state]) == interface
 
     custom_measurement_process(dev, spy)
 

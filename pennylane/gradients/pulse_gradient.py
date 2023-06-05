@@ -172,7 +172,6 @@ def _parshift_and_integrate(
             # Contract the results with the parameter-shift rule coefficients
             parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
             if len(psr_sh:=qml.math.shape(psr_coeffs)) > 1:
-                #new_shape = (psr_sh[0], (shape:=cjacs.shape)[0]//psr_sh[0], *j_sh[1:])
                 new_shape = (cjacs.shape[0], *parshift.shape[2:])
                 parshift = jnp.reshape(parshift, new_shape)
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
@@ -574,12 +573,16 @@ def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcastin
     """
     op, op_idx, term_idx = op_id
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
+<<<<<<< HEAD
     if extract is None:
         cjac_fn = jax.jacobian(coeff, argnums=0)
     else:
         def cjac_fn(params, t):
             return jax.jacobian(coeff, argnums=0)(params, t)[extract]
     
+=======
+    cjac_fn = jax.jacobian(coeff, argnums=0)
+>>>>>>> master
 
     t0, *_, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
@@ -649,6 +652,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             continue
 
         key, _key = jax.random.split(key)
+<<<<<<< HEAD
         op_id = tape.get_operation(idx)
         op, *_ = op_id
         if not isinstance(op, ParametrizedEvolution):
@@ -664,6 +668,13 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             )
             data = (len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs)
 
+=======
+        cjacs, _tapes, avg_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
+            tape, idx, _key, num_split_times, use_broadcasting
+        )
+
+        gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs))
+>>>>>>> master
         tapes.extend(_tapes)
         gradient_data.append(data)
             
