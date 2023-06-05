@@ -320,6 +320,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __call__(self, params, t):
         params = self.reorder_fn(params, self.coeffs_parametrized)
+        print(f"reordered: {params=}")
         return super().__call__(params, t)
 
     def __add__(self, other):
