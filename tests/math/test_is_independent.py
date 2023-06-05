@@ -93,10 +93,12 @@ args_overlooked_lambdas = [
     (-2.0,),
 ]
 
+
 def const_circuit(x, y):
     # pylint: disable=unused-argument
     qml.RX(0.1, wires=0)
     return qml.expval(qml.PauliZ(0))
+
 
 def dependent_circuit(x, y, z):
     # pylint: disable=unused-argument
@@ -104,6 +106,7 @@ def dependent_circuit(x, y, z):
     qml.RY(y / 2, wires=0)
     qml.RZ(qml.math.sin(z), wires=0)
     return qml.expval(qml.PauliX(0))
+
 
 class TestIsIndependentAutograd:
     """Tests for is_independent, which tests a function to be
@@ -382,6 +385,7 @@ class TestIsIndependentTensorflow:
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
         from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
         args = tuple(tf.Variable(_arg) for _arg in args)
         # Filter out functions with TF-incompatible output format
         out = func(*args)

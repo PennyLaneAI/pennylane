@@ -213,7 +213,6 @@ def test_dot_autograd():
 class TestMatmul:
     @pytest.mark.torch
     def test_matmul_torch(self):
-
         m1 = torch.tensor([[1, 0], [0, 1]])
         m2 = [[1, 2], [3, 4]]
         assert fn.allequal(fn.matmul(m1, m2), m2)
@@ -277,7 +276,6 @@ class TestDetach:
 
 @pytest.mark.all_interfaces
 class TestNorm:
-
     mats_intrf_norm = (
         (np.array([0.5, -1, 2]), "numpy", np.array(2), dict()),
         (np.array([[5, 6], [-2, 3]]), "numpy", np.array(11), dict()),

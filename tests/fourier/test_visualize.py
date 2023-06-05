@@ -29,6 +29,7 @@ from pennylane.fourier.visualize import (
     panel,
     radial_box,
 )
+
 matplotlib = pytest.importorskip("matplotlib")
 
 plt = matplotlib.pyplot

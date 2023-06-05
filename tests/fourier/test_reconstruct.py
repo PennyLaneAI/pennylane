@@ -829,9 +829,7 @@ class TestReconstruct:
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
     )
-    def test_with_qnode(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
-    ):
+    def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls):
         """Run a full reconstruction on a QNode."""
         qnode = qml.QNode(qnode, dev_1, interface="autograd")
 
