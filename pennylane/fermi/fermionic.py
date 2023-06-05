@@ -87,6 +87,9 @@ class FermiWord(dict):
         >>> w.to_string()
         '0+ 1-'
         """
+        if len(self) == 0:
+            return "I"
+
         string = " ".join(
             [
                 i + j

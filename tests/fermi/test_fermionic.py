@@ -44,6 +44,9 @@ class TestFermiWord:
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
             fw.update({(2, 2): "+"})
 
+        with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
+            fw[(1, 1)] = "+"
+
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
         fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
