@@ -19,7 +19,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
-from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
 
 from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -171,7 +170,7 @@ def _parshift_and_integrate(
             res = qml.math.stack(res_list)[:, 1:-1]
             # Contract the results with the parameter-shift rule coefficients
             parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
-            if len(psr_sh:=qml.math.shape(psr_coeffs)) > 1:
+            if len(psr_sh := qml.math.shape(psr_coeffs)) > 1:
                 new_shape = (cjacs.shape[0], *parshift.shape[2:])
                 parshift = jnp.reshape(parshift, new_shape)
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
@@ -567,22 +566,19 @@ def _stoch_pulse_grad(
 
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
 
-def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcasting, extract=None):
+
+def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcasting, par_idx=None):
     """Generate the tapes and compute the classical Jacobians for one given
     generating Hamiltonian term of one pulse.
     """
     op, op_idx, term_idx = op_id
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-<<<<<<< HEAD
-    if extract is None:
+    if par_idx is None:
         cjac_fn = jax.jacobian(coeff, argnums=0)
     else:
+
         def cjac_fn(params, t):
-            return jax.jacobian(coeff, argnums=0)(params, t)[extract]
-    
-=======
-    cjac_fn = jax.jacobian(coeff, argnums=0)
->>>>>>> master
+            return jax.jacobian(coeff, argnums=0)(params, t)[par_idx]
 
     t0, *_, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
@@ -623,7 +619,9 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
 
         _op_id = (op, op_idx, coeff_idx)
         # Overwriting avg_prefactor does not matter, it is equal for all parameters in this op
-        _cjacs, _tapes, avg_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(tape, _op_id, key, num_split_times, use_broadcasting, cjac_idx)
+        _cjacs, _tapes, avg_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
+            tape, _op_id, key, num_split_times, use_broadcasting, cjac_idx
+        )
         cjacs.extend(_cjacs)
         tapes.extend(_tapes)
         psr_coeffs.append(_psr_coeffs)
@@ -632,10 +630,16 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
     # coefficient Jacobian. The two-dimensionality of the psr_coeffs will be used in
     # _parshift_and_integrate.
     zeros = [jnp.zeros_like(c) for c in psr_coeffs]
-    psr_coeffs = jnp.stack([jnp.hstack([c if i==j else z for i, (c, z) in enumerate(zip(psr_coeffs, zeros))]) for j, _ in enumerate(psr_coeffs)])
-    
+    psr_coeffs = jnp.stack(
+        [
+            jnp.hstack([c if i == j else z for i, (c, z) in enumerate(zip(psr_coeffs, zeros))])
+            for j, _ in enumerate(psr_coeffs)
+        ]
+    )
+
     data = (len(tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs)
     return tapes, data
+
 
 # pylint: disable=too-many-arguments
 def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting):
@@ -652,7 +656,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             continue
 
         key, _key = jax.random.split(key)
-<<<<<<< HEAD
         op_id = tape.get_operation(idx)
         op, *_ = op_id
         if not isinstance(op, ParametrizedEvolution):
@@ -668,16 +671,9 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             )
             data = (len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs)
 
-=======
-        cjacs, _tapes, avg_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
-            tape, idx, _key, num_split_times, use_broadcasting
-        )
-
-        gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs))
->>>>>>> master
         tapes.extend(_tapes)
         gradient_data.append(data)
-            
+
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
@@ -705,12 +701,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
                 use_broadcasting,
             )
             grads.append(g)
-
-        #summed_grads = []
-        #start = 0
-        #for num in sum_gradient_entries:
-            #summed_grads.append(sum(grads[start:start+num]))
-            #start += num
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
