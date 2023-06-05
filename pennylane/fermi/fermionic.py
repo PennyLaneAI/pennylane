@@ -160,7 +160,6 @@ class FermiWord(dict):
         return operator
 
 
-
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(wire)
@@ -186,7 +185,6 @@ class FermiC(FermiWord):
     """
 
     def __init__(self, wire):
-
         if not isinstance(wire, int) or wire < 0:
             raise ValueError(
                 f"FermiC: expected a single, positive integer value for wire, but received {wire}"
@@ -224,7 +222,6 @@ class FermiA(FermiWord):
     """
 
     def __init__(self, wire):
-
         if not isinstance(wire, int) or wire < 0:
             raise ValueError(
                 f"FermiA: expected a single, positive integer value for wire, but received {wire}"
@@ -237,9 +234,9 @@ class FermiA(FermiWord):
     # def to_qubit(self):
     #     return mapping(self)
 
+
 # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
 # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
 # TODO: create __imul__ method.
 # TODO: support multiply by number in __mul__ when FermiiSentence is merged.
 # TODO: create mapping method when the jordan_wigner function is added.
-
