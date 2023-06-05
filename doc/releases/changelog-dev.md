@@ -19,6 +19,10 @@
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
+* Added the `FermiWord` class to represent a fermionic operator such as
+  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
@@ -217,6 +221,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
+  generating terms of a pulse Hamiltonian.
+  [(4156)](https://github.com/PennyLaneAI/pennylane/pull/4156)
+  
 * Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
   was not taken into account.
   [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)

@@ -15,6 +15,7 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -90,12 +91,17 @@ def _split_evol_ops(op, ob, tau):
         after_t = jax.numpy.array([tau, t1])
 
     if qml.pauli.is_pauli_word(ob):
-        prefactor = next(iter(qml.pauli.pauli_sentence(ob).values()))
+        prefactor = qml.pauli.pauli_word_prefactor(ob)
         word = qml.pauli.pauli_word_to_string(ob)
         insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
         coeffs = [prefactor, -prefactor]
     else:
-        eigvals = qml.eigvals(ob)
+        with warnings.catch_warnings():
+            if len(ob.wires) <= 4:
+                warnings.filterwarnings(
+                    "ignore", ".*the eigenvalues will be computed numerically.*"
+                )
+            eigvals = qml.eigvals(ob)
         coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
         insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
 
@@ -568,8 +574,11 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
     """Generate the tapes and compute the classical Jacobians for one given
     generating Hamiltonian term of one pulse.
     """
+    # Obtain the operation into which the indicated parameter feeds, its position in the tape,
+    # and the index of the parameter within the operation
     op, op_idx, term_idx = tape.get_operation(idx)
     if not isinstance(op, ParametrizedEvolution):
+        # Only pulses are supported
         raise ValueError(
             "stoch_pulse_grad does not support differentiating parameters of "
             "other operations than pulses."
