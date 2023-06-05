@@ -8,20 +8,19 @@
   without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
 
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
-  given subspace.
-  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
-
 * A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
-
-* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
-  given subspace.
-  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
 <h4>Fermionic operators 🔬</h4>
 
 <h4>Workflow-level resource estimation 🧮</h4>
+
+* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
+  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
+
+* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
+  [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
@@ -34,99 +33,6 @@
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
 <h3>Improvements 🛠</h3>
-
-* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
-  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
-  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
-
-* `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
-  instead of a `QubitUnitary` operation with a dense matrix.
-  [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
-  
-* The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
-  [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
-
-* Accelerate Jordan-Wigner transforms caching Pauli gate objects.
-  [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
-
-* The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
-  differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
-  removed.
-  [(#4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
-  [(#4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
-
-* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
-  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
-  inform the users that the `pyscf` backend can be used for open-shell calculations.
-  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
-
-* Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
-  concretely.
-  [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
-  [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
-  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
-  [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
-
-* Integrated `QuantumScript.shots` with `QNode` so that shots are placed on the `QuantumScript`
-  during `QNode` construction.
-  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
-
-* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
-  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
-
-* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
-  [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
-  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
-
-* `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
-  [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
-
-* Added `__repr__` and `__str__` methods to the `Shots` class.
-  [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
-
-* Added `__eq__` and `__hash__` methods to the `Shots` class.
-  [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
-
-* Added a function `measure_with_samples` that returns a sample-based measurement result given a state
-  [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
-  [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
-
-* Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
-  the hash of any operators/measurement processes.
-  [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
-
-* All drawing methods changed their default value for the keyword argument `show_matrices`
-  to `True`. This allows quick insights into broadcasted tapes for example.
-  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
-
-* Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
-  [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
-  [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
-
-* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
-  an execution.
-  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
-
-* `CZ` now inherits from the `ControlledOp` class. It now supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
-  [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
-
-* The construction of the pauli representation for the `Sum` class is now faster.
-  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
-
-* `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
-  equality or hash to work correctly.
-  [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
-
-* Updated the `gradients` module to use the new `Shots` object internally.
-  [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
-
-* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
-  and now inherits from `qml.ops.op_math.ControlledOp`.
-  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
-
-* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
-  Both functions have broadcasting support.
-  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h4>Extended support for differentiating pulses</h4>
 
@@ -141,12 +47,40 @@
   ```
   [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
 
+* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
+  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+
+<h4>The qchem module</h4>
+
+* The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
+  differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
+  removed.
+  [(#4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
+  [(#4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
+
+* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
+  inform the users that the `pyscf` backend can be used for open-shell calculations.
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+
+* Accelerate Jordan-Wigner transforms caching Pauli gate objects.
+  [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
+
 <h4>A more flexible projector</h4>
 
 <h4>Do more with qutrits</h4>
 
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+  given subspace.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
+  given subspace.
+  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
 <h4>Next-generation device API</h4>
 
@@ -156,8 +90,9 @@
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
 
-* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
-  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+* Added a function `measure_with_samples` that returns a sample-based measurement result given a state
+  [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
+  [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
 
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
@@ -177,6 +112,79 @@
 
 * The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
   [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
+
+<h4>Handling shots</h4>
+
+* Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
+  concretely.
+  [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+  [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
+  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
+  [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
+
+* Added `__repr__` and `__str__` methods to the `Shots` class.
+  [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
+
+* Added `__eq__` and `__hash__` methods to the `Shots` class.
+  [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
+
+* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* Integrated `QuantumScript.shots` with `QNode` so that shots are placed on the `QuantumScript`
+  during `QNode` construction.
+  [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
+
+* Updated the `gradients` module to use the new `Shots` object internally.
+  [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
+
+<h4>Operators</h4>
+
+* `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
+  [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
+
+* `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ` and `MultiRZ` gates
+  instead of a `QubitUnitary` operation with a dense matrix.
+  [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
+
+* Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
+  the hash of any operators/measurement processes.
+  [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
+
+* Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
+  [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
+  [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
+
+* `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
+  and now inherits from `qml.ops.op_math.ControlledOp`.
+  [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
+
+* `CZ` now inherits from the `ControlledOp` class. It now supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
+  [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
+
+* The construction of the pauli representation for the `Sum` class is now faster.
+  [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
+
+* `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
+  equality or hash to work correctly.
+  [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
+
+<h4>Other improvements</h4>
+
+* All drawing methods changed their default value for the keyword argument `show_matrices`
+  to `True`. This allows quick insights into broadcasted tapes for example.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
+
+* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
+  an execution.
+  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
+  
+* The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
+  [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
+
+* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
+  Both functions have broadcasting support.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
 <h3>Breaking changes 💔</h3>
 
