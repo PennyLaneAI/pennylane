@@ -162,32 +162,33 @@ def _parshift_and_integrate(
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
 
-    if use_broadcasting:
+    num_shifts = len(psr_coeffs)
 
-        def _psr_and_contract(res_list, cjacs, int_prefactor):
-            # Stack results and slice away the first and last values, corresponding to the initial
-            # condition and the final value of the time evolution, but not to a splitting time
-            res = qml.math.stack(res_list)[:, 1:-1]
-            # Contract the results with the parameter-shift rule coefficients
-            parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
-            if len(psr_sh := qml.math.shape(psr_coeffs)) > 1:
-                new_shape = (cjacs.shape[0], *parshift.shape[2:])
-                parshift = jnp.reshape(parshift, new_shape)
-            return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
-
-    else:
-        num_shifts = len(psr_coeffs)
-
-        def _psr_and_contract(res_list, cjacs, int_prefactor):
-            res = qml.math.stack(res_list)
+    def _psr_and_contract(res_list, cjacs, int_prefactor):
+        res = qml.math.stack(res_list)
+        if use_broadcasting:
+            # Slice away the first and last values, corresponding to the initial condition
+            # and the final value of the time evolution, but not to a splitting time
+            res = res[:, 1:-1]
+        else:
             # Reshape the results such that the first axis corresponds to the splitting times
-            # and the second axis corresponds to different shifts. All other axes are untouched
+            # and the second axis corresponds to different shifts. All other axes are untouched.
+            # Afterwards move the shifts-axis to the first position.
             shape = qml.math.shape(res)
             new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
-            res = qml.math.reshape(res, new_shape)
-            # Contract the results with the parameter-shift rule coefficients
-            parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
-            return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
+            res = qml.math.moveaxis(qml.math.reshape(res, new_shape), 1, 0)
+
+        # Contract the results with the parameter-shift rule coefficients
+        parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
+        if qml.math.ndim(psr_coeffs) > 1:
+            # multi-dimensional psr_coeffs are created for HardwareHamiltonians in order to
+            # allow for adding the contributions of multiple generating terms. Afterwards the
+            # computation of the parameter-shift rule results, we need to reshape so that the
+            # number of quantum derivatives mathces the number of classical coefficient derivatives
+            parshift = jnp.reshape(parshift, (cjacs.shape[0], *parshift.shape[2:]))
+        # Contract the quantum and (classical) coefficient derivatives, including the rescaling
+        # factor from the Monte Carlo integral and from global prefactors of Pauli word generators.
+        return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
     if not single_measure + shot_vector == 1:
@@ -576,6 +577,9 @@ def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcastin
     if par_idx is None:
         cjac_fn = jax.jacobian(coeff, argnums=0)
     else:
+        # For `par_idx is not None`, we need to extract the entry of the coefficient
+        # Jacobian that belongs to the parameter of interest. This only happens when
+        # more than one parameter effectively feeds into one coefficient (HardwareHamiltonian)
 
         def cjac_fn(params, t):
             return jax.jacobian(coeff, argnums=0)(params, t)[par_idx]
@@ -595,19 +599,24 @@ def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcastin
         for tau in taus:
             split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, tau)
             tapes.extend(_split_evol_tape(tape, split_evolve_ops, op_idx))
-    avg_prefactor = (t1 - t0) / num_split_times
-    return cjacs, tapes, avg_prefactor, psr_coeffs
+    int_prefactor = (t1 - t0) / num_split_times
+    return cjacs, tapes, int_prefactor, psr_coeffs
 
 
 def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
-    """Create tapes and gradient data for a trainable parameter of a HardwareHamiltonian."""
+    """Create tapes and gradient data for a trainable parameter of a HardwareHamiltonian,
+    taking into account its reordering function."""
     op, op_idx, term_idx = op_id
+    # Map a simple enumeration of numbers from HardwareHamiltonian input parameters to
+    # ParametrizedHamiltonian parameters. This is typically a fan-out function.
     fake_params = jnp.arange(op.num_params)
     reordered = op.H.reorder_fn(fake_params, op.H.coeffs_parametrized)
     cjacs = []
     tapes = []
     psr_coeffs = []
     for coeff_idx, x in enumerate(reordered):
+        # Find out whether the value term_idx, corresponding to the current parameter of interest,
+        # has been mapped to x (for scalar x) or into x (for 1d x). If so, generate tapes and data
         if not hasattr(x, "__len__"):
             if x != term_idx:
                 continue
@@ -618,8 +627,9 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
             continue
 
         _op_id = (op, op_idx, coeff_idx)
-        # Overwriting avg_prefactor does not matter, it is equal for all parameters in this op
-        _cjacs, _tapes, avg_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
+        # Overwriting int_prefactor does not matter, it is equal for all parameters in this op,
+        # because it
+        _cjacs, _tapes, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
             tape, _op_id, key, num_split_times, use_broadcasting, cjac_idx
         )
         cjacs.extend(_cjacs)
@@ -628,16 +638,13 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
 
     # Create parameter-shift coefficients that only are non-zero for their corresponding
     # coefficient Jacobian. The two-dimensionality of the psr_coeffs will be used in
-    # _parshift_and_integrate.
+    # `_parshift_and_integrate`.
     zeros = [jnp.zeros_like(c) for c in psr_coeffs]
     psr_coeffs = jnp.stack(
-        [
-            jnp.hstack([c if i == j else z for i, (c, z) in enumerate(zip(psr_coeffs, zeros))])
-            for j, _ in enumerate(psr_coeffs)
-        ]
+        [jnp.hstack(zeros[:j] + [c] + zeros[j + 1 :]) for j, c in enumerate(psr_coeffs)]
     )
 
-    data = (len(tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs)
+    data = (len(tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
     return tapes, data
 
 
@@ -664,12 +671,13 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
                 "other operations than pulses."
             )
         if isinstance(op.H, HardwareHamiltonian):
+            # Treat HardwareHamiltonians separately because they have a reordering function
             _tapes, data = _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting)
         else:
-            cjacs, _tapes, avg_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
+            cjacs, _tapes, int_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
                 tape, op_id, _key, num_split_times, use_broadcasting
             )
-            data = (len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs)
+            data = (len(_tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
 
         tapes.extend(_tapes)
         gradient_data.append(data)
@@ -683,7 +691,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     def processing_fn(results):
         start = 0
         grads = []
-        for num_tapes, cjacs, avg_prefactor, psr_coeffs in gradient_data:
+        for num_tapes, cjacs, int_prefactor, psr_coeffs in gradient_data:
             if num_tapes == 0:
                 grads.append(None)
                 continue
@@ -694,7 +702,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             g = _parshift_and_integrate(
                 res,
                 cjacs,
-                avg_prefactor,
+                int_prefactor,
                 psr_coeffs,
                 single_measure,
                 has_partitioned_shots,
