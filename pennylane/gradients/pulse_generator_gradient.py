@@ -49,6 +49,8 @@ except ImportError:
 def _one_parameter_generators(op):
     r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
     reproduce the partial derivatives of a parameterized evolution.
+    In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
+    and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
     Args:
         op (`~.ParametrizedEvolution`): Parametrized evolution for which to compute the generator
@@ -56,7 +58,7 @@ def _one_parameter_generators(op):
     Returns:
         tuple[tensor_like]: The generators for one-parameter groups that reproduce the
         partial derivatives of the parametrized evolution.
-        The ``k``\ th entry of the returned ``tuple`` has the shape ``(2**N, 2**N, *par_shape)``
+        The ``k``\ th entry of the returned ``tuple`` has the shape ``(*par_shape, 2**N, 2**N)``
         where ``N`` is the number of qubits the evolution acts on and ``par_shape`` is the
         shape of the ``k``\ th parameter of the evolution.
 
@@ -73,20 +75,20 @@ def _one_parameter_generators(op):
     See the documentation of pulse_generator for more details and a mathematical derivation.
     """
 
-    def _compute_matrix(*args):
+    def _compute_matrix(op_data):
         """Parametrized computation of the matrix for the given pulse ``op``."""
-        return op(*args, t=op.t, **op.odeint_kwargs).matrix()
+        return op(op_data, t=op.t, **op.odeint_kwargs).matrix()
 
-    def _compute_matrix_split(*args):
+    def _compute_matrix_split(op_data):
         """Parametrized computation of the matrix for the given pulse ``op``.
         Return the real and imaginary parts separately."""
-        mat = _compute_matrix(*args)
+        mat = _compute_matrix(op_data)
         return mat.real, mat.imag
 
     # Compute the Jacobian of _compute_matrix, giving the Jacobian of the real and imag parts
     # The output is a tuple, with one entry per parameter, each of which has the axes
     # (mat_dim, mat_dim, *parameter_shape)
-    jac_real, jac_imag = jax.jacobian(_compute_matrix_split, argnums=0)(op.data)
+    jac_real, jac_imag = jax.jacobian(_compute_matrix_split)(op.data)
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
@@ -106,12 +108,9 @@ def _one_parameter_generators(op):
 
 
 def _one_parameter_paulirot_coeffs(generators, num_wires):
-    r"""Compute the Pauli coefficients of the one-parameter group generators that reproduce
-    the partial derivatives of a parametrized evolution. The coefficients correspond
+    r"""Compute the Pauli coefficients of effective generators. The coefficients correspond
     to the decomposition into (rescaled) Pauli word generators as used by ``PauliRot``
     gates.
-    In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
-    and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
     Args:
         generators (tuple[tensor_like]): Generators of the one-parameter groups that
@@ -130,13 +129,6 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
         number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qml.PauliRot``
         in the pulse generator differentiation pipeline.
 
-    .. note::
-
-        Currently, this function work via tensor multiplication, costing
-        :math:`\mathcal{O}(n16^N)` scalar multiplications, where :math:`N` is the
-        number of qubits the evolution acts on and :math:`n` is the number of (scalar) parameters
-        of the evolution. This can be improved to :math:`\mathcal{O}(nN4^N}` by using the
-        fast Walsh-Hadamard transform.
     """
     # The generators are skew-Hermitian. Therefore _pauli_decompose will return a purely
     # imaginary tensor. Multiplying with 2i results in a real-valued tensor, which
@@ -194,8 +186,8 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
 
     Args:
         tape (`~.QuantumTape`): Tape to differentiate.
-        idx (int): Index of the parameter with respect to which to differentiate
-            into ``tape.trainable_parameters``.
+        idx (int): Index (referring to ``tape.trainable_parameters``) of the parameter
+            with respect to which to differentiate.
         atol (float): absolute tolerance used to determine whether a coefficient is zero.
         cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
 
@@ -223,7 +215,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
         # only ParametrizedEvolution can be treated with this gradient transform
         raise ValueError(
             "pulse_generator does not support differentiating parameters of "
-            "other operations than pulses."
+            f"other operations than pulses, but received operation {op}."
         )
 
     num_wires = len(op.wires)

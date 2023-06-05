@@ -101,7 +101,7 @@ class ApproxTimeEvolution(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
+    def __init__(self, hamiltonian, time, n, do_queue=None, id=None):
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
                 f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"

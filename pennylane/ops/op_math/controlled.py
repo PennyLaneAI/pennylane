@@ -87,6 +87,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     """
     custom_controlled_ops = {
         qml.PauliZ: qml.CZ,
+        qml.PauliY: qml.CY,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
@@ -151,7 +152,9 @@ class Controlled(SymbolicOp):
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
         do_queue(bool):  indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -247,7 +250,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=too-many-function-args
     def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
@@ -613,7 +616,7 @@ class ControlledOp(Controlled, operation.Operation):
 
     # pylint: disable=too-many-function-args
     def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
     ):
         super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
         # check the grad_recipe validity
