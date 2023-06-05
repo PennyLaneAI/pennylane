@@ -23,6 +23,7 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
+from pennylane.measurements import Shots
 
 from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax
@@ -360,7 +361,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
-    shot_vector = isinstance(shots, Sequence)
+    partitioned_shots = shots.has_partitioned_shots
     tape_specs = (single_measure, num_params, num_measurements, shots)
 
     def processing_fn(results):
@@ -385,7 +386,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
             # Apply the parameter-shift rule (respecting the tape output formatting)
             # and contract the result with the coefficients of the effective generators
             # in the Pauli basis. This computes the partial derivative.
-            g = _parshift_and_contract(res, coeffs, single_measure, not shot_vector)
+            g = _parshift_and_contract(res, coeffs, single_measure, not partitioned_shots)
             grads.append(g)
 
             # Memorize the parameter shape for the nonzero gradient entry
@@ -399,10 +400,9 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
             if _g is None:
                 par_shapes = (nonzero_parshape, next(zero_parshapes))
                 # Make zero representative gradient entry, adapting the shape
-                zero_rep = _make_zero_rep(g, single_measure, shot_vector, par_shapes)
+                zero_rep = _make_zero_rep(g, single_measure, partitioned_shots, par_shapes)
                 # Fill in zero-valued gradient entry
                 grads[i] = zero_rep
-
 
         # Reformat the flat list of gradients into an output that fits the original tape specs.
         return reorder_grads(grads, tape_specs)
@@ -421,6 +421,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    shots = Shots(shots)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)

@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
+from pennylane.measurements import Shots
 from pennylane.math import expand_matrix
 from pennylane.gradients.pulse_generator_gradient import (
     _generate_tapes_and_coeffs,
@@ -716,7 +717,9 @@ class TestParshiftAndContract:
         # derivative 0.81*value
         results = [np.array(pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, single_measure=True, shot_vector=False)
+        output = _parshift_and_contract(
+            results, coeffs, single_measure=True, single_shot_entry=True
+        )
         assert isinstance(output, np.ndarray)
         assert output.shape == (num_out,)
         expected = 0.81 * values @ np.stack(coeffs)
@@ -733,7 +736,9 @@ class TestParshiftAndContract:
         # derivative 0.81*value
         results = [shot_factors * (pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, single_measure=True, shot_vector=True)
+        output = _parshift_and_contract(
+            results, coeffs, single_measure=True, single_shot_entry=False
+        )
         assert isinstance(output, tuple)
         assert len(output) == len_shot_vector
         assert all(isinstance(x, np.ndarray) for x in output)
@@ -752,8 +757,10 @@ class TestParshiftAndContract:
         # derivative 0.81*value
         results = [meas_factors * (pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, single_measure=False, shot_vector=False)
-        # Note that these checks are equal to those for single_measure and not shot_vector
+        output = _parshift_and_contract(
+            results, coeffs, single_measure=False, single_shot_entry=True
+        )
+        # Note that these checks are equal to those for single_measure and single_shot_entry
         assert isinstance(output, tuple)
         assert len(output) == num_measurements
         assert all(isinstance(x, np.ndarray) for x in output)
@@ -777,8 +784,10 @@ class TestParshiftAndContract:
         factors = np.outer(shot_factors, meas_factors)
         results = [factors * (pref * v) for v in values for pref in [1.2, -0.42]]
         coeffs = [np.random.random(num_out) for _ in range(num_params)]
-        output = _parshift_and_contract(results, coeffs, single_measure=False, shot_vector=True)
-        # Note that these checks are equal to those for single_measure and not shot_vector
+        output = _parshift_and_contract(
+            results, coeffs, single_measure=False, single_shot_entry=False
+        )
+        # Note that these checks are equal to those for single_measure and single_shot_entry
         assert isinstance(output, tuple)
         assert len(output) == len_shot_vector
         for x in output:
@@ -974,7 +983,7 @@ class TestPulseGeneratorTapes:
         theta = integral_of_polyval(x, t)
         assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
-        _tapes, fn = pulse_generator(tape, shots=shots)
+        _tapes, fn = pulse_generator(tape, shots=Shots(shots))
         assert len(_tapes) == 2
 
         grad = fn(qml.execute(_tapes, dev))
@@ -1013,7 +1022,7 @@ class TestPulseGeneratorTapes:
         circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
         circuit.tape.trainable_params = [0, 1]
-        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1], shots=shots)
+        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1], shots=Shots(shots))
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
@@ -1101,7 +1110,7 @@ class TestPulseGeneratorTapes:
         circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
         circuit.tape.trainable_params = [0, 1, 2]
-        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1, 2], shots=shots)
+        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1, 2], shots=Shots(shots))
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
