@@ -326,6 +326,11 @@ class TestFermiSentence:
         (fs3, fs5, fs5),
         (fs4, fs3, fs3),
         (fs3, fs4, fs3),
+        (
+            FermiSentence({fw2: 1, fw3: 1, fw4: 1}),
+            FermiSentence({fw4: 1, fw2: 1}),
+            FermiSentence({fw2: 2, fw3: 1, fw4: 1, fw2 * fw2: 1, fw3 * fw2: 1}),
+        ),
     )
 
     @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
