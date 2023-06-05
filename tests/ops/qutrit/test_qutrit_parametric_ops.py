@@ -413,7 +413,7 @@ def test_control_wires(op, control_wires):
     [
         (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
         (qml.TRY, qml.GellMann(0, 1), np.cos),
-        (qml.TRZ, qml.GellMann(0, 3), lambda phi: 0 * phi),
+        (qml.TRZ, qml.GellMann(0, 1), lambda phi: -np.sin(phi)),
     ],
 )
 class TestGrad:
@@ -431,6 +431,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -448,6 +451,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -467,6 +473,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -486,6 +495,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -505,6 +517,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -523,6 +538,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -543,6 +561,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -564,6 +585,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if issubclass(op, qml.TRZ):
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
