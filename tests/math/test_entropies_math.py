@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for differentiable quantum entropies.
 """
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -47,11 +47,11 @@ class TestPurity:
     check_state = [True, False]
 
     @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("state_vector,subsystems_purity,full_purity", state_vector)
+    @pytest.mark.parametrize("state_vector,subsystems_purity,_", state_vector)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
     def test_state_vector_purity_single_wire(
-        self, state_vector, wires, check_state, subsystems_purity, full_purity, interface
+        self, state_vector, wires, check_state, subsystems_purity, _, interface
     ):
         """Tests purity of sub-systems of different state vectors"""
 
@@ -62,11 +62,11 @@ class TestPurity:
         assert qml.math.allclose(purity, subsystems_purity)
 
     @pytest.mark.parametrize("wires", full_wires_list)
-    @pytest.mark.parametrize("state_vector,subsystems_purity,full_purity", state_vector)
+    @pytest.mark.parametrize("state_vector,_,full_purity", state_vector)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
     def test_state_vector_purity_full_wire(
-        self, state_vector, wires, check_state, subsystems_purity, full_purity, interface
+        self, state_vector, wires, check_state, _, full_purity, interface
     ):
         """Tests purity of different state vectors"""
 
@@ -76,12 +76,12 @@ class TestPurity:
         purity = qml.math.purity(state_vector, wires, check_state=check_state)
         assert qml.math.allclose(purity, full_purity)
 
-    @pytest.mark.parametrize("density_matrix,subsystems_purity,full_purity", density_matrices)
+    @pytest.mark.parametrize("density_matrix,subsystems_purity,_", density_matrices)
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
     def test_density_matrices_purity_single_wire(
-        self, density_matrix, wires, check_state, subsystems_purity, full_purity, interface
+        self, density_matrix, wires, check_state, subsystems_purity, _, interface
     ):
         """Test purity for different density matrices."""
 
@@ -91,12 +91,12 @@ class TestPurity:
         purity = qml.math.purity(density_matrix, wires, check_state=check_state)
         assert qml.math.allclose(purity, subsystems_purity)
 
-    @pytest.mark.parametrize("density_matrix,subsystems_purity,full_purity", density_matrices)
+    @pytest.mark.parametrize("density_matrix,_,full_purity", density_matrices)
     @pytest.mark.parametrize("wires", full_wires_list)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
     def test_density_matrices_purity_full_wire(
-        self, density_matrix, wires, check_state, subsystems_purity, full_purity, interface
+        self, density_matrix, wires, check_state, _, full_purity, interface
     ):
         """Test purity for different density matrices."""
 
@@ -410,8 +410,6 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_max_entropy_grad_torch(self, params, wires, base, check_state):
         """Test `max_entropy` differentiability with torch interface."""
-        import torch
-
         params = torch.tensor(params, requires_grad=True)
 
         max_entropy = qml.math.max_entropy(params, wires, base, check_state)
@@ -427,8 +425,6 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_max_entropy_grad_tf(self, params, wires, base, check_state):
         """Test `max_entropy` differentiability with tensorflow interface."""
-        import tensorflow as tf
-
         params = tf.Variable(params)
 
         with tf.GradientTape() as tape:
@@ -446,8 +442,7 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("jit", [False, True])
     def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `max_entropy` differentiability with jax."""
-        import jax
-        import jax.numpy as jnp
+        jnp = jax.numpy
 
         params = jnp.array(params)
 

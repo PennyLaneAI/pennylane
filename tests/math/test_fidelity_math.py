@@ -67,11 +67,12 @@ class TestFidelityMath:
 
     check_state = [True, False]
 
-    @pytest.mark.parametrize("state0,state1,fid", state0_state1_fid)
+    @pytest.mark.parametrize("states_fid", state0_state1_fid)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
-    def test_state_vector_fidelity(self, state0, state1, check_state, fid, func):
+    def test_state_vector_fidelity(self, states_fid, check_state, func):
         """Test fidelity between different quantum states."""
+        state0, state1, fid = states_fid
         state0 = func(state0)
         state1 = func(state1)
         fidelity = qml.math.fidelity(state0, state1, check_state)
