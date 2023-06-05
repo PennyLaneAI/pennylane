@@ -14,9 +14,10 @@
 """
 Tests for the pennylane.qnn.keras module.
 """
+from collections import defaultdict
+
 import numpy as np
 import pytest
-from collections import defaultdict
 
 import pennylane as qml
 

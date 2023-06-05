@@ -16,9 +16,10 @@ Tests for the pennylane.qnn.torch module.
 """
 from unittest import mock
 import math
+from collections import defaultdict
+
 import numpy as np
 import pytest
-from collections import defaultdict
 
 import pennylane as qml
 from pennylane.qnn.torch import TorchLayer
