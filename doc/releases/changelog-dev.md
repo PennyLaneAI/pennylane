@@ -217,6 +217,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
+  generating terms of a pulse Hamiltonian.
+  [(4156)](https://github.com/PennyLaneAI/pennylane/pull/4156)
+  
 * Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
   was not taken into account.
   [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)
