@@ -589,10 +589,11 @@ def execute(
             )
 
             # Adjoint Jacobian with backward pass and jitting needs the original state
-            from .jax import get_jax_interface_name
 
             interface_jax = interface
             if interface == "jax":
+                from .jax import get_jax_interface_name
+
                 interface_jax = get_jax_interface_name(tapes)
             if interface_jax == "jax-jit":
                 use_device_state = gradient_kwargs.get("use_device_state", None)
