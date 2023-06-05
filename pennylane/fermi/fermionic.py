@@ -175,7 +175,7 @@ class FermiC(FermiWord):
         wire(int): the non-negative integer indicating the energy level the operator acts on.
 
     The first state is designated 0, and subsequent states are numbered chronologically. For
-    instance, ``qml.FermiC(3)``=:math:`a^\dagger_3` operates on the 3rd state in :math:`\ket{0000}`.
+    instance, ``qml.FermiC(3)`` :math:`=a^\dagger_3` operates on the 3rd state in :math:`\ket{0000}`.
 
     .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane ``Operator``
 
@@ -224,7 +224,7 @@ class FermiA(FermiWord):
         wire(int): the non-negative integer indicating the state the operator acts on.
 
     The first state is designated 0, and subsequent states are numbered chronologically. For
-    instance, ``qml.FermiA(3)``=:math:`a_3` operates on the 3rd state in :math:`\ket{1111}`.
+    instance, ``qml.FermiA(3)`` :math:`=a_3` operates on the 3rd state in :math:`\ket{1111}`.
 
     .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane ``Operator``
 
