@@ -80,7 +80,7 @@ class TestFermiWord:
         (fw1, "0+ 1-"),
         (fw2, "0+ 0-"),
         (fw3, "0+ 3- 0+ 4-"),
-        (fw4, ""),
+        (fw4, "I"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_compact)
