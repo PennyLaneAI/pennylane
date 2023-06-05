@@ -74,10 +74,8 @@ class TestMeasurementTransformations:
         qwc_rot = qwc_rotation(pauli_ops)
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
 
     invalid_qwc_rotation_inputs = [
@@ -166,16 +164,12 @@ class TestMeasurementTransformations:
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
         assert all(
-            [
-                are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-                for i in range(len(diag_qwc_grouping))
-            ]
+            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
+            for i in range(len(diag_qwc_grouping))
         )
 
     not_qwc_groupings = [

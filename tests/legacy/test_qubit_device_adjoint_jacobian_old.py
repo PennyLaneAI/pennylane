@@ -57,6 +57,21 @@ class TestAdjointJacobian:
         ):
             dev.adjoint_jacobian(tape)
 
+    def test_broadcasting_error(self):
+        """Tests that parameter broadcasting is not supported with adjoint on DefaultQubit"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="adjoint")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="broadcasting is not supported with adjoint",
+        ):
+            circuit([0.1, 0.2])
+
     def test_unsupported_op(self, dev):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
         multi-parameter operations that are not qml.Rot"""

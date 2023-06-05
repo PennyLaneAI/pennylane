@@ -29,6 +29,24 @@ from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumTape, make_qscript
 
 
+def _convert_to_interface(res, interface):
+    """
+    Recursively convert res to the given interface.
+    """
+    interface = INTERFACE_MAP[interface]
+
+    if interface in ["Numpy"]:
+        return res
+
+    if isinstance(res, (list, tuple)):
+        return type(res)(_convert_to_interface(r, interface) for r in res)
+
+    if isinstance(res, dict):
+        return {k: _convert_to_interface(v, interface) for k, v in res.items()}
+
+    return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
+
+
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
@@ -891,6 +909,11 @@ class QNode:
             )
 
             res = res[0]
+
+            # convert result to the interface in case the qfunc has no parameters
+
+            if len(self.tape.get_parameters(trainable_only=False)) == 0:
+                res = _convert_to_interface(res, self.interface)
 
             if old_interface == "auto":
                 self.interface = "auto"
