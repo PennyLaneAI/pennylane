@@ -244,7 +244,7 @@ def zxz_decomposition(U, wire, return_global_phase=False):
 
 
 def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
-    r"""Decompose a one-qubit unitary :math:`U` in terms of specified rotations.
+    r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations.
 
     Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
     and RZ gates.
