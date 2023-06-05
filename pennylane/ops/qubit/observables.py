@@ -560,7 +560,7 @@ class StateVectorProjector(Observable):
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
         >>> qml.StateVectorProjector(state_vector, wires=(0, 1, 2)).label()
-        '(0.71|01> + 0.71|10>)(0.71<01| + 0.71<10|)'
+        '(0.71|01⟩ + 0.71|10⟩)(0.71⟨01| + 0.71⟨10|)'
 
         """
         state_vector = self.parameters[0]
@@ -580,8 +580,8 @@ class StateVectorProjector(Observable):
         if len(basis_strings) == 1:
             return f"|{basis_strings[0]}><{basis_strings[0]}|"
 
-        kets = " + ".join([f"{c}|{b}>" for c, b in zip(coefficients, basis_strings)])
-        bras = " + ".join([f"{c}<{b}|" for c, b in zip(coefficients, basis_strings)])
+        kets = " + ".join([f"{c}|{b}⟩" for c, b in zip(coefficients, basis_strings)])
+        bras = " + ".join([f"{c}⟨{b}|" for c, b in zip(coefficients, basis_strings)])
         label = f"({kets})({bras})"
 
         if len(label) > 42:
