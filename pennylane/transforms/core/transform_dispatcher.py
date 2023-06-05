@@ -36,7 +36,7 @@ class TransformDispatcher:
     """
 
     def __init__(
-            self, transform, expand_transform=None, classical_cotransform=None
+        self, transform, expand_transform=None, classical_cotransform=None
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -122,8 +122,8 @@ class TransformContainer:
     """
 
     def __init__(
-            self, transform, args=None, kwargs=None, classical_cotransform=None
-    ):  # pylint:disable=redefined-outer-name
+        self, transform, args=None, kwargs=None, classical_cotransform=None
+    ):  # pylint:disable=protected-access
         self._transform = transform
         self._args = args if args else []
         self._kwargs = kwargs if kwargs else {}

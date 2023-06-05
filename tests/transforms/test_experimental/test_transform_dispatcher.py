@@ -48,7 +48,7 @@ def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform without tape."""
-    circuit._ops.pop(index)
+    circuit._ops.pop(index)  # pylint:disable=protected-access
     return [circuit], lambda x: x
 
 
@@ -56,7 +56,7 @@ def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform with wrong hinting."""
-    tape._ops.pop(index)
+    tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
@@ -96,7 +96,7 @@ def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid transform."""
-    tape._ops.pop(index)
+    tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
@@ -122,7 +122,7 @@ def multiple_args_expand_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Multiple args expand fn."""
-    tape._ops.pop(index)
+    tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
@@ -305,7 +305,7 @@ class TestTransformDispatcher:
         with pytest.raises(
             TransformError,
             match="The object on which the transform is applied is not valid. It can only be a tape, a QNode or a "
-                  "qfunc.",
+            "qfunc.",
         ):
             obj = qml.RX(0.1, wires=0)
             dispatched_transform(obj)

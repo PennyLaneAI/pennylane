@@ -151,7 +151,11 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
         )
 
-    if not ret[0] in (Sequence[qml.tape.QuantumTape], List[qml.tape.QuantumTape], Tuple[qml.tape.QuantumTape]):  # pylint:disable=unsubscriptable-object
+    if not ret[0] in (
+        Sequence[qml.tape.QuantumTape],
+        List[qml.tape.QuantumTape],
+        Tuple[qml.tape.QuantumTape],
+    ):  # pylint:disable=unsubscriptable-object
         raise TransformError(
             "The first return of a transform must be a sequence of tapes: collections.abc.Sequence["
             "pennylane.tape.tape.QuantumTape]"
