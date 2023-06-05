@@ -282,7 +282,7 @@ def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
-        rotations (string): A string defining the sequence of rotations to decompose :math:`U` into.
+        rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
 
     Returns:

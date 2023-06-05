@@ -29,7 +29,7 @@ def unitary_to_rot(tape):
     :class:`.RZ` gate, while non-diagonal operations will be converted to a
     sequence of Y and Z rotations in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)` that
     implements the original operation up to a global phase. Two-qubit gates will be
-    decomposed according to the :func:`pennylane.transforms.two_qubit_decomposition`function.
+    decomposed according to the :func:`pennylane.transforms.two_qubit_decomposition` function.
 
     .. warning::
 
