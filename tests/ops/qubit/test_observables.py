@@ -66,31 +66,32 @@ PROJECTOR_EIGVALS_TEST_DATA = [
 ]
 
 STATEVECTORPROJECTOR_TEST_STATES = [
-    np.array([1, 0]),
-    np.array([1j, 0, 0, 0]),
-    np.array([1j, 0, 0, 1, 0, 0, 0, 0]) / np.sqrt(2),
+    (np.array([1, 0])),
+    (np.array([1j, 0])),
+    (np.array([1j, 0, 0, 1, 0, 0, 0, 0]) / np.sqrt(2)),
 ]
 
 STATEVECTORPROJECTOR_TEST_MATRICES = [
-    np.array([[1, 0], [0, 0]]),
-    np.array([[1, 0], [0, 0]]),
-    np.array(
-        [
-            [0.5, 0, 0, 1j * 0.5, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [-1j * 0.5, 0, 0, 0.5, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-        ]
+    (np.array([[1, 0], [0, 0]])),
+    (np.array([[1, 0], [0, 0]])),
+    (
+        np.array(
+            [
+                [0.5, 0, 0, 1j * 0.5, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [-1j * 0.5, 0, 0, 0.5, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
     ),
 ]
 
-STATEVECTORPROJECTOR_TEST_DATA = (
-    STATEVECTORPROJECTOR_TEST_STATES,
-    STATEVECTORPROJECTOR_TEST_MATRICES,
+STATEVECTORPROJECTOR_TEST_DATA = zip(
+    STATEVECTORPROJECTOR_TEST_STATES, STATEVECTORPROJECTOR_TEST_MATRICES
 )
 
 
@@ -628,14 +629,14 @@ class TestStateVectorProjector:
     def test_pow_zero(self):
         """Assert that the state vector projector raised to zero is an empty list."""
         state_vector = np.array([0, 1])
-        op = qml.StateVectorProjector(state_vector, wires=(0, 1))
+        op = qml.StateVectorProjector(state_vector, wires=[0])
         assert len(op.pow(0)) == 0
 
     @pytest.mark.parametrize("n", (1, 3))
     def test_pow_non_zero_positive_int(self, n):
         """Test that the state vector projector raised to a positive integer is just a copy."""
-        basis_state = np.array([0, 1])
-        op = qml.StateVectorProjector(basis_state, wires=(0, 1))
+        state_vector = np.array([0, 1])
+        op = qml.StateVectorProjector(state_vector, wires=[0])
         pow_op = op.pow(n)[0]
         assert pow_op.__class__ is qml.StateVectorProjector
         assert qml.math.allclose(pow_op.data[0], op.data[0])
