@@ -446,7 +446,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
             used for tape execution, but provides information about the shots.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
-            ``qml.math.isclose(x, 0., atol=atol, rtol=0)=True`` are neglected.
+            ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -550,7 +550,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         This function requires the JAX interface and does not work with other autodiff interfaces
         commonly encountered with PennyLane.
-        In addition, this transform is only JIT-compatible with scalar pulse parameters.
+        In addition, this transform is only JIT-compatible with pulses that only have scalar parameters.
 
     .. note::
 
@@ -667,7 +667,8 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         Considering the derivation above, we notice that the same modified cost function
         :math:`C_\ell(x)` may appear in the derivatives of distinct parameters
-        :math:`\theta_k` and :math:`\theta_m`. In order to not evaluate the same
+        :math:`\theta_k` and :math:`\theta_m`, because they both enter into the same
+        pulse gate. In order to not evaluate the same
         modified quantum circuit derivatives multiple times, we use an internal
         cache that avoids repeated creation of the same parameter-shifted circuits.
         In addition, all modified cost functions :math:`C_\ell` that would be multiplied
