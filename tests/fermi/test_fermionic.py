@@ -91,7 +91,7 @@ class TestFermiWord:
         (fw1, "<FermiWord = '0+ 1-'>"),
         (fw2, "<FermiWord = '0+ 0-'>"),
         (fw3, "<FermiWord = '0+ 3- 0+ 4-'>"),
-        (fw4, "<FermiWord = ''>"),
+        (fw4, "<FermiWord = 'I'>"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_str)
