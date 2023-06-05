@@ -47,7 +47,6 @@ class TestFermiWord:
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
             fw[(1, 1)] = "+"
 
-
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
         fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
@@ -159,7 +158,6 @@ class TestFermiWord:
         serialization = pickle.dumps(fw)
         new_fw = pickle.loads(serialization)
         assert fw == new_fw
-        
 
     @pytest.mark.parametrize(
         "operator",
@@ -173,7 +171,7 @@ class TestFermiWord:
         """Test that an error is raised if the operator orders are not correct."""
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
-            
+
 
 fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
 fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
@@ -403,4 +401,3 @@ class TestFermiSentence:
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
-
