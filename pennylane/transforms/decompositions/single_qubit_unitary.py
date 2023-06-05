@@ -145,9 +145,9 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(array(0.45246584), wires=[0]),
+    [RX(array(-1.72101925), wires=[0]),
     RY(array(1.39749741), wires=[0]),
-    RX(array(-1.72101925), wires=[0]),
+    RX(array(0.45246584), wires=[0]),
     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
@@ -174,7 +174,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
 
     phi, theta, lam = map(math.squeeze, [phi, theta, lam])
 
-    Operations = [qml.RX(phi, wire), qml.RY(theta, wire), qml.RX(lam, wire)]
+    Operations = [qml.RX(lam, wire), qml.RY(theta, wire), qml.RX(phi, wire)]
     if return_global_phase:
         Operations += [qml.s_prod(math.exp(1j * gamma)[0], qml.Identity(wire))]
 
@@ -204,9 +204,9 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = zxz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-        [RZ(array(4.47029367), wires=[0]),
-        RX(array(1.14938178), wires=[0]),
-        RZ(array(-0.62748677), wires=[0]),
+        [RZ(tensor(3.30385447, requires_grad=True), wires=[0]),
+        RX(tensor(1.14938178, requires_grad=True), wires=[0]),
+        RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
@@ -231,7 +231,8 @@ def zxz_decomposition(U, wire, return_global_phase=False):
 
     phi, theta, psi = map(math.squeeze, [phi, theta, psi])
 
-    Operations = [qml.RZ(phi, wire), qml.RX(theta, wire), qml.RZ(psi, wire)]
+    #Return gates in the order they will be applied on the qubit
+    Operations = [qml.RZ(psi, wire), qml.RX(theta, wire), qml.RZ(phi, wire)]
     if return_global_phase:
         Operations += [qml.s_prod(math.exp(1j * alpha)[0], qml.Identity(wire))]
 
@@ -245,7 +246,7 @@ def one_qubit_decomposition(U, rotations, wire):
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
-        rotations (string): A string defining the sequence of rotations to decompose :math:`U` into. 
+        rotations (string): A string defining the sequence of rotations to decompose :math:`U` into.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
 
     Returns:
