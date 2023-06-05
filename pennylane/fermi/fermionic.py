@@ -87,6 +87,9 @@ class FermiWord(dict):
         >>> w.to_string()
         '0+ 1-'
         """
+        if len(self) == 0:
+            return "I"
+
         string = " ".join(
             [
                 i + j
@@ -154,12 +157,6 @@ class FermiWord(dict):
             operator *= self
 
         return operator
-
-
-# TODO: create __add__ method when PauliSentence is merged.
-# TODO: create __sub__ method when PauliSentence is merged.
-# TODO: support multiply by number in __mul__ when PauliSentence is merged.
-# TODO: create mapping method when the ne jordan_wigner function is added.
 
 
 class FermiSentence(dict):
@@ -239,9 +236,9 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
+
 # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
 # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
 # TODO: create __imul__ method.
 # TODO: support multiply by number in __mul__ when FermiiSentence is merged.
 # TODO: create mapping method when the jordan_wigner function is added.
-

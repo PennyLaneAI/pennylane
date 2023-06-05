@@ -26,6 +26,7 @@
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
