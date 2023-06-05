@@ -135,14 +135,7 @@ jobs:
 
       - name: Install additional PIP packages
         if: inputs.additional_pip_packages != ''
-        env:
-          PIP_PACKAGES: ${{ inputs.additional_pip_packages }}
-        run: |
-          if [[ ! "$PIP_PACKAGES" =~ ^[a-zA-z0-9~=\-_:\/@\+\.]+ ]]; then
-            echo "Invalid Value for additional pip packages"
-            exit 1
-          fi
-          pip install $PIP_PACKAGES
+        run: pip install ${{ inputs.additional_pip_packages }}
 
       - name: Install PennyLane
         run: |
