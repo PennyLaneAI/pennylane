@@ -349,6 +349,45 @@ class Projector(Observable):
     * Gradient recipe: None
 
     Args:
+        state (tensor-like): binary input of shape ``(n, )``
+        wires (Iterable): wires that the projector acts on
+        basis_representation (bool): indicates whether ``state`` is a basis
+            state (True) or a state vector (False).
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
+        id (str or None): String representing the operation (optional)
+    """
+
+    def __new__(cls, *args, basis_representation=True, **kwargs):
+        base_cls = _BasisStateProjector if basis_representation else _StateVectorProjector
+        cls_type = type("Projector", (base_cls,), dict(base_cls.__dict__))
+        proj = super().__new__(cls_type)
+        proj.__init__(*args, **kwargs)
+        return proj
+
+
+class _BasisStateProjector(Observable):
+    r"""
+    Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
+
+    The expectation of this observable returns the value
+
+    .. math::
+        |\langle \psi | i \rangle |^2
+
+    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
+
+    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}`, is created by ``basis_state=np.array([1, 1])``.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
         basis_state (tensor-like): binary input of shape ``(n, )``
         wires (Iterable): wires that the projector acts on
         do_queue (bool): Indicates whether the operator should be
@@ -396,7 +435,7 @@ class Projector(Observable):
 
         **Example:**
 
-        >>> qml.Projector([0, 1, 0], wires=(0, 1, 2)).label()
+        >>> qml._BasisStateProjector([0, 1, 0], wires=(0, 1, 2)).label()
         '|010⟩⟨010|'
 
         """
@@ -423,7 +462,7 @@ class Projector(Observable):
 
         **Example**
 
-        >>> qml.Projector.compute_matrix([0, 1])
+        >>> qml._BasisStateProjector.compute_matrix([0, 1])
         [[0. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 0.]
@@ -457,7 +496,7 @@ class Projector(Observable):
 
         **Example**
 
-        >>> qml.Projector.compute_eigvals([0, 1])
+        >>> qml._BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
         w = np.zeros(2 ** len(basis_state))
@@ -488,7 +527,7 @@ class Projector(Observable):
 
         **Example**
 
-        >>> qml.Projector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
+        >>> qml._BasisStateProjector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
         []
         """
         return []
@@ -497,7 +536,7 @@ class Projector(Observable):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
-class StateVectorProjector(Observable):
+class _StateVectorProjector(Observable):
     r"""
     Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
 
@@ -559,7 +598,7 @@ class StateVectorProjector(Observable):
         **Example:**
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
-        >>> qml.StateVectorProjector(state_vector, wires=(0, 1, 2)).label()
+        >>> qml._StateVectorProjector(state_vector, wires=(0, 1, 2)).label()
         '(0.71|01⟩ + 0.71|10⟩)(0.71⟨01| + 0.71⟨10|)'
 
         """
@@ -608,7 +647,7 @@ class StateVectorProjector(Observable):
 
         The projector of the state :math:`\frac{1}{\sqrt{2}}(\ket{01}+\ket{10})`
 
-        >>> qml.StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
+        >>> qml._StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
         [[0. 0.  0.  0.]
          [0. 0.5 0.5 0.]
          [0. 0.5 0.5 0.]
@@ -629,7 +668,7 @@ class StateVectorProjector(Observable):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.StateVectorProjector.eigvals`
+        .. seealso:: :meth:`~._StateVectorProjector.eigvals`
 
         Args:
             state_vector (Iterable): state vector to project on
@@ -639,7 +678,7 @@ class StateVectorProjector(Observable):
 
         **Example**
 
-        >>> qml.StateVectorProjector.compute_eigvals([0, 0, 1, 0])
+        >>> qml._StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         [0. 0. 0. 1.]
         """
         w = qml.math.zeros_like(state_vector)
@@ -659,7 +698,7 @@ class StateVectorProjector(Observable):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.StateVectorProjector.diagonalizing_gates`.
+        .. seealso:: :meth:`~._StateVectorProjector.diagonalizing_gates`.
 
         Args:
             basis_state (Iterable): basis state that the operator projects on
@@ -670,7 +709,7 @@ class StateVectorProjector(Observable):
         **Example**
 
         >>> state_vector = np.array([1., 1j])/np.sqrt(2)
-        >>> qml.StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
+        >>> qml._StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
         [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
                              [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
         """

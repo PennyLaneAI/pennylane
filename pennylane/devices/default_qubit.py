@@ -168,7 +168,6 @@ class DefaultQubit(QubitDevice):
         "Hermitian",
         "Identity",
         "Projector",
-        "StateVectorProjector",
         "SparseHamiltonian",
         "Hamiltonian",
         "Sum",
