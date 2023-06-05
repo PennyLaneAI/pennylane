@@ -19,6 +19,10 @@
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
+* Added the `FermiWord` class to represent a fermionic operator such as
+  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
 <h3>Improvements 🛠</h3>
 
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
