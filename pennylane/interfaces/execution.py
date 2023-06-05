@@ -587,6 +587,18 @@ def execute(
                 pass_kwargs=True,
                 return_tuple=False,
             )
+
+            # Adjoint Jacobian with backward pass and jitting needs the original state
+            from .jax import get_jax_interface_name
+
+            interface_jax = interface
+            if interface == "jax":
+                interface_jax = get_jax_interface_name(tapes)
+            if interface_jax == "jax-jit":
+                use_device_state = gradient_kwargs.get("use_device_state", None)
+                if use_device_state:
+                    gradient_kwargs["use_device_state"] = False
+
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn
