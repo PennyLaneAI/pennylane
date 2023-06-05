@@ -25,7 +25,13 @@
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
-<h4>Batching and other tweaks to Torch and Keras layers 🦾</h4>
+* Updated repr for ParametrizedHamiltonian.
+  [(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+<h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
+
+* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
+  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
 <h3>Improvements 🛠</h3>
 
@@ -93,18 +99,6 @@
   to `True`. This allows quick insights into broadcasted tapes for example.
   [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
 
-* Support for adjoint differentiation has been added to the `DefaultQubit2` device.
-  [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
-
-* Support for sample-based measurements has been added to the `DefaultQubit2` device.
-  [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
-  [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
-  [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
-  [(#4172)](https://github.com/PennyLaneAI/pennylane/pull/4172)
-
-* Added a keyword argument `seed` to the `DefaultQubit2` device.
-  [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
-
 * Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
@@ -112,30 +106,6 @@
 * Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
   an execution.
   [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
-
-* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
-[(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
-
-* `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
-  `use_device_gradient`, and `grad_on_execution`.
-  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
-
-* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
-  ```python
-  def U(params):
-      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
-      Um = qml.evolve(H)(params, t=10., dense=False)
-      return qml.matrix(Um)
-  params = jnp.array([[0.5]], dtype=complex)
-  jac = jax.jacobian(U, holomorphic=True)(params)
-  ```
-  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
-
-* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
-  ([#2845])(https://github.com/PennyLaneAI/pennylane/pull/2845)
-
-* The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
-  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
 * `CZ` now inherits from the `ControlledOp` class. It now supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
   [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
@@ -150,12 +120,6 @@
 * Updated the `gradients` module to use the new `Shots` object internally.
   [(#4152)](https://github.com/PennyLaneAI/pennylane/pull/4152)
 
-* The new device interface in integrated with `qml.execute` for Jax.
-  [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
-
-* The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
-  [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
-
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
@@ -164,15 +128,55 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
-* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
-  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
-
-* Updated repr for ParametrizedHamiltonian.
-[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
-
 <h4>Extended support for differentiating pulses</h4>
 
+* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
+  ```python
+  def U(params):
+      H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
+      Um = qml.evolve(H)(params, t=10., dense=False)
+      return qml.matrix(Um)
+  params = jnp.array([[0.5]], dtype=complex)
+  jac = jax.jacobian(U, holomorphic=True)(params)
+  ```
+  [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
+
 <h4>A more flexible projector</h4>
+
+<h4>Do more with qutrits</h4>
+
+* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+<h4>Next-generation device API</h4>
+
+* The new device interface in integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
+
+* Support for adjoint differentiation has been added to the `DefaultQubit2` device.
+  [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
+
+* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
+  `use_device_gradient`, and `grad_on_execution`.
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* Support for sample-based measurements has been added to the `DefaultQubit2` device.
+  [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
+  [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
+  [(#4133)](https://github.com/PennyLaneAI/pennylane/pull/4133)
+  [(#4172)](https://github.com/PennyLaneAI/pennylane/pull/4172)
+
+* Added a keyword argument `seed` to the `DefaultQubit2` device.
+  [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
+
+* The new device interface in integrated with `qml.execute` for Jax.
+  [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
+
+* The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
+  [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
 
 <h3>Breaking changes 💔</h3>
 
@@ -257,7 +261,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Venkatakrishnan AnushKrishna
+Venkatakrishnan AnushKrishna,
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
