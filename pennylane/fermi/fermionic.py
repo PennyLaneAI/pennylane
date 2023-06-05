@@ -20,6 +20,8 @@ class FermiWord(dict):
     annihilation operators, associating wires with their respective operators. Can be constructed
     from a standard dictionary.
 
+    To construct the operator :math:`a\dagger_0 a_1`, for example:
+
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
     <FermiWord = '0+ 1-'>
@@ -27,15 +29,24 @@ class FermiWord(dict):
 
     def __init__(self, operator):
         self.sorted_dic = dict(sorted(operator.items()))
+
+        indices = [i[0] for i in self.sorted_dic.keys()]
+
+        if indices:
+            if list(range(max(indices) + 1)) != indices:
+                raise ValueError(
+                    "The operator indices must belong to the set {0, ..., len(operator)-1}."
+                )
+
         super().__init__(operator)
 
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
-        return [i[1] for i in self.sorted_dic.keys()]
+        return set(i[1] for i in self.sorted_dic.keys())
 
     def __missing__(self, key):
-        r"""Return empty string for a missing jey in FermiWord."""
+        r"""Return empty string for a missing key in FermiWord."""
         return ""
 
     def update(self, item):
@@ -68,12 +79,18 @@ class FermiWord(dict):
         return hash(frozenset(self.items()))
 
     def to_string(self):
-        r"""Return a compact string representation of a FermiWord.
+        r"""Return a compact string representation of a FermiWord. Each operator in the word is
+        represented by the number of the wire it operates on, and a `+` or `-` to indicate either
+        a creation or annihilation operator.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         '0+ 1-'
         """
+
+        if len(self) == 0:
+            return "I"
+
         string = " ".join(
             [
                 i + j
@@ -107,14 +124,14 @@ class FermiWord(dict):
             if len(other) == 0:
                 return copy(self)
 
-            order_other = [i[0] for i in other.sorted_dic.keys()]
-            order_final = [
-                i[0] + max(i[0] for i in self.sorted_dic.keys()) + 1
-                for i in other.sorted_dic.keys()
-            ]
+            order_final = [i[0] + len(self) for i in other.sorted_dic.keys()]
+            other_wires = [i[1] for i in other.sorted_dic.keys()]
 
             dict_other = dict(
-                zip([(order_final[o], other.wires[o]) for o in order_other], other.values())
+                zip(
+                    [(order_idx, other_wires[i]) for i, order_idx in enumerate(order_final)],
+                    other.values(),
+                )
             )
             dict_self = dict(zip(self.keys(), self.values()))
 
@@ -143,9 +160,6 @@ class FermiWord(dict):
         return operator
 
 
-# TODO: create __add__ method when PauliSentence is merged.
-# TODO: support multiply by number in __mul__ when PauliSentence is merged.
-# TODO: create mapping method when the ne jordan_wigner function is added.
 
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
@@ -222,3 +236,10 @@ class FermiA(FermiWord):
     # TODO: create mapping method when the tne jordan_wigner function is added.
     # def to_qubit(self):
     #     return mapping(self)
+
+# TODO: create __add__ and __iadd__ method when FermiSentence is merged.
+# TODO: create __sub__ and __isub__ method when FermiSentence is merged.
+# TODO: create __imul__ method.
+# TODO: support multiply by number in __mul__ when FermiiSentence is merged.
+# TODO: create mapping method when the jordan_wigner function is added.
+

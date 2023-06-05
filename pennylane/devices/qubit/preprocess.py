@@ -58,6 +58,9 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
+    if op.name == "Snapshot":
+        return True
+
     return op.has_matrix
 
 

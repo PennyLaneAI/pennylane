@@ -14,4 +14,5 @@
 """A module containing utility functions and reduced representation classes for working with
 Fermionic operators. """
 
+
 from .fermionic import FermiWord, FermiC, FermiA
