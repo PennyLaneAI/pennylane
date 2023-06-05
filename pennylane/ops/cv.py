@@ -102,7 +102,9 @@ class Rotation(CVOperation):
         phi (float): the rotation angle
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -110,7 +112,7 @@ class Rotation(CVOperation):
     grad_method = "A"
     grad_recipe = (_two_term_shift_rule,)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -153,7 +155,9 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -165,7 +169,7 @@ class Squeezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, r, phi, wires, do_queue=True, id=None):
+    def __init__(self, r, phi, wires, do_queue=None, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -210,7 +214,9 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -222,7 +228,7 @@ class Displacement(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, a, phi, wires, do_queue=True, id=None):
+    def __init__(self, a, phi, wires, do_queue=None, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -273,7 +279,9 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -281,7 +289,7 @@ class Beamsplitter(CVOperation):
     grad_method = "A"
     grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
 
-    def __init__(self, theta, phi, wires, do_queue=True, id=None):
+    def __init__(self, theta, phi, wires, do_queue=None, id=None):
         super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
 
     # For the beamsplitter, both parameters are rotation-like
@@ -337,7 +345,9 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
@@ -350,7 +360,7 @@ class TwoModeSqueezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
-    def __init__(self, r, phi, wires, do_queue=True, id=None):
+    def __init__(self, r, phi, wires, do_queue=None, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -401,7 +411,9 @@ class QuadraticPhase(CVOperation):
         s (float): parameter
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -414,7 +426,7 @@ class QuadraticPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, do_queue=True, id=None):
+    def __init__(self, s, wires, do_queue=None, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -457,7 +469,9 @@ class ControlledAddition(CVOperation):
         s (float): addition multiplier
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -469,7 +483,7 @@ class ControlledAddition(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, do_queue=True, id=None):
+    def __init__(self, s, wires, do_queue=None, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -516,7 +530,9 @@ class ControlledPhase(CVOperation):
         s (float):  phase shift multiplier
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -528,7 +544,7 @@ class ControlledPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
-    def __init__(self, s, wires, do_queue=True, id=None):
+    def __init__(self, s, wires, do_queue=None, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -562,14 +578,16 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, kappa, wires, do_queue=True, id=None):
+    def __init__(self, kappa, wires, do_queue=None, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):
@@ -593,14 +611,16 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 2
     grad_method = "F"
 
-    def __init__(self, kappa, wires, do_queue=True, id=None):
+    def __init__(self, kappa, wires, do_queue=None, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):
@@ -624,14 +644,16 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
+    def __init__(self, gamma, wires, do_queue=None, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):
@@ -675,7 +697,9 @@ class InterferometerUnitary(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[Any] or Any): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -683,7 +707,7 @@ class InterferometerUnitary(CVOperation):
     grad_method = None
     grad_recipe = None
 
-    def __init__(self, U, wires, do_queue=True, id=None):
+    def __init__(self, U, wires, do_queue=None, id=None):
         super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -729,14 +753,16 @@ class CoherentState(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi, wires, do_queue=True, id=None):
+    def __init__(self, a, phi, wires, do_queue=None, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -755,14 +781,16 @@ class SqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, r, phi, wires, do_queue=True, id=None):
+    def __init__(self, r, phi, wires, do_queue=None, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -791,14 +819,16 @@ class DisplacedSqueezedState(CVOperation):
         phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 4
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi_a, r, phi_r, wires, do_queue=True, id=None):
+    def __init__(self, a, phi_a, r, phi_r, wires, do_queue=None, id=None):
         super().__init__(a, phi_a, r, phi_r, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -816,14 +846,16 @@ class ThermalState(CVOperation):
         nbar (float): mean thermal population of the mode
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, nbar, wires, do_queue=True, id=None):
+    def __init__(self, nbar, wires, do_queue=None, id=None):
         super().__init__(nbar, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -846,14 +878,16 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = AnyWires
     grad_method = "F"
 
-    def __init__(self, V, r, wires, do_queue=True, id=None):
+    def __init__(self, V, r, wires, do_queue=None, id=None):
         super().__init__(V, r, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -874,14 +908,16 @@ class FockState(CVOperation):
         n (int): Fock state to prepare
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = None
 
-    def __init__(self, n, wires, do_queue=True, id=None):
+    def __init__(self, n, wires, do_queue=None, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -926,7 +962,9 @@ class FockStateVector(CVOperation):
             or a multimode ket, with one array dimension per mode
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     .. details::
@@ -974,7 +1012,7 @@ class FockStateVector(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
-    def __init__(self, state, wires, do_queue=True, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1017,14 +1055,16 @@ class FockDensityMatrix(CVOperation):
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = AnyWires
     grad_method = "F"
 
-    def __init__(self, state, wires, do_queue=True, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -1054,14 +1094,16 @@ class CatState(CVOperation):
             cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 3
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, a, phi, p, wires, do_queue=True, id=None):
+    def __init__(self, a, phi, p, wires, do_queue=None, id=None):
         super().__init__(a, phi, p, wires=wires, do_queue=do_queue, id=id)
 
 
@@ -1261,7 +1303,9 @@ class QuadOperator(CVObservable):
             the generalized quadrature observable
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -1270,7 +1314,7 @@ class QuadOperator(CVObservable):
     grad_method = "A"
     ev_order = 1
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
+    def __init__(self, phi, wires, do_queue=None, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1340,7 +1384,9 @@ class PolyXP(CVObservable):
         q (array[float]): expansion coefficients
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     """
@@ -1350,7 +1396,7 @@ class PolyXP(CVObservable):
     grad_method = "F"
     ev_order = 2
 
-    def __init__(self, q, wires, do_queue=True, id=None):
+    def __init__(self, q, wires, do_queue=None, id=None):
         super().__init__(q, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -1401,7 +1447,9 @@ class FockStateProjector(CVObservable):
             total number of wires in the QNode.
         wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -1410,7 +1458,7 @@ class FockStateProjector(CVObservable):
     grad_method = None
     ev_order = None
 
-    def __init__(self, n, wires, do_queue=True, id=None):
+    def __init__(self, n, wires, do_queue=None, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):

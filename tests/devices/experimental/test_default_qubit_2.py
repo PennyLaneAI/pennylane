@@ -66,6 +66,15 @@ def test_no_device_derivatives():
         dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
 
 
+def test_debugger_attribute():
+    """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
+    # pylint: disable=protected-access
+    dev = DefaultQubit2()
+
+    assert hasattr(dev, "_debugger")
+    assert dev._debugger is None
+
+
 class TestTracking:
     """Testing the tracking capabilities of DefaultQubit2."""
 
@@ -88,16 +97,25 @@ class TestTracking:
         qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
 
         dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
         with qml.Tracker(dev) as tracker:
             dev.execute(qs)
+            dev.compute_derivatives(qs, config)
             dev.execute([qs, qs])  # and a second time
 
         assert tracker.history == {
             "batches": [1, 1],
             "executions": [1, 2],
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
+            "derivative_batches": [1],
+            "derivatives": [1],
         }
-        assert tracker.totals == {"batches": 2, "executions": 3}
+        assert tracker.totals == {
+            "batches": 2,
+            "executions": 3,
+            "derivative_batches": 1,
+            "derivatives": 1,
+        }
         assert tracker.latest == {"batches": 1, "executions": 2}
 
     def test_tracking_resources(self):
@@ -550,6 +568,41 @@ class TestSampleMeasurements:
         assert all(isinstance(res, np.ndarray) for res in results)
         assert results[0].shape == (100, 2)
         assert results[1].shape == (50,)
+
+    def test_counts_wires(self):
+        """Test that a Counts measurement with wires works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.counts(wires=[0, 1])], shots=10000)
+
+        dev = DefaultQubit2(seed=123)
+        result = dev.execute(qs)
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {"00", "10"}
+
+        # check that the count values match the expected
+        values = list(result.values())
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+
+    @pytest.mark.parametrize("all_outcomes", [False, True])
+    def test_counts_obs(self, all_outcomes):
+        """Test that a Counts measurement with an observable works as expected"""
+        x = np.array(np.pi / 2)
+        qs = qml.tape.QuantumScript(
+            [qml.RY(x, wires=0)],
+            [qml.counts(qml.PauliZ(0), all_outcomes=all_outcomes)],
+            shots=10000,
+        )
+
+        dev = DefaultQubit2(seed=123)
+        result = dev.execute(qs)
+
+        assert isinstance(result, dict)
+        assert set(result.keys()) == {1, -1}
+
+        # check that the count values match the expected
+        values = list(result.values())
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
 
 
 class TestExecutingBatches:
