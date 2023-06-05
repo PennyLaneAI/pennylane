@@ -22,6 +22,7 @@ tests/legacy/test_measurements_old.py
 tests/legacy/test_pulse_gradient_old.py
 tests/math/test_functions.py
 tests/math/test_init.py
+tests/math/test_trace_distance_math.py
 tests/measurements/**
 tests/ops/functions/test_bind_new_parameters.py
 tests/ops/functions/test_dot.py
@@ -36,6 +37,7 @@ tests/optimize/test_riemannian_gradient_optimizer.py
 tests/pulse/**
 tests/pauli/test_pauli_interface.py
 tests/qchem/test_givens_rotations.py
+tests/qinfo/test_trace_distance.py
 tests/qnn/**
 tests/tape/test_qscript.py
 tests/templates/test_subroutines/test_basis_rotation.py

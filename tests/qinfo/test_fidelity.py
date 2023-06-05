@@ -25,7 +25,7 @@ def expected_fidelity_rx_pauliz(param):
 
 
 def expected_grad_fidelity_rx_pauliz(param):
-    """Return the analytical fidelity for the RX and PauliZ."""
+    """Return the analytical gradient of the fidelity for the RX and PauliZ."""
     return -np.sin(param) / 2
 
 
