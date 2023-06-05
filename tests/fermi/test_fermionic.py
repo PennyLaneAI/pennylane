@@ -192,7 +192,7 @@ class TestFermiC:
         assert op.sorted_dic == op_dict
 
     @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
-    def test_bad_wire_raises_error(wire):
+    def test_bad_wire_raises_error(self, wire):
         """Test that passing a value for wire that is not a positive integer raises an error"""
         with pytest.raises(ValueError, match="expected a single, positive integer value for wire"):
             _ = FermiC(wire)
@@ -215,7 +215,7 @@ class TestFermiA:
         assert op.sorted_dic == op_dict
 
     @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
-    def test_bad_wire_raises_error(wire):
+    def test_bad_wire_raises_error(self, wire):
         """Test that passing a value for wire that is not a positive integer raises an error"""
         with pytest.raises(ValueError, match="expected a single, positive integer value for wire"):
             _ = FermiA(wire)
