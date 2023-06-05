@@ -66,6 +66,15 @@ def test_no_device_derivatives():
         dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
 
 
+def test_debugger_attribute():
+    """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
+    # pylint: disable=protected-access
+    dev = DefaultQubit2()
+
+    assert hasattr(dev, "_debugger")
+    assert dev._debugger is None
+
+
 class TestTracking:
     """Testing the tracking capabilities of DefaultQubit2."""
 
