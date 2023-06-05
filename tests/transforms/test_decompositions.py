@@ -261,6 +261,112 @@ class TestQubitUnitaryXYXDecomposition:
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
 
+typeof_gates = (qml.RZ, qml.RX, qml.RZ, qml.ops.op_math.sprod.SProd)
+single_qubit_decomps_xyx = [
+    # Try a random dense unitary
+    (
+        np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        ),
+        typeof_gates,
+        (
+            3.3038544749132295,
+            1.1493817777940707,
+            -1.8128916324243893,
+            0.38469215914523336 - 0.9230449299422961j,
+        ),
+    ),
+    # Try a few specific special unitaries
+    (I, typeof_gates, [0, 0, 0, 1]),  # This triggers the if conditional
+    (X, typeof_gates, [-1 / 2 * np.pi, 0, 3 / 2 * np.pi, 1j]),
+    (Y, typeof_gates, [1 / 2 * np.pi, np.pi, 1 / 2 * np.pi, 1j]),
+    (Z, typeof_gates, [1 / 2 * np.pi, np.pi, -1 / 2 * np.pi, 1j]),
+]
+
+
+class TestQubitUnitaryZXZDecomposition:
+    """Test that the ZXZ decomposition is correct."""
+
+    def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
+        assert len(obtained_gates) == 4, "Incorrect number of gates"
+        for i in range(4):
+            assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
+            assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
+        # Check the global phase
+        assert qml.math.isclose(
+            qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
+        ), "Incorrect global phase"
+        # Now we check the XYX rotation angles
+        assert qml.math.allclose(
+            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:3]],
+            expected_params[:3],
+            atol=1e-7,
+        ), "Incorrect XYX rotation angles"
+
+        obtained_mat = qml.math.unwrap([reduce(np.dot, [op.matrix() for op in obtained_gates])])[0]
+
+        if len(obtained_mat.shape) == 2:
+            U = [U]
+            obtained_mat = [obtained_mat]
+
+        assert all(
+            check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
+            for curr_obtained_mat, curr_U in zip(obtained_mat, qml.math.unwrap(U))
+        )
+
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
+    def test_xyx_decomposition(self, U, expected_gates, expected_params):
+        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
+
+        self._run_assertions(U, expected_gates, expected_params, obtained_gates)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
+    def test_xyx_decomposition_torch(self, U, expected_gates, expected_params):
+        """Test that a one-qubit operation in Torch is correctly decomposed."""
+        import torch
+
+        U = torch.tensor(U, dtype=torch.complex128)
+
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
+
+        self._run_assertions(U, expected_gates, expected_params, obtained_gates)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
+    def test_xyx_decomposition_tf(self, U, expected_gates, expected_params):
+        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
+        import tensorflow as tf
+
+        U = tf.Variable(U, dtype=tf.complex128)
+
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
+
+        self._run_assertions(U, expected_gates, expected_params, obtained_gates)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
+    def test_xyx_decomposition_jax(self, U, expected_gates, expected_params):
+        """Test that a one-qubit operation in JAX is correctly decomposed."""
+        import jax
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
+
+        self._run_assertions(U, expected_gates, expected_params, obtained_gates)
+
+
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
 # These require 3 CNOTs each
 samples_3_cnots = [
