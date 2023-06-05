@@ -4,13 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
-  without mutating the original operator.
-  [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
-
-* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
-  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
-
 <h4>Fermionic operators 🔬</h4>
 
 <h4>Workflow-level resource estimation 🧮</h4>
@@ -155,6 +148,10 @@
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
+  without mutating the original operator.
+  [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
@@ -181,6 +178,9 @@
   
 * The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
+
+* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
+  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
 * Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
   Both functions have broadcasting support.
