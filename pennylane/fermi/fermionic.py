@@ -87,7 +87,6 @@ class FermiWord(dict):
         >>> w.to_string()
         '0+ 1-'
         """
-
         if len(self) == 0:
             return "I"
 
@@ -163,7 +162,7 @@ class FermiWord(dict):
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(wire)
-    The fermionic creation operator :math:`\hat{c}^\dagger`, such that
+    The fermionic creation operator :math:`\hat{c}^\dagger`
 
     .. math:: \hat{c}^\dagger \ket{n} = \sqrt{n + 1} \ket{n+1}
 
@@ -182,13 +181,13 @@ class FermiC(FermiWord):
 
     **Example**
 
-    To construct the operator :math:`\hat{c}\dagger_0`:
+    To construct the operator :math:`\hat{c}^\dagger_0`:
 
     >>> FermiC(0)
     <FermiWord = '0+'>
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiC`. For example,
-    :math:`\hat{c}\dagger_0 \hat{c}_1` can be constructed as:
+    :math:`\hat{c}^\dagger_0 \hat{c}_1` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1)
     <FermiWord = '0+ 1-'>
@@ -210,7 +209,7 @@ class FermiC(FermiWord):
 
 class FermiA(FermiWord):
     r"""FermiA(wire)
-    The fermionic annihilation operator
+    The fermionic annihilation operator \hat{c}
 
     .. math:: \hat{c} \ket{n} = \sqrt{n} \ket{n-1}
 
@@ -235,7 +234,7 @@ class FermiA(FermiWord):
     <FermiWord = '0-'>
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
-    :math:`\hat{c}\dagger_0 \hat{c}_1` can be constructed as:
+    :math:`\hat{c}^\dagger_0 \hat{c}_1` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1)
     <FermiWord = '0+ 1-'>
