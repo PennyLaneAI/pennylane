@@ -123,9 +123,10 @@ Matrix to Operator functions
 .. autosummary::
 
     ~pennylane.pauli_decompose
+    ~pennylane.qsvt
 
-These functions take the matrix representation of an operator and return
-the equivalent native PennyLane operator.
+These functions take a matrix and return an associated native PennyLane operator.
+For example:
 
 >>> mat = np.array([[1, 1], [1, -1]])
 >>> h = qml.pauli_decompose(mat)
@@ -162,6 +163,7 @@ Non-parametrized gates
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CH
     ~pennylane.SWAP
     ~pennylane.ISWAP
     ~pennylane.ECR
@@ -195,6 +197,7 @@ Parametrized gates
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase
+    ~pennylane.PCPhase
     ~pennylane.CPhaseShift00
     ~pennylane.CPhaseShift01
     ~pennylane.CPhaseShift10
@@ -254,6 +257,7 @@ Gates constructed from a matrix
     ~pennylane.ControlledQubitUnitary
     ~pennylane.DiagonalQubitUnitary
     ~pennylane.SpecialUnitary
+    ~pennylane.BlockEncode
 
 :html:`</div>`
 
@@ -455,6 +459,21 @@ Qutrit gates constructed from a matrix
 
     ~pennylane.QutritUnitary
     ~pennylane.ControlledQutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_param:
+
+Qutrit parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TRX
 
 :html:`</div>`
 

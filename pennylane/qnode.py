@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements
 import functools
 import inspect
 import warnings
@@ -27,6 +27,24 @@ from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumTape, make_qscript
+
+
+def _convert_to_interface(res, interface):
+    """
+    Recursively convert res to the given interface.
+    """
+    interface = INTERFACE_MAP[interface]
+
+    if interface in ["Numpy"]:
+        return res
+
+    if isinstance(res, (list, tuple)):
+        return type(res)(_convert_to_interface(r, interface) for r in res)
+
+    if isinstance(res, dict):
+        return {k: _convert_to_interface(v, interface) for k, v in res.items()}
+
+    return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
 
 
 class QNode:
@@ -729,7 +747,7 @@ class QNode:
     def _validate_parameter_shift(device):
         model = device.capabilities().get("model", None)
 
-        if model == "qubit":
+        if model in {"qubit", "qutrit"}:
             return qml.gradients.param_shift, {}, device
 
         if model == "cv":
@@ -751,10 +769,19 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
+        if not self._qfunc_uses_shots_arg:
+            shots = kwargs.pop("shots", None)
+        else:
+            shots = (
+                self._original_device._raw_shot_sequence
+                if self._original_device._shot_vector
+                else self._original_device.shots
+            )
+
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func)(*args, **kwargs)
+        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
@@ -824,7 +851,7 @@ class QNode:
         if old_interface == "auto":
             self.interface = "auto"
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
+    def __call__(self, *args, **kwargs) -> qml.typing.Result:
         override_shots = False
         old_interface = self.interface
 
@@ -835,7 +862,7 @@ class QNode:
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
             # interpret it as device shots value for this call.
-            override_shots = kwargs.pop("shots", False)
+            override_shots = kwargs.get("shots", False)
 
             if override_shots is not False:
                 # Since shots has changed, we need to update the preferred gradient function.
@@ -848,6 +875,13 @@ class QNode:
                 # pylint: disable=not-callable
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
+
+            else:
+                kwargs["shots"] = (
+                    self._original_device._raw_shot_sequence
+                    if self._original_device._shot_vector
+                    else self._original_device.shots
+                )
 
         # construct the tape
         self.construct(args, kwargs)
@@ -875,6 +909,11 @@ class QNode:
             )
 
             res = res[0]
+
+            # convert result to the interface in case the qfunc has no parameters
+
+            if len(self.tape.get_parameters(trainable_only=False)) == 0:
+                res = _convert_to_interface(res, self.interface)
 
             if old_interface == "auto":
                 self.interface = "auto"

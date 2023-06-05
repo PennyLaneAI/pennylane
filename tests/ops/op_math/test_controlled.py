@@ -60,6 +60,12 @@ base_num_control_mats = [
 ]
 
 
+custom_controlled_ops = [  # operators with their own controlled class
+    (qml.PauliY, qml.CY),
+    (qml.PauliZ, qml.CZ),
+]
+
+
 class TempOperator(Operator):
     num_wires = 1
 
@@ -493,6 +499,15 @@ class TestMiscMethods:
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
 
+    def test_base_name_deprecated(self):
+        """Tests that the base_name property is deprecated."""
+
+        class DummyOp(Operation):
+            """Dummy op."""
+
+        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
+            assert Controlled(DummyOp(2), 1).base_name == "C(DummyOp)"
+
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
@@ -621,10 +636,15 @@ class TestQueuing:
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
-
         base = qml.PauliX(0)
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+
         with qml.queuing.AnnotatedQueue() as q:
-            _ = Controlled(base, 1, do_queue=False)
+            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+                _ = Controlled(base, 1, do_queue=False)
 
         assert len(q) == 0
 
@@ -705,7 +725,7 @@ class TestMatrix:
         """Check that an op that defines a sparse matrix has it used in the controlled
         sparse matrix."""
 
-        Hmat = qml.utils.sparse_hamiltonian(1.0 * qml.PauliX(0))
+        Hmat = (1.0 * qml.PauliX(0)).sparse_matrix()
         H_sparse = qml.SparseHamiltonian(Hmat, wires="0")
         op = Controlled(H_sparse, "a")
 
@@ -1520,6 +1540,7 @@ def test_qubit_unitary(M):
     assert not equal_list(list(tape), expected)
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "M",
     [
@@ -1610,6 +1631,36 @@ def test_ctrl_template_and_operations():
     tape = tape.expand(depth=2, stop_at=lambda obj: not isinstance(obj, Controlled))
     assert len(tape.operations) == 10
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
+
+
+class TestCtrlCustomOperator:
+    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
+    def test_ctrl_custom_operators(self, op_cls, custom_op_cls):
+        """Test that ctrl returns operators with their own controlled class."""
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, control=1)
+        custom_op = custom_op_cls(wires=[1, 0])
+        assert qml.equal(ctrl_op, custom_op)
+        assert ctrl_op.name == custom_op.name
+
+    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when there are multiple control wires."""
+        control_wires = [1, 2]
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, control=control_wires)
+        expected = Controlled(op, control_wires=control_wires)
+        assert not isinstance(ctrl_op, custom_op_cls)
+        assert qml.equal(ctrl_op, expected)
+
+    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_control_values(self, op_cls, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when the control value is not `True`."""
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, 1, control_values=False)
+        expected = Controlled(op, 1, control_values=False)
+        assert not isinstance(ctrl_op, custom_op_cls)
+        assert qml.equal(ctrl_op, expected)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])

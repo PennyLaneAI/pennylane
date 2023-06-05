@@ -53,7 +53,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         id (str): id for the Exp operator. Default is None.
 
     Returns:
-       :class:`Exp`: A :class:`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
 
     .. note::
 
@@ -124,7 +124,9 @@ class Exp(ScalarSymbolicOp, Operation):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        do_queue (bool): determines if the sum operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): id for the Exp operator. Default is None.
 
     **Example**
@@ -170,10 +172,12 @@ class Exp(ScalarSymbolicOp, Operation):
     _name = "Exp"
 
     # pylint: disable=too-many-arguments
-    def __init__(self, base, coeff=1, num_steps=None, do_queue=True, id=None):
+    def __init__(self, base, coeff=1, num_steps=None, do_queue=None, id=None):
         super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
+
+        self.hyperparameters["num_steps"] = num_steps
 
     def __repr__(self):
         return (
@@ -455,5 +459,5 @@ class Exp(ScalarSymbolicOp, Operation):
         raise GeneratorUndefinedError(
             f"Exponential with coefficient {self.coeff} and base operator {self.base} does not appear to have a "
             f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
-            f"in the form exp(ixG) through the Evolution class."
+            f"in the form exp(-ixG) through the Evolution class."
         )

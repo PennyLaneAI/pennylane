@@ -15,74 +15,118 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
-from collections.abc import Sequence
-from copy import copy
+import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pulse import ParametrizedEvolution
 
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
-from .parameter_shift import (
-    _reorder_grad_axes_multi_measure,
-    _reorder_grad_axes_single_measure_shot_vector,
-    _make_zero_rep,
-)
+from .parameter_shift import _make_zero_rep
+from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (
+    _all_zero_grad,
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    reorder_grads,
 )
 
 has_jax = True
 try:
     import jax
+    import jax.numpy as jnp
 except ImportError:
     has_jax = False
 
 
-def split_evol_ops(op, word, word_wires, key):
+def _assert_has_jax(transform_name):
+    """Check that JAX is installed and imported correctly, otherwise raise an error.
+
+    Args:
+        transform_name (str): Name of the gradient transform that queries the return system
+    """
+    if not has_jax:  # pragma: no cover
+        raise ImportError(
+            f"Module jax is required for the {transform_name} gradient transform. "
+            "You can install jax via: pip install jax jaxlib"
+        )
+
+
+def _split_evol_ops(op, ob, tau):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
     This yields two groups of three operations each.
 
     Args:
         op (ParametrizedEvolution): operation to split up.
-        word (str): Pauli word with respect to which to rotate between the split up parts.
-        word_wires (~.wires.Wires): wires on which the Pauli word acts
-        key (list[int]): randomness seed to pass to the sampler for sampling the split-up point.
+        ob (`~.Operator`): generating Hamiltonian term to insert the parameter-shift rule for.
+        tau (float or tensor_like): split-up time(s). If multiple times are passed, the split-up
+            operations are set up to return intermediate time evolution results, leading to
+            broadcasting effectively.
 
     Returns:
-        float: The sampled split-up time tau
         tuple[list[`~.Operation`]]: The split-time evolution, expressed as three operations in the
-            inner lists. The first tuple entry contains the operations with positive Pauli rotation
-            angle, the second entry the operations with negative Pauli rotation angle.
+            inner lists. The number of tuples is given by the number of shifted terms in the
+            parameter-shift rule of the generating Hamiltonian term ``ob``.
+        tensor_like: Coefficients of the parameter-shift rule of the provided generating Hamiltonian
+            term ``ob``.
     """
-    before_plus, after_plus, before_minus, after_minus = (copy(op) for _ in range(4))
-    # Extract time interval, split it, and set the intervals of the copies to the split intervals
-    t0, t1 = op.t
-    tau = jax.random.uniform(key) * (t1 - t0) + t0
-    before_plus.t = before_minus.t = jax.numpy.array([t0, tau])
-    after_plus.t = after_minus.t = jax.numpy.array([tau, t1])
+    t0, *_, t1 = op.t
+    # If there are multiple values for tau, use broadcasting
+    if bcast := qml.math.ndim(tau) > 0:
+        # With broadcasting, create a sorted array of [t_0, *sorted(taus), t_1]
+        # Use this array for both, the pulse before and after the inserted operation.
+        # The way we slice the resulting tape results later on accomodates for the additional
+        # time points t_0 and t_1 in the array.
+        tau = jnp.sort(tau)
+        before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
+        after_t = before_t.copy()
+    else:
+        # Create a time interval from start to split and one from split to end
+        before_t = jax.numpy.array([t0, tau])
+        after_t = jax.numpy.array([tau, t1])
+
+    if qml.pauli.is_pauli_word(ob):
+        prefactor = qml.pauli.pauli_word_prefactor(ob)
+        word = qml.pauli.pauli_word_to_string(ob)
+        insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
+        coeffs = [prefactor, -prefactor]
+    else:
+        with warnings.catch_warnings():
+            if len(ob.wires) <= 4:
+                warnings.filterwarnings(
+                    "ignore", ".*the eigenvalues will be computed numerically.*"
+                )
+            eigvals = qml.eigvals(ob)
+        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
+        insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
+
     # Create Pauli rotations to be inserted at tau
-    evolve_plus = qml.PauliRot(np.pi / 2, word, wires=word_wires)
-    evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=word_wires)
-    # Construct gate sequences of split intervals and inserted Pauli rotations
-    ops = ([before_plus, evolve_plus, after_plus], [before_minus, evolve_minus, after_minus])
-    return tau, ops
+    ode_kwargs = op.odeint_kwargs
+    # If we are broadcasting, make use of the `return_intermediate` and `complementary` features
+    ops = tuple(
+        [
+            op(op.data, before_t, return_intermediate=bcast, **ode_kwargs),
+            insert_op,
+            op(op.data, after_t, return_intermediate=bcast, complementary=bcast, **ode_kwargs),
+        ]
+        for insert_op in insert_ops
+    )
+    return ops, jnp.array(coeffs)
 
 
-def _split_evol_tapes(tape, split_evolve_ops, op_idx):
+def _split_evol_tape(tape, split_evolve_ops, op_idx):
     """Replace a marked ``ParametrizedEvolution`` in a given tape by provided operations, creating
     one tape per group of operations.
 
     Args:
         tape (QuantumTape): original tape
         split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as
-            created by :func:`~.split_evol_ops`. For each group of operations, a new tape
+            created by ``_split_evol_ops``. For each group of operations, a new tape
             is created.
         op_idx (int): index of the operation to replace within the tape
 
@@ -93,12 +137,15 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx + 1 :]
     return [
-        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements)
+        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
         for split in split_evolve_ops
     ]
 
 
-def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_vector):
+# pylint: disable=too-many-arguments
+def _parshift_and_integrate(
+    results, cjacs, int_prefactor, psr_coeffs, single_measure, shot_vector, use_broadcasting
+):
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
     parameter-shift rule.
@@ -111,32 +158,63 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
         cjacs (tensor_like): classical Jacobian evaluated at the splitting times
         int_prefactor (float): prefactor of the numerical integration, corresponding to the size
             of the time range divided by the number of splitting time samples
-        single_measure (bool):
-        shot_vector (bool):
+        psr_coeffs (tensor_like): Coefficients of the parameter-shift rule to contract the results
+            with before integrating numerically.
+        single_measure (bool): Whether the results contain a single measurement per shot setting
+        shot_vector (bool): Whether the results have a shot vector axis
+        use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
+            ``results``.
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
 
-    def _diff_and_contract(res_list, cjacs, int_prefactor):
-        diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
-        return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
+    if use_broadcasting:
 
-    # There is a single measurement and shots setting
-    if single_measure and not shot_vector:
-        return _diff_and_contract(results, cjacs, int_prefactor)
+        def _psr_and_contract(res_list, cjacs, int_prefactor):
+            # Stack results and slice away the first and last values, corresponding to the initial
+            # condition and the final value of the time evolution, but not to a splitting time
+            res = qml.math.stack(res_list)[:, 1:-1]
+            # Contract the results with the parameter-shift rule coefficients
+            parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
+            return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
-    # There are multiple measurements or a shot vector (but not both):
-    # One axis to pull out of the shift rule and integration
-    if single_measure or not shot_vector:
-        return tuple(_diff_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+    else:
+        num_shifts = len(psr_coeffs)
 
-    # Multiple measurements and shot vector: Two axes to pull out
+        def _psr_and_contract(res_list, cjacs, int_prefactor):
+            res = qml.math.stack(res_list)
+            # Reshape the results such that the first axis corresponds to the splitting times
+            # and the second axis corresponds to different shifts. All other axes are untouched
+            shape = qml.math.shape(res)
+            new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
+            res = qml.math.reshape(res, new_shape)
+            # Contract the results with the parameter-shift rule coefficients
+            parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
+            return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
+
+    # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
+    if not single_measure + shot_vector == 1:
+        return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+    if single_measure:
+        # Single measurement without shot vector
+        return _psr_and_contract(results, cjacs, int_prefactor)
+
+    # Multiple measurements with shot vector. Not supported with broadcasting yet.
+    if use_broadcasting:
+        # TODO: Remove once #2690 is resolved
+        raise NotImplementedError(
+            "Broadcasting, multiple measurements and shot vectors are currently not "
+            "supported all simultaneously by stoch_pulse_grad."
+        )
     return tuple(
-        tuple(_diff_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
+        tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )
 
 
-def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, shots=None):
+# pylint: disable=too-many-arguments
+def _stoch_pulse_grad(
+    tape, argnum=None, num_split_times=1, sampler_seed=None, shots=None, use_broadcasting=False
+):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -188,9 +266,14 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
-            information about the shots.
+        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
+            returned by this transform. Note that this argument does not *influence* the shots
+            used for execution, but informs the transform about the shots to ensure a compatible
+            return value structure.
+        use_broadcasting (bool): Whether to use broadcasting across the different sampled
+            splitting times. If ``False`` (the default), one set of modified tapes per
+            splitting time is created, if ``True`` only a single set of broadcasted, modified
+            tapes is created, increasing performance on simulators.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -234,7 +317,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
     Consider a pulse program with a single two-qubit pulse, generated by a Hamiltonian
     with three terms: the non-trainable term :math:`\frac{1}{2}X\otimes I`, the trainable
     constant (over time) term :math:`v_1 Z\otimes Z` and the trainable sinoidal term
-    :math:`\sin(v_2 t) I\otimes X`.
+    :math:`\sin(v_2 t) (\frac{1}{5} Y\otimes I + \frac{7}{10} I\otimes X)`.
 
     .. code-block:: python
 
@@ -246,25 +329,27 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
             return jax.numpy.sin(p * t)
 
         ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-        H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * qml.PauliX(1)
+        Y_plus_X = qml.dot([1/5, 3/5], [qml.PauliY(0), qml.PauliX(1)])
+        H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
-            qml.evolve(H)(params, (0.2, 1.))
+            qml.evolve(H)(params, (0.2, 0.4))
             return qml.expval(qml.PauliY(1))
 
-        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=stoch_pulse_grad)
+        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
     >>> params = [jax.numpy.array(0.4), jax.numpy.array(1.3)]
     >>> qnode(params)
-    Array(-0.83524704, dtype=float32)
+    Array(-0.0905377, dtype=float32)
 
     And as we registered the differentiation method :func:`~.stoch_pulse_grad`,
     we can compute its gradient in a hardware compatible manner:
 
     >>> jax.grad(qnode)(params)
-    [Array(0.2167219, dtype=float32), Array(-0.25133985, dtype=float32)] # results may differ
+    [Array(0.00054451, dtype=float32, weak_type=True),
+     Array(-0.05673098, dtype=float32, weak_type=True)] # results may differ
 
     Note that the derivative is computed using a stochastic parameter-shift rule,
     which is based on a sampled approximation of an integral expression (see theoretical
@@ -273,17 +358,50 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
     approximate the integral can be chosen with ``num_split_times``, the seed for the
     sampling can be fixed with ``sampler_seed``:
 
-    >>> qnode = qml.QNode(
-    ...     ansatz,
-    ...     dev,
-    ...     interface="jax",
-    ...     diff_method=qml.gradients.stoch_pulse_grad,
-    ...     num_split_times=20, # Use 20 samples for the approximation
-    ...     sampler_seed=18, # Fix randomness seed
-    ... )
+    .. code-block:: python
+
+        qnode = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=5, # Use 5 samples for the approximation
+            sampler_seed=18, # Fix randomness seed
+        )
+
     >>> jax.grad(qnode)(params)
-    [Array(0.37935182, dtype=float32, weak_type=True),
-     Array(-0.26384923, dtype=float32, weak_type=True)] # results do not vary
+    [Array(0.00210484, dtype=float32, weak_type=True),
+     Array(-0.07159606, dtype=float32, weak_type=True)]
+
+    On simulator devices, we may activate the option ``use_broadcasting``, which makes
+    use of broadcasting internally to improve the performance of the stochastic parameter-shift
+    rule:
+
+    .. code-block:: python
+
+        from time import process_time
+        faster_grad_qnode = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=5, # Use 5 samples for the approximation
+            sampler_seed=18, # Fix randomness seed
+            use_broadcasting=True, # Activate broadcasting
+        )
+        times = []
+        for node in [qnode, faster_grad_qnode]:
+            start = process_time()
+            jax.grad(node)(params)
+            times.append(process_time() - start)
+
+    >>> print(times) # Show the gradient computation times in seconds.
+    [44.92675887899999, 10.405261402999997]
+
+    .. warning::
+
+        As the option ``use_broadcasting=True`` adds a broadcasting dimension to the modified
+        circuits, it is not compatible with circuits that already are broadcasted.
 
     .. details::
         :title: Theoretical background
@@ -418,25 +536,11 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the stochastic pulse parameter-shift gradient transform. "
-            "You can install jax via: pip install jax jaxlib"
-        )
-    if not qml.active_return():
-        raise NotImplementedError(
-            "The stochastic pulse parameter-shift gradient only supports the new "
-            "return type. Use qml.enable_return() to turn it on."
-        )
-    if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of variances with the stochastic pulse "
-            "parameter-shift gradient is not implemented."
-        )
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    transform_name = "stochastic pulse parameter-shift"
+    _assert_has_jax(transform_name)
+    assert_active_return(transform_name)
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_no_variance(tape.measurements, transform_name)
 
     if num_split_times < 1:
         raise ValueError(
@@ -444,15 +548,17 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
             f"parameter-shift gradient, got {num_split_times}."
         )
 
+    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
-    gradient_analysis(tape, grad_fn=stoch_pulse_grad)
-    method = "analytic"
-    diff_methods = grad_method_validation(method, tape)
+    if use_broadcasting and tape.batch_size is not None:
+        raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
+
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -461,10 +567,43 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)
 
-    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots)
+    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
 
 
-def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
+def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting):
+    """Generate the tapes and compute the classical Jacobians for one given
+    generating Hamiltonian term of one pulse.
+    """
+    # Obtain the operation into which the indicated parameter feeds, its position in the tape,
+    # and the index of the parameter within the operation
+    op, op_idx, term_idx = tape.get_operation(idx)
+    if not isinstance(op, ParametrizedEvolution):
+        # Only pulses are supported
+        raise ValueError(
+            "stoch_pulse_grad does not support differentiating parameters of "
+            "other operations than pulses."
+        )
+
+    coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
+    cjac_fn = jax.jacobian(coeff, argnums=0)
+
+    t0, *_, t1 = op.t
+    taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
+    cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
+    if use_broadcasting:
+        split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, taus)
+        tapes = _split_evol_tape(tape, split_evolve_ops, op_idx)
+    else:
+        tapes = []
+        for tau in taus:
+            split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, tau)
+            tapes.extend(_split_evol_tape(tape, split_evolve_ops, op_idx))
+    avg_prefactor = (t1 - t0) / num_split_times
+    return cjacs, tapes, avg_prefactor, psr_coeffs
+
+
+# pylint: disable=too-many-arguments
+def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
@@ -474,49 +613,27 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
     for idx, trainable_idx in enumerate(tape.trainable_params):
         if trainable_idx not in argnum:
             # Only the number of tapes is needed to indicate a zero gradient entry
-            gradient_data.append((0, None, None))
+            gradient_data.append((0, None, None, None))
             continue
 
-        op, op_idx, term_idx = tape.get_operation(idx, return_op_index=True)
-        if not isinstance(op, ParametrizedEvolution):
-            raise ValueError(
-                "stoch_pulse_grad does not support differentiating parameters of "
-                "other operations than pulses."
-            )
+        key, _key = jax.random.split(key)
+        cjacs, _tapes, avg_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
+            tape, idx, _key, num_split_times, use_broadcasting
+        )
 
-        this_tapes = []
-        coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-        if not qml.pauli.is_pauli_word(ham):
-            raise ValueError(
-                "stoch_pulse_grad currently only supports Pauli words as parametrized "
-                f"terms in ParametrizedHamiltonian. Got {ham}"
-            )
-        word = qml.pauli.pauli_word_to_string(ham)
-        cjac_fn = jax.jacobian(coeff)
-        this_cjacs = []
-        for _ in range(num_split_times):
-            key, _key = jax.random.split(key)
-            tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
-            this_cjacs.append(cjac_fn(op.data[term_idx], tau))
-            this_tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
-        avg_prefactor = (op.t[1] - op.t[0]) / num_split_times
-        gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs), avg_prefactor))
-        tapes.extend(this_tapes)
+        gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs))
+        tapes.extend(_tapes)
+
+    num_measurements = len(tape.measurements)
+    single_measure = num_measurements == 1
+    num_params = len(tape.trainable_params)
+    has_partitioned_shots = shots.has_partitioned_shots
+    tape_specs = (single_measure, num_params, num_measurements, shots)
 
     def processing_fn(results):
-        # pylint: disable=protected-access
-        scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(
-            tape._qfunc_output, Sequence
-        )
-        if scalar_qfunc_output:
-            results = [qml.math.squeeze(res) for res in results]
-
-        num_measurements = len(tape.measurements)
-        single_measure = num_measurements == 1
-        shot_vector = isinstance(shots, Sequence)
         start = 0
         grads = []
-        for num_tapes, cjacs, avg_prefactor in gradient_data:
+        for num_tapes, cjacs, avg_prefactor, psr_coeffs in gradient_data:
             if num_tapes == 0:
                 grads.append(None)
                 continue
@@ -524,31 +641,25 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
             start += num_tapes
             # Apply the postprocessing of the parameter-shift rule and contract
             # with classical Jacobian, effectively computing the integral approximation
-            g = _parshift_and_integrate(res, cjacs, avg_prefactor, single_measure, shot_vector)
+            g = _parshift_and_integrate(
+                res,
+                cjacs,
+                avg_prefactor,
+                psr_coeffs,
+                single_measure,
+                has_partitioned_shots,
+                use_broadcasting,
+            )
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        zero_rep = _make_zero_rep(g, single_measure, shot_vector)
+        zero_rep = _make_zero_rep(g, single_measure, has_partitioned_shots)
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        num_params = len(tape.trainable_params)
-        if single_measure and num_params == 1:
-            return grads[0]
-        len_shot_vec = _get_num_copies(shots) if shot_vector else None
-        if single_measure and shot_vector:
-            return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
-        if not single_measure:
-            return _reorder_grad_axes_multi_measure(
-                grads,
-                num_params,
-                num_measurements,
-                len_shot_vec,
-                shot_vector,
-            )
-        return tuple(grads)
+        return reorder_grads(grads, tape_specs)
 
     return tapes, processing_fn
 

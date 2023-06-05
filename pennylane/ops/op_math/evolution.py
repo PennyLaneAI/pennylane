@@ -14,7 +14,6 @@
 """
 This submodule defines the Evolution class.
 """
-import warnings
 from copy import copy
 from warnings import warn
 
@@ -26,7 +25,7 @@ from .exp import Exp
 
 
 class Evolution(Exp):
-    r"""Create an exponential operator that defines a generator, of the form :math:`e^{ix\hat{G}}`
+    r"""Create an exponential operator that defines a generator, of the form :math:`e^{-ix\hat{G}}`
 
     Args:
         base (~.operation.Operator): The operator to be used as a generator, G.
@@ -35,16 +34,18 @@ class Evolution(Exp):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        do_queue (bool): determines if the sum operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): id for the Evolution operator. Default is None.
 
     Returns:
-       :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
+       :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
        where x is real.
 
     **Usage Details**
 
-    In contrast to the general :class:`~.Exp` class, the ``Evolution`` operator :math:`e^{ix\hat{G}}` is constrained to have a single trainable
+    In contrast to the general :class:`~.Exp` class, the ``Evolution`` operator :math:`e^{-ix\hat{G}}` is constrained to have a single trainable
     parameter, x. Any parameters contained in the base operator are not trainable. This allows the operator
     to be differentiated with regard to the evolution parameter. Defining a mathematically identical operator
     using the :class:`~.Exp` class will be incompatible with a variety of PennyLane functions that require only a single
@@ -54,7 +55,7 @@ class Evolution(Exp):
     This symbolic operator can be used to make general rotation operators:
 
     >>> theta = np.array(1.23)
-    >>> op = Evolution(qml.PauliX(0), -0.5 * theta)
+    >>> op = Evolution(qml.PauliX(0), 0.5 * theta)
     >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
     True
 
@@ -62,14 +63,14 @@ class Evolution(Exp):
 
     >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
     >>> t = 10e-6
-    >>> U = Evolution(H, -1 * t)
+    >>> U = Evolution(H, t)
 
     If the base operator is Hermitian, then the gate can be used in a circuit,
     though it may not be supported by the device and may not be differentiable.
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.ops.Evolution(qml.PauliX(0), -0.5 * x)
+    ...     qml.ops.Evolution(qml.PauliX(0), 0.5 * x)
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp(-0.61j X)─┤  <Z>
@@ -80,11 +81,10 @@ class Evolution(Exp):
     num_params = 1
 
     # pylint: disable=too-many-arguments
-    def __init__(self, generator, param=1, num_steps=None, do_queue=True, id=None):
-        warnings.warn(
-            "Please use `qml.evolve` to instantiate an `Evolution` operator.", UserWarning
+    def __init__(self, generator, param=1, num_steps=None, do_queue=None, id=None):
+        super().__init__(
+            generator, coeff=-1j * param, num_steps=num_steps, do_queue=do_queue, id=id
         )
-        super().__init__(generator, coeff=1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
         self._data = [param]
 
     def __repr__(self):
@@ -109,13 +109,13 @@ class Evolution(Exp):
 
     @property
     def coeff(self):
-        return 1j * self.data[0]
+        return -1j * self.data[0]
 
     def label(self, decimals=None, base_label=None, cache=None):
         param = (
-            self.data[0]
+            -self.data[0]
             if decimals is None
-            else format(math.toarray(self.data[0]), f".{decimals}f")
+            else format(math.toarray(-self.data[0]), f".{decimals}f")
         )
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
 
@@ -137,7 +137,7 @@ class Evolution(Exp):
 
         .. math::
 
-            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+            U(\phi) = e^{-i\phi (0.5 Y + Z\otimes X)}
 
         we get the generator
 
@@ -150,7 +150,7 @@ class Evolution(Exp):
             warn(f"The base {self.base} may not be hermitian.")
         if qml.math.real(self.coeff):
             raise GeneratorUndefinedError(
-                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
+                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(-ixG)."
                 f"The generator is not defined."
             )
         return self.base

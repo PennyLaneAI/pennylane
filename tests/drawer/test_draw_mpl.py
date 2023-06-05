@@ -30,6 +30,7 @@ dev = qml.device("default.qubit", wires=(0, "a", 1.23))
 
 @qml.qnode(dev)
 def circuit1(x, y):
+    """Circuit on three qubits."""
     qml.RX(x, wires=0)
     qml.CNOT(wires=(0, "a"))
     qml.RY(y, wires=1.23)
@@ -38,6 +39,7 @@ def circuit1(x, y):
 
 @qml.qnode(dev)
 def circuit2(x):
+    """Circuit on a single qubit."""
     qml.RX(x, wires=0)
     return qml.expval(qml.PauliZ(0))
 

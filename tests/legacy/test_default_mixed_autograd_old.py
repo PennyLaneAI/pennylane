@@ -653,27 +653,3 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        def ansatz(weights, **kwargs):
-            # pylint: disable=unused-argument
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([0.1, 0.2], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights))
-
-        grad = qml.grad(cost)(weights)
-        assert grad.shape == weights.shape

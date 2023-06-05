@@ -65,7 +65,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod, op_sum
+from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -98,7 +98,19 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
 )
-from pennylane.ops.functions import *
+from pennylane.ops.functions import (
+    dot,
+    eigvals,
+    equal,
+    evolve,
+    generator,
+    is_commuting,
+    is_hermitian,
+    is_unitary,
+    map_wires,
+    matrix,
+    simplify,
+)
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
@@ -106,8 +118,6 @@ from pennylane.shadows import ClassicalShadow
 import pennylane.data
 import pennylane.pulse
 
-# collections needs to be imported after all other pennylane imports
-from .collections import QNodeCollection, map
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
@@ -341,18 +351,3 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
-
-
-# pragma: no cover
-def __getattr__(name):
-    """Raise a deprecation warning and still allow `qml.grouping.func_name`
-    syntax for one release."""
-    if name == "grouping":
-        warnings.warn(
-            "The qml.grouping module is deprecated, please use qml.pauli instead.",
-            UserWarning,
-        )
-        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
-
-        return grouping
-    raise AttributeError(f"Module {__name__} has no attribute {name}")

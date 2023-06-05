@@ -106,7 +106,7 @@ class CommutingEvolution(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=None, id=None):
         # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import (
             generate_shift_rule,
@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
         hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
-        return qml.ApproxTimeEvolution(hamiltonian, time, 1)
+        return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
 
     def adjoint(self):
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)

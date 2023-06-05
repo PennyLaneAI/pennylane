@@ -27,7 +27,12 @@ from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, Varian
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
-from .gradient_transform import choose_grad_methods, grad_method_validation, gradient_transform
+from .gradient_transform import (
+    choose_grad_methods,
+    _grad_method_validation,
+    gradient_transform,
+    _no_trainable_grad_legacy,
+)
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
 
@@ -117,15 +122,22 @@ def _grad_method(tape, idx):
 def _gradient_analysis_cv(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
-
     if getattr(tape, "_gradient_fn", None) is param_shift_cv:
-        # gradient analysis has already been performed on this tape
+        # gradient analysis for param_shift_cv has already been performed on this tape
         return
 
     tape._gradient_fn = param_shift_cv
 
     for idx, info in enumerate(tape._par_info):
         info["grad_method"] = _grad_method(tape, idx)
+
+
+def _gradient_analysis_and_validation_cv(tape, method):
+    """Update the parameter information dictionary of the tape with
+    gradient information of each parameter. Subsequently validate the
+    gradient methods and return diff_methods."""
+    _gradient_analysis_cv(tape)
+    return _grad_method_validation(method, tape)
 
 
 def _transform_observable(obs, Z, device_wires):
@@ -403,6 +415,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             constants.append(constant)
 
             g_tape._measurements[idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
+        g_tape._update_par_info()
 
         if not any(i is None for i in constants):
             # Check if *all* transformed observables corresponds to a constant
@@ -662,15 +675,11 @@ def param_shift_cv(
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    _gradient_analysis_cv(tape)
+    method = "analytic" if fallback_fn is None else "best"
+    diff_methods = _gradient_analysis_and_validation_cv(tape, method)
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the gradient of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return [], lambda _: qml.math.zeros((tape.output_dim, 0))
+        return _no_trainable_grad_legacy(tape)
 
     gradient_tapes = []
     shapes = []
@@ -683,8 +692,6 @@ def param_shift_cv(
         shapes.append(len(data[0]))
         fns.append(data[1])
 
-    method = "analytic" if fallback_fn is None else "best"
-    diff_methods = grad_method_validation(method, tape)
     if all(g == "0" for g in diff_methods):
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 

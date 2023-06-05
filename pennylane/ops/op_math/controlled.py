@@ -24,16 +24,12 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math as qmlmath
 from pennylane import operation
+from pennylane import math as qmlmath
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
-from .controlled_decompositions import (
-    ctrl_decomp_zyz,
-    ctrl_decomp_bisect,
-)
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -89,9 +85,20 @@ def ctrl(op, control, control_values=None, work_wires=None):
     Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
 
     """
-    control_values = [control_values] if isinstance(control_values, int) else control_values
+    custom_controlled_ops = {
+        qml.PauliZ: qml.CZ,
+        qml.PauliY: qml.CY,
+    }
+    control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
 
+    if (
+        isinstance(op, tuple(custom_controlled_ops))
+        and len(control) == 1
+        and (control_values is None or control_values[0])
+    ):
+        qml.QueuingManager.remove(op)
+        return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
@@ -145,16 +152,14 @@ class Controlled(SymbolicOp):
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
         do_queue(bool):  indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
-
-        The :class:`~.ControlledOperation` currently constructed by the :func:`~.ctrl` transform wraps
-        an entire tape and does not provide as many representations and attributes as ``Controlled``,
-        but :class:`~.ControlledOperation` does decompose.
 
     .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
@@ -245,7 +250,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=too-many-function-args
     def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
     ):
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
@@ -372,9 +377,9 @@ class Controlled(SymbolicOp):
         new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
         new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
 
-        return self.__class__(
-            base=new_base,
-            control_wires=new_control_wires,
+        return ctrl(
+            op=new_base,
+            control=new_control_wires,
             control_values=self.control_values,
             work_wires=new_work_wires,
         )
@@ -403,8 +408,12 @@ class Controlled(SymbolicOp):
         padding_left = self._control_int * num_target_states
         padding_right = total_matrix_size - padding_left - num_target_states
 
-        left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
-        right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
+        left_pad = qmlmath.convert_like(
+            qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j), base_matrix
+        )
+        right_pad = qmlmath.convert_like(
+            qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j), base_matrix
+        )
 
         shape = qml.math.shape(base_matrix)
         if len(shape) == 3:  # stack if batching
@@ -474,8 +483,8 @@ class Controlled(SymbolicOp):
             return True
         if isinstance(self.base, qml.PauliX):
             return True
-        if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
-            return True
+        # if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
+        #    return True
         if self.base.has_decomposition:
             return True
 
@@ -517,7 +526,7 @@ class Controlled(SymbolicOp):
         return self.base.has_adjoint
 
     def adjoint(self):
-        return self.__class__(
+        return ctrl(
             self.base.adjoint(),
             self.control_wires,
             control_values=self.control_values,
@@ -527,7 +536,7 @@ class Controlled(SymbolicOp):
     def pow(self, z):
         base_pow = self.base.pow(z)
         return [
-            self.__class__(
+            ctrl(
                 op,
                 self.control_wires,
                 control_values=self.control_values,
@@ -539,15 +548,16 @@ class Controlled(SymbolicOp):
     def simplify(self) -> "Controlled":
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
-            return self.__class__(
+            return ctrl(
                 base,
-                control_wires=self.control_wires + self.base.control_wires,
+                control=self.control_wires + self.base.control_wires,
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
             )
-        return self.__class__(
-            base=self.base.simplify(),
-            control_wires=self.control_wires,
+
+        return ctrl(
+            op=self.base.simplify(),
+            control=self.control_wires,
             control_values=self.control_values,
             work_wires=self.work_wires,
         )
@@ -568,16 +578,16 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if isinstance(op.base, qml.PauliX):
         # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
-    if (
-        len(op.base.wires) == 1
-        and len(op.control_wires) >= 2
-        and getattr(op.base, "has_matrix", False)
-        and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
-    ):
-        # Bisect algorithms use CNOTs and single qubit unitary
-        return ctrl_decomp_bisect(op.base, op.control_wires)
-    if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
-        return ctrl_decomp_zyz(op.base, op.control_wires)
+    # if (
+    #    len(op.base.wires) == 1
+    #    and len(op.control_wires) >= 2
+    #    and getattr(op.base, "has_matrix", False)
+    #    and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
+    # ):
+    # Bisect algorithms use CNOTs and single qubit unitary
+    #    return ctrl_decomp_bisect(op.base, op.control_wires)
+    # if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
+    #    return ctrl_decomp_zyz(op.base, op.control_wires)
 
     if not op.base.has_decomposition:
         return None
@@ -606,7 +616,7 @@ class ControlledOp(Controlled, operation.Operation):
 
     # pylint: disable=too-many-function-args
     def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
     ):
         super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
         # check the grad_recipe validity
@@ -616,6 +626,10 @@ class ControlledOp(Controlled, operation.Operation):
 
     @property
     def base_name(self):
+        warnings.warn(
+            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
+            UserWarning,
+        )
         return f"C({self.base.base_name})"
 
     @property

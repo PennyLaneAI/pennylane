@@ -99,6 +99,7 @@ class DefaultQubit(QubitDevice):
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
+        "BlockEncode",
         "MultiControlledX",
         "IntegerComparator",
         "DiagonalQubitUnitary",
@@ -128,6 +129,7 @@ class DefaultQubit(QubitDevice):
         "CZ",
         "CH",
         "PhaseShift",
+        "PCPhase",
         "ControlledPhaseShift",
         "CPhaseShift00",
         "CPhaseShift01",
@@ -306,10 +308,10 @@ class DefaultQubit(QubitDevice):
             return state
         wires = operation.wires
 
-        if operation.__class__.__name__ in self._apply_ops:
+        if str(operation.name) in self._apply_ops:  # cast to string because of Tensor
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
-            return self._apply_ops[operation.base_name](state, axes)
+            return self._apply_ops[operation.name](state, axes)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 

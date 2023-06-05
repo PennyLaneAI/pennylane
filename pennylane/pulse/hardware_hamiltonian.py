@@ -16,6 +16,7 @@ Hardware Hamiltonians"""
 
 from dataclasses import dataclass
 from typing import Callable, List, Union
+import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -86,7 +87,7 @@ def drive(amplitude, phase, wires):
     + (1) [X2 X3]
     + (1) [X3 X0]
     >>> H_d
-    ParametrizedHamiltonian: terms=2
+    HardwareHamiltonian:: terms=2
 
     The terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
@@ -163,6 +164,9 @@ def drive(amplitude, phase, wires):
         qubits that is typically not the case.
         Note that a potential anharmonicity term, as is common for transmon systems when taking into account higher energy
         levels, is unaffected by this transformation.
+
+        Further, note that the factor :math:`\frac{1}{2}` is a matter of convention. We keep it for ``drive()`` as well as :func:`~.rydberg_drive`,
+        but ommit it in :func:`~.transmon_drive`, as is common in the respective fields.
 
     .. details::
         **Neutral Atom Rydberg systems**
@@ -318,6 +322,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         params = self.reorder_fn(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
+    def __repr__(self):
+        return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
@@ -428,12 +435,13 @@ class HardwarePulse:
         )
 
 
-def amplitude_and_phase(trig_fn, amp, phase):
-    """Wrapper function for combining amplitude and phase into a single callable
-    (or constant if neither amplitude nor phase are callable)."""
+def amplitude_and_phase(trig_fn, amp, phase, hz_to_rads=2 * np.pi):
+    r"""Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable). The factor of :math:`2 \pi` converts
+    amplitude in Hz to amplitude in radians/second."""
     if not callable(amp) and not callable(phase):
-        return amp * trig_fn(phase)
-    return AmplitudeAndPhase(trig_fn, amp, phase)
+        return hz_to_rads * amp * trig_fn(phase)
+    return AmplitudeAndPhase(trig_fn, amp, phase, hz_to_rads=hz_to_rads)
 
 
 # pylint:disable = too-few-public-methods
@@ -441,18 +449,19 @@ class AmplitudeAndPhase:
     """Class storing combined amplitude and phase callable if either or both
     of amplitude or phase are callable."""
 
-    def __init__(self, trig_fn, amp, phase):
+    def __init__(self, trig_fn, amp, phase, hz_to_rads=2 * np.pi):
+        # The factor of 2pi converts amplitude in Hz to amplitude in radians/second
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
 
         def callable_amp_and_phase(params, t):
-            return amp(params[0], t) * trig_fn(phase(params[1], t))
+            return hz_to_rads * amp(params[0], t) * trig_fn(phase(params[1], t))
 
         def callable_amp(params, t):
-            return amp(params, t) * trig_fn(phase)
+            return hz_to_rads * amp(params, t) * trig_fn(phase)
 
         def callable_phase(params, t):
-            return amp * trig_fn(phase(params, t))
+            return hz_to_rads * amp * trig_fn(phase(params, t))
 
         if self.amp_is_callable and self.phase_is_callable:
             self.func = callable_amp_and_phase

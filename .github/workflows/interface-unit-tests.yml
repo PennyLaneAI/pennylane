@@ -10,7 +10,7 @@ on:
         description: The version of JAX to install for any job that requires JAX
         required: false
         type: string
-        default: 0.4.3
+        default: 0.4.10
       tensorflow_version:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
@@ -47,7 +47,6 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not legacy and not finite-diff and not param-shift
-      additional_pip_packages: ${{ matrix.python-version != '3.11' && 'cvxpy cvxopt' || '' }}
 
 
   autograd-tests:
@@ -70,7 +69,6 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: autograd and not qcut and not legacy and not finite-diff and not param-shift
-      additional_pip_packages: ${{ matrix.python-version != '3.11' && 'cvxpy cvxopt' || '' }}
 
 
   tf-tests:
@@ -97,7 +95,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not legacy and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
-      additional_pip_packages: pytest-split cvxpy cvxopt
+      additional_pip_packages: pytest-split
 
 
   jax-tests:
@@ -123,7 +121,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not legacy and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
-      additional_pip_packages: ${{ matrix.python-version != '3.11' && 'pytest-split cvxpy cvxopt' || 'pytest-split' }}
+      additional_pip_packages: pytest-split
 
 
   core-tests:
@@ -150,7 +148,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not legacy and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
-      additional_pip_packages: ${{ matrix.python-version != '3.11' && 'pytest-split cvxpy cvxopt' || 'pytest-split' }}
+      additional_pip_packages: pytest-split
 
 
   all-interfaces-tests:

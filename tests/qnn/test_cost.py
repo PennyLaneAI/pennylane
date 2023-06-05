@@ -14,18 +14,20 @@
 """
 Tests for the pennylane.qnn.cost module.
 """
+import pytest
 import numpy as np
 import pennylane as qml
-import pytest
 
 from pennylane.qnn.cost import SquaredErrorLoss
 
 
+# pylint: disable=unused-argument
 def rx_ansatz(phis, **kwargs):
     for w, phi in enumerate(phis):
         qml.RX(phi, wires=w)
 
 
+# pylint: disable=unused-argument
 def layer_ansatz(weights, x=None, **kwargs):
     qml.templates.AngleEmbedding(x, wires=[0, 1, 2])
     qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])

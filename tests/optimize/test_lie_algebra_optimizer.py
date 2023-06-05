@@ -67,6 +67,24 @@ hamiltonian_3 = qml.Hamiltonian(
     coeffs=[-2.0], observables=[qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2)]
 )
 
+circuits = [circuit_1, circuit_2, circuit_3]
+hamiltonians = [hamiltonian_1, hamiltonian_2, hamiltonian_3]
+
+
+@pytest.mark.parametrize("circuit, hamiltonian", zip(circuits, hamiltonians))
+def test_lie_algebra_deprecation_warning(circuit, hamiltonian):
+    """Test that creating a ``LieAlgebraOptimizer`` outputs the correct deprecation warning."""
+    nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
+    dev = qml.device("default.qubit", wires=nqubits)
+
+    @qml.qnode(dev)
+    def lie_circuit():
+        circuit()
+        return qml.expval(hamiltonian)
+
+    with pytest.warns(UserWarning, match="``LieAlgebraOptimizer`` is deprecated."):
+        _ = LieAlgebraOptimizer(circuit=lie_circuit)
+
 
 @pytest.mark.parametrize(
     "circuit,hamiltonian",
@@ -98,7 +116,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
+    hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
     opt = LieAlgebraOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators(None)[0]
@@ -139,7 +157,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
+    hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
     restriction = qml.Hamiltonian(
@@ -186,7 +204,7 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
+    hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
     phi_exact = expm(-0.1 * lie_algebra_np * 2**nqubits) @ phi

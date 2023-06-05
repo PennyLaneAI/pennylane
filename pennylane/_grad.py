@@ -22,6 +22,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.return_types import active_return
+
 make_vjp = unary_to_nary(_make_vjp)
 
 
@@ -39,6 +41,9 @@ class grad:
     *and* the backward pass will be performed in order to
     compute the gradient. The value of the forward pass is available via the
     :attr:`~.forward` property.
+
+    .. warning::
+        ``grad`` is intended to be used with the Autograd interface only.
 
     Args:
         func (function): a plain QNode, or a Python function that contains
@@ -112,7 +117,7 @@ class grad:
             self._forward = self._fun(*args, **kwargs)
             return ()
 
-        grad_value, ans = grad_fn(*args, **kwargs)
+        grad_value, ans = grad_fn(*args, **kwargs)  # pylint: disable=not-callable
         self._forward = ans
 
         return grad_value
@@ -324,7 +329,18 @@ def jacobian(func, argnum=None):
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
-        jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+        try:
+            jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+        except TypeError as e:
+            if active_return():
+                raise ValueError(
+                    "PennyLane has a new return shape specification that"
+                    " may not work well with autograd and more than one measurement. That may"
+                    " be the source of the error. \n\n"
+                    "See the documentation here for more information:\n"
+                    "https://docs.pennylane.ai/en/stable/introduction/returns.html"
+                ) from e
+            raise e
 
         return jac[0] if unpack else jac
 

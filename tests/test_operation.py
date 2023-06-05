@@ -37,19 +37,53 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
+qutrit_subspace_error_data = [
+    ([1, 1], "Elements of subspace list must be unique."),
+    ([1, 2, 3], "The subspace must be a sequence with"),
+    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
+    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
+    ([1], "The subspace must be a sequence with"),
+    (0, "The subspace must be a sequence with two unique"),
+]
+
+
+@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
+def test_qutrit_subspace_op_errors(subspace, err_msg):
+    """Test that the correct errors are raised when subspace is incorrectly defined"""
+
+    with pytest.raises(ValueError, match=err_msg):
+        _ = Operator.validate_subspace(subspace)
+
+
 class TestOperatorConstruction:
     """Test custom operators construction."""
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
-        op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
-        assert isinstance(op, qml.operation.Operation)
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
+            assert isinstance(op, qml.operation.Operation)
 
-        op = qml.ops.RX(0.5, wires=0, do_queue=True)
-        assert isinstance(op, qml.operation.Operation)
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            op = qml.ops.RX(0.5, wires=0, do_queue=True)
+            assert isinstance(op, qml.operation.Operation)
 
         op = qml.ops.Hadamard(wires=0)
         assert isinstance(op, qml.operation.Operation)
+
+    @pytest.mark.parametrize("do_queue", [True, False])
+    def test_do_queue_deprecation(self, do_queue):
+        """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            Operator(wires=0, do_queue=do_queue)
 
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
@@ -69,7 +103,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
-            DummyOp(0.5, wires=[1, 1], do_queue=False)
+            DummyOp(0.5, wires=[1, 1])
 
     def test_num_wires_default_any_wires(self):
         """Test that num_wires is `AnyWires` by default."""
@@ -167,6 +201,96 @@ class TestOperatorConstruction:
         # Test with mismatching batch dimensions
         with pytest.raises(ValueError, match="Broadcasting was attempted but the broadcasted"):
             DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
+
+    def test_default_pauli_rep(self):
+        """Test that the default _pauli_rep attribute is None"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        assert op._pauli_rep is None
+
+    def test_list_or_tuple_params_casted_into_numpy_array(self):
+        """Test that list parameters are casted into numpy arrays."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp([1, 2, 3], wires=0)
+
+        assert isinstance(op.data[0], np.ndarray)
+
+        op2 = DummyOp((1, 2, 3), wires=0)
+        assert isinstance(op2.data[0], np.ndarray)
+
+    def test_wires_by_final_argument(self):
+        """Test that wires can be passed as the final positional argument."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, "a")
+        assert op.wires[0] == "a"
+        assert op.data == [1.234]
+
+    def test_no_wires(self):
+        """Test an error is raised if no wires are passed."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        with pytest.raises(ValueError, match="Must specify the wires"):
+            DummyOp(1.234)
+
+    def test_name_setter(self):
+        """Tests that we can set the name of an operator"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
+        assert op.name == "MyOp"
+
+    def test_default_hyperparams(self):
+        """Tests that the hyperparams attribute is defined for all operations."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+        class MyOpOverwriteInit(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires):
+                pass
+
+        op = MyOp(wires=0)
+        assert op.hyperparameters == {}
+
+        op = MyOpOverwriteInit(wires=0)
+        assert op.hyperparameters == {}
+
+    def test_custom_hyperparams(self):
+        """Tests that an operation can add custom hyperparams."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires, basis_state=None):
+                self._hyperparameters = {"basis_state": basis_state}
+
+        state = [0, 1, 0]
+        assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
+
+
+class TestBroadcasting:
+    """Test parameter broadcasting checks."""
 
     broadcasted_params_test_data = [
         # Test with no parameter broadcasted
@@ -271,67 +395,36 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="could not broadcast input array"):
             qml.RX(x, 0)
 
-    def test_wires_by_final_argument(self):
-        """Test that wires can be passed as the final positional argument."""
+    @pytest.mark.tf
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_with_tf_function(self, jit_compile):
+        """Tests using tf.function with an operation works with and without
+        just in time (JIT) compilation."""
+        import tensorflow as tf
 
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-            num_params = 1
+        class MyRX(qml.RX):
+            @property
+            def ndim_params(self):
+                return self._ndim_params
 
-        op = DummyOp(1.234, "a")
-        assert op.wires[0] == "a"
-        assert op.data == [1.234]
+        def fun(x):
+            _ = qml.RX(x, 0)
+            _ = MyRX(x, 0)
 
-    def test_no_wires(self):
-        """Test an error is raised if no wires are passed."""
+        # No kwargs
+        fun0 = tf.function(fun)
+        fun0(tf.Variable(0.2))
+        fun0(tf.Variable([0.2, 0.5]))
 
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-            num_params = 1
+        # With kwargs
+        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
+        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
+        fun1(tf.Variable(0.2))
+        fun1(tf.Variable([0.2, 0.5]))
 
-        with pytest.raises(ValueError, match="Must specify the wires"):
-            DummyOp(1.234)
 
-    def test_name_setter(self):
-        """Tests that we can set the name of an operator"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-
-        op = DummyOp(wires=0)
-        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
-        assert op.name == "MyOp"
-
-    def test_default_hyperparams(self):
-        """Tests that the hyperparams attribute is defined for all operations."""
-
-        class MyOp(qml.operation.Operation):
-            num_wires = 1
-
-        class MyOpOverwriteInit(qml.operation.Operation):
-            num_wires = 1
-
-            def __init__(self, wires):
-                pass
-
-        op = MyOp(wires=0)
-        assert op.hyperparameters == {}
-
-        op = MyOpOverwriteInit(wires=0)
-        assert op.hyperparameters == {}
-
-    def test_custom_hyperparams(self):
-        """Tests that an operation can add custom hyperparams."""
-
-        class MyOp(qml.operation.Operation):
-            num_wires = 1
-
-            def __init__(self, wires, basis_state=None):
-                self._hyperparameters = {"basis_state": basis_state}
-
-        state = [0, 1, 0]
-        assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
+class TestHasReprProperties:
+    """Test has representation properties."""
 
     def test_has_matrix_true(self):
         """Test has_matrix property detects overriding of `compute_matrix` method."""
@@ -496,32 +589,9 @@ class TestOperatorConstruction:
         op = qml.Rot(0.3, 0.2, 0.1, 0)
         assert op.has_generator is False
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("jit_compile", [True, False])
-    def test_with_tf_function(self, jit_compile):
-        """Tests using tf.function with an operation works with and without
-        just in time (JIT) compilation."""
-        import tensorflow as tf
 
-        class MyRX(qml.RX):
-            @property
-            def ndim_params(self):
-                return self._ndim_params
-
-        def fun(x):
-            _ = qml.RX(x, 0)
-            _ = MyRX(x, 0)
-
-        # No kwargs
-        fun0 = tf.function(fun)
-        fun0(tf.Variable(0.2))
-        fun0(tf.Variable([0.2, 0.5]))
-
-        # With kwargs
-        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
-        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
-        fun1(tf.Variable(0.2))
-        fun1(tf.Variable([0.2, 0.5]))
+class TestModificationMethods:
+    """Test the methods that produce a new operation with some modification."""
 
     def test_simplify_method(self):
         """Test that simplify method returns the same instance."""
@@ -575,27 +645,6 @@ class TestOperatorConstruction:
         assert op is not mapped_op
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 1, 12])
-
-    def test_default_pauli_rep(self):
-        """Test that the default _pauli_rep attribute is None"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-
-        op = DummyOp(wires=0)
-        assert op._pauli_rep is None
-
-    def test_list_params_casted_into_numpy_array(self):
-        """Test that list parameters are casted into numpy arrays."""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-
-        op = DummyOp([1, 2, 3], wires=0)
-
-        assert isinstance(op.data[0], np.ndarray)
 
 
 class TestOperationConstruction:
@@ -790,6 +839,15 @@ class TestOperationConstruction:
 
         op = DummyOp(wires=0)
         assert op.is_hermitian is False
+
+    def test_base_name_deprecated(self):
+        """Test that the base name property raises a deprecation warning."""
+
+        class DummyOp(qml.operation.Operation):
+            pass
+
+        with pytest.warns(UserWarning, match=r"Operation.base_name is deprecated."):
+            assert DummyOp(2).base_name == "DummyOp"
 
 
 class TestObservableConstruction:
@@ -1333,7 +1391,7 @@ class TestTensor:
         p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
-        Z = qml.Hermitian(p, wires=[1, 2])
+        Z = qml.Hermitian(p, wires=[3, 4])
         t = Tensor(X, Y, Z)
         assert t.num_params == 2
 
@@ -1409,6 +1467,21 @@ class TestTensor:
         assert isinstance(t, Tensor)
         assert t.obs == [Z, H, X, Y]
 
+    def test_multiply_tensor_hamiltonian(self):
+        """Test that a tensor can be multiplied by a hamiltonian."""
+        H = qml.PauliX(0) + qml.PauliY(0)
+        t = qml.PauliZ(1) @ qml.PauliZ(2)
+        out = t @ H
+
+        expected = qml.Hamiltonian(
+            [1, 1],
+            [
+                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(0),
+                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(0),
+            ],
+        )
+        assert qml.equal(out, expected)
+
     def test_multiply_tensor_in_place(self):
         """Test that multiplying a tensor in-place
         produces a tensor"""
@@ -1429,7 +1502,7 @@ class TestTensor:
         is multiplied by an operation"""
         X = qml.PauliX(0)
         Y = qml.CNOT(wires=[0, 1])
-        Z = qml.PauliZ(0)
+        Z = qml.PauliZ(1)
 
         with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
@@ -1584,7 +1657,8 @@ class TestTensor:
     def test_tensor_matrix_too_large_warning(self):
         """Tests that a warning is raised if wires occur in multiple of the
         factors in the tensor product, leading to a wrongly-sized matrix."""
-        O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
+        with pytest.warns(UserWarning, match="acts on overlapping wires"):
+            O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
         with pytest.warns(UserWarning, match="The size of the returned matrix"):
             O.matrix()
 
@@ -1593,7 +1667,8 @@ class TestTensor:
         """If using the ``@`` operator on two observables acting on the
         same wire, the tensor class should treat this as matrix multiplication."""
         c1, c2 = classes
-        O = c1(0) @ c2(0)
+        with pytest.warns(UserWarning, match="acts on overlapping wires"):
+            O = c1(0) @ c2(0)
 
         res = O.matrix()
         expected = c1.compute_matrix() @ c2.compute_matrix()
@@ -2310,6 +2385,146 @@ class TestCriteria:
         assert not both(self.exp)
 
 
+pairs_of_ops = [
+    (qml.S(0), qml.T(0)),
+    (qml.S(0), qml.PauliX(0)),
+    (qml.PauliX(0), qml.S(0)),
+    (qml.PauliX(0), qml.PauliY(0)),
+]
+
+
+class TestNewOpMath:
+    """Tests dunder operations with new operator arithmetic enabled."""
+
+    @pytest.fixture(autouse=True, scope="class")
+    def run_before_and_after_tests(self):
+        qml.operation.enable_new_opmath()
+        yield
+        qml.operation.disable_new_opmath()
+
+    class TestAdd:
+        """Test the __add__/__radd__/__sub__ dunders."""
+
+        @pytest.mark.parametrize("op0,op1", pairs_of_ops)
+        def test_add_operators(self, op0, op1):
+            """Tests adding two operators, observable or not."""
+            op = op0 + op1
+            assert isinstance(op, Sum)
+            assert qml.equal(op[0], op0)
+            assert qml.equal(op[1], op1)
+
+        @pytest.mark.parametrize("op0,op1", pairs_of_ops)
+        def test_sub_operators(self, op0, op1):
+            """Tests subtracting two operators."""
+            op = op0 - op1
+            assert isinstance(op, Sum)
+            assert qml.equal(op[0], op0)
+            assert isinstance(op[1], SProd)
+            assert op[1].scalar == -1
+            assert qml.equal(op[1].base, op1)
+
+        def test_op_with_scalar(self):
+            """Tests adding/subtracting ops with scalars."""
+            x0 = qml.PauliX(0)
+            for op in [x0 + 1, 1 + x0]:
+                assert isinstance(op, Sum)
+                assert qml.equal(op[0], x0)
+                assert isinstance(op[1], SProd)
+                assert op[1].scalar == 1
+                assert qml.equal(op[1].base, qml.Identity(0))
+
+            x1 = qml.PauliX(1)
+            op = x1 - 1.1
+            assert isinstance(op, Sum)
+            assert qml.equal(op[0], x1)
+            assert isinstance(op[1], SProd)
+            assert op[1].scalar == -1.1
+            assert qml.equal(op[1].base, qml.Identity(1))
+
+            op = 1.1 - x1  # will use radd
+            assert isinstance(op, Sum)
+            assert isinstance(op[0], SProd)
+            assert op[0].scalar == -1
+            assert qml.equal(op[0].base, x1)
+            assert isinstance(op[1], SProd)
+            assert op[1].scalar == 1.1
+            assert qml.equal(op[1].base, qml.Identity(1))
+
+        def test_adding_many_does_not_auto_simplify(self):
+            """Tests that adding more than two operators creates nested Sums."""
+            op0, op1, op2 = qml.S(0), qml.T(0), qml.PauliZ(0)
+            op = op0 + op1 + op2
+            assert isinstance(op, Sum)
+            assert len(op) == 2
+            assert isinstance(op[0], Sum)
+            assert qml.equal(op[0][0], op0)
+            assert qml.equal(op[0][1], op1)
+            assert qml.equal(op[1], op2)
+
+    class TestMul:
+        """Test the __mul__/__rmul__ dunders."""
+
+        @pytest.mark.parametrize("scalar", [0, 1, 1.1, 1 + 2j, [3, 4j]])
+        def test_mul(self, scalar):
+            """Tests multiplying an operator by a scalar coefficient works as expected."""
+            base = qml.PauliX(0)
+            for op in [scalar * base, base * scalar]:
+                assert isinstance(op, SProd)
+                assert qml.math.allequal(op.scalar, scalar)
+                assert qml.equal(op.base, base)
+
+        @pytest.mark.parametrize("scalar", [1, 1.1, 1 + 2j, qml.numpy.array([3, 4j])])
+        def test_div(self, scalar):
+            """Tests diviing an operator by a scalar coefficient works as expected."""
+            base = qml.PauliX(0)
+            op = base / scalar
+            assert isinstance(op, SProd)
+            assert qml.math.allequal(op.scalar, 1 / scalar)
+            assert qml.equal(op.base, base)
+
+        def test_mul_does_not_auto_simplify(self):
+            """Tests that multiplying an SProd with a scalar creates nested SProds."""
+            op = 2 * qml.PauliX(0)
+            nested = 0.5 * op
+            assert isinstance(nested, SProd)
+            assert nested.scalar == 0.5
+            assert qml.equal(nested.base, op)
+
+    class TestMatMul:
+        """Test the __matmul__/__rmatmul__ dunders."""
+
+        @pytest.mark.parametrize("op0,op1", pairs_of_ops)
+        def test_matmul_operators(self, op0, op1):
+            """Tests matrix-multiplication of two operators, observable or not."""
+            op = op0 @ op1
+            assert isinstance(op, Prod)
+            assert qml.equal(op[0], op0)
+            assert qml.equal(op[1], op1)
+
+        def test_mul_does_not_auto_simplify(self):
+            """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
+            op0, op1, op2 = qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)
+            op = op0 @ op1 @ op2
+            assert isinstance(op, Prod)
+            assert len(op) == 2
+            assert isinstance(op[0], Prod)
+            assert qml.equal(op[0], op0 @ op1)
+            assert qml.equal(op[1], op2)
+
+
+def test_op_arithmetic_toggle():
+    """Tests toggling op arithmetic on and off, and that it is off by default."""
+    assert not qml.operation.active_new_opmath()
+
+    qml.operation.enable_new_opmath()
+    assert qml.operation.active_new_opmath()
+    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
+
+    qml.operation.disable_new_opmath()
+    assert not qml.operation.active_new_opmath()
+    assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+
+
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
     Operator class docstring, as well as in the 'adding_operators'
@@ -2320,7 +2535,7 @@ def test_docstring_example_of_operator_class(tol):
         grad_method = "A"
 
         # pylint: disable=too-many-arguments
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=None, id=None):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 

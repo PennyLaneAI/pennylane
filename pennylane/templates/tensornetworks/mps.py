@@ -110,7 +110,7 @@ class MPS(Operation):
                 qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
-        >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+        >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
@@ -131,7 +131,7 @@ class MPS(Operation):
         block,
         n_params_block,
         template_weights=None,
-        do_queue=True,
+        do_queue=None,
         id=None,
     ):
         ind_gates = compute_indices_MPS(wires, n_block_wires)
@@ -176,7 +176,11 @@ class MPS(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        return [block(weights=weights[idx][:], wires=w.tolist()) for idx, w in enumerate(ind_gates)]
+        decomp = []
+        block_gen = qml.tape.make_qscript(block)
+        for idx, w in enumerate(ind_gates):
+            decomp += block_gen(weights=weights[idx][:], wires=w.tolist())
+        return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):

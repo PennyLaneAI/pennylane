@@ -151,11 +151,10 @@ These three lists can be used to construct a :class:`~.QuantumScript`:
 >>> qml.tape.QuantumScript(ops, measurements, prep)
 <QuantumScript: wires=[0, 1], params=1>
 
-In order to construct new operators within a recording, but without queuing them, either
-use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
+In order to construct new operators within a recording, but without queuing them
+use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.PauliX(0, do_queue=False)
 ...     with qml.QueuingManager.stop_recording():
 ...         qml.PauliY(1)
 >>> q.queue
@@ -171,6 +170,22 @@ from threading import RLock
 
 class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
+
+
+class WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"Wrapped({self.obj.__repr__()})"
 
 
 class QueuingManager:
@@ -357,29 +372,44 @@ class AnnotatedQueue(OrderedDict):
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         self[obj] = kwargs
 
     def remove(self, obj):
         """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         if obj in self:
             del self[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         if obj in self:
             self[obj].update(kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         if obj not in self:
-            raise QueuingError(f"Object {obj} not in the queue.")
+            raise QueuingError(f"Object {obj.obj} not in the queue.")
 
         return self[obj]
+
+    def items(self):
+        return tuple((key.obj, value) for key, value in super().items())
 
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self.keys())
+        return list(key.obj for key in self.keys())
+
+    def __setitem__(self, key, value):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__getitem__(key)
 
 
 def apply(op, context=QueuingManager):
