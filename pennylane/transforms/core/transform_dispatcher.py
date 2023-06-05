@@ -15,7 +15,10 @@
 This module contains the transform function, the transform dispatcher and the transform container.
 """
 import pennylane as qml
-from .transform import TransformError
+
+
+class TransformError(Exception):
+    """Raised when there is an error with the transform logic"""
 
 
 class TransformDispatcher:
@@ -33,7 +36,7 @@ class TransformDispatcher:
     """
 
     def __init__(
-        self, transform, expand_transform=None, classical_cotransform=None
+            self, transform, expand_transform=None, classical_cotransform=None
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -59,8 +62,7 @@ class TransformDispatcher:
             return self._qfunc_transform(obj, targs, tkwargs)
 
         raise TransformError(
-            "The object on which the transform is applied is not valid. It can only be a "
-            "tape, a QNode or a qfunc."
+            "The object on which the transform is applied is not valid. It can only be a tape, a QNode or a qfunc."
         )
 
     @property
@@ -120,7 +122,7 @@ class TransformContainer:
     """
 
     def __init__(
-        self, transform, args=None, kwargs=None, classical_cotransform=None
+            self, transform, args=None, kwargs=None, classical_cotransform=None
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._args = args if args else []

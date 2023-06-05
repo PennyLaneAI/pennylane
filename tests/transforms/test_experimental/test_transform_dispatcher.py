@@ -304,8 +304,8 @@ class TestTransformDispatcher:
         dispatched_transform = transform(first_valid_transform)
         with pytest.raises(
             TransformError,
-            match="The object on which is the transform is applied is not valid. It "
-            "can only be a tape, a QNode or a qfunc.",
+            match="The object on which the transform is applied is not valid. It can only be a tape, a QNode or a "
+                  "qfunc.",
         ):
             obj = qml.RX(0.1, wires=0)
             dispatched_transform(obj)

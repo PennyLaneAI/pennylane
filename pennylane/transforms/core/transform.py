@@ -14,13 +14,9 @@
 """
 This module contains the transform function to make your custom transforms compatible with qfunc and QNodes.
 """
-from typing import get_type_hints, Sequence, Callable
+from typing import get_type_hints, Sequence, Callable, List, Tuple
 import pennylane as qml
-from .transform_dispatcher import TransformDispatcher
-
-
-class TransformError(Exception):
-    """Raised when there is an error with the transform logic"""
+from .transform_dispatcher import TransformDispatcher, TransformError
 
 
 def transform(quantum_transform, expand_transform=None, classical_cotransform=None):
@@ -155,7 +151,7 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
         )
 
-    if not ret[0] == Sequence[qml.tape.QuantumTape]:  # pylint:disable=unsubscriptable-object
+    if not ret[0] in (Sequence[qml.tape.QuantumTape], List[qml.tape.QuantumTape], Tuple[qml.tape.QuantumTape]):  # pylint:disable=unsubscriptable-object
         raise TransformError(
             "The first return of a transform must be a sequence of tapes: collections.abc.Sequence["
             "pennylane.tape.tape.QuantumTape]"
