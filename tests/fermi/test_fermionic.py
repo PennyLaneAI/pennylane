@@ -19,6 +19,8 @@ import pytest
 
 from pennylane.fermi.fermionic import FermiWord
 
+# pylint: disable=too-few-public-methods
+
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
@@ -46,7 +48,6 @@ class TestFermiWord:
 
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
             fw[(1, 1)] = "+"
-
 
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
