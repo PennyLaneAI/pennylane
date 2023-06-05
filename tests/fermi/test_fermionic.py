@@ -44,12 +44,15 @@ class TestFermiWord:
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
             fw.update({(2, 2): "+"})
 
+        with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
+            fw[(1, 1)] = "+"
+
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
         fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
         fw_2 = FermiWord({(0, 0): "+", (1, 1): "-"})  # same as 1
         fw_3 = FermiWord({(1, 1): "-", (0, 0): "+"})  # same as 1 but reordered
-        fw_4 = FermiWord({(0, 0): "+", (2, 2): "-"})  # distinct from above
+        fw_4 = FermiWord({(0, 0): "+", (1, 2): "-"})  # distinct from above
 
         assert fw_1.__hash__() == fw_2.__hash__()
         assert fw_1.__hash__() == fw_3.__hash__()
@@ -66,7 +69,7 @@ class TestFermiWord:
         assert copy_fw is not fw
         assert deep_copy_fw is not fw
 
-    tup_fws_wires = ((fw1, [0, 1]), (fw2, [0, 0]), (fw3, [0, 3, 0, 4]), (fw4, []))
+    tup_fws_wires = ((fw1, {0, 1}), (fw2, {0}), (fw3, {0, 3, 4}), (fw4, set()))
 
     @pytest.mark.parametrize("fw, wires", tup_fws_wires)
     def test_wires(self, fw, wires):
@@ -77,7 +80,7 @@ class TestFermiWord:
         (fw1, "0+ 1-"),
         (fw2, "0+ 0-"),
         (fw3, "0+ 3- 0+ 4-"),
-        (fw4, ""),
+        (fw4, "I"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_compact)
@@ -88,7 +91,7 @@ class TestFermiWord:
         (fw1, "<FermiWord = '0+ 1-'>"),
         (fw2, "<FermiWord = '0+ 0-'>"),
         (fw3, "<FermiWord = '0+ 3- 0+ 4-'>"),
-        (fw4, "<FermiWord = ''>"),
+        (fw4, "<FermiWord = 'I'>"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_str)
@@ -155,3 +158,16 @@ class TestFermiWord:
         serialization = pickle.dumps(fw)
         new_fw = pickle.loads(serialization)
         assert fw == new_fw
+
+    @pytest.mark.parametrize(
+        "operator",
+        [
+            ({(0, 0): "+", (2, 1): "-"}),
+            ({(0, 0): "+", (1, 1): "-", (3, 0): "+", (4, 1): "-"}),
+            ({(-1, 0): "+", (0, 1): "-", (1, 0): "+", (2, 1): "-"}),
+        ],
+    )
+    def test_init_error(self, operator):
+        """Test that an error is raised if the operator orders are not correct."""
+        with pytest.raises(ValueError, match="The operator indices must belong to the set"):
+            FermiWord(operator)
