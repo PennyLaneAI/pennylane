@@ -669,16 +669,16 @@ class StateVectorProjector(Observable):
 
         **Example**
 
-        >>> qml.StateVectorProjector.compute_diagonalizing_gates([1, 0, 0, 0], wires=[0, 1])
-        [QubitUnitary(array([[0., 1., 0., 0.],
-                             [0., 0., 1., 0.],
-                             [0., 0., 0., 1.],
-                             [1., 0., 0., 0.]]), wires=[0, 1])]
+        >>> state_vector = np.array([1., 1j])/np.sqrt(2)
+        >>> qml.StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
+        [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
+                             [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
         """
         if set(state_vector).issubset({0, 1}):
             return []
 
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
+        # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
         phase = qml.math.exp(-1j * qml.math.angle(state_vector[0]))
         psi = phase * state_vector
