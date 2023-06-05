@@ -14,6 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
+# pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from unittest.mock import patch
 
@@ -33,6 +34,7 @@ COEFFS_PARAM_INTERFACE = [
 ]
 
 try:
+    import jax
     from jax import numpy as jnp
 
     COEFFS_PARAM_INTERFACE.append((jnp.array([-0.05, 0.17]), jnp.array(1.7), "jax"))
@@ -49,9 +51,9 @@ except ImportError:
     pass
 
 try:
-    from torch import tensor
+    import torch
 
-    COEFFS_PARAM_INTERFACE.append((tensor([-0.05, 0.17]), tensor(1.7), "torch"))
+    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor(1.7), "torch"))
 except ImportError:
     pass
 
@@ -651,7 +653,7 @@ class TestHamiltonian:
         """Tests that an exception is raised when giving an invalid
         combination of coefficients and ops"""
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
-            H = qml.Hamiltonian(coeffs, ops)
+            qml.Hamiltonian(coeffs, ops)
 
     @pytest.mark.parametrize(
         "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]
@@ -668,7 +670,7 @@ class TestHamiltonian:
     def test_hamiltonian_wires(self, coeffs, ops):
         """Tests that the Hamiltonian object has correct wires."""
         H = qml.Hamiltonian(coeffs, ops)
-        assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+        assert set(H.wires) == set(w for op in H.ops for w in op.wires)
 
     def test_label(self):
         """Tests the label method of Hamiltonian when <=3 coefficients."""
@@ -696,6 +698,7 @@ class TestHamiltonian:
     @patch("builtins.print")
     def test_small_hamiltonian_ipython_display(self, mock_print):
         """Test that the ipython_dipslay method prints __str__."""
+        # pylint: disable=protected-access
         H = 1.0 * qml.PauliX(0)
         H._ipython_display_()
         mock_print.assert_called_with(str(H))
@@ -703,6 +706,7 @@ class TestHamiltonian:
     @patch("builtins.print")
     def test_big_hamiltonian_ipython_display(self, mock_print):
         """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
+        # pylint: disable=protected-access
         H = qml.Hamiltonian([1] * 16, [qml.PauliX(i) for i in range(16)])
         H._ipython_display_()
         mock_print.assert_called_with(repr(H))
@@ -743,6 +747,7 @@ class TestHamiltonian:
 
     def test_data(self):
         """Tests the obs_data method"""
+        # pylint: disable=protected-access
 
         H = qml.Hamiltonian(
             [1, 1, 0.5],
@@ -827,7 +832,7 @@ class TestHamiltonian:
         assert H.compare(H1 @ H2)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_hamiltonians)
-    def test_hamiltonian_matmul(self, H1, H2, H):
+    def test_hamiltonian_rmatmul(self, H1, H2, H):
         """Tests that Hamiltonians are tensored correctly when using __rmatmul__"""
         assert H.compare(H1.__rmatmul__(H2))
 
@@ -837,7 +842,7 @@ class TestHamiltonian:
         h1 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
 
         with pytest.raises(ValueError, match="Hamiltonians can only be multiplied together if"):
-            h1 @ h1
+            _ = h1 @ h1
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
     def test_hamiltonian_iadd(self, H1, H2, H):
@@ -892,14 +897,6 @@ class TestHamiltonian:
 
     def test_hamiltonian_queue_outside(self):
         """Tests that Hamiltonian are queued correctly when components are defined outside the recording context."""
-
-        queue = [
-            qml.Hadamard(wires=1),
-            qml.PauliX(wires=0),
-            qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            ),
-        ]
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
@@ -989,15 +986,13 @@ class TestHamiltonianCoefficients:
         assert H1.data == H2.data
 
 
+@pytest.mark.tf
 class TestHamiltonianArithmeticTF:
     """Tests creation of Hamiltonians using arithmetic
     operations with TensorFlow tensor coefficients."""
 
-    @pytest.mark.tf
     def test_hamiltonian_equal(self):
         """Tests equality"""
-        import tensorflow as tf
-
         coeffs = tf.Variable([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1008,11 +1003,8 @@ class TestHamiltonianArithmeticTF:
 
         assert H1.compare(H2)
 
-    @pytest.mark.tf
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
-        import tensorflow as tf
-
         coeffs = tf.Variable([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1028,11 +1020,8 @@ class TestHamiltonianArithmeticTF:
         H1 += H2
         assert H.compare(H1)
 
-    @pytest.mark.tf
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        import tensorflow as tf
-
         coeffs = tf.Variable([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1048,11 +1037,8 @@ class TestHamiltonianArithmeticTF:
         H1 -= H2
         assert H.compare(H1)
 
-    @pytest.mark.tf
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        import tensorflow as tf
-
         coeffs = tf.Variable([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1080,8 +1066,6 @@ class TestHamiltonianArithmeticTorch:
     @pytest.mark.torch
     def test_hamiltonian_equal(self):
         """Tests equality"""
-        import torch
-
         coeffs = torch.tensor([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1095,8 +1079,6 @@ class TestHamiltonianArithmeticTorch:
     @pytest.mark.torch
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
-        import torch
-
         coeffs = torch.tensor([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1115,8 +1097,6 @@ class TestHamiltonianArithmeticTorch:
     @pytest.mark.torch
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        import torch
-
         coeffs = torch.tensor([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1135,8 +1115,6 @@ class TestHamiltonianArithmeticTorch:
     @pytest.mark.torch
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        import torch
-
         coeffs = torch.tensor([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1392,15 +1370,13 @@ class TestHamiltonianSparseMatrix:
             H.sparse_matrix(wire_order=["a", "c", "b"])
 
 
+@pytest.mark.jax
 class TestHamiltonianArithmeticJax:
     """Tests creation of Hamiltonians using arithmetic
     operations with jax tensor coefficients."""
 
-    @pytest.mark.jax
     def test_hamiltonian_equal(self):
         """Tests equality"""
-        from jax import numpy as jnp
-
         coeffs = jnp.array([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1411,11 +1387,8 @@ class TestHamiltonianArithmeticJax:
 
         assert H1.compare(H2)
 
-    @pytest.mark.jax
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
-        from jax import numpy as jnp
-
         coeffs = jnp.array([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1431,10 +1404,8 @@ class TestHamiltonianArithmeticJax:
         H1 += H2
         assert H.compare(H1)
 
-    @pytest.mark.jax
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        from jax import numpy as jnp
 
         coeffs = jnp.array([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -1451,11 +1422,8 @@ class TestHamiltonianArithmeticJax:
         H1 -= H2
         assert H.compare(H1)
 
-    @pytest.mark.jax
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        from jax import numpy as jnp
-
         coeffs = jnp.array([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
         H1 = qml.Hamiltonian(coeffs, obs)
@@ -1588,36 +1556,36 @@ class TestHamiltonianEvaluation:
     def test_vqe_forward_different_coeff_types(self, coeffs, param, interface):
         """Check that manually splitting a Hamiltonian expectation has the same
         result as passing the Hamiltonian as an observable"""
-        dev = qml.device("default.qubit", wires=2)
+        device = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)])
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(device, interface=interface)
         def circuit():
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(H)
 
-        @qml.qnode(dev, interface=interface)
-        def circuit1():
+        @qml.qnode(device, interface=interface)
+        def node1():
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        @qml.qnode(dev, interface=interface)
-        def circuit2():
+        @qml.qnode(device, interface=interface)
+        def node2():
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit()
-        res_expected = coeffs[0] * circuit1() + coeffs[1] * circuit2()
+        res_expected = coeffs[0] * node1() + coeffs[1] * node2()
         assert np.isclose(res, res_expected)
 
     def test_simplify_reduces_tape_parameters(self):
         """Test that simplifying a Hamiltonian reduces the number of parameters on a tape"""
-        dev = qml.device("default.qubit", wires=2)
+        device = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(device)
         def circuit():
             qml.RY(0.1, wires=0)
             return qml.expval(
@@ -1779,11 +1747,8 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_jax(self, simplify, group):
-        """Test the jax interface by comparing the differentiation of linearly combined subcircuits
-        with the differentiation of a Hamiltonian expectation"""
-
-        import jax
-        import jax.numpy as jnp
+        """Test the jax interface by comparing the differentiation of linearly
+        combined subcircuits with the differentiation of a Hamiltonian expectation"""
 
         coeffs = jnp.array([-0.05, 0.17])
         param = jnp.array(1.7)
@@ -1822,10 +1787,6 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
-
-        import jax
-        import jax.numpy as jnp
-
         coeffs = np.array([-0.05, 0.17])
         param = jnp.array(1.7)
 
@@ -1858,9 +1819,6 @@ class TestHamiltonianDifferentiation:
     def test_trainable_coeffs_torch(self, simplify, group):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
-
-        import torch
-
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1905,9 +1863,6 @@ class TestHamiltonianDifferentiation:
     @pytest.mark.torch
     def test_nontrainable_coeffs_torch(self):
         """Test the torch interface if the coefficients are explicitly set non-trainable"""
-
-        import torch
-
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=False)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1951,9 +1906,6 @@ class TestHamiltonianDifferentiation:
     def test_trainable_coeffs_tf(self, simplify, group):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
-
-        import tensorflow as tf
-
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 
@@ -1998,8 +1950,6 @@ class TestHamiltonianDifferentiation:
     def test_nontrainable_coeffs_tf(self):
         """Test the tf interface if the coefficients are explicitly set non-trainable"""
 
-        import tensorflow as tf
-
         coeffs = tf.constant([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 
@@ -2040,12 +1990,12 @@ class TestHamiltonianDifferentiation:
 
     def test_not_supported_by_adjoint_differentiation(self):
         """Test that error is raised when attempting the adjoint differentiation method."""
-        dev = qml.device("default.qubit", wires=2)
+        device = qml.device("default.qubit", wires=2)
 
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
         param = pnp.array(1.7, requires_grad=True)
 
-        @qml.qnode(dev, diff_method="adjoint")
+        @qml.qnode(device, diff_method="adjoint")
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)

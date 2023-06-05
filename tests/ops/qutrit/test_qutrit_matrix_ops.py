@@ -14,15 +14,16 @@
 """
 Unit tests for the qutrit matrix-based operations.
 """
+# pylint: disable=protected-access
 import pytest
 import numpy as np
 from scipy.stats import unitary_group
 
+from gate_data import TSWAP
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
 
-from gate_data import TSWAP
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -625,6 +626,7 @@ label_data = [
 
 @pytest.mark.parametrize("mat, op", label_data)
 class TestUnitaryLabels:
+    # pylint: disable=unused-argument
     def test_no_cache(self, mat, op):
         """Test labels work without a provided cache."""
         assert op.label() == "U"

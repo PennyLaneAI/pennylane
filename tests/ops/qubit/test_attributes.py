@@ -21,7 +21,6 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 from pennylane.ops.qubit.attributes import Attribute
-from pennylane.ops import Controlled
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
