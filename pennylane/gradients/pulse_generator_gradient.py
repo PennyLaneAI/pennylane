@@ -244,14 +244,15 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     return tapes, (start, end, all_coeffs[term_idx]), cache
 
 
-def _parshift_and_contract(results, coeffs, single_measure, shot_vector):
+def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     """Compute parameter-shift tape derivatives and contract them with coefficients.
 
     Args:
         results (list[tensor_like]): Tape execution results to be processed.
         coeffs (list[tensor_like]): Coefficients to be contracted.
         single_measure (bool): whether the tape execution results contain single measurements.
-        shot_vector (bool): whether the tape execution results were obtained with a shot vector.
+        single_shot_entry (bool): whether the tape execution results were obtained with a single
+            shots setting.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: contraction between the
@@ -264,10 +265,10 @@ def _parshift_and_contract(results, coeffs, single_measure, shot_vector):
         psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
         return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
 
-    if single_measure and not shot_vector:
+    if single_measure and single_shot_entry:
         # single measurement and single shot entry
         return _parshift_and_contract_single(results, qml.math.stack(coeffs))
-    if single_measure or not shot_vector:
+    if single_measure or single_shot_entry:
         # single measurement or single shot entry, but not both
         return tuple(
             _parshift_and_contract_single(r, qml.math.stack(coeffs)) for r in zip(*results)
@@ -384,7 +385,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
             # Apply the parameter-shift rule (respecting the tape output formatting)
             # and contract the result with the coefficients of the effective generators
             # in the Pauli basis. This computes the partial derivative.
-            g = _parshift_and_contract(res, coeffs, single_measure, shot_vector)
+            g = _parshift_and_contract(res, coeffs, single_measure, not shot_vector)
             grads.append(g)
 
             # Memorize the parameter shape for the nonzero gradient entry
