@@ -103,6 +103,7 @@ class DefaultQubit2(Device):
         super().__init__()
 
         self._rng = np.random.default_rng(seed)
+        self._debugger = None
 
     def supports_derivatives(
         self,
@@ -194,7 +195,7 @@ class DefaultQubit2(Device):
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
-        results = tuple(simulate(c, rng=self._rng) for c in circuits)
+        results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         return results[0] if is_single_circuit else results
 
     def compute_derivatives(
