@@ -14,18 +14,15 @@
 """
 Unit tests for the available qubit operations for quantum chemistry purposes.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
-
-import pennylane as qml
-from pennylane import numpy as pnp
 
 from gate_data import (
     X,
     StateZeroProjector,
     StateOneProjector,
-    ControlledPhaseShift,
     SingleExcitation,
     SingleExcitationPlus,
     SingleExcitationMinus,
@@ -35,6 +32,9 @@ from gate_data import (
     OrbitalRotation,
     FermionicSWAP,
 )
+import pennylane as qml
+from pennylane import numpy as pnp
+
 
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
@@ -303,7 +303,7 @@ class TestSingleExcitation:
 
         dev = qml.device("default.qubit.autograd", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -392,19 +392,6 @@ class TestDoubleExcitation:
         assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_double_excitation_decomp(self, phi):
-        """Tests that the DoubleExcitation operation calculates the correct decomposition"""
-        decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
-
-        for decomp in [decomp1, decomp2]:
-            mats = [m.matrix() for m in decomp]
-            decomposed_matrix = mats[0] @ mats[1]
-            exp = DoubleExcitation(phi)
-
-            assert np.allclose(decomposed_matrix, exp)
-
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_generator(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct generator"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
@@ -438,10 +425,10 @@ class TestDoubleExcitation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
+        from functools import reduce
+
         decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
         decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
-
-        from functools import reduce
 
         # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
         # CU  = |0><0| \otimes I + |1><1| \otimes U
@@ -463,6 +450,12 @@ class TestDoubleExcitation:
             return reduce(np.kron, individual_mats)
 
         for decomp in [decomp1, decomp2]:
+            mats = [m.matrix() for m in decomp]
+            decomposed_matrix = mats[0] @ mats[1]
+            exp = DoubleExcitation(phi)
+
+            assert np.allclose(decomposed_matrix, exp)
+
             mats = []
             for i in reversed(decomp):
                 # Single-qubit gate
@@ -894,8 +887,6 @@ class TestOrbitalRotation:
         """Tests that operations are computed correctly using the
         jax interface"""
 
-        import jax
-
         dev = qml.device("default.qubit.jax", wires=4)
         state = np.array(
             [
@@ -932,8 +923,6 @@ class TestOrbitalRotation:
     def test_torch(self):
         """Tests that operations are computed correctly using the
         torch interface"""
-
-        import torch
 
         dev = qml.device("default.qubit.torch", wires=4)
         state = np.array(
@@ -1189,7 +1178,7 @@ class TestFermionicSWAP:
 
         dev = qml.device("default.qubit.autograd", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])

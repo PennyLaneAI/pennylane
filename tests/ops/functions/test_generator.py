@@ -14,6 +14,7 @@
 """
 Unit tests for the qml.generator transform
 """
+# pylint: disable=too-few-public-methods
 from functools import reduce
 from operator import matmul
 
@@ -22,7 +23,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops import Hamiltonian, Prod, SProd, Sum
+from pennylane.ops import Prod, SProd, Sum
 
 ###################################################################
 # Test operations
