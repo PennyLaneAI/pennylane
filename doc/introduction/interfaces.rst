@@ -30,8 +30,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
         ...
 
 .. note::
-    If no interface is specified, PennyLane will default to the NumPy interface (powered by the
-    `autograd <https://github.com/HIPS/autograd>`_ library).
+    If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
@@ -129,8 +128,9 @@ NumPy
 ~~~~~
 
 When using the standard NumPy framework, PennyLane offers some built-in optimizers.
-Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
-:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, :class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
+Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`,
+:class:`~.RiemannianGradientOptimizer`, :class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`,
+:class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
 
 :html:`<div class="summary-table">`
 
@@ -141,10 +141,10 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.AdamOptimizer
     ~pennylane.AdaptiveOptimizer
     ~pennylane.GradientDescentOptimizer
-    ~pennylane.LieAlgebraOptimizer
     ~pennylane.MomentumOptimizer
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
+    ~pennylane.RiemannianGradientOptimizer
     ~pennylane.RMSPropOptimizer
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer

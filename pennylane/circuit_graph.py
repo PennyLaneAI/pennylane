@@ -22,10 +22,7 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
-import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.resource import ResourcesOperation
-from pennylane.measurements import SampleMP, StateMP
 
 
 def _by_idx(x):
@@ -110,26 +107,20 @@ class CircuitGraph:
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
+
+        self._indices = {}
+        # Store indices for the nodes of the DAG here
+
         self.wires = wires
         """Wires: wires that are addressed in the operations.
         Required to translate between wires and indices of the wires on the device."""
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
-            meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
-            if isinstance(op, StateMP):
-                # State measurements contain no wires by default, but wires are
-                # required for the circuit drawer, so we recreate the state
-                # measurement with all wires
-                op = StateMP(wires=meas_wires)
-
-            elif isinstance(op, SampleMP) and op.wires == Wires([]):
-                # Sampling without specifying wires is treated as sampling all wires
-                op = qml.sample(wires=meas_wires)
-
+            # meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
             op.queue_idx = k  # store the queue index in the Operator
 
-            for w in op.wires:
+            for w in wires if len(op.wires) == 0 else op.wires:
                 # get the index of the wire on the device
                 wire = wires.index(w)
                 # add op to the grid, to the end of wire w
@@ -150,22 +141,22 @@ class CircuitGraph:
             # is already added to the graph; this
             # condition avoids adding new nodes with
             # the same value but different indexes
-            if wire[0] not in self._graph.nodes():
-                self._graph.add_node(wire[0])
+            if all(wire[0] is not op for op in self._graph.nodes()):
+                _ind = self._graph.add_node(wire[0])
+                self._indices.setdefault(id(wire[0]), _ind)
 
             for i in range(1, len(wire)):
                 # For subsequent operators on the wire:
-                if wire[i] not in self._graph.nodes():
+                if all(wire[i] is not op for op in self._graph.nodes()):
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
-                    self._graph.add_node(wire[i])
+                    _ind = self._graph.add_node(wire[i])
+                    self._indices.setdefault(id(wire[i]), _ind)
 
                 # Create an edge between this and the previous operator
                 # There isn't any default value for the edge-data in
                 # rx.PyDiGraph.add_edge(); this is set to an empty string
-                self._graph.add_edge(
-                    self._graph.nodes().index(wire[i - 1]), self._graph.nodes().index(wire[i]), ""
-                )
+                self._graph.add_edge(self._indices[id(wire[i - 1])], self._indices[id(wire[i])], "")
 
         # For computing depth; want only a graph with the operations, not
         # including the observables
@@ -311,7 +302,7 @@ class CircuitGraph:
             self._graph.get_node_data(n)
             for n in set().union(
                 # rx.ancestors() returns node indexes instead of node-values
-                *(rx.ancestors(self._graph, self._graph.nodes().index(o)) for o in ops)
+                *(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops)
             )
         )
         return anc - set(ops)
@@ -329,7 +320,7 @@ class CircuitGraph:
             self._graph.get_node_data(n)
             for n in set().union(
                 # rx.descendants() returns node indexes instead of node-values
-                *(rx.descendants(self._graph, self._graph.nodes().index(o)) for o in ops)
+                *(rx.descendants(self._graph, self._indices[id(o)]) for o in ops)
             )
         )
         return des - set(ops)
@@ -343,7 +334,7 @@ class CircuitGraph:
         Returns:
             Iterable[Operator]: same set of operators, topologically ordered
         """
-        G = self._graph.subgraph(list(self._graph.nodes().index(o) for o in ops))
+        G = self._graph.subgraph(list(self._indices[id(o)] for o in ops))
         indexes = rx.topological_sort(G)
         return list(G[x] for x in indexes)
 
@@ -452,7 +443,9 @@ class CircuitGraph:
             raise ValueError("The new Operator must act on the same wires as the old one.")
 
         new.queue_idx = old.queue_idx
-        self._graph[self._graph.nodes().index(old)] = new
+        self._graph[self._indices[id(old)]] = new
+        index = self._indices.pop(id(old))
+        self._indices[id(new)] = index
 
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
@@ -469,7 +462,7 @@ class CircuitGraph:
         if self._depth is None and self.operations:
             if self._operation_graph is None:
                 self._operation_graph = self._graph.subgraph(
-                    list(self._graph.nodes().index(node) for node in self.operations)
+                    list(self._indices[id(node)] for node in self.operations)
                 )
                 self._extend_graph(self._operation_graph)
                 self._depth = (
@@ -539,8 +532,8 @@ class CircuitGraph:
             len(
                 rx.digraph_dijkstra_shortest_paths(
                     self._graph,
-                    self._graph.nodes().index(a),
-                    self._graph.nodes().index(b),
+                    self._indices[id(a)],
+                    self._indices[id(b)],
                     weight_fn=None,
                     default_weight=1.0,
                     as_undirected=False,

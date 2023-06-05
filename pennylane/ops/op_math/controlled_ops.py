@@ -21,9 +21,10 @@ from functools import lru_cache
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import AnyWires
+from pennylane.ops.qubit.non_parametric_ops import PauliY, S, PauliZ, CCZ
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.ops.qubit.non_parametric_ops import PauliZ, CCZ
 from .controlled import ControlledOp
 
 
@@ -55,7 +56,9 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on (optional if U is provided as a QubitUnitary)
         control_values (List[int, bool]): a list providing the state of the control qubits to control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the operator (default False)
-        do_queue (bool): indicates whether the operator should be recorded when created in a tape context
+        do_queue (bool): indicates whether the operator should be recorded when created in a tape context.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     **Example**
 
@@ -109,7 +112,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_wires,
         wires=None,
         control_values=None,
-        do_queue=True,
+        do_queue=None,
         unitary_check=False,
         work_wires=None,
     ):
@@ -140,6 +143,110 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=self.work_wires,
         )
         return new_op
+
+
+class CY(ControlledOp):
+    r"""CY(wires)
+    The controlled-Y operator
+
+    .. math:: CY = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 0 & -i\\
+            0 & 0 & i & 0
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): indicates whether the operator should be recorded when created in
+            a tape context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+    """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = None
+    """Gradient computation method."""
+
+    def __init__(self, wires, do_queue=None, id=None):
+        control_wire, wire = wires
+        base = PauliY(wire)
+
+        super().__init__(base, control_wire, do_queue=do_queue, id=id)
+        self._name = "CY"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CY.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CY.compute_matrix())
+        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
+         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, -1j],
+                [0, 0, 1j, 0],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators (static method).
+
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.CY.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CY.compute_decomposition([0, 1]))
+        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
+
+        """
+        return [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
 
 
 class CZ(ControlledOp):
