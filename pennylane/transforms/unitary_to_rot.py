@@ -74,7 +74,7 @@ def unitary_to_rot(tape):
     >>> transformed_qfunc = unitary_to_rot(qfunc)
     >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
     >>> print(qml.draw(transformed_qnode)())
-    0: ──Rot(-1.35,1.83,-0.61)─┤  <Z>
+    0: ──RZ(-1.35)──RY(1.83)──RZ(-0.61)─┤  <Z>
 
 
     .. details::

@@ -86,7 +86,7 @@ def zyz_decomposition(U, wire, return_global_phase=False):
     # Cast to batched format for more consistent code
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
-    U_det1, alpha = _convert_to_su2(U, return_global_phase=True)
+    U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
 
     # If U is only one unitary and its value is not abstract, we can include a conditional
     # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
@@ -94,11 +94,11 @@ def zyz_decomposition(U, wire, return_global_phase=False):
         if math.allclose(U_det1[0, 0, 1], 0.0):
             Operations = [qml.RZ(2 * math.angle(U_det1[0, 1, 1]), wires=wire)]
             if return_global_phase:
-                Operations += [qml.s_prod(math.exp(1j * alpha)[0], qml.Identity(wire))]
+                Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
             return Operations
 
     # For batched U or single U with non-zero off-diagonal, compute the
-    # Rot operator decomposition instead
+    # normal decomposition instead
     off_diagonal_elements = math.clip(math.abs(U_det1[:, 0, 1]), 0, 1)
     thetas = 2 * math.arcsin(off_diagonal_elements)
 
@@ -119,15 +119,14 @@ def zyz_decomposition(U, wire, return_global_phase=False):
     omegas = angles_U10 - angles_U00
 
     # Wrap angles to range [-\pi, \pi]
-    phis, omegas = (qml.numpy.array([phis, omegas]) + qml.numpy.pi) % (2 * qml.numpy.pi)
-    phis = phis - qml.numpy.pi
-    omegas = omegas - qml.numpy.pi
+    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
+    omegas = (omegas + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
-    phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
+    phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
 
     Operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        Operations += [qml.s_prod(math.exp(1j * alpha)[0], qml.Identity(wire))]
+        Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
 
     return Operations
 
@@ -167,30 +166,31 @@ def xyx_decomposition(U, wire, return_global_phase=False):
 
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, gamma = _convert_to_su2(U, return_global_phase=True)
+    U_det1, gammas = _convert_to_su2(U, return_global_phase=True)
 
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U_det1 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
-    lam_plus_phi = math.arctan2(-math.imag(U_det1[:, 0, 1]), math.real(U_det1[:, 0, 0]) + EPS)
-    lam_minus_phi = math.arctan2(math.imag(U_det1[:, 0, 0]), -math.real(U_det1[:, 0, 1]) + EPS)
-    lam = lam_plus_phi + lam_minus_phi
-    phi = lam_plus_phi - lam_minus_phi
+    lams_plus_phis = math.arctan2(-math.imag(U_det1[:, 0, 1]), math.real(U_det1[:, 0, 0]) + EPS)
+    lams_minus_phis = math.arctan2(math.imag(U_det1[:, 0, 0]), -math.real(U_det1[:, 0, 1]) + EPS)
+    lams = lams_plus_phis + lams_minus_phis
+    phis = lams_plus_phis - lams_minus_phis
 
     # Wrap angles to range [-\pi, \pi]
-    lam, phi = (qml.numpy.array([lam, phi]) + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
+    lams = (lams + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
+    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
-    if math.allclose(lam_plus_phi, 0):
-        theta = 2 * math.arccos(math.real(U_det1[:, 1, 1]) / (math.cos(lam_plus_phi) + EPS))
+    if math.allclose(lams_plus_phis, 0):
+        thetas = 2 * math.arccos(math.real(U_det1[:, 1, 1]) / (math.cos(lams_plus_phis) + EPS))
     else:
-        theta = 2 * math.arccos(-math.imag(U_det1[:, 0, 1]) / (math.sin(lam_plus_phi) + EPS))
+        thetas = 2 * math.arccos(-math.imag(U_det1[:, 0, 1]) / (math.sin(lams_plus_phis) + EPS))
 
-    phi, theta, lam = map(math.squeeze, [phi, theta, lam])
+    phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
-    Operations = [qml.RX(lam, wire), qml.RY(theta, wire), qml.RX(phi, wire)]
+    Operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
-        Operations += [qml.s_prod(math.exp(1j * gamma)[0], qml.Identity(wire))]
+        Operations += [qml.s_prod(math.exp(1j * gammas), qml.Identity(wire))]
 
     return Operations
 
@@ -235,7 +235,7 @@ def zxz_decomposition(U, wire, return_global_phase=False):
 
     # Get global phase \alpha and U in SU(2) form (determinant is 1)
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, alpha = _convert_to_su2(U, return_global_phase=True)
+    U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
 
     # If U is only one unitary and its value is not abstract, we can include a conditional
     # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
@@ -243,30 +243,31 @@ def zxz_decomposition(U, wire, return_global_phase=False):
         if math.allclose(U_det1[0, 0, 1], 0.0):
             Operations = [qml.RZ(2 * math.angle(U_det1[0, 1, 1]), wires=wire)]
             if return_global_phase:
-                Operations += [qml.s_prod(math.exp(1j * alpha)[0], qml.Identity(wire))]
+                Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
             return Operations
 
     # Use top row to solve for \phi and \psi
-    phi_plus_psi = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
-    phi_minus_psi = math.arctan2(-math.real(U_det1[:, 0, 1]), -math.imag(U_det1[:, 0, 1]) + EPS)
-    phi = phi_plus_psi + phi_minus_psi
-    psi = phi_plus_psi - phi_minus_psi
+    phis_plus_psis = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
+    phis_minus_psis = math.arctan2(-math.real(U_det1[:, 0, 1]), -math.imag(U_det1[:, 0, 1]) + EPS)
+    phis = phis_plus_psis + phis_minus_psis
+    psis = phis_plus_psis - phis_minus_psis
 
     # Wrap angles to range [-\pi, \pi]
-    phi, psi = (qml.numpy.array([phi, psi]) + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
+    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
+    psis = (psis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # Conditional to avoid divide by 0 errors
-    if math.allclose(phi_plus_psi, 0):
-        theta = 2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phi_plus_psi) + EPS))
+    if math.allclose(phis_plus_psis, 0):
+        thetas = 2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS))
     else:
-        theta = 2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phi_plus_psi) + EPS))
+        thetas = 2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS))
 
-    phi, theta, psi = map(math.squeeze, [phi, theta, psi])
+    phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
     # Return gates in the order they will be applied on the qubit
-    Operations = [qml.RZ(psi, wire), qml.RX(theta, wire), qml.RZ(phi, wire)]
+    Operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
-        Operations += [qml.s_prod(math.exp(1j * alpha)[0], qml.Identity(wire))]
+        Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
 
     return Operations
 
@@ -277,6 +278,8 @@ def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
     Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
     and RZ gates.
 
+    Currently supported values for `rotations` are "ZYZ", "XYX", and "ZXZ".
+
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
         rotations (string): A string defining the sequence of rotations to decompose :math:`U` into.
@@ -285,6 +288,17 @@ def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
     Returns:
         list[Operation]: Returns a list of of gates which when applied in the order of appearance
         in the list is equivalent to the unitary :math:`U` up to global phase.
+
+    **Example**
+
+    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
+    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
+    >>> decomp = one_qubit_decomposition(U, "ZXZ", 0, return_global_phase=True)
+    >>> decomp
+        [RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
+        RX(tensor(1.14938178, requires_grad=True), wires=[0]),
+        RZ(tensor(-2.97933083, requires_grad=True), wires=[0]),
+        (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     supported_rotations = {
         "ZYZ": zyz_decomposition,
