@@ -8,12 +8,84 @@
 
 <h4>Workflow-level resource estimation 🧮</h4>
 
-* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
-  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
-
-* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
+* PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
+  monitors the resource requirements of circuits being executed by the device.
   [(#4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
   [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
+
+  Suppose we have a workflow that involves executing circuits with different qubit numbers. This
+  can be achieved by executing the workflow with the `Tracker` context:
+
+  ```python
+  dev = qml.device("default.qubit", wires=4)
+
+  @qml.qnode(dev)
+  def circuit(n_wires):
+      for i in range(n_wires):
+          qml.Hadamard(i)
+      return qml.probs(range(n_wires))
+
+  with qml.Tracker(dev) as tracker:
+      for i in range(1, 5):
+          circuit(i)
+  ```
+
+  It is then possible to inspect the resource requirements of individual circuits:
+
+  ```pycon
+  >>> resources = tracker.history["resources"]
+  >>> resources[0]
+  wires: 1
+  gates: 1
+  depth: 1
+  shots: Shots(total=None)
+  gate_types:
+  {'Hadamard': 1}
+  gate_sizes:
+  {1: 1}
+  ```
+  
+  Moreover, it is possible to predict the resource requirements without evaluating circuits
+  using the `null.qubit` device. Consider the following workflow that takes the gradient of a
+  `50`-qubit circuit:
+
+  ```python
+  from pennylane import numpy as np
+
+  n_wires = 50
+  dev = qml.device("null.qubit", wires=n_wires)
+
+  weight_shape = qml.StronglyEntanglingLayers.shape(2, n_wires)
+  weights = np.random.random(weight_shape, requires_grad=True)
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(weights):
+      qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
+      return qml.expval(qml.PauliZ(0))
+
+  with qml.Tracker(dev) as tracker:
+      qml.grad(circuit)(weights)
+  ```
+
+  The tracker can be inspected to extract resource requirements without requiring a 50-qubit circuit
+  run:
+
+  ```pycon
+  >>> tracker.totals
+  {'executions': 451, 'batches': 2, 'batch_len': 451}
+  >>> tracker.history["resources"][0]
+  wires: 50
+  gates: 200
+  depth: 77
+  shots: Shots(total=None)
+  gate_types:
+  {'Rot': 100, 'CNOT': 100}
+  gate_sizes:
+  {1: 100, 2: 100}
+  ```
+
+* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
+  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
