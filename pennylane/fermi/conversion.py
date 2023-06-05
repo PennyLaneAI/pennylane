@@ -24,8 +24,8 @@ def jw_mapping(fermi_operator: FermiWord) -> PauliSentence:
 
     .. math::
 
-        c^{\dagger}_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X-iY}{2} \right ),
-        c_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X+iY}{2} \right ),
+        a^{\dagger}_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X-iY}{2} \right ),
+        a_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X+iY}{2} \right ),
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
 
