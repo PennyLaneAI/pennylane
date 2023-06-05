@@ -205,11 +205,10 @@ class TestTraceDistanceQnode:
         expected_td = expected_trace_distance_rx_pauliz(param)
         assert qml.math.allclose(td, expected_td)
 
-        # TODO: Commented until #4194 is resolved
-        # td = qml.qinfo.trace_distance(circuit1, circuit0, wires0=[wire - 1], wires1=[wire - 1])(
-        #    None, interface[1](param)
-        # )
-        # assert qml.math.allclose(td, expected_td)
+        td = qml.qinfo.trace_distance(circuit1, circuit0, wires0=[wire - 1], wires1=[wire - 1])(
+            None, func(param)
+        )
+        assert qml.math.allclose(td, expected_td)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("param", parameters)
