@@ -414,7 +414,6 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     >>> reduce_statevector(x, indices=[1])
     array([[[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]],
-
            [[0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j]]])
     """
@@ -1093,7 +1092,7 @@ def _check_density_matrix(density_matrix):
             # Check if positive semi-definite
             evs, _ = qml.math.linalg.eigh(dm)
             evs = np.real(evs)
-            evs_non_negative = [ev for ev in evs if ev >= 0.0]
+            evs_non_negative = [ev for ev in evs if ev >= -1e-7]
             if len(evs) != len(evs_non_negative):
                 raise ValueError("The matrix is not positive semi-definite.")
 
@@ -1207,3 +1206,81 @@ def _compute_max_entropy(density_matrix, base):
     maximum_entropy = qml.math.log(rank) / div_base
 
     return maximum_entropy
+
+
+def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
+    r"""
+    Compute the trace distance between two quantum states.
+
+    .. math::
+        T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
+        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right)
+
+    where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
+
+    The trace distance measures how close two quantum states are. In particular, it upper-bounds
+    the probability of distinguishing two quantum states.
+
+    Args:
+        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        check_state (bool): If True, the function will check the states' validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Trace distance between state0 and state1
+
+    **Examples**
+
+    The trace distance between two equal states is always zero:
+
+    >>> x = np.array([[1, 0], [0, 0]])
+    >>> qml.math.trace_distance(x, x)
+    0.0
+
+    It is possible to use state vectors by first transforming them into density matrices via the
+    :func:`~reduce_statevector` function:
+
+    >>> y = qml.math.reduce_statevector(np.array([0.2, np.sqrt(0.96)]), [0])
+    >>> qml.math.trace_distance(x, y)
+    0.9797958971132713
+
+    The quantum states can also be provided as batches of density matrices:
+
+    >>> batch0 = np.array([np.eye(2) / 2, np.ones((2, 2)) / 2, np.array([[1, 0],[0, 0]])])
+    >>> batch1 = np.array([np.ones((2, 2)) / 2, np.ones((2, 2)) / 2, np.array([[1, 0],[0, 0]])])
+    >>> qml.math.trace_distance(batch0, batch1)
+    array([0.5, 0. , 0. ])
+
+    If only one of the two states represent a single element, then the trace distances are taken
+    with respect to that element:
+
+    >>> rho = np.ones((2, 2)) / 2
+    >>> qml.math.trace_distance(rho, batch0)
+    array([0.5       , 0.        , 0.70710678])
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.trace_distance`
+    """
+    # Cast as a c_dtype array
+    state0 = cast(state0, dtype=c_dtype)
+
+    # Cannot be cast_like if jit
+    if not is_abstract(state0):
+        state1 = cast_like(state1, state0)
+
+    if check_state:
+        _check_density_matrix(state0)
+        _check_density_matrix(state1)
+
+    if state0.shape[-1] != state1.shape[-1]:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    if len(state0.shape) == len(state1.shape) == 3 and state0.shape[0] != state1.shape[0]:
+        raise ValueError(
+            "The two states must be batches of the same size, or one of them must contain a single "
+            "element."
+        )
+
+    eigvals = qml.math.abs(qml.math.eigvalsh(state0 - state1))
+
+    return qml.math.sum(eigvals, axis=-1) / 2
