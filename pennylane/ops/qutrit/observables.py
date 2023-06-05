@@ -60,7 +60,9 @@ class THermitian(Hermitian):
         A (array): square Hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -181,7 +183,9 @@ class GellMann(Observable):
         index (int): The index of the Gell-Mann matrix to be used. Must be between 1
             and 8 inclusive
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -205,7 +209,7 @@ class GellMann(Observable):
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""
 
-    def __init__(self, wires, index=1, do_queue=True, id=None):
+    def __init__(self, wires, index=1, do_queue=None, id=None):
         if not isinstance(index, int) or index < 1 or index > 8:
             raise ValueError(
                 "The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive."

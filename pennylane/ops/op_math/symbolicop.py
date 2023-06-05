@@ -16,6 +16,7 @@ This submodule defines a base class for symbolic operations representing operato
 """
 from abc import abstractmethod
 from copy import copy
+import warnings
 
 import numpy as np
 
@@ -30,7 +31,9 @@ class SymbolicOp(Operator):
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -66,13 +69,20 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base, do_queue=True, id=None):
+    def __init__(self, base, do_queue=None, id=None):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
         self._pauli_rep = None
 
-        if do_queue:
+        if do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+        if do_queue or do_queue is None:
             self.queue()
 
     @property
@@ -154,7 +164,8 @@ class ScalarSymbolicOp(SymbolicOp):
         base (~.operation.Operator): the base operation that is modified symbolicly
         scalar (float): the scalar coefficient
         do_queue (bool): indicates whether the operator should be recorded when created in a tape
-            context
+            context. This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance, can be useful for some applications
             where the instance has to be identified
 
@@ -164,7 +175,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     _name = "ScalarSymbolicOp"
 
-    def __init__(self, base, scalar: float, do_queue=True, id=None):
+    def __init__(self, base, scalar: float, do_queue=None, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
         super().__init__(base, do_queue=do_queue, id=id)
         self._batch_size = self._check_and_compute_batch_size(scalar)
