@@ -127,7 +127,7 @@
   ```
   
   A quantum circuit can be created that contains `CustomOp` and inspected using
-  [qml.specs](https://docs.pennylane.ai/en/latest/code/api/pennylane.specs.html):
+  [qml.specs](https://docs.pennylane.ai/en/stable/code/api/pennylane.specs.html):
 
   ```python
   dev = qml.device("default.qubit", wires=wires)
@@ -147,8 +147,20 @@
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
-* Updated repr for ParametrizedHamiltonian.
+* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
+  now has an improved string representation.
   [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+  ```pycon
+  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
+  >>> def f2(p, t): return p * t
+  >>> coeffs = [2., f1, f2]
+  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+  >>> qml.dot(coeffs, observables)
+    (2.0*(PauliX(wires=[0])))
+  + (f1(params_0, t)*(PauliY(wires=[0])))
+  + (f2(params_1, t)*(PauliZ(wires=[0])))
+  ```
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
   [(#4181)](https://github.com/PennyLaneAI/pennylane/pull/4181)
