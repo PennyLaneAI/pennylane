@@ -199,13 +199,6 @@
     0.19999999999999998
     ```
 
-<h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
-
-* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
-  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
-
-<h3>Improvements 🛠</h3>
-
 <h4>Extended support for differentiating pulses</h4>
 
 * `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
@@ -222,6 +215,13 @@
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+
+<h3>Improvements 🛠</h3>
+
+<h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
+
+* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
+  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
 <h4>A more flexible projector</h4>
 
