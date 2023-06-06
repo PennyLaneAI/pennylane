@@ -655,9 +655,6 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-        warnings.filterwarnings(
-            "ignore", message="Directly calling DefaultQubit", category=UserWarning
-        )
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
@@ -945,9 +942,6 @@ class Device(abc.ABC):
             DeviceError: if there are operations in the queue or observables that the device does
                 not support
         """
-        warnings.filterwarnings(
-            "ignore", message="Directly calling DefaultQubit", category=UserWarning
-        )
 
         for o in queue:
             operation_name = o.name

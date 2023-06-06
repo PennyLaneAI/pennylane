@@ -45,16 +45,6 @@ SQRT2INV = 1 / np.sqrt(2)
 TPHASE = np.exp(1j * np.pi / 4)
 
 
-def _deprecation_warning(func_name):
-    warnings.warn(
-        f"Directly calling DefaultQubit.{func_name} is not recommended and should be avoided "
-        "where possible. The available methods of DefaultQubit will be updated soon to follow "
-        "a new API described here: "
-        "https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html",
-        UserWarning,
-    )
-
-
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
 
@@ -215,7 +205,16 @@ class DefaultQubit(QubitDevice):
 
     @property
     def stopping_condition(self):
-        _deprecation_warning("stopping_condition")
+        """.BooleanFn: Returns the stopping condition for the device. The returned
+        function accepts a queuable object (including a PennyLane operation
+        and observable) and returns ``True`` if supported by the device.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
 
         def accepts_obj(obj):
             if obj.name == "QFT" and len(obj.wires) >= 6:
@@ -262,7 +261,18 @@ class DefaultQubit(QubitDevice):
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
-        _deprecation_warning("apply")
+        """Apply a sequence of operations and rotations to the device.
+
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        Args:
+            operations (List[.Operation]): List of operations to apply
+            rotations (List[.Operation]): List of rotations to apply to rotate state to measurement basis
+        """
 
         rotations = rotations or []
 
@@ -550,6 +560,12 @@ class DefaultQubit(QubitDevice):
         ``Hamiltonian`` or ``SparseHamiltonian`` object, the expectation value is computed directly
         from the sparse matrix representation, which leads to faster execution.
 
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
         Args:
             observable (~.Observable): a PennyLane observable
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
@@ -568,7 +584,6 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
-        _deprecation_warning("expval")
 
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
@@ -700,7 +715,14 @@ class DefaultQubit(QubitDevice):
 
     @property
     def state(self):
-        _deprecation_warning("state")
+        """Returns the state vector of the circuit prior to measurement.
+
+        .. warning::
+
+            Directly requesting this property is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
 
         dim = 2**self.num_wires
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
@@ -919,8 +941,14 @@ class DefaultQubit(QubitDevice):
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
-        """Reset the device"""
-        _deprecation_warning("reset")
+        """Reset the device.
+
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
 
         super().reset()
 
@@ -929,7 +957,20 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-        _deprecation_warning("analytic_probability")
+        """Compute the analytic probability of all the basis states from the device state vector.
+
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        Args:
+            wires (Optional[.Wires]): List of wires to compute probabilities for
+
+        Returns:
+            tensor[float]: Array of computed probabilities
+        """
 
         if self._state is None:
             return None
@@ -973,6 +1014,12 @@ class DefaultQubit(QubitDevice):
 
         .. seealso:: :func:`~pennylane.classical_shadow`
 
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The available methods of DefaultQubit will be updated soon to follow a new API described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
             circuit (~.tape.QuantumTape): The quantum tape that is being executed
@@ -981,7 +1028,6 @@ class DefaultQubit(QubitDevice):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-        _deprecation_warning("classical_shadow")
 
         wires = obs.wires
         seed = obs.seed

@@ -311,10 +311,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        warnings.filterwarnings(
-            "ignore", message="Directly calling DefaultQubit", category=UserWarning
-        )
-
         if not qml.active_return():
             return self._execute_legacy(circuit, **kwargs)
 
@@ -595,10 +591,6 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        warnings.filterwarnings(
-            "ignore", message="Directly calling DefaultQubit", category=UserWarning
-        )
-
         if not qml.active_return():
             return self._batch_execute_legacy(circuits=circuits)
 
