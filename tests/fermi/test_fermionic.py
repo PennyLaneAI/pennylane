@@ -17,7 +17,6 @@ from copy import copy, deepcopy
 
 import pytest
 
-import pennylane as qml
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.pauli import PauliWord, PauliSentence
 
@@ -174,7 +173,6 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
 
-
     FERMI_AND_PAULI_WORDS = (
         (
             FermiWord({(0, 1): "+", (1, 1): "-", (2, 0): "+", (3, 0): "-"}),  # [1, 1, 0, 0],
@@ -214,7 +212,6 @@ class TestFermiWord:
 
     @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_WORDS)
     def test_to_qubit(self, operator, pauli_equivalent):
-
         ps = operator.to_qubit()
         coeffs, words = pauli_equivalent
 
@@ -451,4 +448,3 @@ class TestFermiSentence:
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
-
