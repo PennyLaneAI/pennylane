@@ -237,7 +237,7 @@ def zxz_decomposition(U, wire, return_global_phase=False):
         [
             2 * math.arccos(math.real(curr_U[0, 0]) / (math.cos(phi_plus_psi) + EPS))
             if math.allclose(math.sin(phi_plus_psi), 0.0)
-            else 2 * math.arccos(-math.imag(curr_U[0, 0]) / (math.sin(phis_plus_psi) + EPS))
+            else 2 * math.arccos(-math.imag(curr_U[0, 0]) / (math.sin(phi_plus_psi) + EPS))
             for curr_U, phi_plus_psi in zip(U_det1, phis_plus_psis)
         ]
     )

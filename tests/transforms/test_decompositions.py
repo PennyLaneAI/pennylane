@@ -102,9 +102,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         if len(obtained_mat.shape) == 2:
             U = [U]
-            obtained_mat = [qml.math.unwrap(obtained_mat)]
-        else:
-            obtained_mat = qml.math.unwrap(obtained_mat)
+            obtained_mat = [obtained_mat]
 
         assert all(
             check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
@@ -222,9 +220,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         if len(obtained_mat.shape) == 2:
             U = [U]
-            obtained_mat = [qml.math.unwrap(obtained_mat)]
-        else:
-            obtained_mat = qml.math.unwrap(obtained_mat)
+            obtained_mat = [obtained_mat]
 
         assert all(
             check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
@@ -354,9 +350,7 @@ class TestQubitUnitaryZXZDecomposition:
 
         if len(obtained_mat.shape) == 2:
             U = [U]
-            obtained_mat = [qml.math.unwrap(obtained_mat)]
-        else:
-            obtained_mat = qml.math.unwrap(obtained_mat)
+            obtained_mat = [obtained_mat]
 
         assert all(
             check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
