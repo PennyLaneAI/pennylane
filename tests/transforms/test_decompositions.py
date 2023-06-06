@@ -29,7 +29,8 @@ from pennylane.wires import Wires
 from pennylane.transforms.decompositions import zyz_decomposition
 from pennylane.transforms.decompositions import xyx_decomposition
 from pennylane.transforms.decompositions import zxz_decomposition
-from pennylane.transforms.decompositions import one_qubit_decomposition
+
+# from pennylane.transforms.decompositions import one_qubit_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
 from pennylane.transforms.decompositions.two_qubit_unitary import (
     _convert_to_su4,
@@ -61,7 +62,7 @@ single_qubit_decomps_zyz = [
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
-        [-1.0, 2.0, -3.0, 0.9998000066665778+0.019998666693333122j],
+        [-1.0, 2.0, -3.0, 0.9998000066665778 + 0.019998666693333122j],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
@@ -97,8 +98,10 @@ class TestQubitUnitaryZYZDecomposition:
             atol=1e-7,
         ), "Incorrect ZYZ rotation angles"
 
-        obtained_mat = qml.math.unwrap(reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)]))
-        #Cast to np.array to use .shape
+        obtained_mat = qml.math.unwrap(
+            reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        )
+        # Cast to np.array to use .shape
         obtained_mat = np.array(obtained_mat)
 
         if len(obtained_mat.shape) == 2:
@@ -190,7 +193,7 @@ single_qubit_decomps_xyx = [
         [[-np.pi / 2, -np.pi / 2], [np.pi, np.pi / 2], [np.pi / 2, np.pi / 2], [1, 1]],
     ),
     (
-        #This triggers the if conditional non-trivially
+        # This triggers the if conditional non-trivially
         qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
         typeof_gates_xyx,
         [[-0.93760008, 2.81949056], [2.53416365, 2.59030735], [0.93760008, -2.81949056], [1, 1]],
@@ -217,8 +220,10 @@ class TestQubitUnitaryXYXDecomposition:
             atol=1e-7,
         ), "Incorrect XYX rotation angles"
 
-        obtained_mat = qml.math.unwrap(reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)]))
-        #Cast to np.array to use .shape
+        obtained_mat = qml.math.unwrap(
+            reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        )
+        # Cast to np.array to use .shape
         obtained_mat = np.array(obtained_mat)
 
         if len(obtained_mat.shape) == 2:
@@ -288,7 +293,11 @@ single_qubit_decomps_zxz = [
     (T, typeof_gates_zxz, [np.pi / 8, 0.0, np.pi / 8, 0.92387953 + 0.38268343j]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zxz, [0.15, 0.0, 0.15, 1]),
     (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zxz, [-0.25, 0.0, -0.25, 1]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zxz, [-1.37079633, 0.5, 1.27079633, 1]),
+    (
+        qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
+        typeof_gates_zxz,
+        [-1.37079633, 0.5, 1.27079633, 1],
+    ),
     (
         np.array(
             [
@@ -304,7 +313,7 @@ single_qubit_decomps_zxz = [
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zxz,
-        [-1.0 - np.pi / 2, 2.0, -3.0 + np.pi / 2, 0.9998000066665778+0.019998666693333122j],
+        [-1.0 - np.pi / 2, 2.0, -3.0 + np.pi / 2, 0.9998000066665778 + 0.019998666693333122j],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
@@ -315,7 +324,12 @@ single_qubit_decomps_zxz = [
     (
         qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
         typeof_gates_zxz,
-        [[1.2 - np.pi / 2, 2.3 - np.pi / 2], [1.2, 2.3], [1.2 + np.pi / 2, -3 * np.pi / 2 + 2.3], [1, 1]],
+        [
+            [1.2 - np.pi / 2, 2.3 - np.pi / 2],
+            [1.2, 2.3],
+            [1.2 + np.pi / 2, -3 * np.pi / 2 + 2.3],
+            [1, 1],
+        ],
     ),
 ]
 
@@ -340,8 +354,10 @@ class TestQubitUnitaryZXZDecomposition:
             atol=1e-7,
         ), "Incorrect ZXZ rotation angles"
 
-        obtained_mat = qml.math.unwrap(reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)]))
-        #Cast to np.array to use .shape
+        obtained_mat = qml.math.unwrap(
+            reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        )
+        # Cast to np.array to use .shape
         obtained_mat = np.array(obtained_mat)
 
         if len(obtained_mat.shape) == 2:

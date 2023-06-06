@@ -172,9 +172,13 @@ def xyx_decomposition(U, wire, return_global_phase=False):
         # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
         # complaining about argument mismatch
         if qml.numpy.isclose(qml.numpy.sin(lams_plus_psis[i]), 0.0):
-            thetas[i] = 2 * math.arccos(math.real(U_det1[i, 1, 1]) / (math.cos(lams_plus_phis[i]) + EPS))
+            thetas[i] = 2 * math.arccos(
+                math.real(U_det1[i, 1, 1]) / (math.cos(lams_plus_phis[i]) + EPS)
+            )
         else:
-            thetas[i] = 2 * math.arccos(-math.imag(U_det1[i, 0, 1]) / (math.sin(lams_plus_phis[i]) + EPS))
+            thetas[i] = 2 * math.arccos(
+                -math.imag(U_det1[i, 0, 1]) / (math.sin(lams_plus_phis[i]) + EPS)
+            )
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
@@ -238,9 +242,13 @@ def zxz_decomposition(U, wire, return_global_phase=False):
         # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
         # complaining about argument mismatch
         if qml.numpy.isclose(qml.numpy.sin(phis_plus_psis[i]), 0.0):
-            thetas[i] = 2 * math.arccos(math.real(U_det1[i, 0, 0]) / (math.cos(phis_plus_psis[i]) + EPS))
+            thetas[i] = 2 * math.arccos(
+                math.real(U_det1[i, 0, 0]) / (math.cos(phis_plus_psis[i]) + EPS)
+            )
         else:
-            thetas[i] = 2 * math.arccos(-math.imag(U_det1[i, 0, 0]) / (math.sin(phis_plus_psis[i]) + EPS))
+            thetas[i] = 2 * math.arccos(
+                -math.imag(U_det1[i, 0, 0]) / (math.sin(phis_plus_psis[i]) + EPS)
+            )
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
