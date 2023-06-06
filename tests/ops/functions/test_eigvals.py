@@ -98,7 +98,9 @@ class TestSingleOperation:
         rounding_precision = 6
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
         expected = op_class(-0.54, wires=0).eigvals()
-        assert set(np.around(res, rounding_precision)) == set(np.around(expected, rounding_precision))
+        assert set(np.around(res, rounding_precision)) == set(
+            np.around(expected, rounding_precision)
+        )
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""

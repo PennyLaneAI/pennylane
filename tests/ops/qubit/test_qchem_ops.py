@@ -36,7 +36,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qml.SingleExcitation(0.14, wires=[0, 1]),
     qml.SingleExcitationMinus(0.14, wires=[0, 1]),
@@ -430,42 +429,8 @@ class TestDoubleExcitation:
         decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
         decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
-        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
-        # CU  = |0><0| \otimes I + |1><1| \otimes U
-        def cnot_four_qubits(wires):
-            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
-
-            proj_1_term = [np.eye(2) for idx in range(4)]
-            proj_1_term[wires[0]] = StateOneProjector
-            proj_1_term[wires[1]] = X
-
-            proj_0_kron = reduce(np.kron, proj_0_term)
-            proj_1_kron = reduce(np.kron, proj_1_term)
-
-            return proj_0_kron + proj_1_kron
-
-        # Inserts a single-qubit matrix into a four-qubit matrix at the right place
-        def single_mat_four_qubits(mat, wire):
-            individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
-            return reduce(np.kron, individual_mats)
-
         for decomp in [decomp1, decomp2]:
-            mats = [m.matrix() for m in decomp]
-            decomposed_matrix = mats[0] @ mats[1]
-            exp = DoubleExcitation(phi)
-
-            assert np.allclose(decomposed_matrix, exp)
-
-            mats = []
-            for i in reversed(decomp):
-                # Single-qubit gate
-                if len(i.wires.tolist()) == 1:
-                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
-                    mats.append(mat)
-                # Two-qubit gate
-                else:
-                    mat = cnot_four_qubits(i.wires.tolist())
-                    mats.append(mat)
+            mats = [op.matrix(wire_order=list(range(4))) for op in decomp]
 
             decomposed_matrix = np.linalg.multi_dot(mats)
             exp = DoubleExcitation(phi)

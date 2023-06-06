@@ -1282,6 +1282,7 @@ class TestPowMethod:
 
 class TestControlledMethod:
     """Tests for the _controlled method of non-parametric operations."""
+
     # pylint: disable=protected-access
 
     def test_PauliX(self):
