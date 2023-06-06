@@ -90,7 +90,7 @@
 * Support has been added for defining operations where only the resource requirements are known,
   without an explicit decomposition or matrix representation. PennyLane is now able to estimate
   the total resource requirements of circuits that include one or more of these operations. This
-  will allow you to estimate the requirements for high-level algorithms composed of more abstract
+  will allow you to estimate the requirements for high-level algorithms composed of abstract
   subroutines.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
@@ -143,12 +143,7 @@
   >>> specs = qml.specs(circ)()
   >>> specs["resources"].depth
   6
-  ```
-  
-
-
-* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
-  
+  ``` 
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
