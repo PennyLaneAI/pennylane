@@ -32,9 +32,9 @@ def append_gate(tape, params, gates):
         qml.apply(o)
 
     for i, g in enumerate(gates):
-        g = copy.copy(g)
-        g.data[0] = params[i]
-        qml.apply(g)
+        new_params = (params[i], *g.data[1:])
+        new_g = qml.ops.functions.bind_new_parameters(g, new_params)
+        qml.apply(new_g)
 
     for m in tape.measurements:
         qml.apply(m)

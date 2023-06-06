@@ -660,7 +660,7 @@ class Operator(abc.ABC):
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()
+        copied_op.data = copy.copy(self.data)
         for attr, value in vars(self).items():
             if attr != "data":
                 setattr(copied_op, attr, value)
@@ -680,7 +680,7 @@ class Operator(abc.ABC):
                 # Shallow copy the list of parameters. We avoid a deep copy
                 # here, since PyTorch does not support deep copying of tensors
                 # within a differentiable computation.
-                copied_op.data = value.copy()
+                copied_op.data = copy.copy(value)
             else:
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
@@ -1024,7 +1024,8 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
+        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
+        # self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
 
         if do_queue is not None:
             do_queue_deprecation_warning = (
@@ -1167,7 +1168,7 @@ class Operator(abc.ABC):
     @property
     def parameters(self):
         """Trainable parameters that the operator depends on."""
-        return self.data.copy()
+        return list(self.data)
 
     @property
     def hyperparameters(self):
@@ -2051,9 +2052,9 @@ class Tensor(Observable):
         """Raw parameters of all constituent observables in the tensor product.
 
         Returns:
-            list[Any]: flattened list containing all dependent parameters
+            tuple[Any]: flattened list containing all dependent parameters
         """
-        return sum((o.data for o in self.obs), [])
+        return functools.reduce(lambda x, y: (*x, *y.data), self.obs, ())
 
     @data.setter
     def data(self, new_data):

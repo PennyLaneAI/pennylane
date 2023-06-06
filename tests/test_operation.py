@@ -235,7 +235,7 @@ class TestOperatorConstruction:
 
         op = DummyOp(1.234, "a")
         assert op.wires[0] == "a"
-        assert op.data == [1.234]
+        assert op.data == (1.234,)
 
     def test_no_wires(self):
         """Test an error is raised if no wires are passed."""
@@ -1373,7 +1373,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.data == [p]
+        assert t.data == (p,)
 
     def test_data_setter(self):
         """Test the data setter"""
@@ -1381,10 +1381,10 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.data == [p]
+        assert t.data == (p,)
         new_data = np.eye(4) * 6
-        t.data = [[], [new_data]]
-        assert qml.math.allequal(t.data, [new_data])
+        t.data = [(), (new_data,)]
+        assert qml.math.allequal(t.data, (new_data,))
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
@@ -1969,6 +1969,8 @@ class TestTensorObservableOperations:
                 ),
             )
         }
+
+        raise Exception
 
     def test_equality_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""

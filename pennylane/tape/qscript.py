@@ -461,7 +461,8 @@ class QuantumScript:
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx + len(self.operations), "p_idx": i}
+                    for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
@@ -729,10 +730,53 @@ class QuantumScript:
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 
+        ####################################################
+
+        # for idx, p in iterator:
+        #     op = self._par_info[idx]["op"]
+        #     op.data[self._par_info[idx]["p_idx"]] = p
+        #     op._check_batching(op.data)
+
+        ####################################################
+
+        # op_map = {}
+        # for pinfo in self._par_info:
+        #     if pinfo["op_idx"] not in op_map:
+        #         op_map[pinfo["op_idx"]] = (pinfo["op"], list(pinfo["op"].data))
+
+        # new_ops = {
+        #     op_idx: qml.ops.functions.bind_new_parameters(op, op_data)
+        #     for op_idx, (op, op_data) in op_map.items()
+        # }
+
+        # for idx, _ in make_iterator():
+        #     self._par_info[idx]["op"] = new_ops[self._par_info[idx]["op_idx"]]
+
+        # self._prep = [op if idx not in op_map else new_ops[idx]
+        #               for idx, op in enumerate(self._prep)]
+        # self._ops = [op if idx not in op_map else new_ops[idx]
+        #              for idx, op in enumerate(self._ops, len(self._prep))]
+
+        ####################################################
+
+        op_map = {
+            pinfo["op_idx"]: (pinfo["op"], list(pinfo["op"].data)) for pinfo in self._par_info
+        }
+
+        # op_map = {}
+        # for pinfo in self._par_info:
+        #     if pinfo["op_idx"] not in op_map:
+        #         op_map[pinfo["op_idx"]] = (pinfo["op"], list(pinfo["op"].data))
+
+        op_data = [op_map[pinfo["op_idx"]][1] for pinfo in self._par_info]
+
         for idx, p in iterator:
-            op = self._par_info[idx]["op"]
-            op.data[self._par_info[idx]["p_idx"]] = p
+            op_data[idx][self._par_info[idx]["p_idx"]] = p
+
+        for op, d in op_map.values():
+            op.data = tuple(d)
             op._check_batching(op.data)
+
         self._update_batch_size()
         self._update_output_dim()
 
