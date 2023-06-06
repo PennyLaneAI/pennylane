@@ -167,9 +167,11 @@ def xyx_decomposition(U, wire, return_global_phase=False):
 
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
-    thetas = qml.numpy.empty_like(lams)
-    for i in range(qml.numpy.shape(U_det1)[0]):
-        if math.isclose(math.sin(lams_plus_phis[i]), 0):
+    thetas = math.empty_like(lams)
+    for i in range(math.shape(U_det1)[0]):
+        # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
+        # complaining about argument mismatch
+        if qml.numpy.isclose(qml.numpy.sin(lams_plus_psis[i]), 0.0):
             thetas[i] = 2 * math.arccos(math.real(U_det1[i, 1, 1]) / (math.cos(lams_plus_phis[i]) + EPS))
         else:
             thetas[i] = 2 * math.arccos(-math.imag(U_det1[i, 0, 1]) / (math.sin(lams_plus_phis[i]) + EPS))
@@ -231,9 +233,11 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     psis = (psis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # Conditional to avoid divide by 0 errors
-    thetas = qml.numpy.empty_like(phis)
-    for i in range(qml.numpy.shape(U_det1)[0]):
-        if math.isclose(math.sin(phis_plus_psis[i]), 0):
+    thetas = math.empty_like(phis)
+    for i in range(math.shape(U_det1)[0]):
+        # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
+        # complaining about argument mismatch
+        if qml.numpy.isclose(qml.numpy.sin(phis_plus_psis[i]), 0.0):
             thetas[i] = 2 * math.arccos(math.real(U_det1[i, 0, 0]) / (math.cos(phis_plus_psis[i]) + EPS))
         else:
             thetas[i] = 2 * math.arccos(-math.imag(U_det1[i, 0, 0]) / (math.sin(phis_plus_psis[i]) + EPS))

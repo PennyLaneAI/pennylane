@@ -78,7 +78,7 @@ single_qubit_decomps_zyz = [
 
 
 class TestQubitUnitaryZYZDecomposition:
-    """Test that the decompositions are correct."""
+    """Test that the ZYZ decomposition is correct."""
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
@@ -88,12 +88,12 @@ class TestQubitUnitaryZYZDecomposition:
 
         # Check the global phase
         assert qml.math.allclose(
-            qml.math.unwrap(obtained_gates[-1].parameters[:1]), expected_params[-1]
+            qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
         # Now we check the ZYZ rotation angles
         assert qml.math.allclose(
-            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:-1]],
-            expected_params[:-1],
+            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:3]],
+            expected_params[:3],
             atol=1e-7,
         ), "Incorrect ZYZ rotation angles"
 
@@ -125,7 +125,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a", return_global_phase=True)
+        obtained_gates = zyz_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -137,7 +137,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a", return_global_phase=True)
+        obtained_gates = zyz_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -155,7 +155,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a", return_global_phase=True)
+        obtained_gates = zyz_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -321,7 +321,7 @@ single_qubit_decomps_zxz = [
 
 
 class TestQubitUnitaryZXZDecomposition:
-    """Test that the decompositions are correct."""
+    """Test that the ZXZ decomposition is correct."""
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
@@ -331,12 +331,12 @@ class TestQubitUnitaryZXZDecomposition:
 
         # Check the global phase
         assert qml.math.allclose(
-            qml.math.unwrap(obtained_gates[-1].parameters[:1]), expected_params[-1]
+            qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
         # Now we check the ZXZ rotation angles
         assert qml.math.allclose(
-            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:-1]],
-            expected_params[:-1],
+            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:3]],
+            expected_params[:3],
             atol=1e-7,
         ), "Incorrect ZXZ rotation angles"
 
@@ -368,7 +368,7 @@ class TestQubitUnitaryZXZDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a", return_global_phase=True)
+        obtained_gates = zxz_decomposition(U, wire="a", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
