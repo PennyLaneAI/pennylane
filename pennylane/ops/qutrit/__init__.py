@@ -38,6 +38,7 @@ ops = {
     "THadamard",
     "TRX",
     "TRY",
+    "TRZ",
 }
 
 obs = {
