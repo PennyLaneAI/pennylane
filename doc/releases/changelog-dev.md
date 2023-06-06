@@ -23,6 +23,10 @@
   $\hat{c}_1 c_0 \hat{c}_2 c_3$.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
+* Added a conversion function `jw_mapping` that converts a fermionic operator (`FermiWord`) to a qubit 
+  operator (`PauliSentence`) using the Jordan-Wigner mapping.
+  [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
