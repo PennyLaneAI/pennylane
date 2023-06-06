@@ -30,6 +30,12 @@
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
+* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
+  operators. These user-facing classes for creating fermonic operators are accessible as 
+  `qml.FermiC(0)` and `qml.FermiA(3)`
+  [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
+
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
@@ -297,6 +303,7 @@ This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann,
