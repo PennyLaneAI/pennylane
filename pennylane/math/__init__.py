@@ -78,6 +78,7 @@ from .quantum import (
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    trace_distance,
 )
 from .utils import (
     allclose,
@@ -120,7 +121,7 @@ def __getattr__(name):
 
 
 __all__ = [
-    "multi_dispatch",
+    "add",
     "allclose",
     "allequal",
     "array",
@@ -134,6 +135,7 @@ __all__ = [
     "diag",
     "dot",
     "einsum",
+    "expand_matrix",
     "eye",
     "fidelity",
     "frobenius_inner_product",
@@ -142,22 +144,24 @@ __all__ = [
     "in_backprop",
     "is_abstract",
     "is_independent",
+    "iscomplex",
     "marginal_prob",
     "max_entropy",
+    "multi_dispatch",
     "mutual_info",
     "ones_like",
     "purity",
+    "reduce_dm",
     "reduced_dm",
     "relative_entropy",
+    "reduce_statevector",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",
     "stack",
     "tensordot",
+    "trace_distance",
     "unwrap",
     "vn_entropy",
     "where",
-    "add",
-    "iscomplex",
-    "expand_matrix",
 ]
