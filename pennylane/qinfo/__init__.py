@@ -22,4 +22,5 @@ from .transforms import (
     quantum_fisher,
     fidelity,
     relative_entropy,
+    trace_distance,
 )

@@ -36,7 +36,7 @@ def model(get_circuit, n_qubits, output_dim):
 
     m = tf.keras.models.Sequential(
         [
-            tf.keras.layers.Dense(n_qubits),
+            tf.keras.layers.Dense(n_qubits, input_shape=(n_qubits,)),
             layer1,
             tf.keras.layers.Dense(n_qubits),
             layer2,
@@ -56,7 +56,7 @@ def model_dm(get_circuit_dm, n_qubits, output_dim):
 
     m = tf.keras.models.Sequential(
         [
-            tf.keras.layers.Dense(n_qubits),
+            tf.keras.layers.Dense(n_qubits, input_shape=(n_qubits,)),
             layer1,
             # Adding a lambda layer to take only the real values from density matrix
             tf.keras.layers.Lambda(lambda x: tf.abs(x)),  # pylint: disable=unnecessary-lambda
@@ -300,10 +300,14 @@ class TestKerasLayer:
         values that are the input keyword arguments, and we check that the specified weight_specs
         keywords are there."""
 
-        def add_weight_dummy(*args, **kwargs):  # pylint: disable=unused-argument
-            """Dummy function for mocking out the add_weight method to simply return the input
-            keyword arguments"""
-            return kwargs
+        add_weight = KerasLayer.add_weight
+
+        specs = {}
+
+        def add_weight_dummy(self, **kwargs):
+            """Dummy function for mocking out the add_weight method to store the kwargs in a dict"""
+            specs[kwargs["name"]] = kwargs
+            return add_weight(self, **kwargs)
 
         weight_specs = {
             "w1": {"initializer": "random_uniform", "trainable": False},
@@ -322,10 +326,7 @@ class TestKerasLayer:
             layer.build(input_shape=(10, n_qubits))
 
             for weight in layer.weight_shapes:
-                assert all(
-                    item in layer.qnode_weights[weight].items()
-                    for item in weight_specs[weight].items()
-                )
+                assert all(item in specs[weight].items() for item in weight_specs[weight].items())
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
     @pytest.mark.parametrize("input_shape", [(10, 4), (8, 3)])
@@ -435,7 +436,6 @@ class TestKerasLayer:
         (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly.
         """
         c, w = get_circuit
-
         layer = KerasLayer(c, w, output_dim)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
@@ -573,22 +573,71 @@ class TestKerasLayerIntegration:
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_save_weights(
-        self, model, n_qubits, tmpdir
+    def test_save_model_weights(
+        self, get_circuit, n_qubits, output_dim, tmpdir
     ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
-        prediction = model.predict(np.ones((1, n_qubits)))
+        clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
+        qlayer = KerasLayer(*get_circuit, output_dim)
+        model = tf.keras.models.Sequential([clayer, qlayer])
         weights = model.get_weights()
+
         file = str(tmpdir) + "/model"
         model.save_weights(file)
-        model.load_weights(file)
-        prediction_loaded = model.predict(np.ones((1, n_qubits)))
-        weights_loaded = model.get_weights()
 
-        assert np.allclose(prediction, prediction_loaded)
-        for i, w in enumerate(weights):
-            assert np.allclose(w, weights_loaded[i])
+        new_clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
+        new_qlayer = KerasLayer(*get_circuit, output_dim)
+        new_model = tf.keras.models.Sequential([new_clayer, new_qlayer])
+        new_weights = new_model.get_weights()
+
+        assert len(weights) == len(new_weights)
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+
+        # assert that the new model's weights are different
+        assert all(tf.math.reduce_any(w != nw) for w, nw in zip(weights, new_weights))
+
+        new_model.load_weights(file)
+        new_weights = new_model.get_weights()
+
+        assert len(weights) == len(new_weights)
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+
+        # assert that the new model's weights are now the same
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model(x)
+        new_res = new_model(x)
+        assert tf.math.reduce_all(res == new_res)
+
+    # the test is slow since TensorFlow needs to compile the execution graph
+    # in order to save the model
+    @pytest.mark.slow
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    def test_save_whole_model(
+        self, model, n_qubits, tmpdir
+    ):  # pylint: disable=redefined-outer-name
+        """Test if the entire model can be successfully saved and reloaded
+        using the .save() method"""
+        weights = model.get_weights()
+
+        file = str(tmpdir) + "/model"
+        model.save(file)
+
+        new_model = tf.keras.models.load_model(file)
+        new_weights = new_model.get_weights()
+
+        assert len(weights) == len(new_weights)
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model(x)
+        new_res = new_model(x)
+        assert tf.math.reduce_all(res == new_res)
 
 
 @pytest.mark.tf
@@ -606,6 +655,7 @@ class TestKerasLayerIntegrationDM:
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+
         x = np.zeros((batch_size, n_qubits))
         y = np.zeros((batch_size, output_dim[0] * output_dim[1]))
 
@@ -630,23 +680,70 @@ class TestKerasLayerIntegrationDM:
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_model_save_weights_dm(
-        self, model_dm, n_qubits, tmpdir
+    def test_save_model_weights_dm(
+        self, get_circuit_dm, n_qubits, output_dim, tmpdir
     ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
+        clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
+        qlayer = KerasLayer(*get_circuit_dm, output_dim)
+        model = tf.keras.models.Sequential([clayer, qlayer])
+        weights = model.get_weights()
 
-        prediction = model_dm.predict(np.ones((1, n_qubits)))
-        weights = model_dm.get_weights()
         file = str(tmpdir) + "/model"
-        model_dm.save_weights(file)
-        model_dm.load_weights(file)
-        prediction_loaded = model_dm.predict(np.ones((1, n_qubits)))
-        weights_loaded = model_dm.get_weights()
+        model.save_weights(file)
 
-        assert np.allclose(prediction, prediction_loaded)
-        for i, w in enumerate(weights):
-            assert np.allclose(w, weights_loaded[i])
+        new_clayer = tf.keras.layers.Dense(n_qubits, use_bias=False, input_shape=(n_qubits,))
+        new_qlayer = KerasLayer(*get_circuit_dm, output_dim)
+        new_model = tf.keras.models.Sequential([new_clayer, new_qlayer])
+        new_weights = new_model.get_weights()
+
+        assert len(weights) == len(new_weights)
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+
+        # assert that the new model's weights are different
+        assert all(tf.math.reduce_any(w != nw) for w, nw in zip(weights, new_weights))
+
+        new_model.load_weights(file)
+        new_weights = new_model.get_weights()
+
+        assert len(weights) == len(new_weights)
+        assert all(w.shape == nw.shape for w, nw in zip(weights, new_weights))
+
+        # assert that the new model's weights are now the same
+        assert all(tf.math.reduce_all(w == nw) for w, nw in zip(weights, new_weights))
+
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model(x)
+        new_res = new_model(x)
+        assert tf.math.reduce_all(res == new_res)
+
+    # the test is slow since TensorFlow needs to compile the execution graph
+    # in order to save the model
+    @pytest.mark.slow
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
+    def test_save_whole_model_dm(
+        self, model_dm, n_qubits, tmpdir
+    ):  # pylint: disable=redefined-outer-name
+        """Test if the entire model can be successfully saved and reloaded
+        using the .save() method"""
+        weights = model_dm.get_weights()
+
+        file = str(tmpdir) + "/model"
+        model_dm.save(file)
+
+        new_model_dm = tf.keras.models.load_model(file)
+        new_weights = new_model_dm.get_weights()
+
+        for w, nw in zip(weights, new_weights):
+            assert np.allclose(w, nw)
+
+        # assert that the results are the same
+        x = tf.constant(np.arange(5 * n_qubits).reshape(5, n_qubits))
+        res = model_dm(x)
+        new_res = new_model_dm(x)
+        assert tf.math.reduce_all(res == new_res)
 
 
 @pytest.mark.tf
@@ -657,7 +754,7 @@ def test_no_attribute():
 
 
 @pytest.mark.tf
-def test_batch_input():
+def test_batch_input_single_measure():
     """Test input batching in keras"""
     dev = qml.device("default.qubit.tf", wires=4)
 
@@ -669,6 +766,41 @@ def test_batch_input():
         return qml.probs(op=qml.PauliZ(1))
 
     KerasLayer.set_input_argument("x")
-    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
     layer.build((None, 2))
-    assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
+
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 2)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=1e-5)
+
+
+@pytest.mark.tf
+def test_batch_input_multi_measure():
+    """Test input batching in keras for multiple measurements"""
+    dev = qml.device("default.qubit.tf", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return [qml.expval(qml.PauliZ(1)), qml.probs(wires=range(2))]
+
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(5,))
+    layer.build((None, 4))
+
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 5)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
+        assert qml.math.allclose(r, exp)
