@@ -973,11 +973,20 @@ class TestQubitIntegrationHigherOrder:
 
     def test_second_derivative(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test second derivative calculation of a scalar-valued QNode"""
-
+        kwargs = dict(
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            max_diff=2,
+        )
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            spsa_kwargs = dict(
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
+                num_directions=10,
+            )
+            kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
 
         num_wires = 1
@@ -987,13 +996,7 @@ class TestQubitIntegrationHigherOrder:
 
         dev = qml.device(dev_name, wires=num_wires)
 
-        @qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            max_diff=2,
-        )
+        @qnode(dev, **kwargs)
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)
