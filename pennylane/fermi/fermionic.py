@@ -216,22 +216,13 @@ class FermiSentence(dict):
         if (len(self) == 0) or (len(other) == 0):
             return FermiSentence({FermiWord({}): 0})
 
-        keys = [i * j for i in self.keys() for j in other.keys()]
-        vals = [i * j for i in self.values() for j in other.values()]
+        product = FermiSentence({})
 
-        # if there is no repetition, zip together and return a dict (twice as fast as alternative)
-        if len(set(keys)) == len(keys):
-            return FermiSentence(dict(zip(keys, vals)))
+        for fw1, coeff1 in self.items():
+            for fw2, coeff2 in other.items():
+                product[fw1 * fw2] += coeff1 * coeff2
 
-        # otherwise deal with grouping
-        new_dict = {}
-        for fw, coeff in zip(keys, vals):
-            if fw in new_dict:
-                new_dict[fw] += coeff
-            else:
-                new_dict[fw] = coeff
-
-        return FermiSentence(new_dict)
+        return product
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
