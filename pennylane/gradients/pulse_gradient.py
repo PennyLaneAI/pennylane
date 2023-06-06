@@ -162,33 +162,65 @@ def _parshift_and_integrate(
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
 
-    num_shifts = len(psr_coeffs)
+    multi_terms = isinstance(psr_coeffs, tuple)
+    num_shifts = [len(c) for c in psr_coeffs] if multi_terms else len(psr_coeffs)
+
+    def _contract(coeffs, res, cjac):
+        return jnp.tensordot(jnp.tensordot(coeffs, res, axes=1), cjac, axes=[[0], [0]])
 
     def _psr_and_contract(res_list, cjacs, int_prefactor):
-        res = qml.math.stack(res_list)
-        if use_broadcasting:
-            # Slice away the first and last values, corresponding to the initial condition
-            # and the final value of the time evolution, but not to a splitting time
-            res = res[:, 1:-1]
-        else:
-            # Reshape the results such that the first axis corresponds to the splitting times
-            # and the second axis corresponds to different shifts. All other axes are untouched.
-            # Afterwards move the shifts-axis to the first position.
-            shape = qml.math.shape(res)
-            new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
-            res = qml.math.moveaxis(qml.math.reshape(res, new_shape), 1, 0)
+        res = jnp.stack(res_list)
 
-        # Contract the results with the parameter-shift rule coefficients
-        parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
-        if qml.math.ndim(psr_coeffs) > 1:
-            # multi-dimensional psr_coeffs are created for HardwareHamiltonians in order to
-            # allow for adding the contributions of multiple generating terms. Afterwards the
-            # computation of the parameter-shift rule results, we need to reshape so that the
-            # number of quantum derivatives mathces the number of classical coefficient derivatives
-            parshift = jnp.reshape(parshift, (cjacs.shape[0], *parshift.shape[2:]))
-        # Contract the quantum and (classical) coefficient derivatives, including the rescaling
-        # factor from the Monte Carlo integral and from global prefactors of Pauli word generators.
-        return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
+        # Preprocess the results: Reshape, create slices for different generating terms
+        if use_broadcasting:
+            if multi_terms:
+                # Slice the results according to the different generating terms. Slice away the
+                # first and last value for each term, which correspond to the initial condition
+                # and the final value of the time evolution, but not to splitting times
+                idx = 0
+                res = tuple(res[idx : (idx := idx + n), 1:-1] for n in num_shifts)
+            else:
+                # Slice away the first and last values, corresponding to the initial condition
+                # and the final value of the time evolution, but not to splitting times
+                res = res[:, 1:-1]
+        else:
+            shape = jnp.shape(res)
+            if multi_terms:
+                num_taus = shape[0] // sum(num_shifts)
+                # Reshape the slices of the results corresponding to different generating terms.
+                # Afterwards the first axis corresponds to the splitting times and the second axis
+                # corresponds to the different shifts of the respective term.
+                # Afterwards move the shifts-axis to the first position of each term.
+                idx = 0
+                res = tuple(
+                    jnp.moveaxis(
+                        jnp.reshape(
+                            res[idx : (idx := idx + n * num_taus)], (num_taus, n) + shape[1:]
+                        ),
+                        1,
+                        0,
+                    )
+                    for n in num_shifts
+                )
+            else:
+                # Reshape the results such that the first axis corresponds to the splitting times
+                # and the second axis corresponds to different shifts. All other axes are untouched.
+                # Afterwards move the shifts-axis to the first position.
+                shape = jnp.shape(res)
+                new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
+                res = jnp.moveaxis(jnp.reshape(res, new_shape), 1, 0)
+
+        # Contract the results, parameter-shift rule coefficients and (classical) Jacobians,
+        # and include the rescaling factor from the Monte Carlo integral and from global prefactors
+        # of Pauli word generators.
+        if not multi_terms:
+            return _contract(psr_coeffs, res, cjacs) * int_prefactor
+        return (
+            qml.math.sum(
+                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)], axis=0
+            )
+            * int_prefactor
+        )
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
     if not single_measure + shot_vector == 1:
@@ -631,7 +663,7 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
                 continue
             cjac_idx = None
         else:
-            if set(x).difference(set(range(op.num_params))):
+            if not all(_x in list(range(op.num_params)) for _x in x):
                 _raise()
             if term_idx not in x:
                 continue
@@ -643,19 +675,15 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
         _cjacs, _tapes, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
             tape, _op_id, key, num_split_times, use_broadcasting, cjac_idx
         )
-        cjacs.extend(_cjacs)
+        cjacs.append(_cjacs)
         tapes.extend(_tapes)
         psr_coeffs.append(_psr_coeffs)
 
-    # Create parameter-shift coefficients that only are non-zero for their corresponding
-    # coefficient Jacobian. The two-dimensionality of the psr_coeffs will be used in
-    # `_parshift_and_integrate`.
-    zeros = [jnp.zeros_like(c) for c in psr_coeffs]
-    psr_coeffs = jnp.stack(
-        [jnp.hstack(zeros[:j] + [c] + zeros[j + 1 :]) for j, c in enumerate(psr_coeffs)]
-    )
+    # The fact that psr_coeffs are a tuple only for hardware Hamiltonian generators will be
+    # used in `_parshift_and_integrate`.
+    psr_coeffs = tuple(psr_coeffs)
 
-    data = (len(tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
+    data = (len(tapes), tuple(qml.math.stack(cj) for cj in cjacs), int_prefactor, psr_coeffs)
     return tapes, data
 
 
