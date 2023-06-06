@@ -17,7 +17,9 @@ from copy import copy, deepcopy
 
 import pytest
 
+import pennylane as qml
 from pennylane.fermi.fermionic import FermiWord
+from pennylane.pauli import PauliWord, PauliSentence
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
@@ -171,3 +173,48 @@ class TestFermiWord:
         """Test that an error is raised if the operator orders are not correct."""
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
+
+    FERMI_WORDS_AND_PAULI_SENTENCES = (
+        (
+            FermiWord({(0, 1): "+", (1, 1): "-", (2, 0): "+", (3, 0): "-"}),  # [1, 1, 0, 0],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1 0^ 0', 1))
+            (
+                [(0.25 + 0j), (-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j)],
+                [
+                    PauliWord({0: "I"}),
+                    PauliWord({0: "Z"}),
+                    PauliWord({0: "Z", 1: "Z"}),
+                    PauliWord({1: "Z"}),
+                ],
+            ),
+        ),
+        (
+            FermiWord({(0, 5): "+", (1, 5): "-", (2, 5): "+", (3, 5): "-"}),  # [5, 5, 5, 5],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('5^ 5 5^ 5', 1))
+            (
+                [(0.5 + 0j), (-0.5 + 0j)],
+                [PauliWord({0: "I"}), PauliWord({5: "Z"})],
+            ),
+        ),
+        (
+            FermiWord({(0, 3): "+", (1, 3): "-", (2, 3): "+", (3, 1): "-"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 3 3^ 1', 1))
+            (
+                [(0.25 + 0j), (-0.25j), (0.25j), (0.25 + 0j)],
+                [
+                    PauliWord({1: "X", 2: "Z", 3: "X"}),
+                    PauliWord({1: "X", 2: "Z", 3: "Y"}),
+                    PauliWord({1: "Y", 2: "Z", 3: "X"}),
+                    PauliWord({1: "Y", 2: "Z", 3: "Y"}),
+                ],
+            ),
+        ),
+    )
+
+    @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_WORDS_AND_PAULI_SENTENCES)
+    def test_to_qubit(self, operator, pauli_equivalent):
+
+        ps = operator.to_qubit()
+        coeffs, words = pauli_equivalent
+
+        assert ps == PauliSentence(dict(zip(words, coeffs)))

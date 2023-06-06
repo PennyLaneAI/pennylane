@@ -15,3 +15,4 @@
 Fermionic operators. """
 
 from .fermionic import FermiWord
+from .conversion import jw_mapping
