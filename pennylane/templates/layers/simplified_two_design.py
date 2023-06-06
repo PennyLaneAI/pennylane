@@ -101,7 +101,7 @@ class SimplifiedTwoDesign(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
+    def __init__(self, initial_layer_weights, weights, wires, do_queue=None, id=None):
         shape = qml.math.shape(weights)
 
         if len(shape) > 1:

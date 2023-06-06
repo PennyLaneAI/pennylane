@@ -120,6 +120,17 @@ class TestHardwareHamiltonian:
         ]
         assert sum_rm.settings == settings
 
+    def test__repr__(self):
+        """Test repr method returns expected string"""
+        test_example = HardwareHamiltonian(
+            coeffs=[2],
+            observables=[qml.PauliY(8)],
+            pulses=[HardwarePulse(5, 6, 7, 8)],
+            reorder_fn=_reorder_parameters,
+        )
+        str = repr(test_example)
+        assert str == "HardwareHamiltonian: terms=1"
+
     def test_add_parametrized_hamiltonian(self):
         """Tests that adding a `HardwareHamiltonian` and `ParametrizedHamiltonian` works as
         expected."""

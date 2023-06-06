@@ -199,6 +199,7 @@ Transforms core
 .. autosummary::
     :toctree: api
 
+    ~transforms.core.transform
     ~transforms.core.transform_dispatcher
 
 """
@@ -257,4 +258,4 @@ from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
-from .core import transform_dispatcher
+from .core import transform, TransformError

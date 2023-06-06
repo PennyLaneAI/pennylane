@@ -48,7 +48,7 @@ def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform without tape."""
-    circuit.circuit.pop(index)
+    circuit._ops.pop(index)  # pylint:disable=protected-access
     return [circuit], lambda x: x
 
 
@@ -56,7 +56,7 @@ def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform with wrong hinting."""
-    tape.circuit.pop(index)
+    tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
@@ -75,7 +75,7 @@ def no_callable_return(
     tape: qml.tape.QuantumTape,
 ) -> (Sequence[qml.tape.QuantumTape], qml.tape.QuantumTape):
     """Transform without callable return."""
-    return tape, lambda x: x
+    return list(tape), tape
 
 
 non_valid_transforms = [
@@ -96,7 +96,7 @@ def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid transform."""
-    tape.circuit.pop(index)
+    tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
@@ -122,7 +122,7 @@ def multiple_args_expand_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Multiple args expand fn."""
-    tape.circuit.pop(index)
+    tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
@@ -189,6 +189,7 @@ class TestTransformDispatcher:
 
         assert isinstance(transformed_tape, qml.tape.QuantumTape)
         assert transformed_tape.circuit is not None
+        assert len(transformed_tape.circuit) == 4
 
     def test_qnode_with_expand_transform(self):
         """Test qnode with a transform program and expand transform."""
@@ -307,8 +308,8 @@ class TestTransformDispatcher:
         dispatched_transform = transform(first_valid_transform)
         with pytest.raises(
             TransformError,
-            match="The object on which is the transform is applied is not valid. It "
-            "can only be a tape, a QNode or a qfunc.",
+            match="The object on which the transform is applied is not valid. It can only be a tape, a QNode or a "
+            "qfunc.",
         ):
             obj = qml.RX(0.1, wires=0)
             dispatched_transform(obj)

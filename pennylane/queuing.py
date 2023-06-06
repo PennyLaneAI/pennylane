@@ -151,11 +151,10 @@ These three lists can be used to construct a :class:`~.QuantumScript`:
 >>> qml.tape.QuantumScript(ops, measurements, prep)
 <QuantumScript: wires=[0, 1], params=1>
 
-In order to construct new operators within a recording, but without queuing them, either
-use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
+In order to construct new operators within a recording, but without queuing them
+use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.PauliX(0, do_queue=False)
 ...     with qml.QueuingManager.stop_recording():
 ...         qml.PauliY(1)
 >>> q.queue
