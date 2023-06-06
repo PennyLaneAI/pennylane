@@ -435,6 +435,6 @@ def _execute_fwd(
 
         return (res, updated_jacs), (jvps, updated_jacs)
 
-    res = execute_wrapper(params)
+    res, _jacs = execute_wrapper(params)
 
-    return res[0]
+    return res

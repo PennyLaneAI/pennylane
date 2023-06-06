@@ -39,6 +39,7 @@ ops = {
     "THadamard",
     "TRX",
     "TRY",
+    "TRZ",
     "QutritBasisState",
 }
 

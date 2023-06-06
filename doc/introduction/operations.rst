@@ -474,6 +474,8 @@ Qutrit parametrized gates
     :nosignatures:
 
     ~pennylane.TRX
+    ~pennylane.TRY
+    ~pennylane.TRZ
 
 :html:`</div>`
 

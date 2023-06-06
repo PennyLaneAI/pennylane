@@ -116,7 +116,7 @@ class AllSinglesDoubles(Operation):
     grad_method = None
 
     def __init__(
-        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
+        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=None, id=None
     ):
         if len(wires) < 2:
             raise ValueError(

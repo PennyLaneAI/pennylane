@@ -63,6 +63,7 @@ class DefaultQutrit(QutritDevice):
         "THadamard",
         "TRX",
         "TRY",
+        "TRZ",
         "QutritBasisState",
     }
 
