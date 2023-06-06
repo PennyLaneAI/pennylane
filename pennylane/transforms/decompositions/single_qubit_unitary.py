@@ -83,15 +83,6 @@ def zyz_decomposition(U, wire, return_global_phase=False):
 
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
 
-    # If U is only one unitary and its value is not abstract, we can include a conditional
-    # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
-    if len(U_det1) == 1 and not math.is_abstract(U_det1[0]):
-        if math.allclose(U_det1[0, 0, 1], 0.0):
-            Operations = [qml.RZ(2 * math.angle(U_det1[0, 1, 1]), wires=wire)]
-            if return_global_phase:
-                Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
-            return Operations
-
     # For batched U or single U with non-zero off-diagonal, compute the
     # normal decomposition instead
     off_diagonal_elements = math.clip(math.abs(U_det1[:, 0, 1]), 0, 1)

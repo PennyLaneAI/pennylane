@@ -38,16 +38,13 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
 )
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ, qml.ops.op_math.sprod.SProd)
-typeof_gates_zyz_rz_only = (qml.RZ, qml.ops.op_math.sprod.SProd)
 single_qubit_decomps_zyz = [
-    # First set of gates are diagonal and converted to RZ
-    (I, typeof_gates_zyz_rz_only, [0.0, 1]),
-    (Z, typeof_gates_zyz_rz_only, [np.pi, 1j]),
-    (S, typeof_gates_zyz_rz_only, [np.pi / 2, 0.70710678 + 0.70710678j]),
-    (T, typeof_gates_zyz_rz_only, [np.pi / 4, 0.92387953 + 0.38268343j]),
-    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz_rz_only, [0.3, 1]),
-    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zyz_rz_only, [-0.5, 1]),
-    # Next set of gates are non-diagonal and decomposed as ZYZ
+    (I, typeof_gates_zyz, [0.0, 0.0, 0.0, 1]),
+    (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2, 1j]),
+    (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4, 0.70710678 + 0.70710678j]),
+    (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8, 0.92387953 + 0.38268343j]),
+    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15, 1]),
+    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zyz, [-0.25, 0.0, -0.25, 1]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, -0.3, 1]),
     (
         np.array(
@@ -84,7 +81,7 @@ class TestQubitUnitaryZYZDecomposition:
     """Test that the decompositions are correct."""
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
-        assert len(obtained_gates) == len(expected_gates), "Incorrect number of gates"
+        assert len(obtained_gates) == 4, "Incorrect number of gates"
         for i in range(len(expected_gates)):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
@@ -268,16 +265,13 @@ class TestQubitUnitaryXYXDecomposition:
 
 
 typeof_gates_zxz = (qml.RZ, qml.RX, qml.RZ, qml.ops.op_math.sprod.SProd)
-typeof_gates_zxz_rz_only = (qml.RZ, qml.ops.op_math.sprod.SProd)
 single_qubit_decomps_zxz = [
-    # First set of gates are diagonal and converted to RZ
-    (I, typeof_gates_zxz_rz_only, [0.0, 1]),
-    (Z, typeof_gates_zxz_rz_only, [np.pi, 1j]),
-    (S, typeof_gates_zxz_rz_only, [np.pi / 2, 0.70710678 + 0.70710678j]),
-    (T, typeof_gates_zxz_rz_only, [np.pi / 4, 0.92387953 + 0.38268343j]),
-    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zxz_rz_only, [0.3, 1]),
-    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zxz_rz_only, [-0.5, 1]),
-    # Next set of gates are non-diagonal and decomposed as ZXZ
+    (I, typeof_gates_zxz, [0.0, 0.0, 0.0, 1]),
+    (Z, typeof_gates_zxz, [np.pi / 2, 0.0, np.pi / 2, 1j]),
+    (S, typeof_gates_zxz, [np.pi / 4, 0.0, np.pi / 4, 0.70710678 + 0.70710678j]),
+    (T, typeof_gates_zxz, [np.pi / 8, 0.0, np.pi / 8, 0.92387953 + 0.38268343j]),
+    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zxz, [0.15, 0.0, 0.15, 1]),
+    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zxz, [-0.25, 0.0, -0.25, 1]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zxz, [-1.37079633, 0.5, 1.27079633, 1]),
     (
         np.array(
@@ -314,7 +308,7 @@ class TestQubitUnitaryZXZDecomposition:
     """Test that the decompositions are correct."""
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
-        assert len(obtained_gates) == len(expected_gates), "Incorrect number of gates"
+        assert len(obtained_gates) == 4, "Incorrect number of gates"
         for i in range(len(expected_gates)):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
@@ -886,7 +880,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        #assert len(obtained_decomposition) == 10
+        assert len(obtained_decomposition) == 18
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -908,7 +902,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        #assert len(obtained_decomposition) == 8
+        assert len(obtained_decomposition) == 16
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -928,7 +922,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        #assert len(obtained_decomposition) == 5
+        assert len(obtained_decomposition) == 13
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
@@ -948,7 +942,7 @@ class TestTwoQubitUnitaryDecomposition:
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-        #assert len(obtained_decomposition) == 2
+        assert len(obtained_decomposition) == 6
 
         with qml.queuing.AnnotatedQueue() as q:
             for op in obtained_decomposition:
