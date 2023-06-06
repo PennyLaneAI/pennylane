@@ -211,7 +211,6 @@ class FermiSentence(dict):
     def __mul__(self, other):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
         words pair-wise"""
-
         # an empty FermiSentence represents the Null operator
         if (len(self) == 0) or (len(other) == 0):
             return FermiSentence({FermiWord({}): 0})
