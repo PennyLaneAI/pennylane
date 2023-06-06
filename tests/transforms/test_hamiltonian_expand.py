@@ -289,7 +289,6 @@ class TestHamiltonianExpand:
             assert np.isclose(res, output)
 
             g = gtape.gradient(res, var)
-            print(g)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
 
