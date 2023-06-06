@@ -171,7 +171,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     for i in range(math.shape(U_det1)[0]):
         # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
         # complaining about argument mismatch
-        if qml.numpy.isclose(qml.numpy.sin(lams_plus_psis[i]), 0.0):
+        if qml.numpy.isclose(qml.numpy.sin(lams_plus_phis[i]), 0.0):
             thetas[i] = 2 * math.arccos(
                 math.real(U_det1[i, 1, 1]) / (math.cos(lams_plus_phis[i]) + EPS)
             )
