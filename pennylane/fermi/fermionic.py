@@ -16,7 +16,6 @@ from copy import copy
 
 import pennylane as qml
 
-
 class FermiWord(dict):
     r"""Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
     annihilation operators, associating wires with their respective operators. Can be constructed
@@ -84,7 +83,6 @@ class FermiWord(dict):
         r"""Return a compact string representation of a FermiWord. Each operator in the word is
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
-
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
@@ -242,7 +240,6 @@ class FermiSentence(dict):
             operator *= self
 
         return operator
-
 
     def simplify(self, tol=1e-8):
         r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold

@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.pauli import PauliWord, PauliSentence
 
-
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
