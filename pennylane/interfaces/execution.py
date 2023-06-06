@@ -588,7 +588,9 @@ def execute(
                 return_tuple=False,
             )
 
-            # Adjoint Jacobian with backward pass and jitting needs the original state
+            # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
+            # can not be reused from the device if `grad_on_execution is False`.
+
 
             interface_jax = interface
             if interface == "jax":
