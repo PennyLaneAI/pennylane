@@ -428,6 +428,10 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     else:
         batch_dim, dim = np.shape(state)[:2]
 
+        # batch dim exists but is unknown; cast to int so that reshaping works
+        if batch_dim is None:
+            batch_dim = -1
+
     # Get dimension of the quantum system and reshape
     num_wires = int(np.log2(dim))
     consecutive_wires = list(range(num_wires))
