@@ -215,12 +215,8 @@ def _parshift_and_integrate(
         # of Pauli word generators.
         if not multi_terms:
             return _contract(psr_coeffs, res, cjacs) * int_prefactor
-        return (
-            qml.math.sum(
-                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)], axis=0
-            )
-            * int_prefactor
-        )
+        diff_per_term = [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
+        return qml.math.sum(diff_per_term, axis=0) * int_prefactor
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
     if not single_measure + shot_vector == 1:
