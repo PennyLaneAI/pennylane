@@ -2075,8 +2075,14 @@ class Tensor(Observable):
         [array([[5., 0.],
         [0., 5.]])]
         """
-        for new_entry, op in zip(new_data, self.obs):
-            op.data = new_entry
+        if isinstance(new_data[0], (list, tuple)):
+            for new_entry, op in zip(new_data, self.obs):
+                op.data = new_entry
+        else:
+            start = 0
+            for i, op in enumerate(self.obs):
+                op.data = new_data[start : start + len(op.data)]
+                start += len(op.data)
 
     @property
     def num_params(self):

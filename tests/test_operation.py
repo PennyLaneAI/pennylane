@@ -1970,8 +1970,6 @@ class TestTensorObservableOperations:
             )
         }
 
-        raise Exception
-
     def test_equality_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
