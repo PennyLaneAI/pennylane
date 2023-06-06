@@ -72,9 +72,9 @@ def zyz_decomposition(U, wire, return_global_phase=False):
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = zyz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RZ(array(-1.72101925), wires=[0]),
-    RY(array(1.39749741), wires=[0]),
-    RZ(array(0.45246584), wires=[0]),
+    [RZ(tensor(-0.2420953, requires_grad=True), wires=[0]),
+    RY(tensor(1.14938178, requires_grad=True), wires=[0]),
+    RZ(tensor(1.73305815, requires_grad=True), wires=[0]),
     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
@@ -141,9 +141,9 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(array(-1.72101925), wires=[0]),
-    RY(array(1.39749741), wires=[0]),
-    RX(array(0.45246584), wires=[0]),
+    [RX(tensor(-1.72101925, requires_grad=True), wires=[0]),
+    RY(tensor(1.39749741, requires_grad=True), wires=[0]),
+    RX(tensor(0.45246584, requires_grad=True), wires=[0]),
     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
@@ -167,10 +167,12 @@ def xyx_decomposition(U, wire, return_global_phase=False):
 
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
-    if math.allclose(lams_plus_phis, 0):
-        thetas = 2 * math.arccos(math.real(U_det1[:, 1, 1]) / (math.cos(lams_plus_phis) + EPS))
-    else:
-        thetas = 2 * math.arccos(-math.imag(U_det1[:, 0, 1]) / (math.sin(lams_plus_phis) + EPS))
+    thetas = qml.numpy.empty_like(lams)
+    for i in range(qml.numpy.shape(U_det1)[0]):
+        if math.isclose(math.sin(lams_plus_phis[i]), 0):
+            thetas[i] = 2 * math.arccos(math.real(U_det1[i, 1, 1]) / (math.cos(lams_plus_phis[i]) + EPS))
+        else:
+            thetas[i] = 2 * math.arccos(-math.imag(U_det1[i, 0, 1]) / (math.sin(lams_plus_phis[i]) + EPS))
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
@@ -229,10 +231,12 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     psis = (psis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # Conditional to avoid divide by 0 errors
-    if math.allclose(phis_plus_psis, 0):
-        thetas = 2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS))
-    else:
-        thetas = 2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS))
+    thetas = qml.numpy.empty_like(phis)
+    for i in range(qml.numpy.shape(U_det1)[0]):
+        if math.isclose(math.sin(phis_plus_psis[i]), 0):
+            thetas[i] = 2 * math.arccos(math.real(U_det1[i, 0, 0]) / (math.cos(phis_plus_psis[i]) + EPS))
+        else:
+            thetas[i] = 2 * math.arccos(-math.imag(U_det1[i, 0, 0]) / (math.sin(phis_plus_psis[i]) + EPS))
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
