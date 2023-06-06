@@ -223,6 +223,21 @@
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
+<h4>A more flexible projector</h4>
+
+<h4>Do more with qutrits</h4>
+
+* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+  given subspace.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
+  given subspace.
+  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
+
 <h4>The qchem module</h4>
 
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
@@ -238,21 +253,6 @@
 
 * Accelerate Jordan-Wigner transforms caching Pauli gate objects.
   [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
-
-<h4>A more flexible projector</h4>
-
-<h4>Do more with qutrits</h4>
-
-* Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
-  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
-
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
-  given subspace.
-  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
-
-* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
-  given subspace.
-  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
 <h4>Next-generation device API</h4>
 
