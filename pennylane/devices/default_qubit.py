@@ -22,7 +22,6 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 from typing import List
-import warnings
 
 import numpy as np
 from scipy.sparse import csr_matrix
