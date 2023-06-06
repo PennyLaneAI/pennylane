@@ -245,6 +245,9 @@ class MPLDrawer:
     _notch_style = "round, pad=0.05"
     """Box style for active wire notches."""
 
+    _cond_shift = 0.03
+    """The shift value from the centre axis for classical double-lines."""
+
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
@@ -276,8 +279,11 @@ class MPLDrawer:
             wire_options = {}
 
         # adding wire lines
-        for wire in range(self.n_wires):
-            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
+        self._wire_lines = [
+            plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
+            for wire in range(self.n_wires)
+        ]
+        for line in self._wire_lines:
             self._ax.add_line(line)
 
     @property
@@ -842,3 +848,161 @@ class MPLDrawer:
             head_width=self._box_length / 8.0,
             **lines_options,
         )
+
+    def cond(self, layer, measured_layer, wires, wires_target, options=None):
+        """Add classical communication double-lines for conditional operations
+
+        Args:
+            layer (int): the layer to draw the object in
+            measured_layer (int): the layer where the mid-circuit measurements are
+            wires (Union[int, Iterable[int]]): set of wires to control on
+            wires_target (Union[int, Iterable[int]]): target wires. Used to determine min
+                and max wires for the vertical line
+
+        Keyword Args:
+            options=None (dict): Matplotlib keywords. The only supported keys are ``'color'``, ``'linewidth'``,
+                and ``'zorder'``.
+
+        **Example**
+
+        .. code-block:: python
+
+            drawer = qml.drawer.MPLDrawer(n_wires=3, n_layers=4)
+
+            drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
+
+            options = {'color': "indigo", 'linewidth': 1.5}
+            drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
+
+        .. figure:: ../../_static/drawer/cond.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+        """
+        if options is None:
+            options = {}
+
+        wires_ctrl = _to_tuple(sorted(wires))
+        wires_target = _to_tuple(sorted(wires_target))
+        start_x = measured_layer + self._box_length / 2.0
+        lines = []
+
+        if wires_ctrl[-1] < wires_target[0]:
+            lines.extend(
+                (
+                    # draw from top-most measurement to double-elbow
+                    plt.Line2D(
+                        (start_x, layer + self._cond_shift),
+                        (wires_ctrl[0] - self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (start_x, layer - self._cond_shift),
+                        (wires_ctrl[0] + self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    # draw vertical lines that reach the target operation
+                    plt.Line2D(
+                        (layer + self._cond_shift,) * 2,
+                        (wires_ctrl[0] - self._cond_shift, wires_target[0]),
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (layer - self._cond_shift,) * 2,
+                        (wires_ctrl[-1] + self._cond_shift, wires_target[0]),
+                        **options,
+                    ),
+                )
+            )
+            for prev_idx, next_wire in enumerate(wires_ctrl[1:]):
+                # draw ⅃ for every wire but the first one
+                #      ‾
+                lines.extend(
+                    (
+                        plt.Line2D(
+                            (layer - self._cond_shift,) * 2,
+                            (wires_ctrl[prev_idx] + self._cond_shift, next_wire - self._cond_shift),
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (next_wire - self._cond_shift,) * 2,
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (next_wire + self._cond_shift,) * 2,
+                            **options,
+                        ),
+                    )
+                )
+        elif wires_target[-1] < wires_ctrl[0]:
+            lines.extend(
+                (
+                    # draw from bottom-most measurement to double-elbow
+                    plt.Line2D(
+                        (start_x, layer + self._cond_shift),
+                        (wires_ctrl[-1] + self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (start_x, layer - self._cond_shift),
+                        (wires_ctrl[-1] - self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    # draw vertical lines that reach the target operation
+                    plt.Line2D(
+                        (layer + self._cond_shift,) * 2,
+                        (wires_ctrl[-1] + self._cond_shift, wires_target[-1]),
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (layer - self._cond_shift,) * 2,
+                        (wires_ctrl[0] - self._cond_shift, wires_target[-1]),
+                        **options,
+                    ),
+                )
+            )
+            for wire_idx, ctrl_wire in enumerate(wires_ctrl[:-1]):
+                # draw _  for every wire but the first one
+                #      ‾|
+                lines.extend(
+                    (
+                        plt.Line2D(
+                            (layer - self._cond_shift,) * 2,
+                            (
+                                ctrl_wire + self._cond_shift,
+                                wires_ctrl[wire_idx + 1] - self._cond_shift,
+                            ),
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (ctrl_wire - self._cond_shift,) * 2,
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (ctrl_wire + self._cond_shift,) * 2,
+                            **options,
+                        ),
+                    )
+                )
+        else:
+            raise ValueError(
+                "Cannot draw interspersed mid-circuit measurements and conditional operations"
+            )
+
+        for line in lines:
+            self._ax.add_line(line)
+
+        for wire in wires_ctrl:
+            line = self._wire_lines[wire]
+            start_x = line.get_xdata()[0]
+            line.set_xdata((start_x, measured_layer))
+            # TODO: re-add wires if being reused. perhaps add later only when being re-used?
+            #
+            # line = copy(line)
+            # line.set_xdata((layer + 0.5, self.n_layers))
+            # self._wire_lines[wire] = line
+            # self._ax.add_line(line)
