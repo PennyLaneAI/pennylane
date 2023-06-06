@@ -48,10 +48,6 @@ def zyz_decomposition(U, wire, return_global_phase=False):
     of elementary operations, as a product of X and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`.
 
-    Diagonal operations can be converted to a single :class:`.RZ` gate, while non-diagonal
-    operations will be converted to a product of Y and Z rotations that implements the original
-    operation up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
-
     .. warning::
 
         When used with ``jax.jit``, all unitaries will be converted to :class:`.Rot` gates,
@@ -67,8 +63,7 @@ def zyz_decomposition(U, wire, return_global_phase=False):
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RY`` and
         another ``RZ`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to global phase. If :math:`U` is diagonal,
-        a list containing an equivalent ``RZ`` gate is returned. If `return_global_phase=True`,
+        equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -200,10 +195,6 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     of elementary operations, as a product of X and Z rotations in the form
     :math:`e^{i\alpha} RZ(\phi) RY(\theta) RZ(\psi)`.
 
-    Diagonal operations can be converted to a single :class:`.RZ` gate, while non-diagonal
-    operations will be converted to a product of X and Z rotations that implements the original
-    operation up to a global phase in the form :math:`RZ(\phi) RY(\theta) RZ(\psi)`.
-
     Args:
         U (array[complex]): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
@@ -214,8 +205,7 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RX`` and
         another ``RZ`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to global phase. If :math:`U` is diagonal,
-        a list containing an equivalent ``RZ`` gate is returned. If `return_global_phase=True`,
+        equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -236,15 +226,6 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     # Get global phase \alpha and U in SU(2) form (determinant is 1)
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
-
-    # If U is only one unitary and its value is not abstract, we can include a conditional
-    # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
-    if len(U_det1) == 1 and not math.is_abstract(U_det1[0]):
-        if math.allclose(U_det1[0, 0, 1], 0.0):
-            Operations = [qml.RZ(2 * math.angle(U_det1[0, 1, 1]), wires=wire)]
-            if return_global_phase:
-                Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
-            return Operations
 
     # Use top row to solve for \phi and \psi
     phis_plus_psis = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
