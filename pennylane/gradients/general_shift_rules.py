@@ -403,27 +403,44 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
 
-    def _copy_and_shift_params(tape, params, idx, shift, mult):
+    # def _copy_and_shift_params(tape, params, idx, shift, mult):
+    #     """Create a copy of a tape and of parameters, and set the new tape to the parameters
+    #     rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
+    #     new_params = params.copy()
+    #     new_params[idx] = new_params[idx] * qml.math.convert_like(
+    #         mult, new_params[idx]
+    #     ) + qml.math.convert_like(shift, new_params[idx])
+
+    #     shifted_tape = tape.copy(copy_operations=True)
+    #     shifted_tape.set_parameters(new_params)
+    #     return shifted_tape
+
+    def _copy_and_shift_params(tape, idx, shift, mult):
         """Create a copy of a tape and of parameters, and set the new tape to the parameters
         rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
-        new_params = params.copy()
-        new_params[idx] = new_params[idx] * qml.math.convert_like(
-            mult, new_params[idx]
-        ) + qml.math.convert_like(shift, new_params[idx])
-
         shifted_tape = tape.copy(copy_operations=True)
-        shifted_tape.set_parameters(new_params)
+        op, op_idx, p_idx = shifted_tape.get_operation(idx)
+
+        new_params = op.data.copy()
+        new_params[p_idx] = new_params[p_idx] * qml.math.convert_like(
+            mult, new_params[p_idx]
+        ) + qml.math.convert_like(shift, new_params[p_idx])
+
+        shifted_op = qml.ops.functions.bind_new_parameters(op, new_params)
+        # pylint: disable=protected-access
+        shifted_tape._ops[op_idx] = shifted_op
+        shifted_tape._update()
+        # TODO: Figure out less ugly way to update shifted operation
         return shifted_tape
 
-    params = list(tape.get_parameters())
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 
     if broadcast:
-        return (_copy_and_shift_params(tape, params, index, shifts, multipliers),)
+        return (_copy_and_shift_params(tape, index, shifts, multipliers),)
 
     return tuple(
-        _copy_and_shift_params(tape, params, index, shift, multiplier)
+        _copy_and_shift_params(tape, index, shift, multiplier)
         for shift, multiplier in zip(shifts, multipliers)
     )
 
