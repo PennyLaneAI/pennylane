@@ -242,7 +242,7 @@ def find_and_place_cuts(
             # The easiest way to tell if a cut is valid is to just do the fragment graph.
 
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
-            num_cuts = sum(isinstance(n, WireCut) for n in cut_graph.nodes)
+            num_cuts = sum(isinstance(n[0], WireCut) for n in cut_graph.nodes)
 
             replace_wire_cut_nodes(cut_graph)
             frags, comm = fragment_graph(cut_graph)
@@ -313,8 +313,9 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> qml.transforms.qcut.replace_wire_cut_node(wire_cut, graph)
     """
-    predecessors = graph.pred[node]
-    successors = graph.succ[node]
+    node_tuple = (node, id(node))
+    predecessors = graph.pred[node_tuple]
+    successors = graph.succ[node_tuple]
 
     predecessor_on_wire = {}
     for op, data in predecessors.items():
@@ -328,8 +329,8 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
             wire = d["wire"]
             successor_on_wire[wire] = op
 
-    order = graph.nodes[node]["order"]
-    graph.remove_node(node)
+    order = graph.nodes[node_tuple]["order"]
+    graph.remove_node(node_tuple)
 
     for wire in node.wires:
         predecessor = predecessor_on_wire.get(wire, None)
@@ -341,15 +342,17 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
         # We are introducing a degeneracy in the order of the measure and prepare nodes
         # here but the order can be inferred as MeasureNode always precedes
         # the corresponding PrepareNode
-        graph.add_node(meas, order=order)
-        graph.add_node(prep, order=order)
+        meas_node = (meas, id(meas))
+        prep_node = (prep, id(prep))
+        graph.add_node(meas_node, order=order)
+        graph.add_node(prep_node, order=order)
 
-        graph.add_edge(meas, prep, wire=wire)
+        graph.add_edge(meas_node, prep_node, wire=wire)
 
         if predecessor is not None:
-            graph.add_edge(predecessor, meas, wire=wire)
+            graph.add_edge(predecessor, meas_node, wire=wire)
         if successor is not None:
-            graph.add_edge(prep, successor, wire=wire)
+            graph.add_edge(prep_node, successor, wire=wire)
 
 
 def replace_wire_cut_nodes(graph: MultiDiGraph):
@@ -391,7 +394,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
     """
-    for op in list(graph.nodes):
+    for op, _ in list(graph.nodes):
         if isinstance(op, WireCut):
             replace_wire_cut_node(op, graph)
 
@@ -462,9 +465,10 @@ def place_wire_cuts(
                 cut_graph.nodes[op]["order"] += 1
         # Add WireCut
         wire_cut = WireCut(wires=wire)
-        cut_graph.add_node(wire_cut, order=order)
-        cut_graph.add_edge(op0, wire_cut, wire=wire)
-        cut_graph.add_edge(wire_cut, op1, wire=wire)
+        wire_cut_node = (wire_cut, id(wire_cut))
+        cut_graph.add_node(wire_cut_node, order=order)
+        cut_graph.add_edge(op0, wire_cut_node, wire=wire)
+        cut_graph.add_edge(wire_cut_node, op1, wire=wire)
 
     return cut_graph
 
@@ -480,16 +484,16 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
         (MultiDiGraph): Copy of the input graph with all its existing cuts removed.
     """
     uncut_graph = graph.copy()
-    for op in list(graph.nodes):
-        if isinstance(op, WireCut):
-            uncut_graph.remove_node(op)
-        elif isinstance(op, MeasureNode):
-            for op1 in graph.neighbors(op):
-                if isinstance(op1, PrepareNode):
-                    uncut_graph.remove_node(op)
-                    uncut_graph.remove_node(op1)
+    for node in list(graph.nodes):
+        if isinstance(node[0], WireCut):
+            uncut_graph.remove_node(node)
+        elif isinstance(node[0], MeasureNode):
+            for node1 in graph.neighbors(node):
+                if isinstance(node1[0], PrepareNode):
+                    uncut_graph.remove_node(node)
+                    uncut_graph.remove_node(node1)
 
-    if len([n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
+    if len([n for n in uncut_graph.nodes if isinstance(n[0], (MeasureNode, PrepareNode))]) > 0:
         warnings.warn(
             "The circuit contains `MeasureNode` or `PrepareNode` operations that are "
             "not paired up correctly. Please check.",
@@ -560,11 +564,11 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     graph_copy = graph.copy()
 
     cut_edges = []
-    measure_nodes = [n for n in graph.nodes if isinstance(n, MeasurementProcess)]
+    measure_nodes = [n for n in graph.nodes if isinstance(n[0], MeasurementProcess)]
 
     for node1, node2, wire_key in graph.edges:
-        if isinstance(node1, MeasureNode):
-            assert isinstance(node2, PrepareNode)
+        if isinstance(node1[0], MeasureNode):
+            assert isinstance(node2[0], PrepareNode)
             cut_edges.append((node1, node2, wire_key))
             graph_copy.remove_edge(node1, node2, key=wire_key)
 
@@ -603,7 +607,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             subgraphs_connected_to_measurements.append(s)
         else:
             subgraphs_indices_to_remove.append(i)
-            prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
+            prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n[0], PrepareNode)])
 
     measure_nodes_to_remove = [
         m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_
