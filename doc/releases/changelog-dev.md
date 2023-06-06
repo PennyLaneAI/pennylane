@@ -10,6 +10,9 @@
   $\hat{c}_1 c_0 \hat{c}_2 c_3$.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
+* Added the `FermiSentence` class to represent a linear combination of fermionic operators.
+  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
+
 <h4>Workflow-level resource estimation 🧮</h4>
 
 * PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
@@ -230,13 +233,17 @@
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+* Added the `TRX` qutrit rotation operator, which allows applying an X rotation on a
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
 * Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
+
+* Added the `TRZ` qutrit rotation operator, which allows applying a Z rotation on a
+  given subspace.
+  [(#2847)](https://github.com/PennyLaneAI/pennylane/pull/2847)
 
 <h4>The qchem module</h4>
 
