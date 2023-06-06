@@ -209,13 +209,8 @@ class TestApply:
 
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
 
-        qutrit_device_1_wire.apply(
-            [
-                operation(*par, wires=[0])
-                if subspace is None
-                else operation(*par, wires=[0], subspace=subspace)
-            ]
-        )
+        kwargs = {} if subspace is None else {"subspace": subspace}
+        qutrit_device_1_wire.apply([operation(*par, wires=[0], **kwargs)])
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE

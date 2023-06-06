@@ -392,8 +392,8 @@ class TRZ(Operation):
             obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
             return qml.dot(coeffs, obs)
 
-        coeffs = [-0.25 * np.sqrt(3), 0.25]
-        obs = [qml.GellMann(wires=self.wires, index=8), qml.GellMann(wires=self.wires, index=3)]
+        coeffs = [0.25, -0.25 * np.sqrt(3)]
+        obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
         return qml.dot(coeffs, obs)
 
     def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
@@ -452,9 +452,7 @@ class TRZ(Operation):
         )
         mat = qml.math.cast_like(mat, p)
 
-        slices = [(i, i) for i in subspace]
-        if is_broadcasted:
-            slices = [(Ellipsis, *s) for s in slices]
+        slices = [(Ellipsis, i, i) for i in subspace]
 
         mat[slices[0]] = p
         mat[slices[1]] = qml.math.conj(p)
