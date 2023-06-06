@@ -257,7 +257,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes adjoint jacobian results with `grad_on_execution=False`.
+* Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
