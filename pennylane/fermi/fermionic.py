@@ -213,10 +213,7 @@ class FermiSentence(dict):
         words pair-wise"""
 
         # an empty FermiSentence represents the Null operator
-        if len(self) == 0:
-            return FermiSentence({FermiWord({}): 0})
-
-        if len(other) == 0:
+        if (len(self) == 0) or (len(other) == 0):
             return FermiSentence({FermiWord({}): 0})
 
         keys = [i * j for i in self.keys() for j in other.keys()]
