@@ -87,8 +87,68 @@
   {1: 100, 2: 100}
   ```
 
-* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
+* Support has been added for defining operations where only the resource requirements are known,
+  without an explicit decomposition or matrix representation. PennyLane is now able to estimate
+  the total resource requirements of circuits that include one or more of these operations. This
+  will allow you to estimate the requirements for high-level algorithms composed of more abstract
+  subroutines.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
+
+  These operations can be defined by inheriting from
+  [ResourcesOperation](https://docs.pennylane.ai/en/stable/code/api/pennylane.resource.ResourcesOperation.html)
+  and overriding the `resources()` method to return an appropriate
+  [Resources](https://docs.pennylane.ai/en/stable/code/api/pennylane.resource.Resources.html)
+  object:
+
+  ```python
+  class CustomOp(qml.resource.ResourcesOperation):
+      def resources(self):
+          n = len(self.wires)
+          r = qml.resource.Resources(
+              num_wires=n,
+              num_gates=n ** 2,
+              depth=5,
+          )
+          return r
+  ```
+
+  ```pycon
+  >>> wires = [0, 1, 2]
+  >>> c = CustomOp(wires)
+  >>> c.resources()
+  wires: 3
+  gates: 9
+  depth: 5
+  shots: Shots(total=None)
+  gate_types:
+  {}
+  gate_sizes:
+  {}
+  ```
+  
+  A quantum circuit can be created that contains `CustomOp` and inspected using
+  [qml.specs](https://docs.pennylane.ai/en/latest/code/api/pennylane.specs.html):
+
+  ```python
+  dev = qml.device("default.qubit", wires=wires)
+
+  @qml.qnode(dev)
+  def circ():
+      qml.PauliZ(wires=0)
+      CustomOp(wires)
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> specs = qml.specs(circ)()
+  >>> specs["resources"].depth
+  6
+  ```
+  
+
+
+* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
+  
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
