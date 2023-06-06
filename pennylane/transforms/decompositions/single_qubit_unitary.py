@@ -167,18 +167,14 @@ def xyx_decomposition(U, wire, return_global_phase=False):
 
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
-    thetas = math.empty_like(lams)
-    for i in range(math.shape(U_det1)[0]):
-        # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
-        # complaining about argument mismatch
-        if qml.numpy.isclose(qml.numpy.sin(lams_plus_phis[i]), 0.0):
-            thetas[i] = 2 * math.arccos(
-                math.real(U_det1[i, 1, 1]) / (math.cos(lams_plus_phis[i]) + EPS)
-            )
-        else:
-            thetas[i] = 2 * math.arccos(
-                -math.imag(U_det1[i, 0, 1]) / (math.sin(lams_plus_phis[i]) + EPS)
-            )
+    thetas = math.array(
+        [
+            2 * math.arccos(math.real(curr_U[1, 1]) / (math.cos(lam_plus_phi) + EPS))
+            if math.allclose(math.sin(lam_plus_phi), 0.0)
+            else 2 * math.arccos(-math.imag(curr_U[0, 1]) / (math.sin(lam_plus_phi) + EPS))
+            for curr_U, lam_plus_phi in zip(U_det1, lams_plus_phis)
+        ]
+    )
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
@@ -237,18 +233,14 @@ def zxz_decomposition(U, wire, return_global_phase=False):
     psis = (psis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # Conditional to avoid divide by 0 errors
-    thetas = math.empty_like(phis)
-    for i in range(math.shape(U_det1)[0]):
-        # Using qml.numpy.* instead of math.* in conditional to avoid problems with PyTorch
-        # complaining about argument mismatch
-        if qml.numpy.isclose(qml.numpy.sin(phis_plus_psis[i]), 0.0):
-            thetas[i] = 2 * math.arccos(
-                math.real(U_det1[i, 0, 0]) / (math.cos(phis_plus_psis[i]) + EPS)
-            )
-        else:
-            thetas[i] = 2 * math.arccos(
-                -math.imag(U_det1[i, 0, 0]) / (math.sin(phis_plus_psis[i]) + EPS)
-            )
+    thetas = math.array(
+        [
+            2 * math.arccos(math.real(curr_U[0, 0]) / (math.cos(phi_plus_psi) + EPS))
+            if math.allclose(math.sin(phi_plus_psi), 0.0)
+            else 2 * math.arccos(-math.imag(curr_U[0, 0]) / (math.sin(phis_plus_psi) + EPS))
+            for curr_U, phi_plus_psi in zip(U_det1, phis_plus_psis)
+        ]
+    )
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 

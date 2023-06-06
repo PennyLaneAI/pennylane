@@ -98,15 +98,13 @@ class TestQubitUnitaryZYZDecomposition:
             atol=1e-7,
         ), "Incorrect ZYZ rotation angles"
 
-        obtained_mat = qml.math.unwrap(
-            reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
-        )
-        # Cast to np.array to use .shape
-        obtained_mat = np.array(obtained_mat)
+        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
 
         if len(obtained_mat.shape) == 2:
             U = [U]
-            obtained_mat = [obtained_mat]
+            obtained_mat = [qml.math.unwrap(obtained_mat)]
+        else:
+            obtained_mat = qml.math.unwrap(obtained_mat)
 
         assert all(
             check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
@@ -220,15 +218,13 @@ class TestQubitUnitaryXYXDecomposition:
             atol=1e-7,
         ), "Incorrect XYX rotation angles"
 
-        obtained_mat = qml.math.unwrap(
-            reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
-        )
-        # Cast to np.array to use .shape
-        obtained_mat = np.array(obtained_mat)
+        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
 
         if len(obtained_mat.shape) == 2:
             U = [U]
-            obtained_mat = [obtained_mat]
+            obtained_mat = [qml.math.unwrap(obtained_mat)]
+        else:
+            obtained_mat = qml.math.unwrap(obtained_mat)
 
         assert all(
             check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
@@ -354,15 +350,13 @@ class TestQubitUnitaryZXZDecomposition:
             atol=1e-7,
         ), "Incorrect ZXZ rotation angles"
 
-        obtained_mat = qml.math.unwrap(
-            reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
-        )
-        # Cast to np.array to use .shape
-        obtained_mat = np.array(obtained_mat)
+        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
 
         if len(obtained_mat.shape) == 2:
             U = [U]
-            obtained_mat = [obtained_mat]
+            obtained_mat = [qml.math.unwrap(obtained_mat)]
+        else:
+            obtained_mat = qml.math.unwrap(obtained_mat)
 
         assert all(
             check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
