@@ -30,16 +30,13 @@ from gate_data import I, Z, S, T, H, X, CNOT
 from test_optimization.utils import check_matrix_equivalence
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
-typeof_gates_zyz_rz_only = (qml.RZ,)
 single_qubit_decomps = [
-    # First set of gates are diagonal and converted to RZ
-    (I, typeof_gates_zyz_rz_only, [0.0]),
-    (Z, typeof_gates_zyz_rz_only, [np.pi]),
-    (S, typeof_gates_zyz_rz_only, [np.pi / 2]),
-    (T, typeof_gates_zyz_rz_only, [np.pi / 4]),
-    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz_rz_only, [0.3]),
-    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zyz_rz_only, [-0.5]),
-    # Next set of gates are non-diagonal and decomposed as ZYZ
+    (I, typeof_gates_zyz, [0.0, 0.0, 0.0]),
+    (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2]),
+    (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4]),
+    (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8]),
+    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15]),
+    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zyz, [-0.25, 0.0, -0.25]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, -0.3]),
     (
         np.array(
@@ -51,8 +48,8 @@ single_qubit_decomps = [
         typeof_gates_zyz,
         [-0.18409714468526372, np.pi, 0.18409714468526372],
     ),
-    (H, typeof_gates_zyz, [-np.pi, np.pi / 2, 0.0, 1j]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, -np.pi / 2, 1j]),
+    (H, typeof_gates_zyz, [-np.pi, np.pi / 2, 0.0]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, -np.pi / 2]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
@@ -78,18 +75,18 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == 2 + len(expected_gates)
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        for i in range(len(expected_gates)):
+        for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
             assert ops[1 + i].wires == Wires("a")
-            assert qml.math.allclose(ops[1 + i].parameters, expected_params[i], atol=1e-7)
+            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
 
-        assert isinstance(ops[1 + len(expected_gates)], qml.CNOT)
-        assert ops[1 + len(expected_gates)].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     def test_unitary_to_rot_too_big_unitary(self):
         """Test that the transform ignores QubitUnitary instances that are too big
@@ -131,17 +128,18 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == len(expected_gates)
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gates)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.tf
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
@@ -155,17 +153,18 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == len(expected_gates)
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gates)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
@@ -185,17 +184,18 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == len(expected_gates)
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gates)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)

@@ -64,16 +64,16 @@ single_qubit_decomps_zyz = [
         [-1.0, 2.0, -3.0, 0.9998000066665778+0.019998666693333122j],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
-    # (
-    #     qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-    #     typeof_gates_zyz,
-    #     [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4], [1, 1]],
-    # ),
-    # (
-    #     qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
-    #     typeof_gates_zyz,
-    #     [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3], [1, 1]],
-    # ),
+    (
+        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
+        typeof_gates_zyz,
+        [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4], [1, 1]],
+    ),
+    (
+        qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
+        typeof_gates_zyz,
+        [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3], [1, 1]],
+    ),
 ]
 
 
@@ -82,7 +82,7 @@ class TestQubitUnitaryZYZDecomposition:
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
-        for i in range(len(expected_gates)):
+        for i in range(4):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
 
@@ -97,7 +97,9 @@ class TestQubitUnitaryZYZDecomposition:
             atol=1e-7,
         ), "Incorrect ZYZ rotation angles"
 
-        obtained_mat = qml.math.unwrap([reduce(np.dot, [op.matrix() for op in reversed(obtained_gates)])])[0]
+        obtained_mat = qml.math.unwrap(reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)]))
+        #Cast to np.array to use .shape
+        obtained_mat = np.array(obtained_mat)
 
         if len(obtained_mat.shape) == 2:
             U = [U]
@@ -291,16 +293,16 @@ single_qubit_decomps_zxz = [
         [-1.0 - np.pi / 2, 2.0, -3.0 + np.pi / 2, 0.9998000066665778+0.019998666693333122j],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
-    # (
-    #     qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-    #     typeof_gates_zxz,
-    #     [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4], [1, 1]],
-    # ),
-    # (
-    #     qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
-    #     typeof_gates_zxz,
-    #     [[1.2 - np.pi / 2, 2.3 - np.pi / 2], [1.2, 2.3], [1.2 + np.pi / 2, -3 * np.pi / 2 + 2.3], [1, 1]],
-    # ),
+    (
+        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
+        typeof_gates_zxz,
+        [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4], [1, 1]],
+    ),
+    (
+        qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
+        typeof_gates_zxz,
+        [[1.2 - np.pi / 2, 2.3 - np.pi / 2], [1.2, 2.3], [1.2 + np.pi / 2, -3 * np.pi / 2 + 2.3], [1, 1]],
+    ),
 ]
 
 
@@ -324,7 +326,9 @@ class TestQubitUnitaryZXZDecomposition:
             atol=1e-7,
         ), "Incorrect ZXZ rotation angles"
 
-        obtained_mat = qml.math.unwrap([reduce(np.dot, [op.matrix() for op in reversed(obtained_gates)])])[0]
+        obtained_mat = qml.math.unwrap(reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)]))
+        #Cast to np.array to use .shape
+        obtained_mat = np.array(obtained_mat)
 
         if len(obtained_mat.shape) == 2:
             U = [U]

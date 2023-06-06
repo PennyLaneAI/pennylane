@@ -190,7 +190,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         with qml.QueuingManager.stop_recording():
             zyz_decomp = qml.transforms.zyz_decomposition(
                 qml.matrix(target_operation), target_wire
-            )[0]
+            )
         phi, theta, omega = [gate.parameters[0] for gate in zyz_decomp]
 
     decomp = []
