@@ -47,12 +47,13 @@ from gate_data import (
     OrbitalRotation,
     FermionicSWAP,
 )
+
+tf = pytest.importorskip("tensorflow", minversion="2.0")
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import DeviceError
 from pennylane.devices.default_qubit_tf import DefaultQubitTF
-
-tf = pytest.importorskip("tensorflow", minversion="2.0")
 
 np.random.seed(42)
 
