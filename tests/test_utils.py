@@ -23,7 +23,6 @@ import numpy as np
 
 import pennylane as qml
 import pennylane.utils as pu
-import scipy.sparse
 
 
 flat_dummy_array = np.linspace(-1, 1, 64)
@@ -48,7 +47,7 @@ class TestFlatten:
         """Tests that _flatten successfully flattens multidimensional arrays."""
 
         reshaped = np.reshape(flat_dummy_array, shape)
-        flattened = np.array([x for x in pu._flatten(reshaped)])
+        flattened = np.array(list(pu._flatten(reshaped)))
 
         assert flattened.shape == flat_dummy_array.shape
         assert np.array_equal(flattened, flat_dummy_array)
@@ -58,7 +57,7 @@ class TestFlatten:
         """Tests that _unflatten successfully unflattens multidimensional arrays."""
 
         reshaped = np.reshape(flat_dummy_array, shape)
-        unflattened = np.array([x for x in pu.unflatten(flat_dummy_array, reshaped)])
+        unflattened = np.array(list(pu.unflatten(flat_dummy_array, reshaped)))
 
         assert unflattened.shape == reshaped.shape
         assert np.array_equal(unflattened, reshaped)
@@ -104,18 +103,15 @@ class TestPauliEigs:
         for x, y in list(itertools.product(standard_observables, standard_observables))
     ]
 
-    @pytest.mark.parametrize("pauli", standard_observables)
-    def test_correct_eigenvalues_paulis(self, pauli):
+    def test_correct_eigenvalues_paulis(self):
         """Test the paulieigs function for one qubit"""
         assert np.array_equal(pu.pauli_eigs(1), np.diag(self.pauliz))
 
-    @pytest.mark.parametrize("pauli_product", matrix_pairs)
-    def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(self, pauli_product):
+    def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(self):
         """Test the paulieigs function for two qubits"""
         assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
 
-    @pytest.mark.parametrize("pauli_product", matrix_pairs)
-    def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
+    def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self):
         """Test the paulieigs function for three qubits"""
         assert np.array_equal(
             pu.pauli_eigs(3),
@@ -127,7 +123,6 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pu.pauli_eigs.cache_clear()
         pu.pauli_eigs(depth)
-        total_runs = sum([2**x for x in range(depth)])
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pu.pauli_eigs.cache_info()
 
 

@@ -87,6 +87,9 @@ class FermiWord(dict):
         >>> w.to_string()
         '0+ 1-'
         """
+        if len(self) == 0:
+            return "I"
+
         string = " ".join(
             [
                 i + j
@@ -201,9 +204,12 @@ class FermiWord(dict):
         return operator
 
 
-# TODO: create __add__ method when PauliSentence is merged.
-# TODO: create __sub__ method when PauliSentence is merged.
-# TODO: create mapping method when the ne jordan_wigner function is added.
+    # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
+    # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
+    # TODO: create __imul__ method.
+    # TODO: support multiply by number in __mul__ when FermiSentence is merged.
+    # TODO: create mapping method when the jordan_wigner function is added.
+    # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
 
 
 class FermiSentence(dict):
@@ -226,7 +232,8 @@ class FermiSentence(dict):
     def __str__(self):
         r"""String representation of a FermiSentence."""
         if len(self) == 0:
-            return "0 * ''"
+            return "0 * 'I'"
+
         return "\n+ ".join(f"{coeff} * '{fw.to_string()}'" for fw, coeff in self.items())
 
     def __repr__(self):
@@ -273,20 +280,16 @@ class FermiSentence(dict):
             other = FermiSentence({other: 1})
 
         if isinstance(other, FermiSentence):
-            if len(self) == 0:
-                return copy(other)
+            if (len(self) == 0) or (len(other) == 0):
+              return FermiSentence({FermiWord({}): 0})
 
-            if len(other) == 0:
-                return copy(self)
+            product = FermiSentence({})
 
-            keys = [i * j for i in self.keys() for j in other.keys()]
-            vals = [i * j for i in self.values() for j in other.values()]
+            for fw1, coeff1 in self.items():
+              for fw2, coeff2 in other.items():
+                product[fw1 * fw2] += coeff1 * coeff2
 
-            return FermiSentence(dict(zip(keys, vals)))
-
-        if isinstance(other, (int, float)):
-            vals = [i * other for i in self.values()]
-            return FermiSentence(dict(zip(self.keys(), vals)))
+            return product
 
         raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
 
@@ -304,12 +307,13 @@ class FermiSentence(dict):
 
         raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
 
+
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
         if value < 0 or not isinstance(value, int):
             raise ValueError("The exponent must be a positive integer.")
 
-        operator = FermiSentence({})
+        operator = FermiSentence({FermiWord({}): 1})  # 1 times Identity
 
         for _ in range(value):
             operator *= self

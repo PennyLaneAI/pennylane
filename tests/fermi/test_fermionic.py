@@ -44,6 +44,10 @@ class TestFermiWord:
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
             fw.update({(2, 2): "+"})
 
+        with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
+            fw[(1, 1)] = "+"
+
+
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
         fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
@@ -77,7 +81,7 @@ class TestFermiWord:
         (fw1, "0+ 1-"),
         (fw2, "0+ 0-"),
         (fw3, "0+ 3- 0+ 4-"),
-        (fw4, ""),
+        (fw4, "I"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_compact)
@@ -88,7 +92,7 @@ class TestFermiWord:
         (fw1, "<FermiWord = '0+ 1-'>"),
         (fw2, "<FermiWord = '0+ 0-'>"),
         (fw3, "<FermiWord = '0+ 3- 0+ 4-'>"),
-        (fw4, "<FermiWord = ''>"),
+        (fw4, "<FermiWord = 'I'>"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_str)
@@ -103,6 +107,7 @@ class TestFermiWord:
             FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
             FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
         ),
+        (fw1, fw1, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
         (
             fw1,
             fw3,
@@ -169,6 +174,7 @@ class TestFermiWord:
         """Test that a FermiWord can be multiplied onto a number (from the right)
         and return a FermiSentence"""
         assert number * fw == result
+
 
     tup_fw_mult_error = (
         (fw1, [1.5]),
@@ -324,9 +330,9 @@ class TestFermiSentence:
     tup_fs_str = (
         (fs1, "1.23 * '0+ 1-'\n" + "+ 4j * '0+ 0-'\n" + "+ -0.5 * '0+ 3- 0+ 4-'"),
         (fs2, "-1.23 * '0+ 1-'\n" + "+ (-0-4j) * '0+ 0-'\n" + "+ 0.5 * '0+ 3- 0+ 4-'"),
-        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" + "+ 1 * ''"),
-        (fs4, "1 * ''"),
-        (fs5, "0 * ''"),
+        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" + "+ 1 * 'I'"),
+        (fs4, "1 * 'I'"),
+        (fs5, "0 * 'I'"),
     )
 
     @pytest.mark.parametrize("fs, str_rep", tup_fs_str)
@@ -384,14 +390,22 @@ class TestFermiSentence:
                 }
             ),
         ),
-        (fs5, fs3, fs3),
-        (fs3, fs5, fs3),
+        (fs5, fs3, fs5),
+        (fs3, fs5, fs5),
+        (fs4, fs3, fs3),
+        (fs3, fs4, fs3),
+        (
+            FermiSentence({fw2: 1, fw3: 1, fw4: 1}),
+            FermiSentence({fw4: 1, fw2: 1}),
+            FermiSentence({fw2: 2, fw3: 1, fw4: 1, fw2 * fw2: 1, fw3 * fw2: 1}),
+        ),
     )
 
     @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
     def test_mul(self, f1, f2, result):
         """Test that the correct result of multiplication between two
         FermiSentences is produced."""
+
         simplified_product = f1 * f2
         simplified_product.simplify()
 
@@ -431,6 +445,7 @@ class TestFermiSentence:
 
         assert simplified_product == result
 
+        
     fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
     fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
     fs3 = FermiSentence({fw3: -0.5, fw4: 1})
@@ -468,6 +483,7 @@ class TestFermiSentence:
         simplified_product.simplify()
 
         assert simplified_product == result
+
 
     def test_simplify(self):
         """Test that simplify removes terms in the FermiSentence with coefficient less than the
