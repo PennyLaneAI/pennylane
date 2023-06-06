@@ -43,10 +43,10 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
-def zyz_decomposition(U, wire, return_global_phase=False):
+def _zyz_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Y rotations in the form
-    :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`.
+    :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`. (batched operation)
 
     .. warning::
 
@@ -117,10 +117,10 @@ def zyz_decomposition(U, wire, return_global_phase=False):
     return Operations
 
 
-def xyx_decomposition(U, wire, return_global_phase=False):
+def _xyx_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Y rotations in the form
-    :math:`e^{i\gamma} RX(\phi) RY(\theta) RX(\lambda)`.
+    :math:`e^{i\gamma} RX(\phi) RY(\theta) RX(\lambda)`. (batched operation)
 
     Args:
         U (array[complex]): A :math:`2 \times 2` unitary matrix.
@@ -185,10 +185,10 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     return Operations
 
 
-def zxz_decomposition(U, wire, return_global_phase=False):
+def _zxz_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Z rotations in the form
-    :math:`e^{i\alpha} RZ(\phi) RY(\theta) RZ(\psi)`.
+    :math:`e^{i\alpha} RZ(\phi) RY(\theta) RZ(\psi)`. (batched operation)
 
     Args:
         U (array[complex]): A :math:`2 \times 2` unitary matrix.
@@ -253,7 +253,7 @@ def zxz_decomposition(U, wire, return_global_phase=False):
 
 
 def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
-    r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations.
+    r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations. (batched operation)
 
     Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
     and RZ gates.
@@ -281,9 +281,9 @@ def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     supported_rotations = {
-        "ZYZ": zyz_decomposition,
-        "XYX": xyx_decomposition,
-        "ZXZ": zxz_decomposition,
+        "ZYZ": _zyz_decomposition,
+        "XYX": _xyx_decomposition,
+        "ZXZ": _zxz_decomposition,
     }
 
     if rotations in supported_rotations:

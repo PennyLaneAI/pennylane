@@ -79,9 +79,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.zyz_decomposition
-    ~transforms.xyx_decomposition
-    ~transforms.zxz_decomposition
     ~transforms.one_qubit_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
@@ -207,7 +204,6 @@ from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .decompositions import zyz_decomposition, xyx_decomposition, zxz_decomposition
 from .decompositions import one_qubit_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
