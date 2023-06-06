@@ -51,7 +51,9 @@ class TRX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         subspace (Sequence[int]): the 2D subspace on which to apply operation
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -200,7 +202,9 @@ class TRY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         subspace (Sequence[int]): the 2D subspace on which to apply operation
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -239,7 +243,7 @@ class TRY(Operation):
     def generator(self):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
+    def __init__(self, phi, wires, subspace=(0, 1), do_queue=None, id=None):
         self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
@@ -388,8 +392,8 @@ class TRZ(Operation):
             obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
             return qml.dot(coeffs, obs)
 
-        coeffs = [-0.25 * np.sqrt(3), 0.25]
-        obs = [qml.GellMann(wires=self.wires, index=8), qml.GellMann(wires=self.wires, index=3)]
+        coeffs = [0.25, -0.25 * np.sqrt(3)]
+        obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
         return qml.dot(coeffs, obs)
 
     def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
@@ -448,9 +452,7 @@ class TRZ(Operation):
         )
         mat = qml.math.cast_like(mat, p)
 
-        slices = [(i, i) for i in subspace]
-        if is_broadcasted:
-            slices = [(Ellipsis, *s) for s in slices]
+        slices = [(Ellipsis, i, i) for i in subspace]
 
         mat[slices[0]] = p
         mat[slices[1]] = qml.math.conj(p)

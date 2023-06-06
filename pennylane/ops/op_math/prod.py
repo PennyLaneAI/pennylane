@@ -42,7 +42,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None, lazy=True):
+def prod(*ops, do_queue=None, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -55,7 +55,9 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
             Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued. Default is True.
+        do_queue (bool): determines if the product operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -120,7 +122,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
         id=id,
     )
 
-    if do_queue:
+    if do_queue or do_queue is None:
         for op in ops:
             QueuingManager.remove(op)
 
@@ -135,7 +137,9 @@ class Prod(CompositeOp):
         together.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued. Default is True.
+        do_queue (bool): determines if the product operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`

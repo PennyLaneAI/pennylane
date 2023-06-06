@@ -366,7 +366,7 @@ class IntegerComparator(Operation):
         geq=True,
         wires=None,
         work_wires=None,
-        do_queue=True,
+        do_queue=None,
     ):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")

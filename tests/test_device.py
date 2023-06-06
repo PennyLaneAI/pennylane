@@ -15,14 +15,14 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 import importlib
+from collections import OrderedDict
 import pkg_resources
 
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane import Device, DeviceError, QuantumFunctionError
+from pennylane import Device, DeviceError
 from pennylane.wires import Wires
-from collections import OrderedDict
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -167,7 +167,7 @@ def mock_device(monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def mock_device_arbitrary_wires(monkeypatch, wires):
+def mock_device_arbitrary_wires(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(Device, "__abstractmethods__", frozenset())
         m.setattr(Device, "_capabilities", mock_device_capabilities)
@@ -203,6 +203,7 @@ class TestShotVectors:
 
         assert dev.shots == 22
 
+    # pylint: disable=protected-access
     def test_process_shot_sequence(self):
         """Tests that the helper `_process_shot_sequence` works as expected."""
         shot_list = [1, 1, 3]
@@ -436,19 +437,19 @@ class TestInternalFunctions:
         node_gauss = qml.QNode(circuit_gauss, dev_gauss)
         num_evals_gauss = 12
 
-        for i in range(num_evals_gauss):
+        for _ in range(num_evals_gauss):
             node_gauss(0.015, 0.02, 0.005)
         assert dev_gauss.num_executions == num_evals_gauss
 
     wires_to_try = [
-        (1, Wires([0]), Wires([0])),
-        (4, Wires([1, 3]), Wires([1, 3])),
-        (["a", 2], Wires([2]), Wires([1])),
-        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+        (1, Wires([0])),
+        (4, Wires([1, 3])),
+        (["a", 2], Wires([2])),
+        (["a", 2], Wires([2, "a"])),
     ]
 
-    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
-    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+    @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map, mock_device):
         """Test that multiple calls to map_wires will use caching."""
         dev = mock_device(dev_wires)
         original_hits = dev.map_wires.cache_info().hits
@@ -466,7 +467,7 @@ class TestInternalFunctions:
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
 
-    def test_mcm_unsupported_error(self, monkeypatch, mock_device_with_paulis_and_methods):
+    def test_mcm_unsupported_error(self, mock_device_with_paulis_and_methods):
         """Test that an error is raised if mid-circuit measurements are not
         supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
@@ -481,9 +482,7 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
 
-    def test_conditional_ops_unsupported_error(
-        self, monkeypatch, mock_device_with_paulis_and_methods
-    ):
+    def test_conditional_ops_unsupported_error(self, mock_device_with_paulis_and_methods):
         """Test that an error is raised for conditional operations if
         mid-circuit measurements are not supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
@@ -527,6 +526,7 @@ class TestInternalFunctions:
             _ = dev.order_wires(subset_wires=subset)
 
 
+# pylint: disable=too-few-public-methods
 class TestClassmethods:
     """Test the classmethods of Device"""
 
@@ -540,6 +540,7 @@ class TestClassmethods:
 class TestOperations:
     """Tests the logic related to operations"""
 
+    # pylint: disable=protected-access
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
         dev = mock_device()
@@ -561,6 +562,7 @@ class TestOperations:
         ):
             dev.shots = shots
 
+    # pylint: disable=pointless-statement
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -689,8 +691,7 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name
-
+    # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -798,6 +799,7 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
+    # pylint: disable=pointless-statement
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
         dev = mock_device()
@@ -916,7 +918,8 @@ class TestBatchExecution:
 
     with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+        qml.expval(qml.PauliZ(wires=0))
+        qml.expval(qml.PauliZ(wires=1))
 
     tape1 = qml.tape.QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
@@ -949,8 +952,7 @@ class TestBatchExecution:
 
         assert spy.call_count == n_tapes
 
-    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_result(self, n_tapes, mock_device_with_paulis_and_methods, tol):
+    def test_result(self, mock_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types."""
 
         dev = mock_device_with_paulis_and_methods(wires=2)
@@ -983,6 +985,7 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
+    # pylint: disable=too-few-public-methods
     class SomeDevice(qml.Device):
         name = ""
         short_name = ""
@@ -996,6 +999,7 @@ class TestGrouping:
         reset = lambda *args, **kwargs: 0
         supports_observable = lambda *args, **kwargs: True
 
+    # pylint: disable=attribute-defined-outside-init
     @pytest.mark.parametrize("use_grouping", (True, False))
     def test_batch_transform_checks_use_grouping_property(self, use_grouping, mocker):
         """If the device specifies `use_grouping=False`, the batch transform
@@ -1007,8 +1011,7 @@ class TestGrouping:
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
 
-        dev = self.SomeDevice()
-        dev.shots = None
+        dev = self.SomeDevice(shots=None)
         dev.use_grouping = use_grouping
         new_qscripts, _ = dev.batch_transform(qs)
 

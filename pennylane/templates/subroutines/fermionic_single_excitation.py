@@ -116,7 +116,7 @@ class FermionicSingleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, weight, wires=None, do_queue=True, id=None):
+    def __init__(self, weight, wires=None, do_queue=None, id=None):
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
 
