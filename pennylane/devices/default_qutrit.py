@@ -132,7 +132,7 @@ class DefaultQutrit(QutritDevice):
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
             if i > 0 and isinstance(operation, (QutritBasisState)):
                 raise DeviceError(
-                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
+                    f"Operation {operation.name} cannot be used after other operations have already been applied "
                     f"on a {self.short_name} device."
                 )
             if isinstance(operation, QutritBasisState):
