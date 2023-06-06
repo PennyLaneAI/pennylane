@@ -47,7 +47,6 @@ class TestFermiWord:
         with pytest.raises(TypeError, match="FermiWord object does not support assignment"):
             fw[(1, 1)] = "+"
 
-
     def test_hash(self):
         """Test that a unique hash exists for different FermiWords."""
         fw_1 = FermiWord({(0, 0): "+", (1, 1): "-"})
@@ -107,7 +106,12 @@ class TestFermiWord:
             FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
             FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
         ),
-        (fw1, fw1, FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"})),
+        (
+            fw1,
+            fw1,
+            FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
+            FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "+", (3, 1): "-"}),
+        ),
         (
             fw1,
             fw3,
@@ -174,7 +178,6 @@ class TestFermiWord:
         """Test that a FermiWord can be multiplied onto a number (from the right)
         and return a FermiSentence"""
         assert number * fw == result
-
 
     tup_fw_mult_error = (
         (fw1, [1.5]),
@@ -445,7 +448,6 @@ class TestFermiSentence:
 
         assert simplified_product == result
 
-        
     fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
     fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
     fs3 = FermiSentence({fw3: -0.5, fw4: 1})
@@ -484,7 +486,6 @@ class TestFermiSentence:
 
         assert simplified_product == result
 
-
     def test_simplify(self):
         """Test that simplify removes terms in the FermiSentence with coefficient less than the
         threshold."""
@@ -512,12 +513,12 @@ class TestFermiSentence:
         assert fs == new_fs
 
     tup_fs_pow = (
-        (fs1, 0, FermiSentence({})),
+        (fs1, 0, FermiSentence({FermiWord({}): 1})),
         (fs1, 1, fs1),
         (fs1, 2, fs1_x_fs2),
-        (fs3, 0, FermiSentence({})),
+        (fs3, 0, FermiSentence({FermiWord({}): 1})),
         (fs3, 1, fs3),
-        (fs4, 0, FermiSentence({})),
+        (fs4, 0, FermiSentence({FermiWord({}): 1})),
         (fs4, 3, fs4),
     )
 

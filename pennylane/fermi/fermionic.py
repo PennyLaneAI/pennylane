@@ -109,7 +109,6 @@ class FermiWord(dict):
         return str(self)
 
     def __add__(self, other):
-
         self_fs = FermiSentence({self: 1.0})
 
         if isinstance(other, FermiWord):
@@ -203,7 +202,6 @@ class FermiWord(dict):
 
         return operator
 
-
     # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
     # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
     # TODO: create __imul__ method.
@@ -281,15 +279,19 @@ class FermiSentence(dict):
 
         if isinstance(other, FermiSentence):
             if (len(self) == 0) or (len(other) == 0):
-              return FermiSentence({FermiWord({}): 0})
+                return FermiSentence({FermiWord({}): 0})
 
             product = FermiSentence({})
 
             for fw1, coeff1 in self.items():
-              for fw2, coeff2 in other.items():
-                product[fw1 * fw2] += coeff1 * coeff2
+                for fw2, coeff2 in other.items():
+                    product[fw1 * fw2] += coeff1 * coeff2
 
             return product
+
+        if isinstance(other, (int, float)):
+            vals = [i * other for i in self.values()]
+            return FermiSentence(dict(zip(self.keys(), vals)))
 
         raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
 
@@ -306,7 +308,6 @@ class FermiSentence(dict):
             return FermiSentence(dict(zip(self.keys(), vals)))
 
         raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
-
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
