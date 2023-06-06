@@ -167,8 +167,87 @@ class FermiWord(dict):
         return qml.fermi.jw_mapping(self)
 
 
-# TODO: create __add__ and __iadd__ method when FermiSentence is merged.
-# TODO: create __sub__ and __isub__ method when FermiSentence is merged.
-# TODO: create __imul__ method.
-# TODO: support multiply by number in __mul__ when FermiiSentence is merged.
-# TODO: create mapping method when the jordan_wigner function is added.
+    # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
+    # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
+    # TODO: create __imul__ method.
+    # TODO: support multiply by number in __mul__ when FermiSentence is merged.
+    # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
+
+
+class FermiSentence(dict):
+    r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
+    as FermiWord instances and the values correspond to coefficients.
+
+    >>> w1 = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> s
+    1.2 * '0+ 1-'
+    + 3.1 * '1+ 2-'
+    """
+
+    @property
+    def wires(self):
+        r"""Return wires of the FermiSentence."""
+        return set().union(*(fw.wires for fw in self.keys()))
+
+    def __str__(self):
+        r"""String representation of a FermiSentence."""
+        if len(self) == 0:
+            return "0 * 'I'"
+        return "\n+ ".join(f"{coeff} * '{fw.to_string()}'" for fw, coeff in self.items())
+
+    def __repr__(self):
+        r"""Terminal representation for FermiSentence."""
+        return str(self)
+
+    def __missing__(self, key):
+        r"""If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
+        return 0.0
+
+    def __add__(self, other):
+        r"""Add two Fermi sentence together by iterating over the smaller one and adding its terms
+        to the larger one."""
+        smaller_fs, larger_fs = (
+            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+        )
+        for key in smaller_fs:
+            larger_fs[key] += smaller_fs[key]
+
+        return larger_fs
+
+    def __mul__(self, other):
+        r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
+        words pair-wise"""
+        # an empty FermiSentence represents the Null operator
+        if (len(self) == 0) or (len(other) == 0):
+            return FermiSentence({FermiWord({}): 0})
+
+        product = FermiSentence({})
+
+        for fw1, coeff1 in self.items():
+            for fw2, coeff2 in other.items():
+                product[fw1 * fw2] += coeff1 * coeff2
+
+        return product
+
+    def __pow__(self, value):
+        r"""Exponentiate a Fermi sentence to an integer power."""
+        if value < 0 or not isinstance(value, int):
+            raise ValueError("The exponent must be a positive integer.")
+
+        operator = FermiSentence({FermiWord({}): 1})  # 1 times Identity
+
+        for _ in range(value):
+            operator *= self
+
+        return operator
+
+
+    def simplify(self, tol=1e-8):
+        r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold
+        tolerance."""
+        items = list(self.items())
+        for fw, coeff in items:
+            if abs(coeff) <= tol:
+                del self[fw]
