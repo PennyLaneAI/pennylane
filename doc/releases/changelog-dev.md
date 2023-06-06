@@ -221,8 +221,14 @@
 
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
-* The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
-  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+* The `TorchLayer` and `KerasLayer` integrations with `torch.nn` and `Keras` have been upgraded with
+  the following new features:
+
+  - Native support for parameter broadcasting.
+    [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+  - Ability to directly draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
+    `qml.draw_mpl()`.
+    [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
 
 <h3>Improvements 🛠</h3>
 
