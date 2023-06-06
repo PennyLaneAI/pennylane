@@ -308,7 +308,7 @@ class TestApply:
 
         with pytest.raises(
             DeviceError,
-            match="Operation QutritBasisState cannot be used after other Operations have already been applied "
+            match="Operation QutritBasisState cannot be used after other operations have already been applied "
             "on a default.qutrit device.",
         ):
             qutrit_device_2_wires.reset()
