@@ -16,7 +16,7 @@
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
-* Added the `QutritBasisState` function to support qutrit state preparation for the `default.qutrit` device
+* Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
 <h3>Improvements 🛠</h3>
