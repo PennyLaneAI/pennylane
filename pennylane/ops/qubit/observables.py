@@ -349,7 +349,7 @@ class Projector(Observable):
     * Gradient recipe: None
 
     Args:
-        state (tensor-like): binary input of shape ``(n, )``
+        state (tensor-like): input of shape ``(n, )``.
         wires (Iterable): wires that the projector acts on
         basis_representation (bool): indicates whether ``state`` is a basis
             state (True) or a state vector (False).
@@ -360,12 +360,18 @@ class Projector(Observable):
         id (str or None): String representing the operation (optional)
     """
 
-    def __new__(cls, *args, basis_representation=True, **kwargs):
+    def __new__(
+        cls, state, wires, basis_representation=True, do_queue=False, id=None
+    ):  # pylint: disable=too-many-arguments
         base_cls = _BasisStateProjector if basis_representation else _StateVectorProjector
-        cls_type = type("Projector", (base_cls,), dict(base_cls.__dict__))
+        cls_type = type("Projector", (base_cls, cls), dict(base_cls.__dict__))
         proj = super().__new__(cls_type)
-        proj.__init__(*args, **kwargs)
+        proj.__init__(state, wires, do_queue=do_queue, id=id)
         return proj
+
+    def pow(self, z):
+        """Raise this projector to the power ``z``."""
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
 class _BasisStateProjector(Observable):
@@ -531,9 +537,6 @@ class _BasisStateProjector(Observable):
         []
         """
         return []
-
-    def pow(self, z):
-        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
 class _StateVectorProjector(Observable):
@@ -726,6 +729,3 @@ class _StateVectorProjector(Observable):
         psi /= denominator
         u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]
-
-    def pow(self, z):
-        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
