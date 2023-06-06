@@ -182,9 +182,9 @@ def _parshift_and_integrate(
         parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
         if qml.math.ndim(psr_coeffs) > 1:
             # multi-dimensional psr_coeffs are created for HardwareHamiltonians in order to
-            # allow for adding the contributions of multiple generating terms. Afterwards the
+            # allow for adding the contributions of multiple generating terms. After the
             # computation of the parameter-shift rule results, we need to reshape so that the
-            # number of quantum derivatives mathces the number of classical coefficient derivatives
+            # number of quantum derivatives matches the number of classical coefficient derivatives
             parshift = jnp.reshape(parshift, (cjacs.shape[0], *parshift.shape[2:]))
         # Contract the quantum and (classical) coefficient derivatives, including the rescaling
         # factor from the Monte Carlo integral and from global prefactors of Pauli word generators.
