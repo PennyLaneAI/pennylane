@@ -216,12 +216,12 @@
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
-<h3>Improvements 🛠</h3>
-
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+
+<h3>Improvements 🛠</h3>
 
 <h4>A more flexible projector</h4>
 
