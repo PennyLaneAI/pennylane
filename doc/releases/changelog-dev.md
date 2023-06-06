@@ -8,15 +8,15 @@
   without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
 
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+* Added the `TRX` qutrit rotation operation, which allows applying an X rotation on a
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
-* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
+* Added the `TRY` qutrit rotation operation, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
 
-* Added the `TRZ` qutrit rotation operator, which allows applying a Z rotation on a
+* Added the `TRZ` qutrit rotation operation, which allows applying a Z rotation on a
   given subspace.
   [(#2847)](https://github.com/PennyLaneAI/pennylane/pull/2847)
 

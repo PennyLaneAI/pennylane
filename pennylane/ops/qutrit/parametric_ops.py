@@ -146,7 +146,7 @@ class TRX(Operation):
         js = -1j * s
 
         shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0 and shape[0] > 1
+        is_broadcasted = len(shape) != 0
         # Construct identity matrices and cast to complex type
         mat = (
             qml.math.tensordot([1] * shape[0], qml.math.eye(3), axes=0)
@@ -293,7 +293,7 @@ class TRY(Operation):
         s = (1 + 0j) * s
 
         shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0 and shape[0] > 1
+        is_broadcasted = len(shape) != 0
         # Construct identity matrices and cast to complex type
         mat = (
             qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
@@ -439,7 +439,7 @@ class TRZ(Operation):
         p = qml.math.exp(-1j * theta / 2)
 
         shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0 and shape[0] > 1
+        is_broadcasted = len(shape) != 0
         # Construct identity matrices and cast to complex type
         mat = (
             qml.math.tensordot([1] * shape[0], qml.math.eye(3), axes=0)

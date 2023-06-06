@@ -27,23 +27,23 @@ from pennylane.wires import Wires
 
 
 PARAMETRIZED_OPERATIONS = [
-    qml.TRX(0.123, wires=0, subspace=[0, 1]),
-    qml.TRX(0.123, wires=0, subspace=[0, 2]),
-    qml.TRX(0.123, wires=0, subspace=[1, 2]),
-    qml.TRY(0.123, wires=0, subspace=[0, 1]),
-    qml.TRY(0.123, wires=0, subspace=[0, 2]),
-    qml.TRY(0.123, wires=0, subspace=[1, 2]),
-    qml.TRZ(0.123, wires=0, subspace=[0, 1]),
-    qml.TRZ(0.123, wires=0, subspace=[0, 2]),
-    qml.TRZ(0.123, wires=0, subspace=[1, 2]),
+    qml.TRX(0.123, wires=0, subspace=(0, 1)),
+    qml.TRX(0.123, wires=0, subspace=(0, 2)),
+    qml.TRX(0.123, wires=0, subspace=(1, 2)),
+    qml.TRY(0.123, wires=0, subspace=(0, 1)),
+    qml.TRY(0.123, wires=0, subspace=(0, 2)),
+    qml.TRY(0.123, wires=0, subspace=(1, 2)),
+    qml.TRZ(0.123, wires=0, subspace=(0, 1)),
+    qml.TRZ(0.123, wires=0, subspace=(0, 2)),
+    qml.TRZ(0.123, wires=0, subspace=(1, 2)),
     qml.QutritUnitary(TSHIFT, wires=0),
     qml.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
 ]
 
 BROADCASTED_OPERATIONS = [
-    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[1, 2]),
-    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[0, 2]),
-    qml.TRZ(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[0, 1]),
+    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(1, 2)),
+    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 2)),
+    qml.TRZ(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 1)),
     qml.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
     qml.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
 ]
@@ -116,82 +116,82 @@ class TestParameterFrequencies:
 
 
 matrix_data = [
-    (qml.TRX, 0, [0, 1], np.eye(3)),
-    (qml.TRX, 0, [1, 2], np.eye(3)),
-    (qml.TRX, 0, [0, 2], np.eye(3)),
-    (qml.TRY, 0, [0, 1], np.eye(3)),
-    (qml.TRY, 0, [1, 2], np.eye(3)),
-    (qml.TRY, 0, [0, 2], np.eye(3)),
-    (qml.TRZ, 0, [0, 1], np.eye(3)),
-    (qml.TRZ, 0, [1, 2], np.eye(3)),
-    (qml.TRZ, 0, [0, 2], np.eye(3)),
+    (qml.TRX, 0, (0, 1), np.eye(3)),
+    (qml.TRX, 0, (1, 2), np.eye(3)),
+    (qml.TRX, 0, (0, 2), np.eye(3)),
+    (qml.TRY, 0, (0, 1), np.eye(3)),
+    (qml.TRY, 0, (1, 2), np.eye(3)),
+    (qml.TRY, 0, (0, 2), np.eye(3)),
+    (qml.TRZ, 0, (0, 1), np.eye(3)),
+    (qml.TRZ, 0, (1, 2), np.eye(3)),
+    (qml.TRZ, 0, (0, 2), np.eye(3)),
     (
         qml.TRX,
         np.pi / 2,
-        [0, 1],
+        (0, 1),
         np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
         qml.TRX,
         np.pi / 2,
-        [1, 2],
+        (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRX,
         np.pi / 2,
-        [0, 2],
+        (0, 2),
         np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRY,
         np.pi / 2,
-        [0, 1],
+        (0, 1),
         np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
         qml.TRY,
         np.pi / 2,
-        [1, 2],
+        (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRY,
         np.pi / 2,
-        [0, 2],
+        (0, 2),
         np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRZ,
         np.pi / 2,
-        [0, 1],
+        (0, 1),
         np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])),
     ),
     (
         qml.TRZ,
         np.pi / 2,
-        [1, 2],
+        (1, 2),
         np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])),
     ),
     (
         qml.TRZ,
         np.pi / 2,
-        [0, 2],
+        (0, 2),
         np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])),
     ),
-    (qml.TRX, np.pi, [0, 1], -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
-    (qml.TRX, np.pi, [1, 2], -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
-    (qml.TRX, np.pi, [0, 2], -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
-    (qml.TRY, np.pi, [0, 1], np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
-    (qml.TRY, np.pi, [1, 2], np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
-    (qml.TRY, np.pi, [0, 2], np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
-    (qml.TRZ, np.pi, [0, 1], -1j * np.diag([1, -1, 1j])),
-    (qml.TRZ, np.pi, [1, 2], -1j * np.diag([1j, 1, -1])),
-    (qml.TRZ, np.pi, [0, 2], -1j * np.diag([1, 1j, -1])),
+    (qml.TRX, np.pi, (0, 1), -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
+    (qml.TRX, np.pi, (1, 2), -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
+    (qml.TRX, np.pi, (0, 2), -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
+    (qml.TRY, np.pi, (0, 1), np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
+    (qml.TRY, np.pi, (1, 2), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
+    (qml.TRY, np.pi, (0, 2), np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
+    (qml.TRZ, np.pi, (0, 1), -1j * np.diag([1, -1, 1j])),
+    (qml.TRZ, np.pi, (1, 2), -1j * np.diag([1j, 1, -1])),
+    (qml.TRZ, np.pi, (0, 2), -1j * np.diag([1, 1j, -1])),
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [0, 1],
+        (0, 1),
         np.tensordot(
             [1, 1], np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
         ),
@@ -199,7 +199,7 @@ matrix_data = [
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [1, 2],
+        (1, 2),
         np.tensordot(
             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2), axes=0
         ),
@@ -207,7 +207,7 @@ matrix_data = [
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [0, 2],
+        (0, 2),
         np.tensordot(
             [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
         ),
@@ -215,7 +215,7 @@ matrix_data = [
     (
         qml.TRY,
         np.array([np.pi / 2] * 2),
-        [0, 1],
+        (0, 1),
         np.tensordot(
             [1, 1], np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
         ),
@@ -223,7 +223,7 @@ matrix_data = [
     (
         qml.TRY,
         np.array([np.pi / 2] * 2),
-        [1, 2],
+        (1, 2),
         np.tensordot(
             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2), axes=0
         ),
@@ -231,7 +231,7 @@ matrix_data = [
     (
         qml.TRY,
         np.array([np.pi / 2] * 2),
-        [0, 2],
+        (0, 2),
         np.tensordot(
             [1, 1], np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2), axes=0
         ),
@@ -239,19 +239,19 @@ matrix_data = [
     (
         qml.TRZ,
         np.array([np.pi / 2] * 2),
-        [0, 1],
+        (0, 1),
         np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])), axes=0),
     ),
     (
         qml.TRZ,
         np.array([np.pi / 2] * 2),
-        [1, 2],
+        (1, 2),
         np.tensordot([1, 1], np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])), axes=0),
     ),
     (
         qml.TRZ,
         np.array([np.pi / 2] * 2),
-        [0, 2],
+        (0, 2),
         np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])), axes=0),
     ),
 ]
