@@ -17,6 +17,7 @@ import pytest
 import pennylane as qml
 from pennylane.pauli.conversion import pauli_sentence
 from pennylane.fermi.conversion import jw_mapping
+from pennylane.pauli import PauliWord, PauliSentence
 from pennylane.fermi.fermionic import FermiWord
 
 
@@ -40,11 +41,81 @@ from pennylane.fermi.fermionic import FermiWord
             ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
         ),
         (
+            FermiWord({(0, 0): "-", (1, 0): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0 0^'))
+            # reformatted the original openfermion output: (0.5+0j) [] + (0.5+0j) [Z0]
+            ([(0.5 + 0j), (0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
+        ),
+        (
+            FermiWord({(0, 0): "-", (1, 1): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0 1^'))
+            # reformatted the original openfermion output:
+            # (-0.25+0j) [X0 X1] +
+            # 0.25j [X0 Y1] +
+            # -0.25j [Y0 X1] +
+            # (-0.25+0j) [Y0 Y1]
+            (
+                [(-0.25 + 0j), 0.25j, -0.25j, (-0.25 + 0j)],
+                [
+                    qml.PauliX(0) @ qml.PauliX(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliY(0) @ qml.PauliX(1),
+                    qml.PauliY(0) @ qml.PauliY(1),
+                ],
+            ),
+        ),
+        (
+            FermiWord({(0, 1): "-", (1, 0): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('1 0^'))
+            # reformatted the original openfermion output:
+            # (-0.25+0j) [X0 X1] +
+            # -0.25j [X0 Y1] +
+            # 0.25j [Y0 X1] +
+            # (-0.25+0j) [Y0 Y1]
+            (
+                [(-0.25 + 0j), -0.25j, 0.25j, (-0.25 + 0j)],
+                [
+                    qml.PauliX(0) @ qml.PauliX(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliY(0) @ qml.PauliX(1),
+                    qml.PauliY(0) @ qml.PauliY(1),
+                ],
+            ),
+        ),
+        (
             FermiWord({(0, 3): "+", (1, 0): "-"}),
             # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 0', 1))
             # reformatted the original openfermion output
             (
                 [(0.25 + 0j), -0.25j, 0.25j, (0.25 + 0j)],
+                [
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                ],
+            ),
+        ),
+        (
+            FermiWord({(0, 0): "-", (1, 3): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0 3^'))
+            # reformatted the original openfermion output
+            (
+                [(-0.25 + 0j), 0.25j, -0.25j, (-0.25 + 0j)],
+                [
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                ],
+            ),
+        ),
+        (
+            FermiWord({(0, 3): "-", (1, 0): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3 0^'))
+            # reformatted the original openfermion output
+            (
+                [(-0.25 + 0j), -0.25j, 0.25j, (-0.25 + 0j)],
                 [
                     qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(3),
                     qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
@@ -162,10 +233,120 @@ from pennylane.fermi.fermionic import FermiWord
                 ],
             ),
         ),
+        (
+            FermiWord({(0, 3): "-", (1, 0): "+", (2, 2): "-", (3, 1): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3 0^ 2 1^'))
+            (
+                [
+                    (-0.0625 + 0j),
+                    -0.0625j,
+                    -0.0625j,
+                    (0.0625 + 0j),
+                    0.0625j,
+                    (-0.0625 + 0j),
+                    (-0.0625 + 0j),
+                    -0.0625j,
+                    0.0625j,
+                    (-0.0625 + 0j),
+                    (-0.0625 + 0j),
+                    -0.0625j,
+                    (0.0625 + 0j),
+                    0.0625j,
+                    0.0625j,
+                    (-0.0625 + 0j),
+                ],
+                [
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                ],
+            ),
+        ),
+        (
+            FermiWord({(0, 3): "-", (1, 0): "+", (2, 2): "-", (3, 1): "+"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3 0^ 2 1^'))
+            (
+                [
+                    (-0.0625 + 0j),
+                    -0.0625j,
+                    -0.0625j,
+                    (0.0625 + 0j),
+                    0.0625j,
+                    (-0.0625 + 0j),
+                    (-0.0625 + 0j),
+                    -0.0625j,
+                    0.0625j,
+                    (-0.0625 + 0j),
+                    (-0.0625 + 0j),
+                    -0.0625j,
+                    (0.0625 + 0j),
+                    0.0625j,
+                    0.0625j,
+                    (-0.0625 + 0j),
+                ],
+                [
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                ],
+            ),
+        ),
+        (
+            FermiWord({(0, 0): "-", (1, 0): "+", (2, 2): "+", (3, 1): "-"}),
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0 0^ 2^ 1'))
+            (
+                [
+                    (0.125 + 0j),
+                    -0.125j,
+                    0.125j,
+                    (0.125 + 0j),
+                    (0.125 + 0j),
+                    -0.125j,
+                    0.125j,
+                    (0.125 + 0j),
+                ],
+                [
+                    qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliX(2),
+                    qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
+                    qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliX(2),
+                    qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliY(2),
+                    qml.PauliX(1) @ qml.PauliX(2),
+                    qml.PauliX(1) @ qml.PauliY(2),
+                    qml.PauliY(1) @ qml.PauliX(2),
+                    qml.PauliY(1) @ qml.PauliY(2),
+                ],
+            ),
+        ),
     ],
 )
 def test_jw_mapping(fermionic_op, result):
-    r"""Test that the jw_mapping function returns the correct qubit operator."""
+    """Test that the jw_mapping function returns the correct qubit operator."""
     # convert FermiWord to PauliSentence and simplify
     qubit_op = jw_mapping(fermionic_op)
     qubit_op.simplify()
@@ -175,3 +356,23 @@ def test_jw_mapping(fermionic_op, result):
     expected_op.simplify()
 
     assert qubit_op == expected_op
+
+
+def test_jw_mapping_for_identity():
+    """Test that the jw_mapping function returns the correct qubit operator for Identity."""
+
+    assert jw_mapping(FermiWord({})) == PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
+
+
+@pytest.mark.parametrize(
+    "operator",
+    (
+        FermiWord({(0, 1): "-", (1, 0): "+", (2, 2): "-", (3, 1): "-"}),  # ('1 0^ 2 1')
+        FermiWord({(0, 1): "-", (1, 0): "+", (2, 2): "+", (3, 1): "-"}),  # ('1 0^ 2^ 1')
+        FermiWord({(0, 3): "-", (1, 0): "+", (2, 2): "+", (3, 3): "-"}),  # ('3 0^ 2^ 3')
+        FermiWord({(0, 3): "-", (1, 2): "+", (2, 2): "+", (3, 3): "-"}),  # ('3 2^ 2^ 3')
+    ),
+)
+def test_jw_mapping_for_0(operator):
+    """Test that the jw_mapping function works when the result is 0"""
+    assert operator.to_qubit().simplify() is None

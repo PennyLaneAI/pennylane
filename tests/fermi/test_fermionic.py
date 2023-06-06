@@ -174,7 +174,7 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
 
-    FERMI_WORDS_AND_PAULI_SENTENCES = (
+    FERMI_AND_PAULI_WORDS = (
         (
             FermiWord({(0, 1): "+", (1, 1): "-", (2, 0): "+", (3, 0): "-"}),  # [1, 1, 0, 0],
             # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1 0^ 0', 1))
@@ -211,7 +211,7 @@ class TestFermiWord:
         ),
     )
 
-    @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_WORDS_AND_PAULI_SENTENCES)
+    @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_WORDS)
     def test_to_qubit(self, operator, pauli_equivalent):
 
         ps = operator.to_qubit()
