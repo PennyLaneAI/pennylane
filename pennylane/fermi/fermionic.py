@@ -168,7 +168,6 @@ class FermiWord(dict):
     # TODO: support multiply by number in __mul__ when FermiSentence is merged.
     # TODO: create mapping method when the jordan_wigner function is added.
     # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
-    
 
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
@@ -238,8 +237,7 @@ class FermiSentence(dict):
             operator *= self
 
         return operator
-      
-     def simplify(self, tol=1e-8):
+    def simplify(self, tol=1e-8):
         r"""Remove any FermiWords in the FermiSentence with coefficients less than the threshold
         tolerance."""
         items = list(self.items())
