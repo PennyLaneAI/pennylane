@@ -281,6 +281,9 @@
 * A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
   [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
 
+* Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
+  [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
