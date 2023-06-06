@@ -361,17 +361,11 @@ class Projector(Observable):
     """
 
     def __new__(
-        cls, state, wires, basis_representation=True, do_queue=False, id=None
+        cls, state, wires, basis_representation=True, do_queue=None, id=None
     ):  # pylint: disable=too-many-arguments
-        base_cls = _BasisStateProjector if basis_representation else _StateVectorProjector
-        cls_type = type("Projector", (base_cls, cls), dict(base_cls.__dict__))
-        proj = super().__new__(cls_type)
-        proj.__init__(state, wires, do_queue=do_queue, id=id)
-        return proj
-
-    def pow(self, z):
-        """Raise this projector to the power ``z``."""
-        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
+        if basis_representation:
+            return _BasisStateProjector(state, wires, do_queue=do_queue, id=id)
+        return _StateVectorProjector(state, wires, do_queue=do_queue, id=id)
 
 
 class _BasisStateProjector(Observable):
@@ -407,6 +401,7 @@ class _BasisStateProjector(Observable):
     """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, basis_state, wires, do_queue=None, id=None):
+        print("Basis init lool")
         wires = Wires(wires)
         shape = qml.math.shape(basis_state)
 
@@ -441,7 +436,7 @@ class _BasisStateProjector(Observable):
 
         **Example:**
 
-        >>> qml._BasisStateProjector([0, 1, 0], wires=(0, 1, 2)).label()
+        >>> _BasisStateProjector([0, 1, 0], wires=(0, 1, 2)).label()
         '|010⟩⟨010|'
 
         """
@@ -468,7 +463,7 @@ class _BasisStateProjector(Observable):
 
         **Example**
 
-        >>> qml._BasisStateProjector.compute_matrix([0, 1])
+        >>> _BasisStateProjector.compute_matrix([0, 1])
         [[0. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 0.]
@@ -502,7 +497,7 @@ class _BasisStateProjector(Observable):
 
         **Example**
 
-        >>> qml._BasisStateProjector.compute_eigvals([0, 1])
+        >>> _BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
         w = np.zeros(2 ** len(basis_state))
@@ -533,10 +528,14 @@ class _BasisStateProjector(Observable):
 
         **Example**
 
-        >>> qml._BasisStateProjector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
+        >>> _BasisStateProjector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
         []
         """
         return []
+
+    def pow(self, z):
+        """Raise this projector to the power ``z``."""
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
 class _StateVectorProjector(Observable):
@@ -605,6 +604,9 @@ class _StateVectorProjector(Observable):
         '(0.71|01⟩ + 0.71|10⟩)(0.71⟨01| + 0.71⟨10|)'
 
         """
+        if base_label is not None:
+            return base_label
+
         state_vector = self.parameters[0]
         n_wires = int(qml.math.log2(len(state_vector)))
         basis_state_idx = qml.math.nonzero(state_vector)[0]
@@ -626,8 +628,8 @@ class _StateVectorProjector(Observable):
         bras = " + ".join([f"{c}⟨{b}|" for c, b in zip(coefficients, basis_strings)])
         label = f"({kets})({bras})"
 
-        if len(label) > 42:
-            return super().label(base_label=base_label or "P", cache={"info": label})
+        # if len(label) > 42:
+        #     return super().label(base_label=base_label or "P", cache={"info": label})
 
         return label
 
@@ -650,7 +652,7 @@ class _StateVectorProjector(Observable):
 
         The projector of the state :math:`\frac{1}{\sqrt{2}}(\ket{01}+\ket{10})`
 
-        >>> qml._StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
+        >>> _StateVectorProjector.compute_matrix([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
         [[0. 0.  0.  0.]
          [0. 0.5 0.5 0.]
          [0. 0.5 0.5 0.]
@@ -681,7 +683,7 @@ class _StateVectorProjector(Observable):
 
         **Example**
 
-        >>> qml._StateVectorProjector.compute_eigvals([0, 0, 1, 0])
+        >>> _StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         [0. 0. 0. 1.]
         """
         w = qml.math.zeros_like(state_vector)
@@ -712,7 +714,7 @@ class _StateVectorProjector(Observable):
         **Example**
 
         >>> state_vector = np.array([1., 1j])/np.sqrt(2)
-        >>> qml._StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
+        >>> _StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
         [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
                              [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
         """
@@ -729,3 +731,7 @@ class _StateVectorProjector(Observable):
         psi /= denominator
         u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]
+
+    def pow(self, z):
+        """Raise this projector to the power ``z``."""
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
