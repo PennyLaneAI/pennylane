@@ -164,15 +164,13 @@ class FermiC(FermiWord):
     r"""FermiC(wire)
     The fermionic creation operator :math:`a^\dagger`
 
-    .. math:: a^\dagger \ket{n} = \sqrt{n + 1} \ket{n+1}
-
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 0
 
     Args:
-        wire(int): the non-negative integer indicating the energy level the operator acts on.
+        wire(int): the non-negative integer indicating the state the operator acts on.
 
     The first state is designated 0, and subsequent states are numbered chronologically. For
     instance, ``qml.FermiC(3)`` (:math:`a^\dagger_3`) operates on the 3rd state in :math:`\ket{0000}`.
@@ -189,10 +187,10 @@ class FermiC(FermiWord):
     <FermiWord = '0+'>
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
-    :math:`a^\dagger_0 a_1` can be constructed as:
+    :math:`a^\dagger_0 a_1 a^\dagger_2, a_3` can be constructed as:
 
-    >>> qml.FermiC(0) * qml.FermiA(1)
-    <FermiWord = '0+ 1-'>
+    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    <FermiWord = '0+ 1- 2+ 3-'>
     """
 
     def __init__(self, wire):
@@ -212,8 +210,6 @@ class FermiC(FermiWord):
 class FermiA(FermiWord):
     r"""FermiA(wire)
     The fermionic annihilation operator :math:`a`
-
-    .. math:: a \ket{n} = \sqrt{n} \ket{n-1}
 
     **Details:**
 
@@ -238,10 +234,10 @@ class FermiA(FermiWord):
     <FermiWord = '0-'>
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
-    :math:`a^\dagger_0 a_1` can be constructed as:
+    :math:`a^\dagger_0 a_1 a^\dagger_2, a_3` can be constructed as:
 
-    >>> qml.FermiC(0) * qml.FermiA(1)
-    <FermiWord = '0+ 1-'>
+    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    <FermiWord = '0+ 1- 2+ 3-'>
     """
 
     def __init__(self, wire):
