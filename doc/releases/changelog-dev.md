@@ -6,6 +6,10 @@
 
 <h4>Fermionic operators 🔬</h4>
 
+* Added the `FermiWord` class to represent a fermionic operator such as
+  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
 <h4>Workflow-level resource estimation 🧮</h4>
 
 * PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
@@ -199,10 +203,6 @@
 
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
-
-* Added the `FermiWord` class to represent a fermionic operator such as
-  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
-  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
 <h3>Improvements 🛠</h3>
 
