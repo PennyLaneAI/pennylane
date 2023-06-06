@@ -359,13 +359,35 @@ class Projector(Observable):
             use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
+    _basis_state_type = None
+    _state_vector_type = None
 
-    def __new__(
-        cls, state, wires, basis_representation=True, do_queue=None, id=None
-    ):  # pylint: disable=too-many-arguments
+    def __new__(cls, *_, basis_representation=True, **__):
         if basis_representation:
-            return _BasisStateProjector(state, wires, do_queue=do_queue, id=id)
-        return _StateVectorProjector(state, wires, do_queue=do_queue, id=id)
+            if cls._basis_state_type is None:
+                base_cls = (_BasisStateProjector, Projector)
+                cls._basis_state_type = type("Projector", base_cls, dict(cls.__dict__))
+            return object.__new__(cls._basis_state_type)
+
+        if cls._state_vector_type is None:
+            base_cls = (_StateVectorProjector, Projector)
+            cls._state_vector_type = type("Projector", base_cls, dict(cls.__dict__))
+        return object.__new__(cls._state_vector_type)
+
+    def pow(self, z):
+        """Raise this projector to the power ``z``."""
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
+
+    def __copy__(self):
+        copied_op = self.__new__(
+            Projector, basis_representation=self._basis_representation  # pylint: disable=no-member
+        )
+        copied_op.data = self.data.copy()
+        for attr, value in vars(self).items():
+            if attr != "data":
+                setattr(copied_op, attr, value)
+
+        return copied_op
 
 
 class _BasisStateProjector(Observable):
@@ -400,10 +422,18 @@ class _BasisStateProjector(Observable):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, basis_state, wires, do_queue=None, id=None):
-        print("Basis init lool")
+    def __init__(
+        self, basis_state, wires, basis_representation=True, do_queue=None, id=None
+    ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         shape = qml.math.shape(basis_state)
+
+        if not basis_representation:
+            raise ValueError(
+                "This projector expects the input to be a basis state and, therefore, "
+                f"``basis_representation`` should be ``True``, got {basis_representation} instead."
+            )
+        self._basis_representation = basis_representation
 
         if len(shape) != 1:
             raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
@@ -533,10 +563,6 @@ class _BasisStateProjector(Observable):
         """
         return []
 
-    def pow(self, z):
-        """Raise this projector to the power ``z``."""
-        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
-
 
 class _StateVectorProjector(Observable):
     r"""
@@ -568,10 +594,19 @@ class _StateVectorProjector(Observable):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, state_vector, wires, do_queue=True, id=None):
+    def __init__(
+        self, state_vector, wires, basis_representation=False, do_queue=True, id=None
+    ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         shape = qml.math.shape(state_vector)
         state_vector = list(qml.math.toarray(state_vector))
+
+        if basis_representation:
+            raise ValueError(
+                "This projector expects the input to be a state vector and, therefore, "
+                f"``basis_representation`` should be ``False``, got {basis_representation} instead."
+            )
+        self._basis_representation = basis_representation
 
         if len(shape) != 1:
             raise ValueError(f"State vector must be one-dimensional; got shape {shape}.")

@@ -453,12 +453,18 @@ class TestProjector:
         basis_state_projector = qml.Projector(basis_state, wires)
         assert isinstance(basis_state_projector, _BasisStateProjector)
 
+        second_projector = qml.Projector(basis_state, wires)
+        assert qml.equal(second_projector, basis_state_projector)
+
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when ``basis_representation=False``."""
         state_vector = np.array([1, 1, 1, 1]) / 2
         wires = [0, 1]
         state_vector_projector = qml.Projector(state_vector, wires, basis_representation=False)
         assert isinstance(state_vector_projector, _StateVectorProjector)
+
+        second_projector = qml.Projector(state_vector, wires, basis_representation=False)
+        assert qml.equal(second_projector, state_vector_projector)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""
@@ -479,15 +485,13 @@ class TestProjector:
         basis_state = np.array([0, 1])
         op = qml.Projector(basis_state, wires=(0, 1))
         pow_op = op.pow(n)[0]
-        assert isinstance(pow_op, _BasisStateProjector)
-        assert qml.math.allclose(pow_op.data[0], op.data[0])
+        assert qml.equal(op, pow_op)
 
         # State vector projector
         state_vector = np.array([0, 1])
         op = qml.Projector(state_vector, wires=[0], basis_representation=False)
         pow_op = op.pow(n)[0]
-        assert isinstance(pow_op, _StateVectorProjector)
-        assert qml.math.allclose(pow_op.data[0], op.data[0])
+        assert qml.equal(op, pow_op)
 
 
 class TestBasisStateProjector:
