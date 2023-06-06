@@ -93,12 +93,49 @@
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
 * Updated repr for ParametrizedHamiltonian.
-  [(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+* The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
+  [(#4181)](https://github.com/PennyLaneAI/pennylane/pull/4181)
+
+  We've enabled two cases for calculating the trace distance:
+  
+  - A QNode transform via `qml.qinfo.trace_distance`:
+
+    ```python
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit(param):
+        qml.RY(param, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.state()
+    ```
+
+    ```pycon
+    >>> trace_distance_circuit = qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[0])
+    >>> x, y = np.array(0.4), np.array(0.6)
+    >>> trace_distance_circuit((x,), (y,))
+    0.047862689546603415
+    ```
+
+  - Support in `qml.math` for flexible post-processing:
+
+    ```pycon
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+    >>> qml.math.trace_distance(rho, sigma)
+    0.19999999999999998
+    ```
 
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+
+* Added the `FermiWord` class to represent a fermionic operator such as
+  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
 <h3>Improvements 🛠</h3>
 
@@ -340,6 +377,9 @@
 * A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
   [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
 
+* Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
+  [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -352,6 +392,7 @@ Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Tristan Nemoz,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
