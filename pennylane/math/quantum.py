@@ -35,7 +35,7 @@ def _state_param_deprecation_warning(func_name):
     """Raise a warning that passing a state vector as a parameter is deprecated"""
     warnings.warn(
         f"Passing a state vector to {func_name} has been deprecated. "
-        f"Please call qml.math.dm_from_state_vector first.",
+        "Please call qml.math.dm_from_state_vector first.",
         UserWarning,
     )
 
@@ -45,8 +45,8 @@ def _interpret_dm_warning(x, func_name):
     than a batched state vector"""
     warnings.warn(
         f"Argument passed to {func_name} has shape {qml.math.shape(x)} and will be interpreted "
-        f"as a density matrix. If a batched state vector was intended, please "
-        f"call qml.math.dm_from_state_vector first, as passing state vectors to "
+        "as a density matrix. If a batched state vector was intended, please "
+        "call qml.math.dm_from_state_vector first, as passing state vectors to "
         f"{func_name} is deprecated."
     )
 
