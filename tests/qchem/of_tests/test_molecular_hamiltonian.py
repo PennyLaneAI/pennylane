@@ -1,5 +1,20 @@
-import sys
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for molecular Hamiltonians.
+"""
+# pylint: disable=too-many-arguments
 import pytest
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -11,8 +26,8 @@ from pennylane.ops import Hamiltonian
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
-symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
-coordinates = np.array(
+symb = ["C", "C", "N", "H", "H", "H", "H", "H"]
+coords = np.array(
     [
         0.68219113,
         -0.85415621,
@@ -74,8 +89,8 @@ def test_building_hamiltonian(
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(
-        symbols,
-        coordinates,
+        symb,
+        coords,
         charge=charge,
         mult=mult,
         method=package,
@@ -211,8 +226,8 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
     )
 
-    assert h_args.coeffs.requires_grad == True
-    assert h_noargs.coeffs.requires_grad == False
+    assert h_args.coeffs.requires_grad is True
+    assert h_noargs.coeffs.requires_grad is False
 
 
 @pytest.mark.parametrize(
@@ -236,7 +251,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
 )
 def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, grouping, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
-    hamiltonian, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         method=method,
@@ -269,7 +284,7 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, gr
 )
 def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, grouping, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
-    hamiltonian, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         wires=wiremap,
@@ -317,13 +332,13 @@ def test_diff_hamiltonian_error(symbols, geometry):
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")[0]
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     with pytest.raises(ValueError, match="Only 'dhf' and 'pyscf' backends are supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="psi4")[0]
+        qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, mult=3)[0]
+        qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
 
 @pytest.mark.parametrize(
@@ -351,7 +366,7 @@ def test_diff_hamiltonian_error(symbols, geometry):
 )
 def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
-    hamiltonian, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         method=method,

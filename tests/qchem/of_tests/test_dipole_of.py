@@ -1,6 +1,20 @@
-import os
-import sys
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the ``dipole_of`` function.
+"""
+# pylint: disable=too-many-arguments
 import numpy as np
 import pytest
 
@@ -236,11 +250,11 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
 
     dip_obs = qml.qchem.dipole_of(symbols, coords, charge=charge, outpath=tmpdir.strpath)
 
-    def circuit(param, wires):
+    def circuit(wires):
         qml.BasisState(hf_state, wires=wires)
 
     with pytest.warns(UserWarning, match="is deprecated,"):
-        dipole = np.array([qml.ExpvalCost(circuit, obs, dev)(0.0) for obs in dip_obs])
+        dipole = np.array([qml.ExpvalCost(circuit, obs, dev)() for obs in dip_obs])
 
     assert np.allclose(dipole, exp_dipole, **tol)
 
