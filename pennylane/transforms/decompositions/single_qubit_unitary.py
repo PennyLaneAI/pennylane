@@ -264,10 +264,14 @@ def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
         U (tensor): A :math:`2 \times 2` unitary matrix.
         rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        return_global_phase (bool): Whether to return the global phase
+            as a `qml.s_prod` between `exp(1j)*alpha` and `qml.Identity` as the last
+            element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of of gates which when applied in the order of appearance
-        in the list is equivalent to the unitary :math:`U` up to global phase.
+        in the list is equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        the global phase is returned as the last element of the list.
 
     **Example**
 
