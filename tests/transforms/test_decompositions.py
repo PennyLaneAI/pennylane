@@ -403,6 +403,95 @@ class TestQubitUnitaryZXZDecomposition:
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
 
+single_qubit_decomps = [
+    (
+        np.array(
+            [
+                [0, -9.831019270939975e-01 + 0.1830590094588862j],
+                [9.831019270939975e-01 + 0.1830590094588862j, 0],
+            ]
+        ),
+        "ZYZ",
+        typeof_gates_zyz,
+        [-0.18409714468526372, np.pi, 0.18409714468526372, 1],
+    ),
+    (
+        np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        ),
+        "XYX",
+        typeof_gates_xyx,
+        (
+            -1.7210192479534632,
+            1.3974974118006183,
+            0.45246583660683803,
+            0.38469215914523336 - 0.9230449299422961j,
+        ),
+    ),
+    (
+        np.array(
+            [
+                [0, -9.831019270939975e-01 + 0.1830590094588862j],
+                [9.831019270939975e-01 + 0.1830590094588862j, 0],
+            ]
+        ),
+        "ZXZ",
+        typeof_gates_zxz,
+        [-1.7548934714801603, np.pi, 1.7548934714801607, 1],
+    ),
+]
+
+
+class TestOneQubitUnitaryDecomposition:
+    """Test that one qubit unitaries are correctly decomposed."""
+
+    def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
+        assert len(obtained_gates) == 4, "Incorrect number of gates"
+        for i in range(4):
+            assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
+            assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
+
+        # Check the global phase
+        assert qml.math.allclose(
+            qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
+        ), "Incorrect global phase"
+        # Now we check the ZXZ rotation angles
+        assert qml.math.allclose(
+            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:3]],
+            expected_params[:3],
+            atol=1e-7,
+        ), "Incorrect ZXZ rotation angles"
+
+        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+
+        if len(obtained_mat.shape) == 2:
+            U = [U]
+            obtained_mat = [obtained_mat]
+
+        assert all(
+            check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
+            for curr_obtained_mat, curr_U in zip(obtained_mat, qml.math.unwrap(U))
+        )
+
+    @pytest.mark.parametrize("U,decomp_type,expected_gates,expected_params", single_qubit_decomps)
+    def test_one_qubit_decomposition(self, U, decomp_type, expected_gates, expected_params):
+        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        obtained_gates = one_qubit_decomposition(
+            U, decomp_type, Wires("a"), return_global_phase=True
+        )
+
+        self._run_assertions(U, expected_gates, expected_params, obtained_gates)
+
+    # @pytest.mark.parametrize("U,decomp_type,expected_gates,expected_params", single_qubit_decomps)
+    def test_one_qubit_decomposition_exception(self):
+        U = qml.Rot(1.2, 1.2, 1.2, wires=0).matrix()
+        with pytest.raises(ValueError):
+            one_qubit_decomposition(U, "nonsense string", Wires("a"), return_global_phase=True)
+
+
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
 # These require 3 CNOTs each
 samples_3_cnots = [
