@@ -762,12 +762,6 @@ class QuantumScript:
         op_map = {
             pinfo["op_idx"]: (pinfo["op"], list(pinfo["op"].data)) for pinfo in self._par_info
         }
-
-        # op_map = {}
-        # for pinfo in self._par_info:
-        #     if pinfo["op_idx"] not in op_map:
-        #         op_map[pinfo["op_idx"]] = (pinfo["op"], list(pinfo["op"].data))
-
         op_data = [op_map[pinfo["op_idx"]][1] for pinfo in self._par_info]
 
         for idx, p in iterator:
