@@ -88,6 +88,18 @@ def ctrl(savefile="ctrl.png"):
     plt.close()
 
 
+def cond(savefile="cond.png"):
+    drawer = MPLDrawer(n_wires=3, n_layers=4)
+
+    drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
+
+    options = {'color': "indigo", 'linewidth': 1.5}
+    drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
+
+    plt.savefig(folder / savefile)
+    plt.close()
+
+
 def CNOT(savefile="cnot.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
 

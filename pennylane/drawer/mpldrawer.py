@@ -867,7 +867,7 @@ class MPLDrawer:
 
         .. code-block:: python
 
-            drawer = qml.drawer.MPLDrawer(n_wires=3, n_layers=4)
+            drawer = MPLDrawer(n_wires=3, n_layers=4)
 
             drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
 
