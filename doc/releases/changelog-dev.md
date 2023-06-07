@@ -221,14 +221,43 @@
 
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
-* The `TorchLayer` and `KerasLayer` integrations with `torch.nn` and `Keras` have been upgraded with
-  the following new features:
+* The `TorchLayer` and `KerasLayer` integrations with `torch.nn` and `Keras` have been upgraded.
+  Consider the `TorchLayer`:
+
+  ```python
+  n_qubits = 2
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def qnode(inputs, weights):
+      qml.AngleEmbedding(inputs, wires=range(n_qubits))
+      qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
+      return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
+
+  n_layers = 6
+  weight_shapes = {"weights": (n_layers, n_qubits)}
+  qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+  ```
+  
+  The following features are now available:
 
   - Native support for parameter broadcasting.
     [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+
+    ```pycon
+    >>> batch_size = 10
+    >>> inputs = torch.rand((batch_size, n_qubits))
+    >>> qlayer(inputs)
+    >>> assert dev.num_executions == 1
+    ```
+
   - Ability to directly draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
     `qml.draw_mpl()`.
     [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
+
+  - Support for `KerasLayer` model saving and clearer instructions on `TorchLayer` model saving.
+    [(#4149)](https://github.com/PennyLaneAI/pennylane/pull/4149)
+    [(#4158)](https://github.com/PennyLaneAI/pennylane/pull/4158)
 
 <h3>Improvements 🛠</h3>
 
