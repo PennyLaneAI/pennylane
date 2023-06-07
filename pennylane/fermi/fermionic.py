@@ -242,3 +242,23 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+
+def fermiword(operator):
+    r"""Return a fermionic operator object from its string representation.
+
+    Args:
+        operator (str): string representation of the fermionic object
+
+    Returns:
+        FermiWord: the fermionic operator object
+
+    **Example**
+
+    >>> operator = '0+ 1- 0+ 1-'
+    >>> fermiword(operator)
+    <FermiWord = '0+ 1- 0+ 1-'>
+    """
+    operator = {(i, int(s[0])): s[1] for i, s in enumerate(re.split("\s", string))}
+
+    return FermiWord(operator)
