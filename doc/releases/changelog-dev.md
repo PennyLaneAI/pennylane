@@ -177,8 +177,10 @@
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
-* The public methods of `DefaultQubit` that aren't present in `DefaultQubit2` should no longer be called
-  directly by users. The docstrings of the affected methods have been updated to reflect this.
+* The public methods of `DefaultQubit` are pending changes to
+  follow the new device API, as used in `DefaultQubit2`.
+  The docstrings of the affected methods in `DefaultQubit` have been
+  updated to reflect this.
   [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
 
 <h3>Documentation 📝</h3>

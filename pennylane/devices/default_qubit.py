@@ -211,7 +211,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly using this property is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
         """
 
@@ -265,7 +265,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly calling this method is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
 
         Args:
@@ -562,7 +562,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly calling this method is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
 
         Args:
@@ -719,7 +719,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly requesting this property is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
         """
 
@@ -945,7 +945,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly calling this method is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
         """
 
@@ -961,7 +961,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly calling this method is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
 
         Args:
@@ -1016,7 +1016,7 @@ class DefaultQubit(QubitDevice):
         .. warning::
 
             Directly calling this method is not recommended and should be avoided where possible.
-            The available methods of DefaultQubit will be updated soon to follow a new API described
+            The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
 
         Args:

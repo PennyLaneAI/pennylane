@@ -51,17 +51,23 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* The public methods of ``DefaultQubit`` that aren't present in ``DefaultQubit2`` are pending changes to
-  follow a new API.
+* The public methods of ``DefaultQubit`` are pending changes to
+  follow the new device API, as used in ``DefaultQubit2``.
 
-  We are switching to a new device interface. In this new interface, simulation implementation details
+  We will be switching to the new device interface in a coming release.
+  In this new interface, simulation implementation details
   will be abstracted away from the device class itself and provided by composition, rather than inheritance.
-  Therefore, many public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
-  in a workflow will remain the same. See :class:`pennylane.devices.experimental.Device` for more information
-  on what the new interface will look like.
-
-  To directly work with the components of a Python state vector simulator, please consult the ``devices.qubit``
-  submodule.
+  Therefore, some public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
+  in a workflow will remain the same.
+  
+  If you directly interact with device methods, please consult
+  :class:`pennylane.devices.experimental.Device` and
+  :class:`pennylane.devices.experimental.DefaultQubit2`
+  for more information on what the new interface will look like and be prepared
+  to make updates in a coming release. If you have any feedback on these
+  changes, please create an
+  [issue](https://github.com/PennyLaneAI/pennylane/issues) or post in our
+  [discussion forum](https://discuss.pennylane.ai/).
 
   - Deprecated in v0.31
 
