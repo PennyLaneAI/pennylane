@@ -43,58 +43,58 @@ def kahypar_cut(
 ) -> List[Tuple[Operation, Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
 
-        .. warning::
-            Requires KaHyPar to be installed separately. For Linux and Mac users,
-            KaHyPar can be installed using ``pip install kahypar``. Windows users
-            can follow the instructions
-            `here <https://kahypar.org>`__ to compile from source.
+    .. warning::
+        Requires KaHyPar to be installed separately. For Linux and Mac users,
+        KaHyPar can be installed using ``pip install kahypar``. Windows users
+        can follow the instructions
+        `here <https://kahypar.org>`__ to compile from source.
 
-        Args:
-            graph (nx.MultiDiGraph): The graph to be partitioned.
-            num_fragments (int): Desired number of fragments.
-            imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's determination.
-            edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
-            node_weights (List[Union[int, float]]): Weights for nodes. Defaults to unit-weighted nodes.
-            fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
-                to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
-            hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
-                Setting it to 0 leads to no such insertion. If greater than 0, hyperedges will be
-                appended with the provided weight, to encourage the resulting fragments to cluster gates
-                on the same wire together. Defaults to 1.
-            seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
-                i.e. unfixed seed.
-            config_path (str): KaHyPar's ``.ini`` config file path. Defaults to its SEA20 paper config.
-            trial (int): trial id for summary label creation. Defaults to ``None``.
-            verbose (bool): Flag for printing KaHyPar's output summary. Defaults to ``False``.
+    Args:
+        graph (nx.MultiDiGraph): The graph to be partitioned.
+        num_fragments (int): Desired number of fragments.
+        imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's determination.
+        edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
+        node_weights (List[Union[int, float]]): Weights for nodes. Defaults to unit-weighted nodes.
+        fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
+            to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
+        hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
+            Setting it to 0 leads to no such insertion. If greater than 0, hyperedges will be
+            appended with the provided weight, to encourage the resulting fragments to cluster gates
+            on the same wire together. Defaults to 1.
+        seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
+            i.e. unfixed seed.
+        config_path (str): KaHyPar's ``.ini`` config file path. Defaults to its SEA20 paper config.
+        trial (int): trial id for summary label creation. Defaults to ``None``.
+        verbose (bool): Flag for printing KaHyPar's output summary. Defaults to ``False``.
 
-        Returns:
-            List[Union[int, Any]]: List of cut edges.
+    Returns:
+        List[Union[int, Any]]: List of cut edges.
 
-        **Example**
+    **Example**
 
-        Consider the following 2-wire circuit with one CNOT gate connecting the wires:
+    Consider the following 2-wire circuit with one CNOT gate connecting the wires:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            with qml.tape.QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires="a")
-                qml.CNOT(wires=[0, "a"])
-                qml.RZ(0.240, wires=0)
-                qml.RZ(0.133, wires="a")
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires="a")
-                qml.expval(qml.PauliZ(wires=[0]))
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.expval(qml.PauliZ(wires=[0]))
 
-        We can let KaHyPar automatically find the optimal edges to place cuts:
+    We can let KaHyPar automatically find the optimal edges to place cuts:
 
-        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
-        >>> cut_edges = qml.transforms.qcut.kahypar_cut(
-                graph=graph,
-                num_fragments=2,
-            )
-        >>> cut_edges
-        [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> cut_edges = qml.transforms.qcut.kahypar_cut(
+            graph=graph,
+            num_fragments=2,
+        )
+    >>> cut_edges
+    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
     try:
