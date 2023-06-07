@@ -202,6 +202,9 @@
     0.19999999999999998
     ```
 
+* PennyLane Docker builds have been updated to include the latest plugins and interface versions.
+  [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
+
 <h4>Extended support for differentiating pulses</h4>
 
 * `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. This allows computing Jacobians of the unitary directly even when `dense=False`.
