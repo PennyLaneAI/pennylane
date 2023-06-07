@@ -110,11 +110,11 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
 
-    Operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
+    operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
+        operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
 
-    return Operations
+    return operations
 
 
 def _xyx_decomposition(U, wire, return_global_phase=False):
@@ -178,11 +178,11 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
-    Operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
+    operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
-        Operations += [qml.s_prod(math.exp(1j * gammas), qml.Identity(wire))]
+        operations += [qml.s_prod(math.exp(1j * gammas), qml.Identity(wire))]
 
-    return Operations
+    return operations
 
 
 def _zxz_decomposition(U, wire, return_global_phase=False):
@@ -245,11 +245,11 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
     # Return gates in the order they will be applied on the qubit
-    Operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
+    operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
-        Operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
+        operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
 
-    return Operations
+    return operations
 
 
 def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
