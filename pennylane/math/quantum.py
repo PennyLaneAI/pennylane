@@ -674,7 +674,7 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
         if len(np.shape(state)) == 1:
             return np.real((state[0] + 2.0) / (state[0] + 2.0))
 
-        return np.real((state[0][0] + 2.0) / (state[0][0] + 2.0))
+        return np.real((state[:, 0] + 2.0) / (state[:, 0] + 2.0))
 
     # If the state is a state vector but the system in question is a sub-system of the
     # overall state, then the purity of the sub-system still needs to be computed.
