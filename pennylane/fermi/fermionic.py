@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Fermionic representation classes."""
+import re
 from copy import copy
 
 
@@ -259,6 +260,6 @@ def fermiword(operator):
     >>> fermiword(operator)
     <FermiWord = '0+ 1- 0+ 1-'>
     """
-    operator = {(i, int(s[0])): s[1] for i, s in enumerate(re.split("\s", string))}
+    dic = {(i, int(s[0])): s[1] for i, s in enumerate(re.split("\s", operator))}
 
-    return FermiWord(operator)
+    return FermiWord(dic)
