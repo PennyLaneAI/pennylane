@@ -615,7 +615,7 @@ class _StateVectorProjector(Observable):
     """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(
-        self, state_vector, wires, basis_representation=False, do_queue=True, id=None
+        self, state_vector, wires, basis_representation=False, do_queue=None, id=None
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         shape = qml.math.shape(state_vector)
@@ -666,27 +666,16 @@ class _StateVectorProjector(Observable):
         n_wires = int(qml.math.log2(len(state_vector)))
         basis_state_idx = qml.math.nonzero(state_vector)[0]
 
-        basis_strings = []
-        coefficients = []
-        for idx in basis_state_idx:
-            prob_ampl = state_vector[idx]
-            basis_strings.append(f"{idx:0{n_wires}b}")
-            if qml.math.iscomplex(prob_ampl):
-                coefficients.append(f"({prob_ampl:.2f})")
-            else:
-                coefficients.append(f"{qml.math.real(prob_ampl):.2f}")
+        if len(basis_state_idx) == 1:
+            basis_string = f"{basis_state_idx[0]:0{n_wires}b}"
+            return f"|{basis_string}⟩⟨{basis_string}|"
 
-        if len(basis_strings) == 1:
-            return f"|{basis_strings[0]}><{basis_strings[0]}|"
+        if cache is None or not isinstance(cache.get("matrices", None), list):
+            return "P"
 
-        kets = " + ".join([f"{c}|{b}⟩" for c, b in zip(coefficients, basis_strings)])
-        bras = " + ".join([f"{c}⟨{b}|" for c, b in zip(coefficients, basis_strings)])
-        label = f"({kets})({bras})"
-
-        # if len(label) > 42:
-        #     return super().label(base_label=base_label or "P", cache={"info": label})
-
-        return label
+        mat_num = len(cache["matrices"])
+        cache["matrices"].append(self.parameters[0])
+        return f"P(M{mat_num})"
 
     @staticmethod
     def compute_matrix(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
