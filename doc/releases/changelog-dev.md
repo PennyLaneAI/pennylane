@@ -27,6 +27,9 @@
   $\hat{c}_1 c_0 \hat{c}_2 c_3$.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
+* Added the `FermiSentence` class to represent a linear combination of fermionic operators.
+  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
@@ -260,6 +263,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+  [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
   generating terms of a pulse Hamiltonian.
