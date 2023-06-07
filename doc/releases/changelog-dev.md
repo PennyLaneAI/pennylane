@@ -32,6 +32,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Projector` now accepts state vector representation of states, which enables the creation of projectors
+  in any basis. This should be indicated by `basis_representation=False` when creating a `Projector`.
+  [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)  
+
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
