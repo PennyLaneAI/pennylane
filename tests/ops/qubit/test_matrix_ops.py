@@ -257,7 +257,11 @@ class TestQubitUnitary:
             ),
             (H, (qml.RZ, qml.RY, qml.RZ), [-np.pi, np.pi / 2, 0.0]),
             (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)), (qml.RZ, qml.RY, qml.RZ), [0.2, 0.5, -0.3]),
+            (
+                qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)),
+                (qml.RZ, qml.RY, qml.RZ),
+                [0.2, 0.5, -0.3],
+            ),
             (
                 np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
