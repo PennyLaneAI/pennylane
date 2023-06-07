@@ -14,6 +14,10 @@
 
 FROM pennylane/cuda/base:latest
 ARG INTERFACE_NAME=tensorflow
+RUN . /opt/venv/bin/activate
+# the following packages need re-installation in this build stage to avoid bugs
+RUN pip uninstall -y numpy scipy rustworkx \
+    && pip install "numpy<1.24" "scipy~=1.8" "rustworkx==0.12.0"
 WORKDIR /opt/pennylane/docker/interfaces
 RUN chmod +x install-interface-gpu.sh && ./install-interface-gpu.sh $INTERFACE_NAME
 

@@ -28,6 +28,8 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata \
     python3-pip \
     python3-venv \
     libjpeg-dev \
+    libopenblas-dev \
+    libsuitesparse-dev \
     libpng-dev && \
     rm -rf /var/lib/apt/lists/* \
     && /usr/sbin/update-ccache-symlinks \
@@ -35,6 +37,8 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata \
     && python3 -m venv /opt/venv
 # Activate VirtualENV
 ENV PATH="/opt/venv/bin:$PATH"
+# This flag (along with openblas and suitesparse above) are needed for cvxopt
+ENV CPPFLAGS="-I/usr/include/suitesparse"
 
 #Setup and Build pennylane
 WORKDIR /opt/pennylane

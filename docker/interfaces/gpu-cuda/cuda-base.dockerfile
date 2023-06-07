@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM nvidia/cuda:11.1-base AS compile-image
+FROM nvidia/cuda:11.1.1-base AS compile-image
 
 # Setup and install Basic packages
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
 RUN apt-get update && apt-get install -y apt-utils --no-install-recommends
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y tzdata \
     build-essential \
@@ -54,6 +55,9 @@ COPY --from=compile-image /opt/pennylane /opt/pennylane
 ENV PATH="/opt/venv/bin:$PATH"
 RUN apt-get update \
     && apt-get install -y apt-utils \
-    --no-install-recommends python3 python3-pip python3-venv
+    --no-install-recommends python3 python3-venv \
+    && rm -rf /opt/venv/lib/python3.8/site-packages/pip* \
+    && python3 -m ensurepip
 # Image build completed.
+ENV PYTHONPATH="/opt/venv/lib/python3.8/site-packages"
 CMD echo "Successfully built Docker image for GPU"
