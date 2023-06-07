@@ -85,7 +85,7 @@ def zyz_decomposition(U, wire):
     [Rot(-0.24209529417800013, 1.14938178234275, 1.7330581433950871, wires=[0])]
     """
     warnings.warn(
-        "XYX decomposition is deprecated and will be removed soone. Use :func:`one_qubit_decomposition` with"
+        "The ZYZ decomposition is deprecated and will be removed soon. Use :func:`one_qubit_decomposition` with"
         "the keyword  `rotations=ZYZ`"
     )
     return _zyz_decomposition(U=U, wire=wire)
@@ -199,7 +199,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     warnings.warn(
-        "XYX decomposition is deprecated and will be removed soone. Use :func:`one_qubit_decomposition` with"
+        "The XYX decomposition is deprecated and will be removed soon. Use :func:`one_qubit_decomposition` with"
         "the keyword  `rotations=XYX`"
     )
     return _xyx_decomposition(U=U, wire=wire, return_global_phase=return_global_phase)
