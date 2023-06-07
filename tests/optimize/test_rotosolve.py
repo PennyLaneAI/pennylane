@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RotosolveOptimizer``.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import functools
 import pytest
 from scipy.optimize import shgo
@@ -187,7 +188,7 @@ all_substep_kwargs = [
 )
 class TestWithClassicalFunction:
     def test_number_of_function_calls(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self, fun, _, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         # pylint: disable=too-many-arguments
@@ -195,7 +196,7 @@ class TestWithClassicalFunction:
 
         @functools.wraps(fun)
         def _fun(*args, **kwargs):
-            global num_calls
+            nonlocal num_calls
             num_calls += 1
             return fun(*args, **kwargs)
 
@@ -204,18 +205,18 @@ class TestWithClassicalFunction:
         # Make only the first argument trainable
         param = (np.array(param[0], requires_grad=True),) + param[1:]
         # Only one argument is marked as trainable -> Expect only the executions for that arg
-        new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
+        opt.step(_fun, *param, nums_frequency=nums_freq)
         exp_num_calls_single_trainable = sum(2 * num + 1 for num in nums_freq["x"].values())
         assert num_calls == exp_num_calls_single_trainable
         num_calls = 0
 
         # Parameters are now marked as trainable -> Expect full number of executions
         param = tuple(np.array(p, requires_grad=True) for p in param)
-        new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
+        opt.step(_fun, *param, nums_frequency=nums_freq)
         assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self, fun, x_min, param, nums_freq, _, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
@@ -272,7 +273,7 @@ class TestWithClassicalFunction:
         assert np.isclose(old_cost, fun(*param))
 
     def test_full_output(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self, fun, _, param, nums_freq, __, substep_optimizer, substep_kwargs
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
