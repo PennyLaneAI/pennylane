@@ -133,7 +133,7 @@ def unitary_to_rot(tape):
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
             if qml.math.shape(op.parameters[0]) == (2, 2):
-                one_qubit_decomposition(op.parameters[0], "ZYZ", op.wires[0])
+                one_qubit_decomposition(op.parameters[0], op.wires[0])
             # Two-qubit unitary operations
             elif qml.math.shape(op.parameters[0]) == (4, 4):
                 two_qubit_decomposition(op.parameters[0], op.wires)

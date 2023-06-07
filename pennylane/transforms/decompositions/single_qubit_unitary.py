@@ -252,7 +252,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
-def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
+def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
     r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations. (batched operation)
 
     Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
@@ -262,22 +262,21 @@ def one_qubit_decomposition(U, rotations, wire, return_global_phase=False):
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
-        rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): Whether to return the global phase
-            as a `qml.s_prod` between `exp(1j)*alpha` and `qml.Identity` as the last
-            element of the returned list of operations.
+        rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
+        return_global_phase (bool): Whether to return the global phase as a `qml.s_prod` between
+        `exp(1j)*alpha` and `qml.Identity` as the last element of the returned list of operations.
 
     Returns:
-        list[Operation]: Returns a list of of gates which when applied in the order of appearance
-        in the list is equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        list[Operation]: Returns a list of gates which when applied in the order of appearance in
+        the list is equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = one_qubit_decomposition(U, "ZXZ", 0, return_global_phase=True)
+    >>> decomp = one_qubit_decomposition(U, 0, "ZXZ", return_global_phase=True)
     >>> decomp
         [RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
         RX(tensor(1.14938178, requires_grad=True), wires=[0]),

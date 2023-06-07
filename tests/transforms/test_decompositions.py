@@ -108,7 +108,7 @@ class TestQubitUnitaryZYZDecomposition:
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_zyz)
     def test_zyz_decomposition(self, U, expected_gates, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        obtained_gates = one_qubit_decomposition(U, "ZYZ", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZYZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -120,7 +120,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "ZYZ", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZYZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -132,7 +132,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "ZYZ", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZYZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -150,7 +150,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "ZYZ", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZYZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -226,7 +226,7 @@ class TestQubitUnitaryXYXDecomposition:
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
     def test_xyx_decomposition(self, U, expected_gates, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        obtained_gates = one_qubit_decomposition(U, "XYX", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "XYX", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -238,7 +238,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "XYX", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "XYX", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -250,7 +250,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "XYX", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "XYX", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -268,7 +268,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "XYX", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "XYX", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -356,7 +356,7 @@ class TestQubitUnitaryZXZDecomposition:
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_zxz)
     def test_zxz_decomposition(self, U, expected_gates, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        obtained_gates = one_qubit_decomposition(U, "ZXZ", Wires("a"), return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZXZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -368,7 +368,7 @@ class TestQubitUnitaryZXZDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "ZXZ", wire="a", return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZXZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -380,7 +380,7 @@ class TestQubitUnitaryZXZDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "ZXZ", wire="a", return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZXZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -398,7 +398,7 @@ class TestQubitUnitaryZXZDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = one_qubit_decomposition(U, "ZXZ", wire="a", return_global_phase=True)
+        obtained_gates = one_qubit_decomposition(U, Wires("a"), "ZXZ", return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -480,7 +480,7 @@ class TestOneQubitUnitaryDecomposition:
     def test_one_qubit_decomposition(self, U, decomp_type, expected_gates, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
         obtained_gates = one_qubit_decomposition(
-            U, decomp_type, Wires("a"), return_global_phase=True
+            U, Wires("a"), decomp_type, return_global_phase=True
         )
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
@@ -489,7 +489,7 @@ class TestOneQubitUnitaryDecomposition:
     def test_one_qubit_decomposition_exception(self):
         U = qml.Rot(1.2, 1.2, 1.2, wires=0).matrix()
         with pytest.raises(ValueError):
-            one_qubit_decomposition(U, "nonsense string", Wires("a"), return_global_phase=True)
+            one_qubit_decomposition(U, Wires("a"), "nonsense string", return_global_phase=True)
 
 
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
