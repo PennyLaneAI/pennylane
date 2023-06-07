@@ -95,6 +95,8 @@ STATEVECTORPROJECTOR_TEST_DATA = zip(
     STATEVECTORPROJECTOR_TEST_STATES, STATEVECTORPROJECTOR_TEST_MATRICES
 )
 
+projector_sv = [qml.Projector(np.array([0.5, 0.5, 0.5, 0.5]), [0, 1], basis_representation=False)]
+
 
 class TestSimpleObservables:
     """Tests for simple single-qubit observables"""
@@ -659,7 +661,7 @@ class TestStateVectorProjector:
             circuit(state_vector)
 
         with pytest.raises(ValueError, match="This projector expects the input to be a state"):
-            _BasisStateProjector([1, 0], wires=[0], basis_representation=True)
+            _StateVectorProjector([1, 0], wires=[0], basis_representation=True)
 
     @pytest.mark.parametrize("state_vector,expected", STATEVECTORPROJECTOR_TEST_DATA)
     def test_matrix_representation(self, state_vector, expected, tol):
@@ -672,14 +674,35 @@ class TestStateVectorProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
+    @pytest.mark.parametrize("projector", projector_sv)
+    def test_label_matrices_not_in_cache(self, projector):
+        """Test we obtain the correct label whenever "matrices" keyowrd is not in cache."""
+        assert projector.label(cache={}) == "P"
+
+    @pytest.mark.parametrize("projector", projector_sv)
+    def test_label_matrices_not_list_in_cache(self, projector):
+        """Test we obtain the correct label when "matrices" key pair is not a list."""
+        assert projector.label(cache={"matrices": 0}) == "P"
+
+    @pytest.mark.parametrize("projector", projector_sv)
+    def test_label_empty_matrices_list_in_cache(self, projector):
+        cache = {"matrices": []}
+        assert projector.label(cache=cache) == "P(M0)"
+        assert np.allclose(cache["matrices"][0], projector.parameters[0])
+
+    @pytest.mark.parametrize("projector", projector_sv)
+    def test_label_matrices_list_in_cache(self, projector):
+        cache = {"matrices": [projector.parameters[0]]}
+        assert projector.label(cache=cache) == "P(M1)"  # Does not check repetition (not needed)
+        assert len(cache["matrices"]) == 2
+        assert np.allclose(cache["matrices"][1], projector.parameters[0])
+
 
 label_data = [
     (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
     (qml.Projector([1, 0, 1], wires=(0, 1, 2)), "|101⟩⟨101|"),
-    (
-        qml.Projector(np.array([1, 1]) / np.sqrt(2), wires=[0], basis_representation=False),
-        "(0.71|0⟩ + 0.71|1⟩)(0.71⟨0| + 0.71⟨1|)",
-    ),
+    (qml.Projector([1, 0, 0, 0], wires=(0, 1), basis_representation=False), "|00⟩⟨00|"),
+    (qml.Projector([0.5, 0.5, 0.5, 0.5], wires=(0, 1), basis_representation=False), "P"),
 ]
 
 
