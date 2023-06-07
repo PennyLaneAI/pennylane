@@ -45,9 +45,9 @@ def get_circuit(n_qubits, output_dim, interface):
         qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
         qml.RX(w2[0], wires=0 % n_qubits)
         qml.RX(w3, wires=1 % n_qubits)
-        qml.Rot(*w4, wires=2 % n_qubits)
+        qml.Rot(w4[0], w4[1], w4[2], wires=2 % n_qubits)
         qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
-        qml.Rot(*w6, wires=3 % n_qubits)
+        qml.Rot(w6[0], w6[1], w6[2], wires=3 % n_qubits)
         qml.RX(w7, wires=4 % n_qubits)
         return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
@@ -79,9 +79,9 @@ def get_circuit_dm(n_qubits, output_dim, interface):
         qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
         qml.RX(w2[0], wires=0 % n_qubits)
         qml.RX(w3, wires=1 % n_qubits)
-        qml.Rot(*w4, wires=2 % n_qubits)
+        qml.Rot(w4[0], w4[1], w4[2], wires=2 % n_qubits)
         qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
-        qml.Rot(*w6, wires=3 % n_qubits)
+        qml.Rot(w6[0], w6[1], w6[2], wires=3 % n_qubits)
         qml.RX(w7, wires=4 % n_qubits)
 
         # Using np.log2() here because output_dim is sampled from varying the number of

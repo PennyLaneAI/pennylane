@@ -1476,8 +1476,6 @@ class TestDtypePreservedBroadcasted:
     @pytest.mark.parametrize(
         "op",
         [
-            # TODO[dwierichs]: Include the following test cases once the operations support
-            # broadcasting.
             qml.SingleExcitation,
             qml.SingleExcitationPlus,
             qml.SingleExcitationMinus,

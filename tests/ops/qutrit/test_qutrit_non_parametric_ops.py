@@ -29,9 +29,9 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.TAdd, TADD, None),
     (qml.TSWAP, TSWAP, None),
     (qml.THadamard, TH, None),
-    (qml.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), [0, 1]),
-    (qml.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), [0, 2]),
-    (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), [1, 2]),
+    (qml.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), (0, 1)),
+    (qml.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), (0, 2)),
+    (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), (1, 2)),
 ]
 
 
@@ -101,9 +101,9 @@ period_three_ops = [
 
 period_two_ops = [
     qml.TSWAP(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 2]),
-    qml.THadamard(wires=0, subspace=[1, 2]),
+    qml.THadamard(wires=0, subspace=(0, 1)),
+    qml.THadamard(wires=0, subspace=(0, 2)),
+    qml.THadamard(wires=0, subspace=(1, 2)),
 ]
 
 no_pow_method_ops = [
@@ -181,7 +181,7 @@ label_data = [
     (qml.TAdd([0, 1]), "TAdd"),
     (qml.TSWAP([0, 1]), "TSWAP"),
     (qml.THadamard(0), "TH"),
-    (qml.THadamard(0, subspace=[0, 1]), "TH"),
+    (qml.THadamard(0, subspace=(0, 1)), "TH"),
 ]
 
 
@@ -216,9 +216,9 @@ no_adjoint_ops = [  # ops that are not their own inverses
 
 involution_ops = [  # ops that are their own inverses
     qml.TSWAP(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 2]),
-    qml.THadamard(wires=0, subspace=[1, 2]),
+    qml.THadamard(wires=0, subspace=(0, 1)),
+    qml.THadamard(wires=0, subspace=(0, 2)),
+    qml.THadamard(wires=0, subspace=(1, 2)),
 ]
 
 

@@ -17,14 +17,13 @@ Integration tests for the ``default.qubit.jax`` device.
 import pytest
 import numpy as np
 
-from jax.config import config
+jax = pytest.importorskip("jax", minversion="0.2")
 
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane.pulse import ParametrizedHamiltonian
 
-jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
 
 
@@ -92,7 +91,7 @@ class TestQNodeIntegration:
     )
     def test_float_precision(self, jax_enable_x64, c_dtype, r_dtype):
         """Test that the plugin device uses the same float precision as the jax config."""
-        config.update("jax_enable_x64", jax_enable_x64)
+        jax.config.update("jax_enable_x64", jax_enable_x64)
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.state.dtype == c_dtype
         assert dev.state.real.dtype == r_dtype
