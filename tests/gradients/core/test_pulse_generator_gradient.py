@@ -1129,6 +1129,109 @@ class TestPulseGeneratorTapes:
 class TestPulseGeneratorQNode:
     """Test that pulse_generator integrates correctly with QNodes."""
 
+    def test_qnode_expval_single_par(self):
+        """Test that a simple qnode that returns an expectation value
+        can be differentiated with pulse_generator."""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.2
+        ham_single_q_const = qml.pulse.constant * Y(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], T)
+            return qml.expval(Z(0))
+
+        params = jnp.array(0.4)
+        with qml.Tracker(dev) as tracker:
+            grad = pulse_generator(circuit)(params)
+
+        p = params * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        assert jnp.allclose(grad, exp_grad)
+        assert tracker.totals["executions"] == 2  # two shifted tapes
+
+    @pytest.mark.xfail(
+        "Applying QNode-level gradient transforms with non-scalar parameters is not supported yet"
+    )
+    def test_qnode_expval_probs_single_par(self):
+        """Test that a simple qnode that returns an expectation value
+        can be differentiated with pulse_generator."""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.2
+        ham_single_q_const = jnp.polyval * Y(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], T)
+            return qml.probs(wires=0), qml.expval(Z(0))
+
+        params = jnp.array([0.4, 0.9, 1.2])
+        with qml.Tracker(dev) as tracker:
+            jac = pulse_generator(circuit)(params)
+
+        circuit(params)
+        p = integral_of_polyval(params, T)
+        p_jac = jax.jacobian(integral_of_polyval)(params, T)
+        exp_jac = (
+            jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p_jac),
+            -2 * jnp.sin(2 * p) * p_jac,
+        )
+        for j, e in zip(jac, exp_jac):
+            assert qml.math.allclose(j, e)
+        assert jnp.allclose(grad, exp_grad)
+        assert tracker.totals["executions"] == 2  # two shifted tapes
+
+    @pytest.mark.xfail(
+        "Applying QNode-level gradient transforms with non-scalar parameters is not supported yet"
+    )
+    def test_qnode_probs_expval_multi_par(self):
+        """Test that a simple qnode that returns probabilities
+        can be differentiated with pulse_generator."""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
+        T = 0.2
+        ham_single_q_const = jnp.polyval * Y(0) + qml.pulse.constant * Y(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params, c):
+            qml.evolve(ham_single_q_const)([params, c], T)
+            return qml.probs(wires=0), qml.expval(Z(0))
+
+        params = jnp.array([0.4, 0.2, 0.1])
+        c = jnp.array(0.9)
+        with qml.Tracker(dev) as tracker:
+            grad = pulse_generator(circuit, argnums=[0, 1])(params, c)
+
+        p0 = integral_of_polyval(params, T)
+        p0_jac = jax.jacobian(integral_of_polyval)(params, T)
+        p1 = c * T
+        p1_jac = T
+        exp_jac = (
+            (
+                jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p0_jac),
+                jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p1_jac),
+            ),
+            (-2 * jnp.sin(2 * p) * p0_jac, -2 * jnp.sin(2 * p) * p1_jac),
+        )
+        for j, e in zip(jac, exp_jac):
+            for _j, _e in zip(j, e):
+                assert qml.math.allclose(_j, _e)
+
+@pytest.mark.jax
+class TestPulseGeneratorIntegration:
+    """Test that pulse_generator integrates correctly with QNodes."""
+
     def test_simple_qnode_expval(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
