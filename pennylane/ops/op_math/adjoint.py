@@ -221,6 +221,8 @@ class Adjoint(SymbolicOp):
         True
         >>> type(Adjoint(op)) == type(Adjoint(op))
         True
+        >>> isinstance(Adjoint(op), type(Adjoint(copy(op))))
+        True
         >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
         True
         >>> Adjoint(qml.PauliX(0)).__class__ is Adjoint._operation_observable_type
