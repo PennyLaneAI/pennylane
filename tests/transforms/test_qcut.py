@@ -152,10 +152,46 @@ with qml.queuing.AnnotatedQueue() as q1:
 
 frag1 = qml.tape.QuantumScript.from_queue(q1)
 frag_edge_data = [
-    (0, 1, {"pair": ((frag0.operations[4], id(frag0.operations[4])), (frag1.operations[0], id(frag1.operations[0])))}),
-    (1, 0, {"pair": ((frag1.operations[2], id(frag1.operations[2])), (frag0.operations[5], id(frag0.operations[5])))}),
-    (0, 1, {"pair": ((frag0.operations[8], id(frag0.operations[8])), (frag1.operations[4], id(frag1.operations[4])))}),
-    (1, 0, {"pair": ((frag1.operations[6], id(frag1.operations[6])), (frag0.operations[9], id(frag0.operations[9])))}),
+    (
+        0,
+        1,
+        {
+            "pair": (
+                (frag0.operations[4], id(frag0.operations[4])),
+                (frag1.operations[0], id(frag1.operations[0])),
+            )
+        },
+    ),
+    (
+        1,
+        0,
+        {
+            "pair": (
+                (frag1.operations[2], id(frag1.operations[2])),
+                (frag0.operations[5], id(frag0.operations[5])),
+            )
+        },
+    ),
+    (
+        0,
+        1,
+        {
+            "pair": (
+                (frag0.operations[8], id(frag0.operations[8])),
+                (frag1.operations[4], id(frag1.operations[4])),
+            )
+        },
+    ),
+    (
+        1,
+        0,
+        {
+            "pair": (
+                (frag1.operations[6], id(frag1.operations[6])),
+                (frag0.operations[9], id(frag0.operations[9])),
+            )
+        },
+    ),
 ]
 
 
@@ -1855,7 +1891,12 @@ class TestExpandFragmentTapesMC:
         tape1 = qml.tape.QuantumScript.from_queue(q1)
         tapes = [tape0, tape1]
 
-        edge_data = {"pair": ((tape0.operations[2], id(tape0.operations[2])), (tape1.operations[0], id(tape1.operations[0])))}
+        edge_data = {
+            "pair": (
+                (tape0.operations[2], id(tape0.operations[2])),
+                (tape1.operations[0], id(tape1.operations[0])),
+            )
+        }
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
