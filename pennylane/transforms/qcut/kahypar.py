@@ -42,9 +42,6 @@ def kahypar_cut(
     verbose: bool = False,
 ) -> List[Tuple[Operation, Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
-    +
-
-
 
         .. warning::
             Requires KaHyPar to be installed separately. For Linux and Mac users,
