@@ -20,9 +20,6 @@ import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
 
 from gate_data import (
-    X,
-    StateZeroProjector,
-    StateOneProjector,
     SingleExcitation,
     SingleExcitationPlus,
     SingleExcitationMinus,
@@ -424,8 +421,6 @@ class TestDoubleExcitation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        from functools import reduce
-
         decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
         decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 

@@ -83,7 +83,7 @@ def test_error_missing_frequency_info_single_par():
     for one of the function arguments."""
 
     opt = RotosolveOptimizer()
-    fun = lambda x: qml.math.sum(x)
+    fun = qml.math.sum
     x = np.arange(4, requires_grad=True)
     nums_frequency = {"x": {(0,): 1, (1,): 1}}
     spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
@@ -99,8 +99,6 @@ def test_error_no_trainable_args():
     opt = RotosolveOptimizer()
     fun = lambda x, y, z: 1.0
     x = np.arange(4, requires_grad=False)
-    y = np.arange(2, requires_grad=False)
-    z = [1.2, -0.4, -9.1]
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):
         opt.step(fun, x, nums_frequency=None, spectra=None)
@@ -192,7 +190,7 @@ class TestWithClassicalFunction:
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
-        global num_calls
+        # pylint: disable=too-many-arguments
         num_calls = 0
 
         @functools.wraps(fun)
