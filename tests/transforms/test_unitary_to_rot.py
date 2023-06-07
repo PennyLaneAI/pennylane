@@ -83,7 +83,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
             assert ops[1 + i].wires == Wires("a")
-            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
         assert isinstance(ops[4], qml.CNOT)
         assert ops[4].wires == Wires(["b", "a"])
@@ -136,7 +138,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
             assert ops[1 + i].wires == Wires("a")
-            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
         assert isinstance(ops[4], qml.CNOT)
         assert ops[4].wires == Wires(["b", "a"])
@@ -161,7 +165,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
             assert ops[1 + i].wires == Wires("a")
-            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
         assert isinstance(ops[4], qml.CNOT)
         assert ops[4].wires == Wires(["b", "a"])
@@ -192,7 +198,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
             assert ops[1 + i].wires == Wires("a")
-            assert qml.math.allclose(qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7)
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
         assert isinstance(ops[4], qml.CNOT)
         assert ops[4].wires == Wires(["b", "a"])
@@ -550,8 +558,8 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
-        # 3 normal operations + 10 for the first decomp and 2 for the second
-        # assert len(transformed_qnode.qtape.operations) == 15
+        # 3 normal operations + 18 for the first decomp and 6 for the second
+        assert len(transformed_qnode.qtape.operations) == 27
 
         original_grad = qml.grad(original_qnode)(x, y, z)
         transformed_grad = qml.grad(transformed_qnode)(x, y, z)
@@ -599,7 +607,7 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_result, transformed_result)
 
-        # assert len(transformed_qnode.qtape.operations) == 15
+        assert len(transformed_qnode.qtape.operations) == 27
 
         original_result.backward()
         transformed_result.backward()
@@ -644,7 +652,7 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_result, transformed_result)
 
-        # assert len(transformed_qnode.qtape.operations) == 13
+        assert len(transformed_qnode.qtape.operations) == 25
 
         with tf.GradientTape() as tape:
             loss = original_qnode(x)
@@ -693,8 +701,8 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
 
-        # 1 normal operations + 10 for the first decomp and 2 for the second
-        # assert len(transformed_qnode.qtape.operations) == 13
+        # 1 normal operations + 18 for the first decomp and 6 for the second
+        assert len(transformed_qnode.qtape.operations) == 25
 
         original_grad = jax.grad(original_qnode, argnums=(0))(x)
         transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)

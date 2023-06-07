@@ -126,8 +126,7 @@ class TestControlledDecompositionZYZ:
 
         res = decomp_circuit()
         expected = expected_circuit()
-        print(res)
-        print(expected)
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", su2_ops)
@@ -216,7 +215,7 @@ class TestControlledDecompositionZYZ:
                     [-1, 1],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires="a",
         )
         op = Controlled(base, (0,))
@@ -241,7 +240,7 @@ class TestControlledDecompositionZYZ:
                     [-1, 1],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires="a",
         )
         op = Controlled(base, (0,), control_values=[False])
@@ -282,7 +281,7 @@ class TestControlledBisectOD:
                     [-1, 1],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires=0,
         ),
         qml.QubitUnitary(
@@ -438,7 +437,7 @@ class TestControlledBisectMD:
                     [-1, 1],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires=0,
         ),
         qml.QubitUnitary(
@@ -469,7 +468,7 @@ class TestControlledBisectMD:
                     [-1j, 1j],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires=0,
         ),
     ]
@@ -561,7 +560,7 @@ class TestControlledBisectGeneral:
                     [1j, -1j],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires=0,
         ),
         qml.QubitUnitary(
@@ -571,7 +570,7 @@ class TestControlledBisectGeneral:
                     [-1, 1],
                 ]
             )
-            * 2**-0.5,
+            * 2 ** -0.5,
             wires=0,
         ),
         qml.QubitUnitary(
@@ -581,7 +580,7 @@ class TestControlledBisectGeneral:
                     [3 + 4j, 1 - 2j],
                 ]
             )
-            * 30**-0.5,
+            * 30 ** -0.5,
             wires=0,
         ),
     ]

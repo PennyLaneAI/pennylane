@@ -188,7 +188,9 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         phi, theta, omega = target_operation.single_qubit_rot_angles()
     except NotImplementedError:
         with qml.QueuingManager.stop_recording():
-            zyz_decomp = qml.transforms.one_qubit_decomposition(qml.matrix(target_operation), "ZYZ", target_wire)
+            zyz_decomp = qml.transforms.one_qubit_decomposition(
+                qml.matrix(target_operation), "ZYZ", target_wire
+            )
         phi, theta, omega = [gate.parameters[0] for gate in zyz_decomp]
 
     decomp = []
