@@ -21,7 +21,7 @@ devices with autodifferentiation support.
 
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
-# pylint: disable=too-many-statements, invalid-unary-operand-type
+# pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
 
 import inspect
 import warnings
@@ -455,7 +455,17 @@ def execute(
         interface = qml.math.get_interface(*params)
 
     new_device_interface = isinstance(device, qml.devices.experimental.Device)
-    config = qml.devices.experimental.ExecutionConfig(interface=interface)
+    if gradient_fn is None:
+        _gradient_method = None
+    elif isinstance(gradient_fn, str):
+        _gradient_method = gradient_fn
+    else:
+        _gradient_method = "gradient-transform"
+    config = qml.devices.experimental.ExecutionConfig(
+        interface=interface,
+        gradient_method=_gradient_method,
+        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+    )
     gradient_kwargs = gradient_kwargs or {}
 
     if isinstance(cache, bool) and cache:
@@ -506,19 +516,54 @@ def execute(
 
     _grad_on_execution = False
 
-    if gradient_fn == "device":
+    if config.use_device_gradient:
+        # must be new device if this is specified as true
+        _grad_on_execution = config.grad_on_execution
+
+        if config.grad_on_execution:
+
+            def execute_fn(internal_tapes):
+                """A partial function that wraps the execute_and_compute_derivatives method of the device.
+
+                Closure Variables:
+                    device: The device to execute on
+                    config: the ExecutionConfig that specifies how to perform the simulations.
+                """
+                return device.execute_and_compute_derivatives(internal_tapes, config)
+
+            gradient_fn = None
+
+        else:
+
+            def execute_fn(internal_tapes) -> Tuple[ResultBatch, Tuple]:
+                """A wrapper around device.execute that adds an empty tuple instead of derivatives.
+
+                Closure Variables:
+                    device: the device to execute on
+                    config: the ExecutionConfig that specifies how to perform the simulations.
+                """
+                return (device.execute(internal_tapes, config), tuple())
+
+            def gradient_fn(internal_tapes):
+                """A partial function that wraps compute_derivatives method of the device.
+
+                Closure Variables:
+                    device: the device to execute on
+                    config: the ExecutionConfig that specifies how to take the derivative.
+                """
+                return device.compute_derivatives(internal_tapes, config)
+
+    elif gradient_fn == "device":
         # gradient function is a device method
 
         # Expand all tapes as per the device's expand function here.
         # We must do this now, prior to the interface, to ensure that
         # decompositions with parameter processing is tracked by the
         # autodiff frameworks.
-        for i, tape in enumerate(tapes):
-            tapes[i] = expand_fn(tape)
+        tapes = [expand_fn(t) for t in tapes]
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
-            mode = "forward" if grad_on_execution else "backward"
-            tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
+            tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
 
         # grad on execution or best was chosen
         if grad_on_execution is True or grad_on_execution == "best":
@@ -542,6 +587,20 @@ def execute(
                 pass_kwargs=True,
                 return_tuple=False,
             )
+
+            # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
+            # can not be reused from the device if `grad_on_execution is False`.
+
+            interface_jax = interface
+            if interface == "jax":
+                from .jax import get_jax_interface_name
+
+                interface_jax = get_jax_interface_name(tapes)
+            if interface_jax == "jax-jit":
+                use_device_state = gradient_kwargs.get("use_device_state", None)
+                if use_device_state:
+                    gradient_kwargs["use_device_state"] = False
+
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn

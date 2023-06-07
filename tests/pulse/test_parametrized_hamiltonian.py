@@ -17,7 +17,6 @@ Unit tests for the ParametrizedHamiltonian class
 """
 # pylint: disable=no-member, import-outside-toplevel
 import pytest
-
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pulse import ParametrizedHamiltonian
@@ -124,8 +123,32 @@ class TestInitialization:
 
     def test__repr__(self):
         """Test repr method returns expected string"""
-        str = repr(test_example)
-        assert str == "ParametrizedHamiltonian: terms=4"
+
+        coeffs = [2.0, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        expected = "(2.0*(PauliX(wires=[0])))+(f1(params_0,t)*(PauliY(wires=[0])))+(f2(params_1,t)*(PauliZ(wires=[0])))"
+
+        assert repr(H).replace("\n", "").replace(" ", "") == expected
+
+    def test_repr_with_class_objects(self):
+        """Test repr method with class objects r
+        eturns expected string"""
+
+        class f3:  # pylint: disable=too-few-public-methods
+            """Dummy class"""
+
+            def __init__(self, hyper_param):
+                self.hyper = hyper_param
+
+            def __call__(self, p, t):
+                return self.hyper * p * t
+
+        coeffs = [2.0, f1, f2, f3(0.5)]
+        observables = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0), qml.PauliX(0)]
+        H = ParametrizedHamiltonian(coeffs, observables)
+        expected = "(2.0*(PauliX(wires=[0])))+(f1(params_0,t)*(PauliY(wires=[0])))+(f2(params_1,t)*(PauliZ(wires=[0])))+(f3(params_2,t)*(PauliX(wires=[0])))"
+        assert repr(H).replace("\n", "").replace(" ", "") == expected
 
     def test_wire_attribute(self):
         """Tests that the wires attribute contains the expected wires, in the expected order"""
