@@ -5198,11 +5198,11 @@ class TestKaHyPar:
             assert len(comm_graph.edges) == expected_num_cut_edges
 
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.MeasureNode)])
                 == expected_num_cut_edges
             )
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.PrepareNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.PrepareNode)])
                 == expected_num_cut_edges
             )
 
@@ -5210,9 +5210,9 @@ class TestKaHyPar:
             # wire 1:
             expected_cut_wire = 1 if with_manual_cut else "a"
             assert all(
-                list(n.wires) == [expected_cut_wire]
+                list(n[0].wires) == [expected_cut_wire]
                 for n in cut_graph.nodes
-                if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
+                if isinstance(n[0], (qcut.MeasureNode, qcut.PrepareNode))
             )
 
             expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
@@ -5223,11 +5223,11 @@ class TestKaHyPar:
             assert len(comm_graph.edges) in expected_num_cut_edges
 
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.MeasureNode)])
                 in expected_num_cut_edges
             )
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.PrepareNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.PrepareNode)])
                 in expected_num_cut_edges
             )
 
