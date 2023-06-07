@@ -1025,7 +1025,6 @@ class Operator(abc.ABC):
         self._check_batching(params)
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
-        # self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
 
         if do_queue is not None:
             do_queue_deprecation_warning = (

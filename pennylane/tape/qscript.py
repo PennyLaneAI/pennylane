@@ -730,35 +730,6 @@ class QuantumScript:
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 
-        ####################################################
-
-        # for idx, p in iterator:
-        #     op = self._par_info[idx]["op"]
-        #     op.data[self._par_info[idx]["p_idx"]] = p
-        #     op._check_batching(op.data)
-
-        ####################################################
-
-        # op_map = {}
-        # for pinfo in self._par_info:
-        #     if pinfo["op_idx"] not in op_map:
-        #         op_map[pinfo["op_idx"]] = (pinfo["op"], list(pinfo["op"].data))
-
-        # new_ops = {
-        #     op_idx: qml.ops.functions.bind_new_parameters(op, op_data)
-        #     for op_idx, (op, op_data) in op_map.items()
-        # }
-
-        # for idx, _ in make_iterator():
-        #     self._par_info[idx]["op"] = new_ops[self._par_info[idx]["op_idx"]]
-
-        # self._prep = [op if idx not in op_map else new_ops[idx]
-        #               for idx, op in enumerate(self._prep)]
-        # self._ops = [op if idx not in op_map else new_ops[idx]
-        #              for idx, op in enumerate(self._ops, len(self._prep))]
-
-        ####################################################
-
         op_map = {
             pinfo["op_idx"]: (pinfo["op"], list(pinfo["op"].data)) for pinfo in self._par_info
         }
