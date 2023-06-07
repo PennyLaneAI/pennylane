@@ -127,13 +127,3 @@ def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
         new_obs.append(bind_new_parameters(obs, sub_params))
 
     return Tensor(*new_obs)
-
-
-@bind_new_parameters.register
-def bind_new_paramers_pcphase(op: qml.PCPhase, params: Sequence[TensorLike]):
-    return qml.PCPhase(params[0], op.hyperparameters["dimension"][0], wires=op.wires)
-
-
-@bind_new_parameters.register
-def bind_new_paramers_pcphase(op: qml.SpecialUnitary, params: Sequence[TensorLike]):
-    return qml.SpecialUnitary(params[0], wires=op.wires)
