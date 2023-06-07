@@ -132,11 +132,6 @@ def drawable_layers(ops, wire_map=None):
             m_layers = [measured_layers[m_id] for m_id in op.meas_val.measurement_ids]
             max_control_layer = max(m_layers)
 
-            if op_layer <= max_control_layer:
-                # conditional must appear _after_ the measurements it is conditioned on
-                op_layer = max_control_layer + 1
-
-            empty_layers = []
             for m_id, m_layer in zip(op.meas_val.measurement_ids, m_layers):
                 # this MidMeasureMP has been used, remove from measurement caches for qubit reuse
                 del measured_wires[m_id]
@@ -149,14 +144,6 @@ def drawable_layers(ops, wire_map=None):
                             ops_in_layer[max_control_layer].append(o)  # add to cond. op. layer
                             ops_in_layer[m_layer].pop(i)  # remove from original layer
                             # no need to remove from previous occupied_wires_per_layer
-                    if not ops_in_layer[m_layer]:
-                        # the only ops in that layer were MidMeasureMP that have been promoted
-                        empty_layers.append(m_layer)
-
-            # pop all empty layers (reverse to ensure proper popping order)
-            for m_layer in sorted(empty_layers)[::-1]:
-                ops_in_layer.pop(m_layer)
-                occupied_wires_per_layer.pop(m_layer)
 
         # see if need to add new layer
         if op_layer > max_layer:
@@ -170,4 +157,4 @@ def drawable_layers(ops, wire_map=None):
         if is_mid_measure:
             measured_layers[op.id] = op_layer
 
-    return ops_in_layer
+    return list(filter(None, ops_in_layer[:-1])) + ops_in_layer[-1:]

@@ -8,9 +8,7 @@ tests/devices/test_default_mixed_jax.py
 tests/devices/test_default_mixed_tf.py
 tests/devices/test_default_mixed_torch.py
 tests/devices/test_null_qubit.py
-tests/drawer/test_draw_mpl.py
-tests/drawer/test_drawer_utils.py
-tests/drawer/test_tape_mpl.py
+tests/drawer/**
 tests/fermi/test_fermionic.py
 tests/fourier/test_coefficients.py
 tests/gradients/core/**
