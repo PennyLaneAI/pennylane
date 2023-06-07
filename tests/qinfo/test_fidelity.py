@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for differentiable quantum fidelity transform."""
-
+# pylint: disable=too-many-public-methods
 import pytest
 
 import pennylane as qml
@@ -166,15 +166,15 @@ class TestFidelityQnode:
 
         @qml.qnode(dev)
         def circuit0(x):
-            qml.RX(x, wires=0)
+            qml.RX(x, wires=wire)
             return qml.state()
 
         @qml.qnode(dev)
         def circuit1():
-            qml.PauliZ(wires=0)
+            qml.PauliZ(wires=wire)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[wire], wires1=[wire])((param))
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid)
 
@@ -472,8 +472,7 @@ class TestFidelityQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire, interface):
+    def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire):
         """Test the fidelity between Rx and PauliZ circuits with Jax jit."""
         import jax
 

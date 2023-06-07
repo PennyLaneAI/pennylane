@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for differentiable quantum entropies.
 """
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -558,13 +558,13 @@ class TestRelativeEntropy:
         with the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit2(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -600,13 +600,13 @@ class TestRelativeEntropy:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit2(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -640,23 +640,17 @@ class TestRelativeEntropy:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit2(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
-
-            first_expected = (
-                np.sin(param[0] / 2)
-                * np.cos(param[0] / 2)
-                * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2))
-            )
 
         expected = [
             np.sin(param[0] / 2)
@@ -697,7 +691,7 @@ class TestRelativeEntropy:
 
         msg = "The two states must have the same number of wires"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
+            qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_full_wires(self, device):
@@ -719,7 +713,7 @@ class TestRelativeEntropy:
         x, y = np.array(0.3), np.array(0.7)
 
         # test that the circuit executes
-        actual = rel_ent_circuit(x, y)
+        rel_ent_circuit(x, y)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_no_args(self, device):
@@ -741,7 +735,7 @@ class TestRelativeEntropy:
         rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
         # test that the circuit executes
-        actual = rel_ent_circuit()
+        rel_ent_circuit()
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_kwargs(self, device):

@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -129,7 +130,7 @@ def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m
         (one_h2, two_h2, 1.6570514682587973),
     ],
 )
-def test_df_norm(one, two, lamb):
+def test_df_lamb(one, two, lamb):
     r"""Test that DoubleFactorization class returns a correct norm."""
     est = qml.resource.DoubleFactorization(one, two)
 
@@ -211,6 +212,7 @@ def test_estimation_cost_error(norm, error):
 )
 def test_qrom_cost(constants, cost_ref, k_ref):
     r"""Test that _qrom_cost returns the correct values."""
+    # pylint: disable=protected-access
     cost, k = qml.resource.DoubleFactorization._qrom_cost(constants)
 
     assert cost == cost_ref

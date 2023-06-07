@@ -30,13 +30,13 @@ tests/optimize/test_riemannian_gradient_optimizer.py
 tests/pulse/**
 tests/pauli/grouping/**
 tests/pauli/**
-tests/qchem/test_givens_rotations.py
-tests/qinfo/test_trace_distance.py
+tests/qchem/**
+tests/qinfo/**
 tests/qnn/**
+tests/resource/**
 tests/tape/test_qscript.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/templates/test_subroutines/test_qsvt.py
-tests/resource/test_resource.py
 tests/transforms/test_convert_to_numpy_parameters.py
 tests/transforms/test_decompositions.py
 tests/transforms/test_qfunc_transform.py
