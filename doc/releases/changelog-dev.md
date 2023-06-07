@@ -253,6 +253,9 @@
 
 <h4>The qchem module</h4>
 
+* Added non-cubic lattice support for all electron resource estimation.
+  [(3956)](https://github.com/PennyLaneAI/pennylane/pull/3956)
+
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
   removed.
