@@ -552,6 +552,9 @@ class TestBasisStateProjector:
             basis_state = np.array([0, 2])
             circuit(basis_state)
 
+        with pytest.raises(ValueError, match="This projector expects the input to be a basis"):
+            _BasisStateProjector([0, 0], wires=[0, 1], basis_representation=False)
+
     @pytest.mark.parametrize(
         "basis_state,expected,n_wires",
         [
@@ -654,6 +657,9 @@ class TestStateVectorProjector:
         with pytest.raises(ValueError, match="State vector must be of length"):
             state_vector = np.random.randint(2, size=(3))
             circuit(state_vector)
+
+        with pytest.raises(ValueError, match="This projector expects the input to be a state"):
+            _BasisStateProjector([1, 0], wires=[0], basis_representation=True)
 
     @pytest.mark.parametrize("state_vector,expected", STATEVECTORPROJECTOR_TEST_DATA)
     def test_matrix_representation(self, state_vector, expected, tol):
