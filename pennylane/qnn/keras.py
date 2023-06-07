@@ -448,7 +448,7 @@ class KerasLayer(Layer):
 
     def __getattr__(self, item):
         """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
-        if self._initialized:
+        if self._initialized and hasattr(self.qnode, item):
             return getattr(self.qnode, item)
 
         try:
@@ -458,7 +458,7 @@ class KerasLayer(Layer):
 
     def __setattr__(self, item, val):
         """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
-        if self._initialized:
+        if self._initialized and hasattr(self.qnode, item):
             setattr(self.qnode, item, val)
         else:
             self.__dict__[item] = val
