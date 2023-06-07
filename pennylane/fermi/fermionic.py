@@ -260,6 +260,9 @@ def fermiword(operator):
     >>> fermiword(operator)
     <FermiWord = '0+ 1- 0+ 1-'>
     """
+    if len(operator) == 0:
+        return FermiWord({})
+
     dic = {(i, int(s[0])): s[1] for i, s in enumerate(re.split("\s", operator))}
 
     return FermiWord(dic)
