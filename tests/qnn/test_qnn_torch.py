@@ -767,7 +767,7 @@ def test_draw():
     actual = qml.draw(qlayer)(x)
 
     w1 = f"{qlayer.qnode_weights['w1'].detach().numpy():.2f}"
-    m1 = f"{qlayer.qnode_weights['w2']}"
+    m1 = f"{qlayer.qnode_weights['w2'].detach()}"
     expected = (
         f"0: ─╭AngleEmbedding(M0)──RX({w1})─╭StronglyEntanglingLayers(M1)─┤  <Z>\n"
         f"1: ─╰AngleEmbedding(M0)───────────╰StronglyEntanglingLayers(M1)─┤  <Z>\n"
