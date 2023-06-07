@@ -260,7 +260,8 @@ class DefaultQubit(QubitDevice):
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
-        """Apply a sequence of operations and rotations to the device.
+        """Apply quantum operations, rotate the circuit into the measurement
+        basis, and compile and execute the quantum circuit.
 
         .. warning::
 
@@ -268,11 +269,36 @@ class DefaultQubit(QubitDevice):
             The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
 
-        Args:
-            operations (List[.Operation]): List of operations to apply
-            rotations (List[.Operation]): List of rotations to apply to rotate state to measurement basis
-        """
+        This method receives a list of quantum operations queued by the QNode,
+        and should be responsible for:
 
+        * Constructing the quantum program
+        * (Optional) Rotating the quantum circuit using the rotation
+          operations provided. This diagonalizes the circuit so that arbitrary
+          observables can be measured in the computational basis.
+        * Compile the circuit
+        * Execute the quantum circuit
+
+        Both arguments are provided as lists of PennyLane :class:`~.Operation`
+        instances. Useful properties include :attr:`~.Operation.name`,
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
+
+        >>> op = qml.RX(0.2, wires=[0])
+        >>> op.name # returns the operation name
+        "RX"
+        >>> op.wires # returns a Wires object representing the wires that the operation acts on
+        <Wires = [0]>
+        >>> op.parameters # returns a list of parameters
+        [0.2]
+
+        Args:
+            operations (list[~.Operation]): operations to apply to the device
+
+        Keyword args:
+            rotations (list[~.Operation]): operations that rotate the circuit
+                pre-measurement into the eigenbasis of the observables.
+            hash (int): the hash value of the circuit constructed by `CircuitGraph.hash`
+        """
         rotations = rotations or []
 
         # apply the circuit operations
