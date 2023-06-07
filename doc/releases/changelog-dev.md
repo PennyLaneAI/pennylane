@@ -255,9 +255,23 @@
     `qml.draw_mpl()`.
     [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
 
+    ```pycon
+    >>> print(qml.draw(qlayer, show_matrices=False)(inputs))
+    0: ─╭AngleEmbedding(M0)─╭BasicEntanglerLayers(M1)─┤  <Z>
+    1: ─╰AngleEmbedding(M0)─╰BasicEntanglerLayers(M1)─┤  <Z>
+    ```
+
   - Support for `KerasLayer` model saving and clearer instructions on `TorchLayer` model saving.
     [(#4149)](https://github.com/PennyLaneAI/pennylane/pull/4149)
     [(#4158)](https://github.com/PennyLaneAI/pennylane/pull/4158)
+
+    ```pycon
+    >>> torch.save(qlayer.state_dict(), "weights.pt")  # Saving
+    >>> qlayer.load_state_dict(torch.load("weights.pt"))  # Loading
+    >>> qlayer.eval()
+    ```
+    
+    Hybrid models containing `KerasLayer` or `TorchLayer` objects can also be saved and loaded.
 
 <h3>Improvements 🛠</h3>
 
