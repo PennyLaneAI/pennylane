@@ -196,7 +196,7 @@ class Pow(ScalarSymbolicOp):
         True
         >>> type(Pow(op, z)) == type(Pow(op, z))
         True
-        >>> isinstance(Pow(op, z), type(Pow(copy(op), z)))
+        >>> isinstance(Pow(op, z), type(Pow(op, z)))
         True
         >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
         True
