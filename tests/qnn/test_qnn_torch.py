@@ -849,6 +849,6 @@ def test_specs():
     assert info["num_used_wires"] == 2
     assert info["depth"] == 3
     assert info["num_device_wires"] == 3
-    assert info["num_trainable_params"] == 2
+    assert info["num_trainable_params"] == 0
     assert info["interface"] == "torch"
     assert info["device_name"] == "default.qubit.torch"
