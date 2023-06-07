@@ -363,6 +363,26 @@ class Projector(Observable):
     _state_vector_type = None
 
     def __new__(cls, *_, basis_representation=True, **__):
+        """Changes parents based on the state representation.
+
+        Though all the types will be named "Projector", their *identity* and location in memory
+        will be different based on ``basis_representation``. We cache the different types in private class
+        variables so that:
+
+        >>> state0, state1, wires = [0, 0, 0, 1], [1, 0, 1, 0], [0, 1, 2, 3]
+        >>> projector0, projector1 = Projector(state0, wires), Projector(state1, wires)
+        >>> projector0.__class__ is projector1.__class__
+        True
+        >>> type(projector0) == type(projector1)
+        True
+        >>> isinstance(projector1, type(projector0)) and isinstance(projector0, type(projector1))
+        True
+        >>> Projector(state0, wires).__class__ is Projector._basis_state_type
+        True
+        >>> Projector(state0, [0, 1], basis_representation=False).__class__ is Projector._state_vector_type
+        True
+
+        """
         if basis_representation:
             if cls._basis_state_type is None:
                 base_cls = (_BasisStateProjector, Projector)
@@ -766,7 +786,3 @@ class _StateVectorProjector(Observable):
         psi /= denominator
         u = 2 * qml.math.outer(psi, qml.math.conj(psi)) - qml.math.eye(len(psi))
         return [QubitUnitary(u, wires=wires)]
-
-    def pow(self, z):
-        """Raise this projector to the power ``z``."""
-        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
