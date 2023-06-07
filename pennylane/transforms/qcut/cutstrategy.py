@@ -196,8 +196,8 @@ class CutStrategy:
         wire_depths = {}
         for g in tape_dag.nodes:
             if not isinstance(g[0], WireCut):
-                for w in g.wires:
-                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
+                for w in g[0].wires:
+                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g[0].wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
