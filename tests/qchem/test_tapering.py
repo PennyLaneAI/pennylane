@@ -605,9 +605,7 @@ def test_taper_excitations(
     o = np.array([1, 0])
     l = np.array([0, 1])
     state = functools.reduce(np.kron, [l if s else o for s in hf_state])
-    state_tapered = functools.reduce(
-        np.kron, [l if s else o for s in hf_tapered]
-    )
+    state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
 
     singles, doubles = qml.qchem.excitations(num_electrons, num_wires)
     exc_fnc = [qml.SingleExcitation, qml.DoubleExcitation]
@@ -744,7 +742,7 @@ def test_consistent_taper_ops(operation, op_gen):
     if taper_op1:
         observables = [
             hamiltonian,  # for energy
-            sum(qml.PauliZ(wire) for wire in hamiltonian.wires), # for local-cost 1
+            sum(qml.PauliZ(wire) for wire in hamiltonian.wires),  # for local-cost 1
             # for local-cost 2
             sum(qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires),
         ]
@@ -758,9 +756,7 @@ def test_consistent_taper_ops(operation, op_gen):
         )
         o, l = np.array([1, 0]), np.array([0, 1])
         state = functools.reduce(np.kron, [l if s else o for s in hf_state])
-        state_tapered = functools.reduce(
-            np.kron, [l if s else o for s in hf_tapered]
-        )
+        state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
         evolved_state = np.matmul(qml.matrix(operation, wire_order=range(len(hf_state))), state)
         ob_tap_mat = functools.reduce(
             np.matmul,

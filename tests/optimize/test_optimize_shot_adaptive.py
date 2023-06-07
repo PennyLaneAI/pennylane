@@ -108,8 +108,10 @@ class TestExceptions:
 
         assert isinstance(new_x, np.tensor)
 
+
 def ansatz0(x, **kwargs):
     qml.RX(x, wires=0)
+
 
 def ansatz1(x, **kwargs):
     qml.RX(x[0, 0], wires=0)

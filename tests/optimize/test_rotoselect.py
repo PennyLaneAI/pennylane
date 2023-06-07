@@ -152,9 +152,7 @@ class TestRotoselectOptimizer:
             X_1 = circuit_2(params, generators=generators)
             return 0.5 * (Y_2 - shift) ** 2 + 0.8 * (Z_1 - shift) ** 2 - 0.2 * (X_1 - shift) ** 2
 
-        params_new, *_ = rotoselect_opt.step_and_cost(
-            cost_fn, x_start, generators, shift=0.0
-        )
+        params_new, *_ = rotoselect_opt.step_and_cost(cost_fn, x_start, generators, shift=0.0)
         params_new2, _, res_new2 = rotoselect_opt.step_and_cost(
             cost_fn, x_start, generators, shift=1.0
         )

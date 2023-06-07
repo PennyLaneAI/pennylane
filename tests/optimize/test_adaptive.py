@@ -85,8 +85,6 @@ def test_step(circuit, energy_ref, pool):
     assert np.allclose(energy, energy_ref)
 
 
-
-
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [

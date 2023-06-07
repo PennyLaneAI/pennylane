@@ -272,9 +272,7 @@ class TestWithClassicalFunction:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(
-        self, fun, _, param, nums_freq, __, substep_optimizer, substep_kwargs
-    ):
+    def test_full_output(self, fun, _, param, nums_freq, __, substep_optimizer, substep_kwargs):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
         param = tuple(np.array(p, requires_grad=True) for p in param)

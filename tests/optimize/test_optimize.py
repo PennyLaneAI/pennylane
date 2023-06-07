@@ -48,6 +48,7 @@ def opt(opt_name):
 @pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam"])
 class TestOverOpts:
     """Tests keywords, multiple arguments, and non-training arguments in relevant optimizers"""
+
     # pylint: disable=unused-argument
 
     def test_kwargs(self, mocker, opt, opt_name, tol):
