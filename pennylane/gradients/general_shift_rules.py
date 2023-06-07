@@ -419,7 +419,8 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         """Create a copy of a tape and of parameters, and set the new tape to the parameters
         rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
         shifted_tape = tape.copy(copy_operations=True)
-        op, op_idx, p_idx = shifted_tape.get_operation(idx)
+        # op, op_idx, p_idx = shifted_tape.get_operation(idx)
+        op, op_idx, p_idx = shifted_tape._par_info[idx]
 
         new_params = op.data.copy()
         new_params[p_idx] = new_params[p_idx] * qml.math.convert_like(
