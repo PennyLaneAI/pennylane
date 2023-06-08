@@ -24,7 +24,7 @@
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
 * Added the `FermiWord` class to represent a fermionic operator such as
-  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  :math:`a^\dagger_1 a_0 a^\dagger_2 a_3`.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
 * Added a conversion function `jw_mapping` that converts a fermionic operator (`FermiWord`) to a qubit 
