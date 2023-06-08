@@ -23,8 +23,8 @@ from pennylane.pulse import ParametrizedHamiltonian
 
 jax = pytest.importorskip("jax", minversion="0.2")
 from pennylane.devices.default_qubit_jax import (
-    DefaultQubitJax,
-)  # pylint: disable=wrong-import-position
+    DefaultQubitJax,  # pylint: disable=wrong-import-position
+)
 
 jnp = jax.numpy
 
