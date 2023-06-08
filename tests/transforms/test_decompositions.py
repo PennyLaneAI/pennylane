@@ -1034,7 +1034,8 @@ class TestDeprecation:
     def test_zyz_deprecation(self, U, expected_gate, expected_params):
         """Test that a one-qubit matrix zyz is deprecated"""
         with pytest.warns(
-            UserWarning, match="The zyz_decomposition function is deprecated and will be removed soon."
+            UserWarning,
+            match="The zyz_decomposition function is deprecated and will be removed soon.",
         ):
             zyz_decomposition(U, Wires("a"))
 
@@ -1042,6 +1043,7 @@ class TestDeprecation:
     def test_xyx_deprecation(self, U, expected_gates, expected_params):
         """Test that a one-qubit matrix xyx is deprecated"""
         with pytest.warns(
-            UserWarning, match="The xyx_decomposition function is deprecated and will be removed soon."
+            UserWarning,
+            match="The xyx_decomposition function is deprecated and will be removed soon.",
         ):
             xyx_decomposition(U, Wires("a"))
