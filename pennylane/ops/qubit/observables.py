@@ -655,8 +655,20 @@ class _StateVectorProjector(Observable):
         **Example:**
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
-        >>> qml._StateVectorProjector(state_vector, wires=(0, 1, 2)).label()
+        >>> _StateVectorProjector(state_vector, wires=(0, 1)).label()
         'P'
+        >>> _StateVectorProjector(state_vector, wires=(0, 1)).label(base_label="hi!")
+        'hi!'
+        >>> dev = qml.device("default.qubit", wires=1)
+        >>> @qml.qnode(dev)
+        ... def circuit(state):
+        ...     return qml.expval(_StateVectorProjector(state, [0]))
+        >>> print(qml.draw(circuit)([1, 0]))
+        0: ───┤  <|0⟩⟨0|>
+        >>> print(qml.draw(circuit)(np.array([1, 1]) / np.sqrt(2)))
+        0: ───┤  <P(M0)>
+        M0 =
+        [0.70710678 0.70710678]
 
         """
         if base_label is not None:
@@ -750,10 +762,10 @@ class _StateVectorProjector(Observable):
         .. seealso:: :meth:`~._StateVectorProjector.diagonalizing_gates`.
 
         Args:
-            basis_state (Iterable): basis state that the operator projects on
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            state_vector (Iterable): state vector that the operator projects on.
+            wires (Iterable[Any], Wires): wires that the operator acts on.
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.Operator]: list of diagonalizing gates.
 
         **Example**
 
