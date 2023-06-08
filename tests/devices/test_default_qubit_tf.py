@@ -53,8 +53,8 @@ from pennylane import numpy as pnp
 from pennylane import DeviceError
 
 tf = pytest.importorskip("tensorflow", minversion="2.0")
-from pennylane.devices.default_qubit_tf import (
-    DefaultQubitTF,  # pylint: disable=wrong-import-position
+from pennylane.devices.default_qubit_tf import (  # pylint: disable=wrong-import-position
+    DefaultQubitTF,
 )
 
 np.random.seed(42)

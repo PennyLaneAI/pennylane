@@ -63,8 +63,8 @@ from pennylane import DeviceError
 from pennylane import numpy as pnp
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
-from pennylane.devices.default_qubit_torch import (
-    DefaultQubitTorch,  # pylint: disable=wrong-import-position
+from pennylane.devices.default_qubit_torch import (  # pylint: disable=wrong-import-position
+    DefaultQubitTorch,
 )
 
 pytestmark = pytest.mark.gpu
