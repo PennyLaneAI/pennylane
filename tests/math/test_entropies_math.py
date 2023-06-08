@@ -553,6 +553,7 @@ class TestEntropyBroadcasting:
         ):
             purity = qml.math.purity(state_vector, wires, check_state=check_state)
 
+        assert qml.math.shape(purity) == (2,)
         assert qml.math.allclose(purity, expected)
 
     @pytest.mark.parametrize("wires", single_wires_list)
