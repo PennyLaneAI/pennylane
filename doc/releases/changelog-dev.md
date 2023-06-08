@@ -8,20 +8,27 @@
   without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
 
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+* Added the `TRX` qutrit rotation operation, which allows applying an X rotation on a
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+
+* Added the `TRY` qutrit rotation operation, which allows applying a Y rotation on a
+  given subspace.
+  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
+
+* Added the `TRZ` qutrit rotation operation, which allows applying a Z rotation on a
+  given subspace.
+  [(#2847)](https://github.com/PennyLaneAI/pennylane/pull/2847)
 
 * A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
-* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
-  given subspace.
-  [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
-
 * Added the `FermiWord` class to represent a fermionic operator such as
   $\hat{c}_1 c_0 \hat{c}_2 c_3$.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
+* Added the `FermiSentence` class to represent a linear combination of fermionic operators.
+  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
 <h3>Improvements 🛠</h3>
 
@@ -256,6 +263,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+  [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
   generating terms of a pulse Hamiltonian.
