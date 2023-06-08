@@ -233,6 +233,8 @@ class TestPurity:
         import jax
         import jax.numpy as jnp
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device(device, wires=2)
 
         @qml.qnode(dev, interface=interface)

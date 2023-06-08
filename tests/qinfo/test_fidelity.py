@@ -162,7 +162,7 @@ class TestFidelityQnode:
     @pytest.mark.parametrize("wire", wires)
     def test_fidelity_qnodes_rx_pauliz(self, device, param, wire):
         """Test the fidelity between Rx and PauliZ circuits."""
-        dev = qml.device(device, wires=1)
+        dev = qml.device(device, wires=[wire])
 
         @qml.qnode(dev)
         def circuit0(x):

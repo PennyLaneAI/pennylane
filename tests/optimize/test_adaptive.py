@@ -14,6 +14,7 @@
 """
 Unit tests for the ``AdaptiveOptimizer``.
 """
+import copy
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -95,7 +96,7 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is True."""
     opt = qml.AdaptiveOptimizer()
     for _ in range(4):
-        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=True)
+        circuit, energy, _ = opt.step_and_cost(circuit, copy.copy(pool), drain_pool=True)
 
     _ = circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
@@ -115,9 +116,9 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for _ in range(4):
-        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=False)
+        circuit, energy, __ = opt.step_and_cost(circuit, pool, drain_pool=False)
 
-    _ = circuit()
+    circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
 
     assert np.allclose(energy, energy_ref, rtol=1e-4)
@@ -125,18 +126,13 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) < len(selected_excitations)
 
 
-@pytest.mark.parametrize(
-    "circuit",
-    [
-        (initial_circuit),
-    ],
-)
+@pytest.mark.parametrize("circuit", [(initial_circuit)])
 def test_largest_gradient(circuit):
     """Test that step function selects the gate with the largest gradient."""
 
     opt = qml.AdaptiveOptimizer()
     circuit = opt.step(circuit, pool_exc)
-    _ = circuit()
+    circuit()
     selected_gate = circuit.tape.operations[-1]
 
     #  the reference gate is obtained manually
