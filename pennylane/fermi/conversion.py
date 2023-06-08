@@ -13,11 +13,15 @@
 # limitations under the License.
 """Utility functions to convert between ``~.FermiWord`` and other PennyLane formats."""
 
+from functools import singledispatch
+from typing import Union
+
 from pennylane.pauli import PauliWord, PauliSentence
-from .fermionic import FermiWord
+from .fermionic import FermiWord, FermiSentence
 
 
-def jw_mapping(fermi_operator: FermiWord) -> PauliSentence:
+@singledispatch
+def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence])) -> PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -30,7 +34,7 @@ def jw_mapping(fermi_operator: FermiWord) -> PauliSentence:
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
 
     Args:
-        fermi_operator(FermiWord): the fermionic operator
+        fermi_operator(FermiWord, FermiSentence): the fermionic operator
 
     Returns:
         PauliSentence: a linear combination of qubit operators
@@ -38,17 +42,23 @@ def jw_mapping(fermi_operator: FermiWord) -> PauliSentence:
     **Example**
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> mapping(w)
+    >>> jordan_wigner(w)
     -0.25j * Y(0) @ X(1)
     + (0.25+0j) * Y(0) @ Y(1)
     + (0.25+0j) * X(0) @ X(1)
     + 0.25j * X(0) @ Y(1)
     """
-    coeffs = {"+": -0.5j, "-": 0.5j}
-    qubit_operator = PauliSentence()
+    raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
+
+
+@jordan_wigner.register
+def _(fermi_operator: FermiWord):
 
     if len(fermi_operator) == 0:
-        return PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
+        return PauliSentence({PauliWord({}): 1.0})
+
+    coeffs = {"+": -0.5j, "-": 0.5j}
+    qubit_operator = PauliSentence()
 
     for item in fermi_operator.items():
         (_, wire), sign = item
@@ -62,3 +72,20 @@ def jw_mapping(fermi_operator: FermiWord) -> PauliSentence:
         )
 
     return qubit_operator
+
+
+@jordan_wigner.register
+def _(fermi_operator: FermiSentence):
+
+    if len(fermi_operator) == 0:
+        return PauliSentence({PauliWord({}): 0})
+
+    operator = PauliSentence()
+
+    for fw, coeff in fermi_operator.items():
+        qubit_operator = jordan_wigner(fw)
+
+        for key in qubit_operator.keys():
+            operator[key] += qubit_operator[key] * coeff
+
+    return operator

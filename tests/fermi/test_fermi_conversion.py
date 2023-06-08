@@ -16,7 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.pauli.conversion import pauli_sentence
-from pennylane.fermi.conversion import jw_mapping
+from pennylane.fermi.conversion import jordan_wigner
 from pennylane.pauli import PauliWord, PauliSentence
 from pennylane.fermi.fermionic import FermiWord
 
@@ -345,10 +345,10 @@ from pennylane.fermi.fermionic import FermiWord
         ),
     ],
 )
-def test_jw_mapping(fermionic_op, result):
+def test_jordan_wigner_fermi_word(fermionic_op, result):
     """Test that the jw_mapping function returns the correct qubit operator."""
     # convert FermiWord to PauliSentence and simplify
-    qubit_op = jw_mapping(fermionic_op)
+    qubit_op = jordan_wigner(fermionic_op)
     qubit_op.simplify()
 
     # get expected op as PauliSentence and simplify
@@ -358,10 +358,10 @@ def test_jw_mapping(fermionic_op, result):
     assert qubit_op == expected_op
 
 
-def test_jw_mapping_for_identity():
+def test_jordan_wigner_for_identity():
     """Test that the jw_mapping function returns the correct qubit operator for Identity."""
 
-    assert jw_mapping(FermiWord({})) == PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
+    assert jordan_wigner(FermiWord({})) == PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
 
 
 @pytest.mark.parametrize(
@@ -373,6 +373,6 @@ def test_jw_mapping_for_identity():
         FermiWord({(0, 3): "-", (1, 2): "+", (2, 2): "+", (3, 3): "-"}),  # ('3 2^ 2^ 3')
     ),
 )
-def test_jw_mapping_for_0(operator):
+def test_jordan_wigner_for_null_operator_fermi_word(operator):
     """Test that the jw_mapping function works when the result is 0"""
     assert operator.to_qubit().simplify() is None
