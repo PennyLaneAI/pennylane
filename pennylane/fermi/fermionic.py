@@ -271,11 +271,13 @@ def string_to_fermi_word(fermi_string):
     >>> string_to_fermi_word('0^ 1 0^ 1')
     <FermiWord = '0+ 1- 0+ 1-'>
     """
-    if len(fermi_string) == 0:
+    if fermi_string.isspace() or not fermi_string:
         return FermiWord({})
+
+    fermi_string = re.sub(" +", " ", fermi_string).strip()
 
     operators = [
         i + "-" if len(i) == 1 else i for i in re.split(r"\s", re.sub(r"\^", "+", fermi_string))
     ]
 
-    return FermiWord({(i, int(s[0])): s[1] for i, s in enumerate(operators)})
+    return FermiWord({(i, int(s[0 : len(s) - 1])): s[-1] for i, s in enumerate(operators)})

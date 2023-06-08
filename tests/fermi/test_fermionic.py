@@ -415,6 +415,29 @@ class TestFermiSentence:
         ("0+ 0", fw2),
         ("0+ 3 0+ 4", fw3),
         ("", fw4),
+        (" ", fw4),
+    )
+
+    @pytest.mark.parametrize("string, result_fw", tup_fw_string)
+    def test_string_to_fermi_word(self, string, result_fw):
+        assert string_to_fermi_word(string) == result_fw
+
+    tup_fw_string = (
+        ("0+ 1-", fw1),
+        ("0+ 0-", fw2),
+        ("0+ 3- 0+ 4-", fw3),
+        ("0+   3- 0+    4-    ", fw3),
+        ("0^ 1", fw1),
+        ("0^ 0", fw2),
+        ("0^    0", fw2),
+        ("0^ 3 0^ 4", fw3),
+        ("0+ 1", fw1),
+        ("0+  1", fw1),
+        ("0+ 0", fw2),
+        ("0+ 3 0+ 4", fw3),
+        ("", fw4),
+        (" ", fw4),
+        ("0+ 30- 0+ 400-", FermiWord({(0, 0): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})),
     )
 
     @pytest.mark.parametrize("string, result_fw", tup_fw_string)
