@@ -192,7 +192,7 @@ class Pow(ScalarSymbolicOp):
         different based on ``base``'s inheritance.  We cache the different types in private class
         variables so that:
 
-        >>> Pow(op, z).__class__ is Adjoint(op, z).__class__
+        >>> Pow(op, z).__class__ is Pow(op, z).__class__
         True
         >>> type(Pow(op, z)) == type(Pow(op, z))
         True
