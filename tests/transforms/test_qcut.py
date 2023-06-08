@@ -1170,7 +1170,7 @@ class TestGraphToTape:
             qml.RY(0.543, wires=[2])
             qml.RZ(0.876, wires=[3])
 
-        expected_tapes = list(map(qml.tape.QuantumScript.from_queue[q0, q1, q2, q3, q4]))
+        expected_tapes = list(map(qml.tape.QuantumScript.from_queue, [q0, q1, q2, q3, q4]))
 
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)

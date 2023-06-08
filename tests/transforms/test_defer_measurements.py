@@ -723,7 +723,7 @@ class TestExpressionConditionals:
             m_2 = qml.measure(2)
 
             expression = 4 * m_0 + 2 * m_1 + m_2
-            qml.cond((3 <= expression <= 6), qml.RX)(rads, wires=3)
+            qml.cond((expression >= 3) & (expression <= 6), qml.RX)(rads, wires=3)
             return qml.probs(wires=3)
 
         normal_probs = normal_circuit(1.0)

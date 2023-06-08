@@ -191,8 +191,9 @@ class TestCond:
             qml.cond(m_0, g, f)()  # Check that the same error is raised when f and g are swapped
 
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
-    def test_cond_error_unrecognized_input(self, inp, _):
+    def test_cond_error_unrecognized_input(self, inp, terminal_measurement):
         """Test that an error is raised when the input is not recognized."""
+        # pylint: disable=unused-argument
 
         with pytest.raises(
             ConditionalTransformError,

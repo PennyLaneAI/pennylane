@@ -267,7 +267,8 @@ class TestBatchTransform:
         @functools.partial(transform_fn, perform_expansion=perform_expansion)
         @qml.qnode(dev)
         def qnode(x):
-            qml.PhaseShift(x, wires=0)
+            # pylint: disable=unused-argument
+            qml.PhaseShift(0.5, wires=0)
             return qml.expval(qml.PauliX(0))
 
         qnode(0.2)

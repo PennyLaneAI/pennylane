@@ -184,9 +184,10 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert ops[2].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U,*_", single_qubit_decomps)
-    def test_unitary_to_rot_jax_jit(self, U, *_):
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot_jax_jit(self, U, expected_gate, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
+        # pylint: disable=unused-argument
         import jax
 
         # Enable float64 support

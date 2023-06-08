@@ -329,7 +329,8 @@ def fubini_ansatz9(params, wires=None):
 
 
 def fubini_ansatz10(weights, wires=None):
-    qml.templates.BasicEntanglerLayers(weights, wires=wires)
+    # pylint: disable=unused-argument
+    qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
 
 
 B = np.array(

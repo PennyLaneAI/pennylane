@@ -970,9 +970,10 @@ def fubini_ansatz1(params, wires=None):
 
 
 def fubini_ansatz2(params, wires=None):
+    # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
-    qml.RX(fixed_pars[1], wires=wires[0])
+    qml.RX(fixed_pars[1], wires=0)
     qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
     _ = qml.RY(params0, wires=0) ** 0.4
@@ -983,10 +984,11 @@ def fubini_ansatz2(params, wires=None):
 
 
 def fubini_ansatz3(params, wires=None):
+    # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
-    qml.RX(fixed_pars[1], wires=wires[0])
+    qml.RX(fixed_pars[1], wires=0)
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -1004,10 +1006,11 @@ def fubini_ansatz3(params, wires=None):
 
 
 def fubini_ansatz4(params00, params_rest, wires=None):
+    # pylint: disable=unused-argument
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
-    qml.RY(fixed_pars[3], wires=wires[0])
+    qml.RY(fixed_pars[3], wires=0)
     qml.RY(fixed_pars[2], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -1034,9 +1037,10 @@ def fubini_ansatz7(x, wires=None):
 
 
 def fubini_ansatz8(params, wires=None):
+    # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
-    qml.RX(fixed_pars[1], wires=wires[0])
+    qml.RX(fixed_pars[1], wires=[0])
     qml.RY(fixed_pars[3], wires=[0])
     qml.RZ(fixed_pars[2], wires=[0])
     qml.RX(fixed_pars[2], wires=[1])
@@ -1275,7 +1279,8 @@ class TestFullMetricTensor:
 
 
 def diffability_ansatz_0(weights, wires=None):
-    qml.RX(weights[0], wires=wires[0])
+    # pylint: disable=unused-argument
+    qml.RX(weights[0], wires=0)
     qml.RX(weights[1], wires=0)
     qml.CNOT(wires=[0, 1])
     qml.RZ(weights[2], wires=1)
@@ -1295,7 +1300,8 @@ expected_diag_jac_0 = lambda weights: np.array(
 
 
 def diffability_ansatz_1(weights, wires=None):
-    qml.RX(weights[0], wires=wires[0])
+    # pylint: disable=unused-argument
+    qml.RX(weights[0], wires=0)
     qml.RY(weights[1], wires=0)
     qml.CNOT(wires=[0, 1])
     qml.RZ(weights[2], wires=1)
@@ -1315,7 +1321,8 @@ expected_diag_jac_1 = lambda weights: np.array(
 
 
 def diffability_ansatz_2(weights, wires=None):
-    qml.RX(weights[0], wires=wires[0])
+    # pylint: disable=unused-argument
+    qml.RX(weights[0], wires=0)
     qml.RY(weights[1], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.RZ(weights[2], wires=1)
