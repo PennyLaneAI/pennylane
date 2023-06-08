@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
+# pylint: disable=too-many-arguments,too-few-public-methods
 import autograd
 import autograd.numpy as anp
 import pytest
@@ -60,6 +61,7 @@ H_FOR_SPSA = 0.01
 )
 class TestQNode:
     """Test that using the QNode with Autograd integrates with the PennyLane stack"""
+    # pylint: disable=unused-argument
 
     def test_nondiff_param_unwrapping(
         self, interface, dev_name, diff_method, grad_on_execution, mocker
@@ -135,7 +137,7 @@ class TestQNode:
 
         res = circuit(a)
 
-        assert circuit.qtape.interface == None
+        assert circuit.qtape.interface is None
 
         # without the interface, the QNode simply returns a scalar array
         assert isinstance(res, np.ndarray)
@@ -281,7 +283,7 @@ class TestQNode:
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_jacobian_options(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker, tol
+        self, interface, dev_name, diff_method, grad_on_execution, mocker
     ):
         """Test setting jacobian options"""
         if diff_method == "backprop":
@@ -362,7 +364,7 @@ class TestQNode:
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
 
-    def test_classical_processing(self, interface, dev_name, diff_method, grad_on_execution, tol):
+    def test_classical_processing(self, interface, dev_name, diff_method, grad_on_execution):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -395,7 +397,7 @@ class TestQNode:
         assert res[1].shape == ()
 
     def test_no_trainable_parameters(
-        self, interface, dev_name, diff_method, grad_on_execution, tol
+        self, interface, dev_name, diff_method, grad_on_execution
     ):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device(dev_name, wires=2)
@@ -420,17 +422,17 @@ class TestQNode:
         assert len(res) == 2
         assert isinstance(res, tuple)
 
-        def cost(x, y):
+        def cost0(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            assert not qml.jacobian(cost)(a, b)
+            assert not qml.jacobian(cost0)(a, b)
 
-        def cost(a, b):
+        def cost1(a, b):
             return np.sum(circuit(a, b))
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            grad = qml.grad(cost)(a, b)
+            grad = qml.grad(cost1)(a, b)
 
         assert grad == tuple()
 
@@ -563,7 +565,7 @@ class TestShotsIntegration:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = circuit(a, b, shots=100)
+        res = circuit(a, b, shots=100) # pylint: disable=unexpected-keyword-arg
         spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
@@ -574,7 +576,7 @@ class TestShotsIntegration:
         spy.assert_called_once()  # same single call performed above
 
     @pytest.mark.xfail(reason="Param shift and shot vectors.")
-    def test_gradient_integration(self, tol):
+    def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
         dev = qml.device("default.qubit", wires=2, shots=None)
@@ -598,7 +600,7 @@ class TestShotsIntegration:
             np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
         )
 
-    def test_update_diff_method(self, mocker, tol):
+    def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
         dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = np.array([0.543, -0.654], requires_grad=True)
@@ -619,7 +621,7 @@ class TestShotsIntegration:
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None)
+        cost_fn(a, b, shots=None) # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
         # original QNode settings are unaffected
@@ -633,6 +635,7 @@ class TestShotsIntegration:
 )
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
+    # pylint: disable=unused-argument
 
     def test_probability_differentiation(
         self, interface, dev_name, diff_method, grad_on_execution, tol
@@ -1114,7 +1117,7 @@ class TestQubitIntegration:
         x = np.array([1.0, 2.0], requires_grad=True)
         res = circuit(x)
 
-        a, b = x
+        a, _ = x
 
         expected_res = np.cos(a)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
@@ -1358,6 +1361,8 @@ class TestQubitIntegration:
 
         def cost_fn(x):
             return autograd.numpy.hstack(circuit(x))
+
+        assert qml.math.allclose(circuit(x), expected_res)
 
         jac_fn = qml.jacobian(cost_fn)
 
@@ -1608,7 +1613,7 @@ class TestTapeExpansion:
         circuit(x, y)
 
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
-        res = qml.grad(circuit)(x, y)
+        qml.grad(circuit)(x, y)
 
         input_tape = spy.call_args[0][0]
         assert len(input_tape.operations) == 3
@@ -1761,9 +1766,9 @@ class TestSample:
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
-            circuit(shots=10)
+            circuit(shots=10) # pylint: disable=unexpected-keyword-arg
 
-    def test_sample_dimension(self, tol):
+    def test_sample_dimension(self):
         """Test that the sample function outputs samples of the right size"""
         n_sample = 10
 
@@ -1785,7 +1790,7 @@ class TestSample:
         assert res[1].shape == (10,)
         assert isinstance(res[1], np.ndarray)
 
-    def test_sample_combination(self, tol):
+    def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
 
         n_sample = 10
@@ -1808,7 +1813,7 @@ class TestSample:
         assert isinstance(result[2], np.ndarray)
         assert result[0].dtype == np.dtype("int")
 
-    def test_single_wire_sample(self, tol):
+    def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
@@ -1825,7 +1830,7 @@ class TestSample:
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
 
-    def test_multi_wire_sample_regular_shape(self, tol):
+    def test_multi_wire_sample_regular_shape(self):
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
         n_sample = 10
@@ -1855,6 +1860,7 @@ class TestSample:
 @pytest.mark.parametrize("dev_name,diff_method,grad_on_execution", qubit_device_and_diff_method)
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
+    # pylint: disable=unused-argument
 
     def test_grad_single_measurement_param(self, dev_name, diff_method, grad_on_execution):
         """For one measurement and one param, the gradient is a float."""
@@ -2340,7 +2346,7 @@ class TestReturn:
         assert isinstance(hess[1], np.ndarray)
         assert hess[1].shape == (6,)
 
-    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, grad_on_execution):
+    def test_hessian_var_probs_multiple_param_array(self, dev_name, diff_method, grad_on_execution):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")

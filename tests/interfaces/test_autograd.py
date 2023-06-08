@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the autograd interface"""
-import functools
-import importlib
+# pylint: disable=protected-access,too-few-public-methods
 import sys
 
 import autograd
@@ -39,7 +38,7 @@ class TestAutogradExecuteUnitTests:
 
         try:
             del sys.modules["pennylane.interfaces.autograd"]
-        except:
+        except KeyError:
             pass
 
         dev = qml.device("default.qubit", wires=2, shots=None)
@@ -55,7 +54,7 @@ class TestAutogradExecuteUnitTests:
         ):
             qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 
-    def test_jacobian_options(self, mocker, tol):
+    def test_jacobian_options(self, mocker):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -77,7 +76,7 @@ class TestAutogradExecuteUnitTests:
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
             )[0]
 
-        res = qml.jacobian(cost)(a, device=dev)
+        qml.jacobian(cost)(a, device=dev)
 
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
@@ -101,7 +100,7 @@ class TestAutogradExecuteUnitTests:
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
-            res = qml.jacobian(cost)(a, device=dev)
+            qml.jacobian(cost)(a, device=dev)
 
     def test_unknown_interface(self):
         """Test that an error is raised if the interface is unknown"""
@@ -412,11 +411,11 @@ class TestCaching:
         # for the forward pass, and one for the backward pass.
         dev._num_executions = 0
         jac_fn = qml.jacobian(cost)
-        grad1 = jac_fn(params, cache=True)
+        jac_fn(params, cache=True)
         assert dev.num_executions == 2
 
 
-execute_kwargs = [
+execute_kwargs_integration = [
     {"gradient_fn": param_shift},
     {
         "gradient_fn": "device",
@@ -431,7 +430,7 @@ execute_kwargs = [
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_integration)
 class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
@@ -570,7 +569,7 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    def test_tapes_with_different_return_size(self, execute_kwargs, tol):
+    def test_tapes_with_different_return_size(self, execute_kwargs):
         """Test that tapes wit different can be executed and differentiated."""
         dev = qml.device("default.qubit", wires=2)
 
@@ -596,7 +595,6 @@ class TestAutogradExecuteIntegration:
             return autograd.numpy.hstack(qml.execute([tape1, tape2, tape3], dev, **execute_kwargs))
 
         params = np.array([0.1, 0.2], requires_grad=True)
-        x, y = params
 
         res = cost(params)
         assert isinstance(res, np.ndarray)
@@ -648,7 +646,7 @@ class TestAutogradExecuteIntegration:
         assert isinstance(jac, tuple) and len(jac) == 2
         assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
 
-    def test_classical_processing(self, execute_kwargs, tol):
+    def test_classical_processing(self, execute_kwargs):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -672,7 +670,7 @@ class TestAutogradExecuteIntegration:
         assert res[0].shape == ()
         assert res[1].shape == ()
 
-    def test_no_trainable_parameters(self, execute_kwargs, tol):
+    def test_no_trainable_parameters(self, execute_kwargs):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
@@ -886,7 +884,7 @@ class TestAutogradExecuteIntegration:
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 
-        def cost(x, device):
+        def cost(device):
             with qml.queuing.AnnotatedQueue() as q:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
@@ -898,8 +896,7 @@ class TestAutogradExecuteIntegration:
 
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
-        x = np.array(0.543, requires_grad=True)
-        res = cost(x, device=dev)
+        res = cost(device=dev)
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert res[0].shape == (shots,)
@@ -1106,11 +1103,11 @@ class TestOverridingShots:
         mock_property = qml.Device.shots.setter(spy)
         mocker.patch.object(qml.Device, "shots", mock_property)
 
-        res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=123)
+        qml.execute([tape], dev, gradient_fn=param_shift, override_shots=123)
         # overriden shots is the same, no change
         spy.assert_not_called()
 
-        res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
         # overriden shots is not the same, shots were changed
         spy.assert_called()
 
@@ -1149,7 +1146,7 @@ class TestOverridingShots:
         assert len(res) == 5
 
     @pytest.mark.xfail(reason="Shots vector must be adapted for new return types.")
-    def test_gradient_integration(self, tol):
+    def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
         # TODO: Update here when shot vectors are supported
@@ -1178,13 +1175,13 @@ class TestOverridingShots:
         )
 
 
-execute_kwargs = [
+execute_kwargs_hamiltonian = [
     {"gradient_fn": param_shift},
     {"gradient_fn": finite_diff},
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_hamiltonian)
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
@@ -1242,6 +1239,7 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
         """Test hamiltonian with no trainable parameters."""
+        # pylint: disable=unused-argument
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
         weights = np.array([0.4, 0.5], requires_grad=True)
@@ -1257,6 +1255,7 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
         """Test hamiltonian with trainable parameters."""
+        # pylint: disable=unused-argument
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
@@ -1285,6 +1284,7 @@ class TestCustomJacobian:
                 return capabilities
 
             def jacobian(self, tape):
+                # pylint: disable=unused-argument
                 return np.array([1.0, 2.0, 3.0, 4.0])
 
         dev = CustomJacobianDevice(wires=2)
@@ -1393,6 +1393,7 @@ class DeviceSupportingSpecialObservable(DefaultQubit):
 
     @staticmethod
     def _asarray(arr, dtype=None):
+        # pylint: disable=unused-argument
         return arr
 
     @classmethod
