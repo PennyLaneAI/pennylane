@@ -167,6 +167,9 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
