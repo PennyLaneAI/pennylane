@@ -17,7 +17,7 @@ from copy import copy, deepcopy
 
 import pytest
 
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, fermiword
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, string_to_fermi_word
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
@@ -408,9 +408,15 @@ class TestFermiSentence:
         ("0+ 1-", fw1),
         ("0+ 0-", fw2),
         ("0+ 3- 0+ 4-", fw3),
+        ("0^ 1", fw1),
+        ("0^ 0", fw2),
+        ("0^ 3 0^ 4", fw3),
+        ("0+ 1", fw1),
+        ("0+ 0", fw2),
+        ("0+ 3 0+ 4", fw3),
         ("", fw4),
     )
 
     @pytest.mark.parametrize("string, result_fw", tup_fw_string)
-    def test_fermiword_string(self, string, result_fw):
-        assert fermiword(string) == result_fw
+    def test_string_to_fermi_word(self, string, result_fw):
+        assert string_to_fermi_word(string) == result_fw

@@ -245,25 +245,37 @@ class FermiSentence(dict):
                 del self[fw]
 
 
-def fermiword(operator):
+def string_to_fermi_word(fermi_string):
     r"""Return a fermionic operator object from its string representation.
 
+    The string representation is a compact format that uses the orbital index and `+` or `-` symbols
+    to indicate creation and annihilation operators, respectively. For instance, the string
+    representation for the operator :math:`a\dagger_0 a_1 a\dagger_0 a_1` is '0+ 1- 0+ 1-'. The `-`
+    symbols can be optionally dropped such that '0+ 1 0+ 1' represents the same operator. The format
+    commonly used in OpenFermion, '0^ 1 0^ 1' to represent the same operator, is also supported.
+
     Args:
-        operator (str): string representation of the fermionic object
+        fermi_string (str): string representation of the fermionic object
 
     Returns:
         FermiWord: the fermionic operator object
 
     **Example**
 
-    >>> operator = '0+ 1- 0+ 1-'
-    >>> fermiword(operator)
+    >>> string_to_fermi_word('0+ 1- 0+ 1-')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> string_to_fermi_word('0+ 1 0+ 1')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> string_to_fermi_word('0^ 1 0^ 1')
     <FermiWord = '0+ 1- 0+ 1-'>
     """
-    if len(operator) == 0:
+    if len(fermi_string) == 0:
         return FermiWord({})
 
-    operator = re.sub(r"\^", "+", operator)
-    operator = [i + "-" if len(i) == 1 else i for i in re.split(r"\s", operator)]
+    operators = [
+        i + "-" if len(i) == 1 else i for i in re.split(r"\s", re.sub(r"\^", "+", fermi_string))
+    ]
 
-    return FermiWord({(i, int(s[0])): s[1] for i, s in enumerate(operator)})
+    return FermiWord({(i, int(s[0])): s[1] for i, s in enumerate(operators)})
