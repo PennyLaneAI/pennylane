@@ -133,9 +133,11 @@ def drawable_layers(ops, wire_map=None):
             max_control_layer = max(m_layers)
 
             for m_id, m_layer in zip(op.meas_val.measurement_ids, m_layers):
-                # this MidMeasureMP has been used, remove from measurement caches for qubit reuse
-                del measured_wires[m_id]
-                del measured_layers[m_id]
+                # TODO: remove from measurement caches for qubit reuse
+                # goes with the _todo_ at the end of MPLDrawer.cond()
+                #
+                # del measured_layers[m_id]
+                # del measured_wires[m_id]
 
                 # measurements for a conditional should all be in the same layer
                 if m_layer < max_control_layer:
