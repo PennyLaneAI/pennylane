@@ -490,7 +490,7 @@ class TestIteration:
 
         # Iterate over the tape
         for op_ in tape:
-            op_ # pylint: disable=pointless-statement
+            op_  # pylint: disable=pointless-statement
 
         # Check that the underlying circuit is still as expected
         assert tape.circuit == circuit
@@ -1520,9 +1520,7 @@ class TestTapeCopying:
         for i, j in zip(copied_tape.get_parameters(), new_params):
             assert i is j
 
-    @pytest.mark.parametrize(
-        "copy_fn", [lambda tape: tape.copy(copy_operations=True), copy.copy]
-    )
+    @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), copy.copy])
     def test_shallow_copy_with_operations(self, copy_fn):
         """Test that shallow copying of a tape and operations allows
         parameters to be set independently"""

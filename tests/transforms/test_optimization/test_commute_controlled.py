@@ -11,17 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``commute_controlled``.
+"""
 import pytest
-from pennylane import numpy as np
-import pennylane as qml
-from pennylane.wires import Wires
+from utils import compare_operation_lists, check_matrix_equivalence
 
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.wires import Wires
 from pennylane.transforms.optimization import commute_controlled
-from utils import (
-    compare_operation_lists,
-    check_matrix_equivalence,
-)
 
 
 class TestCommuteControlled:
@@ -38,7 +37,7 @@ class TestCommuteControlled:
         transformed_qfunc = commute_controlled(direction="sideways")(qfunc)
 
         with pytest.raises(ValueError, match="must be 'left' or 'right'"):
-            ops = qml.tape.make_qscript(transformed_qfunc)().operations
+            qml.tape.make_qscript(transformed_qfunc)()
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_gate_with_no_basis(self, direction):
@@ -203,7 +202,7 @@ class TestCommuteControlled:
             qml.CY(wires=["a", 1])
             qml.RY(0.3, wires="a")
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -285,7 +284,7 @@ class TestCommuteControlled:
             qml.PauliX(wires=1)
             qml.CRY(0.2, wires=[1, 0])
 
-        transformed_qfunc = commute_controlled()(qfunc)
+        transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
         original_ops = qml.tape.make_qscript(qfunc)().operations
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
@@ -306,7 +305,7 @@ class TestCommuteControlled:
 dev = qml.device("default.qubit", wires=3)
 
 
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.PauliX(wires=2)
     qml.S(wires=0)
     qml.CNOT(wires=[0, 1])
@@ -318,7 +317,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliZ(0))
 
 
-transformed_qfunc = commute_controlled()(qfunc)
+transformed_qfunc_all_ops = commute_controlled()(qfunc_all_ops)
 
 expected_op_list = ["PauliX", "CNOT", "CRY", "PauliY", "Toffoli", "S", "PhaseShift", "T"]
 expected_wires_list = [
@@ -340,8 +339,8 @@ class TestCommuteControlledInterfaces:
     def test_commute_controlled_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
@@ -362,8 +361,8 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([1.2, -0.35], requires_grad=True)
         transformed_input = torch.tensor([1.2, -0.35], requires_grad=True)
@@ -389,8 +388,8 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.8, -0.6])
         transformed_input = tf.Variable([0.8, -0.6])
@@ -424,11 +423,10 @@ class TestCommuteControlledInterfaces:
 
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.3, 0.4], dtype=jnp.float64)
 

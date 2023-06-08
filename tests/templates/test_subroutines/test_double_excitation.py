@@ -348,4 +348,4 @@ class TestInterfaces:
         res = circuit(weight)
         res.backward()
         # check that the gradient is computed without error
-        weight.grad # pylint: disable=pointless-statement
+        weight.grad  # pylint: disable=pointless-statement

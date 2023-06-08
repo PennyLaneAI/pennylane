@@ -143,7 +143,7 @@ def circuit_template(features):
 def circuit_decomposed(features):
     # convert tensor to list
     feats = list(qml.math.toarray(features))
-    _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat==1]
+    _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
 

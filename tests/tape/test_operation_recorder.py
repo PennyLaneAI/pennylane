@@ -16,6 +16,7 @@ Unit tests for the ``OperationRecorder`` in PennyLane.
 """
 import pennylane as qml
 
+
 class TestOperationRecorder:
     """Test the OperationRecorder class."""
 
