@@ -33,6 +33,9 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
+* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions.
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
@@ -170,6 +173,8 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* One qubit unitaries can now be decomposed into a `ZXZ` gate sequence (apart from the pre-existing `XYX` and `ZYZ`).
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
@@ -256,6 +261,9 @@
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
 
+* `zyz_decomposition` and `xyx_decomposition` are now deprecated in favour of `one_qubit_decomposition`.
+  [(#4230)](https://github.com/PennyLaneAI/pennylane/pull/4230)
+
 <h3>Documentation 📝</h3>
 
 * The docstring for `qml.grad` now states that it should be used with the Autograd interface only.
@@ -296,6 +304,9 @@
 
 * Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
+
+* Fixed buggy calculation of angle in `xyx_decomposition` causing it to give incorrect decomposition of certain unitaries.
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
 <h3>Contributors ✍️</h3>
 
