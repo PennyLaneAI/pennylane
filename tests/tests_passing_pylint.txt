@@ -26,7 +26,6 @@ tests/ops/qubit/**
 tests/ops/qutrit/**
 tests/ops/**
 tests/optimize/**
-tests/optimize/test_riemannian_gradient_optimizer.py
 tests/pulse/**
 tests/pauli/grouping/**
 tests/pauli/**
@@ -35,6 +34,7 @@ tests/qinfo/**
 tests/qnn/**
 tests/resource/**
 tests/tape/test_qscript.py
+tests/templates/test_state_preparations/test_qutrit_basis_state_prep.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/templates/test_subroutines/test_qsvt.py
 tests/transforms/test_convert_to_numpy_parameters.py
