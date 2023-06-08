@@ -120,7 +120,7 @@ class TestPauliWord:
         (pw3, pw4, pw3, 1.0),
     )
 
-    @pytest.mark.parametrize("pw1, pw2, result_pw, coeff", tup_pws_mult)
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_mult)
     def test_mul(self, word1, word2, result_pw, coeff):
         copy_pw1 = copy(word1)
         copy_pw2 = copy(word2)
@@ -354,7 +354,7 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)
+    @pytest.mark.parametrize("string1, string2, res", tup_ps_mult)
     def test_mul(self, string1, string2, res):
         """Test that the correct result of multiplication is produced."""
         copy_ps1 = copy(string1)
@@ -374,7 +374,7 @@ class TestPauliSentence:
         (ps2, ps5, ps2),
     )
 
-    @pytest.mark.parametrize("ps1, ps2, result", tup_ps_add)
+    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
     def test_add(self, string1, string2, result):
         """Test that the correct result of addition is produced."""
         copy_ps1 = copy(string1)

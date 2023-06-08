@@ -84,14 +84,17 @@ def test_error_missing_frequency_info_single_par():
     for one of the function arguments."""
 
     opt = RotosolveOptimizer()
-    fun = qml.math.sum
+
+    def sum_named_arg(x):
+        return qml.math.sum(x)
+
     x = np.arange(4, requires_grad=True)
     nums_frequency = {"x": {(0,): 1, (1,): 1}}
     spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
     # For the first three entries either nums_frequency or spectra is provided
     with pytest.raises(ValueError, match=r"was provided for the entry \(3,\)"):
-        opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
+        opt.step(sum_named_arg, x, nums_frequency=nums_frequency, spectra=spectra)
 
 
 def test_error_no_trainable_args():
@@ -187,8 +190,9 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
+    # pylint: disable=unused-argument
     def test_number_of_function_calls(
-        self, fun, _, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         # pylint: disable=too-many-arguments
@@ -216,7 +220,7 @@ class TestWithClassicalFunction:
         assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self, fun, x_min, param, nums_freq, _, substep_optimizer, substep_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
@@ -272,7 +276,9 @@ class TestWithClassicalFunction:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(self, fun, _, param, nums_freq, __, substep_optimizer, substep_kwargs):
+    def test_full_output(
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+    ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
