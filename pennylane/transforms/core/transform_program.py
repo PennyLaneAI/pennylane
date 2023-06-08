@@ -14,7 +14,6 @@
 """
 This module contains the transform program class.
 """
-import pennylane
 from .transform_dispatcher import TransformContainer, TransformError
 
 

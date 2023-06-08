@@ -135,7 +135,7 @@ class TransformContainer:
 
     def __init__(
         self, transform, args=None, kwargs=None, classical_cotransform=None, is_informative=False
-    ):  # pylint:disable=redefined-outer-name
+    ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args if args else []
         self._kwargs = kwargs if kwargs else {}
