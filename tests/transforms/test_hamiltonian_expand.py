@@ -531,7 +531,6 @@ class TestSumExpand:
         assert np.isclose(cost(var), output)
 
         grad = qml.grad(cost)(var)
-        print(grad)
         assert len(grad) == len(output2)
         for g, o in zip(grad, output2):
             assert np.allclose(g, o, atol=tol)
