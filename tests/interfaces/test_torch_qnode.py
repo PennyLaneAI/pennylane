@@ -101,7 +101,9 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=num_wires)
 
-        @qnode(dev, diff_method=diff_method, interface="autograd", grad_on_execution=grad_on_execution)
+        @qnode(
+            dev, diff_method=diff_method, interface="autograd", grad_on_execution=grad_on_execution
+        )
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -234,7 +236,9 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+        )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -257,9 +261,7 @@ class TestQNode:
         assert a.grad.dtype is torch.float32
         assert b.grad.dtype is torch.float32
 
-    def test_jacobian_options(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker
-    ):
+    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution, mocker):
         """Test setting jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
@@ -306,7 +308,9 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+        )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -397,9 +401,7 @@ class TestQNode:
         assert b.grad is None
         assert isinstance(c.grad, torch.Tensor)
 
-    def test_no_trainable_parameters(
-        self, interface, dev_name, diff_method, grad_on_execution
-    ):
+    def test_no_trainable_parameters(self, interface, dev_name, diff_method, grad_on_execution):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         num_wires = 2
 
@@ -570,7 +572,7 @@ class TestShotsIntegration:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = circuit(a, b, shots=100) # pylint: disable=unexpected-keyword-arg
+        res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
@@ -652,7 +654,7 @@ class TestShotsIntegration:
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None) # pylint: disable=unexpected-keyword-arg
+        cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
         # original QNode settings are unaffected
@@ -784,9 +786,7 @@ class TestQubitIntegration:
         assert np.allclose(jac[1][0], res_2, atol=tol, rtol=0)
         assert np.allclose(jac[1][1], res_3, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(
-        self, interface, dev_name, diff_method, grad_on_execution, tol
-    ):
+    def test_ragged_differentiation(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if diff_method == "adjoint":
@@ -905,7 +905,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
-            **options
+            **options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -962,7 +962,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
-            **options
+            **options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1030,7 +1030,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
-            **options
+            **options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1542,7 +1542,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface="torch",
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])

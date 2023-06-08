@@ -861,7 +861,9 @@ class TestVectorValued:
         exec_jax = cost(x, y, dev, interface="jax-python", ek=execute_kwargs)
         exec_autograd = cost(x_, y_, dev, interface="autograd", ek=execute_kwargs)
 
-        assert all(np.allclose(exec_jax[i][j], exec_autograd[i][j]) for i in range(2) for j in range(2))
+        assert all(
+            np.allclose(exec_jax[i][j], exec_autograd[i][j]) for i in range(2) for j in range(2)
+        )
 
         res = jax.jacobian(cost, argnums=(0, 1))(
             x, y, dev, interface="jax-python", ek=execute_kwargs

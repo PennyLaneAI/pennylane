@@ -73,9 +73,7 @@ class TestTensorFlowExecuteUnitTests:
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
-            execute(
-                [tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface="tf"
-            )
+            execute([tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface="tf")
 
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""

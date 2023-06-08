@@ -61,6 +61,7 @@ H_FOR_SPSA = 0.01
 )
 class TestQNode:
     """Test that using the QNode with Autograd integrates with the PennyLane stack"""
+
     # pylint: disable=unused-argument
 
     def test_nondiff_param_unwrapping(
@@ -282,9 +283,7 @@ class TestQNode:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_jacobian_options(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker
-    ):
+    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution, mocker):
         """Test setting jacobian options"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
@@ -396,9 +395,7 @@ class TestQNode:
         assert res[0].shape == ()
         assert res[1].shape == ()
 
-    def test_no_trainable_parameters(
-        self, interface, dev_name, diff_method, grad_on_execution
-    ):
+    def test_no_trainable_parameters(self, interface, dev_name, diff_method, grad_on_execution):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device(dev_name, wires=2)
 
@@ -565,7 +562,7 @@ class TestShotsIntegration:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = circuit(a, b, shots=100) # pylint: disable=unexpected-keyword-arg
+        res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
@@ -621,7 +618,7 @@ class TestShotsIntegration:
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None) # pylint: disable=unexpected-keyword-arg
+        cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
         # original QNode settings are unaffected
@@ -635,6 +632,7 @@ class TestShotsIntegration:
 )
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
+
     # pylint: disable=unused-argument
 
     def test_probability_differentiation(
@@ -1766,7 +1764,7 @@ class TestSample:
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
-            circuit(shots=10) # pylint: disable=unexpected-keyword-arg
+            circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
 
     def test_sample_dimension(self):
         """Test that the sample function outputs samples of the right size"""
@@ -1860,6 +1858,7 @@ class TestSample:
 @pytest.mark.parametrize("dev_name,diff_method,grad_on_execution", qubit_device_and_diff_method)
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
+
     # pylint: disable=unused-argument
 
     def test_grad_single_measurement_param(self, dev_name, diff_method, grad_on_execution):

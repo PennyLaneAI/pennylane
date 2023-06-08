@@ -97,7 +97,12 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface=interface, diff_method="parameter-shift", grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method="parameter-shift",
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -250,9 +255,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(
-        self, dev_name, diff_method, grad_on_execution, interface, mocker
-    ):
+    def test_jacobian_options(self, dev_name, diff_method, grad_on_execution, interface, mocker):
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -263,7 +266,14 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface=interface, diff_method="finite-diff", h=1e-8, approx_order=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method="finite-diff",
+            h=1e-8,
+            approx_order=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -817,7 +827,7 @@ class TestShotsIntegration:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = circuit(a, b, shots=100) # pylint: disable=unexpected-keyword-arg
+        res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
@@ -872,7 +882,7 @@ class TestShotsIntegration:
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None) # pylint: disable=unexpected-keyword-arg
+        cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
         # original QNode settings are unaffected
@@ -1374,7 +1384,11 @@ class TestQubitIntegrationHigherOrder:
         x, y = 0.765, -0.654
 
         @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution, **gradient_kwargs
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            **gradient_kwargs
         )
         def circuit(x, y):
             qml.RX(x, wires=0)
@@ -1879,7 +1893,9 @@ class TestJIT:
         if diff_method in ["backprop", "adjoint"]:
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
-        @qml.qnode(dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution)
+        @qml.qnode(
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+        )
         def circuit():
             return qml.probs(wires=0)
 
@@ -2509,7 +2525,13 @@ class TestReturnHessian:
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -2552,7 +2574,13 @@ class TestReturnHessian:
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
@@ -2578,7 +2606,13 @@ class TestReturnHessian:
         par_0 = jax.numpy.array(0.1, dtype=jax.numpy.float64)
         par_1 = jax.numpy.array(0.2, dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -2617,7 +2651,13 @@ class TestReturnHessian:
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
@@ -2648,7 +2688,13 @@ class TestReturnHessian:
         par_0 = jax.numpy.array(0.1, dtype=jax.numpy.float64)
         par_1 = jax.numpy.array(0.2, dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -2692,7 +2738,13 @@ class TestReturnHessian:
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
@@ -2723,7 +2775,13 @@ class TestReturnHessian:
         par_0 = jax.numpy.array(0.1, dtype=jax.numpy.float64)
         par_1 = jax.numpy.array(0.2, dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -2761,7 +2819,13 @@ class TestReturnHessian:
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, max_diff=2, grad_on_execution=grad_on_execution)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            max_diff=2,
+            grad_on_execution=grad_on_execution,
+        )
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
