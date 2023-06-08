@@ -276,6 +276,9 @@ def string_to_fermi_word(fermi_string):
 
     fermi_string = re.sub(" +", " ", fermi_string).strip()
 
+    if not all(s.isdigit() or s in ["+", "-", "^", " "] for s in fermi_string):
+        raise ValueError(f"Invalid character encountered in string {fermi_string}.")
+
     operators = [
         i + "-" if len(i) == 1 else i for i in re.split(r"\s", re.sub(r"\^", "+", fermi_string))
     ]

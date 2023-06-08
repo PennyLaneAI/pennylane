@@ -443,3 +443,13 @@ class TestFermiSentence:
     @pytest.mark.parametrize("string, result_fw", tup_fw_string)
     def test_string_to_fermi_word(self, string, result_fw):
         assert string_to_fermi_word(string) == result_fw
+
+    tup_fw_string_error = (
+        "0+ a-",
+        "0+ 1-? 3+ 4-",
+    )
+
+    @pytest.mark.parametrize("string", tup_fw_string_error)
+    def test_string_to_fermi_word_error(self, string):
+        with pytest.raises(ValueError, match="Invalid character encountered in string "):
+            string_to_fermi_word(string)  # pylint: disable=pointless-statement
