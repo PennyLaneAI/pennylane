@@ -22,7 +22,14 @@ import warnings
 import pennylane as qml
 
 from pennylane.operation import Tensor
-from pennylane.measurements import MidMeasureMP, StateMeasurement, SampleMeasurement, ExpectationMP
+from pennylane.measurements import (
+    MidMeasureMP,
+    StateMeasurement,
+    SampleMeasurement,
+    ExpectationMP,
+    ClassicalShadowMP,
+    ShadowExpvalMP,
+)
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
 
@@ -186,7 +193,7 @@ def validate_measurements(
             )
 
         for m in circuit.measurements:
-            if not isinstance(m, SampleMeasurement):
+            if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
                 raise DeviceError(
                     f"Circuits with finite shots must only contain SampleMeasurements; got {m}"
                 )

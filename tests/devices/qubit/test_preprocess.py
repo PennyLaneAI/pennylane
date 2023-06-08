@@ -283,6 +283,8 @@ class TestValidateMeasurements:
             [qml.sample(wires=0)],
             [qml.expval(qml.PauliZ(0))],
             [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(0)],
+            [qml.classical_shadow(wires=[0])],
+            [qml.shadow_expval(qml.PauliZ(0))],
         ],
     )
     def test_only_sample_measurements(self, measurements):
@@ -296,6 +298,8 @@ class TestValidateMeasurements:
             [qml.sample(wires=0)],
             [qml.state(), qml.sample(wires=0)],
             [qml.sample(wires=0), qml.expval(qml.PauliZ(0))],
+            [qml.classical_shadow(wires=[0])],
+            [qml.shadow_expval(qml.PauliZ(0))],
         ],
     )
     def test_analytic_with_samples(self, measurements):
