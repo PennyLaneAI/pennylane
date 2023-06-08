@@ -738,7 +738,7 @@ class _StateVectorProjector(Observable):
         **Example**
 
         >>> _StateVectorProjector.compute_eigvals([0, 0, 1, 0])
-        [0. 0. 0. 1.]
+        array([1, 0, 0, 0])
         """
         w = qml.math.zeros_like(state_vector)
         w[0] = 1
