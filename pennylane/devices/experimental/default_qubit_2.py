@@ -103,6 +103,7 @@ class DefaultQubit2(Device):
         super().__init__()
 
         self._rng = np.random.default_rng(seed)
+        self._debugger = None
 
     def supports_derivatives(
         self,
@@ -194,7 +195,7 @@ class DefaultQubit2(Device):
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
-        results = tuple(simulate(c, rng=self._rng) for c in circuits)
+        results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         return results[0] if is_single_circuit else results
 
     def compute_derivatives(
@@ -206,6 +207,10 @@ class DefaultQubit2(Device):
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
+
+        if self.tracker.active:
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
 
         if execution_config.gradient_method == "adjoint":
             res = tuple(adjoint_jacobian(circuit) for circuit in circuits)

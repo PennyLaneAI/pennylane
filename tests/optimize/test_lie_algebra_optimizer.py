@@ -67,6 +67,24 @@ hamiltonian_3 = qml.Hamiltonian(
     coeffs=[-2.0], observables=[qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2)]
 )
 
+circuits = [circuit_1, circuit_2, circuit_3]
+hamiltonians = [hamiltonian_1, hamiltonian_2, hamiltonian_3]
+
+
+@pytest.mark.parametrize("circuit, hamiltonian", zip(circuits, hamiltonians))
+def test_lie_algebra_deprecation_warning(circuit, hamiltonian):
+    """Test that creating a ``LieAlgebraOptimizer`` outputs the correct deprecation warning."""
+    nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
+    dev = qml.device("default.qubit", wires=nqubits)
+
+    @qml.qnode(dev)
+    def lie_circuit():
+        circuit()
+        return qml.expval(hamiltonian)
+
+    with pytest.warns(UserWarning, match="``LieAlgebraOptimizer`` is deprecated."):
+        _ = LieAlgebraOptimizer(circuit=lie_circuit)
+
 
 @pytest.mark.parametrize(
     "circuit,hamiltonian",

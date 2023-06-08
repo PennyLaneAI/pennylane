@@ -91,7 +91,7 @@ class TestFidelityMath:
     @pytest.mark.parametrize("state0,state1", state_wrong_shape)
     def test_state_vector_wrong_shape(self, state0, state1):
         """Test that a message is raised when the state does not have the right shape."""
-        with pytest.raises(ValueError, match="State vector must be of length"):
+        with pytest.raises(ValueError, match="State vector must be of shape"):
             qml.math.fidelity(state0, state1, check_state=True)
 
     d_mat_wrong_shape = [

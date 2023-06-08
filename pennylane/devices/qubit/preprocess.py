@@ -58,14 +58,22 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
+    if op.name == "Snapshot":
+        return True
+
     return op.has_matrix
 
 
+def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Oeprator is supported by adjoint differentiation."""
+    return op.num_params == 0 or op.num_params == 1 and op.has_generator
+
+
 def _operator_decomposition_gen(
-    op: qml.operation.Operator,
+    op: qml.operation.Operator, acceptance_function: Callable[[qml.operation.Operator], bool]
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted by DefaultQubit2."""
-    if _accepted_operator(op):
+    if acceptance_function(op):
         yield op
     else:
         try:
@@ -76,7 +84,7 @@ def _operator_decomposition_gen(
             ) from e
 
         for sub_op in decomp:
-            yield from _operator_decomposition_gen(sub_op)
+            yield from _operator_decomposition_gen(sub_op, acceptance_function)
 
 
 #######################
@@ -95,34 +103,18 @@ def validate_and_expand_adjoint(
         Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
         If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
     """
-    # Check validity of measurements
-    measurements = []
-    for m in circuit.measurements:
-        if not isinstance(m, ExpectationMP):
-            return DeviceError(
-                "Adjoint differentiation method does not support "
-                f"measurement {m.__class__.__name__}."
-            )
 
-        if not m.obs.has_matrix:
-            return DeviceError(
-                f"Adjoint differentiation method does not support observable {m.obs.name}."
-            )
-
-        measurements.append(m)
-
-    expanded_ops = []
-    for op in circuit._ops:
-        if op.num_params > 1:
-            if not isinstance(op, qml.Rot):
-                return DeviceError(
-                    f"The {op} operation is not supported using "
-                    'the "adjoint" differentiation method.'
-                )
-            ops = op.decomposition()
-            expanded_ops.extend(ops)
-        elif not isinstance(op, qml.operation.StatePrep):
-            expanded_ops.append(op)
+    try:
+        new_ops = [
+            final_op
+            for op in circuit._ops
+            for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
+        ]
+    except RecursionError as e:
+        raise DeviceError(
+            "Reached recursion limit trying to decompose operations. "
+            "Operator decomposition may have entered an infinite loop."
+        ) from e
 
     prep = circuit._prep[:1]
 
@@ -141,7 +133,23 @@ def validate_and_expand_adjoint(
         else:
             trainable_params.append(k)
 
-    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep, circuit.shots)
+    # Check validity of measurements
+    measurements = []
+    for m in circuit.measurements:
+        if not isinstance(m, ExpectationMP):
+            return DeviceError(
+                "Adjoint differentiation method does not support "
+                f"measurement {m.__class__.__name__}."
+            )
+
+        if not m.obs.has_matrix:
+            return DeviceError(
+                f"Adjoint differentiation method does not support observable {m.obs.name}."
+            )
+
+        measurements.append(m)
+
+    expanded_tape = qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
     expanded_tape.trainable_params = trainable_params
 
     return expanded_tape
@@ -209,7 +217,9 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     if not all(_accepted_operator(op) for op in circuit._ops):
         try:
             new_ops = [
-                final_op for op in circuit._ops for final_op in _operator_decomposition_gen(op)
+                final_op
+                for op in circuit._ops
+                for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
             raise DeviceError(
