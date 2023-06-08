@@ -14,5 +14,5 @@
 """A module containing utility functions and reduced representation classes for working with
 Fermionic operators. """
 
-from .conversion import jw_mapping
+from .conversion import jordan_wigner
 from .fermionic import FermiWord, FermiSentence
