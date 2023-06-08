@@ -445,6 +445,24 @@ single_qubit_decomps = [
 ]
 
 
+rot_decomps = [
+    # These will be decomposed to RZ
+    (I, "rot", qml.RZ, [0.0]),
+    (Z, "rot", qml.RZ, [np.pi]),
+    (S, "rot", qml.RZ, [np.pi / 2]),
+    (T, "rot", qml.RZ, [np.pi / 4]),
+    (qml.RZ(0.3, wires=0).matrix(), "rot", qml.RZ, [0.3]),
+    (qml.RZ(-0.5, wires=0).matrix(), "rot", qml.RZ, [-0.5]),
+    # This will be decomposed to Rot
+    (
+        qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
+        "rot",
+        qml.Rot,
+        [0.2, 0.5, -0.3],
+    ),
+]
+
+
 class TestOneQubitUnitaryDecomposition:
     """Test that one qubit unitaries are correctly decomposed."""
 
@@ -458,12 +476,12 @@ class TestOneQubitUnitaryDecomposition:
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
-        # Now we check the ZXZ rotation angles
+        # Now we check the rotation angles
         assert qml.math.allclose(
             [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:3]],
             expected_params[:3],
             atol=1e-7,
-        ), "Incorrect ZXZ rotation angles"
+        ), "Incorrect rotation angles"
 
         obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
 
@@ -485,11 +503,43 @@ class TestOneQubitUnitaryDecomposition:
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
-    # @pytest.mark.parametrize("U,decomp_type,expected_gates,expected_params", single_qubit_decomps)
     def test_one_qubit_decomposition_exception(self):
+        """Test that exception for incorrect rotations argument is raised."""
         U = qml.Rot(1.2, 1.2, 1.2, wires=0).matrix()
         with pytest.raises(ValueError):
             one_qubit_decomposition(U, Wires("a"), "nonsense string", return_global_phase=True)
+
+    def _run_assertions_rot(self, U, expected_gate, expected_params, obtained_gates):
+        assert len(obtained_gates) == 1, "Incorrect number of gates"
+        assert isinstance(obtained_gates[0], expected_gate), "Incorrect type of gate"
+        assert obtained_gates[0].wires == Wires("a"), "Incorrect wire"
+
+        # Now we check the rotation angles
+        assert qml.math.allclose(
+            qml.math.unwrap(obtained_gates[0].parameters),
+            expected_params,
+            atol=1e-7,
+        ), "Incorrect rotation angles"
+
+        obtained_mat = obtained_gates[0].matrix()
+
+        if len(obtained_mat.shape) == 2:
+            U = [U]
+            obtained_mat = [obtained_mat]
+
+        assert all(
+            check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
+            for curr_obtained_mat, curr_U in zip(obtained_mat, qml.math.unwrap(U))
+        )
+
+    @pytest.mark.parametrize("U,decomp_type,expected_gate,expected_params", rot_decomps)
+    def test_one_qubit_decomposition_rot(self, U, decomp_type, expected_gate, expected_params):
+        """Test that a one-qubit matrix in isolation is correctly decomposed to RZ or Rot gate."""
+        obtained_gates = one_qubit_decomposition(
+            U, Wires("a"), decomp_type, return_global_phase=True
+        )
+
+        self._run_assertions_rot(U, expected_gate, expected_params, obtained_gates)
 
 
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
