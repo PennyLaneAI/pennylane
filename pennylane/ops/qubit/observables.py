@@ -373,17 +373,15 @@ class Projector(Observable):
         will be different based on ``basis_representation``. We cache the different types in private class
         variables so that:
 
-        >>> state0, state1, wires = [0, 1], [1, 0], [0, 1]
-        >>> projector0, projector1 = Projector(state0, wires), Projector(state1, wires)
-        >>> projector0.__class__ is projector1.__class__
+        >>> Projector(state, wires).__class__ is Projector(state, wires).__class__
         True
-        >>> type(projector0) == type(projector1)
+        >>> type(Projector(state, wries)) == type(Projector(state, wires))
         True
-        >>> isinstance(projector1, type(projector0)) and isinstance(projector0, type(projector1))
+        >>> isinstance(Projector(state, wires), type(Projector(state, wires)))
         True
-        >>> Projector(state0, wires).__class__ is Projector._basis_state_type
+        >>> Projector(state, wires).__class__ is Projector._basis_state_type
         True
-        >>> Projector(state0, [0], basis_representation=False).__class__ is Projector._state_vector_type
+        >>> Projector(state, wires, basis_representation=False).__class__ is Projector._state_vector_type
         True
 
         """
