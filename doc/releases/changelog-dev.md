@@ -176,6 +176,10 @@
 * One qubit unitaries can now be decomposed into a `ZXZ` gate sequence (apart from the pre-existing `XYX` and `ZYZ`).
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
+* Added broadcasting support for `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, `qml.math.max_entropy`, and `qml.math.sqrt_matrix`.
+  [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
@@ -256,6 +260,11 @@
 
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
+* `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
+  input. Please call `qml.math.dm_from_state_vector` on the input before passing to any of these functions.
+  [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
 
 * `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
