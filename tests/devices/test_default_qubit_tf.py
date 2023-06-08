@@ -48,12 +48,14 @@ from gate_data import (
     FermionicSWAP,
 )
 
-tf = pytest.importorskip("tensorflow", minversion="2.0")
-
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import DeviceError
-from pennylane.devices.default_qubit_tf import DefaultQubitTF
+
+tf = pytest.importorskip("tensorflow", minversion="2.0")
+from pennylane.devices.default_qubit_tf import (
+    DefaultQubitTF,
+)  # pylint: disable=wrong-import-position
 
 np.random.seed(42)
 
