@@ -88,14 +88,6 @@ class DefaultQubit(QubitDevice):
 
     @property
     def name(self):
-        """The full name of the device.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
         return "Default qubit PennyLane plugin"
 
     @property
