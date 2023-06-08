@@ -58,12 +58,14 @@ from gate_data import (
     Z,
 )
 
-torch = pytest.importorskip("torch", minversion="1.8.1")
-
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane import numpy as pnp
-from pennylane.devices.default_qubit_torch import DefaultQubitTorch
+
+torch = pytest.importorskip("torch", minversion="1.8.1")
+from pennylane.devices.default_qubit_torch import (
+    DefaultQubitTorch,
+)  # pylint: disable=wrong-import-position
 
 pytestmark = pytest.mark.gpu
 

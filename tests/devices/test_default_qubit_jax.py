@@ -17,12 +17,14 @@ Integration tests for the ``default.qubit.jax`` device.
 import pytest
 import numpy as np
 
-jax = pytest.importorskip("jax", minversion="0.2")
-
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane.pulse import ParametrizedHamiltonian
+
+jax = pytest.importorskip("jax", minversion="0.2")
+from pennylane.devices.default_qubit_jax import (
+    DefaultQubitJax,
+)  # pylint: disable=wrong-import-position
 
 jnp = jax.numpy
 
