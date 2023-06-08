@@ -14,11 +14,11 @@
 """
 Tests for the MPS template.
 """
-import math
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.tensornetworks.mps import *
+from pennylane.templates.tensornetworks.mps import compute_indices_MPS, MPS
 
 
 class TestIndicesMPS:
@@ -98,8 +98,8 @@ class TestIndicesMPS:
     def test_indices_output(self, wires, n_block_wires, expected_indices):
         """Verifies the indices are correct for both integer and string wire labels."""
         indices = compute_indices_MPS(wires, n_block_wires)
-        for i in range(len(expected_indices)):
-            assert all(indices[i] == expected_indices[i])
+        for idx, exp_idx in zip(indices, expected_indices):
+            assert all(idx == exp_idx)
 
 
 class TestTemplateInputs:
@@ -212,7 +212,8 @@ class TestAttributes:
         [(range(4), 5), (range(9), 20)],
     )
     def test_get_n_blocks_error(self, wires, n_block_wires):
-        """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
+        """Test that the number of blocks attribute raises an error when
+        n_block_wires is too large."""
 
         with pytest.raises(
             ValueError,
@@ -223,10 +224,12 @@ class TestAttributes:
 
 
 class TestTemplateOutputs:
+    @staticmethod
     def circuit1_block(weights, wires):
         qml.RZ(weights[0], wires=wires[0])
         qml.RZ(weights[1], wires=wires[1])
 
+    @staticmethod
     def circuit1_MPS(weights, wires):
         qml.RZ(weights[0][0], wires=wires[0])
         qml.RZ(weights[0][1], wires=wires[1])
@@ -235,12 +238,14 @@ class TestTemplateOutputs:
         qml.RZ(weights[2][0], wires=wires[2])
         qml.RZ(weights[2][1], wires=wires[3])
 
+    @staticmethod
     def circuit2_block(weights, wires):
         SELWeights = np.array(
             [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
         )
         qml.StronglyEntanglingLayers(SELWeights, wires)
 
+    @staticmethod
     def circuit2_MPS(weights, wires):
         SELWeights1 = np.array(
             [
@@ -289,16 +294,16 @@ class TestTemplateOutputs:
         dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_template():
             qml.MPS(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
-        template_result = circuit()
+        template_result = circuit_template()
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_manual():
             expected_circuit(template_weights, wires)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
-        manual_result = circuit()
+        manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
