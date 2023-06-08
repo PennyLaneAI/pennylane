@@ -1495,9 +1495,6 @@ class Operator(abc.ABC):
             return qml.pow(self, z=other)
         return NotImplemented
 
-    def __hash__(self):
-        return self.hash
-
 
 # =============================================================================
 # Base Operation class
