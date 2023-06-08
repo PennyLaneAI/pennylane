@@ -21,7 +21,7 @@ from .fermionic import FermiWord, FermiSentence
 
 
 @singledispatch
-def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence])) -> PauliSentence:
+def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -> PauliSentence:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -35,6 +35,8 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence])) -> PauliSen
 
     Args:
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
+        ps: whether to return the result as a PauliSentence instead of an
+            operation. Defaults to False.
 
     Returns:
         PauliSentence: a linear combination of qubit operators
@@ -52,7 +54,7 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence])) -> PauliSen
 
 
 @jordan_wigner.register
-def _(fermi_operator: FermiWord):
+def _(fermi_operator: FermiWord, ps):
 
     if len(fermi_operator) == 0:
         return PauliSentence({PauliWord({}): 1.0})
@@ -71,11 +73,13 @@ def _(fermi_operator: FermiWord):
             }
         )
 
-    return qubit_operator
+    if ps:
+        return qubit_operator
+    return qubit_operator.operation()
 
 
 @jordan_wigner.register
-def _(fermi_operator: FermiSentence):
+def _(fermi_operator: FermiSentence, ps):
 
     if len(fermi_operator) == 0:
         return PauliSentence({PauliWord({}): 0})
@@ -83,9 +87,11 @@ def _(fermi_operator: FermiSentence):
     operator = PauliSentence()
 
     for fw, coeff in fermi_operator.items():
-        qubit_operator = jordan_wigner(fw)
+        qubit_operator = jordan_wigner(fw, ps=True)
 
         for key in qubit_operator.keys():
             operator[key] += qubit_operator[key] * coeff
 
-    return operator
+    if ps:
+        return qubit_operator
+    return qubit_operator.operation()
