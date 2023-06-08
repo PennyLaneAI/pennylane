@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use ``one_qubit_decomposition`` with a rotations
+  keyword instead.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
 * The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
   all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
   setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
@@ -26,6 +32,13 @@ Pending deprecations
 * ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
 
   - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
   - Removed in v0.32
 
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
