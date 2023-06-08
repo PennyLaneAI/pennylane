@@ -86,7 +86,7 @@ def zyz_decomposition(U, wire):
     """
     warnings.warn(
         "The ZYZ decomposition is deprecated and will be removed soon. Use :func:`one_qubit_decomposition` with"
-        "the keyword  `rotations=ZYZ`"
+        " the keyword rotations='ZYZ'"
     )
     return _zyz_decomposition(U=U, wire=wire)
 
