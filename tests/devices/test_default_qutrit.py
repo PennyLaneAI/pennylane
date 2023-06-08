@@ -272,7 +272,48 @@ class TestApply:
 
         assert np.allclose(qutrit_device_1_wire._state.flatten(), state)
 
-    # TODO: Add tests for state preperation ops after they're implemented
+    @pytest.mark.parametrize(
+        "operation,expected_output,par",
+        [
+            (qml.QutritBasisState, [0, 1, 0, 0, 0, 0, 0, 0, 0], [0, 1]),
+            (qml.QutritBasisState, [0, 0, 0, 0, 1, 0, 0, 0, 0], [1, 1]),
+            (qml.QutritBasisState, [0, 0, 0, 0, 0, 0, 0, 1, 0], [2, 1]),
+        ],
+    )
+    def test_apply_operation_state_preparation(
+        self, qutrit_device_2_wires, tol, operation, expected_output, par
+    ):
+        """Tests that applying an operation yields the expected output state for single wire
+        operations that have no parameters."""
+
+        par = np.array(par)
+        qutrit_device_2_wires.reset()
+        qutrit_device_2_wires.apply([operation(par, wires=[0, 1])])
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+
+    def test_apply_errors_basis_state(self, qutrit_device_2_wires):
+        with pytest.raises(
+            ValueError, match="QutritBasisState parameter must consist of 0, 1 or 2 integers."
+        ):
+            qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
+
+        with pytest.raises(
+            ValueError, match="QutritBasisState parameter and wires must be of equal length."
+        ):
+            qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([0, 1]), wires=[0])])
+
+        with pytest.raises(
+            DeviceError,
+            match="Operation QutritBasisState cannot be used after other operations have already been applied "
+            "on a default.qutrit device.",
+        ):
+            qutrit_device_2_wires.reset()
+            qutrit_device_2_wires.apply(
+                [qml.TClock(wires=0), qml.QutritBasisState(np.array([1, 1]), wires=[0, 1])]
+            )
 
 
 class TestExpval:
