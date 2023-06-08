@@ -853,15 +853,14 @@ class MPLDrawer:
         """Add classical communication double-lines for conditional operations
 
         Args:
-            layer (int): the layer to draw the object in
+            layer (int): the layer to draw vertical lines in, containing the target operation
             measured_layer (int): the layer where the mid-circuit measurements are
             wires (Union[int, Iterable[int]]): set of wires to control on
-            wires_target (Union[int, Iterable[int]]): target wires. Used to determine min
-                and max wires for the vertical line
+            wires_target (Union[int, Iterable[int]]): target wires. Used to determine where to
+                terminate the vertical double-line
 
         Keyword Args:
-            options=None (dict): Matplotlib keywords. The only supported keys are ``'color'``, ``'linewidth'``,
-                and ``'zorder'``.
+            options=None (dict): Matplotlib keywords passed to ``plt.Line2D``
 
         **Example**
 
