@@ -54,7 +54,7 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -
 
 
 @jordan_wigner.register
-def _(fermi_operator: FermiWord, ps):
+def _(fermi_operator: FermiWord, ps=False):
 
     if len(fermi_operator) == 0:
         return PauliSentence({PauliWord({}): 1.0})
@@ -79,18 +79,18 @@ def _(fermi_operator: FermiWord, ps):
 
 
 @jordan_wigner.register
-def _(fermi_operator: FermiSentence, ps):
+def _(fermi_operator: FermiSentence, ps=False):
 
     if len(fermi_operator) == 0:
         return PauliSentence({PauliWord({}): 0})
 
-    operator = PauliSentence()
+    qubit_operator = PauliSentence()
 
     for fw, coeff in fermi_operator.items():
-        qubit_operator = jordan_wigner(fw, ps=True)
+        fermi_word_as_ps = jordan_wigner(fw, ps=True)
 
-        for key in qubit_operator.keys():
-            operator[key] += qubit_operator[key] * coeff
+        for key in fermi_word_as_ps.keys():
+            qubit_operator[key] += fermi_word_as_ps[key] * coeff
 
     if ps:
         return qubit_operator

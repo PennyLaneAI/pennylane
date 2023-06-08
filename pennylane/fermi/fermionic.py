@@ -160,10 +160,10 @@ class FermiWord(dict):
 
         return operator
 
-    def to_qubit(self):
+    def to_qubit(self, ps=False):
         """Map the FermiWord to the qubit basis to get a linear combination
         of Pauli operators"""
-        return qml.fermi.conversion.jordan_wigner(self)
+        return qml.fermi.conversion.jordan_wigner(self, ps)
 
     # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
     # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
@@ -249,7 +249,7 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
-    def to_qubit(self):
+    def to_qubit(self, ps=False):
         """Map the FermiSentence to the qubit basis to get a linear combination
         of Pauli operators"""
-        return qml.fermi.conversion.jordan_wigner(self)
+        return qml.fermi.conversion.jordan_wigner(self, ps)
