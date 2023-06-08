@@ -44,7 +44,7 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
-def _rot_decomposition(U, wire):
+def zyz_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
@@ -80,7 +80,7 @@ def _rot_decomposition(U, wire):
     can instead recover a ``Rot`` gate that implements the same operation, up
     to a global phase:
 
-    >>> decomp = rot_decomposition(U, 0)
+    >>> decomp = zyz_decomposition(U, 0)
     >>> decomp
     [Rot(-0.24209529417800013, 1.14938178234275, 1.7330581433950871, wires=[0])]
     """
@@ -88,10 +88,10 @@ def _rot_decomposition(U, wire):
         "The zyz_decomposition function is deprecated and will be removed soon. Use"
         " one_qubit_decomposition() with the keyword rotations='ZYZ'"
     )
-    return _zyz_decomposition(U=U, wire=wire)
+    return _zyz_decomposition_old(U=U, wire=wire)
 
 
-def _zyz_decomposition(U, wire):
+def _zyz_decomposition_old(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
@@ -243,7 +243,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
-def _xyx_decomposition(U, wire, return_global_phase=False):
+def xyx_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Y rotations in the form
     :math:`e^{i\gamma} RX(\phi) RY(\theta) RX(\lambda)`. (batched operation)
@@ -446,7 +446,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     supported_rotations = {
-        "rot": _rot_decomposition,
+        "rot": zyz_decomposition,
         "ZYZ": _zyz_decomposition,
         "XYX": _xyx_decomposition,
         "ZXZ": _zxz_decomposition,

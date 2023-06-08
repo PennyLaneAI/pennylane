@@ -26,6 +26,7 @@ from pennylane import numpy as np
 
 from pennylane.wires import Wires
 
+from pennylane.transforms.decompositions import zyz_decomposition, xyx_decomposition
 from pennylane.transforms.decompositions import one_qubit_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
 from pennylane.transforms.decompositions.two_qubit_unitary import (
