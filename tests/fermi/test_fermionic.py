@@ -208,10 +208,15 @@ class TestFermiWord:
                 ],
             ),
         ),
+        (
+            FermiWord({}),
+            ([1], [PauliWord({0: "I"})]),
+        ),
     )
 
     @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_WORDS)
     def test_to_qubit(self, operator, pauli_equivalent):
+        """Test that the to_qubit method on a FermiWord translates to the exptected PauliSentence"""
         ps = operator.to_qubit()
         coeffs, words = pauli_equivalent
 
@@ -448,3 +453,44 @@ class TestFermiSentence:
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
+
+    FERMI_AND_PAULI_SENTENCES = [
+        (FermiSentence({}), PauliSentence({PauliWord({}): 0})),
+        (fs4, PauliSentence({PauliWord({}): 1})),
+        (
+            FermiSentence({fw2: 2}),
+            PauliSentence({PauliWord({}): (1 + 0j), PauliWord({0: "Z"}): (-1 + 0j)}),
+        ),
+        (
+            FermiSentence({fw1: 1, fw2: 1}),
+            PauliSentence(
+                {
+                    PauliWord({}): (0.5 + 0j),
+                    PauliWord({0: "Z"}): (-0.5 + 0j),
+                    PauliWord({0: "Y", 1: "X"}): -0.25j,
+                    PauliWord({0: "Y", 1: "Y"}): (0.25 + 0j),
+                    PauliWord({0: "X", 1: "X"}): (0.25 + 0j),
+                    PauliWord({0: "X", 1: "Y"}): 0.25j,
+                }
+            ),
+        ),
+        (
+            FermiSentence({fw1: 1j, fw2: -2}),
+            PauliSentence(
+                {
+                    PauliWord({}): (-1 + 0j),
+                    PauliWord({0: "Z"}): (1 + 0j),
+                    PauliWord({0: "Y", 1: "X"}): 0.25,
+                    PauliWord({0: "Y", 1: "Y"}): 0.25j,
+                    PauliWord({0: "X", 1: "X"}): 0.25j,
+                    PauliWord({0: "X", 1: "Y"}): -0.25,
+                }
+            ),
+        ),
+    ]
+
+    @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_SENTENCES)
+    def test_to_qubit(self, operator, pauli_equivalent):
+        """Test that the to_qubit method on a FermiSentence translates to the expected PauliSentence"""
+        ps = operator.to_qubit()
+        assert ps == pauli_equivalent

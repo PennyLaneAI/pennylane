@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane.pauli.conversion import pauli_sentence
 from pennylane.fermi.conversion import jordan_wigner
 from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.fermi.fermionic import FermiWord
+from pennylane.fermi.fermionic import FermiWord, FermiSentence
 
 
 @pytest.mark.parametrize(
@@ -376,3 +376,53 @@ def test_jordan_wigner_for_identity():
 def test_jordan_wigner_for_null_operator_fermi_word(operator):
     """Test that the jw_mapping function works when the result is 0"""
     assert operator.to_qubit().simplify() is None
+
+
+fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
+fw4 = FermiWord({})
+
+# used above results translating fermiword --> paulisentence, to calculate expected output by hand
+FERMI_AND_PAULI_SENTENCES = [
+    (FermiSentence({}), PauliSentence({PauliWord({}): 0})),  # Empty FermiSentence to null
+    (FermiSentence({fw4: 1}), PauliSentence({PauliWord({}): 1})),  # Identity to Identity
+    (
+        FermiSentence({fw2: 2}),
+        PauliSentence({PauliWord({}): (1 + 0j), PauliWord({0: "Z"}): (-1 + 0j)}),
+    ),
+    (
+        FermiSentence({fw1: 1, fw2: 1}),
+        PauliSentence(
+            {
+                PauliWord({}): (0.5 + 0j),
+                PauliWord({0: "Z"}): (-0.5 + 0j),
+                PauliWord({0: "Y", 1: "X"}): -0.25j,
+                PauliWord({0: "Y", 1: "Y"}): (0.25 + 0j),
+                PauliWord({0: "X", 1: "X"}): (0.25 + 0j),
+                PauliWord({0: "X", 1: "Y"}): 0.25j,
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw1: 1j, fw2: -2}),
+        PauliSentence(
+            {
+                PauliWord({}): (-1 + 0j),
+                PauliWord({0: "Z"}): (1 + 0j),
+                PauliWord({0: "Y", 1: "X"}): 0.25,
+                PauliWord({0: "Y", 1: "Y"}): 0.25j,
+                PauliWord({0: "X", 1: "X"}): 0.25j,
+                PauliWord({0: "X", 1: "Y"}): -0.25,
+            }
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("fermionic_op, result", FERMI_AND_PAULI_SENTENCES)
+def test_jordan_wigner_for_fermi_sentence(fermionic_op, result):
+    qubit_op = jordan_wigner(fermionic_op)
+    qubit_op.simplify()
+
+    assert qubit_op == result
