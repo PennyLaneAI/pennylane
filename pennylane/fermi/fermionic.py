@@ -263,6 +263,7 @@ def fermiword(operator):
     if len(operator) == 0:
         return FermiWord({})
 
-    dic = {(i, int(s[0])): s[1] for i, s in enumerate(re.split(r"\s", operator))}
+    operator = re.sub(r"\^", "+", operator)
+    operator = [i + "-" if len(i) == 1 else i for i in re.split(r"\s", operator)]
 
-    return FermiWord(dic)
+    return FermiWord({(i, int(s[0])): s[1] for i, s in enumerate(operator)})
