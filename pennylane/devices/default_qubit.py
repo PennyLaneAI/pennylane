@@ -86,13 +86,80 @@ class DefaultQubit(QubitDevice):
             returns analytical results.
     """
 
-    name = "Default qubit PennyLane plugin"
-    short_name = "default.qubit"
-    pennylane_requires = __version__
-    version = __version__
-    author = "Xanadu Inc."
+    @property
+    def name(self):
+        """The full name of the device.
 
-    operations = {
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
+        return "Default qubit PennyLane plugin"
+
+    @property
+    def short_name(self):
+        """Returns the string used to load the device.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
+        return "default.qubit"
+
+    @property
+    def pennylane_requires(self):
+        """The current API version that the device plugin was made for.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
+        return __version__
+
+    @property
+    def version(self):
+        """The current version of the plugin.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
+        return __version__
+
+    @property
+    def author(self):
+        """The author(s) of the plugin.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+        """
+        return "Xanadu Inc."
+
+    @property
+    def operations(self):
+        """Get the supported set of operations.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        Returns:
+            set[str]: the set of PennyLane operation names the device supports
+        """
+        return {
         "Identity",
         "Snapshot",
         "BasisState",
@@ -160,7 +227,20 @@ class DefaultQubit(QubitDevice):
         "ECR",
     }
 
-    observables = {
+    @property
+    def observables(self):
+        """Get the supported set of observables.
+
+        .. warning::
+
+            Directly using this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        Returns:
+            set[str]: the set of PennyLane observable names the device supports
+        """
+        return {
         "PauliX",
         "PauliY",
         "PauliZ",
@@ -230,6 +310,20 @@ class DefaultQubit(QubitDevice):
 
     @functools.lru_cache()
     def map_wires(self, wires):
+        """Map the wire labels of wires using this device's wire map.
+
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        Args:
+            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
+
+        Returns:
+            Wires: wires with new labels
+        """
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         try:
@@ -242,6 +336,31 @@ class DefaultQubit(QubitDevice):
         return mapped_wires
 
     def define_wire_map(self, wires):
+        """Create the map from user-provided wire labels to the wire labels used by the device.
+
+        .. warning::
+
+            Directly calling this method is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        The default wire map maps the user wire labels to wire labels that are consecutive integers.
+
+        However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
+        wire labels.
+
+        Args:
+            wires (Wires): user-provided wires for this device
+
+        Returns:
+            OrderedDict: dictionary specifying the wire map
+
+        **Example**
+
+        >>> dev = device('my.device', wires=['b', 'a'])
+        >>> dev.wire_map()
+        OrderedDict( [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)])
+        """
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
@@ -585,12 +704,6 @@ class DefaultQubit(QubitDevice):
         ``Hamiltonian`` or ``SparseHamiltonian`` object, the expectation value is computed directly
         from the sparse matrix representation, which leads to faster execution.
 
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
         Args:
             observable (~.Observable): a PennyLane observable
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
@@ -705,6 +818,29 @@ class DefaultQubit(QubitDevice):
 
     @classmethod
     def capabilities(cls):
+        """Get the capabilities of this device class.
+
+        .. warning::
+
+            Directly requesting this property is not recommended and should be avoided where possible.
+            The API of DefaultQubit will be updated soon to follow a new interface described
+            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
+
+        Inheriting classes that change or add capabilities must override this method, for example via
+
+        .. code-block:: python
+
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    supports_a_new_capability=True,
+                )
+                return capabilities
+
+        Returns:
+            dict[str->*]: results
+        """
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -744,7 +880,7 @@ class DefaultQubit(QubitDevice):
 
         .. warning::
 
-            Directly requesting this property is not recommended and should be avoided where possible.
+            Directly using this property is not recommended and should be avoided where possible.
             The API of DefaultQubit will be updated soon to follow a new interface described
             `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
         """
@@ -1038,12 +1174,6 @@ class DefaultQubit(QubitDevice):
             qubits.
 
         .. seealso:: :func:`~pennylane.classical_shadow`
-
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
