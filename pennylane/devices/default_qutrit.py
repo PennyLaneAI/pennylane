@@ -22,7 +22,7 @@ import functools
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane import QutritDevice
+from pennylane import QutritDevice, QutritBasisState, DeviceError
 from pennylane.wires import WireError
 from pennylane.devices.default_qubit import _get_slice
 from .._version import __version__
@@ -64,6 +64,7 @@ class DefaultQutrit(QutritDevice):
         "TRX",
         "TRY",
         "TRZ",
+        "QutritBasisState",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
@@ -130,7 +131,15 @@ class DefaultQutrit(QutritDevice):
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
-            self._state = self._apply_operation(self._state, operation)
+            if i > 0 and isinstance(operation, (QutritBasisState)):
+                raise DeviceError(
+                    f"Operation {operation.name} cannot be used after other operations have already been applied "
+                    f"on a {self.short_name} device."
+                )
+            if isinstance(operation, QutritBasisState):
+                self._apply_basis_state(operation.parameters[0], operation.wires)
+            else:
+                self._state = self._apply_operation(self._state, operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
@@ -138,6 +147,35 @@ class DefaultQutrit(QutritDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
+
+    def _apply_basis_state(self, state, wires):
+        """Initialize the state vector in a specified computational basis state.
+
+        Args:
+            state (array[int]): computational basis state of shape ``(wires,)``
+                consisting of 0s, 1s and 2s.
+            wires (Wires): wires that the provided computational state should be initialized on
+
+        Note: This function does not support broadcasted inputs yet.
+        """
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        # length of basis state parameter
+        n_basis_state = len(state)
+
+        if not set(state.tolist()).issubset({0, 1, 2}):
+            raise ValueError("QutritBasisState parameter must consist of 0, 1 or 2 integers.")
+
+        if n_basis_state != len(device_wires):
+            raise ValueError("QutritBasisState parameter and wires must be of equal length.")
+
+        # get computational basis state number
+        basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
+
+        self._state = self._create_basis_state(num)
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.

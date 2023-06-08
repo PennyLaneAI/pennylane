@@ -30,6 +30,9 @@
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
+* Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
+  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
+
 <h3>Improvements 🛠</h3>
 
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
@@ -300,6 +303,8 @@ This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
+Emiliano Godinez Ramirez
+Nikhil Harle
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann,
