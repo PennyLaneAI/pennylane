@@ -138,116 +138,90 @@ class DefaultQubit(QubitDevice):
         """
         return "Xanadu Inc."
 
-    @property
-    def operations(self):
-        """Get the supported set of operations.
+    operations = {
+        "Identity",
+        "Snapshot",
+        "BasisState",
+        "QubitStateVector",
+        "QubitUnitary",
+        "ControlledQubitUnitary",
+        "BlockEncode",
+        "MultiControlledX",
+        "IntegerComparator",
+        "DiagonalQubitUnitary",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "MultiRZ",
+        "Hadamard",
+        "S",
+        "Adjoint(S)",
+        "T",
+        "Adjoint(T)",
+        "SX",
+        "Adjoint(SX)",
+        "CNOT",
+        "SWAP",
+        "ISWAP",
+        "PSWAP",
+        "Adjoint(ISWAP)",
+        "SISWAP",
+        "Adjoint(SISWAP)",
+        "SQISW",
+        "CSWAP",
+        "Toffoli",
+        "CCZ",
+        "CY",
+        "CZ",
+        "CH",
+        "PhaseShift",
+        "PCPhase",
+        "ControlledPhaseShift",
+        "CPhaseShift00",
+        "CPhaseShift01",
+        "CPhaseShift10",
+        "CPhase",
+        "RX",
+        "RY",
+        "RZ",
+        "Rot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+        "IsingXY",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
+        "OrbitalRotation",
+        "QFT",
+        "ECR",
+    }
 
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        Returns:
-            set[str]: the set of PennyLane operation names the device supports
-        """
-        return {
-            "Identity",
-            "Snapshot",
-            "BasisState",
-            "QubitStateVector",
-            "QubitUnitary",
-            "ControlledQubitUnitary",
-            "BlockEncode",
-            "MultiControlledX",
-            "IntegerComparator",
-            "DiagonalQubitUnitary",
-            "PauliX",
-            "PauliY",
-            "PauliZ",
-            "MultiRZ",
-            "Hadamard",
-            "S",
-            "Adjoint(S)",
-            "T",
-            "Adjoint(T)",
-            "SX",
-            "Adjoint(SX)",
-            "CNOT",
-            "SWAP",
-            "ISWAP",
-            "PSWAP",
-            "Adjoint(ISWAP)",
-            "SISWAP",
-            "Adjoint(SISWAP)",
-            "SQISW",
-            "CSWAP",
-            "Toffoli",
-            "CCZ",
-            "CY",
-            "CZ",
-            "CH",
-            "PhaseShift",
-            "PCPhase",
-            "ControlledPhaseShift",
-            "CPhaseShift00",
-            "CPhaseShift01",
-            "CPhaseShift10",
-            "CPhase",
-            "RX",
-            "RY",
-            "RZ",
-            "Rot",
-            "CRX",
-            "CRY",
-            "CRZ",
-            "CRot",
-            "IsingXX",
-            "IsingYY",
-            "IsingZZ",
-            "IsingXY",
-            "SingleExcitation",
-            "SingleExcitationPlus",
-            "SingleExcitationMinus",
-            "DoubleExcitation",
-            "DoubleExcitationPlus",
-            "DoubleExcitationMinus",
-            "QubitCarry",
-            "QubitSum",
-            "OrbitalRotation",
-            "QFT",
-            "ECR",
-        }
-
-    @property
-    def observables(self):
-        """Get the supported set of observables.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        Returns:
-            set[str]: the set of PennyLane observable names the device supports
-        """
-        return {
-            "PauliX",
-            "PauliY",
-            "PauliZ",
-            "Hadamard",
-            "Hermitian",
-            "Identity",
-            "Projector",
-            "SparseHamiltonian",
-            "Hamiltonian",
-            "Sum",
-            "SProd",
-            "Prod",
-            "Exp",
-            "Evolution",
-        }
+    observables = {
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "Hermitian",
+        "Identity",
+        "Projector",
+        "SparseHamiltonian",
+        "Hamiltonian",
+        "Sum",
+        "SProd",
+        "Prod",
+        "Exp",
+        "Evolution",
+    }
 
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
