@@ -617,24 +617,6 @@ class TestControlledQutritUnitary:
         adjoint_mat = op.data[0].T.conj()
         assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)
 
-    def test_adjoint(self):
-        """Tests the metadata and unitary for an adjoint ControlledQutritUnitary operation."""
-        U1 = unitary_group.rvs(3, random_state=10)
-
-        op = qml.ControlledQutritUnitary(
-            U1, control_wires=("b", "c"), wires="a", control_values="01"
-        )
-
-        adjoint_op = op.adjoint()
-        assert isinstance(adjoint_op, qml.ControlledQutritUnitary)
-
-        assert adjoint_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
-        assert adjoint_op.control_wires == op.control_wires
-        assert adjoint_op.control_values == op.control_values
-
-        adjoint_mat = op.data[0].T.conj()
-        assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)
-
 
 label_data = [
     (U_thadamard_01, qml.QutritUnitary(U_thadamard_01, wires=0)),
