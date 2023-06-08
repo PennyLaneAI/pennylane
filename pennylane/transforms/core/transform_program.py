@@ -50,7 +50,7 @@ class TransformProgram:
         """The string representation of the transform program class."""
         repr = "TransformProgram("
         transforms_repr = "".join([f"{transform_c.transform}, " for transform_c in self])
-        transforms_repr = transforms_repr.removesuffix(", ")
+        transforms_repr = transforms_repr[:-2]
         end = ")"
         return repr + transforms_repr + end
 
@@ -107,14 +107,3 @@ class TransformProgram:
             bool: Boolean, True if empty, False otherwise.
         """
         return len(self) == 0
-
-    def add_device_pre_processing(self, device: pennylane.Device):
-        """Add the transforms from the device pre-processing.
-
-        Args:
-            device(Device): The considered quantum device.
-        """
-        # TODO: Change this part
-        device_preprocessing_container = TransformContainer(device.preprocessing)
-        # Device pre-processing is first.
-        self.insert_front(device_preprocessing_container)
