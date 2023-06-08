@@ -6,7 +6,7 @@ Deprecations
 Pending deprecations
 --------------------
 
-* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use `one_qubit_decomposition` with the rotations
+* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use ``one_qubit_decomposition`` with a rotations
   keyword instead.
 
   - Deprecated in v0.31
