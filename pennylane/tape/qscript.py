@@ -461,8 +461,7 @@ class QuantumScript:
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx + len(self.operations), "p_idx": i}
-                    for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
@@ -730,15 +729,17 @@ class QuantumScript:
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 
-        op_map = {
-            pinfo["op_idx"]: (pinfo["op"], list(pinfo["op"].data)) for pinfo in self._par_info
-        }
-        op_data = [op_map[pinfo["op_idx"]][1] for pinfo in self._par_info]
+        op_data = []
+        for pinfo in self._par_info:
+            if pinfo["p_idx"] == 0:
+                op_data.append((pinfo["op"], list(pinfo["op"].data)))
+            else:
+                op_data.append(op_data[-1])
 
         for idx, p in iterator:
-            op_data[idx][self._par_info[idx]["p_idx"]] = p
+            op_data[idx][1][self._par_info[idx]["p_idx"]] = p
 
-        for op, d in op_map.values():
+        for op, d in op_data:
             op.data = tuple(d)
             op._check_batching(op.data)
 
