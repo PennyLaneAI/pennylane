@@ -103,6 +103,10 @@ state preparation is typically used as the first operation.
     :figure: _static/templates/state_preparations/basis.png
 
 .. gallery-item::
+    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
+    :figure: _static/templates/state_preparations/basis_qutrit.png
+
+.. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
