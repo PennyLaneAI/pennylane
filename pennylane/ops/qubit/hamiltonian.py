@@ -813,6 +813,6 @@ def sum_sparse_matrix_core(wires, coeffs, ops, mask):
         if tmp_init:
             tmp.data += red_mat.data
         else:
-            tmp = red_mat.tocsr()
+            tmp = red_mat.tocsr().astype(dtype="complex128")
             tmp_init = True
     return tmp
