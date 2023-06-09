@@ -756,6 +756,7 @@ class Hamiltonian(Observable):
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
         return new_op
 
+
 def sum_sparse_matrix_core(wires, coeffs, ops, mask):
     """Returns the sum of all Hamiltonian terms with trace indexed u."""
     tmp_init = False
