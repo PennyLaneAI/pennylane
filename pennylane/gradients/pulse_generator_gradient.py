@@ -423,12 +423,17 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     on hardware, with the limitation that the program must be composed of few-qubit pulses.
 
     For this differentiation method, the unitary matrix corresponding to each pulse
-    is computed and differentiated with an autodiff framework. From this derivative,
-    the so-called effective generators :math:`\Omega_{k}` of the pulses
-    (one for each variational parameter) are extracted.
+    is computed and differentiated classically with an autodiff framework,
+
+    .. math:: \partial_k U = U \Omega_k.
+
+    From :math:`\partial_k U` and the unitary :math:`U` itself, the so-called effective
+    generators :math:`\Omega_{k}` are extracted (one for each variational parameter).
     Afterwards, the generators are decomposed into the Pauli basis and the
     standard parameter-shift rule is used to evaluate the derivatives of the pulse program
-    in this basis. To this end, shifted ``PauliRot`` operations are inserted in the program.
+    in this basis.
+
+    To this end, shifted ``PauliRot`` operations are inserted in the program.
     Finally, the Pauli basis derivatives are recombined into the gradient
     of the pulse program with respect to its original parameters.
     See the theoretical background section below for more details.
@@ -457,6 +462,12 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
           in order to obtain the Jacobian.
+
+    .. note::
+
+        This function requires the JAX interface and does not work with other autodiff interfaces
+        commonly encountered with PennyLane.
+        In addition, this transform is only JIT-compatible with pulses that only have scalar parameters.
 
     **Example**
 
@@ -542,12 +553,6 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     (Array(1.41897933, dtype=float64),
      Array([0.00164914, 0.00284789], dtype=float64),
      Array(-0.09984585, dtype=float64))
-
-    .. note::
-
-        This function requires the JAX interface and does not work with other autodiff interfaces
-        commonly encountered with PennyLane.
-        In addition, this transform is only JIT-compatible with pulses that only have scalar parameters.
 
     .. note::
 
