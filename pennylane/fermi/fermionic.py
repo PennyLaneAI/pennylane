@@ -109,6 +109,8 @@ class FermiWord(dict):
         return str(self)
 
     def __add__(self, other):
+        """Add a FermiSentence or FermiWord to a FermiSentence by iterating over the
+        smaller one and adding its terms to the larger one."""
         self_fs = FermiSentence({self: 1.0})
 
         if isinstance(other, FermiWord):
@@ -121,6 +123,7 @@ class FermiWord(dict):
         raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
 
     def __sub__(self, other):
+        """Subtract a FermiSentence or FermiWord from a FermiSentence"""
         self_fs = FermiSentence({self: 1.0})
 
         if isinstance(other, FermiWord):
@@ -134,7 +137,7 @@ class FermiWord(dict):
         raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
 
     def __mul__(self, other):
-        r"""Multiply a FermiWord with another FermiWord or a FermiSentence.
+        r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a number (int, float, complex).
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w * w
@@ -202,13 +205,6 @@ class FermiWord(dict):
 
         return operator
 
-    # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
-    # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
-    # TODO: create __imul__ method.
-    # TODO: support multiply by number in __mul__ when FermiSentence is merged.
-    # TODO: create mapping method when the jordan_wigner function is added.
-    # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
-
 
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
@@ -243,8 +239,8 @@ class FermiSentence(dict):
         return 0.0
 
     def __add__(self, other):
-        r"""Add two Fermi sentence together by iterating over the smaller one and adding its terms
-        to the larger one."""
+        r"""Add a FermiSentence or FermiWord to a FermiSentence by iterating over the
+        smaller one and adding its terms to the larger one."""
 
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
@@ -261,8 +257,7 @@ class FermiSentence(dict):
         raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
 
     def __sub__(self, other):
-        r"""Subtract one FermiSentence from the other by reversing the sign of
-        any coefficients and then adding"""
+        r"""Subtract a FermiSentence or FermiWord from a FermiSentence"""
         if isinstance(other, FermiWord):
             other = FermiSentence({other: -1})
             return self.__add__(other)
