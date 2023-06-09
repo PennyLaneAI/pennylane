@@ -330,7 +330,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
     thetas = math.where(
-        math.isclose(math.sin(lams_plus_phis), 0.0),
+        math.isclose(math.sin(lams_plus_phis), 0.0 * math.ones_like(lams_plus_phis)),
         2 * math.arccos(math.real(U_det1[:, 1, 1]) / (math.cos(lams_plus_phis) + EPS)),
         2 * math.arccos(-math.imag(U_det1[:, 0, 1]) / (math.sin(lams_plus_phis) + EPS)),
     )
@@ -393,7 +393,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     # Conditional to avoid divide by 0 errors
     thetas = math.where(
-        math.isclose(math.sin(phis_plus_psis), 0.0),
+        math.isclose(math.sin(phis_plus_psis), 0.0 * math.ones_like(phis_plus_psis)),
         2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS)),
         2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS)),
     )
