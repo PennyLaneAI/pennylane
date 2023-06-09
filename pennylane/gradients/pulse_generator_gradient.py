@@ -297,14 +297,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
-
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
+        tuple[list[QuantumTape], function]: A tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
           in order to obtain the Jacobian.
