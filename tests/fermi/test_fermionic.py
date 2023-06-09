@@ -17,6 +17,8 @@ from copy import copy, deepcopy
 
 import pytest
 
+import pennylane as qml
+
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.pauli import PauliWord, PauliSentence
 
@@ -217,7 +219,19 @@ class TestFermiWord:
     @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_WORDS)
     def test_to_qubit(self, operator, pauli_equivalent):
         """Test that the to_qubit method on a FermiWord translates to the exptected PauliSentence"""
-        ps = operator.to_qubit()
+        wires = list(operator.wires) or [0]
+
+        qubit_operation = operator.to_qubit()
+
+        coeffs, words = pauli_equivalent
+        expected_op = PauliSentence(dict(zip(words, coeffs))).operation(wires)
+
+        assert qml.equal(qubit_operation.simplify(), expected_op.simplify())
+
+    @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_WORDS)
+    def test_to_qubit_ps(self, operator, pauli_equivalent):
+        """Test that the to_qubit method on a FermiWord translates to the expected PauliSentence"""
+        ps = operator.to_qubit(ps=True)
         coeffs, words = pauli_equivalent
 
         assert ps == PauliSentence(dict(zip(words, coeffs)))
@@ -465,12 +479,12 @@ class TestFermiSentence:
             FermiSentence({fw1: 1, fw2: 1}),
             PauliSentence(
                 {
-                    PauliWord({}): (0.5 + 0j),
-                    PauliWord({0: "Z"}): (-0.5 + 0j),
                     PauliWord({0: "Y", 1: "X"}): -0.25j,
                     PauliWord({0: "Y", 1: "Y"}): (0.25 + 0j),
                     PauliWord({0: "X", 1: "X"}): (0.25 + 0j),
                     PauliWord({0: "X", 1: "Y"}): 0.25j,
+                    PauliWord({}): (0.5 + 0j),
+                    PauliWord({0: "Z"}): (-0.5 + 0j),
                 }
             ),
         ),
@@ -478,12 +492,12 @@ class TestFermiSentence:
             FermiSentence({fw1: 1j, fw2: -2}),
             PauliSentence(
                 {
-                    PauliWord({}): (-1 + 0j),
-                    PauliWord({0: "Z"}): (1 + 0j),
-                    PauliWord({0: "Y", 1: "X"}): 0.25,
+                    PauliWord({0: "Y", 1: "X"}): (0.25 + 0j),
                     PauliWord({0: "Y", 1: "Y"}): 0.25j,
                     PauliWord({0: "X", 1: "X"}): 0.25j,
-                    PauliWord({0: "X", 1: "Y"}): -0.25,
+                    PauliWord({0: "X", 1: "Y"}): (-0.25 + 0j),
+                    PauliWord({}): (-1 + 0j),
+                    PauliWord({0: "Z"}): (1 + 0j),
                 }
             ),
         ),
@@ -492,5 +506,15 @@ class TestFermiSentence:
     @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_SENTENCES)
     def test_to_qubit(self, operator, pauli_equivalent):
         """Test that the to_qubit method on a FermiSentence translates to the expected PauliSentence"""
-        ps = operator.to_qubit()
+        wires = list(operator.wires) or [0]
+
+        qubit_op = operator.to_qubit()
+        expected_op = pauli_equivalent.operation(wires)
+
+        assert qml.equal(qubit_op.simplify(), expected_op.simplify())
+
+    @pytest.mark.parametrize("operator, pauli_equivalent", FERMI_AND_PAULI_SENTENCES)
+    def test_to_qubit_ps(self, operator, pauli_equivalent):
+        """Test that the to_qubit method on a FermiSentence translates to the expected PauliSentence"""
+        ps = operator.to_qubit(ps=True)
         assert ps == pauli_equivalent

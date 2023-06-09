@@ -57,7 +57,10 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -
 def _(fermi_operator: FermiWord, ps=False):
 
     if len(fermi_operator) == 0:
-        return PauliSentence({PauliWord({}): 1.0})
+        qubit_operator = PauliSentence({PauliWord({}): 1.0})
+        if ps:
+            return qubit_operator
+        return qubit_operator.operation([0])
 
     coeffs = {"+": -0.5j, "-": 0.5j}
     qubit_operator = PauliSentence()
@@ -75,14 +78,20 @@ def _(fermi_operator: FermiWord, ps=False):
 
     if ps:
         return qubit_operator
+
     return qubit_operator.operation()
 
 
 @jordan_wigner.register
 def _(fermi_operator: FermiSentence, ps=False):
 
+    wires = list(fermi_operator.wires) or [0]
+
     if len(fermi_operator) == 0:
-        return PauliSentence({PauliWord({}): 0})
+        qubit_operator = PauliSentence({PauliWord({}): 0})
+        if ps:
+            return qubit_operator
+        return qubit_operator.operation([0])
 
     qubit_operator = PauliSentence()
 
@@ -94,4 +103,4 @@ def _(fermi_operator: FermiSentence, ps=False):
 
     if ps:
         return qubit_operator
-    return qubit_operator.operation()
+    return qubit_operator.operation(wires)
