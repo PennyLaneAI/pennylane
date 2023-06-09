@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
 import pickle
-import pytest
 from copy import copy, deepcopy
+import pytest
 
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 
