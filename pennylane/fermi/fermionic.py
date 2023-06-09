@@ -270,6 +270,11 @@ def string_to_fermi_word(fermi_string):
 
     >>> string_to_fermi_word('0^ 1 0^ 1')
     <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
+    >>> op2 = string_to_fermi_word('0+ 1- 2+ 3-')
+    >>> op1 == op2
+    True
     """
     if fermi_string.isspace() or not fermi_string:
         return FermiWord({})
@@ -279,8 +284,8 @@ def string_to_fermi_word(fermi_string):
     if not all(s.isdigit() or s in ["+", "-", "^", " "] for s in fermi_string):
         raise ValueError(f"Invalid character encountered in string {fermi_string}.")
 
-    operators = [
-        i + "-" if len(i) == 1 else i for i in re.split(r"\s", re.sub(r"\^", "+", fermi_string))
-    ]
+    fermi_string = re.sub(r"\^", "+", fermi_string)
 
-    return FermiWord({(i, int(s[0 : len(s) - 1])): s[-1] for i, s in enumerate(operators)})
+    operators = [i + "-" if i[-1] not in "+-" else i for i in re.split(r"\s", fermi_string)]
+
+    return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
