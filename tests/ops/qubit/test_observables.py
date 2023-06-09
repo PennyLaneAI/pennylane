@@ -508,6 +508,16 @@ class TestProjector:
 class TestBasisStateProjector:
     """Tests for the basis state projector observable."""
 
+    def test_basic_usage(self):
+        """Tests a typical use case."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Projector([0], [0]))
+
+        assert np.allclose(circuit(), 1)
+
     @pytest.mark.parametrize("basis_state", BASISSTATEPROJECTOR_EIGVALS_TEST_DATA)
     def test_projector_eigvals(self, basis_state, tol):
         """Tests that the eigvals property of the Projector class returns the correct results."""
@@ -605,6 +615,17 @@ class TestBasisStateProjector:
 
 class TestStateVectorProjector:
     """Tests for state vector projector observable."""
+
+    def test_basic_usage(self):
+        """Tests a typical use case."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.expval(qml.Projector(np.array([1, 1]) / np.sqrt(2), [0]))
+
+        assert np.allclose(circuit(), 1)
 
     @pytest.mark.parametrize("state_vector", STATEVECTORPROJECTOR_TEST_STATES)
     def test_sv_projector_eigvals(self, state_vector, tol):
