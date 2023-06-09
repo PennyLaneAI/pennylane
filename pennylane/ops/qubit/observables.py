@@ -50,13 +50,13 @@ class Hermitian(Observable):
     * Gradient recipe: None
 
     Args:
-        A (array or Sequence): square hermitian matrix.
-        wires (Sequence[int] or int): the wire(s) the operation acts on.
+        A (array or Sequence): square hermitian matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
             This argument is deprecated, instead of setting it to ``False``
             use :meth:`~.queuing.QueuingManager.stop_recording`.
-        id (str or None): String representing the operation (optional).
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     num_params = 1
@@ -139,7 +139,7 @@ class Hermitian(Observable):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable.
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
@@ -157,7 +157,7 @@ class Hermitian(Observable):
         possible and stores the corresponding eigenvectors from the eigendecomposition.
 
         Returns:
-            array: array containing the eigenvalues of the Hermitian observable.
+            array: array containing the eigenvalues of the Hermitian observable
         """
         return self.eigendecomposition["eigval"]
 
@@ -176,9 +176,9 @@ class Hermitian(Observable):
 
         Args:
             eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"].
-            wires (Iterable[Any], Wires): wires that the operator acts on.
+            wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: list of diagonalizing gates.
+            list[.Operator]: list of diagonalizing gates
 
         **Example**
 
@@ -196,7 +196,7 @@ class Hermitian(Observable):
         specified Hermitian observable.
 
         Returns:
-            list: list containing the gates diagonalizing the Hermitian observable.
+            list: list containing the gates diagonalizing the Hermitian observable
         """
         # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
@@ -220,12 +220,12 @@ class SparseHamiltonian(Observable):
     Args:
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires.
-        wires (Sequence[int]): the wire(s) the operation acts on.
+        wires (Sequence[int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
             This argument is deprecated, instead of setting it to ``False``
             use :meth:`~.queuing.QueuingManager.stop_recording`.
-        id (str or None): String representing the operation (optional).
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -275,10 +275,10 @@ class SparseHamiltonian(Observable):
         :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
 
         Args:
-            H (scipy.sparse.csr_matrix): sparse matrix used to create the operator.
+            H (scipy.sparse.csr_matrix): sparse matrix used to create the operator
 
         Returns:
-            array: dense matrix.
+            array: dense matrix
 
         **Example**
 
@@ -307,10 +307,10 @@ class SparseHamiltonian(Observable):
         :meth:`~.SparseHamiltonian.compute_matrix`.
 
         Args:
-            H (scipy.sparse.csr_matrix): sparse matrix used to create the operator.
+            H (scipy.sparse.csr_matrix): sparse matrix used to create the operator
 
         Returns:
-            scipy.sparse.csr_matrix: sparse matrix.
+            scipy.sparse.csr_matrix: sparse matrix
 
         **Example**
 
@@ -330,7 +330,7 @@ class SparseHamiltonian(Observable):
 
 
 class Projector(Observable):
-    r"""
+    r"""Projector(state, wires[, do_queue, id])
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
     The expectation of this observable returns the value
@@ -339,9 +339,6 @@ class Projector(Observable):
         |\langle \psi | \phi \rangle |^2
 
     corresponding to the probability that :math:`|\psi\rangle` is projected onto :math:`|\phi\rangle` during measurement.
-
-    For example, the projector :math:`\ket{11}\bra{11}` (:math:`\ket{3}\bra{3}` in integer notation) is created with argument ``np.array([1, 1])``,
-    or the projector :math:`\ket{+}\bra{+}` is created with argument ``np.array([1, 1])/np.sqrt(2)``.
 
     **Details:**
 
@@ -357,6 +354,27 @@ class Projector(Observable):
             This argument is deprecated, instead of setting it to ``False``
             use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional).
+
+    **Example**
+
+    In the following example we consider projectors over two states: the :math:`|00\rangle` and the
+    :math:`|++\rangle`. Since the first one is in the computational basis, we create its projector
+    directly from its basis state representation, which is, ``three_state=[1, 1]``. For the latter,
+    we need to use its state vector form ``plusplus_state=np.array([1, 1, 1, 1])/2``.
+
+    .. code-block::
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> @qml.qnode(dev)
+        ... def circuit(state, wires):
+        ...     return qml.expval(qml.Projector(state, wires=[0, 1]))
+        >>> zero_state = [0, 0]
+        >>> circuit(zero_state, wires)
+        0.
+        >>> plusplus_state = np.array([1, 1, 1, 1]) / 2
+        >>> circuit(plusplus_state, wires)
+        0.25
+
     """
     num_wires = AnyWires
     num_params = 1
@@ -364,7 +382,7 @@ class Projector(Observable):
     _basis_state_type = None  # type if Projector inherits from _BasisStateProjector
     _state_vector_type = None  # type if Projector inherits from _StateVectorProjector
 
-    def __new__(cls, state, wires, **__):
+    def __new__(cls, state, wires, **_):
         """Changes parents based on the state representation.
 
         Though all the types will be named "Projector", their *identity* and location in memory
@@ -422,34 +440,8 @@ class Projector(Observable):
 
 
 class _BasisStateProjector(Observable):
-    r"""
-    Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
-
-    The expectation of this observable returns the value
-
-    .. math::
-        |\langle \psi | i \rangle |^2
-
-    corresponding to the probability of measuring the quantum state in the :math:`i` -th eigenstate of the specified :math:`n` qubits.
-
-    For example, the projector :math:`\ket{11}\bra{11}` , or in integer notation :math:`\ket{3}\bra{3}`, is created by ``basis_state=np.array([1, 1])``.
-
-    **Details:**
-
-    * Number of wires: Any
-    * Number of parameters: 1
-    * Gradient recipe: None
-
-    Args:
-        state (tensor-like): binary input of shape ``(n, )``.
-        wires (Iterable): wires that the projector acts on.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
-        id (str or None): String representing the operation (optional).
-    """
-
+    # The call signature should be the same as Projector.__new__ for the positional
+    # arguments, but with free key word arguments.
     def __init__(self, state, wires, do_queue=None, id=None):
         wires = Wires(wires)
         state = list(qml.math.toarray(state))
@@ -573,32 +565,8 @@ class _BasisStateProjector(Observable):
 
 
 class _StateVectorProjector(Observable):
-    r"""
-    Observable corresponding to the computational basis state projector :math:`P=\ket{\phi}\bra{\phi}`.
-
-    The expectation of this observable returns the value
-
-    .. math::
-        |\langle \psi | \phi \rangle |^2
-
-    corresponding to the probability of measuring the quantum state in the basis defined by :math:`\phi`.
-
-    For example, the projector :math:`\ket{+}\bra{+}` is created by ``state_vector=np.array([1, 1])/np.sqrt(2)``.
-
-    **Details:**
-
-    * Number of wires: Any
-    * Number of parameters: 1
-    * Gradient recipe: None
-
-    Args:
-        state (tensor-like): state vector of shape ``(n, )``.
-        wires (Iterable): wires that the projector acts on.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-        id (str or None): String representing the operation (optional).
-    """
-
+    # The call signature should be the same as Projector.__new__ for the positional
+    # arguments, but with free key word arguments.
     def __init__(self, state, wires, do_queue=None, id=None):
         wires = Wires(wires)
         state = list(qml.math.toarray(state))
@@ -627,7 +595,7 @@ class _StateVectorProjector(Observable):
         'hi!'
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
-        ... def circuit(state):
+        >>> def circuit(state):
         ...     return qml.expval(_StateVectorProjector(state, [0]))
         >>> print(qml.draw(circuit)([1, 0]))
         0: ───┤  <|0⟩⟨0|>
