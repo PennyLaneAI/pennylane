@@ -130,7 +130,10 @@ def qsvt(A, angles, wires, convention=None):
         global_phase = (len(angles) - 1) % 4
 
         if global_phase:
-            qml.exp(qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase))
+            with qml.QueuingManager.stop_recording():
+                global_phase_op = qml.exp(
+                    qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase)
+                )
 
     for idx, phi in enumerate(angles):
         dim = c if idx % 2 else r
@@ -138,6 +141,9 @@ def qsvt(A, angles, wires, convention=None):
             projectors.append(PCPhase(phi, dim=dim, wires=wires))
 
     projectors = projectors[::-1]  # reverse order to match equation
+
+    if convention == "Wx":
+        return qml.prod(global_phase_op, QSVT(UA, projectors))
     return QSVT(UA, projectors)
 
 
