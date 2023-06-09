@@ -310,8 +310,6 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
           in order to obtain the Jacobian.
 
     """
-    if isinstance(argnum, int):
-        argnum = [argnum]
     argnum = argnum or tape.trainable_params
     # Initialize a cache that will store the following:
     # 1. a single entry ``str: int`` that memorizes the number of tapes that
