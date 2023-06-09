@@ -249,6 +249,9 @@ class FermiC(FermiWord):
     r"""FermiC(wire)
     The fermionic creation operator :math:`a^\dagger`
 
+    For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^\dagger_2`. This operator applied
+    to :math:`\ket{0000}` gives :math:`\ket{0010}`.
+
     **Details:**
 
     * Number of wires: 1
@@ -257,10 +260,7 @@ class FermiC(FermiWord):
     Args:
         wire(int): the non-negative integer indicating the state the operator acts on.
 
-    For instance, ``qml.FermiC(3)`` (:math:`a^\dagger_3`) operating on :math:`\ket{0000}` gives
-    :math:`\ket{0001}`.
-
-    .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane ``Operator``
+    .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
 
     .. seealso:: :class:`~pennylane.FermiA`
 
@@ -291,6 +291,9 @@ class FermiA(FermiWord):
     r"""FermiA(wire)
     The fermionic annihilation operator :math:`a`
 
+    For instance, the operator ``qml.FermiA(2)`` denotes :math:`a_2`. This operator applied
+    to :math:`\ket{0010}` gives :math:`\ket{0000}`.
+
     **Details:**
 
     * Number of wires: 1
@@ -299,10 +302,7 @@ class FermiA(FermiWord):
     Args:
         wire(int): the non-negative integer indicating the state the operator acts on.
 
-    For instance, ``qml.FermiA(3)`` (:math:`a_3`) operating on :math:`\ket{0001}` gives
-    :math:`\ket{0000}`.
-
-    .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane ``Operator``
+    .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
 
     .. seealso:: :class:`~pennylane.FermiC`
 

@@ -31,8 +31,8 @@
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
 * Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
-  operators. These user-facing classes for creating fermonic operators are accessible as e.g.
-  `qml.FermiC(0)` and `qml.FermiA(3)`
+  operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
+  `qml.FermiC(0)` and `qml.FermiA(3)`.
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
 
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
