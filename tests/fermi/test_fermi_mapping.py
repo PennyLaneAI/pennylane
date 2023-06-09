@@ -398,9 +398,11 @@ def test_jordan_wigner_for_identity_ps():
 )
 def test_jordan_wigner_for_null_operator_fermi_word_ps(operator):
     """Test that the jw_mapping function works when the result is 0"""
-    assert operator.to_qubit(ps=True).simplify() is None
+    # in PauliSentence return format, returns None
+    assert jordan_wigner(operator, ps=True).simplify() is None
 
-    op = operator.to_qubit().simplify()
+    # in operation return format, '0 * I'
+    op = jordan_wigner(operator).simplify()
 
     assert isinstance(op, SProd)
     assert isinstance(op.base, Identity)

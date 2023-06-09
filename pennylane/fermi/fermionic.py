@@ -14,8 +14,6 @@
 """The Fermionic representation classes."""
 from copy import copy
 
-import pennylane as qml
-
 
 class FermiWord(dict):
     r"""Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
@@ -160,11 +158,6 @@ class FermiWord(dict):
 
         return operator
 
-    def to_qubit(self, ps=False):
-        """Map the FermiWord to the qubit basis to get a linear combination
-        of Pauli operators"""
-        return qml.fermi.conversion.jordan_wigner(self, ps)
-
     # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
     # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
     # TODO: create __imul__ method.
@@ -248,8 +241,3 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
-
-    def to_qubit(self, ps=False):
-        """Map the FermiSentence to the qubit basis to get a linear combination
-        of Pauli operators"""
-        return qml.fermi.conversion.jordan_wigner(self, ps)
