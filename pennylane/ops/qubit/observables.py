@@ -340,8 +340,8 @@ class Projector(Observable):
 
     corresponding to the probability of measuring the quantum state :math:`\psi` in the basis defined by :math:`\phi`.
 
-    For example, the projector :math:`\ket{11}\bra{11}` (:math:`\ket{3}\bra{3}` in integer notation) is created by ``basis_state=np.array([1, 1])``,
-    or the projector :math:`\ket{+}\bra{+}` is created by ``state_vector=np.array([1, 1])/np.sqrt(2)``.
+    For example, the projector :math:`\ket{11}\bra{11}` (:math:`\ket{3}\bra{3}` in integer notation) is created with argument ``np.array([1, 1])``,
+    or the projector :math:`\ket{+}\bra{+}` is created with argument ``np.array([1, 1])/np.sqrt(2)``.
 
     **Details:**
 
