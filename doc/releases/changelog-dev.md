@@ -35,6 +35,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
+  of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
+  `HardwareHamiltonian`s which are not checked.
+  [(4216)](https://github.com/PennyLaneAI/pennylane/pull/4216)
+  
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
