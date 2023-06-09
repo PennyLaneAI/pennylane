@@ -33,6 +33,10 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
+* Added dunder methods to `FermiWord` and `FermiSentence` to allow arithmetic operations 
+  using `+`, `-` and `*` as well as in-place addition, subtraction and multiplication, between 
+  `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
+  [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
 
 <h3>Improvements 🛠</h3>
 
