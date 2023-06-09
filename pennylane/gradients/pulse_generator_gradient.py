@@ -309,6 +309,8 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
           in order to obtain the Jacobian.
 
     """
+    if isinstance(argnum, int):
+        argnum = [argnum]
     argnum = argnum or tape.trainable_params
     # Initialize a cache that will store the following:
     # 1. a single entry ``str: int`` that memorizes the number of tapes that
@@ -333,10 +335,13 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     gradient_data = []
     gradient_tapes = []
     tape_params = tape.get_parameters()
+    print(f"{argnum=}")
+    print(f"{tape_params=}")
+    print(f"{tape.trainable_params=}")
     for idx, (trainable_idx, param) in enumerate(zip(tape.trainable_params, tape_params)):
         shape = qml.math.shape(param)
 
-        if trainable_idx not in argnum:
+        if idx not in argnum:
             # Trainable parameters that are de-selected by ``argnum`` receive a vanishing
             # gradient entry.
             # Indicate that there are no tapes for this parameter by setting start==end
@@ -361,13 +366,14 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     num_params = len(tape.trainable_params)
     partitioned_shots = shots.has_partitioned_shots
     tape_specs = (single_measure, num_params, num_measurements, shots)
+    print(gradient_data)
 
     def processing_fn(results):
-        """Post-process the results of the parameter-shifted tapes of the pulse
-        generator parameter-shift rule into the gradient."""
+        """Post-process the results of the parameter-shifted tapes for
+        ``pulse_generator`` into the gradient."""
         grads = []
         zero_parshapes = []
-        # Iterate over gradient_data, which is equivalent to the trainable parameters in argnum
+        # Iterate over gradient_data, which contains one entry for each of the trainable parameters in argnum
         for start, end, coeffs, par_shape in gradient_data:
             # If start and end pointer are equal, no tapes contribute and we get a vanishing
             # gradient for this parameter. For this, add an entry ``None``, which will
