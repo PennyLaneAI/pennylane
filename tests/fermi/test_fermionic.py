@@ -17,7 +17,7 @@ from copy import copy, deepcopy
 
 import pytest
 
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, fermiword
+from pennylane.fermi.fermionic import FermiSentence, FermiWord
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
@@ -403,14 +403,3 @@ class TestFermiSentence:
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
-
-    tup_fw_string = (
-        ("0+ 1-", fw1),
-        ("0+ 0-", fw2),
-        ("0+ 3- 0+ 4-", fw3),
-        ("", fw4),
-    )
-
-    @pytest.mark.parametrize("string, result_fw", tup_fw_string)
-    def test_fermiword_string(self, string, result_fw):
-        assert fermiword(string) == result_fw

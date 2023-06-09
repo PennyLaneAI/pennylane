@@ -325,12 +325,9 @@ This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
-<<<<<<< HEAD
 Lillian M. A. Frederiksen,
-=======
 Emiliano Godinez Ramirez
 Nikhil Harle
->>>>>>> master
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann,

@@ -158,10 +158,6 @@ class FermiWord(dict):
 
         return operator
 
-    # TODO: create mapping method when the tne jordan_wigner function is added.
-    # def to_qubit(self):
-    #     return mapping(self)
-
     # TODO: create __add__ and __iadd__ method when FermiSentence is merged.
     # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
     # TODO: create __imul__ method.
