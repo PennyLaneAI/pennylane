@@ -31,6 +31,7 @@ tests/ops/qubit/test_special_unitary.py
 tests/ops/qubit/test_state_prep.py
 tests/ops/qutrit/test_qutrit_observables.py
 tests/ops/qutrit/test_qutrit_parametric_ops.py
+tests/ops/qutrit/test_qutrit_state_prep.py
 tests/optimize/test_riemannian_gradient_optimizer.py
 tests/pulse/**
 tests/pauli/test_pauli_interface.py
@@ -38,6 +39,7 @@ tests/qchem/test_givens_rotations.py
 tests/qinfo/test_trace_distance.py
 tests/qnn/**
 tests/tape/test_qscript.py
+tests/templates/test_state_preparations/test_qutrit_basis_state_prep.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/templates/test_subroutines/test_qsvt.py
 tests/resource/test_resource.py

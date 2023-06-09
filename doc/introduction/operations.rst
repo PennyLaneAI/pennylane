@@ -479,6 +479,21 @@ Qutrit parametrized gates
 
 :html:`</div>`
 
+.. _intro_ref_ops_qutrit_stateprep:
+
+Qutrit State preparation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritBasisState
+
+:html:`</div>`
+
 .. _intro_ref_ops_qutrit_obs:
 
 Qutrit Observables
