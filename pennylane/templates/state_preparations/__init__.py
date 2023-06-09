@@ -19,3 +19,4 @@ by decomposing it into elementary operations.
 from .mottonen import MottonenStatePreparation
 from .basis import BasisStatePreparation
 from .arbitrary_state_preparation import ArbitraryStatePreparation
+from .basis_qutrit import QutritBasisStatePreparation
