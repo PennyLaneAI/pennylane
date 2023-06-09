@@ -13,14 +13,10 @@
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
 import pickle
+import pytest
 from copy import copy, deepcopy
 
-import pytest
-
-import pennylane as qml
-
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
-from pennylane.pauli import PauliWord, PauliSentence
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
