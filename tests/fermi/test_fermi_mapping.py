@@ -458,11 +458,18 @@ def test_jordan_wigner_for_fermi_sentence_ps(fermionic_op, result):
     assert qubit_op == result
 
 
-# @pytest.mark.parametrize("fermionic_op, result", FERMI_AND_PAULI_SENTENCES)
-# def test_jordan_wigner_for_fermi_sentence_operation(fermionic_op, result):
-#     wires = fermionic_op.wires or [0]
-#
-#     qubit_op = jordan_wigner(fermionic_op)
-#     result = result.operation(wires)
-#
-#     assert qml.equal(qubit_op.simplify(), result.simplify())
+@pytest.mark.parametrize("fermionic_op, result", FERMI_AND_PAULI_SENTENCES)
+def test_jordan_wigner_for_fermi_sentence_operation(fermionic_op, result):
+    wires = fermionic_op.wires or [0]
+
+    qubit_op = jordan_wigner(fermionic_op)
+    result = result.operation(wires)
+
+    assert qml.equal(qubit_op.simplify(), result.simplify())
+
+
+def test_error_is_raised_for_incompatible_type():
+    """Test that an error is raised in the input is not a FermiWord or FermiSentence"""
+
+    with pytest.raises(ValueError, match="fermi_operator must be a FermiWord or FermiSentence"):
+        jordan_wigner(qml.PauliX(0))
