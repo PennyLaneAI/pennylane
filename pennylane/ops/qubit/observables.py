@@ -338,7 +338,7 @@ class Projector(Observable):
     .. math::
         |\langle \psi | \phi \rangle |^2
 
-    corresponding to the probability of measuring the quantum state :math:`\psi` in the basis defined by :math:`\phi`.
+    corresponding to the probability that :math:`|\psi\rangle` is projected onto :math:`|\phi\rangle` during measurement.
 
     For example, the projector :math:`\ket{11}\bra{11}` (:math:`\ket{3}\bra{3}` in integer notation) is created with argument ``np.array([1, 1])``,
     or the projector :math:`\ket{+}\bra{+}` is created with argument ``np.array([1, 1])/np.sqrt(2)``.
