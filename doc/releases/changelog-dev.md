@@ -280,6 +280,10 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
+  `qml.ops.op_math.Adjoint.__new__`.
+  [(#4231)](https://github.com/PennyLaneAI/pennylane/pull/4231)
+
 * The docstring for `qml.grad` now states that it should be used with the Autograd interface only.
   [(#4202)](https://github.com/PennyLaneAI/pennylane/pull/4202)
 
