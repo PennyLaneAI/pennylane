@@ -118,7 +118,7 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return self_fs + other
 
-        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+        raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
 
     def __sub__(self, other):
         self_fs = FermiSentence({self: 1.0})
@@ -131,7 +131,7 @@ class FermiWord(dict):
             other = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other
 
-        raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+        raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
 
     def __mul__(self, other):
         r"""Multiply a FermiWord with another FermiWord or a FermiSentence.

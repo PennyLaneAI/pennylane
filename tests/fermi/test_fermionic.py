@@ -99,7 +99,32 @@ class TestFermiWord:
         assert str(fw) == str_rep
         assert repr(fw) == str_rep
 
-    tup_fw_mult = (
+    def test_pickling(self):
+        """Check that FermiWords can be pickled and unpickled."""
+        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
+        serialization = pickle.dumps(fw)
+        new_fw = pickle.loads(serialization)
+        assert fw == new_fw
+
+    @pytest.mark.parametrize(
+        "operator",
+        [
+            ({(0, 0): "+", (2, 1): "-"}),
+            ({(0, 0): "+", (1, 1): "-", (3, 0): "+", (4, 1): "-"}),
+            ({(-1, 0): "+", (0, 1): "-", (1, 0): "+", (2, 1): "-"}),
+        ],
+    )
+    def test_init_error(self, operator):
+        """Test that an error is raised if the operator orders are not correct."""
+        with pytest.raises(ValueError, match="The operator indices must belong to the set"):
+            FermiWord(operator)
+
+
+class TestFermiWordArithmetic:
+
+    # ToDo: in-place addition, subtraction, multiplication
+
+    WORDS_MUL = (
         (
             fw1,
             fw1,
@@ -133,7 +158,7 @@ class TestFermiWord:
         (fw4, fw4, fw4, fw4),
     )
 
-    @pytest.mark.parametrize("f1, f2, result_fw_right, result_fw_left", tup_fw_mult)
+    @pytest.mark.parametrize("f1, f2, result_fw_right, result_fw_left", WORDS_MUL)
     def test_mul_fermi_words(self, f1, f2, result_fw_right, result_fw_left):
         """Test that two FermiWords can be multiplied together and return a new
         FermiWord, with operators in the expected order"""
@@ -145,26 +170,24 @@ class TestFermiWord:
             fw1,
             FermiSentence({fw3: 1.2}),
             FermiSentence({fw1 * fw3: 1.2}),
-            FermiSentence({fw3 * fw1: 1.2}),
         ),
         (
             fw2,
             FermiSentence({fw3: 1.2, fw1: 3.7}),
             FermiSentence({fw2 * fw3: 1.2, fw2 * fw1: 3.7}),
-            FermiSentence({fw3 * fw2: 1.2, fw1 * fw2: 3.7}),
         ),
     )
 
-    @pytest.mark.parametrize("fw, fs, result_fs1, result_fs2", WORDS_AND_SENTENCES_MUL)
-    def test_mul_fermi_sentence(self, fw, fs, result_fs1, result_fs2):
-        """Test that a FermiWord and a FermiSentence can be multiplied together
+    @pytest.mark.parametrize("fw, fs, result", WORDS_AND_SENTENCES_MUL)
+    def test_mul_fermi_word_and_sentence(self, fw, fs, result):
+        """Test that a FermiWord can be multiplied by a FermiSentence
         and return a new FermiSentence"""
-        assert fw * fs == result_fs1
-        assert fs * fw == result_fs2
+        assert fw * fs == result
 
     WORDS_AND_NUMBERS_MUL = (
         (fw1, 2, FermiSentence({fw1: 2})),
         (fw2, 3.7, FermiSentence({fw2: 3.7})),
+        (fw2, 2j, FermiSentence({fw2: 2j})),
     )
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
@@ -184,10 +207,90 @@ class TestFermiWord:
         (fw4, "string"),
     )
 
-    @pytest.mark.parametrize("f1, f2", tup_fw_mult_error)
-    def test_mul_error(self, f1, f2):
-        with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(f2)}."):
-            f1 * f2  # pylint: disable=pointless-statement
+    @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
+    def test_mul_error(self, fw, bad_type):
+        with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(bad_type)}."):
+            fw * bad_type  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
+    def test_rmul_error(self, fw, bad_type):
+        with pytest.raises(TypeError, match=f"Cannot multiply FermiWord by {type(bad_type)}."):
+            bad_type * fw  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
+    def test_add_error(self, fw, bad_type):
+        # with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiWord"):
+        #     bad_type + fw  # pylint: disable=pointless-statement
+        # ToDo: uncomment or delete
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiWord"):
+            fw + bad_type  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
+    def test_sub_error(self, fw, bad_type):
+        # with pytest.raises(TypeError, match=f"Cannot subtract {type(bad_type)} from a FermiWord"):
+        #     bad_type - fw  # pylint: disable=pointless-statement
+        # ToDo: uncomment or delete
+        with pytest.raises(TypeError, match=f"Cannot subtract {type(bad_type)} from a FermiWord"):
+            fw - bad_type  # pylint: disable=pointless-statement
+
+    WORDS_ADD = [
+        (fw1, fw2, FermiSentence({fw1: 1, fw2: 1})),
+        (fw3, fw2, FermiSentence({fw2: 1, fw3: 1})),
+        (fw2, fw2, FermiSentence({fw2: 2})),
+    ]
+
+    @pytest.mark.parametrize("f1, f2, res", WORDS_ADD)
+    def test_add_fermi_words(self, f1, f2, res):
+        """Test that adding two FermiWords returns the expected FermiSentence"""
+        assert f1 + f2 == res
+        assert f2 + f1 == res
+
+    WORDS_AND_SENTENCES_ADD = [
+        (fw1, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: 2.2, fw3: 3j})),
+        (fw3, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: 1.2, fw3: (1 + 3j)})),
+        (fw1, FermiSentence({fw1: -1.2, fw3: 3j}), FermiSentence({fw1: -0.2, fw3: 3j})),
+    ]
+
+    @pytest.mark.parametrize("w, s, res", WORDS_AND_SENTENCES_ADD)
+    def test_add_fermi_words_and_sentences(self, w, s, res):
+        """Test that adding a FermiSentence to a FermiWord returns the expected FermiSentence"""
+        sum = w + s
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        sum_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+        )
+        assert sum_rounded == res
+
+    WORDS_SUB = [
+        (fw1, fw2, FermiSentence({fw1: 1, fw2: -1}), FermiSentence({fw1: -1, fw2: 1})),
+        (fw2, fw3, FermiSentence({fw2: 1, fw3: -1}), FermiSentence({fw2: -1, fw3: 1})),
+        (fw2, fw2, FermiSentence({fw2: 0}), FermiSentence({fw2: 0})),
+    ]
+
+    @pytest.mark.parametrize("f1, f2, res1, res2", WORDS_SUB)
+    def test_subtract_fermi_words(self, f1, f2, res1, res2):
+        """Test that adding two FermiWords returns the expected FermiSentence"""
+        assert f1 - f2 == res1
+        assert f2 - f1 == res2
+
+    WORDS_AND_SENTENCES_SUB = [
+        (fw1, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: -0.2, fw3: -3j})),
+        (fw3, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: -1.2, fw3: (1 - 3j)})),
+        (fw1, FermiSentence({fw1: -1.2, fw3: 3j}), FermiSentence({fw1: 2.2, fw3: -3j})),
+    ]
+
+    @pytest.mark.parametrize("w, s, res", WORDS_AND_SENTENCES_SUB)
+    def test_subtract_fermi_words_and_sentences(self, w, s, res):
+        """Test that subtracting a FermiSentence from a FermiWord returns the expected FermiSentence"""
+        diff = w - s
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        diff_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+        )
+
+        assert diff_rounded == res
 
     @pytest.mark.parametrize("f1, f2", tup_fw_mult_error)
     def test_rmul_error(self, f1, f2):
@@ -217,26 +320,6 @@ class TestFermiWord:
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
-
-    def test_pickling(self):
-        """Check that FermiWords can be pickled and unpickled."""
-        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
-        serialization = pickle.dumps(fw)
-        new_fw = pickle.loads(serialization)
-        assert fw == new_fw
-
-    @pytest.mark.parametrize(
-        "operator",
-        [
-            ({(0, 0): "+", (2, 1): "-"}),
-            ({(0, 0): "+", (1, 1): "-", (3, 0): "+", (4, 1): "-"}),
-            ({(-1, 0): "+", (0, 1): "-", (1, 0): "+", (2, 1): "-"}),
-        ],
-    )
-    def test_init_error(self, operator):
-        """Test that an error is raised if the operator orders are not correct."""
-        with pytest.raises(ValueError, match="The operator indices must belong to the set"):
-            FermiWord(operator)
 
 
 fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
@@ -368,6 +451,57 @@ class TestFermiSentence:
         assert copy_fs is not fs
         assert deep_copy_fs is not fs
 
+    fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
+    fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
+    fs3 = FermiSentence({fw3: -0.5, fw4: 1})
+    fs4 = FermiSentence({fw4: 1})
+    fs5 = FermiSentence({})
+
+    # tup_fs_subtract = (  # computed by hand
+    #     (fs1, fs1, FermiSentence({})),
+    #     (fs2, fs2, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
+    #     (fs3, fs3, FermiSentence({fw1: 1.23, fw2: 4j, fw4: -1})),
+    #     (fs2, fs5, fs2),
+    # )
+    #
+    # @pytest.mark.parametrize("f1, f2, result", tup_fs_subtract)
+    # def test_subtract_fermi_sentences(self, f1, f2, result):
+    #     """Test that the correct result of subtraction is produced for two FermiSentences."""
+    #
+    #     simplified_product = f1 - f2
+    #     simplified_product.simplify()
+    #
+    #     assert simplified_product == result
+
+    def test_simplify(self):
+        """Test that simplify removes terms in the FermiSentence with coefficient less than the
+        threshold."""
+        un_simplified_fs = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+
+        expected_simplified_fs0 = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
+        expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
+        expected_simplified_fs2 = FermiSentence({fw3: 1})
+
+        un_simplified_fs.simplify()
+        assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
+        un_simplified_fs.simplify(tol=1e-2)
+        assert un_simplified_fs == expected_simplified_fs1
+        un_simplified_fs.simplify(tol=1e-1)
+        assert un_simplified_fs == expected_simplified_fs2
+
+    def test_pickling(self):
+        """Check that FermiSentences can be pickled and unpickled."""
+        f1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+        f2 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
+        fs = FermiSentence({f1: 1.5, f2: -0.5})
+
+        serialization = pickle.dumps(fs)
+        new_fs = pickle.loads(serialization)
+        assert fs == new_fs
+
+
+class TestFermiSentenceArithmetic:
+
     tup_fs_mult = (  # computed by hand
         (
             fs1,
@@ -405,7 +539,7 @@ class TestFermiSentence:
     )
 
     @pytest.mark.parametrize("f1, f2, result", tup_fs_mult)
-    def test_mul(self, f1, f2, result):
+    def test_mul_fermi_sentences(self, f1, f2, result):
         """Test that the correct result of multiplication between two
         FermiSentences is produced."""
 
@@ -413,6 +547,28 @@ class TestFermiSentence:
         simplified_product.simplify()
 
         assert simplified_product == result
+
+    SENTENCES_AND_WORDS_MUL = (
+        (
+            fw1,
+            FermiSentence({fw3: 1.2}),
+            FermiSentence({fw1 * fw3: 1.2}),
+            FermiSentence({fw3 * fw1: 1.2}),
+        ),
+        (
+            fw2,
+            FermiSentence({fw3: 1.2, fw1: 3.7}),
+            FermiSentence({fw2 * fw3: 1.2, fw2 * fw1: 3.7}),
+            FermiSentence({fw3 * fw2: 1.2, fw1 * fw2: 3.7}),
+        ),
+    )
+
+    @pytest.mark.parametrize("fw, fs, result_fs1, result_fs2", SENTENCES_AND_WORDS_MUL)
+    def test_mul_fermi_word_and_sentence(self, fw, fs, result_fs1, result_fs2):
+        """Test that a FermiWord and a FermiSentence can be multiplied together
+        and return a new FermiSentence"""
+        assert fw * fs == result_fs1
+        assert fs * fw == result_fs2
 
     SENTENCES_AND_NUMBERS_MUL = (
         (fs1, 2, FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),
@@ -448,27 +604,39 @@ class TestFermiSentence:
 
         assert simplified_product == result
 
-    fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
-    fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
-    fs3 = FermiSentence({fw3: -0.5, fw4: 1})
-    fs4 = FermiSentence({fw4: 1})
-    fs5 = FermiSentence({})
+    SENTENCES_AND_WORDS_ADD = [
+        (fw1, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: 2.2, fw3: 3j})),
+        (fw3, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: 1.2, fw3: (1 + 3j)})),
+        (fw1, FermiSentence({fw1: -1.2, fw3: 3j}), FermiSentence({fw1: -0.2, fw3: 3j})),
+    ]
 
-    # tup_fs_subtract = (  # computed by hand
-    #     (fs1, fs1, FermiSentence({})),
-    #     (fs2, fs2, FermiSentence({fw1: 2.46, fw2: 8j, fw3: -1})),
-    #     (fs3, fs3, FermiSentence({fw1: 1.23, fw2: 4j, fw4: -1})),
-    #     (fs2, fs5, fs2),
-    # )
-    #
-    # @pytest.mark.parametrize("f1, f2, result", tup_fs_subtract)
-    # def test_subtract_fermi_sentences(self, f1, f2, result):
-    #     """Test that the correct result of subtraction is produced for two FermiSentences."""
-    #
-    #     simplified_product = f1 - f2
-    #     simplified_product.simplify()
-    #
-    #     assert simplified_product == result
+    @pytest.mark.parametrize("w, s, res", SENTENCES_AND_WORDS_ADD)
+    def test_add_fermi_words_and_sentences(self, w, s, res):
+        """Test that adding a FermiWord to a FermiSentence returns the expected FermiSentence"""
+        sum = s + w
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        sum_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+        )
+        assert sum_rounded == res
+
+    SENTENCES_AND_WORDS_SUB = [
+        (fw1, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: 0.2, fw3: 3j})),
+        (fw3, FermiSentence({fw1: 1.2, fw3: 3j}), FermiSentence({fw1: 1.2, fw3: (-1 + 3j)})),
+        (fw1, FermiSentence({fw1: -1.2, fw3: 3j}), FermiSentence({fw1: -2.2, fw3: 3j})),
+    ]
+
+    @pytest.mark.parametrize("w, s, res", SENTENCES_AND_WORDS_SUB)
+    def test_subtract_fermi_words_and_sentences(self, w, s, res):
+        """Test that subtracting a FermiWord from a FermiSentence returns the expected FermiSentence"""
+        diff = s - w
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        diff_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+        )
+        assert diff_rounded == res
 
     SENTENCE_MINUS_WORD = (  # computed by hand
         (fs1, fw1, FermiSentence({fw1: 0.23, fw2: 4j, fw3: -0.5})),
@@ -476,41 +644,21 @@ class TestFermiSentence:
         (fs3, fw4, FermiSentence({fw3: -0.5})),
     )
 
+    # TODO: DUPLICATION (CONSOLIDATE)
     @pytest.mark.parametrize("fs, fw, result", SENTENCE_MINUS_WORD)
     def test_subtract_fermi_word_from_fermi_sentence(self, fs, fw, result):
         """Test that the correct result is produced if a FermiWord is
         subtracted from a FermiSentence"""
 
-        simplified_product = fs - fw
-        simplified_product.simplify()
+        simplified_diff = fs - fw
+        simplified_diff.simplify()
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        simplified_diff = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
+        )
 
-        assert simplified_product == result
-
-    def test_simplify(self):
-        """Test that simplify removes terms in the FermiSentence with coefficient less than the
-        threshold."""
-        un_simplified_fs = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
-
-        expected_simplified_fs0 = FermiSentence({fw1: 0.001, fw2: 0.05, fw3: 1})
-        expected_simplified_fs1 = FermiSentence({fw2: 0.05, fw3: 1})
-        expected_simplified_fs2 = FermiSentence({fw3: 1})
-
-        un_simplified_fs.simplify()
-        assert un_simplified_fs == expected_simplified_fs0  # default tol = 1e-8
-        un_simplified_fs.simplify(tol=1e-2)
-        assert un_simplified_fs == expected_simplified_fs1
-        un_simplified_fs.simplify(tol=1e-1)
-        assert un_simplified_fs == expected_simplified_fs2
-
-    def test_pickling(self):
-        """Check that FermiSentences can be pickled and unpickled."""
-        f1 = FermiWord({(0, 0): "+", (1, 1): "-"})
-        f2 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
-        fs = FermiSentence({f1: 1.5, f2: -0.5})
-
-        serialization = pickle.dumps(fs)
-        new_fs = pickle.loads(serialization)
-        assert fs == new_fs
+        assert simplified_diff == result
 
     tup_fs_pow = (
         (fs1, 0, FermiSentence({FermiWord({}): 1})),
