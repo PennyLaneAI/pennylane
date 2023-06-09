@@ -374,7 +374,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
         ``pulse_generator`` into the gradient."""
         grads = []
         zero_parshapes = []
-        # Iterate over gradient_data, which is equivalent to the trainable parameters in argnum
+        # Iterate over gradient_data, which contains one entry for each of the trainable parameters in argnum
         for start, end, coeffs, par_shape in gradient_data:
             # If start and end pointer are equal, no tapes contribute and we get a vanishing
             # gradient for this parameter. For this, add an entry ``None``, which will
