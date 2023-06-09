@@ -522,7 +522,6 @@ class TestSumExpand:
         qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            print(x)
             qscript.set_parameters(x, trainable_only=False)
             tapes, fn = sum_expand(qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)

@@ -2081,7 +2081,7 @@ class Tensor(Observable):
                 start += len(op.data)
         else:
             for new_entry, op in zip(new_data, self.obs):
-                op.data = new_entry
+                op.data = tuple(new_entry)
 
     @property
     def num_params(self):
