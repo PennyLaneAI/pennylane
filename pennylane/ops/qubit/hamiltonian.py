@@ -350,14 +350,17 @@ class Hamiltonian(Observable):
 
     def _get_pauli_indices(self):
         nops = len(self.ops)
-        nwir = len(self.wires)
+        nwir = max(self.wires) + 1 if len(self.wires) > 0 else 0
         indices = np.zeros((nops, nwir))
         map = {"Identity": 0, "PauliX": 1, "PauliY": 2, "PauliZ": 3}
+        count = 3
         for j, op in enumerate(self.ops):
             if len(op.wires) == 1:
+                update_op_dict(map, op.name, count)
                 indices[j, op.wires[0]] = map[op.name]
                 continue
             for i, w in enumerate(op.wires):
+                update_op_dict(map, op.name[i], count)
                 indices[j, w] = map[op.name[i]]
         return indices
 
@@ -755,6 +758,14 @@ class Hamiltonian(Observable):
                 setattr(new_op, attr, value)
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
         return new_op
+
+
+def update_op_dict(map: dict, key: str, count: int):
+    """Iterate count and add key in map if key is not already in map."""
+    if key in map.keys():
+        return
+    count += 1
+    map.update({key: count})
 
 
 def sum_sparse_matrix_core(wires, coeffs, ops, mask):
