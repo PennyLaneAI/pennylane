@@ -101,12 +101,15 @@ class TestInitialization:
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=None, t=2)
         assert ev.dense is False
+        assert ev(params=[], t=2).dense is False  # Test that calling inherits the dense keyword
 
         ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
         assert ev2.dense is True
+        assert ev2(params=[], t=2).dense is True  # Test that calling inherits the dense keyword
 
         ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
         assert ev3.dense is False
+        assert ev3(params=[], t=2).dense is False  # Test that calling inherits the dense keyword
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
@@ -566,9 +569,7 @@ class TestIntegration:
         assert qml.math.isclose(res_def, res_mix, atol=1e-4)
         assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)
 
-    def test_jitted_unitary_differentiation_sparse(
-        self,
-    ):
+    def test_jitted_unitary_differentiation_sparse(self):
         """Test that the unitary can be differentiated with and without jitting using sparse matrices"""
         import jax
         import jax.numpy as jnp
@@ -577,7 +578,7 @@ class TestIntegration:
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H)(params, t=10.0, dense=False)
+            Um = qml.evolve(H, dense=False)(params, t=10.0)
             return qml.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
@@ -586,9 +587,7 @@ class TestIntegration:
 
         assert qml.math.allclose(jac, jac_jit)
 
-    def test_jitted_unitary_differentiation_dense(
-        self,
-    ):
+    def test_jitted_unitary_differentiation_dense(self):
         """Test that the unitary can be differentiated with and without jitting using dense matrices"""
         import jax
         import jax.numpy as jnp
@@ -597,7 +596,7 @@ class TestIntegration:
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H)(params, t=10.0, dense=True)
+            Um = qml.evolve(H, dense=True)(params, t=10.0)
             return qml.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
