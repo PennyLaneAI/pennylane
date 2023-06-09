@@ -336,10 +336,13 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     gradient_data = []
     gradient_tapes = []
     tape_params = tape.get_parameters()
+    print(f"{argnum=}")
+    print(f"{tape_params=}")
+    print(f"{tape.trainable_params=}")
     for idx, (trainable_idx, param) in enumerate(zip(tape.trainable_params, tape_params)):
         shape = qml.math.shape(param)
 
-        if trainable_idx not in argnum:
+        if idx not in argnum:
             # Trainable parameters that are de-selected by ``argnum`` receive a vanishing
             # gradient entry.
             # Indicate that there are no tapes for this parameter by setting start==end
@@ -364,10 +367,11 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     num_params = len(tape.trainable_params)
     partitioned_shots = shots.has_partitioned_shots
     tape_specs = (single_measure, num_params, num_measurements, shots)
+    print(gradient_data)
 
     def processing_fn(results):
-        """Post-process the results of the parameter-shifted tapes of the pulse
-        generator parameter-shift rule into the gradient."""
+        """Post-process the results of the parameter-shifted tapes for
+        ``pulse_generator`` into the gradient."""
         grads = []
         zero_parshapes = []
         # Iterate over gradient_data, which is equivalent to the trainable parameters in argnum

@@ -880,7 +880,7 @@ class TestPulseGeneratorEdgeCases:
         params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.Rot(*params, wires=0)
+            qml.Rot(*params, wires=0)  # does not impact the measurement -> zero grad
             qml.probs([2, 3])
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -914,7 +914,7 @@ class TestPulseGeneratorEdgeCases:
         params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.Rot(*params, wires=0)
+            qml.Rot(*params, wires=0)  # does not impact the measurements -> zero grad
             qml.expval(Z(wires=2))
             qml.probs([2, 3])
 
@@ -960,7 +960,7 @@ class TestPulseGeneratorEdgeCases:
 
 
 @pytest.mark.jax
-class TestPulseGeneratorTapes:
+class TestPulseGeneratorTape:
     """Test that differentiating tapes with ``pulse_generator`` works."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
@@ -1036,7 +1036,8 @@ class TestPulseGeneratorTapes:
             assert isinstance(grad, tuple) and len(grad) == 2
             assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad))
 
-    def test_single_pulse_multi_term_argnum(self):
+    @pytest.mark.parametrize("argnum", (0, [0], 1, [1]))
+    def test_single_pulse_multi_term_argnum(self, argnum):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly when setting ``argnum``."""
         import jax
@@ -1056,31 +1057,24 @@ class TestPulseGeneratorTapes:
         theta = integral_of_polyval(x, t) + y * (t[1] - t[0])
         assert qml.math.allclose(val, jnp.cos(2 * theta))
 
-        # Argnum=[0]
-        _tapes, fn = pulse_generator(tape, argnum=[0])
+        # Argnum=[0] or 0
+        par_jac_0 = jax.jacobian(integral_of_polyval)(x, t)
+        exp_grad_0 = -2 * par_jac_0 * jnp.sin(2 * theta)
+        # Argnum=[1] or 1
+        par_jac_1 = t[1] - t[0]
+        exp_grad_1 = -2 * par_jac_1 * jnp.sin(2 * theta)
+        exp_grads = [exp_grad_0, exp_grad_1]
+
+        _tapes, fn = pulse_generator(tape, argnum=argnum)
         assert len(_tapes) == 2
 
         grad = fn(qml.execute(_tapes, dev))
-        par_jac = jax.jacobian(integral_of_polyval)(x, t)
-        exp_grad = -2 * par_jac * jnp.sin(2 * theta)
         assert isinstance(grad, tuple) and len(grad) == 2
         assert isinstance(grad[0], jnp.ndarray) and grad[0].shape == x.shape
-        assert qml.math.allclose(grad[0], exp_grad)
         assert isinstance(grad[1], jnp.ndarray) and grad[1].shape == y.shape
-        assert qml.math.allclose(grad[1], 0.0)
-
-        # Argnum=[1]
-        _tapes, fn = pulse_generator(tape, argnum=[1])
-        assert len(_tapes) == 2
-
-        grad = fn(qml.execute(_tapes, dev))
-        par_jac = t[1] - t[0]
-        exp_grad = -2 * par_jac * jnp.sin(2 * theta)
-        assert isinstance(grad, tuple) and len(grad) == 2
-        assert isinstance(grad[0], jnp.ndarray) and grad[0].shape == x.shape
-        assert qml.math.allclose(grad[0], 0.0)
-        assert isinstance(grad[1], jnp.ndarray) and grad[1].shape == y.shape
-        assert qml.math.allclose(grad[1], exp_grad)
+        argnum_int = argnum if isinstance(argnum, int) else argnum[0]
+        assert qml.math.allclose(grad[argnum_int], exp_grads[argnum_int])
+        assert qml.math.allclose(grad[1 - argnum_int], 0.0)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
@@ -1227,6 +1221,7 @@ class TestPulseGeneratorQNode:
         for j, e in zip(jac, exp_jac):
             for _j, _e in zip(j, e):
                 assert qml.math.allclose(_j, _e)
+
 
 @pytest.mark.jax
 class TestPulseGeneratorIntegration:
@@ -1387,6 +1382,38 @@ class TestPulseGeneratorIntegration:
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(qml.math.allclose(r, e) for r, e in zip(grad_pulse_grad, grad_backprop))
+
+    @pytest.mark.parametrize("argnums", [[0, 1], 0, 1])
+    def test_simple_qnode_expval_multiple_params(self, argnums):
+        """Test that a simple qnode with two parameters
+        can be differentiated with pulse_generator and `argnums` works as expected."""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.2
+        ham1 = qml.pulse.constant * Y(0)
+        ham2 = qml.pulse.constant * Y(0)
+
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
+        def circuit(param1, param2):
+            qml.evolve(ham1)(param1, T)
+            qml.evolve(ham2)(param2, T)
+            return qml.expval(Z(0))
+
+        param1, param2 = [jnp.array(0.4)], [jnp.array(0.5)]
+        with qml.Tracker(dev) as tracker:
+            grad = jax.jacobian(circuit, argnums=argnums)(param1, param2)
+        p = (param1[0] + param2[0]) * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        if argnums == [0, 1]:
+            for g in grad:
+                assert qml.math.allclose(g, exp_grad)
+                assert tracker.totals["executions"] == 1 + 4  # one forward pass, four shifted tapes
+        else:
+            assert qml.math.allclose(grad, exp_grad)
+            assert tracker.totals["executions"] == 1 + 2  # one forward pass, two shifted tapes
 
 
 @pytest.mark.jax
