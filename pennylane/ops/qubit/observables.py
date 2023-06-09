@@ -350,7 +350,7 @@ class Projector(Observable):
     * Gradient recipe: None
 
     Args:
-        state (tensor-like): input of shape ``(n, )``.
+        state (tensor-like): input state
         wires (Iterable): wires that the projector acts on.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
