@@ -335,10 +335,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     gradient_data = []
     gradient_tapes = []
     tape_params = tape.get_parameters()
-    print(f"{argnum=}")
-    print(f"{tape_params=}")
-    print(f"{tape.trainable_params=}")
-    for idx, (trainable_idx, param) in enumerate(zip(tape.trainable_params, tape_params)):
+    for idx, param in enumerate(tape_params):
         shape = qml.math.shape(param)
 
         if idx not in argnum:
@@ -366,7 +363,6 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     num_params = len(tape.trainable_params)
     partitioned_shots = shots.has_partitioned_shots
     tape_specs = (single_measure, num_params, num_measurements, shots)
-    print(gradient_data)
 
     def processing_fn(results):
         """Post-process the results of the parameter-shifted tapes for

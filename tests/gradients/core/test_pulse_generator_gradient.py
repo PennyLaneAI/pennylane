@@ -1171,6 +1171,7 @@ class TestPulseGeneratorQNode:
         with qml.Tracker(dev) as tracker:
             jac = pulse_generator(circuit)(params)
 
+        assert tracker.totals["executions"] == 2  # two shifted tapes
         circuit(params)
         p = integral_of_polyval(params, T)
         p_jac = jax.jacobian(integral_of_polyval)(params, T)
@@ -1180,8 +1181,6 @@ class TestPulseGeneratorQNode:
         )
         for j, e in zip(jac, exp_jac):
             assert qml.math.allclose(j, e)
-        assert jnp.allclose(grad, exp_grad)
-        assert tracker.totals["executions"] == 2  # two shifted tapes
 
     @pytest.mark.xfail(
         "Applying QNode-level gradient transforms with non-scalar parameters is not supported yet"
@@ -1205,12 +1204,14 @@ class TestPulseGeneratorQNode:
         params = jnp.array([0.4, 0.2, 0.1])
         c = jnp.array(0.9)
         with qml.Tracker(dev) as tracker:
-            grad = pulse_generator(circuit, argnums=[0, 1])(params, c)
+            jac = pulse_generator(circuit, argnums=[0, 1])(params, c)
 
+        assert tracker.totals["executions"] == 2  # two shifted tapes
         p0 = integral_of_polyval(params, T)
         p0_jac = jax.jacobian(integral_of_polyval)(params, T)
         p1 = c * T
         p1_jac = T
+        p = p0 + p1
         exp_jac = (
             (
                 jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p0_jac),
