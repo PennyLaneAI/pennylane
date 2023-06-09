@@ -441,7 +441,7 @@ class _BasisStateProjector(Observable):
     * Gradient recipe: None
 
     Args:
-        basis_state (tensor-like): binary input of shape ``(n, )``.
+        state (tensor-like): binary input of shape ``(n, )``.
         wires (Iterable): wires that the projector acts on.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
@@ -450,14 +450,14 @@ class _BasisStateProjector(Observable):
         id (str or None): String representing the operation (optional).
     """
 
-    def __init__(self, basis_state, wires, do_queue=None, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         wires = Wires(wires)
-        basis_state = list(qml.math.toarray(basis_state))
+        state = list(qml.math.toarray(state))
 
-        if not set(basis_state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
+        if not set(state).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
-        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -592,18 +592,18 @@ class _StateVectorProjector(Observable):
     * Gradient recipe: None
 
     Args:
-        state_vector (tensor-like): state vector of shape ``(n, )``.
+        state (tensor-like): state vector of shape ``(n, )``.
         wires (Iterable): wires that the projector acts on.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
         id (str or None): String representing the operation (optional).
     """
 
-    def __init__(self, state_vector, wires, do_queue=None, id=None):
+    def __init__(self, state, wires, do_queue=None, id=None):
         wires = Wires(wires)
-        state_vector = list(qml.math.toarray(state_vector))
+        state = list(qml.math.toarray(state))
 
-        super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.

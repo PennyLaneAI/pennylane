@@ -406,7 +406,7 @@ class TestMatrix:
     def test_sprod_observables(self):
         """Test that observable objects can also be scaled with correct matrix representation."""
         wires = [0, 1]
-        sprod_op1 = SProd(1.23, qml.Projector(basis_state=qnp.array([0, 1]), wires=wires))
+        sprod_op1 = SProd(1.23, qml.Projector(state=qnp.array([0, 1]), wires=wires))
         sprod_op2 = SProd(3.45, qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0))
         mat1 = sprod_op1.matrix()
         mat2 = sprod_op2.matrix()

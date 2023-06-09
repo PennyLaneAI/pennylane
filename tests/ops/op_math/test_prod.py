@@ -546,7 +546,7 @@ class TestMatrix:
         wires = [0, 1]
         prod_op = Prod(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=2),
-            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+            qml.Projector(state=qnp.array([0, 1]), wires=wires),
         )
         mat = prod_op.matrix()
 
