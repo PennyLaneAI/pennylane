@@ -105,7 +105,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
-    tape2 = tape.circuit.pop(index)
+    tape2 = tape._ops.pop(index)
 
     def fn(results):
         return qml.math.sum(results)
