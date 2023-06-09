@@ -35,7 +35,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `Projector` now accepts state vector representation of states, which enables the creation of projectors
+* `Projector` now accepts a state vector representation, which enables the creation of projectors
   in any basis.
   [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)  
 
