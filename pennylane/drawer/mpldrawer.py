@@ -989,7 +989,9 @@ class MPLDrawer:
                 )
         else:
             raise ValueError(
-                "Cannot draw interspersed mid-circuit measurements and conditional operations"
+                "Cannot draw interspersed mid-circuit measurements and conditional operations. "
+                "Consider providing a wire order such that all measurement wires precede all "
+                "wires for the operator being controlled, or vice versa."
             )
 
         for line in lines:
