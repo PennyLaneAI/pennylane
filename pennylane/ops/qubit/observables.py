@@ -341,7 +341,7 @@ class Projector(Observable):
     corresponding to the probability of measuring the quantum state :math:`\psi` in the basis defined by :math:`\phi`.
 
     For example, the projector :math:`\ket{11}\bra{11}` (:math:`\ket{3}\bra{3}` in integer notation) is created by ``basis_state=np.array([1, 1])``,
-    or the projector :math:`\ket{+}\bra{+}` is created by ``state_vector=np.array([1, 1])/np.sqrt(2)`` and setting ``basis_representation=False``.
+    or the projector :math:`\ket{+}\bra{+}` is created by ``state_vector=np.array([1, 1])/np.sqrt(2)``.
 
     **Details:**
 
@@ -352,8 +352,6 @@ class Projector(Observable):
     Args:
         state (tensor-like): input of shape ``(n, )``.
         wires (Iterable): wires that the projector acts on.
-        basis_representation (bool): indicates whether ``state`` is a basis
-            state (True) or a state vector (False).
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
             This argument is deprecated, instead of setting it to ``False``
@@ -366,12 +364,12 @@ class Projector(Observable):
     _basis_state_type = None  # type if Projector inherits from _BasisStateProjector
     _state_vector_type = None  # type if Projector inherits from _StateVectorProjector
 
-    def __new__(cls, *_, basis_representation=True, **__):
+    def __new__(cls, state, wires, **__):
         """Changes parents based on the state representation.
 
         Though all the types will be named "Projector", their *identity* and location in memory
-        will be different based on ``basis_representation``. We cache the different types in private class
-        variables so that:
+        will be different based on whether the input state is a basis state or a state vector.
+        We cache the different types in private class variables so that:
 
         >>> Projector(state, wires).__class__ is Projector(state, wires).__class__
         True
@@ -379,31 +377,41 @@ class Projector(Observable):
         True
         >>> isinstance(Projector(state, wires), type(Projector(state, wires)))
         True
-        >>> Projector(state, wires).__class__ is Projector._basis_state_type
+        >>> Projector(basis_state, wires).__class__ is Projector._basis_state_type
         True
-        >>> Projector(state, wires, basis_representation=False).__class__ is Projector._state_vector_type
+        >>> Projector(state_vector, wires).__class__ is Projector._state_vector_type
         True
 
         """
-        if basis_representation:
+        shape = qml.math.shape(state)
+        if len(shape) != 1:
+            raise ValueError(f"Input state must be one-dimensional; got shape {shape}.")
+
+        if len(state) == len(wires):
             if cls._basis_state_type is None:
                 base_cls = (_BasisStateProjector, Projector)
                 cls._basis_state_type = type("Projector", base_cls, dict(cls.__dict__))
             return object.__new__(cls._basis_state_type)
 
-        if cls._state_vector_type is None:
-            base_cls = (_StateVectorProjector, Projector)
-            cls._state_vector_type = type("Projector", base_cls, dict(cls.__dict__))
-        return object.__new__(cls._state_vector_type)
+        if len(state) == 2 ** len(wires):
+            if cls._state_vector_type is None:
+                base_cls = (_StateVectorProjector, Projector)
+                cls._state_vector_type = type("Projector", base_cls, dict(cls.__dict__))
+            return object.__new__(cls._state_vector_type)
+
+        raise ValueError(
+            "Input state should have the same length as the wires in the case"
+            " of a basis state, or 2**len(wires) in case of a state vector."
+            f" The lengths for the input state and wires are {len(state)} and "
+            f" {len(wires)}, respectively."
+        )
 
     def pow(self, z):
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
     def __copy__(self):
-        copied_op = self.__new__(
-            Projector, basis_representation=self._basis_representation  # pylint: disable=no-member
-        )
+        copied_op = self.__new__(Projector, self.data[0], self.wires)
         copied_op.data = self.data.copy()
         for attr, value in vars(self).items():
             if attr != "data":
@@ -434,7 +442,6 @@ class _BasisStateProjector(Observable):
     Args:
         basis_state (tensor-like): binary input of shape ``(n, )``.
         wires (Iterable): wires that the projector acts on.
-        basis_representation (bool): is the input in basis representation (should be ``True``).
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
             This argument is deprecated, instead of setting it to ``False``
@@ -442,28 +449,8 @@ class _BasisStateProjector(Observable):
         id (str or None): String representing the operation (optional).
     """
 
-    def __init__(
-        self, basis_state, wires, basis_representation=True, do_queue=None, id=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, basis_state, wires, do_queue=None, id=None):
         wires = Wires(wires)
-        shape = qml.math.shape(basis_state)
-
-        if not basis_representation:
-            raise ValueError(
-                "This projector expects the input to be a basis state and, therefore, "
-                f"``basis_representation`` should be ``True``, got {basis_representation} instead."
-            )
-        self._basis_representation = basis_representation
-
-        if len(shape) != 1:
-            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
-
-        n_basis_state = shape[0]
-        if n_basis_state != len(wires):
-            raise ValueError(
-                f"Basis state must be of length {len(wires)}; got length {n_basis_state}."
-            )
-
         basis_state = list(qml.math.toarray(basis_state))
 
         if not set(basis_state).issubset({0, 1}):
@@ -606,34 +593,14 @@ class _StateVectorProjector(Observable):
     Args:
         state_vector (tensor-like): state vector of shape ``(n, )``.
         wires (Iterable): wires that the projector acts on.
-        basis_representation (bool): is the input in basis representation (should be ``False``).
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).
         id (str or None): String representing the operation (optional).
     """
 
-    def __init__(
-        self, state_vector, wires, basis_representation=False, do_queue=None, id=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, state_vector, wires, do_queue=None, id=None):
         wires = Wires(wires)
-        shape = qml.math.shape(state_vector)
         state_vector = list(qml.math.toarray(state_vector))
-
-        if basis_representation:
-            raise ValueError(
-                "This projector expects the input to be a state vector and, therefore, "
-                f"``basis_representation`` should be ``False``, got {basis_representation} instead."
-            )
-        self._basis_representation = basis_representation
-
-        if len(shape) != 1:
-            raise ValueError(f"State vector must be one-dimensional; got shape {shape}.")
-
-        n_state_vector = shape[0]
-        if n_state_vector != 2 ** len(wires):
-            raise ValueError(
-                f"State vector must be of length {2**len(wires)}; got length {n_state_vector}."
-            )
 
         super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
