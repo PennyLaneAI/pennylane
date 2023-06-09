@@ -383,6 +383,7 @@ class Projector(Observable):
         True
 
         """
+        wires = Wires(wires)
         shape = qml.math.shape(state)
         if len(shape) != 1:
             raise ValueError(f"Input state must be one-dimensional; got shape {shape}.")
