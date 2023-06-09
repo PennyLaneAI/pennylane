@@ -347,12 +347,12 @@ class Hamiltonian(Observable):
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
-            
+
     def _get_pauli_indices(self):
         nops = len(self.ops)
         nwir = len(self.wires)
         indices = np.zeros((nops, nwir))
-        map = {'Identity': 0, 'PauliX': 1, 'PauliY': 2, 'PauliZ': 3}
+        map = {"Identity": 0, "PauliX": 1, "PauliY": 2, "PauliZ": 3}
         for j, op in enumerate(self.ops):
             if len(op.wires) == 1:
                 indices[j, op.wires[0]] = map[op.name]
@@ -360,7 +360,7 @@ class Hamiltonian(Observable):
             for i, w in enumerate(op.wires):
                 indices[j, w] = map[op.name[i]]
         return indices
-            
+
     def sparse_matrix(self, wire_order=None):
         r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
 
@@ -398,68 +398,25 @@ class Hamiltonian(Observable):
         matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
         coeffs = qml.math.toarray(self.data)
-        buffsize = 2**max(0, 29 - n - 5) # Value of 2**29 arrived at empirically to balance time savings vs memory use. 
+        buffsize = 2 ** max(
+            0, 29 - n - 5
+        )  # Value of 2**29 arrived at empirically to balance time savings vs memory use.
 
         pauli_indices = self._get_pauli_indices()
         reduc_indices = pauli_indices
         # groups tensor products that have the same sparsity pattern
         reduc_indices[pauli_indices == 3] = 0
         reduc_indices[pauli_indices == 2] = 1
-        _, unique_inds, unique_invs = np.unique(reduc_indices, axis=0, return_index=True, return_inverse=True)
+        _, unique_inds, unique_invs = np.unique(
+            reduc_indices, axis=0, return_index=True, return_inverse=True
+        )
         # counts, bins = np.histogram(unique_invs, bins=np.unique(unique_invs))
 
         matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
         indices = unique_inds[unique_invs]
         temp_mats = []
-        for i, u in enumerate(np.unique(indices)):
-            tmp_init = False
-            mask = indices == u
-            ops = [self.ops[x] for x in np.where(mask)[0]]
-            cef = coeffs[np.where(mask)]
-            for coeff, op in zip(cef, ops):
-                obs = []
-                for o in qml.operation.Tensor(op).obs:
-                    if len(o.wires) > 1:
-                        # todo: deal with operations created from multi-qubit operations such as Hermitian
-                        raise ValueError(
-                            f"Can only sparsify Hamiltonians whose constituent observables consist of "
-                            f"(tensor products of) single-qubit operators; got {op}."
-                        )
-                    obs.append(o.matrix())
-
-                # Array to store the single-wire observables which will be Kronecker producted together
-                mat = []
-                # i_count tracks the number of consecutive single-wire identity matrices encountered
-                # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
-                i_count = 0
-                apply_coeff = False
-                for wire_lab in wires:
-                    if wire_lab in op.wires:
-                        if i_count > 0:
-                            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
-                        i_count = 0
-                        idx = op.wires.index(wire_lab)
-                        # obs is an array storing the single-wire observables which
-                        # make up the full Hamiltonian term
-                        sp_obs = scipy.sparse.coo_matrix(obs[idx])
-                        if not apply_coeff:
-                            sp_obs = sp_obs * coeff
-                            apply_coeff = True
-                        mat.append(sp_obs)
-                    else:
-                        i_count += 1
-
-                if i_count > 0:
-                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
-
-                red_mat = (
-                    functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat)
-                )
-                if tmp_init:
-                    tmp.data += red_mat.data
-                else:
-                    tmp = red_mat.tocsr()
-                    tmp_init = True
+        for u in np.unique(indices):
+            tmp = sum_sparse_matrix_core(wires, coeffs, self.ops, indices == u)
             temp_mats.append(tmp)
             del tmp
             if (len(temp_mats) % buffsize) == 0:
@@ -798,3 +755,52 @@ class Hamiltonian(Observable):
                 setattr(new_op, attr, value)
         new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
         return new_op
+
+def sum_sparse_matrix_core(wires, coeffs, ops, mask):
+    """Returns the sum of all Hamiltonian terms with trace indexed u."""
+    tmp_init = False
+    ops = [ops[x] for x in np.where(mask)[0]]
+    cef = coeffs[np.where(mask)]
+    for coeff, op in zip(cef, ops):
+        obs = []
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                    f"(tensor products of) single-qubit operators; got {op}."
+                )
+            obs.append(o.matrix())
+
+        # Array to store the single-wire observables which will be Kronecker producted together
+        mat = []
+        # i_count tracks the number of consecutive single-wire identity matrices encountered
+        # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
+        i_count = 0
+        apply_coeff = False
+        for wire_lab in wires:
+            if wire_lab in op.wires:
+                if i_count > 0:
+                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                i_count = 0
+                idx = op.wires.index(wire_lab)
+                # obs is an array storing the single-wire observables which
+                # make up the full Hamiltonian term
+                sp_obs = scipy.sparse.coo_matrix(obs[idx])
+                if not apply_coeff:
+                    sp_obs = sp_obs * coeff
+                    apply_coeff = True
+                mat.append(sp_obs)
+            else:
+                i_count += 1
+
+        if i_count > 0:
+            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+
+        red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat)
+        if tmp_init:
+            tmp.data += red_mat.data
+        else:
+            tmp = red_mat.tocsr()
+            tmp_init = True
+    return tmp
