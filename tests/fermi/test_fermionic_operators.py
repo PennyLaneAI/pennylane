@@ -34,7 +34,7 @@ class TestFermiC:
         assert list(op.keys()) == [(0, wire)]
         assert list(op.values()) == ["+"]
 
-        assert op.sorted_dic == op_dict
+        assert dict(op) == op_dict
 
     @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
     def test_bad_wire_raises_error(self, wire):
@@ -57,7 +57,7 @@ class TestFermiA:
         assert list(op.keys()) == [(0, wire)]
         assert list(op.values()) == ["-"]
 
-        assert op.sorted_dic == op_dict
+        assert dict(op) == op_dict
 
     @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
     def test_bad_wire_raises_error(self, wire):

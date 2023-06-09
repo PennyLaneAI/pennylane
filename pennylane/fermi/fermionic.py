@@ -261,8 +261,8 @@ class FermiC(FermiWord):
     Args:
         wire(int): the non-negative integer indicating the state the operator acts on.
 
-    The first state is designated 0, and subsequent states are numbered chronologically. For
-    instance, ``qml.FermiC(3)`` (:math:`a^\dagger_3`) operates on the 3rd state in :math:`\ket{0000}`.
+    For instance, ``qml.FermiC(3)`` (:math:`a^\dagger_3`) operating on :math:`\ket{0000}` gives
+    :math:`\ket{0001}`.
 
     .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane ``Operator``
 
@@ -276,7 +276,7 @@ class FermiC(FermiWord):
     <FermiWord = '0+'>
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
-    :math:`a^\dagger_0 a_1 a^\dagger_2, a_3` can be constructed as:
+    :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
     <FermiWord = '0+ 1- 2+ 3-'>
@@ -288,12 +288,7 @@ class FermiC(FermiWord):
                 f"FermiC: expected a single, positive integer value for wire, but received {wire}"
             )
         operator = {(0, wire): "+"}
-        self.sorted_dic = dict(sorted(operator.items()))
         super().__init__(operator)
-
-    # TODO: create mapping method when the tne jordan_wigner function is added.
-    # def to_qubit(self):
-    #     return mapping(self)
 
 
 class FermiA(FermiWord):
@@ -308,8 +303,8 @@ class FermiA(FermiWord):
     Args:
         wire(int): the non-negative integer indicating the state the operator acts on.
 
-    The first state is designated 0, and subsequent states are numbered chronologically. For
-    instance, ``qml.FermiA(3)`` (:math:`a_3`) operates on the 3rd state in :math:`\ket{1111}`.
+    For instance, ``qml.FermiA(3)`` (:math:`a_3`) operating on :math:`\ket{0001}` gives
+    :math:`\ket{0000}`.
 
     .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane ``Operator``
 
@@ -323,7 +318,7 @@ class FermiA(FermiWord):
     <FermiWord = '0-'>
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
-    :math:`a^\dagger_0 a_1 a^\dagger_2, a_3` can be constructed as:
+    :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
     <FermiWord = '0+ 1- 2+ 3-'>
@@ -335,5 +330,4 @@ class FermiA(FermiWord):
                 f"FermiA: expected a single, positive integer value for wire, but received {wire}"
             )
         operator = {(0, wire): "-"}
-        self.sorted_dic = dict(sorted(operator.items()))
         super().__init__(operator)
