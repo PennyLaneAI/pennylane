@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
-from pennylane.measurements import Shots
 from pennylane.math import expand_matrix
 from pennylane.gradients.pulse_generator_gradient import (
     _generate_tapes_and_coeffs,
@@ -983,7 +982,7 @@ class TestPulseGeneratorTape:
         theta = integral_of_polyval(x, t)
         assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
-        _tapes, fn = pulse_generator(tape, shots=Shots(shots))
+        _tapes, fn = pulse_generator(tape, shots=shots)
         assert len(_tapes) == 2
 
         grad = fn(qml.execute(_tapes, dev))
@@ -1022,7 +1021,7 @@ class TestPulseGeneratorTape:
         circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
         circuit.tape.trainable_params = [0, 1]
-        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1], shots=Shots(shots))
+        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1], shots=shots)
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
@@ -1043,8 +1042,7 @@ class TestPulseGeneratorTape:
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
-        dev = qml.device("default.qubit.jax", wires=1, prng_key=prng_key)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         H = jnp.polyval * X(0) + qml.pulse.constant * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1104,7 +1102,7 @@ class TestPulseGeneratorTape:
         circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
         circuit.tape.trainable_params = [0, 1, 2]
-        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1, 2], shots=Shots(shots))
+        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1, 2], shots=shots)
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
@@ -1148,9 +1146,8 @@ class TestPulseGeneratorQNode:
         assert jnp.allclose(grad, exp_grad)
         assert tracker.totals["executions"] == 2  # two shifted tapes
 
-    @pytest.mark.xfail(
-        "Applying QNode-level gradient transforms with non-scalar parameters is not supported yet"
-    )
+    # Applying QNode-level gradient transforms with non-scalar parameters is not supported yet
+    @pytest.mark.xfail
     def test_qnode_expval_probs_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
@@ -1182,9 +1179,8 @@ class TestPulseGeneratorQNode:
         for j, e in zip(jac, exp_jac):
             assert qml.math.allclose(j, e)
 
-    @pytest.mark.xfail(
-        "Applying QNode-level gradient transforms with non-scalar parameters is not supported yet"
-    )
+    # Applying QNode-level gradient transforms with non-scalar parameters is not supported yet
+    @pytest.mark.xfail
     def test_qnode_probs_expval_multi_par(self):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
@@ -1307,7 +1303,7 @@ class TestPulseGeneratorIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1, shots=None)
+        dev = qml.device("default.qubit.jax", wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0)
 
