@@ -1649,7 +1649,9 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
+        if observable.name == "Projector" and len(observable.parameters[0]) == len(
+            observable.wires
+        ):
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
