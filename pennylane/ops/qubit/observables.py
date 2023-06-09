@@ -330,7 +330,7 @@ class SparseHamiltonian(Observable):
 
 
 class Projector(Observable):
-    r"""Projector(state, wires[, do_queue, id])
+    r"""Projector(state, wires, do_queue=None, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
     The expectation of this observable returns the value
@@ -370,7 +370,7 @@ class Projector(Observable):
         ...     return qml.expval(qml.Projector(state, wires=[0, 1]))
         >>> zero_state = [0, 0]
         >>> circuit(zero_state, wires)
-        0.
+        1.
         >>> plusplus_state = np.array([1, 1, 1, 1]) / 2
         >>> circuit(plusplus_state, wires)
         0.25
