@@ -744,50 +744,32 @@ class TestCond:
 
     def test_cond_basic(self):
         """Tests cond from one wire to the next."""
-        wire_data_before = [((-1, 2), (0, 0)), ((-1, 2), (1, 1))]
-        wire_data_after = [((-1, 0), (0, 0)), ((-1, 2), (1, 1))]
-
         drawer = MPLDrawer(n_wires=2, n_layers=2)
-        assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
+        wire_data_before = [line.get_data() for line in drawer._wire_lines]
 
         drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
         actual_data = [line.get_data() for line in drawer.ax.lines]
 
         assert actual_data == [
-            ((-1, 0), (0, 0)),
+            ((-1, 2), (0, 0)),
             ((-1, 2), (1, 1)),
             ((0.375, 1.03), (-0.03, -0.03)),
             ((0.375, 0.97), (0.03, 0.03)),
             ((1.03, 1.03), (-0.03, 1)),
             ((0.97, 0.97), (0.03, 1)),
         ]
-        assert [line.get_data() for line in drawer._wire_lines] == wire_data_after
+        assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
 
     def test_cond_two_ctrl_wires(self):
         """Tests cond from two separated wires."""
-        wire_data_before = [
-            ((-1, 2), (0, 0)),
-            ((-1, 2), (1, 1)),
-            ((-1, 2), (2, 2)),
-            ((-1, 2), (3, 3)),
-        ]
-        wire_data_after = [
-            ((-1, 0), (0, 0)),
-            ((-1, 2), (1, 1)),
-            ((-1, 0), (2, 2)),
-            ((-1, 2), (3, 3)),
-        ]
-
         drawer = MPLDrawer(n_wires=4, n_layers=2)
-        assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
-
         drawer.cond(layer=1, measured_layer=0, wires=[0, 2], wires_target=[3])
         actual_data = [line.get_data() for line in drawer.ax.lines]
 
         assert actual_data == [
-            ((-1, 0), (0, 0)),
+            ((-1, 2), (0, 0)),
             ((-1, 2), (1, 1)),
-            ((-1, 0), (2, 2)),
+            ((-1, 2), (2, 2)),
             ((-1, 2), (3, 3)),
             ((0.375, 1.03), (-0.03, -0.03)),
             ((0.375, 0.97), (0.03, 0.03)),
@@ -797,23 +779,16 @@ class TestCond:
             ((0.375, 0.97), (1.97, 1.97)),
             ((0.375, 0.97), (2.03, 2.03)),
         ]
-        assert [line.get_data() for line in drawer._wire_lines] == wire_data_after
 
     def test_cond_two_ctrl_wires_upward(self):
         """Test cond when the conditional operation is above the control wires."""
-        wire_data_before = [((-1, 2), (0, 0)), ((-1, 2), (1, 1)), ((-1, 2), (2, 2))]
-        wire_data_after = [((-1, 2), (0, 0)), ((-1, 0), (1, 1)), ((-1, 0), (2, 2))]
-
         drawer = MPLDrawer(n_wires=3, n_layers=2)
-        assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
-
         drawer.cond(layer=1, measured_layer=0, wires=[1, 2], wires_target=[0])
         actual_data = [line.get_data() for line in drawer.ax.lines]
-
         assert actual_data == [
             ((-1, 2), (0, 0)),
-            ((-1, 0), (1, 1)),
-            ((-1, 0), (2, 2)),
+            ((-1, 2), (1, 1)),
+            ((-1, 2), (2, 2)),
             ((0.375, 1.03), (2.03, 2.03)),
             ((0.375, 0.97), (1.97, 1.97)),
             ((1.03, 1.03), (2.03, 0)),
@@ -822,7 +797,6 @@ class TestCond:
             ((0.375, 0.97), (0.97, 0.97)),
             ((0.375, 0.97), (1.03, 1.03)),
         ]
-        assert [line.get_data() for line in drawer._wire_lines] == wire_data_after
 
     @pytest.mark.parametrize(
         "ctrl_wires, target_wires",

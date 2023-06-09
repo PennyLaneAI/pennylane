@@ -996,15 +996,3 @@ class MPLDrawer:
 
         for line in lines:
             self._ax.add_line(line)
-
-        for wire in wires_ctrl:
-            line = self._wire_lines[wire]
-            start_x = line.get_xdata()[0]
-            line.set_xdata((start_x, measured_layer))
-            # TODO: re-add wires if being reused. perhaps add later only when being re-used?
-            # goes with the _todo_ in the is_conditional section of drawable_layers.py
-            #
-            # line = copy(line)
-            # line.set_xdata((layer + 0.5, self.n_layers))
-            # self._wire_lines[wire] = line
-            # self._ax.add_line(line)

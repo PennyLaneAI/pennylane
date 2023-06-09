@@ -87,6 +87,9 @@ def _add_wirecut(drawer, layer, mapped_wires, op):
 def _add_mid_circuit_measurement(drawer, layer, mapped_wires, op):
     _measured_layers[op.id] = layer
     drawer.measure(layer, mapped_wires[0])  # assume one wire
+    line = drawer._wire_lines[mapped_wires[0]]  # pylint:disable=protected-access
+    start_x = line.get_xdata()[0]
+    line.set_xdata((start_x, layer))
 
 
 special_cases = {

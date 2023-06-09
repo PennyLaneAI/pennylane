@@ -262,3 +262,4 @@ if __name__ == "__main__":
     integration(style="black_white", savefile="black_white_style.png")
     integration_rcParams()
     integration_formatted()
+    cond()

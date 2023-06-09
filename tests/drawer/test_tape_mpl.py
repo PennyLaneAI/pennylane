@@ -382,6 +382,14 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_MidMeasureMP(self):
+        """Tests MidMeasureMP has correct special handling."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.measure(0)
+        tape = QuantumScript.from_queue(q)
+        _, ax = tape_mpl(tape)
+        assert [l.get_data() for l in ax.lines] == [((-1, 0), (0, 0))]
+
     def test_Conditional(self, mocker):
         """Tests Conditional has correct special handling."""
         cond_spy = mocker.spy(qml.drawer.MPLDrawer, "cond")

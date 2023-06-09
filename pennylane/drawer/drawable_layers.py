@@ -134,7 +134,7 @@ def drawable_layers(ops, wire_map=None):
 
             for m_id, m_layer in zip(op.meas_val.measurement_ids, m_layers):
                 # TODO: remove from measurement caches for qubit reuse
-                # goes with the _todo_ at the end of MPLDrawer.cond()
+                # Note that along with this, wire lines will need to be re-drawn if being reused
                 #
                 # del measured_layers[m_id]
                 # del measured_wires[m_id]
