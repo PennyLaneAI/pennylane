@@ -443,9 +443,10 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes
-            outputted by this transform. Note that this argument doesn't influence the shots
-            used for tape execution, but provides information about the shots.
+        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
+            returned by this transform. Note that this argument does not *influence* the shots
+            used for execution, but *informs* the transform about the shots to ensure a compatible
+            return value formatting.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
@@ -665,7 +666,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         respect to :math:`x` can be computed with the standard two-term parameter-shift
         rule for Pauli rotation gates.
 
-        *Caching*
+        **Caching**
 
         Considering the derivation above, we notice that the same modified cost function
         :math:`C_\ell(x)` may appear in the derivatives of distinct parameters
