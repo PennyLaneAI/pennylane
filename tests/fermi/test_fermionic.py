@@ -123,7 +123,6 @@ class TestFermiWord:
 
 
 class TestFermiWordArithmetic:
-
     # ToDo: in-place addition, subtraction, multiplication
 
     WORDS_MUL = (
@@ -476,7 +475,6 @@ class TestFermiSentence:
 
 
 class TestFermiSentenceArithmetic:
-
     tup_fs_mult = (  # computed by hand
         (
             fs1,
