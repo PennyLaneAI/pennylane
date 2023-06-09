@@ -171,7 +171,7 @@ def _zyz_decomposition_old(U, wire):
 
 def _zyz_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
-    of elementary operations, as a product of X and Y rotations in the form
+    of elementary operations, as a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`. (batched operation)
 
     .. warning::
@@ -183,13 +183,13 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
         U (tensor): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
         return_global_phase (bool): Whether to return the global phase
-            as a `qml.s_prod` between `exp(1j)*alpha` and `qml.Identity` as the last
+            as a ``qml.s_prod`` between ``exp(1j)*alpha`` and ``qml.Identity`` as the last
             element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RY`` and
         another ``RZ`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -238,7 +238,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
+        operations.append(qml.s_prod(math.exp(1j * alphas), qml.Identity(wire)))
 
     return operations
 
@@ -252,13 +252,13 @@ def xyx_decomposition(U, wire, return_global_phase=False):
         U (array[complex]): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
         return_global_phase (bool): Whether to return the global phase
-            as a `qml.s_prod` between `exp(1j)*gamma` and `qml.Identity` as the last
+            as a ``qml.s_prod`` between ``exp(1j)*gamma`` and ``qml.Identity`` as the last
             element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
         another ``RX`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -342,7 +342,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
-        operations += [qml.s_prod(math.exp(1j * gammas), qml.Identity(wire))]
+        operations.append(qml.s_prod(math.exp(1j * gammas), qml.Identity(wire)))
 
     return operations
 
@@ -356,13 +356,13 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
         U (array[complex]): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
         return_global_phase (bool): Whether to return the global phase
-            as a `qml.s_prod` between `exp(1j)*alpha` and `qml.Identity` as the last
+            as a ``qml.s_prod`` between ``exp(1j)*alpha`` and ``qml.Identity`` as the last
             element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RX`` and
         another ``RZ`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -409,7 +409,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
-        operations += [qml.s_prod(math.exp(1j * alphas), qml.Identity(wire))]
+        operations.append(qml.s_prod(math.exp(1j * alphas), qml.Identity(wire)))
 
     return operations
 
@@ -426,12 +426,12 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
         U (tensor): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
         rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
-        return_global_phase (bool): Whether to return the global phase as a `qml.s_prod` between `exp(1j)*alpha`
-            and `qml.Identity` as the last element of the returned list of operations.
+        return_global_phase (bool): Whether to return the global phase as a ``qml.s_prod`` between ``exp(1j)*alpha``
+            and ``qml.Identity`` as the last element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
-        the list is equivalent to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        the list is equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -457,4 +457,4 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
             return supported_rotations[rotations](U, wire)
         return supported_rotations[rotations](U, wire, return_global_phase)
 
-    raise ValueError("Value passed to rotations is either invalid or currently unsupported.")
+    raise ValueError(f"Value {rotations} passed to rotations is either invalid or currently unsupported.")
