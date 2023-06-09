@@ -159,7 +159,7 @@ class QAOAEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, weights, wires, local_field="Y", do_queue=True, id=None):
+    def __init__(self, features, weights, wires, local_field="Y", do_queue=None, id=None):
         if local_field == "Z":
             local_field = qml.RZ
         elif local_field == "X":

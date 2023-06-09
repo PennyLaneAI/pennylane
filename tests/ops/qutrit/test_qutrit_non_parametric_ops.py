@@ -30,22 +30,10 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.TAdd, TADD, None),
     (qml.TSWAP, TSWAP, None),
     (qml.THadamard, TH, None),
-    (qml.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), [0, 1]),
-    (qml.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), [0, 2]),
-    (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), [1, 2]),
+    (qml.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), (0, 1)),
+    (qml.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), (0, 2)),
+    (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), (1, 2)),
 ]
-
-subspace_error_data = [
-    ([1, 1], "Elements of subspace list must be unique."),
-    ([1, 2, 3], "The subspace must be a sequence with"),
-    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
-    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
-    ([1], "The subspace must be a sequence with"),
-    (0, "The subspace must be a sequence with two unique"),
-]
-
-
-# TODO: Add tests for testing that the decomposition of non-parametric ops is correct
 
 
 class TestOperations:
@@ -74,18 +62,6 @@ class TestOperations:
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("subspace, err_msg", subspace_error_data)
-    @pytest.mark.parametrize("op_cls", [qml.THadamard])
-    def test_subspace_op_errors(self, op_cls, subspace, err_msg):
-        """Test that the correct errors are raised when subspace is incorrectly defined"""
-
-        with pytest.raises(ValueError, match=err_msg):
-            op = op_cls(wires=range(op_cls.num_wires), subspace=subspace)
-            op.matrix()
-
-        with pytest.raises(ValueError, match=err_msg):
-            op_cls.compute_matrix(subspace=subspace)
 
 
 class TestEigenval:
@@ -126,9 +102,9 @@ period_three_ops = [
 
 period_two_ops = [
     qml.TSWAP(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 2]),
-    qml.THadamard(wires=0, subspace=[1, 2]),
+    qml.THadamard(wires=0, subspace=(0, 1)),
+    qml.THadamard(wires=0, subspace=(0, 2)),
+    qml.THadamard(wires=0, subspace=(1, 2)),
 ]
 
 no_pow_method_ops = [
@@ -206,7 +182,7 @@ label_data = [
     (qml.TAdd([0, 1]), "TAdd"),
     (qml.TSWAP([0, 1]), "TSWAP"),
     (qml.THadamard(0), "TH"),
-    (qml.THadamard(0, subspace=[0, 1]), "TH"),
+    (qml.THadamard(0, subspace=(0, 1)), "TH"),
 ]
 
 
@@ -241,9 +217,9 @@ no_adjoint_ops = [  # ops that are not their own inverses
 
 involution_ops = [  # ops that are their own inverses
     qml.TSWAP(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 1]),
-    qml.THadamard(wires=0, subspace=[0, 2]),
-    qml.THadamard(wires=0, subspace=[1, 2]),
+    qml.THadamard(wires=0, subspace=(0, 1)),
+    qml.THadamard(wires=0, subspace=(0, 2)),
+    qml.THadamard(wires=0, subspace=(1, 2)),
 ]
 
 

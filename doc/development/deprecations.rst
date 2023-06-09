@@ -6,6 +6,41 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use ``one_qubit_decomposition`` with a rotations
+  keyword instead.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
+* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
+* ``LieAlgebraOptimizer`` is renamed. Please use ``RiemannianGradientOptimizer`` instead.
+  
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
+* The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
+  - Removed in v0.32
+
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:
@@ -18,12 +53,11 @@ Pending deprecations
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
 
+* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
 
-* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
-
-  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
-  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
-
+  - Deprecated in v0.31
+  - Will be removed in v0.32
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
@@ -31,16 +65,6 @@ Pending deprecations
 
   - Still accessible in v0.28, v0.29, v0.30
   - Will be removed in v0.31
-
-* The ``grouping`` module is deprecated. The functionality has been moved and
-  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
-
-  - Still accessible in v0.27, v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
-  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
-  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
-  have been consolidated in the ``pauli/grouping/`` directory.
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
@@ -57,23 +81,29 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* The ``collections`` module has been deprecated.
 
-  - Deprecated in v0.29
-  - Will be removed in v0.31
-
-* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
-
-  - Deprecated in v0.29.
-  - Will be removed in v0.31.
+Completed deprecation cycles
+----------------------------
 
 * The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-Completed deprecation cycles
-----------------------------
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Removed in v0.31.
+
+* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
+
+  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
+  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
 
 * ``Evolution`` now adds a ``-1`` to the input parameter. Beforehand, the minus sign was not included.
 
@@ -92,7 +122,17 @@ Completed deprecation cycles
   - The old signature is replaced with the new one in v0.30
 
 
-* ``qml.VQECost`` is removed. 
+* The ``grouping`` module is removed. The functionality has been moved and
+  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
+
+  - Still accessible in v0.27, v0.28, v0.29, v0.30
+  - Will be removed in v0.31
+
+  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
+  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
+  have been consolidated in the ``pauli/grouping/`` directory.
+
+* ``qml.VQECost`` is removed.
 
    - Deprecated in 0.13
    - Removed in 0.29

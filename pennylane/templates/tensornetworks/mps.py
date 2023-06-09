@@ -110,7 +110,7 @@ class MPS(Operation):
                 qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
-        >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+        >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
@@ -131,7 +131,7 @@ class MPS(Operation):
         block,
         n_params_block,
         template_weights=None,
-        do_queue=True,
+        do_queue=None,
         id=None,
     ):
         ind_gates = compute_indices_MPS(wires, n_block_wires)

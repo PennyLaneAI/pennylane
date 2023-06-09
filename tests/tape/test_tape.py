@@ -60,6 +60,16 @@ def TestOperationMonkeypatching():
 class TestConstruction:
     """Test for queuing and construction"""
 
+    @pytest.mark.parametrize("do_queue", [True, False])
+    def test_tape_do_queue_deprecation(self, do_queue):
+        """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+            qml.tape.QuantumTape(do_queue=do_queue)
+
     @pytest.fixture
     def make_tape(self):
         ops = []
@@ -916,6 +926,7 @@ class TestExpand:
         assert len(new_tape.operations) == 3
         assert new_tape.get_parameters() == [0.1, 0.2, 0.3]
         assert new_tape.trainable_params == [0, 1, 2]
+        assert new_tape.shots is tape.shots
 
         assert isinstance(new_tape.operations[0], qml.RZ)
         assert isinstance(new_tape.operations[1], qml.RY)
@@ -943,6 +954,7 @@ class TestExpand:
         assert new_tape.operations[0].wires.tolist() == [0]
         assert new_tape.num_params == 0
         assert new_tape.get_parameters() == []
+        assert new_tape.shots is tape.shots
 
         assert isinstance(new_tape.operations[0], qml.PauliX)
 
@@ -962,6 +974,7 @@ class TestExpand:
 
         assert new_tape.num_params == 3
         assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.shots is tape.shots
 
     def test_nested_tape(self):
         """Test that a nested tape properly expands"""
@@ -978,6 +991,7 @@ class TestExpand:
         assert len(new_tape.operations) == 2
         assert isinstance(new_tape.operations[0], qml.RX)
         assert isinstance(new_tape.operations[1], qml.RY)
+        assert new_tape.shots is tape1.shots
 
     def test_nesting_and_decomposition(self):
         """Test an example that contains nested tapes and operation decompositions."""
@@ -994,6 +1008,7 @@ class TestExpand:
 
         new_tape = tape.expand()
         assert len(new_tape.operations) == 4
+        assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
         """Test that gates specified in the stop_at
@@ -1026,6 +1041,7 @@ class TestExpand:
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
+    @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
         """Test that gates specified in the stop_at
         argument are not expanded."""
@@ -1192,6 +1208,7 @@ class TestExpand:
         assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape._obs_sharing_wires)
         assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
         assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
+        assert tape.shots == qml.measurements.Shots(None)
 
         assert len(expanded.operations) == 2
         assert qml.equal(expanded.operations[0], ops[0])
@@ -1200,6 +1217,7 @@ class TestExpand:
         assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded._obs_sharing_wires)
         assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
         assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
+        assert expanded.shots is tape.shots
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape

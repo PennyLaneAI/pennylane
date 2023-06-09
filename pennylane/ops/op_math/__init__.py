@@ -58,6 +58,8 @@ Controlled Operator Classes
     :toctree: api
 
     ~ControlledQubitUnitary
+    ~CY
+    ~CZ
 
 Decompositions
 ~~~~~~~~~~~~~~
@@ -75,16 +77,14 @@ Decompositions
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
-from .controlled_ops import ControlledQubitUnitary
+from .controlled_ops import ControlledQubitUnitary, CY, CZ
 from .evolution import Evolution
 from .exp import Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
-from .sum import Sum, op_sum, sum
+from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
-controlled_qubit_ops = {
-    "ControlledQubitUnitary",
-}
+controlled_qubit_ops = {"ControlledQubitUnitary", "CY", "CZ"}

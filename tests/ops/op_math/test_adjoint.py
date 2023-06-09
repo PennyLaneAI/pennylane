@@ -432,7 +432,8 @@ class TestAdjointOperation:
     def test_base_name(self, base, adjoint_base_name):
         """Test the base_name property of AdjointOperation."""
         op = Adjoint(base)
-        assert op.base_name == adjoint_base_name
+        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
+            assert op.base_name == adjoint_base_name
 
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
@@ -548,8 +549,14 @@ class TestQueueing:
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+
         with qml.queuing.AnnotatedQueue() as q:
-            _ = Adjoint(base, do_queue=False)
+            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
+                _ = Adjoint(base, do_queue=False)
 
         assert len(q) == 0
 

@@ -20,9 +20,9 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-from functools import lru_cache, reduce
+from functools import lru_cache, reduce, singledispatch
 from itertools import product
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
@@ -51,7 +51,8 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     return {label: i for i, label in enumerate(wire_labels)}
 
 
-def is_pauli_word(observable):
+@singledispatch
+def is_pauli_word(observable):  # pylint:disable=unused-argument
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
 
@@ -92,20 +93,38 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    return False
+
+
+@is_pauli_word.register(PauliX)
+@is_pauli_word.register(PauliY)
+@is_pauli_word.register(PauliZ)
+@is_pauli_word.register(Identity)
+def _is_pw_pauli(
+    observable: Union[PauliX, PauliY, PauliZ, Identity]
+):  # pylint:disable=unused-argument
+    return True
+
+
+@is_pauli_word.register
+def _is_pw_tensor(observable: Tensor):
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
-    if isinstance(observable, Tensor):
-        return set(observable.name).issubset(pauli_word_names)
+    return set(observable.name).issubset(pauli_word_names)
 
-    if isinstance(observable, Hamiltonian):
-        return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
 
-    if isinstance(observable, Prod):
-        return all(is_pauli_word(op) for op in observable)
+@is_pauli_word.register
+def _is_pw_ham(observable: Hamiltonian):
+    return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
-    if isinstance(observable, SProd):
-        return is_pauli_word(observable.base)
 
-    return observable.name in pauli_word_names
+@is_pauli_word.register
+def _is_pw_prod(observable: Prod):
+    return all(is_pauli_word(op) for op in observable)
+
+
+@is_pauli_word.register
+def _is_pw_sprod(observable: SProd):
+    return is_pauli_word(observable.base)
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
@@ -147,6 +166,9 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     # convert tensors of length 1 to plain observables
     pauli_1 = getattr(pauli_1, "prune", lambda: pauli_1)()
     pauli_2 = getattr(pauli_2, "prune", lambda: pauli_2)()
+
+    if isinstance(pauli_1, qml.Identity) and isinstance(pauli_2, qml.Identity):
+        return True
 
     if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, paulis_with_identity):
         return (pauli_1.wires, pauli_1.name) == (pauli_2.wires, pauli_2.name)
@@ -1392,11 +1414,9 @@ def _pauli_mult(p1, p2):
                 k.append((j[0], pauli_mult_dict[j[1]]))
 
             if i[0] == j[0]:
+                k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
                 if i[1] + j[1] in pauli_coeff:
-                    k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
                     c = c * pauli_coeff[i[1] + j[1]]
-                else:
-                    k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
 
     for item in k:
         k_ = [i for i, x in enumerate(k) if x == item]
@@ -1482,3 +1502,15 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
                 binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix
+
+
+@lru_cache
+def _get_pauli_map(n):
+    r"""Return a list of Pauli operator objects acting on wires `0` up to `n`.
+
+    This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
+    """
+    return [
+        {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
+        for i in range(n + 1)
+    ]

@@ -17,6 +17,7 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes
 import abc
 from typing import Callable, List
+import warnings
 
 import numpy as np
 
@@ -35,7 +36,9 @@ class CompositeOp(Operator):
         operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
 
     Keyword Args:
-        do_queue (bool): determines if the operator will be queued. Default is True.
+        do_queue (bool): determines if the operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property
@@ -46,7 +49,7 @@ class CompositeOp(Operator):
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(
-        self, *operands: Operator, do_queue=True, id=None
+        self, *operands: Operator, do_queue=None, id=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
@@ -62,7 +65,14 @@ class CompositeOp(Operator):
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep()
 
-        if do_queue:
+        if do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+        if do_queue or do_queue is None:
             self.queue()
 
         self._check_batching(None)  # unused param

@@ -17,6 +17,7 @@ This module contains the base quantum tape.
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
 from threading import RLock
+import warnings
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
@@ -217,7 +218,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -240,8 +241,12 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
-        name (str): a name given to the quantum tape
-        do_queue=True (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
+        name (str): Deprecated way to give a name to the quantum tape. Avoid using.
+        do_queue (bool): Whether or not to queue.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -325,13 +330,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
+    To prevent the tape from being queued use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape(do_queue=False) as tape2:
-                qml.RX(0.123, wires=0)
+            with qml.QueuingManager.stop_recording():
+                with qml.tape.QuantumTape() as tape2:
+                    qml.RX(0.123, wires=0)
 
     Here, tape2 records the RX gate, but tape1 doesn't record tape2.
 
@@ -347,15 +353,28 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
-    ):
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        name=None,
+        do_queue=None,
+        _update=True,
+    ):  # pylint: disable=too-many-arguments
+        if do_queue is not None:
+            do_queue_deprecation_warning = (
+                "The do_queue keyword argument is deprecated. "
+                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+            )
+            warnings.warn(do_queue_deprecation_warning, UserWarning)
         self.do_queue = do_queue
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()
-        if self.do_queue:
+        if self.do_queue or self.do_queue is None:
             QueuingManager.append(self)
         QueuingManager.add_active_queue(self)
         return self

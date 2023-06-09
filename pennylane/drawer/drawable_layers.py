@@ -88,7 +88,7 @@ def drawable_layers(ops, wire_map=None):
     # initialize
     max_layer = 0
     occupied_wires_per_layer = [set()]
-    ops_in_layer = [set()]
+    ops_in_layer = [[]]
 
     # loop over operations
     for op in ops:
@@ -110,10 +110,10 @@ def drawable_layers(ops, wire_map=None):
         if op_layer > max_layer:
             max_layer += 1
             occupied_wires_per_layer.append(set())
-            ops_in_layer.append(set())
+            ops_in_layer.append([])
 
         # add to op_layer
-        ops_in_layer[op_layer].add(op)
+        ops_in_layer[op_layer].append(op)
         occupied_wires_per_layer[op_layer].update(op_occupied_wires)
 
     return ops_in_layer

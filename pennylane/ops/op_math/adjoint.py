@@ -15,6 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from functools import wraps
+import warnings
 
 import pennylane as qml
 from pennylane.math import conj, moveaxis, transpose
@@ -209,7 +210,7 @@ class Adjoint(SymbolicOp):
     _observable_type = None  # type if base inherits from observable and not operation
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, do_queue=True, id=None):
+    def __new__(cls, base=None, do_queue=None, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Adjoint", their *identity* and location in memory will
@@ -219,6 +220,8 @@ class Adjoint(SymbolicOp):
         >>> Adjoint(op).__class__ is Adjoint(op).__class__
         True
         >>> type(Adjoint(op)) == type(Adjoint(op))
+        True
+        >>> isinstance(Adjoint(op), type(Adjoint(op)))
         True
         >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
         True
@@ -250,7 +253,7 @@ class Adjoint(SymbolicOp):
 
         return object.__new__(Adjoint)
 
-    def __init__(self, base=None, do_queue=True, id=None):
+    def __init__(self, base=None, do_queue=None, id=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, do_queue=do_queue, id=id)
 
@@ -337,6 +340,10 @@ class AdjointOperation(Operation):
 
     @property
     def base_name(self):
+        warnings.warn(
+            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
+            UserWarning,
+        )
         return self._name
 
     @property

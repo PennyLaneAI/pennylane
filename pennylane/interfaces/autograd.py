@@ -16,8 +16,6 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-from collections.abc import Sequence
-
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -260,11 +258,6 @@ def _vjp_legacy(
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-        if device.short_name == "strawberryfields.gbs":  # pragma: no cover
-            # TODO: remove this exceptional case once the source of this issue
-            # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
-            return (return_vjps,)  # pragma: no cover
-
         return return_vjps
 
     return grad_fn
@@ -419,7 +412,12 @@ def vjp(
 
         jacs = []
         for t in tapes:
-            g_tapes, fn = gradient_fn(t, shots=device.shot_vector, **gradient_kwargs)
+            if isinstance(device, qml.devices.experimental.Device):  # pragma:  no-cover
+                # cant test until we integrate device with shot vector
+                shot_vector = t.shots.shot_vector if t.shots.has_partitioned_shots else None
+            else:
+                shot_vector = device.shot_vector
+            g_tapes, fn = gradient_fn(t, shots=shot_vector, **gradient_kwargs)
 
             unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
             res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
@@ -436,6 +434,13 @@ def vjp(
         dy = dy[0]
 
         computing_jacobian = _n == max_diff
+        if new_device_interface := isinstance(
+            device, qml.devices.experimental.Device
+        ):  # pragma: no-cover
+            # assumes all tapes have the same shot vector
+            has_partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
+        else:
+            has_partitioned_shots = device.shot_vector
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -445,7 +450,7 @@ def vjp(
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
+            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -459,7 +464,7 @@ def vjp(
                         unwrapped_tapes,
                         dy,
                         gradient_fn,
-                        shots=device.shot_vector,
+                        shots=None if new_device_interface else device.shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -471,7 +476,7 @@ def vjp(
                         tapes,
                         dy,
                         gradient_fn,
-                        shots=device.shot_vector,
+                        shots=None if new_device_interface else device.shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -503,28 +508,23 @@ def vjp(
                 unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
                 jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
-                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
+                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-        if device.short_name == "strawberryfields.gbs":  # pragma: no cover
-            # TODO: remove this exceptional case once the source of this issue
-            # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
-            return (return_vjps,)  # pragma: no cover
 
         return return_vjps
 
     return grad_fn
 
 
-def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
+def _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        shot_vector_defined = isinstance(shots, Sequence)
-        dy_ = dy[i] if shot_vector_defined else (dy[i],)
-        jac_ = jacs[i] if shot_vector_defined else (jacs[i],)
+        dy_ = dy[i] if has_partitioned_shots else (dy[i],)
+        jac_ = jacs[i] if has_partitioned_shots else (jacs[i],)
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):

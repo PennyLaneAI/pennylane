@@ -44,10 +44,16 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
     """
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, name=None, do_queue=False, _update=True
-    ):  # pylint: disable=unused-argument
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        name=None,
+        _update=True,
+    ):  # pylint: disable=unused-argument, too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)
         self.ops = None
         self.obs = None
 

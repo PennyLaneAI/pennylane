@@ -101,7 +101,7 @@ def tape_text(
     show_all_wires=False,
     decimals=None,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     cache=None,
 ):
     """Text based diagram for a Quantum Tape.
@@ -116,7 +116,7 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+        show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
 
@@ -204,7 +204,7 @@ def tape_text(
 
     Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
-    selecting ``show_matrices=True``:
+    selecting ``show_matrices=True`` (the default):
 
     .. code-block:: python
 
@@ -213,7 +213,7 @@ def tape_text(
             qml.QubitUnitary(np.eye(2), wires=1)
             qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
 
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True))
+    >>> print(qml.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -230,7 +230,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True, cache=cache))
+    >>> print(qml.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -332,6 +332,7 @@ def tape_text(
             totals = [filler.join([t, s]) for t, s in zip(totals, layer_str)]
         if ender:
             totals = [s + "─┤" for s in totals]
+            line_length += 2
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(finished_lines + totals)

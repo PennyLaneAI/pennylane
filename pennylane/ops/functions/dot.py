@@ -71,10 +71,9 @@ def dot(
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
     >>> ops = [qml.PauliX(0), qml.PauliY(0)]
     >>> qml.dot(coeffs, ops)
-    ParametrizedHamiltonian: terms=2
+      (<lambda>(params_0, t)*(PauliX(wires=[0])))
+    + (<lambda>(params_1, t)*(PauliY(wires=[0])))
     """
-    if isinstance(coeffs, qml.QNodeCollection) or isinstance(ops, qml.QNodeCollection):
-        return qml.collections.dot(coeffs, ops)
 
     if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
