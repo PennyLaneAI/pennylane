@@ -166,7 +166,7 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return FermiSentence({self: 1}) * other
 
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, complex)):
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -179,7 +179,7 @@ class FermiWord(dict):
         ``2 * FermiWord({(0, 0): "+"})``, where the ``__mul__`` operator on an integer
         will fail to multiply with a FermiWord"""
 
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, complex)):
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -246,6 +246,9 @@ class FermiSentence(dict):
         r"""Add two Fermi sentence together by iterating over the smaller one and adding its terms
         to the larger one."""
 
+        if isinstance(other, FermiWord):
+            other = FermiSentence({other: 1})
+
         if isinstance(other, FermiSentence):
             smaller_fs, larger_fs = (
                 (self, copy(other)) if len(self) < len(other) else (other, copy(self))
@@ -289,7 +292,7 @@ class FermiSentence(dict):
 
             return product
 
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, complex)):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 
@@ -303,7 +306,7 @@ class FermiSentence(dict):
         multiplying ``2 * fermi_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a FermiSentence"""
 
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, complex)):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 
