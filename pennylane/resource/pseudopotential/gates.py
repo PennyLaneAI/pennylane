@@ -103,6 +103,7 @@ def momentum_state_loc_qrom(self): #momentum state superposition for U_loc
     beta_loc_parallel = ...
     beta_loc = ...
 
+
     if n_parallel == 1:
         momentum_state_qrom_loc_cost = 2 * np.ceil(x / beta_loc) + \
         3 * beta_loc * (n_Mloc) * (3 * n_p-1) + \
