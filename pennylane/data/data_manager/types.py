@@ -21,7 +21,7 @@ import typing
 from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import PurePosixPath
-from typing import Any, Dict, FrozenSet, List, Literal, Union
+from typing import Any, Dict, FrozenSet, List, Literal, Union, cast
 
 
 class ParamArg(enum.Enum):
@@ -47,7 +47,7 @@ class ParamArg(enum.Enum):
         return isinstance(val, ParamArg) or val in cls.values()
 
     def __str__(self) -> str:
-        return self.value
+        return cast(str, self.value)
 
 
 DEFAULT = ParamArg.DEFAULT
