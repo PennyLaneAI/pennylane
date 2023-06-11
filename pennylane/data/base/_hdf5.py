@@ -14,12 +14,11 @@
 """Contains a lazy-loaded interface to the HDF5 module. For internal use only."""
 
 import importlib
+from functools import lru_cache
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Literal, Union, Optional
+from typing import Any, Literal, Optional, Union
 from uuid import uuid4
-from functools import lru_cache
-
 
 from .typing_util import HDF5Any, HDF5Group
 

@@ -26,7 +26,6 @@ from typing import List, Optional, Union
 import requests
 
 from pennylane.data.base import Dataset
-
 from pennylane.data.base._hdf5 import open_hdf5_s3
 
 from ._params import DEFAULT, FULL, resolve_params
