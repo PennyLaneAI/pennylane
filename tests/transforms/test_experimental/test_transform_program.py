@@ -37,7 +37,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
-    tape2 = tape._ops.pop(index)
+    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -171,7 +171,7 @@ class TestTransformProgram:
         )
 
     def test_valid_transforms(self):
-        """Test that that it is only possiblle to create valid transforms."""
+        """Test that that it is only possible to create valid transforms."""
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform, is_informative=True)
         transform_program.push_back(transform1)
