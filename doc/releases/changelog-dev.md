@@ -33,6 +33,9 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
+* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions.
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+
 <h3>Improvements 🛠</h3>
 
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
@@ -175,6 +178,9 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* One qubit unitaries can now be decomposed into a `ZXZ` gate sequence (apart from the pre-existing `XYX` and `ZYZ`).
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+
 * Added broadcasting support for `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
   `qml.math.relative_entropy`, `qml.math.max_entropy`, and `qml.math.sqrt_matrix`.
   [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
@@ -269,7 +275,14 @@
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
 
+* `zyz_decomposition` and `xyx_decomposition` are now deprecated in favour of `one_qubit_decomposition`.
+  [(#4230)](https://github.com/PennyLaneAI/pennylane/pull/4230)
+
 <h3>Documentation 📝</h3>
+
+* The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
+  `qml.ops.op_math.Adjoint.__new__`.
+  [(#4231)](https://github.com/PennyLaneAI/pennylane/pull/4231)
 
 * The docstring for `qml.grad` now states that it should be used with the Autograd interface only.
   [(#4202)](https://github.com/PennyLaneAI/pennylane/pull/4202)
@@ -310,6 +323,10 @@
 * Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
 
+* Fixed buggy calculation of angle in `xyx_decomposition` causing it to give an incorrect decomposition.
+  An if conditional was intended to prevent divide by zero errors but the division was by the sine of the argument so any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -327,6 +344,7 @@ Romain Moyard,
 Tristan Nemoz,
 Mudit Pandey,
 Borja Requena,
+Mainak Roy,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
