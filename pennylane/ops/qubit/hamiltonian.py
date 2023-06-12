@@ -349,19 +349,33 @@ class Hamiltonian(Observable):
             )
 
     def _get_pauli_indices(self):
+        """Returns a matrix describing the operators as integer sequences.
+        
+        A Pauli word like ``PauliZ(wires=0) @ PauliX(wires=1) @ PauliY(wires=4)`` for a 6-qubit tape should
+        return a row ``[3, 1, 0, 0, 2, 0]``.
+        There are as many rows as there are operators.
+        The index rows are use to infer the sparse structure of the matrix form of the operator.
+        This allows performing certain partial sums at almost zero cost, and hence accelerate ``sparse_matrix``. 
+
+        Returns:
+            indices: an integer array of operator indices.
+        """
         nops = len(self.ops)
-        nwir = max(self.wires) + 1 if len(self.wires) > 0 else 0
+        wires = self.wires.indices(self.wires)
+        nwir = max(wires) + 1 if len(wires) > 0 else 0
         indices = np.zeros((nops, nwir))
         map = {"Identity": 0, "PauliX": 1, "PauliY": 2, "PauliZ": 3}
         count = 3
         for j, op in enumerate(self.ops):
             if len(op.wires) == 1:
                 update_op_dict(map, op.name, count)
-                indices[j, op.wires[0]] = map[op.name]
+                w = self.wires.index(op.wires[0])
+                indices[j, w] = map[newkey]
                 continue
             for i, w in enumerate(op.wires):
                 update_op_dict(map, op.name[i], count)
-                indices[j, w] = map[op.name[i]]
+                w = self.wires.index(w)
+                indices[j, w] = map[newkey]
         return indices
 
     def sparse_matrix(self, wire_order=None):
