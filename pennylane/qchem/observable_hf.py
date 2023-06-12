@@ -109,7 +109,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
      >>> ops = [[0, 0], [0, 0]]
      >>> f = (coeffs, ops)
      >>> print(qubit_observable(f))
-    Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
+     Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
     """
     ops = []
     coeffs = qml.math.array([])
