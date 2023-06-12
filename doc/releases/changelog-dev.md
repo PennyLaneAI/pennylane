@@ -306,9 +306,6 @@
 
 <h4>Do more with qutrits</h4>
 
-* Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
-  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
-
 * Qutrit devices now support parameter-shift differentiation.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
