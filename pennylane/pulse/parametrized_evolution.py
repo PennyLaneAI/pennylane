@@ -108,6 +108,8 @@ class ParametrizedEvolution(Operation):
     To create a :class:`~.ParametrizedEvolution`, we first define a :class:`~.ParametrizedHamiltonian`
     describing the system, and then pass it to :func:`~pennylane.evolve`:
 
+
+
     .. code-block:: python
 
         from jax import numpy as jnp
@@ -435,6 +437,7 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
+            dense=self.dense,
             do_queue=None,
             id=self.id,
             **odeint_kwargs,
