@@ -261,6 +261,37 @@ class TestFermiWordArithmetic:
         )
         assert sum_rounded == res
 
+    WORDS_AND_CONSTANTS_ADD = [
+        (fw1, 5, FermiSentence({fw1: 1, fw4: 5})),  # int
+        (fw2, 2.8, FermiSentence({fw2: 1, fw4: 2.8})),  # float
+        (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: (1 + 3j)})),  # complex
+        (fw4, 2, FermiSentence({fw4: 3})),  # FermiWord is Identity
+    ]
+
+    @pytest.mark.parametrize("w, c, res", WORDS_AND_CONSTANTS_ADD)
+    def test_add_fermi_words_and_constants(self, w, c, res):
+        """Test that adding a constant (int, float or complex) to a FermiWord
+        returns the expected FermiSentence"""
+        sum = w + c
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        sum_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+        )
+        assert sum_rounded == res
+
+    @pytest.mark.parametrize("w, c, res", WORDS_AND_CONSTANTS_ADD)
+    def test_radd_fermi_words_and_constants(self, w, c, res):
+        """Test that adding a Fermi word to a constant (int, float or complex)
+        returns the expected FermiSentence (__radd__)"""
+        sum = c + w
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        sum_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+        )
+        assert sum_rounded == res
+
     WORDS_SUB = [
         (fw1, fw2, FermiSentence({fw1: 1, fw2: -1}), FermiSentence({fw1: -1, fw2: 1})),
         (fw2, fw3, FermiSentence({fw2: 1, fw3: -1}), FermiSentence({fw2: -1, fw3: 1})),
@@ -289,6 +320,44 @@ class TestFermiWordArithmetic:
             {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
         )
 
+        assert diff_rounded == res
+
+    WORDS_AND_CONSTANTS_SUBTRACT = [
+        (fw1, 5, FermiSentence({fw1: 1, fw4: -5})),  # int
+        (fw2, 2.8, FermiSentence({fw2: 1, fw4: -2.8})),  # float
+        (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: -(1 + 3j)})),  # complex
+        (fw4, 2, FermiSentence({fw4: -1})),  # FermiWord is Identity
+    ]
+
+    @pytest.mark.parametrize("w, c, res", WORDS_AND_CONSTANTS_SUBTRACT)
+    def test_subtract_fermi_words_and_constants(self, w, c, res):
+        """Test that subtracting a constant (int, float or complex) from a FermiWord
+        returns the expected FermiSentence"""
+        diff = w - c
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        diff_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+        )
+        assert diff_rounded == res
+
+    CONSTANTS_AND_WORDS_SUBTRACT = [
+        (fw1, 5, FermiSentence({fw1: -1, fw4: 5})),  # int
+        (fw2, 2.8, FermiSentence({fw2: -1, fw4: 2.8})),  # float
+        (fw3, (1 + 3j), FermiSentence({fw3: -1, fw4: (1 + 3j)})),  # complex
+        (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
+    ]
+
+    @pytest.mark.parametrize("w, c, res", WORDS_AND_CONSTANTS_SUBTRACT)
+    def test_subtract_fermi_words_and_constants(self, w, c, res):
+        """Test that subtracting a constant (int, float or complex) from a FermiWord
+        returns the expected FermiSentence"""
+        diff = c - w
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        diff_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+        )
         assert diff_rounded == res
 
     tup_fw_pow = (
@@ -591,6 +660,40 @@ class TestFermiSentenceArithmetic:
         )
         assert sum_rounded == res
 
+    SENTENCES_AND_CONSTANTS_ADD = [
+        (FermiSentence({fw1: 1.2, fw3: 3j}), 3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3})),
+        (FermiSentence({fw1: 1.2, fw3: 3j}), 1.3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 1.3})),
+        (
+            FermiSentence({fw1: -1.2, fw3: 3j}),
+            (1 + 2j),
+            FermiSentence({fw1: -1.2, fw3: 3j, fw4: (1 + 2j)}),
+        ),
+        (FermiSentence({}), 5, FermiSentence({fw4: 5})),
+        (FermiSentence({fw4: 3}), 1j, FermiSentence({fw4: 3 + 1j})),
+    ]
+
+    @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
+    def test_add_fermi_sentences_and_constants(self, s, c, res):
+        """Test that adding a constant to a FermiSentence returns the expected FermiSentence"""
+        sum = s + c
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        sum_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+        )
+        assert sum_rounded == res
+
+    @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
+    def test_radd_fermi_sentences_and_constants(self, s, c, res):
+        """Test that adding a FermiSentence to a constant (__radd___) returns the expected FermiSentence"""
+        sum = c + s
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        sum_rounded = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+        )
+        assert sum_rounded == res
+
     SENTENCE_MINUS_WORD = (  # computed by hand
         (fs1, fw1, FermiSentence({fw1: 0.23, fw2: 4j, fw3: -0.5})),
         (fs2, fw3, FermiSentence({fw1: -1.23, fw2: -4j, fw3: -0.5})),
@@ -613,6 +716,48 @@ class TestFermiSentenceArithmetic:
             {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
         )
 
+        assert simplified_diff == result
+
+    SENTENCE_MINUS_CONSTANT = (  # computed by hand
+        (fs1, 3, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -3})),
+        (fs2, -2.7, FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5, fw4: 2.7})),
+        (fs3, 2j, FermiSentence({fw3: -0.5, fw4: (1 - 2j)})),
+        (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 4})),
+    )
+
+    @pytest.mark.parametrize("fs, c, result", SENTENCE_MINUS_CONSTANT)
+    def test_subtract_constant_from_fermi_sentence(self, fs, c, result):
+        """Test that the correct result is produced if a FermiWord is
+        subtracted from a FermiSentence"""
+
+        simplified_diff = fs - c
+        simplified_diff.simplify()
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        simplified_diff = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
+        )
+        assert simplified_diff == result
+
+    CONSTANT_MINUS_SENTENCE = (  # computed by hand
+        (fs1, 3, FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5, fw4: 3})),
+        (fs2, -2.7, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -2.7})),
+        (fs3, 2j, FermiSentence({fw3: 0.5, fw4: (-1 + 2j)})),
+        (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: -1.2, fw3: -3j, fw4: 4})),
+    )
+
+    @pytest.mark.parametrize("fs, c, result", CONSTANT_MINUS_SENTENCE)
+    def test_subtract_constant_from_fermi_sentence(self, fs, c, result):
+        """Test that the correct result is produced if a FermiWord is
+        subtracted from a FermiSentence"""
+
+        simplified_diff = c - fs
+        simplified_diff.simplify()
+        # due to rounding, the actual result for floats is
+        # e.g. -0.19999999999999... instead of 0.2, so we round to compare
+        simplified_diff = FermiSentence(
+            {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
+        )
         assert simplified_diff == result
 
     tup_fs_subtract = (  # computed by hand
