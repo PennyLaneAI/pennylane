@@ -518,6 +518,7 @@
 This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna,
+Thomas Bromley,
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
