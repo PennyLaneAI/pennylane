@@ -457,7 +457,6 @@ class QNode:
 
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
-        # Temporary until transform program object is created
         self._transform_program = qml.transforms.core.TransformProgram()
 
     def __repr__(self):
