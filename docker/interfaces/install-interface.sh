@@ -27,12 +27,12 @@ case $INTERFACE_NAME in
 # Build Torch interface
   "torch")
   echo "##########-Installing" "$INTERFACE_NAME" "INTERFACE-##########"
-  pip3 install torch==1.8.1
+  pip3 install torch==2.0.0
   ;;
 # Build Tensorflow interface
   "tensorflow")
   echo "##########-Installing" "$INTERFACE_NAME" "INTERFACE-##########"
-  pip3 install tensorflow==2.5.0
+  pip3 install tensorflow==2.12.0
   ;;
 	*)
   echo "##########-No-Interface-Installed-##########"

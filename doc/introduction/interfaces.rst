@@ -30,8 +30,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
         ...
 
 .. note::
-    If no interface is specified, PennyLane will default to the NumPy interface (powered by the
-    `autograd <https://github.com/HIPS/autograd>`_ library).
+    If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
@@ -226,9 +225,9 @@ Hardware-compatible differentiation
 
 The following methods support both quantum hardware and simulators, and are examples of `forward
 accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
-However, when using a simulator, you may notice that the time required to compute the gradients
-with these methods :doc:`scales linearly <demos/tutorial_backprop>` with the number of trainable circuit
-parameters.
+However, when using a simulator, you may notice that the number of circuit executions required to
+compute the gradients with these methods :doc:`scales linearly <demos/tutorial_backprop>`
+with the number of trainable circuit parameters.
 
 * ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
   <glossary/parameter_shift>` for all supported quantum operation arguments, with
@@ -237,6 +236,11 @@ parameters.
 * ``"finite-diff"``: Use numerical finite-differences for all quantum operation arguments.
 
 * ``"hadamard"``: Use hadamard tests on the generators for all compatible quantum operations arguments.
+
+* :func:`qml.gradients.stoch_pulse_grad <~.stoch_pulse_grad>`: Use a stochastic variant of the
+  parameter-shift rule for pulse programs.
+
+* :func:`qml.gradients.pulse_generator <~.pulse_generator>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
 
 
 Device gradients

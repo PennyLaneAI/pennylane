@@ -650,6 +650,7 @@ class TestParameterShiftRule:
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
+        np.random.seed(824)
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=1, shots=shot_vec)

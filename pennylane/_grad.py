@@ -42,6 +42,9 @@ class grad:
     compute the gradient. The value of the forward pass is available via the
     :attr:`~.forward` property.
 
+    .. warning::
+        ``grad`` is intended to be used with the Autograd interface only.
+
     Args:
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
