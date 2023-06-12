@@ -37,7 +37,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
-    tape2 = tape.circuit.pop(index)
+    tape2 = tape._ops.pop(index)
 
     def fn(results):
         return qml.math.sum(results)
@@ -128,6 +128,14 @@ class TestTransformProgram:
         assert isinstance(transform_program[1], TransformContainer)
         assert transform_program[1] is transform1
 
+        transform3 = TransformContainer(transform=second_valid_transform, is_informative=True)
+
+        with pytest.raises(
+            TransformError,
+            match="Informative transforms can only be added at the end of the program.",
+        ):
+            transform_program.insert_front(transform3)
+
     def test_iter_program(self):
         """Test iteration over the transform program."""
         transform_program = TransformProgram()
@@ -156,14 +164,14 @@ class TestTransformProgram:
         assert (
             str_program
             == "TransformProgram("
-            + str(first_valid_transform)
+            + str(first_valid_transform.__name__)
             + ", "
-            + str(second_valid_transform)
+            + str(second_valid_transform.__name__)
             + ")"
         )
 
     def test_valid_transforms(self):
-        """Test that no more than"""
+        """Test that that it is only possiblle to create valid transforms."""
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform, is_informative=True)
         transform_program.push_back(transform1)
@@ -207,9 +215,9 @@ class TestTransformProgramIntegration:
         assert (
             transformed_qnode_rep
             == "TransformProgram("
-            + str(first_valid_transform)
+            + str(first_valid_transform.__name__)
             + ", "
-            + str(first_valid_transform)
+            + str(first_valid_transform.__name__)
             + ")"
         )
 
@@ -242,9 +250,9 @@ class TestTransformProgramIntegration:
         assert (
             transformed_qnode_rep
             == "TransformProgram("
-            + str(first_valid_transform)
+            + str(first_valid_transform.__name__)
             + ", "
-            + str(second_valid_transform)
+            + str(second_valid_transform.__name__)
             + ")"
         )
 

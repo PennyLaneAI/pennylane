@@ -48,8 +48,7 @@ class TransformProgram:
     def __repr__(self):
         """The string representation of the transform program class."""
         repr = "TransformProgram("
-        transforms_repr = "".join([f"{transform_c.transform}, " for transform_c in self])
-        transforms_repr = transforms_repr[:-2]
+        transforms_repr = ", ".join([f"{transform_c.transform.__name__}" for transform_c in self])
         end = ")"
         return repr + transforms_repr + end
 
@@ -73,6 +72,10 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
+        if transform_container.is_informative and not self.is_empty():
+            raise TransformError(
+                "Informative transforms can only be added at the end of the program."
+            )
         self._transform_program.insert(0, transform_container)
 
     def pop_front(self):

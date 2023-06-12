@@ -89,7 +89,7 @@ class TransformDispatcher:
 
     @property
     def is_informative(self):
-        """Return True is the transform does not need to be executed.."""
+        """Return True is the transform does not need to be executed."""
         return self._is_informative
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
@@ -178,5 +178,5 @@ class TransformContainer:
 
     @property
     def is_informative(self):
-        """Return True is the transform does not need to be executed.."""
+        """Return True is the transform does not need to be executed."""
         return self._is_informative
