@@ -68,7 +68,11 @@ class Shots:
 
     Instances of this class are static. If an instance is passed to the constructor, that same
     instance is returned. If an instance is constructed with a ``None`` value, ``total_shots``
-    will be ``None``.  This indicates analytic execution.
+    will be ``None``.  This indicates analytic execution. A ``Shots`` object created with a
+    ``None`` value is Falsy, while any other value results in a Truthy object:
+
+    >>> bool(Shots(None)), bool(Shots(1))
+    (False, True)
 
     **Examples**
 
