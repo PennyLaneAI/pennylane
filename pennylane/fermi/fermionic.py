@@ -109,30 +109,43 @@ class FermiWord(dict):
         return str(self)
 
     def __add__(self, other):
-        """Add a FermiSentence or FermiWord to a FermiSentence by iterating over the
-        smaller one and adding its terms to the larger one."""
-        self_fs = FermiSentence({self: 1.0})
+        """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
+        elements to be added into FermiSentences, and uses the FermiSentence __add__
+        method"""
 
-        if isinstance(other, FermiWord):
-            other = FermiSentence({other: 1.0})
-            return self_fs + other
+        self_fs = FermiSentence({self: 1.0})
 
         if isinstance(other, FermiSentence):
             return self_fs + other
+
+        if isinstance(other, FermiWord):
+            other_fs = FermiSentence({other: 1.0})
+            return self_fs + other_fs
+
+        if isinstance(other, (float, int, complex)):
+            other_fs = FermiSentence({FermiWord({}): other})
+            return self_fs + other_fs
 
         raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
 
     def __sub__(self, other):
-        """Subtract a FermiSentence or FermiWord from a FermiSentence"""
+        """Subtract a FermiSentence, FermiWord or constant from a FermiWord. Converts both
+        elements to be added into FermiSentences (with negative coefficient for `other`), and
+        uses the FermiSentence __add__  method"""
+
         self_fs = FermiSentence({self: 1.0})
 
         if isinstance(other, FermiWord):
-            other = FermiSentence({other: -1.0})
-            return self_fs + other
+            other_fs = FermiSentence({other: -1.0})
+            return self_fs + other_fs
 
         if isinstance(other, FermiSentence):
-            other = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
-            return self_fs + other
+            other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
+            return self_fs + other_fs
+
+        if isinstance(other, (float, int, complex)):
+            other_fs = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
+            return self_fs + other_fs
 
         raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
 
@@ -239,11 +252,14 @@ class FermiSentence(dict):
         return 0.0
 
     def __add__(self, other):
-        r"""Add a FermiSentence or FermiWord to a FermiSentence by iterating over the
+        r"""Add a FermiSentence, FermiWord or constant to a FermiSentence by iterating over the
         smaller one and adding its terms to the larger one."""
 
+        # ensure other is FermiSentence
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
+        if isinstance(other, (float, int, complex)):
+            other = FermiSentence({FermiWord({}): other})
 
         if isinstance(other, FermiSentence):
             smaller_fs, larger_fs = (
@@ -257,9 +273,13 @@ class FermiSentence(dict):
         raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
 
     def __sub__(self, other):
-        r"""Subtract a FermiSentence or FermiWord from a FermiSentence"""
+        r"""Subtract a FermiSentence, FermiWord or constant from a FermiSentence"""
         if isinstance(other, FermiWord):
             other = FermiSentence({other: -1})
+            return self.__add__(other)
+
+        if isinstance(other, (float, int, complex)):
+            other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self.__add__(other)
 
         if isinstance(other, FermiSentence):
