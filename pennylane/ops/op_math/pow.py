@@ -192,6 +192,17 @@ class Pow(ScalarSymbolicOp):
         different based on ``base``'s inheritance.  We cache the different types in private class
         variables so that:
 
+        >>> Pow(op, z).__class__ is Pow(op, z).__class__
+        True
+        >>> type(Pow(op, z)) == type(Pow(op, z))
+        True
+        >>> isinstance(Pow(op, z), type(Pow(op, z)))
+        True
+        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
+        True
+        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        True
+
         """
 
         if isinstance(base, Operation):
