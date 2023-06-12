@@ -482,7 +482,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             self.s[idx] = (
                 np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
                 if len(self.s[idx].shape) <= 1
-                else senf.s[idx][:, np.newaxis]
+                else self.s[idx][:, np.newaxis]
             )
 
         self.k += 1
