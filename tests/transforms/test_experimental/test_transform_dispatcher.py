@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
 from typing import Sequence, Callable
+from functools import partial
 
 import pytest
 import pennylane as qml
@@ -162,10 +163,39 @@ class TestTransformDispatcher:
             qml.RZ(a, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        qnode = dispatched_transform(qnode_circuit, 0)
-        assert isinstance(qnode, qml.QNode)
-        assert isinstance(qnode.transform_program, list)
-        assert isinstance(qnode.transform_program[0], qml.transforms.core.TransformContainer)
+        qnode_transformed = dispatched_transform(qnode_circuit, 0)
+        assert not qnode_circuit.transform_program
+
+        assert isinstance(qnode_transformed, qml.QNode)
+        assert isinstance(qnode_transformed.transform_program, list)
+        assert isinstance(
+            qnode_transformed.transform_program[0], qml.transforms.core.TransformContainer
+        )
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
+        """Test that no error is raised with the transform function and that the transform dispatcher returns
+        the right object."""
+
+        dispatched_transform = transform(valid_transform)
+        targs = [0]
+
+        @partial(dispatched_transform, targs=targs)
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert isinstance(qnode_circuit, qml.QNode)
+        assert isinstance(qnode_circuit.transform_program, list)
+        assert isinstance(
+            qnode_circuit.transform_program[0], qml.transforms.core.TransformContainer
+        )
+        assert qnode_circuit.transform_program[0]
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -188,6 +218,13 @@ class TestTransformDispatcher:
         assert isinstance(transformed_tape, qml.tape.QuantumTape)
         assert transformed_tape.circuit is not None
         assert len(transformed_tape.circuit) == 4
+
+        with qml.tape.QuantumTape() as tape:
+            qfunc_circuit(0.42)
+
+        assert isinstance(transformed_tape, qml.tape.QuantumTape)
+        assert tape.circuit is not None
+        assert len(tape.circuit) == 5
 
     def test_qnode_with_expand_transform(self):
         """Test qnode with a transform program and expand transform."""
