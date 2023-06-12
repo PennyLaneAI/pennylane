@@ -23,44 +23,48 @@ from pennylane.fermi.fermionic import FermiWord, FermiC, FermiA
 class TestFermiC:
     """Test the methods of the creation operator FermiC"""
 
-    @pytest.mark.parametrize("wire", [1, 3])
-    def test_initialization(self, wire):
+    @pytest.mark.parametrize("orbital", [1, 3])
+    def test_initialization(self, orbital):
         """Test __init__ function returns the expected FermiWord object"""
-        op = FermiC(wire)
-        op_dict = {(0, wire): "+"}
+        op = FermiC(orbital)
+        op_dict = {(0, orbital): "+"}
 
         assert isinstance(op, FermiWord)
         assert len(op) == 1
-        assert list(op.keys()) == [(0, wire)]
+        assert list(op.keys()) == [(0, orbital)]
         assert list(op.values()) == ["+"]
 
         assert dict(op) == op_dict
 
-    @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
-    def test_bad_wire_raises_error(self, wire):
-        """Test that passing a value for wire that is not a positive integer raises an error"""
-        with pytest.raises(ValueError, match="expected a single, positive integer value for wire"):
-            _ = FermiC(wire)
+    @pytest.mark.parametrize("orbital", ["a", -2, [0, 1], 1.2])
+    def test_bad_orbital_raises_error(self, orbital):
+        """Test that passing a value for orbital that is not a positive integer raises an error"""
+        with pytest.raises(
+            ValueError, match="expected a single, positive integer value for orbital"
+        ):
+            _ = FermiC(orbital)
 
 
 class TestFermiA:
     """Test the methods of the annihilation operator FermiA"""
 
-    @pytest.mark.parametrize("wire", [1, 3])
-    def test_initialization(self, wire):
+    @pytest.mark.parametrize("orbital", [1, 3])
+    def test_initialization(self, orbital):
         """Test __init__ function returns the expected FermiWord object"""
-        op = FermiA(wire)
-        op_dict = {(0, wire): "-"}
+        op = FermiA(orbital)
+        op_dict = {(0, orbital): "-"}
 
         assert isinstance(op, FermiWord)
         assert len(op) == 1
-        assert list(op.keys()) == [(0, wire)]
+        assert list(op.keys()) == [(0, orbital)]
         assert list(op.values()) == ["-"]
 
         assert dict(op) == op_dict
 
-    @pytest.mark.parametrize("wire", ["a", -2, [0, 1], 1.2])
-    def test_bad_wire_raises_error(self, wire):
-        """Test that passing a value for wire that is not a positive integer raises an error"""
-        with pytest.raises(ValueError, match="expected a single, positive integer value for wire"):
-            _ = FermiA(wire)
+    @pytest.mark.parametrize("orbital", ["a", -2, [0, 1], 1.2])
+    def test_bad_orbital_raises_error(self, orbital):
+        """Test that passing a value for orbital that is not a positive integer raises an error"""
+        with pytest.raises(
+            ValueError, match="expected a single, positive integer value for orbital"
+        ):
+            _ = FermiA(orbital)

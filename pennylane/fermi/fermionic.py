@@ -246,19 +246,14 @@ class FermiSentence(dict):
 
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
-    r"""FermiC(wire)
+    r"""FermiC(orbital)
     The fermionic creation operator :math:`a^\dagger`
 
     For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^\dagger_2`. This operator applied
     to :math:`\ket{0000}` gives :math:`\ket{0010}`.
 
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 0
-
     Args:
-        wire(int): the non-negative integer indicating the state the operator acts on.
+        orbital(int): the non-negative integer indicating the orbital the operator acts on.
 
     .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
 
@@ -278,29 +273,24 @@ class FermiC(FermiWord):
     <FermiWord = '0+ 1- 2+ 3-'>
     """
 
-    def __init__(self, wire):
-        if not isinstance(wire, int) or wire < 0:
+    def __init__(self, orbital):
+        if not isinstance(orbital, int) or orbital < 0:
             raise ValueError(
-                f"FermiC: expected a single, positive integer value for wire, but received {wire}"
+                f"FermiC: expected a single, positive integer value for orbital, but received {orbital}"
             )
-        operator = {(0, wire): "+"}
+        operator = {(0, orbital): "+"}
         super().__init__(operator)
 
 
 class FermiA(FermiWord):
-    r"""FermiA(wire)
+    r"""FermiA(orbital)
     The fermionic annihilation operator :math:`a`
 
     For instance, the operator ``qml.FermiA(2)`` denotes :math:`a_2`. This operator applied
     to :math:`\ket{0010}` gives :math:`\ket{0000}`.
 
-    **Details:**
-
-    * Number of wires: 1
-    * Number of parameters: 0
-
     Args:
-        wire(int): the non-negative integer indicating the state the operator acts on.
+        orbital(int): the non-negative integer indicating the orbital the operator acts on.
 
     .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
 
@@ -320,10 +310,10 @@ class FermiA(FermiWord):
     <FermiWord = '0+ 1- 2+ 3-'>
     """
 
-    def __init__(self, wire):
-        if not isinstance(wire, int) or wire < 0:
+    def __init__(self, orbital):
+        if not isinstance(orbital, int) or orbital < 0:
             raise ValueError(
-                f"FermiA: expected a single, positive integer value for wire, but received {wire}"
+                f"FermiA: expected a single, positive integer value for orbital, but received {orbital}"
             )
-        operator = {(0, wire): "-"}
+        operator = {(0, orbital): "-"}
         super().__init__(operator)
