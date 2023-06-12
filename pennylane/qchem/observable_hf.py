@@ -82,34 +82,34 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
 def qubit_observable(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
-    The fermionic operator is a tuple containing the fermionic coefficients and operators. For
-    instance, the one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the
-    two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
+     The fermionic operator is a tuple containing the fermionic coefficients and operators. For
+     instance, the one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the
+     two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
 
-    Args:
-        o_ferm tuple(array[float], list[int]): fermionic operator
-        cutoff (float): cutoff value for discarding the negligible terms
+     Args:
+         o_ferm tuple(array[float], list[int]): fermionic operator
+         cutoff (float): cutoff value for discarding the negligible terms
 
-    Returns:
-        Union[~.Hamiltonian, ~.Operator]: Simplified PennyLane Hamiltonian
+     Returns:
+         Union[~.Hamiltonian, ~.Operator]: Simplified PennyLane Hamiltonian
 
-    **Example**
+     **Example**
 
-    >>> coeffs = np.array([1.0, 1.0])
-    >>> ops = [[0, 0], [0, 0]]
-    >>> f = (coeffs, ops)
-    >>> print(qubit_observable(f))
-    ((-1+0j)) [Z0]
-    + ((1+0j)) [I0]
+     >>> coeffs = np.array([1.0, 1.0])
+     >>> ops = [[0, 0], [0, 0]]
+     >>> f = (coeffs, ops)
+     >>> print(qubit_observable(f))
+     ((-1+0j)) [Z0]
+     + ((1+0j)) [I0]
 
-    If the new op-math is active, an arithmetic operator is returned instead.
+     If the new op-math is active, an arithmetic operator is returned instead.
 
-    >>> qml.operation.enable_new_opmath()
-    >>> coeffs = np.array([1.0, 1.0])
-    >>> ops = [[0, 0], [0, 0]]
-    >>> f = (coeffs, ops)
-    >>> print(qubit_observable(f))
-   Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
+     >>> qml.operation.enable_new_opmath()
+     >>> coeffs = np.array([1.0, 1.0])
+     >>> ops = [[0, 0], [0, 0]]
+     >>> f = (coeffs, ops)
+     >>> print(qubit_observable(f))
+    Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
     """
     ops = []
     coeffs = qml.math.array([])
@@ -132,6 +132,10 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         if len(ps) == 0:
             return qml.s_prod(
                 0, qml.Identity(ops[0].wires[0])
+            )  # use any op and any wire to represent the null op
+        if (len(ps) == 1) and ((identity := qml.pauli.PauliWord({})) in ps):
+            return qml.s_prod(
+                ps[identity], qml.Identity(ops[0].wires[0])
             )  # use any op and any wire to represent the null op
         return ps.operation()
 

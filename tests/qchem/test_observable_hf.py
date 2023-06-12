@@ -234,6 +234,7 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
                 ],
             ],
         ),
+        ((np.array([1.23]), [[]]), [[1.23], [qml.Identity(0)]]),
     ],
 )
 def test_qubit_observable(f_observable, q_observable):
@@ -244,9 +245,14 @@ def test_qubit_observable(f_observable, q_observable):
     enable_new_opmath()
 
     h_as_op = qchem.qubit_observable(f_observable)
-    h_ref_as_op = pauli_sentence(h_ref).operation()  # easy conversion from ham to operation
+    h_ref_as_op = pauli_sentence(h_ref).operation(
+        h_ref.wires
+    )  # easy conversion from ham to operation
 
     disable_new_opmath()
+
+    print(h_as_op)
+    print(h_ref_as_op)
 
     assert h_as_hamiltonian.compare(h_ref)
     assert np.allclose(
