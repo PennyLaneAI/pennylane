@@ -66,6 +66,7 @@ from .multi_dispatch import (
 )
 from .quantum import (
     cov_matrix,
+    dm_from_state_vector,
     fidelity,
     marginal_prob,
     mutual_info,
