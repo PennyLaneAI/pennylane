@@ -16,6 +16,8 @@ Tests for the pennylane.qnn.torch module.
 """
 from unittest import mock
 import math
+from collections import defaultdict
+
 import numpy as np
 import pytest
 
@@ -735,3 +737,118 @@ def test_batch_input_multi_measure():
     for x_, r in zip(x, res):
         exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
         assert qml.math.allclose(r, exp)
+
+    # reset back to the old name
+    TorchLayer.set_input_argument("inputs")
+
+
+@pytest.mark.torch
+def test_draw():
+    """Test that a TorchLayer can be drawn using qml.draw"""
+
+    dev = qml.device("default.qubit", wires=2)
+    weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
+
+    @qml.qnode(dev, interface="torch")
+    def circuit(inputs, w1, w2):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        qml.templates.StronglyEntanglingLayers(w2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = TorchLayer(circuit, weight_shapes)
+
+    # make the rotation angle positive to prevent the extra minus sign messing up the alignment
+    qlayer.qnode_weights["w1"] = torch.abs(qlayer.qnode_weights["w1"])
+
+    batch_size = 5
+    x = torch.Tensor(np.random.uniform(0, 1, (batch_size, 2)))
+
+    actual = qml.draw(qlayer)(x)
+
+    w1 = f"{qlayer.qnode_weights['w1'].detach().numpy():.2f}"
+    m1 = f"{qlayer.qnode_weights['w2'].detach()}"
+    expected = (
+        f"0: ─╭AngleEmbedding(M0)──RX({w1})─╭StronglyEntanglingLayers(M1)─┤  <Z>\n"
+        f"1: ─╰AngleEmbedding(M0)───────────╰StronglyEntanglingLayers(M1)─┤  <Z>\n"
+        f"M0 = \n{x}\n"
+        f"M1 = \n{m1}"
+    )
+
+    assert actual == expected
+
+
+@pytest.mark.torch
+def test_draw_mpl():
+    """Test that a TorchLayer can be drawn using qml.draw_mpl"""
+
+    dev = qml.device("default.qubit", wires=2)
+    weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
+
+    @qml.qnode(dev, interface="torch")
+    def circuit(inputs, w1, w2):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        qml.templates.StronglyEntanglingLayers(w2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = TorchLayer(circuit, weight_shapes)
+
+    # make the rotation angle positive to prevent the extra minus sign messing up the alignment
+    qlayer.qnode_weights["w1"] = torch.abs(qlayer.qnode_weights["w1"])
+
+    batch_size = 5
+    x = torch.Tensor(np.random.uniform(0, 1, (batch_size, 2)))
+
+    _, ax = qml.draw_mpl(qlayer)(x)
+
+    assert len(ax.patches) == 9  # 3 boxes, 3 patches for each measure
+    assert len(ax.lines) == 2  # 2 wires
+    assert len(ax.texts) == 5  # 2 wire labels, 3 box labels
+
+    assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "1"
+    assert ax.texts[2].get_text() == "AngleEmbedding"
+    assert ax.texts[3].get_text() == "RX"
+    assert ax.texts[4].get_text() == "StronglyEntanglingLayers"
+
+
+@pytest.mark.torch
+def test_specs():
+    """Test that the qml.specs transform works for TorchLayer"""
+
+    dev = qml.device("default.qubit", wires=3)
+    weight_shapes = {"w1": 1, "w2": (3, 2, 3)}
+
+    @qml.qnode(dev, interface="torch")
+    def circuit(inputs, w1, w2):
+        qml.templates.AngleEmbedding(inputs, wires=[0, 1])
+        qml.RX(w1, wires=0)
+        qml.templates.StronglyEntanglingLayers(w2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    qlayer = TorchLayer(circuit, weight_shapes)
+
+    batch_size = 5
+    x = torch.Tensor(np.random.uniform(0, 1, (batch_size, 2)))
+
+    info = qml.specs(qlayer)(x)
+
+    gate_sizes = defaultdict(int, {1: 1, 2: 2})
+    gate_types = defaultdict(int, {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1})
+    expected_resources = qml.resource.Resources(
+        num_wires=2, num_gates=3, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+    )
+    assert info["resources"] == expected_resources
+
+    assert info["gate_sizes"] == gate_sizes
+    assert info["gate_types"] == gate_types
+    assert info["num_operations"] == 3
+    assert info["num_observables"] == 2
+    assert info["num_diagonalizing_gates"] == 0
+    assert info["num_used_wires"] == 2
+    assert info["depth"] == 3
+    assert info["num_device_wires"] == 3
+    assert info["num_trainable_params"] == 0
+    assert info["interface"] == "torch"
+    assert info["device_name"] == "default.qubit.torch"
