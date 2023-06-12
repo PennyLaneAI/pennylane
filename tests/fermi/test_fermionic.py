@@ -330,7 +330,7 @@ class TestFermiWordArithmetic:
     ]
 
     @pytest.mark.parametrize("w, c, res", WORDS_AND_CONSTANTS_SUBTRACT)
-    def test_subtract_fermi_words_and_constants(self, w, c, res):
+    def test_subtract_constant_from_fermi_word(self, w, c, res):
         """Test that subtracting a constant (int, float or complex) from a FermiWord
         returns the expected FermiSentence"""
         diff = w - c
@@ -348,8 +348,8 @@ class TestFermiWordArithmetic:
         (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
     ]
 
-    @pytest.mark.parametrize("w, c, res", WORDS_AND_CONSTANTS_SUBTRACT)
-    def test_subtract_fermi_words_and_constants(self, w, c, res):
+    @pytest.mark.parametrize("c, w, res", WORDS_AND_CONSTANTS_SUBTRACT)
+    def test_subtract_fermi_words_from_constant(self, c, w, res):
         """Test that subtracting a constant (int, float or complex) from a FermiWord
         returns the expected FermiSentence"""
         diff = c - w
@@ -743,11 +743,11 @@ class TestFermiSentenceArithmetic:
         (fs1, 3, FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5, fw4: 3})),
         (fs2, -2.7, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -2.7})),
         (fs3, 2j, FermiSentence({fw3: 0.5, fw4: (-1 + 2j)})),
-        (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: -1.2, fw3: -3j, fw4: 4})),
+        (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: -1.2, fw3: -3j, fw4: -4})),
     )
 
     @pytest.mark.parametrize("fs, c, result", CONSTANT_MINUS_SENTENCE)
-    def test_subtract_constant_from_fermi_sentence(self, fs, c, result):
+    def test_subtract_fermi_sentence_from_constant(self, fs, c, result):
         """Test that the correct result is produced if a FermiWord is
         subtracted from a FermiSentence"""
 

@@ -128,6 +128,14 @@ class FermiWord(dict):
 
         raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
 
+    def __radd__(self, other):
+        """Add a FermiWord to a constant, i.e. `2 + FermiWord({...})`"""
+
+        if isinstance(other, (float, int, complex)):
+            return self.__add__(other)
+
+        raise TypeError(f"Cannot add a FermiWord to {type(other)}.")
+
     def __sub__(self, other):
         """Subtract a FermiSentence, FermiWord or constant from a FermiWord. Converts both
         elements to be added into FermiSentences (with negative coefficient for `other`), and
@@ -148,6 +156,16 @@ class FermiWord(dict):
             return self_fs + other_fs
 
         raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
+
+    def __rsub__(self, other):
+        """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
+
+        if isinstance(other, (float, int, complex)):
+            self_fs = FermiSentence({self: -1.0})
+            other_fs = FermiSentence({FermiWord({}): other})  # -constant * I
+            return self_fs + other_fs
+
+        raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
 
     def __mul__(self, other):
         r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a number (int, float, complex).
@@ -272,6 +290,14 @@ class FermiSentence(dict):
 
         raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
 
+    def __radd__(self, other):
+        """Add a FermiSentence to a constant, i.e. `2 + FermiSentence({...})`"""
+
+        if isinstance(other, (float, int, complex)):
+            return self.__add__(other)
+
+        raise TypeError(f"Cannot add a FermiWord to {type(other)}.")
+
     def __sub__(self, other):
         r"""Subtract a FermiSentence, FermiWord or constant from a FermiSentence"""
         if isinstance(other, FermiWord):
@@ -287,6 +313,19 @@ class FermiSentence(dict):
             return self.__add__(other)
 
         raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
+
+    def __rsub__(self, other):
+        """Subtract a FermiSentence to a constant, i.e.
+
+        >>> 2 - FermiSentence({...})
+        """
+
+        if isinstance(other, (float, int, complex)):
+            self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+            other_fs = FermiSentence({FermiWord({}): other})  # constant * I
+            return self_fs + other_fs
+
+        raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
 
     def __mul__(self, other):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
