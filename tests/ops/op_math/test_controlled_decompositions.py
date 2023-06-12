@@ -126,6 +126,7 @@ class TestControlledDecompositionZYZ:
 
         res = decomp_circuit()
         expected = expected_circuit()
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", su2_ops)
