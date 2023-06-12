@@ -14,6 +14,7 @@
 """
 This module contains the transform function, the transform dispatcher and the transform container.
 """
+import copy
 import pennylane as qml
 
 
@@ -56,7 +57,8 @@ class TransformDispatcher:
             obj, *targs = targs
 
         if isinstance(obj, qml.tape.QuantumTape):
-            return self._transform(obj, *targs, **tkwargs)
+            new_tape = copy.deepcopy(obj)
+            return self._transform(new_tape, *targs, **tkwargs)
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(
                 obj,
@@ -112,14 +114,13 @@ class TransformDispatcher:
 
     def _qnode_transform(self, qnode, targs, tkwargs):
         """Apply the transform on a QNode. It populates the transform program of a QNode"""
+        new_qnode = copy.deepcopy(qnode)
         if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform))
-        qnode.add_transform(
-            TransformContainer(
-                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
-            )
+            new_qnode.add_transform(TransformContainer(self._expand_transform))
+        new_qnode.add_transform(
+            TransformContainer(self._transform, targs, tkwargs, self._classical_cotransform)
         )
-        return qnode
+        return new_qnode
 
 
 class TransformContainer:

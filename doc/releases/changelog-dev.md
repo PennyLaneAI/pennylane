@@ -8,23 +8,38 @@
   without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
 
-* Added the `TRX` qutrit rotation operator, which allows applying a Pauli X rotation on a
+* Added the `TRX` qutrit rotation operation, which allows applying an X rotation on a
   given subspace.
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
-* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
-  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
-
-* Added the `TRY` qutrit rotation operator, which allows applying a Y rotation on a
+* Added the `TRY` qutrit rotation operation, which allows applying a Y rotation on a
   given subspace.
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
+
+* Added the `TRZ` qutrit rotation operation, which allows applying a Z rotation on a
+  given subspace.
+  [(#2847)](https://github.com/PennyLaneAI/pennylane/pull/2847)
+
+* A function `pauli.pauli_word_prefactor()` is added to extract the prefactor for a given Pauli word.
+  [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
 * Added the `FermiWord` class to represent a fermionic operator such as
   $\hat{c}_1 c_0 \hat{c}_2 c_3$.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
+* Added the `FermiSentence` class to represent a linear combination of fermionic operators.
+  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
+
+* Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
+  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
+
 <h3>Improvements 🛠</h3>
 
+* `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
+  of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
+  `HardwareHamiltonian`s which are not checked.
+  [(4216)](https://github.com/PennyLaneAI/pennylane/pull/4216)
+  
 * The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
   supports arbitrary Hermitian generating terms in pulse Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
@@ -160,6 +175,9 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* Added broadcasting support for `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, `qml.math.max_entropy`, and `qml.math.sqrt_matrix`.
+  [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
@@ -242,6 +260,11 @@
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
+  input. Please call `qml.math.dm_from_state_vector` on the input before passing to any of these functions.
+  [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
+
 * `do_queue` keyword argument in `qml.operation.Operator` is deprecated. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4148)](https://github.com/PennyLaneAI/pennylane/pull/4148)
@@ -256,6 +279,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+  [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixes a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
   generating terms of a pulse Hamiltonian.
@@ -281,12 +307,17 @@
 * A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
   [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
 
+* Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
+  [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
+Emiliano Godinez Ramirez
+Nikhil Harle
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann,

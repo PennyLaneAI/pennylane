@@ -200,10 +200,10 @@ class TestTransformProgramIntegration:
             qml.RZ(a, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
+        new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
-        program = qnode_circuit.transform_program
-        transformed_qnode_rep = repr(qnode_circuit.transform_program)
+        program = new_qnode.transform_program
+        transformed_qnode_rep = repr(program)
         assert (
             transformed_qnode_rep
             == "TransformProgram("
@@ -235,10 +235,10 @@ class TestTransformProgramIntegration:
             qml.RZ(a, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
+        new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
-        program = qnode_circuit.transform_program
-        transformed_qnode_rep = repr(qnode_circuit.transform_program)
+        program = new_qnode.transform_program
+        transformed_qnode_rep = repr(program)
         assert (
             transformed_qnode_rep
             == "TransformProgram("

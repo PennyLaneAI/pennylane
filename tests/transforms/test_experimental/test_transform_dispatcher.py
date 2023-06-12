@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
 from typing import Sequence, Callable
+from functools import partial
 
 import pytest
 import pennylane as qml
@@ -105,7 +106,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
-    tape2 = tape.circuit.pop(index)
+    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -162,11 +163,37 @@ class TestTransformDispatcher:
             qml.RZ(a, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        qnode = dispatched_transform(qnode_circuit, 0)
-        assert isinstance(qnode, qml.QNode)
-        assert isinstance(qnode.transform_program, qml.transforms.core.TransformProgram)
+        qnode_transformed = dispatched_transform(qnode_circuit, 0)
+        assert not qnode_circuit.transform_program
+
+        assert isinstance(qnode_transformed, qml.QNode)
+        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         assert isinstance(
-            qnode.transform_program.pop_front(), qml.transforms.core.TransformContainer
+            qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
+        """Test that no error is raised with the transform function and that the transform dispatcher returns
+        the right object."""
+
+        dispatched_transform = transform(valid_transform)
+        targs = [0]
+
+        @partial(dispatched_transform, targs=targs)
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert isinstance(qnode_circuit, qml.QNode)
+        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(
+            qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
 
     def test_queuing_qfunc_transform(self):
@@ -190,6 +217,13 @@ class TestTransformDispatcher:
         assert isinstance(transformed_tape, qml.tape.QuantumTape)
         assert transformed_tape.circuit is not None
         assert len(transformed_tape.circuit) == 4
+
+        with qml.tape.QuantumTape() as tape:
+            qfunc_circuit(0.42)
+
+        assert isinstance(transformed_tape, qml.tape.QuantumTape)
+        assert tape.circuit is not None
+        assert len(tape.circuit) == 5
 
     def test_qnode_with_expand_transform(self):
         """Test qnode with a transform program and expand transform."""
@@ -306,12 +340,12 @@ class TestTransformDispatcher:
     def test_apply_dispatched_transform_non_valid_obj(self):
         """Test that applying a dispatched function on a non-valid object raises an error."""
         dispatched_transform = transform(first_valid_transform)
+        obj = qml.RX(0.1, wires=0)
         with pytest.raises(
             TransformError,
             match="The object on which the transform is applied is not valid. It can only be a tape, a QNode or a "
             "qfunc.",
         ):
-            obj = qml.RX(0.1, wires=0)
             dispatched_transform(obj)
 
     def test_qfunc_transform_multiple_tapes(self):
