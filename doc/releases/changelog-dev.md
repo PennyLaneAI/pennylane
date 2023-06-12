@@ -202,6 +202,25 @@
     0.19999999999999998
     ```
 
+* It is now possible to use basis-state preparations in Qutrit circuits.
+  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
+
+  ```python
+  wires = range(2)
+  dev = qml.device("default.qutrit", wires=wires)
+
+  @qml.qnode(dev)
+  def qutrit_circuit():
+      qml.QutritBasisState([1, 1], wires=wires)
+      qml.TAdd(wires=wires)
+      return qml.probs(wires=1)
+  ```
+  
+  ```pycon
+  >>> qutrit_circuit()
+  array([0., 0., 1.])
+  ```
+
 * PennyLane Docker builds have been updated to include the latest plugins and interface versions.
   [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
