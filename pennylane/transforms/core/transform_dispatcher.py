@@ -120,7 +120,9 @@ class TransformDispatcher:
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform))
         qnode.add_transform(
-            TransformContainer(self._transform, targs, tkwargs, self._classical_cotransform)
+            TransformContainer(
+                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+            )
         )
         return qnode
 
