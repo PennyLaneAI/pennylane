@@ -479,7 +479,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
             smax = max(s[argmax_gamma], 2)
-            self.s[idx] = np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
+            self.s[idx] = (
+                np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
+                if len(self.s[idx].shape) <= 1
+                else senf.s[idx][:, np.newaxis]
+            )
 
         self.k += 1
 
