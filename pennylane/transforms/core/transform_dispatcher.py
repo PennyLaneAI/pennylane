@@ -114,7 +114,7 @@ class TransformDispatcher:
 
     def _qnode_transform(self, qnode, targs, tkwargs):
         """Apply the transform on a QNode. It populates the transform program of a QNode"""
-        if not qnode.transform_program:
+        if qnode.transform_program.is_empty():
             qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:
