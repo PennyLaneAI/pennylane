@@ -691,7 +691,7 @@ def test_vjp_is_unwrapped_for_param_shift():
 
 
 @pytest.mark.torch
-def test_batch_input_single_measure():
+def test_batch_input_single_measure(tol):
     """Test input batching in torch"""
     dev = qml.device("default.qubit.torch", wires=4)
 
@@ -703,19 +703,24 @@ def test_batch_input_single_measure():
         return qml.probs(op=qml.PauliZ(1))
 
     TorchLayer.set_input_argument("x")
-    layer = TorchLayer(circuit, weight_shapes={"weights": (2,)})
-    x = torch.Tensor(np.random.uniform(0, 1, (10, 4)))
-    res = layer(x)
+    try:
+        layer = TorchLayer(circuit, weight_shapes={"weights": (2,)})
+        x = torch.Tensor(np.random.uniform(0, 1, (10, 4)))
+        res = layer(x)
 
-    assert res.shape == (10, 2)
-    assert dev.num_executions == 1
+        assert res.shape == (10, 2)
+        assert dev.num_executions == 1
 
-    for x_, r in zip(x, res):
-        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]))
+        for x_, r in zip(x, res):
+            assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
+
+    finally:
+        # reset back to the old name
+        TorchLayer.set_input_argument("inputs")
 
 
 @pytest.mark.torch
-def test_batch_input_multi_measure():
+def test_batch_input_multi_measure(tol):
     """Test input batching in torch for multiple measurements"""
     dev = qml.device("default.qubit.torch", wires=4)
 
@@ -727,19 +732,21 @@ def test_batch_input_multi_measure():
         return [qml.expval(qml.PauliZ(1)), qml.probs(wires=range(2))]
 
     TorchLayer.set_input_argument("x")
-    layer = TorchLayer(circuit, weight_shapes={"weights": (2,)})
-    x = torch.Tensor(np.random.uniform(0, 1, (10, 4)))
-    res = layer(x)
+    try:
+        layer = TorchLayer(circuit, weight_shapes={"weights": (2,)})
+        x = torch.Tensor(np.random.uniform(0, 1, (10, 4)))
+        res = layer(x)
 
-    assert res.shape == (10, 5)
-    assert dev.num_executions == 1
+        assert res.shape == (10, 5)
+        assert dev.num_executions == 1
 
-    for x_, r in zip(x, res):
-        exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
-        assert qml.math.allclose(r, exp)
+        for x_, r in zip(x, res):
+            exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
+            assert qml.math.allclose(r, exp, atol=tol)
 
-    # reset back to the old name
-    TorchLayer.set_input_argument("inputs")
+    finally:
+        # reset back to the old name
+        TorchLayer.set_input_argument("inputs")
 
 
 @pytest.mark.torch
