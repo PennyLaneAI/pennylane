@@ -35,6 +35,7 @@ def state_diagonalizing_gates(
     Args:
         measurementprocess (StateMeasurement): measurement to apply to the state
         state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the result of the measurement
@@ -60,6 +61,7 @@ def csr_dot_products(
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the result of the measurement
@@ -96,6 +98,7 @@ def sum_of_terms_method(
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the result of the measurement
@@ -122,6 +125,7 @@ def get_measurement_function(
     Args:
         measurementprocess (MeasurementProcess): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         Callable: function that returns the measurement result
@@ -157,6 +161,7 @@ def measure(
     Args:
         measurementprocess (MeasurementProcess): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         Tensorlike: the result of the measurement
