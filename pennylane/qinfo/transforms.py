@@ -131,7 +131,16 @@ def purity(qnode, wires):
         if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc return type needs to be a state.")
 
+        # determine if the measurement is a state vector or a density matrix
+        # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
+        # line with isinstance checks
+        dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+
         state_built = qnode(*args, **kwargs)
+
+        if not dm_measurement:
+            state_built = qml.math.dm_from_state_vector(state_built)
+
         return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
 
     return wrapper
@@ -185,9 +194,17 @@ def vn_entropy(qnode, wires, base=None):
             measurements = qnode.tape.measurements
             if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
                 raise ValueError("The qfunc return type needs to be a state.")
-            density_matrix = qnode(*args, **kwargs)
-            if density_matrix.shape == (density_matrix.shape[0],):
+
+            # determine if the measurement is a state vector or a density matrix
+            # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
+            # line with isinstance checks
+            dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+
+            if not dm_measurement:
+                # if state vector, the entropy is 0
                 return 0.0
+
+            density_matrix = qnode(*args, **kwargs)
             entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
             return entropy
 
@@ -746,17 +763,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    # Get the state vector if all wires are selected
-    if len(wires0) == len(qnode0.device.wires):
-        state_qnode0 = qnode0
-    else:
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-
-    # Get the state vector if all wires are selected
-    if len(wires1) == len(qnode1.device.wires):
-        state_qnode1 = qnode1
-    else:
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_fidelity(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
@@ -875,17 +883,8 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    # Get the state vector if all wires are selected
-    if len(wires0) == len(qnode0.device.wires):
-        state_qnode0 = qnode0
-    else:
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-
-    # Get the state vector if all wires are selected
-    if len(wires1) == len(qnode1.device.wires):
-        state_qnode1 = qnode1
-    else:
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_relative_entropy(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the relative entropy between two states computed from
