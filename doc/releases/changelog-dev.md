@@ -182,6 +182,9 @@
 * Added a transform dispatcher.
   [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
 
+* Added a transform program.
+  [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
