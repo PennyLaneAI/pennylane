@@ -320,10 +320,11 @@ def _stoch_pulse_grad(
         rules when used with simple pulses (see details and examples below), potentially leading
         to imprecise results and/or unnecessarily large computational efforts.
 
-    .. note::
+    .. warning::
 
-        Currently this function only supports pulses for which each *parametrized* term is a
-        simple Pauli word. More general Hamiltonian terms are not supported yet.
+        This transform may only be applied directly to QNodes that only have scalar parameters.
+        For non-scalar parameters, use JAX entrypoints (``jax.grad``, ``jax.jacobian``, ...)
+        instead or apply the transform on the tape level. Also see the examples below.
 
     **Examples**
 

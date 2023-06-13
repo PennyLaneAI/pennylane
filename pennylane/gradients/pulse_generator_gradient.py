@@ -455,7 +455,14 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         This function requires the JAX interface and does not work with other autodiff interfaces
         commonly encountered with PennyLane.
-        In addition, this transform is only JIT-compatible with pulses that only have scalar parameters.
+        In addition, this transform is only JIT-compatible with pulses that only have scalar
+        parameters.
+
+    .. warning::
+
+        This transform may only be applied directly to QNodes that only have scalar parameters.
+        For non-scalar parameters, use JAX entrypoints (``jax.grad``, ``jax.jacobian``, ...)
+        instead or apply the transform on the tape level. Also see the examples below.
 
     **Example**
 
