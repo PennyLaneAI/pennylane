@@ -279,7 +279,7 @@ def string_to_fermi_word(fermi_string):
     if fermi_string.isspace() or not fermi_string:
         return FermiWord({})
 
-    fermi_string = re.sub(" +", " ", fermi_string).strip()
+    fermi_string = " ".join(fermi_string.split())
 
     if not all(s.isdigit() or s in ["+", "-", "^", " "] for s in fermi_string):
         raise ValueError(f"Invalid character encountered in string {fermi_string}.")
