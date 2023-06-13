@@ -38,8 +38,11 @@ def jordan_wigner(
 
     Args:
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
-        ps: whether to return the result as a PauliSentence instead of an
+        ps (bool): whether to return the result as a PauliSentence instead of an
             Operator. Defaults to False.
+        wire_map (dict): a dictionary defining how to map the oribitals of
+            the Fermi operator to qubit wires. If None, the integers used to
+            order the orbitals will be used as wire labels. Defaults to None.
 
     Returns:
         Union[PauliSentence, Operator]: a linear combination of qubit operators
@@ -56,13 +59,19 @@ def jordan_wigner(
     + (0.25+0j) * Y(0) @ Y(1)
     + (0.25+0j) * X(0) @ X(1)
     + 0.25j * X(0) @ Y(1)
+
+    >>> jordan_wigner(w, ps=True, wire_map={0: 2, 1: 3})
+    -0.25j * Y(2) @ X(3)
+    + (0.25+0j) * Y(2) @ Y(3)
+    + (0.25+0j) * X(2) @ X(3)
+    + 0.25j * X(2) @ Y(3)
     """
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
 
 
 @jordan_wigner.register
-def _(fermi_operator: FermiWord, ps=False, wire_order=None):
-    wires = wire_order or list(fermi_operator.wires)
+def _(fermi_operator: FermiWord, ps=False, wire_map=None):
+    wires = wire_map.keys() if wire_map else list(fermi_operator.wires)
 
     if len(fermi_operator) == 0:
         qubit_operator = PauliSentence({PauliWord({}): 1.0})
@@ -82,9 +91,13 @@ def _(fermi_operator: FermiWord, ps=False, wire_order=None):
                 }
             )
 
-    if ps:
-        return qubit_operator
-    return qubit_operator.operation(wires)
+    if not ps:
+        qubit_operator = qubit_operator.operation(wires)
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
 
 
 @jordan_wigner.register
