@@ -71,7 +71,6 @@ def jordan_wigner(
 
 @jordan_wigner.register
 def _(fermi_operator: FermiWord, ps=False, wire_map=None):
-
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -105,7 +104,6 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
 
 @jordan_wigner.register
 def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
-
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
