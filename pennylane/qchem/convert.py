@@ -221,7 +221,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
 
     **Example**
 
-    >>> coeffs = np.array([0.1, 0.2, 0.3])
+    >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
     ...     qml.operation.Tensor(qml.PauliX(wires=['w0'])),
     ...     qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2'])),
