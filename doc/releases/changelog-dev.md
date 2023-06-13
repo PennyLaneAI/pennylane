@@ -4,14 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>Fermionic operators 🔬</h4>
-
-* A new class called `Fermiword` has been added to represent a fermionic operator (e.g., $\hat{c}_1 c_0 \hat{c}_2 c_3$).
-  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
-
-* A new class called `FermiSentence` has been added to represent a linear combination of fermionic operators.
-  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
-
 <h4>Workflow-level resource estimation 🧮</h4>
 
 * PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
@@ -37,7 +29,7 @@
           circuit(i)
   ```
 
-  It is then possible to inspect the resource requirements of individual circuits:
+  The resource requirements of individual circuits can then be inspected as follows:
 
   ```pycon
   >>> resources = tracker.history["resources"]
@@ -152,22 +144,13 @@
   6
   ``` 
 
-<h4>Community contributions from UnitaryHack 🤝</h4>
+<h4>Fermionic operators 🔬</h4>
 
-* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
-  now has an improved string representation.
-  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+* A new class called `Fermiword` has been added to represent a fermionic operator (e.g., $\hat{c}_1 c_0 \hat{c}_2 c_3$).
+  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
-  ```pycon
-  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
-  >>> def f2(p, t): return p * t
-  >>> coeffs = [2., f1, f2]
-  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-  >>> qml.dot(coeffs, observables)
-    (2.0*(PauliX(wires=[0])))
-  + (f1(params_0, t)*(PauliY(wires=[0])))
-  + (f2(params_1, t)*(PauliZ(wires=[0])))
-  ```
+* A new class called `FermiSentence` has been added to represent a linear combination of fermionic operators.
+  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
@@ -176,7 +159,7 @@
 
   Two cases are enabled for calculating the trace distance:
   
-  - A QNode transform via `qinfo.trace_distance`:
+  - A QNode transform via `qml.qinfo.trace_distance`:
 
     ```python
     dev = qml.device('default.qubit', wires=2)
@@ -195,7 +178,7 @@
     0.047862689546603415
     ```
 
-  - Flexible post-processing via `math.trace_distance`:
+  - Flexible post-processing via `qml.math.trace_distance`:
 
     ```pycon
     >>> rho = np.array([[0.3, 0], [0, 0.7]])
@@ -204,34 +187,12 @@
     0.19999999999999998
     ```
 
-* It is now possible to use basis-state preparations in Qutrit circuits.
-  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
-
-  ```python
-  wires = range(2)
-  dev = qml.device("default.qutrit", wires=wires)
-
-  @qml.qnode(dev)
-  def qutrit_circuit():
-      qml.QutritBasisState([1, 1], wires=wires)
-      qml.TAdd(wires=wires)
-      return qml.probs(wires=1)
-  ```
-  
-  ```pycon
-  >>> qutrit_circuit()
-  array([0., 0., 1.])
-  ```
-
-* PennyLane Docker builds have been updated to include the latest plugins and interface versions.
-  [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
-
 <h4>Extended support for differentiating pulses</h4>
 
-* `pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
+* `qml.pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
+  This allows for computing Jacobians of the unitary directly even when `dense=False`.
   [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
 
-  This allows for computing Jacobians of the unitary directly even when `dense=False`.
   
   ```python
   def U(params):
@@ -249,7 +210,7 @@
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
 * The `TorchLayer` and `KerasLayer` integrations with `torch.nn` and `Keras` have been upgraded.
-  Consider the `TorchLayer`:
+  Consider the following `TorchLayer`:
 
   ```python
   n_qubits = 2
@@ -275,7 +236,8 @@
     >>> batch_size = 10
     >>> inputs = torch.rand((batch_size, n_qubits))
     >>> qlayer(inputs)
-    >>> assert dev.num_executions == 1
+    >>> dev.num_executions == 1
+    True
     ```
 
   - Ability to draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
@@ -302,12 +264,45 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>Community contributions from UnitaryHack 🤝</h4>
+
+* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
+  now has an improved string representation.
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+  ```pycon
+  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
+  >>> def f2(p, t): return p * t
+  >>> coeffs = [2., f1, f2]
+  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+  >>> qml.dot(coeffs, observables)
+    (2.0*(PauliX(wires=[0])))
+  + (f1(params_0, t)*(PauliY(wires=[0])))
+  + (f2(params_1, t)*(PauliZ(wires=[0])))
+  ```
+
 <h4>A more flexible projector</h4>
 
 <h4>Do more with qutrits</h4>
 
-* Qutrit devices now support parameter-shift differentiation.
-  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
+* It is now possible to prepare qutrit basis states with `qml.QutritBasisState`.
+  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
+
+  ```python
+  wires = range(2)
+  dev = qml.device("default.qutrit", wires=wires)
+
+  @qml.qnode(dev)
+  def qutrit_circuit():
+      qml.QutritBasisState([1, 1], wires=wires)
+      qml.TAdd(wires=wires)
+      return qml.probs(wires=1)
+  ```
+  
+  ```pycon
+  >>> qutrit_circuit()
+  array([0., 0., 1.])
+  ```
 
 * Three qutrit rotation operators have been added that are analogous to `RX`, `RY`, and `RZ`:
 
@@ -318,6 +313,9 @@
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
   [(#2847)](https://github.com/PennyLaneAI/pennylane/pull/2847)
+  
+* Qutrit devices now support parameter-shift differentiation.
+  [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
 
 <h4>The qchem module</h4>
 
@@ -329,11 +327,6 @@
   removed.
   [(#4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
   [(#4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
-
-* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
-  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
-  that the `pyscf` backend can be used for open-shell calculations.
-  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 * Jordan-Wigner transforms that cache Pauli gate objects have been accelerated.
   [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
@@ -431,6 +424,14 @@
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
 <h4>Other improvements</h4>
+
+* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
+  that the `pyscf` backend can be used for open-shell calculations.
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+
+* PennyLane Docker builds have been updated to include the latest plugins and interface versions.
+  [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
