@@ -234,9 +234,9 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
 
-    phis = phis % (4 * qml.numpy.pi)
-    thetas = thetas % (4 * qml.numpy.pi)
-    omegas = omegas % (4 * qml.numpy.pi)
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    omegas = omegas % (4 * numpy.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
@@ -335,9 +335,9 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
-    phis = phis % (4 * qml.numpy.pi)
-    thetas = thetas % (4 * qml.numpy.pi)
-    lams = lams % (4 * qml.numpy.pi)
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    lams = lams % (4 * numpy.pi)
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
@@ -403,9 +403,9 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
-    phis = phis % (4 * qml.numpy.pi)
-    thetas = thetas % (4 * qml.numpy.pi)
-    psis = psis % (4 * qml.numpy.pi)
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    psis = psis % (4 * numpy.pi)
 
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
