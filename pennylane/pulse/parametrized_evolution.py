@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .hardware_hamiltonian import HardwareHamiltonian
 
 has_jax = True
 try:
@@ -39,7 +40,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=True, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=None, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -68,7 +69,9 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
+        do_queue (bool): determines if the scalar product operator will be queued.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
@@ -104,6 +107,8 @@ class ParametrizedEvolution(Operation):
 
     To create a :class:`~.ParametrizedEvolution`, we first define a :class:`~.ParametrizedHamiltonian`
     describing the system, and then pass it to :func:`~pennylane.evolve`:
+
+
 
     .. code-block:: python
 
@@ -371,9 +376,9 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        do_queue=True,
+        do_queue=None,
         id=None,
-        **odeint_kwargs
+        **odeint_kwargs,
     ):
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
@@ -393,7 +398,15 @@ class ParametrizedEvolution(Operation):
                 "The keyword argument complementary does not have any effect if "
                 "return_intermediate is set to False."
             )
-        params = [] if params is None else params
+        if params is None:
+            params = []
+        else:
+            if not isinstance(H, HardwareHamiltonian) and len(params) != len(H.coeffs_parametrized):
+                raise ValueError(
+                    "The length of the params argument and the number of scalar-valued functions "
+                    f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
+                    f"expected {len(H.coeffs_parametrized)} parameters."
+                )
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
@@ -424,9 +437,10 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
-            do_queue=True,
+            dense=self.dense,
+            do_queue=None,
             id=self.id,
-            **odeint_kwargs
+            **odeint_kwargs,
         )
 
     def _check_time_batching(self):

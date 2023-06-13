@@ -37,7 +37,7 @@ from .symbolicop import ScalarSymbolicOp, SymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, do_queue=True, id=None):
+def pow(base, z=1, lazy=True, do_queue=None, id=None):
     """Raise an Operator to a power.
 
     Args:
@@ -48,7 +48,9 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -105,7 +107,14 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     else:
         pow_op = qml.prod(*pow_ops)
 
-    if do_queue:
+    if do_queue is not None:
+        do_queue_deprecation_warning = (
+            "The do_queue keyword argument is deprecated. "
+            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
+        )
+        warnings.warn(do_queue_deprecation_warning, UserWarning)
+
+    if do_queue or do_queue is None:
         QueuingManager.remove(base)
 
     return pow_op
@@ -176,12 +185,23 @@ class Pow(ScalarSymbolicOp):
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, z=1, do_queue=True, id=None):
+    def __new__(cls, base=None, z=1, do_queue=None, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
         different based on ``base``'s inheritance.  We cache the different types in private class
         variables so that:
+
+        >>> Pow(op, z).__class__ is Pow(op, z).__class__
+        True
+        >>> type(Pow(op, z)) == type(Pow(op, z))
+        True
+        >>> isinstance(Pow(op, z), type(Pow(op, z)))
+        True
+        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
+        True
+        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        True
 
         """
 
@@ -206,7 +226,7 @@ class Pow(ScalarSymbolicOp):
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, do_queue=True, id=None):
+    def __init__(self, base=None, z=1, do_queue=None, id=None):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
