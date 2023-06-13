@@ -237,14 +237,14 @@ class TestQubitUnitary:
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize(
-        "U,expected_gate,expected_params",
+        "U,expected_gates,expected_params",
         [
-            (I, qml.RZ, [0.0]),
-            (Z, qml.RZ, [np.pi]),
-            (S, qml.RZ, [np.pi / 2]),
-            (T, qml.RZ, [np.pi / 4]),
-            (qml.matrix(qml.RZ(0.3, wires=0)), qml.RZ, [0.3]),
-            (qml.matrix(qml.RZ(-0.5, wires=0)), qml.RZ, [-0.5]),
+            (I, (qml.RZ, qml.RY, qml.RZ), [0.0, 0.0, 0.0]),
+            (Z, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, 0.0, np.pi / 2]),
+            (S, (qml.RZ, qml.RY, qml.RZ), [np.pi / 4, 0.0, np.pi / 4]),
+            (T, (qml.RZ, qml.RY, qml.RZ), [np.pi / 8, 0.0, np.pi / 8]),
+            (qml.matrix(qml.RZ(0.3, wires=0)), (qml.RZ, qml.RY, qml.RZ), [0.15, 0.0, 0.15]),
+            (qml.matrix(qml.RZ(-0.5, wires=0)), (qml.RZ, qml.RY, qml.RZ), [-0.25, 0.0, -0.25]),
             (
                 np.array(
                     [
@@ -252,15 +252,19 @@ class TestQubitUnitary:
                         [9.831019270939975e-01 + 0.1830590094588862j, 0],
                     ]
                 ),
-                qml.Rot,
+                (qml.RZ, qml.RY, qml.RZ),
                 [-0.18409714468526372, np.pi, 0.18409714468526372],
             ),
-            (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
-            (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)), qml.Rot, [0.2, 0.5, -0.3]),
+            (H, (qml.RZ, qml.RY, qml.RZ), [-np.pi, np.pi / 2, 0.0]),
+            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, -np.pi / 2]),
+            (
+                qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)),
+                (qml.RZ, qml.RY, qml.RZ),
+                [0.2, 0.5, -0.3],
+            ),
             (
                 np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
-                qml.Rot,
+                (qml.RZ, qml.RY, qml.RZ),
                 [-1.0, 2.0, -3.0],
             ),
             # An instance of a broadcast unitary
@@ -269,21 +273,22 @@ class TestQubitUnitary:
                 * qml.Rot(
                     np.array([1.2, 2.3]), np.array([0.12, 0.5]), np.array([0.98, 0.567]), wires=0
                 ).matrix(),
-                qml.Rot,
+                (qml.RZ, qml.RY, qml.RZ),
                 [[1.2, 2.3], [0.12, 0.5], [0.98, 0.567]],
             ),
         ],
     )
-    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
+    def test_qubit_unitary_decomposition(self, U, expected_gates, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
         decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
         decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
-        assert len(decomp) == 1 == len(decomp2)
-        assert isinstance(decomp[0], expected_gate)
-        assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
-        assert isinstance(decomp2[0], expected_gate)
-        assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
+        assert len(decomp) == 3 == len(decomp2)
+        for i in range(3):
+            assert isinstance(decomp[i], expected_gates[i])
+            assert np.allclose(decomp[i].parameters, expected_params[i], atol=1e-7)
+            assert isinstance(decomp2[i], expected_gates[i])
+            assert np.allclose(decomp2[i].parameters, expected_params[i], atol=1e-7)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
