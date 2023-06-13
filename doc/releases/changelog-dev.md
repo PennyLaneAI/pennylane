@@ -331,6 +331,9 @@
 
 * A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
   [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+  
+* The `has_unitary_generator` attribute in `qml.ops.qubit.attributes` no longer contains operators with non-unitary generators.
+  [(#4183)](https://github.com/PennyLaneAI/pennylane/pull/4183)
 
 * Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
@@ -360,5 +363,6 @@ Borja Requena,
 Mainak Roy,
 Matthew Silverman,
 Jay Soni,
+Edward Thomas,
 David Wierichs,
 Frederik Wilde.
