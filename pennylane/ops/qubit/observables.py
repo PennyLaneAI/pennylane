@@ -419,10 +419,10 @@ class Projector(Observable):
             return object.__new__(cls._state_vector_type)
 
         raise ValueError(
-            "Input state should have the same length as the wires in the case"
-            " of a basis state, or 2**len(wires) in case of a state vector."
-            f" The lengths for the input state and wires are {len(state)} and "
-            f" {len(wires)}, respectively."
+            "Input state should have the same length as the wires in the case "
+            "of a basis state, or 2**len(wires) in case of a state vector. "
+            f"The lengths for the input state and wires are {len(state)} and "
+            f"{len(wires)}, respectively."
         )
 
     def pow(self, z):
