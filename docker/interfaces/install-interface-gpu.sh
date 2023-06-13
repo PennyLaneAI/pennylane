@@ -22,17 +22,17 @@ case $INTERFACE_NAME in
 # Build Jax GPU interface
   "jax")
   echo "##########-Installing" "$INTERFACE_NAME" "GPU INTERFACE-##########"
-	pip3 install jax==0.2.14 jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+	pip3 install jax==0.4.10 jaxlib==0.4.10+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
   ;;
 # Build Torch GPU interface
   "torch")
   echo "##########-Installing" "$INTERFACE_NAME" "GPU INTERFACE-##########"
-  pip3 install torch==1.8.1
+  pip3 install torch==2.0.0
   ;;
 # Build Tensorflow GPU interface
   "tensorflow")
   echo "##########-Installing" "$INTERFACE_NAME" "GPU INTERFACE-##########"
-  pip3 install tensorflow==2.5.0
+  pip3 install tensorflow==2.12.0
   ;;
 	*)
   echo "##########-No-GPU-Interface-Installed-##########"
