@@ -223,6 +223,25 @@
   array([0., 0., 1.])
   ```
 
+* Added the `one_qubit_decomposition` function to provide a unified interface for decompositions
+  of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. 
+  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+
+  ```pycon
+  >>> from pennylane.transforms import one_qubit_decomposition
+  >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
+  ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
+  >>> one_qubit_decomposition(U, 0, "ZYZ")
+  [RZ(array(-0.2420953), wires=[0]),
+   RY(array(1.14938178), wires=[0]),
+   RZ(array(1.73305815), wires=[0])]
+  >>> one_qubit_decomposition(U, 0, "XYX", return_global_phase=True)
+  [RX(tensor(-1.72101925, requires_grad=True), wires=[0]),
+   RY(tensor(1.39749741, requires_grad=True), wires=[0]),
+   RX(tensor(0.45246584, requires_grad=True), wires=[0]),
+   (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+  ```
+
 * PennyLane Docker builds have been updated to include the latest plugins and interface versions.
   [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
@@ -444,9 +463,6 @@
   of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
   `HardwareHamiltonian`s which are not checked.
   [(#4216)](https://github.com/PennyLaneAI/pennylane/pull/4216)
-
-* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions.
-  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
 * One qubit unitaries can now be decomposed into a `ZXZ` gate sequence (apart from the pre-existing `XYX` and `ZYZ`).
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
