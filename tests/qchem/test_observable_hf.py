@@ -19,6 +19,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.pauli import pauli_sentence
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -232,14 +234,56 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
                 ],
             ],
         ),
+        ((np.array([1.23]), [[]]), [[1.23], [qml.Identity(0)]]),
     ],
 )
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
-    h = qchem.qubit_observable(f_observable)
+    h_as_hamiltonian = qchem.qubit_observable(f_observable)
     h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
 
-    assert h.compare(h_ref)
+    enable_new_opmath()
+
+    h_as_op = qchem.qubit_observable(f_observable)
+    h_ref_as_op = pauli_sentence(h_ref).operation(
+        h_ref.wires
+    )  # easy conversion from ham to operation
+
+    disable_new_opmath()
+
+    assert h_as_hamiltonian.compare(h_ref)
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2])
+    )
+
+
+@pytest.mark.parametrize(
+    ("f_observable", "cut_off"),
+    [
+        (
+            (np.array([0.01]), [[0, 0]]),
+            0.1,
+        ),
+        (
+            (np.array([1.0]), [[0, 0, 1, 1]]),  # should produce the 0 operator
+            0.1,
+        ),
+    ],
+)
+def test_qubit_observable_cutoff(f_observable, cut_off):
+    """Test that qubit_observable returns the correct operator when a cutoff is provided."""
+    h_ref, h_ref_op = (qml.Hamiltonian([], []), qml.s_prod(0, qml.Identity(0)))
+    h_as_hamiltonian = qchem.qubit_observable(f_observable, cutoff=cut_off)
+
+    enable_new_opmath()
+    h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
+    disable_new_opmath()
+
+    assert h_as_hamiltonian.compare(h_ref)
+    assert qml.equal(h_as_op, h_ref_op)
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_op, wire_order=[0, 1, 2])
+    )
 
 
 @pytest.mark.parametrize(
