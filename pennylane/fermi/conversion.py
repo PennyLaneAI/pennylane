@@ -16,12 +16,15 @@
 from functools import singledispatch
 from typing import Union
 
+from pennylane.operation import Operator
 from pennylane.pauli import PauliWord, PauliSentence
 from .fermionic import FermiWord, FermiSentence
 
 
 @singledispatch
-def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -> Union[Operator, PauliSentence]:
+def jordan_wigner(
+    fermi_operator: (Union[FermiWord, FermiSentence]), ps=False
+) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -36,7 +39,7 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -
     Args:
         fermi_operator(FermiWord, FermiSentence): the fermionic operator
         ps: whether to return the result as a PauliSentence instead of an
-            operation. Defaults to False.
+            Operator. Defaults to False.
 
     Returns:
         Union[PauliSentence, Operator]: a linear combination of qubit operators
@@ -45,6 +48,10 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> jordan_wigner(w)
+    (-0.25j*(PauliY(wires=[0]) @ PauliX(wires=[1]))) + ((0.25+0j)*(PauliY(wires=[0]) @ PauliY(wires=[1]))) +
+    ((0.25+0j)*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + (0.25j*(PauliX(wires=[0]) @ PauliY(wires=[1])))
+
+    >>> jordan_wigner(w, ps=True)
     -0.25j * Y(0) @ X(1)
     + (0.25+0j) * Y(0) @ Y(1)
     + (0.25+0j) * X(0) @ X(1)
