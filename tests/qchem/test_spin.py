@@ -240,7 +240,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     disable_new_opmath()
     sz_ref_pl_op = qml.dot(coeffs_ref, ops_ref)
 
-    wire_order = sz_ref_pl_op.wires
+    wire_order = sz_ref.wires
     assert not isinstance(sz_pl_op, qml.Hamiltonian)
     assert np.allclose(
         qml.matrix(sz_pl_op, wire_order=wire_order),
