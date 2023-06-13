@@ -13,6 +13,8 @@
 # limitations under the License.
 """The Fermionic representation classes."""
 from copy import copy
+from numbers import Number
+from pennylane.numpy.tensor import tensor
 
 
 class FermiWord(dict):
@@ -26,6 +28,9 @@ class FermiWord(dict):
     >>> w
     <FermiWord = '0+ 1-'>
     """
+
+    __numpy_ufunc__ = None
+    __array_ufunc__ = None
 
     def __init__(self, operator):
         self.sorted_dic = dict(sorted(operator.items()))
@@ -122,7 +127,7 @@ class FermiWord(dict):
             other_fs = FermiSentence({other: 1.0})
             return self_fs + other_fs
 
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
 
@@ -131,7 +136,7 @@ class FermiWord(dict):
     def __radd__(self, other):
         """Add a FermiWord to a constant, i.e. `2 + FermiWord({...})`"""
 
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             return self.__add__(other)
 
         raise TypeError(f"Cannot add a FermiWord to {type(other)}.")
@@ -151,7 +156,7 @@ class FermiWord(dict):
             other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other_fs
 
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             other_fs = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self_fs + other_fs
 
@@ -159,7 +164,7 @@ class FermiWord(dict):
 
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             self_fs = FermiSentence({self: -1.0})
             other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
@@ -167,7 +172,7 @@ class FermiWord(dict):
         raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
 
     def __mul__(self, other):
-        r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a number (int, float, complex).
+        r"""Multiply a FermiWord with another FermiWord, a FermiSentence, or a constant.
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w * w
@@ -199,7 +204,7 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return FermiSentence({self: 1}) * other
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (Number, tensor)):
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -212,7 +217,7 @@ class FermiWord(dict):
         ``2 * FermiWord({(0, 0): "+"})``, where the ``__mul__`` operator on an integer
         will fail to multiply with a FermiWord"""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (Number, tensor)):
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -275,7 +280,7 @@ class FermiSentence(dict):
         # ensure other is FermiSentence
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             other = FermiSentence({FermiWord({}): other})
 
         if isinstance(other, FermiSentence):
@@ -292,7 +297,7 @@ class FermiSentence(dict):
     def __radd__(self, other):
         """Add a FermiSentence to a constant, i.e. `2 + FermiSentence({...})`"""
 
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             return self.__add__(other)
 
         raise TypeError(f"Cannot add a FermiSentence to {type(other)}.")
@@ -303,7 +308,7 @@ class FermiSentence(dict):
             other = FermiSentence({other: -1})
             return self.__add__(other)
 
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self.__add__(other)
 
@@ -319,7 +324,7 @@ class FermiSentence(dict):
         >>> 2 - FermiSentence({...})
         """
 
-        if isinstance(other, (float, int, complex)):
+        if isinstance(other, (Number, tensor)):
             self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
             other_fs = FermiSentence({FermiWord({}): other})  # constant * I
             return self_fs + other_fs
@@ -345,7 +350,7 @@ class FermiSentence(dict):
 
             return product
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (Number, tensor)):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 
@@ -359,7 +364,7 @@ class FermiSentence(dict):
         multiplying ``2 * fermi_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a FermiSentence"""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (Number, tensor)):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 

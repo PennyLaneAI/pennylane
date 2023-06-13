@@ -14,6 +14,8 @@
 """Unit Tests for the Fermionic representation classes."""
 import pickle
 from copy import copy, deepcopy
+import numpy as np
+from pennylane import numpy as pnp
 
 import pytest
 
@@ -276,6 +278,8 @@ class TestFermiWordArithmetic:
         (fw1, 5, FermiSentence({fw1: 1, fw4: 5})),  # int
         (fw2, 2.8, FermiSentence({fw2: 1, fw4: 2.8})),  # float
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: (1 + 3j)})),  # complex
+        (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: 5})),  # numpy array
+        (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane numpy array
         (fw4, 2, FermiSentence({fw4: 3})),  # FermiWord is Identity
     ]
 
@@ -337,6 +341,8 @@ class TestFermiWordArithmetic:
         (fw1, 5, FermiSentence({fw1: 1, fw4: -5})),  # int
         (fw2, 2.8, FermiSentence({fw2: 1, fw4: -2.8})),  # float
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: -(1 + 3j)})),  # complex
+        (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: -5})),  # numpy array
+        (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: -2.8})),  # pennylane numpy array
         (fw4, 2, FermiSentence({fw4: -1})),  # FermiWord is Identity
     ]
 
