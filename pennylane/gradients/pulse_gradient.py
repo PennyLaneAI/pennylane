@@ -56,6 +56,18 @@ def _assert_has_jax(transform_name):
         )
 
 
+def warn_pulse_diff_on_qnode(transform_name):
+    """Emit a warning that the gradient transform with the provided name only supports
+    direct application to QNodes that have scalar pulse parameters.
+    """
+    warnings.warn(
+        f"Applying the {transform_name} gradient transform to a QNode directly is currently "
+        "only supported for scalar pulse parameters. Non-scalar parameters may lead to wrong "
+        "results or raise exceptions.",
+        UserWarning,
+    )
+
+
 def _split_evol_ops(op, ob, tau):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
@@ -676,3 +688,15 @@ def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
 stoch_pulse_grad = gradient_transform(
     _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
 )
+
+
+@stoch_pulse_grad.custom_qnode_wrapper
+def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
+    """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
+    It is equivalent to the default QNode wrapper of any :func:`~.gradient_transform`,
+    but in addition warns that applying ``stoch_pulse_grad`` to a ``QNode`` directly
+    is only supported for scalar pulse parameters.
+    """
+    transform_name = "stochastic pulse parameter-shift"
+    warn_pulse_diff_on_qnode(transform_name)
+    return self.default_qnode_wrapper(qnode, targs, tkwargs)
