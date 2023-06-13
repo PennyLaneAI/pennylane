@@ -27,7 +27,7 @@
   :math:`a^\dagger_1 a_0 a^\dagger_2 a_3`.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
-* Added a conversion function `jw_mapping` that converts a fermionic operator (`FermiWord`) to a qubit 
+* Added a conversion function `jordan_wigner` that converts a fermionic operator (`FermiWord`) to a qubit 
   operator (`PauliSentence`) using the Jordan-Wigner mapping.
   Added a `to_qubit` method to `FermiWord` that returns a `PauliSentence` representation using `jw_mapping`.
   [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)

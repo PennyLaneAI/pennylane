@@ -352,7 +352,7 @@ FERMI_WORDS_AND_OPS_EXTENDED = [
 
 @pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS + FERMI_WORDS_AND_OPS_EXTENDED)
 def test_jordan_wigner_fermi_word_ps(fermionic_op, result):
-    """Test that the jw_mapping function returns the correct qubit operator."""
+    """Test that the jordan_wigner function returns the correct qubit operator."""
     # convert FermiWord to PauliSentence and simplify
     qubit_op = jordan_wigner(fermionic_op, ps=True)
     qubit_op.simplify()
@@ -378,12 +378,12 @@ def test_jordan_wigner_fermi_word_operation(fermionic_op, result):
 
 
 def test_jordan_wigner_for_identity():
-    """Test that the jw_mapping function returns the correct qubit operator for Identity."""
+    """Test that the jordan_wigner function returns the correct qubit operator for Identity."""
     assert qml.equal(jordan_wigner(FermiWord({})), qml.Identity(0))
 
 
 def test_jordan_wigner_for_identity_ps():
-    """Test that the jw_mapping function returns the correct PauliSentence for Identity when ps=True."""
+    """Test that the jordan_wigner function returns the correct PauliSentence for Identity when ps=True."""
     assert jordan_wigner(FermiWord({}), ps=True) == PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
 
 
@@ -397,7 +397,7 @@ def test_jordan_wigner_for_identity_ps():
     ),
 )
 def test_jordan_wigner_for_null_operator_fermi_word_ps(operator):
-    """Test that the jw_mapping function works when the result is 0"""
+    """Test that the jordan_wigner function works when the result is 0"""
     # in PauliSentence return format, returns None
     assert jordan_wigner(operator, ps=True).simplify() is None
 

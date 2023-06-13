@@ -39,7 +39,7 @@ def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -
             operation. Defaults to False.
 
     Returns:
-        PauliSentence: a linear combination of qubit operators
+        Union[PauliSentence, Operator]: a linear combination of qubit operators
 
     **Example**
 
@@ -96,8 +96,8 @@ def _(fermi_operator: FermiSentence, ps=False):
     for fw, coeff in fermi_operator.items():
         fermi_word_as_ps = jordan_wigner(fw, ps=True)
 
-        for key in fermi_word_as_ps.keys():
-            qubit_operator[key] += fermi_word_as_ps[key] * coeff
+        for pw in fermi_word_as_ps:
+            qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
 
     if ps:
         return qubit_operator
