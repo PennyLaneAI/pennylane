@@ -205,7 +205,8 @@ def finite_diff(
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
         shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will
-            be used to execute the tapes outputted by this  transform. Note that this argument doesn't
+            be used to execute the tapes outputted by this transform. Note that this argument doesn't
+
             influence the shots used for tape execution, but provides information about the shots.
 
     Returns:
