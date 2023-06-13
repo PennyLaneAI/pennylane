@@ -416,10 +416,10 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
 
         shifted_op = qml.ops.functions.bind_new_parameters(op, new_params)
         # pylint: disable=protected-access
-        if n_prep := len(tape._prep) > op_idx:
+        if (n_prep := len(tape._prep)) > op_idx:
             shifted_tape._prep[op_idx] = shifted_op
         else:
-            shifted_tape._ops[op_idx + n_prep] = shifted_op
+            shifted_tape._ops[op_idx - n_prep] = shifted_op
 
         shifted_tape._update()
         # TODO: Figure out less ugly way to update shifted operation
