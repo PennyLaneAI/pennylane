@@ -627,17 +627,13 @@ class TestStateVectorProjector:
             state_vector, wires=range(num_wires)
         )
 
-        if state_vector[0] == 1:  # The projector is diagonal already
-            assert diag_gates == []
-            assert diag_gates_static == []
-        else:
-            diagonalizing_matrices = [diag_gates[0].matrix(), diag_gates_static[0].matrix()]
-            for u in diagonalizing_matrices:
-                diagonal_matrix = u.conj().T @ proj.matrix() @ u
-                assert np.allclose(
-                    diagonal_matrix - np.diag(np.diagonal(diagonal_matrix)), 0, atol=tol, rtol=0
-                )
-                assert np.allclose(np.diagonal(diagonal_matrix), proj.eigvals(), atol=tol, rtol=0)
+        diagonalizing_matrices = [diag_gates[0].matrix(), diag_gates_static[0].matrix()]
+        for u in diagonalizing_matrices:
+            diagonal_matrix = u.conj().T @ proj.matrix() @ u
+            assert np.allclose(
+                diagonal_matrix - np.diag(np.diagonal(diagonal_matrix)), 0, atol=tol, rtol=0
+            )
+            assert np.allclose(np.diagonal(diagonal_matrix), proj.eigvals(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("state_vector,expected", STATEVECTORPROJECTOR_TEST_DATA)
     def test_matrix_representation(self, state_vector, expected, tol):
