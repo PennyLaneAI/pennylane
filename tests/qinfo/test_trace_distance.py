@@ -540,3 +540,24 @@ class TestTraceDistanceQnode:
 
         td_grad = td_grad(jax.numpy.array(2.0), jax.numpy.array(param))
         assert qml.math.allclose(td_grad, (0.0, expected_td_grad), rtol=1e-03, atol=1e-04)
+
+
+@pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+def test_broadcasting(device):
+    """Test that the trace_distance transform supports broadcasting"""
+    dev = qml.device(device, wires=2)
+
+    @qml.qnode(dev)
+    def circuit_state(x):
+        qml.IsingXX(x, wires=[0, 1])
+        return qml.state()
+
+    x = np.array([0.4, 0.6, 0.8])
+    y = np.array([0.6, 0.8, 1.0])
+    dist = qml.qinfo.trace_distance(circuit_state, circuit_state, wires0=[0], wires1=[1])(x, y)
+
+    expected = 0.5 * (
+        np.abs(np.cos(x / 2) ** 2 - np.cos(y / 2) ** 2)
+        + np.abs(np.sin(x / 2) ** 2 - np.sin(y / 2) ** 2)
+    )
+    assert qml.math.allclose(dist, expected)
