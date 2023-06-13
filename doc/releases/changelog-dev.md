@@ -197,6 +197,10 @@
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
   [(#4234)](https://github.com/PennyLaneAI/pennylane/pull/4234)
 
+* Fix unclear documentation and indicate variable-length argument lists of functions and methods in
+  the respective docstrings.
+  [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
@@ -341,10 +345,6 @@
 * Fixed buggy calculation of angle in `xyx_decomposition` causing it to give an incorrect decomposition.
   An if conditional was intended to prevent divide by zero errors but the division was by the sine of the argument so any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
-
-* Fix unclear documentation and indicate variable-length argument lists of functions and methods in
-  the respective docstrings.
-  [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
 
 <h3>Contributors ✍️</h3>
 
