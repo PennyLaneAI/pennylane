@@ -370,12 +370,12 @@ class Hamiltonian(Observable):
             if len(op.wires) == 1:
                 update_op_dict(map, op.name, count)
                 w = self.wires.index(op.wires[0])
-                indices[j, w] = map[newkey]
+                indices[j, w] = map[op.name]
                 continue
             for i, w in enumerate(op.wires):
                 update_op_dict(map, op.name[i], count)
                 w = self.wires.index(w)
-                indices[j, w] = map[newkey]
+                indices[j, w] = map[op.name[i]]
         return indices
 
     def sparse_matrix(self, wire_order=None):
