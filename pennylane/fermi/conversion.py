@@ -23,7 +23,7 @@ from .fermionic import FermiWord, FermiSentence
 
 @singledispatch
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), ps=False
+    fermi_operator: (Union[FermiWord, FermiSentence]), ps=False, wire_order=None
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -61,51 +61,52 @@ def jordan_wigner(
 
 
 @jordan_wigner.register
-def _(fermi_operator: FermiWord, ps=False):
+def _(fermi_operator: FermiWord, ps=False, wire_order=None):
+    wires = wire_order or list(fermi_operator.wires)
+
     if len(fermi_operator) == 0:
         qubit_operator = PauliSentence({PauliWord({}): 1.0})
-        if ps:
-            return qubit_operator
-        return qubit_operator.operation([0])
 
-    coeffs = {"+": -0.5j, "-": 0.5j}
-    qubit_operator = PauliSentence()
+    else:
+        coeffs = {"+": -0.5j, "-": 0.5j}
+        qubit_operator = PauliSentence()
 
-    for item in fermi_operator.items():
-        (_, wire), sign = item
+        for item in fermi_operator.items():
+            (_, wire), sign = item
 
-        z_string = dict(zip(range(wire), ["Z"] * wire))
-        qubit_operator *= PauliSentence(
-            {
-                PauliWord({**z_string, **{wire: "X"}}): 0.5,
-                PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
-            }
-        )
-
-    if ps:
-        return qubit_operator
-
-    return qubit_operator.operation()
-
-
-@jordan_wigner.register
-def _(fermi_operator: FermiSentence, ps=False):
-    wires = list(fermi_operator.wires) or [0]
-
-    if len(fermi_operator) == 0:
-        qubit_operator = PauliSentence({PauliWord({}): 0})
-        if ps:
-            return qubit_operator
-        return qubit_operator.operation([0])
-
-    qubit_operator = PauliSentence()
-
-    for fw, coeff in fermi_operator.items():
-        fermi_word_as_ps = jordan_wigner(fw, ps=True)
-
-        for pw in fermi_word_as_ps:
-            qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+            z_string = dict(zip(range(wire), ["Z"] * wire))
+            qubit_operator *= PauliSentence(
+                {
+                    PauliWord({**z_string, **{wire: "X"}}): 0.5,
+                    PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
+                }
+            )
 
     if ps:
         return qubit_operator
     return qubit_operator.operation(wires)
+
+
+@jordan_wigner.register
+def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
+    wires = wire_map.keys() if wire_map else list(fermi_operator.wires)
+
+    if len(fermi_operator) == 0:
+        qubit_operator = PauliSentence({PauliWord({}): 0})  # does anything break if I remove this?
+
+    else:
+        qubit_operator = PauliSentence()
+
+        for fw, coeff in fermi_operator.items():
+            fermi_word_as_ps = jordan_wigner(fw, ps=True)
+
+            for pw in fermi_word_as_ps:
+                qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=wires)
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator

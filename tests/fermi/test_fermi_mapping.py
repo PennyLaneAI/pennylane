@@ -379,7 +379,7 @@ def test_jordan_wigner_fermi_word_operation(fermionic_op, result):
 
 def test_jordan_wigner_for_identity():
     """Test that the jordan_wigner function returns the correct qubit operator for Identity."""
-    assert qml.equal(jordan_wigner(FermiWord({})), qml.Identity(0))
+    assert qml.equal(jordan_wigner(FermiWord({}), wire_order=[0]), qml.Identity(0))
 
 
 def test_jordan_wigner_for_identity_ps():
@@ -414,11 +414,40 @@ fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
 
+
+def test_empty_fermi_sentence():
+    """Test that an empty FermiSentence (fermi null operator) is
+    converted to an empty PauliSentence or the null operator"""
+    op = FermiSentence({})
+
+    ps_op = jordan_wigner(op, ps=True)
+    ps_op.simplify()
+    assert ps_op == PauliSentence({})
+
+    op = jordan_wigner(op, wire_map={0: 0}).simplify()
+    assert isinstance(op, SProd)
+    assert isinstance(op.base, Identity)
+    assert op.scalar == 0
+
+
+def test_fermi_sentence_identity():
+    """Test that a FermiSentence composed of a single Identity operator
+    converts to PauliSentence and operation as expected"""
+    op = FermiSentence({fw4: 1})
+    ps = PauliSentence({PauliWord({}): 1})
+
+    ps_op = jordan_wigner(op, ps=True)
+    qubit_op = jordan_wigner(op, wire_map={0: 0})
+
+    assert ps_op == ps
+
+    result = ps.operation(wire_order=[0])
+    assert qml.equal(qubit_op.simplify(), result.simplify())
+
+
 # used above results translating fermiword --> paulisentence, to calculate expected output by hand
 FERMI_AND_PAULI_SENTENCES = [
-    (FermiSentence({}), PauliSentence({})),  # Empty FermiSentence to null
     (FermiSentence({fw4: 0, fw2: 0}), PauliSentence({})),  # all 0 coeffs FermiSentence to null
-    (FermiSentence({fw4: 1}), PauliSentence({PauliWord({}): 1})),  # Identity to Identity
     (
         FermiSentence({fw2: 2}),
         PauliSentence({PauliWord({}): (1 + 0j), PauliWord({0: "Z"}): (-1 + 0j)}),
@@ -475,3 +504,96 @@ def test_error_is_raised_for_incompatible_type():
 
     with pytest.raises(ValueError, match="fermi_operator must be a FermiWord or FermiSentence"):
         jordan_wigner(qml.PauliX(0))
+
+
+WIRE_MAP_FOR_OPERATORS = [
+    (
+        None,
+        [
+            qml.s_prod(-0.25j, qml.prod(qml.PauliY(0), qml.PauliX(1))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliY(0), qml.PauliY(1))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliX(0), qml.PauliX(1))),
+            qml.s_prod(0.25j, qml.prod(qml.PauliX(0), qml.PauliY(1))),
+            qml.s_prod((0.5 + 0j), qml.Identity([0, 1])),
+            qml.s_prod((-0.5 + 0j), qml.PauliZ(0)),
+        ],
+    ),
+    (
+        {0: 0, 1: 1},
+        [
+            qml.s_prod(-0.25j, qml.prod(qml.PauliY(0), qml.PauliX(1))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliY(0), qml.PauliY(1))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliX(0), qml.PauliX(1))),
+            qml.s_prod(0.25j, qml.prod(qml.PauliX(0), qml.PauliY(1))),
+            qml.s_prod((0.5 + 0j), qml.Identity([0, 1])),
+            qml.s_prod((-0.5 + 0j), qml.PauliZ(0)),
+        ],
+    ),
+    (
+        {0: 1, 1: 0},
+        [
+            qml.s_prod(-0.25j, qml.prod(qml.PauliY(1), qml.PauliX(0))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliY(1), qml.PauliY(0))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliX(1), qml.PauliX(0))),
+            qml.s_prod(0.25j, qml.prod(qml.PauliX(1), qml.PauliY(0))),
+            qml.s_prod((0.5 + 0j), qml.Identity([1, 0])),
+            qml.s_prod((-0.5 + 0j), qml.PauliZ(1)),
+        ],
+    ),
+    (
+        {0: 3, 1: 2},
+        [
+            qml.s_prod(-0.25j, qml.prod(qml.PauliY(3), qml.PauliX(2))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliY(3), qml.PauliY(2))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliX(3), qml.PauliX(2))),
+            qml.s_prod(0.25j, qml.prod(qml.PauliX(3), qml.PauliY(2))),
+            qml.s_prod((0.5 + 0j), qml.Identity([2, 3])),
+            qml.s_prod((-0.5 + 0j), qml.PauliZ(3)),
+        ],
+    ),
+    (
+        {0: "b", 1: "a"},
+        [
+            qml.s_prod(-0.25j, qml.prod(qml.PauliY("b"), qml.PauliX("a"))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliY("b"), qml.PauliY("a"))),
+            qml.s_prod((0.25 + 0j), qml.prod(qml.PauliX("b"), qml.PauliX("a"))),
+            qml.s_prod(0.25j, qml.prod(qml.PauliX("b"), qml.PauliY("a"))),
+            qml.s_prod((0.5 + 0j), qml.Identity(["a", "b"])),
+            qml.s_prod((-0.5 + 0j), qml.PauliZ("b")),
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_OPERATORS)
+def test_providing_wire_order_operation(wire_map, ops):
+    fs = FermiSentence(
+        {FermiWord({(0, 0): "+", (1, 1): "-"}): 1, FermiWord({(0, 0): "+", (1, 0): "-"}): 1}
+    )
+
+    op = jordan_wigner(fs, wire_map=wire_map)
+    result = qml.sum(*ops)
+
+    op.simplify()
+
+    assert op.wires == result.wires
+
+    # qml.equal can't handle string wires for CompositeOp, so we don't check this for the last example
+    if not isinstance(op.wires[0], str):
+        assert qml.equal(op, result.simplify())
+
+
+@pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_OPERATORS)
+def test_providing_wire_order_ps(wire_map, ops):
+    fs = FermiSentence(
+        {FermiWord({(0, 0): "+", (1, 1): "-"}): 1, FermiWord({(0, 0): "+", (1, 0): "-"}): 1}
+    )
+
+    op = jordan_wigner(fs, wire_map=wire_map, ps=True)
+    result_op = qml.sum(*ops)
+    ps = pauli_sentence(result_op)
+
+    ps.simplify()
+    op.simplify()
+
+    assert ps == op
