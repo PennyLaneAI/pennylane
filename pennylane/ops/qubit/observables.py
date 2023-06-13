@@ -359,20 +359,20 @@ class Projector(Observable):
 
     In the following example we consider projectors over two states: the :math:`|00\rangle` and the
     :math:`|++\rangle`. Since the first one is in the computational basis, we create its projector
-    directly from its basis state representation, which is, ``three_state=[1, 1]``. For the latter,
+    directly from its basis state representation, which is, ``zero_state=[0, 0]``. For the latter,
     we need to use its state vector form ``plusplus_state=np.array([1, 1, 1, 1])/2``.
 
     .. code-block::
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> @qml.qnode(dev)
-        ... def circuit(state, wires):
+        ... def circuit(state):
         ...     return qml.expval(qml.Projector(state, wires=[0, 1]))
         >>> zero_state = [0, 0]
-        >>> circuit(zero_state, wires)
+        >>> circuit(zero_state)
         1.
         >>> plusplus_state = np.array([1, 1, 1, 1]) / 2
-        >>> circuit(plusplus_state, wires)
+        >>> circuit(plusplus_state)
         0.25
 
     """
@@ -708,9 +708,6 @@ class _StateVectorProjector(Observable):
         [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
                              [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
         """
-        if set(state_vector).issubset({0, 1}):
-            return []
-
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column

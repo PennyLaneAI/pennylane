@@ -1652,7 +1652,7 @@ class QubitDevice(Device):
         if observable.name == "Projector" and len(observable.parameters[0]) == len(
             observable.wires
         ):
-            # branch specifically to handle the projector observable
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1681,8 +1681,10 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if observable.name == "Projector" and len(observable.parameters[0]) == len(
+            observable.wires
+        ):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
