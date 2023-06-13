@@ -159,6 +159,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
 
     def _get_op(term, wires):
+        """A function to compute the PL operator associated with the term string."""
         if len(term) > 1:
             if active_new_opmath():
                 return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
