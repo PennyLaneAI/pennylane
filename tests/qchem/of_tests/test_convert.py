@@ -402,7 +402,7 @@ ops_wires = (
 
 @pytest.mark.parametrize("pl_op, of_op, wire_order", ops_wires)
 def test_operation_conversion(pl_op, of_op, wire_order):
-    """Assert that the conversion between pennylane and openfermion operators"""
+    """Assert the conversion between pennylane and openfermion operators"""
     converted_pl_op = qml.qchem.convert._pennylane_to_openfermion(*pl_op)  # coeffs, ops lists
     assert of_op == converted_pl_op
 
@@ -525,6 +525,7 @@ of_pl_ops = (
 
 @pytest.mark.parametrize("of_op, pl_h, pl_op, wires", of_pl_ops)
 def test_import_operator(of_op, pl_h, pl_op, wires):
+    """Test the import_operator function correctly imports an OpenFermion operator into a PL one."""
     of_h = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
     assert qml.equal(of_h, pl_h)
 
