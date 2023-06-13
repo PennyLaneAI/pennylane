@@ -1141,7 +1141,7 @@ class TestPulseGeneratorQNode:
         with qml.Tracker(dev) as tracker:
             _match = "pulse generator parameter-shift .* scalar pulse parameters."
             with pytest.warns(UserWarning, match=_match):
-                grad_func = pulse_generator(circuit)(params)
+                grad_func = pulse_generator(circuit)
             grad = grad_func(params)
 
         p = params * T
