@@ -458,10 +458,11 @@ class QuantumScript:
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
+        n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i} for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):

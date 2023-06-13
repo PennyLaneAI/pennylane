@@ -419,8 +419,13 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         # pylint: disable=protected-access
         if (n_prep := len(tape._prep)) > op_idx:
             shifted_tape._prep[op_idx] = shifted_op
-        else:
+        elif (n_ops := len(tape.operations)) > op_idx:
             shifted_tape._ops[op_idx - n_prep] = shifted_op
+        else:
+            index = op_idx - n_ops
+            mp = shifted_tape.measurements[index].__class__
+
+            shifted_tape.measurements[index] = mp(shifted_op)
 
         shifted_tape._update()
         # TODO: Figure out less ugly way to update shifted operation
