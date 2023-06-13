@@ -411,18 +411,24 @@ def vjp(
             return cached_jac["jacobian"]
 
         jacs = []
-        for t in tapes:
-            if isinstance(device, qml.devices.experimental.Device):  # pragma:  no-cover
-                # cant test until we integrate device with shot vector
-                shot_vector = t.shots.shot_vector if t.shots.has_partitioned_shots else None
-            else:
-                shot_vector = device.shot_vector
-            g_tapes, fn = gradient_fn(t, shots=shot_vector, **gradient_kwargs)
+        if isinstance(device, qml.devices.experimental.Device):  # pragma:  no-cover
+            # cant test until we integrate device with shot vector
+            shot_vector = (
+                tapes[0].shots.shot_vector if tapes[0].shots.has_partitioned_shots else None
+            )
+        else:
+            shot_vector = device.shot_vector
 
-            unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
-            res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
-            jacs.append(fn(res))
+        def partial_gradient_fn(tape):
+            return gradient_fn(tape, shots=shot_vector, **gradient_kwargs)
 
+        g_tapes, fn = qml.transforms.map_batch_transform(partial_gradient_fn, tapes)
+        unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
+
+        # why does the execute_fn take gradient kwargs?
+        res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
+
+        jacs = fn(res)
         cached_jac["jacobian"] = jacs
         return jacs
 

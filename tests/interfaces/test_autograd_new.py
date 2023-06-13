@@ -415,6 +415,27 @@ class TestCaching:
         grad1 = jac_fn(params, cache=True)
         assert dev.num_executions == 2
 
+    def test_single_backward_pass_batch(self):
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
+        is requested for multiple tapes."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        def f(x):
+            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))])
+
+            results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
+            return results[0] + results[1]
+
+        x = qml.numpy.array(0.1)
+        with dev.tracker:
+            out = qml.grad(f)(x)
+
+        assert dev.tracker.totals["batches"] == 2
+        assert dev.tracker.history["batch_len"] == [2, 4]
+        assert qml.math.allclose(out, -2 * qml.math.sin(x))
+
 
 execute_kwargs = [
     {"gradient_fn": param_shift},
