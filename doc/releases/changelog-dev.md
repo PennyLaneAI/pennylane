@@ -166,6 +166,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
 * `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
