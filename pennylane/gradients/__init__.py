@@ -262,12 +262,12 @@ a datastructure representing variational quantum algorithms:
 
     weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-    with qml.tape.QuantumTape() as tape:
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        qml.expval(qml.PauliZ(1))
+    ops = [qml.RX(weights[0], wires=0),
+        qml.RY(weights[1], wires=1),
+        qml.CNOT(wires=[0, 1]),
+        qml.RX(weights[2], wires=1)]
+    measurements = [qml.expval(qml.PauliZ(1))]
+    tape = qml.tape.QuantumTape(ops, measurements)
 
 Unlike when transforming a QNode, transforming a tape directly
 will perform no implicit quantum device evaluation. Instead, it returns

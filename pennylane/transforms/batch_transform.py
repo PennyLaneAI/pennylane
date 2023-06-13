@@ -475,17 +475,19 @@ def map_batch_transform(
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
-        with qml.tape.QuantumTape() as tape1:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.1, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H)
 
-        with qml.tape.QuantumTape() as tape2:
-            qml.Hadamard(wires=0)
-            qml.CRX(0.5, wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H + 0.5 * qml.PauliY(0))
+        ops1 = [
+            qml.RX(0.5, wires=0),
+            qml.RY(0.1, wires=1),
+            qml.CNOT(wires=(0,1))
+        ]
+        measurements1 = [qml.expval(H)]
+        tape1 = qml.tape.QuantumTape(ops1, measurements1)
+
+        ops2 = [qml.Hadamard(0), qml.CRX(0.5, wires=(0,1)), qml.CNOT((0,1))]
+        measurements2 = [qml.expval(H + 0.5 * qml.PauliY(0))]
+        tape2 = qml.tape.QuantumTape(ops2, measurements2)
+
 
     We can use ``map_batch_transform`` to map a single
     batch transform across both of the these tapes in such a way
