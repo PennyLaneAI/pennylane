@@ -123,7 +123,6 @@ class TestFermiWord:
 
 
 class TestFermiWordArithmetic:
-    # ToDo: in-place addition, subtraction, multiplication
 
     WORDS_MUL = (
         (
@@ -227,10 +226,22 @@ class TestFermiWordArithmetic:
             fw + bad_type  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
+    def test_radd_error(self, fw, bad_type):
+        """Test __radd__ with unsupported type raises an error"""
+        with pytest.raises(TypeError, match=f"Cannot add a FermiWord to {type(bad_type)}"):
+            bad_type + fw  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
     def test_sub_error(self, fw, bad_type):
         """Test __sub__ with unsupported type raises an error"""
         with pytest.raises(TypeError, match=f"Cannot subtract {type(bad_type)} from a FermiWord"):
             fw - bad_type  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
+    def test_rsub_error(self, fw, bad_type):
+        """Test __rsub__ with unsupported type raises an error"""
+        with pytest.raises(TypeError, match=f"Cannot subtract a FermiWord from {type(bad_type)}"):
+            bad_type - fw  # pylint: disable=pointless-statement
 
     WORDS_ADD = [
         (fw1, fw2, FermiSentence({fw1: 1, fw2: 1})),
@@ -348,8 +359,8 @@ class TestFermiWordArithmetic:
         (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
     ]
 
-    @pytest.mark.parametrize("c, w, res", WORDS_AND_CONSTANTS_SUBTRACT)
-    def test_subtract_fermi_words_from_constant(self, c, w, res):
+    @pytest.mark.parametrize("w, c, res", CONSTANTS_AND_WORDS_SUBTRACT)
+    def test_subtract_fermi_words_from_constant(self, w, c, res):
         """Test that subtracting a constant (int, float or complex) from a FermiWord
         returns the expected FermiSentence"""
         diff = c - w
@@ -798,3 +809,48 @@ class TestFermiSentenceArithmetic:
         """Test that invalid values for the exponent raises an error"""
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
+
+    TYPE_ERRORS = (
+        (fs1, [1.5]),
+        (fs4, "string"),
+    )
+
+    @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
+    def test_add_error(self, fs, bad_type):
+        """Test __add__ with unsupported type raises an error"""
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiSentence."):
+            fs + bad_type  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
+    def test_radd_error(self, fs, bad_type):
+        """Test __radd__ with unsupported type raises an error"""
+        with pytest.raises(TypeError, match=f"Cannot add a FermiSentence to {type(bad_type)}."):
+            bad_type + fs  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
+    def test_sub_error(self, fs, bad_type):
+        """Test __sub__ with unsupported type raises an error"""
+        with pytest.raises(
+            TypeError, match=f"Cannot subtract {type(bad_type)} from a FermiSentence."
+        ):
+            fs - bad_type  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
+    def test_rsub_error(self, fs, bad_type):
+        """Test __rsub__ with unsupported type raises an error"""
+        with pytest.raises(
+            TypeError, match=f"Cannot subtract a FermiSentence from {type(bad_type)}."
+        ):
+            bad_type - fs  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
+    def test_mul_error(self, fs, bad_type):
+        """Test __sub__ with unsupported type raises an error"""
+        with pytest.raises(TypeError, match=f"Cannot multiply FermiSentence by {type(bad_type)}."):
+            fs * bad_type  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
+    def test_rmul_error(self, fs, bad_type):
+        """Test __rsub__ with unsupported type raises an error"""
+        with pytest.raises(TypeError, match=f"Cannot multiply {type(bad_type)} by FermiSentence."):
+            bad_type * fs  # pylint: disable=pointless-statement

@@ -159,10 +159,9 @@ class FermiWord(dict):
 
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
-
         if isinstance(other, (float, int, complex)):
             self_fs = FermiSentence({self: -1.0})
-            other_fs = FermiSentence({FermiWord({}): other})  # -constant * I
+            other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
 
         raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
@@ -296,7 +295,7 @@ class FermiSentence(dict):
         if isinstance(other, (float, int, complex)):
             return self.__add__(other)
 
-        raise TypeError(f"Cannot add a FermiWord to {type(other)}.")
+        raise TypeError(f"Cannot add a FermiSentence to {type(other)}.")
 
     def __sub__(self, other):
         r"""Subtract a FermiSentence, FermiWord or constant from a FermiSentence"""
@@ -325,7 +324,7 @@ class FermiSentence(dict):
             other_fs = FermiSentence({FermiWord({}): other})  # constant * I
             return self_fs + other_fs
 
-        raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
+        raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
 
     def __mul__(self, other):
         r"""Multiply two Fermi sentences by iterating over each sentence and multiplying the Fermi
@@ -364,7 +363,7 @@ class FermiSentence(dict):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 
-        raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
+        raise TypeError(f"Cannot multiply {type(other)} by FermiSentence.")
 
     def __pow__(self, value):
         r"""Exponentiate a Fermi sentence to an integer power."""
