@@ -350,19 +350,19 @@ class Hamiltonian(Observable):
 
     def _get_pauli_indices(self):
         """Returns a matrix describing the operators as integer sequences.
-        
+
         A Pauli word like ``PauliZ(wires=0) @ PauliX(wires=1) @ PauliY(wires=4)`` for a 6-qubit tape should
         return a row ``[3, 1, 0, 0, 2, 0]``.
         There are as many rows as there are operators.
         The index rows are use to infer the sparse structure of the matrix form of the operator.
-        This allows performing certain partial sums at almost zero cost, and hence accelerate ``sparse_matrix``. 
+        This allows performing certain partial sums at almost zero cost, and hence accelerate ``sparse_matrix``.
 
         Returns:
             indices: an integer array of operator indices.
         """
         nops = len(self.ops)
         wires = self.wires.indices(self.wires)
-        nwir = max(wires) + 1 if len(wires) > 0 else 0
+        nwir = len(wires)
         indices = np.zeros((nops, nwir))
         map = {"Identity": 0, "PauliX": 1, "PauliY": 2, "PauliZ": 3}
         count = 3
@@ -370,12 +370,17 @@ class Hamiltonian(Observable):
             if len(op.wires) == 1:
                 update_op_dict(map, op.name, count)
                 w = self.wires.index(op.wires[0])
-                indices[j, w] = map[op.name]
+                indices[j, w] = map[
+                    "".join(op.name)
+                ]  # join because of cases like `qml.PauliX(0) @ qml.PauliZ(0)`
                 continue
-            for i, w in enumerate(op.wires):
-                update_op_dict(map, op.name[i], count)
-                w = self.wires.index(w)
-                indices[j, w] = map[op.name[i]]
+            for obs in op.obs:
+                update_op_dict(map, obs.name, count)
+                w = self.wires.indices(obs.wires)
+                if isinstance(obs.name, list):
+                    indices[j, w] = [map["".join(name)] for name in obs.name]
+                else:
+                    indices[j, w] = map["".join(obs.name)] * np.ones((len(obs.wires)))
         return indices
 
     def sparse_matrix(self, wire_order=None):
@@ -776,6 +781,8 @@ class Hamiltonian(Observable):
 
 def update_op_dict(map: dict, key: str, count: int):
     """Iterate count and add key in map if key is not already in map."""
+    if isinstance(key, list):
+        key = "".join(key)
     if key in map.keys():
         return
     count += 1
