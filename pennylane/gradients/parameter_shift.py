@@ -1408,7 +1408,7 @@ def param_shift(
     if unsupported_params:
         # If shots were provided, assume that the fallback function also takes that arg
 
-        fallback_fn = partial(fallback_fn, shots=shots) if shots.total_shots else fallback_fn
+        fallback_fn = partial(fallback_fn, shots=shots) if shots else fallback_fn
         if not argnum:
             return fallback_fn(tape)
 

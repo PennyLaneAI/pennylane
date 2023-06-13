@@ -60,7 +60,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
     for op in circuit._ops:
         state = apply_operation(op, state, debugger=debugger)
 
-    if circuit.shots.total_shots is None:
+    if not circuit.shots:
         # analytic case
 
         if len(circuit.measurements) == 1:
