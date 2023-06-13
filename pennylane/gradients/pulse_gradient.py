@@ -63,7 +63,8 @@ def warn_pulse_diff_on_qnode(transform_name):
     warnings.warn(
         f"Applying the {transform_name} gradient transform to a QNode directly is currently "
         "only supported for scalar pulse parameters. Non-scalar parameters may lead to wrong "
-        "results or raise exceptions.",
+        "results or raise exceptions. Please use differentiation via a JAX entry point "
+        "(jax.grad, jax.jacobian, ...) instead for non-scalar parameters.",
         UserWarning,
     )
 
