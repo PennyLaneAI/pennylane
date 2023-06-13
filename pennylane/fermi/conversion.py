@@ -71,7 +71,9 @@ def jordan_wigner(
 
 @jordan_wigner.register
 def _(fermi_operator: FermiWord, ps=False, wire_map=None):
-    wires = wire_map.keys() if wire_map else list(fermi_operator.wires)
+
+    wires = list(fermi_operator.wires) or [0]
+    identity_wire = wires[0]
 
     if len(fermi_operator) == 0:
         qubit_operator = PauliSentence({PauliWord({}): 1.0})
@@ -92,7 +94,8 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
             )
 
     if not ps:
-        qubit_operator = qubit_operator.operation(wires)
+        # wire_order specifies wires to use for Identity (PauliWord({}))
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -102,7 +105,9 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
 
 @jordan_wigner.register
 def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
-    wires = wire_map.keys() if wire_map else list(fermi_operator.wires)
+
+    wires = list(fermi_operator.wires) or [0]
+    identity_wire = wires[0]
 
     if len(fermi_operator) == 0:
         qubit_operator = PauliSentence({PauliWord({}): 0})  # does anything break if I remove this?
@@ -117,7 +122,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
                 qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
 
     if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=wires)
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
