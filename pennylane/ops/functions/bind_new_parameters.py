@@ -38,13 +38,29 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
     Args:
         op (.Operator): Operator to update
-        params (Sequence[TensorLike]): New parameters to create operator with
+        params (Sequence[TensorLike]): New parameters to create operator with. This
+            must have the same shape as `op.data`.
 
     Returns:
         .Operator: New operator with updated parameters
     """
 
     return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+
+
+@bind_new_parameters.register
+def bind_new_parameters_pcphase(op: qml.PCPhase, params: Sequence[TensorLike]):
+    dim = op.hyperparameters["dimension"][0]
+    return qml.PCPhase(params[0], dim, wires=op.wires)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_approx_time_evolution(op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]):
+    new_hamiltonian = qml.Hamiltonian(params[:-1], op.hyperparameters["hamiltonian"].ops)
+    time = params[-1]
+    n = op.hyperparameters["n"]
+
+    return qml.ApproxTimeEvolution(new_hamiltonian, time, n)
 
 
 @bind_new_parameters.register

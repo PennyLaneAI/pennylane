@@ -20,6 +20,7 @@ import warnings
 
 import numpy as np
 import pennylane as qml
+from pennylane.ops.functions import bind_new_parameters
 
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
@@ -414,7 +415,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             mult, new_params[p_idx]
         ) + qml.math.convert_like(shift, new_params[p_idx])
 
-        shifted_op = qml.ops.functions.bind_new_parameters(op, new_params)
+        shifted_op = bind_new_parameters(op, new_params)
         # pylint: disable=protected-access
         if (n_prep := len(tape._prep)) > op_idx:
             shifted_tape._prep[op_idx] = shifted_op
