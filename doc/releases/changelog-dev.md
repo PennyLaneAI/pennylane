@@ -29,7 +29,6 @@
 
 * Added a conversion function `jordan_wigner` that converts a fermionic operator (`FermiWord`) to a qubit 
   operator (`PauliSentence`) using the Jordan-Wigner mapping.
-  Added a `to_qubit` method to `FermiWord` that returns a `PauliSentence` representation using `jw_mapping`.
   [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
 
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.

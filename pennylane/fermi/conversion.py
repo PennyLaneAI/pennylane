@@ -21,7 +21,7 @@ from .fermionic import FermiWord, FermiSentence
 
 
 @singledispatch
-def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -> PauliSentence:
+def jordan_wigner(fermi_operator: (Union[FermiWord, FermiSentence]), ps=False) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
