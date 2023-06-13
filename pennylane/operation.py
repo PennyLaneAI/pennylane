@@ -1495,6 +1495,9 @@ class Operator(abc.ABC):
             return qml.pow(self, z=other)
         return NotImplemented
 
+    def __eq__(self, other):
+        return qml.equal(self, other)
+
 
 # =============================================================================
 # Base Operation class
