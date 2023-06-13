@@ -752,7 +752,7 @@ class TestSample:
         res = circuit(np.array([1, 1]) / np.sqrt(2)).flatten()
         assert np.allclose(sorted(list(set(res.tolist()))), [0, 1], atol=tol(dev.shots))
         assert np.allclose(np.mean(res), expected, atol=tol(False))
-        assert np.allclose(np.var(res_basis), expected - (expected) ** 2, atol=tol(False))
+        assert np.allclose(np.var(res), expected - (expected) ** 2, atol=tol(False))
 
     def test_sample_values_hermitian_multi_qubit(self, device, tol):
         """Tests if the samples of a multi-qubit Hermitian observable returned by sample have
