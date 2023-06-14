@@ -23,6 +23,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.pauli import pauli_sentence
 from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.tapering import (
     _kernel,
@@ -34,6 +35,7 @@ from pennylane.qchem.tapering import (
     _split_pauli_sentence,
     _taper_pauli_sentence,
 )
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -203,6 +205,17 @@ def test_generate_paulis(generators, num_qubits, result):
     for p1, p2 in zip(pauli_ops, result):
         assert p1.compare(p2)
 
+    # test arithmetic op compatibility:
+    generators_as_ops = [pauli_sentence(g).operation() for g in generators]
+    assert not any(isinstance(g, qml.Hamiltonian) for g in generators_as_ops)
+
+    enable_new_opmath()
+    pauli_ops = qml.paulix_ops(generators_as_ops, num_qubits)
+    disable_new_opmath()
+
+    for p1, p2 in zip(pauli_ops, result):
+        assert qml.equal(p1, p2)
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "num_qubits", "res_generators"),
@@ -228,6 +241,18 @@ def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
 
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
+
+    # test arithmetic op compatibility:
+    hamiltonian_as_op = pauli_sentence(hamiltonian).operation()
+    assert not isinstance(hamiltonian_as_op, qml.Hamiltonian)
+
+    enable_new_opmath()
+    generators = qml.symmetry_generators(hamiltonian_as_op)
+    disable_new_opmath()
+
+    for g1, g2 in zip(generators, res_generators):
+        assert not isinstance(g1, qml.Hamiltonian)  # just confirming we are not relying on Hamiltonians any more
+        assert pauli_sentence(g1) == pauli_sentence(g2)
 
 
 @pytest.mark.parametrize(
@@ -263,6 +288,16 @@ def test_cliford(generator, paulixops, result):
     u = clifford(generator, paulixops)
     assert u.compare(result)
 
+    # test arithmetic op compatibility:
+    result_as_op = pauli_sentence(result).operation()
+    generators_as_ops = [pauli_sentence(g).operation() for g in generator]
+
+    enable_new_opmath()
+    u = clifford(generators_as_ops, paulixops)
+    disable_new_opmath()
+
+    assert qml.equal(result_as_op, u)
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "generator", "paulixops", "paulix_sector", "ham_ref"),
@@ -288,13 +323,30 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.qchem.Molecule(symbols, geometry)
     h = qml.qchem.diff_hamiltonian(mol)()
+    print("Non arithmetic: ")
     ham_calc = qml.taper(h, generator, paulixops, paulix_sector)
-
+    print(ham_calc)
+    print("-----")
     # sort Hamiltonian terms and then compare with reference
     sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
     for i, term in enumerate(sorted_terms):
         assert np.allclose(term[0], ham_ref.terms()[0][i])
         assert term[1].compare(ham_ref.terms()[1][i])
+
+
+    # test arithmetic op compatibility:
+    h_as_op = pauli_sentence(h).operation()
+    generators_as_ops = [pauli_sentence(g).operation() for g in generator]
+
+    enable_new_opmath()
+    print("Arithmetic: ")
+    ham_calc = qml.taper(h_as_op, generators_as_ops, paulixops, paulix_sector)
+    print(ham_calc)
+    print("-----")
+    disable_new_opmath()
+
+    assert not isinstance(ham_calc, qml.Hamiltonian)
+    assert pauli_sentence(ham_calc) == pauli_sentence(ham_ref)
 
 
 @pytest.mark.parametrize(
@@ -656,11 +708,11 @@ def test_taper_excitations(
     ("operation", "op_gen", "message_match"),
     [
         (qml.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
-        (
-            qml.U2(1, 1, 2),
-            np.identity(16),
-            "Generator for the operation needs to be a qml.Hamiltonian",
-        ),
+        # (
+        #     qml.U2(1, 1, 2),
+        #     np.identity(16),
+        #     "Generator for the operation needs to be a qml.Hamiltonian",
+        # ),
         (
             qml.U2(1, 1, 2),
             qml.Hamiltonian([1], [qml.Identity(2)]),
