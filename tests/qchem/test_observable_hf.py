@@ -251,9 +251,6 @@ def test_qubit_observable(f_observable, q_observable):
 
     disable_new_opmath()
 
-    print(h_as_op)
-    print(h_ref_as_op)
-
     assert h_as_hamiltonian.compare(h_ref)
     assert np.allclose(
         qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2])
