@@ -28,9 +28,12 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
+from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.measurements import ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
@@ -553,6 +556,13 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        # intercept Sums
+        if isinstance(observable, Sum):
+            obs = observable.map_wires(self.wire_map)
+            if not self.shots:
+                return measure(ExpectationMP(obs), self._state)
+            raise Exception("cannot compute expectation of sum with finite shots")
+
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
@@ -1045,6 +1055,6 @@ class DefaultQubit(QubitDevice):
         meas_filtered = [
             m
             for m in circuit.measurements
-            if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
+            if m.obs is None or not isinstance(m.obs, (qml.Hamiltonian, Sum))
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
