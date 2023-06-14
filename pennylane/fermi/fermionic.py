@@ -14,7 +14,7 @@
 """The Fermionic representation classes."""
 from copy import copy
 from numbers import Number
-from pennylane.numpy.tensor import tensor
+from numpy import ndarray
 
 
 class FermiWord(dict):
@@ -127,7 +127,7 @@ class FermiWord(dict):
             other_fs = FermiSentence({other: 1.0})
             return self_fs + other_fs
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
 
@@ -136,7 +136,7 @@ class FermiWord(dict):
     def __radd__(self, other):
         """Add a FermiWord to a constant, i.e. `2 + FermiWord({...})`"""
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             return self.__add__(other)
 
         raise TypeError(f"Cannot add a FermiWord to {type(other)}.")
@@ -156,7 +156,7 @@ class FermiWord(dict):
             other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other_fs
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             other_fs = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self_fs + other_fs
 
@@ -164,7 +164,7 @@ class FermiWord(dict):
 
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             self_fs = FermiSentence({self: -1.0})
             other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
@@ -204,7 +204,7 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return FermiSentence({self: 1}) * other
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -217,7 +217,7 @@ class FermiWord(dict):
         ``2 * FermiWord({(0, 0): "+"})``, where the ``__mul__`` operator on an integer
         will fail to multiply with a FermiWord"""
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -253,6 +253,9 @@ class FermiSentence(dict):
     + 3.1 * '1+ 2-'
     """
 
+    __numpy_ufunc__ = None
+    __array_ufunc__ = None
+
     @property
     def wires(self):
         r"""Return wires of the FermiSentence."""
@@ -280,7 +283,7 @@ class FermiSentence(dict):
         # ensure other is FermiSentence
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             other = FermiSentence({FermiWord({}): other})
 
         if isinstance(other, FermiSentence):
@@ -297,7 +300,7 @@ class FermiSentence(dict):
     def __radd__(self, other):
         """Add a FermiSentence to a constant, i.e. `2 + FermiSentence({...})`"""
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             return self.__add__(other)
 
         raise TypeError(f"Cannot add a FermiSentence to {type(other)}.")
@@ -308,7 +311,7 @@ class FermiSentence(dict):
             other = FermiSentence({other: -1})
             return self.__add__(other)
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self.__add__(other)
 
@@ -324,7 +327,7 @@ class FermiSentence(dict):
         >>> 2 - FermiSentence({...})
         """
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
             other_fs = FermiSentence({FermiWord({}): other})  # constant * I
             return self_fs + other_fs
@@ -350,7 +353,7 @@ class FermiSentence(dict):
 
             return product
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 
@@ -364,7 +367,7 @@ class FermiSentence(dict):
         multiplying ``2 * fermi_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a FermiSentence"""
 
-        if isinstance(other, (Number, tensor)):
+        if isinstance(other, (Number, ndarray)):
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 

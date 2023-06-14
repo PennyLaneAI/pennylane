@@ -362,6 +362,8 @@ class TestFermiWordArithmetic:
         (fw1, 5, FermiSentence({fw1: -1, fw4: 5})),  # int
         (fw2, 2.8, FermiSentence({fw2: -1, fw4: 2.8})),  # float
         (fw3, (1 + 3j), FermiSentence({fw3: -1, fw4: (1 + 3j)})),  # complex
+        (fw1, np.array([5]), FermiSentence({fw1: -1, fw4: 5})),  # numpy array
+        (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane numpy array
         (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
     ]
 
@@ -678,15 +680,29 @@ class TestFermiSentenceArithmetic:
         assert sum_rounded == res
 
     SENTENCES_AND_CONSTANTS_ADD = [
-        (FermiSentence({fw1: 1.2, fw3: 3j}), 3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3})),
-        (FermiSentence({fw1: 1.2, fw3: 3j}), 1.3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 1.3})),
+        (FermiSentence({fw1: 1.2, fw3: 3j}), 3, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3})),  # int
         (
-            FermiSentence({fw1: -1.2, fw3: 3j}),
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            1.3,
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 1.3}),
+        ),  # float
+        (
+            FermiSentence({fw1: -1.2, fw3: 3j}),  # complex
             (1 + 2j),
             FermiSentence({fw1: -1.2, fw3: 3j, fw4: (1 + 2j)}),
         ),
-        (FermiSentence({}), 5, FermiSentence({fw4: 5})),
-        (FermiSentence({fw4: 3}), 1j, FermiSentence({fw4: 3 + 1j})),
+        (FermiSentence({}), 5, FermiSentence({fw4: 5})),  # null sentence
+        (FermiSentence({fw4: 3}), 1j, FermiSentence({fw4: 3 + 1j})),  # identity only
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            np.array([3]),
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
+        ),  # numpy array
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            pnp.array([3]),
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
+        ),  # pennylane numpy array
     ]
 
     @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
@@ -736,10 +752,24 @@ class TestFermiSentenceArithmetic:
         assert simplified_diff == result
 
     SENTENCE_MINUS_CONSTANT = (  # computed by hand
-        (fs1, 3, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -3})),
-        (fs2, -2.7, FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5, fw4: 2.7})),
-        (fs3, 2j, FermiSentence({fw3: -0.5, fw4: (1 - 2j)})),
-        (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: 1.2, fw3: 3j, fw4: 4})),
+        (fs1, 3, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -3})),  # int
+        (fs2, -2.7, FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5, fw4: 2.7})),  # float
+        (fs3, 2j, FermiSentence({fw3: -0.5, fw4: (1 - 2j)})),  # complex
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            -4,
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 4}),
+        ),  # negative int
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            np.array([3]),
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
+        ),  # numpy array
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            pnp.array([3]),
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
+        ),  # pennylane numpy array
     )
 
     @pytest.mark.parametrize("fs, c, result", SENTENCE_MINUS_CONSTANT)
@@ -761,6 +791,16 @@ class TestFermiSentenceArithmetic:
         (fs2, -2.7, FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5, fw4: -2.7})),
         (fs3, 2j, FermiSentence({fw3: 0.5, fw4: (-1 + 2j)})),
         (FermiSentence({fw1: 1.2, fw3: 3j}), -4, FermiSentence({fw1: -1.2, fw3: -3j, fw4: -4})),
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            np.array([3]),
+            FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
+        ),  # numpy array
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            pnp.array([3]),
+            FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
+        ),  # pennylane numpy array
     )
 
     @pytest.mark.parametrize("fs, c, result", CONSTANT_MINUS_SENTENCE)
