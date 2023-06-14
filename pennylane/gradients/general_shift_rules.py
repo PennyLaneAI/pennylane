@@ -21,6 +21,7 @@ import warnings
 import numpy as np
 import pennylane as qml
 from pennylane.ops.functions import bind_new_parameters
+from pennylane.tape import QuantumScript
 
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
@@ -381,39 +382,34 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
 def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     """Create a copy of a tape and of parameters, and set the new tape to the parameters
-    rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
-    # pylint: disable=protected-access
-    shifted_tape = tape.copy(copy_operations=True)
+    rescaled and shifted as indicated by ``indices``, ``multipliers`` and ``shifts``."""
+    all_ops = tape.circuit.copy()
 
     for idx, shift, multiplier in zip(indices, shifts, multipliers):
-        op, op_idx, p_idx = shifted_tape.get_operation(idx)
+        _, op_idx, p_idx = tape.get_operation(idx)
+        op = all_ops[op_idx]
 
         # Shift copied parameter
-        new_params = list(op.data.copy())
-        cur_param = new_params[p_idx]
-        new_param = cur_param * qml.math.convert_like(
-            multiplier, cur_param
-        ) + qml.math.convert_like(shift, cur_param)
-
-        new_params[p_idx] = new_param
+        new_params = list(all_ops[op_idx].data.copy())
+        new_params[p_idx] = new_params[p_idx] * qml.math.convert_like(multiplier, new_params[p_idx])
+        new_params[p_idx] = new_params[p_idx] + qml.math.convert_like(shift, new_params[p_idx])
         if cast:
-            dtype = getattr(cur_param, "dtype", float)
+            dtype = getattr(new_params[p_idx], "dtype", float)
             new_params[p_idx] = qml.math.cast(new_params[p_idx], dtype)
 
         # Create operator with shifted parameter and put into shifted tape
         shifted_op = bind_new_parameters(op, new_params)
-        if (n_prep := len(tape._prep)) > op_idx:
-            shifted_tape._prep[op_idx] = shifted_op
-        elif (n_ops := len(tape.operations)) > op_idx:
-            shifted_tape._ops[op_idx - n_prep] = shifted_op
+        if op_idx < len(tape.operations):
+            all_ops[op_idx] = shifted_op
         else:
-            index = op_idx - n_ops
-            mp = shifted_tape.measurements[index].__class__
+            mp = all_ops[op_idx].__class__
+            all_ops[op_idx] = mp(obs=shifted_op)
 
-            shifted_tape._measurements[index] = mp(obs=shifted_op)
+    prep = all_ops[:len(tape._prep)]
+    ops = all_ops[len(tape._prep) : len(tape.operations)]
+    meas = all_ops[len(tape.operations):]
+    shifted_tape = QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
 
-    shifted_tape._update()
-    # TODO: Figure out less ugly way to update shifted operation
     return shifted_tape
 
 
@@ -480,8 +476,23 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
         multipliers = np.ones_like(shifts)
 
     tapes = [
-        _copy_and_shift_params(tape, indices, _shifts, _multipliers)
+        _copy_and_shift_params(tape, indices, _shifts, _multipliers, cast=True)
         for _shifts, _multipliers in zip(shifts, multipliers)
     ]
+
+    # params = list(tape.get_parameters())
+    # tapes = []
+
+    # for _shifts, _multipliers in zip(shifts, multipliers):
+    #     new_params = params.copy()
+    #     shifted_tape = tape.copy(copy_operations=True)
+    #     for idx, shift, multiplier in zip(indices, _shifts, _multipliers):
+    #         dtype = getattr(new_params[idx], "dtype", float)
+    #         new_params[idx] = new_params[idx] * qml.math.convert_like(multiplier, new_params[idx])
+    #         new_params[idx] = new_params[idx] + qml.math.convert_like(shift, new_params[idx])
+    #         new_params[idx] = qml.math.cast(new_params[idx], dtype)
+
+    #     shifted_tape.set_parameters(new_params)
+    #     tapes.append(shifted_tape)
 
     return tapes
