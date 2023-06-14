@@ -31,6 +31,7 @@ openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 
 pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
+pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
 
 
 def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
@@ -407,6 +408,21 @@ def test_operation_conversion(pl_op, of_op, wire_order):
     assert of_op == converted_pl_op
 
     converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
+    converted_of_op_coeffs, converted_of_op_terms = converted_of_op
+    assert all([isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms])
+    assert np.allclose(
+        qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
+        qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
+    )
+
+    # test arithmetic types
+    enable_new_opmath()
+    converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
+    disable_new_opmath()
+
+    converted_of_op_coeffs, converted_of_op_terms = converted_of_op
+    assert all([isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms])
+
     assert np.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
         qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
@@ -520,6 +536,12 @@ of_pl_ops = (
         ),
         ["w0", "w1", "w2"],
     ),
+    (
+        (0.1 * openfermion.QubitOperator("X0 Y1")),
+        qml.Hamiltonian([0.1], [qml.PauliX("w0") @ qml.PauliY("w1")]),
+        qml.s_prod(0.1, qml.prod(qml.PauliX("w0"), qml.PauliY("w1"))),
+        ["w0", "w1"],
+    ),
 )
 
 
@@ -533,11 +555,12 @@ def test_import_operator(of_op, pl_h, pl_op, wires):
     of_arithmetic_op = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
     disable_new_opmath()
 
-    assert isinstance(of_arithmetic_op, qml.ops.Sum)
-    assert all(
-        isinstance(term, qml.ops.SProd) and isinstance(term.base, pauli_ops_and_prod)
-        for term in of_arithmetic_op.operands
-    )
+    assert isinstance(of_arithmetic_op, type(pl_op))
+    if isinstance(of_arithmetic_op, qml.ops.Sum):
+        assert all(
+            isinstance(term, qml.ops.SProd) and isinstance(term.base, pauli_ops_and_prod)
+            for term in of_arithmetic_op.operands
+        )
     assert np.allclose(
         qml.matrix(of_arithmetic_op, wire_order=wires), qml.matrix(pl_op, wire_order=wires)
     )
