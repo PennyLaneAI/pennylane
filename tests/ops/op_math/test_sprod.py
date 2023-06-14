@@ -492,6 +492,21 @@ class TestMatrix:
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
 
+    @pytest.mark.tf
+    def test_tf_matrix_type_casting(self):
+        """Test that types for the matrix are always converted to complex128 and parameters aren't truncated."""
+        import tensorflow as tf
+
+        coeff = tf.Variable(0.1)
+        op = qml.PauliX(0)
+
+        sprod_op = SProd(coeff, op)
+        mat = sprod_op.matrix()
+
+        assert mat.dtype == tf.complex128
+        expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
+        assert qml.math.allclose(mat, expected)
+
 
 class TestSparseMatrix:
     sparse_ops = (
