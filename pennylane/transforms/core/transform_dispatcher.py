@@ -37,11 +37,16 @@ class TransformDispatcher:
     """
 
     def __init__(
-        self, transform, expand_transform=None, classical_cotransform=None
+        self,
+        transform,
+        expand_transform=None,
+        classical_cotransform=None,
+        is_informative=False,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
+        self._is_informative = is_informative
 
     def __call__(self, *targs, **tkwargs):
         obj = None
@@ -82,6 +87,11 @@ class TransformDispatcher:
         """Return the classical co-transform."""
         return self._classical_cotransform
 
+    @property
+    def is_informative(self):
+        """Return True is the transform does not need to be executed."""
+        return self._is_informative
+
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
@@ -104,13 +114,15 @@ class TransformDispatcher:
 
     def _qnode_transform(self, qnode, targs, tkwargs):
         """Apply the transform on a QNode. It populates the transform program of a QNode"""
-        if not qnode.transform_program:
+        if qnode.transform_program.is_empty():
             qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform))
         qnode.add_transform(
-            TransformContainer(self._transform, targs, tkwargs, self._classical_cotransform)
+            TransformContainer(
+                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+            )
         )
         return qnode
 
@@ -127,15 +139,24 @@ class TransformContainer:
     """
 
     def __init__(
-        self, transform, args=None, kwargs=None, classical_cotransform=None
-    ):  # pylint:disable=protected-access
+        self, transform, args=None, kwargs=None, classical_cotransform=None, is_informative=False
+    ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args if args else []
         self._kwargs = kwargs if kwargs else {}
         self._classical_cotransform = classical_cotransform
+        self._is_informative = is_informative
 
     def __iter__(self):
-        return iter((self._transform, self._args, self._kwargs, self._classical_cotransform))
+        return iter(
+            (
+                self._transform,
+                self._args,
+                self._kwargs,
+                self._classical_cotransform,
+                self._is_informative,
+            )
+        )
 
     @property
     def transform(self):
@@ -156,3 +177,8 @@ class TransformContainer:
     def classical_cotransform(self):
         """Return the stored quantum transform's classical co-transform."""
         return self._classical_cotransform
+
+    @property
+    def is_informative(self):
+        """Return True is the transform does not need to be executed."""
+        return self._is_informative
