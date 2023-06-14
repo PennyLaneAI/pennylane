@@ -172,14 +172,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         return qml.Identity(wires[0])
 
     coeffs, ops = zip(
-        *[
-            (
-                coef,
-                _get_op(term, wires)
-                # example term: ((0,'X'), (2,'Z'), (3,'Y'))
-            )
-            for term, coef in qubit_operator.terms.items()
-        ]
+        *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()]
+        # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
 
     return np.real(np.array(coeffs, requires_grad=False)), list(ops)
