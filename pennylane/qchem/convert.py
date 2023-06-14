@@ -341,8 +341,9 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
     >>> qml.operation.enable_new_opmath()
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
+    (-0.0548*(PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]))) + (0.14297*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
     """
-    if format not in "openfermion":
+    if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")
 
     coeffs = np.array([np.real_if_close(coef, tol=tol) for coef in qubit_observable.terms.values()])
