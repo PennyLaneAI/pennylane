@@ -66,6 +66,28 @@ def bind_new_parameters_approx_time_evolution(
 
 
 @bind_new_parameters.register
+def bind_new_parameters_commuting_evolution(
+    op: qml.CommutingEvolution, params: Sequence[TensorLike]
+):
+    new_hamiltonian = qml.Hamiltonian(params[1:], op.hyperparameters["hamiltonian"].ops)
+    freq = op.hyperparameters["frequencies"]
+    shifts = op.hyperparameters["shifts"]
+    time = params[0]
+
+    return qml.CommutingEvolution(new_hamiltonian, time, frequencies=freq, shifts=shifts)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_fermionic_double_excitation(
+    op: qml.FermionicDoubleExcitation, params: Sequence[TensorLike]
+):
+    wires1 = op.hyperparameters["wires1"]
+    wires2 = op.hyperparameters["wires2"]
+
+    return qml.FermionicDoubleExcitation(params[0], wires1=wires1, wires2=wires2)
+
+
+@bind_new_parameters.register
 def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
     return qml.Identity(*params, wires=op.wires)
 

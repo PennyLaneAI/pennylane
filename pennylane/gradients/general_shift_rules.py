@@ -410,7 +410,7 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
             index = op_idx - n_ops
             mp = shifted_tape.measurements[index].__class__
 
-            shifted_tape.measurements[index] = mp(obs=shifted_op)
+            shifted_tape._measurements[index] = mp(obs=shifted_op)
 
     shifted_tape._update()
     # TODO: Figure out less ugly way to update shifted operation
