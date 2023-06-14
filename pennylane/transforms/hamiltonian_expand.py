@@ -230,15 +230,14 @@ def sum_expand(tape: QuantumTape, group=True):
 
     .. code-block:: python3
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-
-            qml.expval(S)
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(1))
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        measurements = [
+            qml.expval(S),
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(qml.PauliX(1)),
             qml.expval(qml.PauliZ(2))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can use the ``sum_expand`` transform to generate new tapes and a classical
     post-processing function to speed-up the computation of the expectation value of the `Sum`.
@@ -279,11 +278,8 @@ def sum_expand(tape: QuantumTape, group=True):
 
         S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(S)
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        tape = qml.tape.QuantumTape(ops, [qml.expval(S)])
 
     With grouping, the Sum gets split into two groups of observables (here
     ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):

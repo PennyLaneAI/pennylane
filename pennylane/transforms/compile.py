@@ -165,6 +165,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
                 return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
 
             expanded_tape = tape.expand(stop_at=stop_at)
+        print(expanded_tape.circuit)
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):

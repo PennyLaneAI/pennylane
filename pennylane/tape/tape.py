@@ -253,6 +253,17 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     **Example**
 
+    Tapes can also be constructed by directly providing operations, measurements, and state preparations:
+
+    >>> ops = [qml.S(0), qml.T(1)]
+    >>> measurements = [qml.state()]
+    >>> prep = [qml.BasisState([1,0], wires=0)]
+    >>> tape = qml.tape.QuantumTape(ops, measurements, prep=prep)
+    >>> tape.circuit
+    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+
+    They can also be populated into a recording tape via queuing.
+
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape:
@@ -261,6 +272,19 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
             qml.expval(qml.PauliZ(wires=[0]))
+
+    A ``QuantumTape`` can also be constructed directly from an :class:`~.AnnotatedQueue`:
+
+    .. code-block:: python
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=0)
+            qml.CNOT(wires=[0, 'a'])
+            qml.RX(0.133, wires='a')
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        tape = qml.tape.QuantumTape.from_queue(q)
 
     Once constructed, the tape may act as a quantum circuit and information
     about the quantum circuit can be queried:
@@ -277,15 +301,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     <Wires = [0, 'a']>
     >>> tape.num_params
     3
-
-    Tapes can also be constructed by directly providing operations, measurements, and state preparations:
-
-    >>> ops = [qml.S(0), qml.T(1)]
-    >>> measurements = [qml.state()]
-    >>> prep = [qml.BasisState([1,0], wires=0)]
-    >>> tape = qml.tape.QuantumTape(ops, measurements, prep=prep)
-    >>> tape.circuit
-    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
 
     The existing circuit is overriden upon exiting a recording context.
 
