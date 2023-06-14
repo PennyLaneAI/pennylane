@@ -19,8 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.utils import simplify
 from pennylane.operation import active_new_opmath
-from pennylane.fermi.conversion import _jordan_wigner_legacy
-from pennylane.fermi.conversion import jordan_wigner  # pylint:disable=unused-import
+from pennylane.fermi.conversion import jordan_wigner
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
@@ -122,7 +121,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
             coeffs = qml.math.array([0.0])
             coeffs = coeffs + o_ferm[0][n]
         else:
-            op = _jordan_wigner_legacy(t)
+            op = jordan_wigner(t)
             if op != 0:
                 ops = ops + op[1]
                 coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
