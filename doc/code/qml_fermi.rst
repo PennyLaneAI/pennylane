@@ -1,5 +1,5 @@
-qml.pauli
-============
+qml.fermi
+=========
 
 Overview
 --------
