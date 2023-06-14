@@ -457,6 +457,8 @@ class QNode:
 
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
+        # Temporary until transform program object is created
+        self._transform_program = []
 
     def __repr__(self):
         """String representation."""
@@ -482,6 +484,16 @@ class QNode:
 
         self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn()
+
+    @property
+    def transform_program(self):
+        """The transform program used by the QNode"""
+        return self._transform_program
+
+    def add_transform(self, transform_container):
+        """Add a transform container to the transform program."""
+        # Temporary append until TransformProgram is added.
+        self._transform_program.append(transform_container)
 
     def _update_gradient_fn(self):
         if self.diff_method is None:
