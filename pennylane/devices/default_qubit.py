@@ -557,11 +557,10 @@ class DefaultQubit(QubitDevice):
 
         """
         # intercept Sums
-        if isinstance(observable, Sum):
-            obs = observable.map_wires(self.wire_map)
-            if not self.shots:
-                return measure(ExpectationMP(obs), self._state)
-            raise Exception("cannot compute expectation of sum with finite shots")
+        if isinstance(observable, Sum) and not self.shots:
+            return measure(
+                ExpectationMP(observable.map_wires(self.wire_map)), self._pre_rotated_state
+            )
 
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
@@ -1055,6 +1054,6 @@ class DefaultQubit(QubitDevice):
         meas_filtered = [
             m
             for m in circuit.measurements
-            if m.obs is None or not isinstance(m.obs, (qml.Hamiltonian, Sum))
+            if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
