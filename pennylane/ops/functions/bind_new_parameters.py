@@ -55,7 +55,9 @@ def bind_new_parameters_pcphase(op: qml.PCPhase, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
-def bind_new_parameters_approx_time_evolution(op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]):
+def bind_new_parameters_approx_time_evolution(
+    op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]
+):
     new_hamiltonian = qml.Hamiltonian(params[:-1], op.hyperparameters["hamiltonian"].ops)
     time = params[-1]
     n = op.hyperparameters["n"]
