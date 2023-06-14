@@ -38,8 +38,10 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
-* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions.
+* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
+  decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+  [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
 <h3>Improvements 🛠</h3>
 
