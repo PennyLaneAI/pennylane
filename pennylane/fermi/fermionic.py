@@ -30,6 +30,9 @@ class FermiWord(dict):
     <FermiWord = '0+ 1-'>
     """
 
+    # override the arithmetic dunder methods for numpy arrays so that the
+    # methods defined on this class are used instead
+    # (i.e. ensure `np.array + FermiWord` uses `FermiWord.__radd__` instead of `np.array.__add__`)
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
@@ -253,7 +256,9 @@ class FermiSentence(dict):
     1.2 * '0+ 1-'
     + 3.1 * '1+ 2-'
     """
-
+    # override the arithmetic dunder methods for numpy arrays so that the
+    # methods defined on this class are used instead
+    # (i.e. ensure `np.array + FermiSentence` uses `FermiSentence.__radd__` instead of `np.array.__add__`)
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
