@@ -324,6 +324,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
+
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
