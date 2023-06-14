@@ -93,7 +93,6 @@ def _split_evol_ops(op, ob, tau):
     if qml.pauli.is_pauli_word(ob):
         prefactor = qml.pauli.pauli_word_prefactor(ob)
         word = qml.pauli.pauli_word_to_string(ob)
-        print(prefactor, word)
         insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
         coeffs = [prefactor, -prefactor]
     else:
@@ -644,8 +643,6 @@ def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcastin
     else:
         op_data = op.data
     cjacs = [cjac_fn(op_data[term_idx], tau) for tau in taus]
-    print(coeff(op_data[term_idx], taus[0]))
-    print(cjacs)
     if use_broadcasting:
         split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, taus)
         tapes = _split_evol_tape(tape, split_evolve_ops, op_idx)
@@ -666,7 +663,6 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
     # ParametrizedHamiltonian parameters. This is typically a fan-out function.
     fake_params, allowed_outputs = jnp.arange(op.num_params), set(range(op.num_params))
     reordered = op.H.reorder_fn(fake_params, op.H.coeffs_parametrized)
-    print(reordered)
 
     def _raise():
         raise ValueError(
@@ -781,9 +777,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         grads = [zero_rep if g is None else g for g in grads]
 
         return reorder_grads(grads, tape_specs)
-
-    for t in tapes:
-        print(qml.drawer.tape_text(t, decimals=2))
 
     return tapes, processing_fn
 
