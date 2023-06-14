@@ -420,8 +420,9 @@ class Hamiltonian(Observable):
             0, 29 - n - 5
         )  # Value of 2**29 arrived at empirically to balance time savings vs memory use.
 
-        pauli_indices = self._get_ops_indices(Wires(set(self.wires + wires)))
-        is_pauli = np.all(pauli_indices <= 3)
+        extended_wires = Wires(set(self.wires + wires))
+        pauli_indices = self._get_ops_indices(extended_wires)
+        is_pauli = list(wires) in list(extended_wires) and np.all(pauli_indices <= 3)
         reduc_indices = np.array(pauli_indices, copy=True)
         # groups tensor products that have the same sparsity pattern
         reduc_indices[pauli_indices == 3] = 0
@@ -797,8 +798,6 @@ def sum_sparse_matrix_core(wires, coeffs, ops, mask, is_pauli=False, pauli_indic
     ops = [ops[x] for x in where[0]]
     cef = coeffs[where]
     if pauli_indices is None:
-        is_pauli = False
-    elif len(wires) != pauli_indices.shape[1]:
         is_pauli = False
     for w, coeff, op in zip(where[0], cef, ops):
         if not is_pauli:
