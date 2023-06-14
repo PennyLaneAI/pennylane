@@ -145,8 +145,7 @@ class SProd(ScalarSymbolicOp):
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
             scalar = copy(self.scalar)
             if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
-                c = qnp.convert_like(1 + 0j, scalar)  # get a complex dtype in the same interface
-                scalar = qnp.cast_like(scalar, c)  # cast scalar to complex dtype
+                scalar = qnp.cast(scalar, "complex128")
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
