@@ -44,70 +44,44 @@ These fermionic objects can be mapped to the qubit basis by using the function
 >>> qml.jordan_wigner(h)
 ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
 
-A Fermi word or a Fermi Sentence can be also constructed directly
-
 FermiWord and FermiSentence
 ---------------------------
 
-Fermi words and Fermi Sentences can also be constructed directly with :class:`~pennylane.FermiWord`
-and :class:`~pennylane.FermiSentence` by passing dictionaries that define the fermionic operators.
+Fermi words and Fermi Sentences can also be constructed directly with
+:class:`~pennylane.fermi.FermiWord` and :class:`~pennylane.fermi.FermiSentence` by passing
+dictionaries that define the fermionic operators.
 
+For Fermi words, the dictionary items identify the fermionic creation and annihilation operators.
+Each operators is identified by a tuple of two integers representing its position in the Fermi word
+the orbital it acts on, and a symbol identifying its type. We use ``'+'`` and ``'-'`` to denote
+creation and annihilation operators, respectively. The operator
+:math:`a^{\dagger}_0 a_0 a^{\dagger}_3 a_3` can then be constructed with
 
-FermiWord and FermiSentence
----------------------------
+>>> qml.fermi.FermiWord({(0, 0): '+', (1, 3): '-'})
+<FermiWord = '0+ 3-'>
 
-The single-qubit Pauli group consists of the four single-qubit Pauli operations
-:class:`~pennylane.Identity`, :class:`~pennylane.PauliX`,
-:class:`~pennylane.PauliY` , and :class:`~pennylane.PauliZ`. The :math:`n`-qubit
-Pauli group is constructed by taking all possible :math:`N`-fold tensor products
-of these elements. Elements of the :math:`n`-qubit Pauli group are known as
-Pauli words, and have the form :math:`P_J = \otimes_{i=1}^{n}\sigma_i^{(J)}`,
-where :math:`\sigma_i^{(J)}` is one of the Pauli operators
-(:class:`~pennylane.PauliX`, :class:`~pennylane.PauliY`,
-:class:`~pennylane.PauliZ`) or identity (:class:`~pennylane.Identity`) acting on
-the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
-:math:`4^n` (neglecting the four possible global phases that may arise from
-multiplication of its elements).
+A Fermi sentence can be constructed directly by passing a dictionary of Fermi words and their
+corresponding coefficients to the :class:`~pennylane.fermi.FermiSentence` class. For instance, the
+Fermi sentence :math:`1.2 a^{\dagger}_0 a_0  + 2.3 a^{\dagger}_3 a_3` can be constructed as
 
-:class:`~pennylane.pauli.PauliWord` is a lightweight class which uses a dictionary
-approach to represent Pauli words. A :class:`~pennylane.pauli.PauliWord` can be
-instantiated by passing a dictionary of wires and their associated Pauli operators.
+>>> fw1 = qml.fermi.FermiWord({(0, 0): '+', (1, 0): '-'})
+>>> fw2 = qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
+>>> qml.FermiSentence({fw1: 1.2, fw2, 2.3})
+1.2 * '0+ 0-'
++ 2.3 * '3+ 3-'
 
->>> from pennylane.pauli import PauliWord
->>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})  # X@Z
->>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})  # Y@Z
->>> pw1, pw2
-(X(0) @ Z(1), Y(0) @ Z(1))
+Mapping to qubit operators
+--------------------------
 
-The purpose of this class is to efficiently compute products of Pauli words and
-obtain the matrix representation.
+The fermionic operators can be mapped to the qubit basis by using the
+:func:`~pennylane.jordan_wigner` function. This function can be used to map creation and
+annihilation operators as well as Fermi words and Fermi Sentences.
 
->>> pw1 * pw2
-(Z(0), 1j)
->>> pw1.to_mat(wire_order=[0, 1])
-array([[ 0,  0,  1,  0],
-       [ 0,  0,  0, -1],
-       [ 1,  0,  0,  0],
-       [ 0, -1,  0,  0]])
+>>> qml.jordan_wigner(qml.FermiA(1))
+(0.5*(PauliZ(wires=[0]) @ PauliX(wires=[1]))) + (0.5j*(PauliZ(wires=[0]) @ PauliY(wires=[1])))
 
+>>> qml.jordan_wigner(qml.FermiC(1) * qml.FermiA(1))
+((0.5+0j)*(Identity(wires=[1]))) + ((-0.5+0j)*(PauliZ(wires=[1])))
 
-The :class:`~pennylane.pauli.PauliSentence` class represents linear combinations of
-Pauli words. Using a similar dictionary based approach we can efficiently add, multiply
-and extract the matrix of operators in this representation.
-
->>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
->>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
->>> ps1
-1.2 * X(0) @ Z(1)
-+ 0.5j * Y(0) @ Z(1)
->>> ps1 + ps2
-0.0 * X(0) @ Z(1)
-+ 0.5j * Y(0) @ Z(1)
->>> ps1 * ps2
--1.44 * I
-+ (-0.6+0j) * Z(0)
->>> (ps1 + ps2).to_mat(wire_order=[0, 1])
-array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
-       [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
-       [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
-       [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
+>>> qml.jordan_wigner(0.5 * qml.FermiC(1) * qml.FermiA(1) + 0.75 * qml.FermiC(2) * qml.FermiA(2))
+((0.625+0j)*(Identity(wires=[1]))) + ((-0.25+0j)*(PauliZ(wires=[1]))) + ((-0.375+0j)*(PauliZ(wires=[2])))
