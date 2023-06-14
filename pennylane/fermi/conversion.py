@@ -23,6 +23,7 @@ from pennylane.pauli import PauliWord, PauliSentence
 from pennylane.pauli.utils import _get_pauli_map, _pauli_mult
 from .fermionic import FermiWord, FermiSentence
 
+
 # pylint: disable=unexpected-keyword-arg
 @singledispatch
 def jordan_wigner(
