@@ -4,18 +4,63 @@
 
 <h3>New features since last release</h3>
 
-<h4>Fermionic operators 🔬</h4>
+<h4>An all-new Fermi module 🔬</h4>
 
-* A new class called `Fermiword` has been added to represent a fermionic operator (e.g., $\hat{c}_1 c_0 \hat{c}_2 c_3$).
+* The `qml.fermi` module is now available, including intuitive fermionic operators. 
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
-
-* A new class called `FermiSentence` has been added to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
-
-* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
-  operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
-  `qml.FermiC(0)` and `qml.FermiA(3)`.
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
+
+  The foundational operators of the Fermi module are `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, 
+  respectively. These operators are defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
+  the operators $a^{\dagger}_0$ and $a_3$ are respectively constructed as
+
+  ```pycon
+  >>> qml.FermiC(0)
+  >>> qml.FermiA(3)
+  ```
+
+  These operators can be multiplied by each other to create a fermionic operator that we call a Fermi word.
+
+  ```
+  >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
+  <FermiWord = '0+ 0- 3+ 3-'>
+  ```
+
+  Alternatively, Fermi words can be created via `qml.fermi.FermiWord`:
+
+  ```pycon
+  >>> qml.fermi.FermiWord({(0, 3): '+', (0, 3): '-'})
+  <FermiWord = '0+ 0- 3+ 3-'>
+  ```
+
+  Fermi words can then be linearly combined to create a fermionic operator that we call a Fermi
+  sentence. Here is an example of creating a fermionic Hamiltonian:
+
+  ```pycon
+  >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
+  >>> h
+  1.2 * '0+ 0-'
+  + 2.3 * '3+ 3-'
+  ```
+
+  Alternatively, Fermi sentences can be created via `qml.fermi.FermiSentence`:
+
+  ```pycon
+  >>> fw1 = qml.fermi.FermiWord({(0, 0): '+', (1, 0): '-'})
+  >>> fw2 = qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
+  >>> qml.FermiSentence({fw1: 1.2, fw2, 2.3})
+  1.2 * '0+ 0-'
+  + 2.3 * '3+ 3-'
+  ```
+
+  Any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence
+  can be mapped back to the qubit basis by using `qml.jordan_wigner`:
+
+  ```pycon
+  >>> qml.jordan_wigner(h)
+  ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
+  ```
 
 <h4>Workflow-level resource estimation 🧮</h4>
 
