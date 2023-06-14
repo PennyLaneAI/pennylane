@@ -397,8 +397,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
         -math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS),
     )
     # Arcos is only defined between -1 and 1
-    thetas = qml.math.where(thetas > 1.0, 1.0, thetas)
-    thetas = qml.math.where(thetas < -1.0, -1.0, thetas)
+    thetas = qml.math.clip(thetas, -1.0, 1.0)
     thetas = 2 * math.arccos(thetas)
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
