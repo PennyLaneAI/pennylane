@@ -422,7 +422,9 @@ class Hamiltonian(Observable):
 
         extended_wires = Wires(set(self.wires + wires))
         pauli_indices = self._get_ops_indices(extended_wires)
-        is_pauli = list(wires) in list(extended_wires) and np.all(pauli_indices <= 3)
+        is_pauli = set(extended_wires).issubset(wires) and np.all(pauli_indices <= 3)
+        if is_pauli:
+            pauli_indices = pauli_indices[:, extended_wires.indices(wires)]
         reduc_indices = np.array(pauli_indices, copy=True)
         # groups tensor products that have the same sparsity pattern
         reduc_indices[pauli_indices == 3] = 0
