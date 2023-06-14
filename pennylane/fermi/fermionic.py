@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Fermionic representation classes."""
+import re
 from copy import copy
 
 
@@ -241,6 +242,52 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+
+def string_to_fermi_word(fermi_string):
+    r"""Return a fermionic operator object from its string representation.
+
+    The string representation is a compact format that uses the orbital index and `+` or `-` symbols
+    to indicate creation and annihilation operators, respectively. For instance, the string
+    representation for the operator :math:`a\dagger_0 a_1 a\dagger_0 a_1` is '0+ 1- 0+ 1-'. The `-`
+    symbols can be optionally dropped such that '0+ 1 0+ 1' represents the same operator. The format
+    commonly used in OpenFermion, '0^ 1 0^ 1' to represent the same operator, is also supported.
+
+    Args:
+        fermi_string (str): string representation of the fermionic object
+
+    Returns:
+        FermiWord: the fermionic operator object
+
+    **Example**
+
+    >>> string_to_fermi_word('0+ 1- 0+ 1-')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> string_to_fermi_word('0+ 1 0+ 1')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> string_to_fermi_word('0^ 1 0^ 1')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
+    >>> op2 = string_to_fermi_word('0+ 1- 2+ 3-')
+    >>> op1 == op2
+    True
+    """
+    if fermi_string.isspace() or not fermi_string:
+        return FermiWord({})
+
+    fermi_string = " ".join(fermi_string.split())
+
+    if not all(s.isdigit() or s in ["+", "-", "^", " "] for s in fermi_string):
+        raise ValueError(f"Invalid character encountered in string {fermi_string}.")
+
+    fermi_string = re.sub(r"\^", "+", fermi_string)
+
+    operators = [i + "-" if i[-1] not in "+-" else i for i in re.split(r"\s", fermi_string)]
+
+    return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
 
 
 # pylint: disable=too-few-public-methods
