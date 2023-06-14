@@ -216,6 +216,10 @@
   the respective docstrings.
   [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
 
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
