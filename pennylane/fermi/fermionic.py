@@ -116,7 +116,7 @@ class FermiWord(dict):
 
     def __add__(self, other):
         """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
-        elements to be added into FermiSentences, and uses the FermiSentence __add__
+        elements into FermiSentences, and uses the FermiSentence __add__
         method"""
 
         self_fs = FermiSentence({self: 1.0})
@@ -144,7 +144,7 @@ class FermiWord(dict):
 
     def __sub__(self, other):
         """Subtract a FermiSentence, FermiWord or constant from a FermiWord. Converts both
-        elements to be added into FermiSentences (with negative coefficient for `other`), and
+        elements into FermiSentences (with negative coefficient for `other`), and
         uses the FermiSentence __add__  method"""
 
         self_fs = FermiSentence({self: 1.0})
