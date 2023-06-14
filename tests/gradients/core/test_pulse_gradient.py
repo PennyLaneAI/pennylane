@@ -806,6 +806,23 @@ class TestStochPulseGrad:
 class TestStochPulseGradQNode:
     """Test that pulse_generator integrates correctly with QNodes."""
 
+    def test_raises_for_application_to_qnodes(self):
+        """Test that an error is raised when applying ``stoch_pulse_grad``
+        to a QNode directly."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], 0.2)
+            return qml.expval(qml.PauliZ(0))
+
+        _match = "stochastic pulse parameter-shift .* scalar pulse parameters."
+        with pytest.raises(NotImplementedError, match=_match):
+            stoch_pulse_grad(circuit, num_split_times=2)
+
+    # TODO: include the following tests when #4225 is resolved.
+    @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_expval_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
@@ -825,9 +842,7 @@ class TestStochPulseGradQNode:
         params = jnp.array(0.4)
         with qml.Tracker(dev) as tracker:
             _match = "stochastic pulse parameter-shift .* scalar pulse parameters."
-            with pytest.warns(UserWarning, match=_match):
-                grad_fn = stoch_pulse_grad(circuit, num_split_times=2)
-            grad = grad_fn(params)
+            grad = stoch_pulse_grad(circuit, num_split_times=2)(params)
 
         p = params * T
         exp_grad = -2 * jnp.sin(2 * p) * T

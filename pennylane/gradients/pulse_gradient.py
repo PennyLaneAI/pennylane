@@ -56,17 +56,18 @@ def _assert_has_jax(transform_name):
         )
 
 
-def warn_pulse_diff_on_qnode(transform_name):
+def raise_pulse_diff_on_qnode(transform_name):
     """Emit a warning that the gradient transform with the provided name only supports
     direct application to QNodes that have scalar pulse parameters.
     """
-    warnings.warn(
+    msg = (
         f"Applying the {transform_name} gradient transform to a QNode directly is currently "
         "only supported for scalar pulse parameters. Non-scalar parameters may lead to wrong "
         "results or raise exceptions. Please use differentiation via a JAX entry point "
         "(jax.grad, jax.jacobian, ...) instead for non-scalar parameters.",
         UserWarning,
     )
+    raise NotImplementedError(msg)
 
 
 def _split_evol_ops(op, ob, tau):
@@ -699,6 +700,6 @@ def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     but in addition warns that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is only supported for scalar pulse parameters.
     """
+    # pylint:disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"
-    warn_pulse_diff_on_qnode(transform_name)
-    return self.default_qnode_wrapper(qnode, targs, tkwargs)
+    raise_pulse_diff_on_qnode(transform_name)
