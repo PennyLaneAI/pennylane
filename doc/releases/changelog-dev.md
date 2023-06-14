@@ -152,6 +152,11 @@
 * A new class called `FermiSentence` has been added to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
+* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
+  operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
+  `qml.FermiC(0)` and `qml.FermiA(3)`.
+  [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
@@ -507,6 +512,24 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
+* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
+
+* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
+  Both functions have broadcasting support.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
+
+* Fix unclear documentation and indicate variable-length argument lists of functions and methods in
+  the respective docstrings.
+  [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
+
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
+* `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
+  equality or hash to work correctly.
+  [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
+
 <h3>Breaking changes 💔</h3>
 
 * The default value for the `show_matrices` keyword argument in all drawing methods is now `True`. 
@@ -600,6 +623,9 @@
 
 * A more meaningful error message is raised when broadcasting with adjoint differentiation on `DefaultQubit`.
   [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+  
+* The `has_unitary_generator` attribute in `qml.ops.qubit.attributes` no longer contains operators with non-unitary generators.
+  [(#4183)](https://github.com/PennyLaneAI/pennylane/pull/4183)
 
 * Fixed a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
@@ -615,6 +641,7 @@ This release contains contributions from (in alphabetical order):
 Venkatakrishnan AnushKrishna,
 Thomas Bromley,
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
 Emiliano Godinez Ramirez
 Nikhil Harle
 Soran Jahangiri,
@@ -631,5 +658,6 @@ Modjtaba Shokrian-Zini,
 Mainak Roy,
 Matthew Silverman,
 Jay Soni,
+Edward Thomas,
 David Wierichs,
 Frederik Wilde.
