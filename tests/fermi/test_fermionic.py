@@ -15,11 +15,13 @@
 import pickle
 from copy import copy, deepcopy
 import numpy as np
-from pennylane import numpy as pnp
-
 import pytest
 
+
+from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import FermiSentence, FermiWord, string_to_fermi_word
+
+# pylint: disable=too-many-public-methods
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
@@ -127,7 +129,6 @@ class TestFermiWord:
 
 
 class TestFermiWordArithmetic:
-
     WORDS_MUL = (
         (
             fw1,
@@ -952,4 +953,3 @@ class TestFermiSentenceArithmetic:
     def test_string_to_fermi_word_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
             string_to_fermi_word(string)  # pylint: disable=pointless-statement
-
