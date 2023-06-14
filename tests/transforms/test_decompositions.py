@@ -197,13 +197,13 @@ single_qubit_decomps_xyx = [
     (
         # This triggers the if conditional non-trivially
         qml.Rot(
-            np.array([1.2, 2.31]), np.array([1.2, 2.31]), np.array([1.2, 2.31]), wires=0
+            np.array([1.2, 2.4]), np.array([1.2, 2.4]), np.array([1.2, 2.4]), wires=0
         ).matrix(),
         typeof_gates_xyx,
         [
-            [11.62877054, 2.82618507],
-            [2.53416365, 2.59040216],
-            [0.93760008, 3.45700024],
+            [11.62877054, 9.1679702],
+            [2.53416365, 2.60061955],
+            [0.93760008, 9.68158572],
             [1, 1],
         ],
     ),
