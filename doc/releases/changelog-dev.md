@@ -303,7 +303,8 @@
 
 <h3>Documentation 📝</h3>
 
-* Part of the documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+* The documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+  [(#4243)](https://github.com/PennyLaneAI/pennylane/pull/4243)
 
 * The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
   `qml.ops.op_math.Adjoint.__new__`.
