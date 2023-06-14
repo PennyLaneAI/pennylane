@@ -20,6 +20,7 @@ import warnings
 
 import numpy as np
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 
@@ -387,10 +388,14 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
 
     for idx, shift, multiplier in zip(indices, shifts, multipliers):
         _, op_idx, p_idx = tape.get_operation(idx)
-        op = all_ops[op_idx]
+        op = (
+            all_ops[op_idx].obs
+            if isinstance(all_ops[op_idx], MeasurementProcess)
+            else all_ops[op_idx]
+        )
 
         # Shift copied parameter
-        new_params = list(all_ops[op_idx].data.copy())
+        new_params = list(op.data.copy())
         new_params[p_idx] = new_params[p_idx] * qml.math.convert_like(multiplier, new_params[p_idx])
         new_params[p_idx] = new_params[p_idx] + qml.math.convert_like(shift, new_params[p_idx])
         if cast:
@@ -405,9 +410,10 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
             mp = all_ops[op_idx].__class__
             all_ops[op_idx] = mp(obs=shifted_op)
 
-    prep = all_ops[:len(tape._prep)]
+    # pylint: disable=protected-access
+    prep = all_ops[: len(tape._prep)]
     ops = all_ops[len(tape._prep) : len(tape.operations)]
-    meas = all_ops[len(tape.operations):]
+    meas = all_ops[len(tape.operations) :]
     shifted_tape = QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
 
     return shifted_tape
