@@ -382,6 +382,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     """Create a copy of a tape and of parameters, and set the new tape to the parameters
     rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
+    # pylint: disable=protected-access
     shifted_tape = tape.copy(copy_operations=True)
 
     for idx, shift, multiplier in zip(indices, shifts, multipliers):
@@ -401,7 +402,6 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
 
         # Create operator with shifted parameter and put into shifted tape
         shifted_op = bind_new_parameters(op, new_params)
-        # pylint: disable=protected-access
         if (n_prep := len(tape._prep)) > op_idx:
             shifted_tape._prep[op_idx] = shifted_op
         elif (n_ops := len(tape.operations)) > op_idx:
@@ -480,7 +480,7 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
         multipliers = np.ones_like(shifts)
 
     tapes = [
-        _copy_and_shift_params(indices, _shifts, _multipliers)
+        _copy_and_shift_params(tape, indices, _shifts, _multipliers)
         for _shifts, _multipliers in zip(shifts, multipliers)
     ]
 
