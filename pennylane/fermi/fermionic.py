@@ -289,7 +289,15 @@ class FermiSentence(dict):
         # ensure other is FermiSentence
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
-        if isinstance(other, (Number, ndarray)):
+        if isinstance(other, Number):
+            other = FermiSentence({FermiWord({}): other})
+        if isinstance(other, ndarray):
+            if len(other) > 1:
+                raise RuntimeError(
+                    f"Cannot add {type(other)} of length {len(other)} to a FermiSentence"
+                )
+            other = FermiSentence({FermiWord({}): other})
+
             other = FermiSentence({FermiWord({}): other})
 
         if isinstance(other, FermiSentence):
