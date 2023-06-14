@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Fermionic representation classes."""
+import re
 from copy import copy
 
 
@@ -162,7 +163,6 @@ class FermiWord(dict):
     # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
     # TODO: create __imul__ method.
     # TODO: support multiply by number in __mul__ when FermiSentence is merged.
-    # TODO: create mapping method when the jordan_wigner function is added.
     # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
 
 
@@ -242,3 +242,124 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+
+def string_to_fermi_word(fermi_string):
+    r"""Return a fermionic operator object from its string representation.
+
+    The string representation is a compact format that uses the orbital index and `+` or `-` symbols
+    to indicate creation and annihilation operators, respectively. For instance, the string
+    representation for the operator :math:`a\dagger_0 a_1 a\dagger_0 a_1` is '0+ 1- 0+ 1-'. The `-`
+    symbols can be optionally dropped such that '0+ 1 0+ 1' represents the same operator. The format
+    commonly used in OpenFermion, '0^ 1 0^ 1' to represent the same operator, is also supported.
+
+    Args:
+        fermi_string (str): string representation of the fermionic object
+
+    Returns:
+        FermiWord: the fermionic operator object
+
+    **Example**
+
+    >>> string_to_fermi_word('0+ 1- 0+ 1-')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> string_to_fermi_word('0+ 1 0+ 1')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> string_to_fermi_word('0^ 1 0^ 1')
+    <FermiWord = '0+ 1- 0+ 1-'>
+
+    >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
+    >>> op2 = string_to_fermi_word('0+ 1- 2+ 3-')
+    >>> op1 == op2
+    True
+    """
+    if fermi_string.isspace() or not fermi_string:
+        return FermiWord({})
+
+    fermi_string = " ".join(fermi_string.split())
+
+    if not all(s.isdigit() or s in ["+", "-", "^", " "] for s in fermi_string):
+        raise ValueError(f"Invalid character encountered in string {fermi_string}.")
+
+    fermi_string = re.sub(r"\^", "+", fermi_string)
+
+    operators = [i + "-" if i[-1] not in "+-" else i for i in re.split(r"\s", fermi_string)]
+
+    return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
+
+
+# pylint: disable=too-few-public-methods
+class FermiC(FermiWord):
+    r"""FermiC(orbital)
+    The fermionic creation operator :math:`a^\dagger`
+
+    For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^\dagger_2`. This operator applied
+    to :math:`\ket{0000}` gives :math:`\ket{0010}`.
+
+    Args:
+        orbital(int): the non-negative integer indicating the orbital the operator acts on.
+
+    .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
+
+    .. seealso:: :class:`~pennylane.FermiA`
+
+    **Example**
+
+    To construct the operator :math:`a^\dagger_0`:
+
+    >>> FermiC(0)
+    <FermiWord = '0+'>
+
+    This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
+    :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
+
+    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    <FermiWord = '0+ 1- 2+ 3-'>
+    """
+
+    def __init__(self, orbital):
+        if not isinstance(orbital, int) or orbital < 0:
+            raise ValueError(
+                f"FermiC: expected a single, positive integer value for orbital, but received {orbital}"
+            )
+        operator = {(0, orbital): "+"}
+        super().__init__(operator)
+
+
+class FermiA(FermiWord):
+    r"""FermiA(orbital)
+    The fermionic annihilation operator :math:`a`
+
+    For instance, the operator ``qml.FermiA(2)`` denotes :math:`a_2`. This operator applied
+    to :math:`\ket{0010}` gives :math:`\ket{0000}`.
+
+    Args:
+        orbital(int): the non-negative integer indicating the orbital the operator acts on.
+
+    .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
+
+    .. seealso:: :class:`~pennylane.FermiC`
+
+    **Example**
+
+    To construct the operator :math:`a_0`:
+
+    >>> FermiA(0)
+    <FermiWord = '0-'>
+
+    This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
+    :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
+
+    >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
+    <FermiWord = '0+ 1- 2+ 3-'>
+    """
+
+    def __init__(self, orbital):
+        if not isinstance(orbital, int) or orbital < 0:
+            raise ValueError(
+                f"FermiA: expected a single, positive integer value for orbital, but received {orbital}"
+            )
+        operator = {(0, orbital): "-"}
+        super().__init__(operator)
