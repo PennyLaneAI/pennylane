@@ -13,7 +13,7 @@ number observables.
 .. automodapi:: pennylane.qchem
     :no-heading:
     :include-all-objects:
-    :skip: taper, symmetry_generators, paulix_ops, import_operator
+    :skip: taper, symmetry_generators, paulix_ops, import_operator, jordan_wigner
 
 Differentiable Hartree-Fock
 ---------------------------
