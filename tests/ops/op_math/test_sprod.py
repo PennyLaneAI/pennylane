@@ -506,6 +506,7 @@ class TestMatrix:
         assert mat.dtype == tf.complex128
         expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
         assert qml.math.allclose(mat, expected)
+        assert s_prod.op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
 
 
 class TestSparseMatrix:
