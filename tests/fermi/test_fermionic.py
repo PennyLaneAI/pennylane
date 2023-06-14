@@ -14,15 +14,16 @@
 """Unit Tests for the Fermionic representation classes."""
 import pickle
 from copy import copy, deepcopy
-
 import pytest
 
-from pennylane.fermi.fermionic import FermiSentence, FermiWord
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, string_to_fermi_word
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
+fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
+fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
 
 
 class TestFermiWord:
@@ -403,3 +404,40 @@ class TestFermiSentence:
     def test_pow_error(self, f1, pow):
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
+
+    tup_fw_string = (
+        ("0+ 1-", fw1),
+        ("0+ 0-", fw2),
+        ("0+ 3- 0+ 4-", fw3),
+        ("0+   3- 0+    4-    ", fw3),
+        ("10+ 30- 0+ 400-", fw5),
+        ("10+ 30+ 0- 400-", fw6),
+        ("0^ 1", fw1),
+        ("0^ 0", fw2),
+        ("0^    0", fw2),
+        ("0^ 3 0^ 4", fw3),
+        ("10^ 30 0^ 400", fw5),
+        ("10^ 30^ 0 400", fw6),
+        ("0+ 1", fw1),
+        ("0+  1", fw1),
+        ("0+ 0", fw2),
+        ("0+ 3 0+ 4", fw3),
+        ("10+ 30 0+ 400", fw5),
+        ("10+ 30+ 0 400", fw6),
+        ("", fw4),
+        (" ", fw4),
+    )
+
+    @pytest.mark.parametrize("string, result_fw", tup_fw_string)
+    def test_string_to_fermi_word(self, string, result_fw):
+        assert string_to_fermi_word(string) == result_fw
+
+    tup_fw_string_error = (
+        "0+ a-",
+        "0+ 1-? 3+ 4-",
+    )
+
+    @pytest.mark.parametrize("string", tup_fw_string_error)
+    def test_string_to_fermi_word_error(self, string):
+        with pytest.raises(ValueError, match="Invalid character encountered in string "):
+            string_to_fermi_word(string)  # pylint: disable=pointless-statement

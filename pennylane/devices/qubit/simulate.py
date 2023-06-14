@@ -13,9 +13,9 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
-import pennylane as qml
+from numpy.random import default_rng
 
-import pennylane.numpy as np
+import pennylane as qml
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -60,7 +60,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
     for op in circuit._ops:
         state = apply_operation(op, state, debugger=debugger)
 
-    if circuit.shots.total_shots is None:
+    if not circuit.shots:
         # analytic case
 
         if len(circuit.measurements) == 1:
@@ -73,7 +73,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
     if len(circuit.measurements) == 1:
         return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
 
-    rng = np.random.default_rng(rng)
+    rng = default_rng(rng)
     results = tuple(
         measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
     )
