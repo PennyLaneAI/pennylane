@@ -93,6 +93,7 @@ def _split_evol_ops(op, ob, tau):
     if qml.pauli.is_pauli_word(ob):
         prefactor = qml.pauli.pauli_word_prefactor(ob)
         word = qml.pauli.pauli_word_to_string(ob)
+        print(prefactor, word)
         insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
         coeffs = [prefactor, -prefactor]
     else:
@@ -158,8 +159,8 @@ def _parshift_and_integrate(
         cjacs (tensor_like): classical Jacobian evaluated at the splitting times
         int_prefactor (float): prefactor of the numerical integration, corresponding to the size
             of the time range divided by the number of splitting time samples
-        psr_coeffs (tensor_like): Coefficients of the parameter-shift rule to contract the results
-            with before integrating numerically.
+        psr_coeffs (tensor_like or tuple[tensor_like]): Coefficients of the parameter-shift
+            rule to contract the results with before integrating numerically.
         single_measure (bool): Whether the results contain a single measurement per shot setting
         shot_vector (bool): Whether the results have a shot vector axis
         use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
@@ -168,36 +169,34 @@ def _parshift_and_integrate(
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
 
-    multi_terms = isinstance(psr_coeffs, tuple)
-    num_shifts = [len(c) for c in psr_coeffs] if multi_terms else len(psr_coeffs)
-
     def _contract(coeffs, res, cjac):
+        """Contract three tensors, the first two like a standard matrix multiplication
+        and the result with the third tensor along the first axes."""
         return jnp.tensordot(jnp.tensordot(coeffs, res, axes=1), cjac, axes=[[0], [0]])
 
-    def _psr_and_contract(res_list, cjacs, int_prefactor):
-        res = jnp.stack(res_list)
+    if isinstance(psr_coeffs, tuple):
+        num_shifts = [len(c) for c in psr_coeffs]
 
-        # Preprocess the results: Reshape, create slices for different generating terms
-        if use_broadcasting:
-            if multi_terms:
+        def _psr_and_contract(res_list, cjacs, int_prefactor):
+            """Execute the parameter-shift rule and contract with classical Jacobians.
+            This function assumes multiple generating terms for the pulse parameter
+            of interest"""
+            res = jnp.stack(res_list)
+            idx = 0
+
+            # Preprocess the results: Reshape, create slices for different generating terms
+            if use_broadcasting:
                 # Slice the results according to the different generating terms. Slice away the
                 # first and last value for each term, which correspond to the initial condition
                 # and the final value of the time evolution, but not to splitting times
-                idx = 0
                 res = tuple(res[idx : (idx := idx + n), 1:-1] for n in num_shifts)
             else:
-                # Slice away the first and last values, corresponding to the initial condition
-                # and the final value of the time evolution, but not to splitting times
-                res = res[:, 1:-1]
-        else:
-            shape = jnp.shape(res)
-            if multi_terms:
+                shape = jnp.shape(res)
                 num_taus = shape[0] // sum(num_shifts)
                 # Reshape the slices of the results corresponding to different generating terms.
                 # Afterwards the first axis corresponds to the splitting times and the second axis
                 # corresponds to the different shifts of the respective term.
-                # Afterwards move the shifts-axis to the first position of each term.
-                idx = 0
+                # Finally move the shifts-axis to the first position of each term.
                 res = tuple(
                     jnp.moveaxis(
                         jnp.reshape(
@@ -208,6 +207,29 @@ def _parshift_and_integrate(
                     )
                     for n in num_shifts
                 )
+
+            # Contract the results, parameter-shift rule coefficients and (classical) Jacobians,
+            # and include the rescaling factor from the Monte Carlo integral and from global
+            # prefactors of Pauli word generators.
+            diff_per_term = jnp.array(
+                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
+            )
+            return qml.math.sum(diff_per_term, axis=0) * int_prefactor
+
+    else:
+        num_shifts = len(psr_coeffs)
+
+        def _psr_and_contract(res_list, cjacs, int_prefactor):
+            """Execute the parameter-shift rule and contract with classical Jacobians.
+            This function assumes a single generating term for the pulse parameter
+            of interest"""
+            res = jnp.stack(res_list)
+
+            # Preprocess the results: Reshape, create slices for different generating terms
+            if use_broadcasting:
+                # Slice away the first and last values, corresponding to the initial condition
+                # and the final value of the time evolution, but not to splitting times
+                res = res[:, 1:-1]
             else:
                 # Reshape the results such that the first axis corresponds to the splitting times
                 # and the second axis corresponds to different shifts. All other axes are untouched.
@@ -216,13 +238,10 @@ def _parshift_and_integrate(
                 new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
                 res = jnp.moveaxis(jnp.reshape(res, new_shape), 1, 0)
 
-        # Contract the results, parameter-shift rule coefficients and (classical) Jacobians,
-        # and include the rescaling factor from the Monte Carlo integral and from global prefactors
-        # of Pauli word generators.
-        if not multi_terms:
+            # Contract the results, parameter-shift rule coefficients and (classical) Jacobians,
+            # and include the rescaling factor from the Monte Carlo integral and from global
+            # prefactors of Pauli word generators.
             return _contract(psr_coeffs, res, cjacs) * int_prefactor
-        diff_per_term = [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
-        return qml.math.sum(diff_per_term, axis=0) * int_prefactor
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
     if not single_measure + shot_vector == 1:
@@ -625,6 +644,8 @@ def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcastin
     else:
         op_data = op.data
     cjacs = [cjac_fn(op_data[term_idx], tau) for tau in taus]
+    print(coeff(op_data[term_idx], taus[0]))
+    print(cjacs)
     if use_broadcasting:
         split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, taus)
         tapes = _split_evol_tape(tape, split_evolve_ops, op_idx)
@@ -645,6 +666,7 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
     # ParametrizedHamiltonian parameters. This is typically a fan-out function.
     fake_params, allowed_outputs = jnp.arange(op.num_params), set(range(op.num_params))
     reordered = op.H.reorder_fn(fake_params, op.H.coeffs_parametrized)
+    print(reordered)
 
     def _raise():
         raise ValueError(
@@ -759,6 +781,9 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         grads = [zero_rep if g is None else g for g in grads]
 
         return reorder_grads(grads, tape_specs)
+
+    for t in tapes:
+        print(qml.drawer.tape_text(t, decimals=2))
 
     return tapes, processing_fn
 
