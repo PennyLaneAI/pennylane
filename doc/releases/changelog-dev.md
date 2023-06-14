@@ -4,6 +4,19 @@
 
 <h3>New features since last release</h3>
 
+<h4>Fermionic operators 🔬</h4>
+
+* A new class called `Fermiword` has been added to represent a fermionic operator (e.g., $\hat{c}_1 c_0 \hat{c}_2 c_3$).
+  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
+* A new class called `FermiSentence` has been added to represent a linear combination of fermionic operators.
+  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
+
+* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
+  operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
+  `qml.FermiC(0)` and `qml.FermiA(3)`.
+  [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
+
 <h4>Workflow-level resource estimation 🧮</h4>
 
 * PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
@@ -142,22 +155,24 @@
   >>> specs = qml.specs(circ)()
   >>> specs["resources"].depth
   6
-  ``` 
+  ```
 
-<h4>Fermionic operators 🔬</h4>
+<h4>Community contributions from UnitaryHack 🤝</h4>
 
-* A new class called `Fermiword` has been added to represent a fermionic operator (e.g., $\hat{c}_1 c_0 \hat{c}_2 c_3$).
-  [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
+  now has an improved string representation.
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
 
-* A new class called `FermiSentence` has been added to represent a linear combination of fermionic operators.
-  [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
-
-* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
-  operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
-  `qml.FermiC(0)` and `qml.FermiA(3)`.
-  [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
-
-<h4>Trace distance is now available in qml.qinfo 💥</h4>
+  ```pycon
+  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
+  >>> def f2(p, t): return p * t
+  >>> coeffs = [2., f1, f2]
+  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+  >>> qml.dot(coeffs, observables)
+    (2.0*(PauliX(wires=[0])))
+  + (f1(params_0, t)*(PauliY(wires=[0])))
+  + (f2(params_1, t)*(PauliZ(wires=[0])))
+  ```
 
 * The quantum information module now supports [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
   [(#4181)](https://github.com/PennyLaneAI/pennylane/pull/4181)
@@ -309,23 +324,6 @@
     Hybrid models containing `KerasLayer` or `TorchLayer` objects can also be saved and loaded.
 
 <h3>Improvements 🛠</h3>
-
-<h4>Community contributions from UnitaryHack 🤝</h4>
-
-* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
-  now has an improved string representation.
-  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
-
-  ```pycon
-  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
-  >>> def f2(p, t): return p * t
-  >>> coeffs = [2., f1, f2]
-  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-  >>> qml.dot(coeffs, observables)
-    (2.0*(PauliX(wires=[0])))
-  + (f1(params_0, t)*(PauliY(wires=[0])))
-  + (f2(params_1, t)*(PauliZ(wires=[0])))
-  ```
 
 <h4>A more flexible projector</h4>
 
