@@ -317,20 +317,15 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
             if pw[w] == "X":
                 val[i] *= paulix_sector[idx]
 
-        # print(i, pw)
         o.append(
             qml.pauli.string_to_pauli_word(
                 # "".join([pw[i] for i in wires_tap]), wire_map=wiremap_tap
-                "".join([pw[wiremap[i]] for i in wires_tap]), wire_map=wiremap_tap
+                "".join([pw[wiremap[i]] for i in wires_tap]),
+                wire_map=wiremap_tap,
             )
         )
 
     c = qml.math.stack(qml.math.multiply(val * complex(1.0), list(ts_ps.values())))
-
-    # res = qml.dot(c, o, pauli=True)
-    # res.simplify()
-    # print(res)
-    # print([op for op, i in zip(o, c) if np.round(abs(i), 5) > 0])
 
     tapered_ham = (
         qml.simplify(qml.dot(c, o)) if active_new_opmath() else simplify(qml.Hamiltonian(c, o))

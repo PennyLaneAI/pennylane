@@ -251,7 +251,9 @@ def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
     disable_new_opmath()
 
     for g1, g2 in zip(generators, res_generators):
-        assert not isinstance(g1, qml.Hamiltonian)  # just confirming we are not relying on Hamiltonians any more
+        assert not isinstance(
+            g1, qml.Hamiltonian
+        )  # just confirming we are not relying on Hamiltonians any more
         assert pauli_sentence(g1) == pauli_sentence(g2)
 
 
@@ -323,30 +325,29 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.qchem.Molecule(symbols, geometry)
     h = qml.qchem.diff_hamiltonian(mol)()
-    print("Non arithmetic: ")
     ham_calc = qml.taper(h, generator, paulixops, paulix_sector)
-    print(ham_calc)
-    print("-----")
     # sort Hamiltonian terms and then compare with reference
     sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
     for i, term in enumerate(sorted_terms):
         assert np.allclose(term[0], ham_ref.terms()[0][i])
         assert term[1].compare(ham_ref.terms()[1][i])
 
-
     # test arithmetic op compatibility:
     h_as_op = pauli_sentence(h).operation()
     generators_as_ops = [pauli_sentence(g).operation() for g in generator]
 
     enable_new_opmath()
-    print("Arithmetic: ")
     ham_calc = qml.taper(h_as_op, generators_as_ops, paulixops, paulix_sector)
-    print(ham_calc)
-    print("-----")
     disable_new_opmath()
 
     assert not isinstance(ham_calc, qml.Hamiltonian)
-    assert pauli_sentence(ham_calc) == pauli_sentence(ham_ref)
+    ham_cal_as_hamiltonian = pauli_sentence(ham_calc).hamiltonian()
+    sorted_terms = list(
+        sorted(zip(ham_cal_as_hamiltonian.terms()[0], ham_cal_as_hamiltonian.terms()[1]))
+    )
+    for i, term in enumerate(sorted_terms):
+        assert np.allclose(term[0], ham_ref.terms()[0][i])
+        assert term[1].compare(ham_ref.terms()[1][i])
 
 
 @pytest.mark.parametrize(
@@ -397,7 +398,15 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
     hamiltonian = qml.qchem.diff_hamiltonian(mol)()
 
     perm = optimal_sector(hamiltonian, generators, num_electrons)
+    assert perm == result
 
+    # test arithmetic op compatibility:
+    h_as_op = pauli_sentence(hamiltonian).operation()
+    generators_as_ops = [pauli_sentence(g).operation() for g in generators]
+
+    enable_new_opmath()
+    perm = optimal_sector(hamiltonian, generators, num_electrons)
+    disable_new_opmath()
     assert perm == result
 
 
