@@ -187,9 +187,11 @@ class TestFermiWordArithmetic:
         assert fw * fs == result
 
     WORDS_AND_NUMBERS_MUL = (
-        (fw1, 2, FermiSentence({fw1: 2})),
-        (fw2, 3.7, FermiSentence({fw2: 3.7})),
-        (fw2, 2j, FermiSentence({fw2: 2j})),
+        (fw1, 2, FermiSentence({fw1: 2})),  # int
+        (fw2, 3.7, FermiSentence({fw2: 3.7})),  # float
+        (fw2, 2j, FermiSentence({fw2: 2j})),  # complex
+        (fw2, np.array([2]), FermiSentence({fw2: 2})),  # numpy array
+        (fw1, pnp.array([2]), FermiSentence({fw1: 2})),  # pennylane numpy array
     )
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
@@ -629,9 +631,20 @@ class TestFermiSentenceArithmetic:
         assert fs * fw == result
 
     SENTENCES_AND_NUMBERS_MUL = (
-        (fs1, 2, FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),
-        (fs2, 3.4, FermiSentence({fw1: -1.23 * 3.4, fw2: -4j * 3.4, fw3: 0.5 * 3.4})),
-        (fs5, 10, FermiSentence({})),  # ToDo: is this the desired behaviour?
+        (fs1, 2, FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2})),  # int
+        (fs2, 3.4, FermiSentence({fw1: -1.23 * 3.4, fw2: -4j * 3.4, fw3: 0.5 * 3.4})),  # float
+        (fs1, 3j, FermiSentence({fw1: 3.69j, fw2: -12, fw3: -1.5j})),  # complex
+        (fs5, 10, FermiSentence({})),  # null operator times constant
+        (
+            fs1,
+            np.array([2]),
+            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
+        ),  # numpy array
+        (
+            fs1,
+            pnp.array([2]),
+            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
+        ),  # pennylane numpy array
     )
 
     @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
