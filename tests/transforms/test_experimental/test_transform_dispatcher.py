@@ -171,6 +171,7 @@ class TestTransformDispatcher:
         assert isinstance(
             qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
+        assert not dispatched_transform.is_informative
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):

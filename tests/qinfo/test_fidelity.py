@@ -799,3 +799,21 @@ class TestFidelityQnode:
         )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0), rtol=1e-03, atol=1e-04)
+
+
+@pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+def test_broadcasting(device):
+    """Test that the fidelity transform supports broadcasting"""
+    dev = qml.device(device, wires=2)
+
+    @qml.qnode(dev)
+    def circuit_state(x):
+        qml.IsingXX(x, wires=[0, 1])
+        return qml.state()
+
+    x = np.array([0.4, 0.6, 0.8])
+    y = np.array([0.6, 0.8, 1.0])
+    fid = qml.qinfo.fidelity(circuit_state, circuit_state, wires0=[0], wires1=[1])(x, y)
+
+    expected = 0.5 * (np.sin(x) * np.sin(y) + np.cos(x) * np.cos(y) + 1)
+    assert qml.math.allclose(fid, expected)

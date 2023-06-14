@@ -89,6 +89,12 @@ class TestTransformProgram:
         assert sub_program_transforms[0] is transform1
         assert sub_program_transforms[1] is transform2
 
+        with pytest.raises(
+            TransformError,
+            match="Only transform container can be added to the transform program.",
+        ):
+            transform_program.push_back(10.0)
+
     def test_pop_front(self):
         """Test the pop front method of the transform program."""
         transform_program = TransformProgram()
