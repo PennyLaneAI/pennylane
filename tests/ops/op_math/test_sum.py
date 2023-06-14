@@ -1062,7 +1062,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
+        """Test that non-hermitian ops in a measurement process will fail."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
@@ -1072,7 +1072,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sum_op)
 
-        with pytest.warns(UserWarning, match="Sum might not be hermitian."):
+        with pytest.raises(NotImplementedError):
             my_circ()
 
     def test_params_can_be_considered_trainable(self):
@@ -1081,10 +1081,14 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(Sum(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 0)))
+            return qml.expval(
+                Sum(
+                    qml.s_prod(1.1, qml.PauliZ(0)),
+                    qml.s_prod(qnp.array(2.2), qml.PauliY(0)),
+                )
+            )
 
-        with pytest.warns(UserWarning):
-            circuit()
+        circuit()
         assert circuit.tape.trainable_params == [1]
 
 
