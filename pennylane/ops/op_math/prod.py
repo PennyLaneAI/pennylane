@@ -51,7 +51,7 @@ def prod(*ops, do_queue=None, id=None, lazy=True):
     that the given operators act on.
 
     Args:
-        ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
+        *ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
             Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
@@ -133,8 +133,8 @@ class Prod(CompositeOp):
     r"""Symbolic operator representing the product of operators.
 
     Args:
-        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
-        together.
+        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+            together.
 
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued.
