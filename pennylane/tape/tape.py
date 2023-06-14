@@ -253,7 +253,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     **Example**
 
-    Tapes can also be constructed by directly providing operations, measurements, and state preparations:
+    Tapes can be constructed by directly providing operations, measurements, and state preparations:
 
     >>> ops = [qml.S(0), qml.T(1)]
     >>> measurements = [qml.state()]
