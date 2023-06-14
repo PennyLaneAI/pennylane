@@ -258,11 +258,13 @@ class TestTransformDispatcher:
         assert not expand_transform_container.is_informative
 
         transform_container = qnode_transformed.transform_program.pop_front()
+
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
         assert transform_container.args == [0]
         assert transform_container.kwargs == {}
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
+
 
     @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
     def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
@@ -378,6 +380,7 @@ class TestTransformDispatcher:
         assert kwargs == {}
         assert cotransform is None
         assert not is_informative
+
 
         assert container.transform is first_valid_transform
         assert container.args == [0]
