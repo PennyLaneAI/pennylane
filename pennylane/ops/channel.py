@@ -764,7 +764,7 @@ class QubitChannel(Channel):
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
-            K_list (list[array[complex]]): list of Kraus matrices
+            *K_list (list[array[complex]]): list of Kraus matrices
 
         Returns:
             list (array): list of Kraus matrices
