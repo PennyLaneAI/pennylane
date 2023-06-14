@@ -24,11 +24,20 @@
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
 * Added the `FermiWord` class to represent a fermionic operator such as
-  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  :math:`a^\dagger_1 a_0 a^\dagger_2 a_3`.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
+* Added a conversion function `jordan_wigner` that converts a fermionic operator (`FermiWord`) to a qubit 
+  operator (`PauliSentence`) using the Jordan-Wigner mapping.
+  [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
 
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
+
+* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
+  operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
+  `qml.FermiC(0)` and `qml.FermiA(3)`.
+  [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
 
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
@@ -163,6 +172,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
 * `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
@@ -180,6 +192,9 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
+* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
+
 * Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -194,6 +209,10 @@
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
   [(#4234)](https://github.com/PennyLaneAI/pennylane/pull/4234)
+
+* Fix unclear documentation and indicate variable-length argument lists of functions and methods in
+  the respective docstrings.
+  [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
@@ -329,6 +348,9 @@
 
 * A more meaningful error message is raised when broadcasting with adjoint differentation on `DefaultQubit`.
   [(#4203)](https://github.com/PennyLaneAI/pennylane/pull/4203)
+  
+* The `has_unitary_generator` attribute in `qml.ops.qubit.attributes` no longer contains operators with non-unitary generators.
+  [(#4183)](https://github.com/PennyLaneAI/pennylane/pull/4183)
 
 * Fixes a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
@@ -343,6 +365,7 @@ This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
 Emiliano Godinez Ramirez
 Nikhil Harle
 Soran Jahangiri,
@@ -357,5 +380,6 @@ Borja Requena,
 Mainak Roy,
 Matthew Silverman,
 Jay Soni,
+Edward Thomas,
 David Wierichs,
 Frederik Wilde.

@@ -19,12 +19,14 @@ from pennylane import numpy as pnp
 
 import pytest
 
-from pennylane.fermi.fermionic import FermiSentence, FermiWord
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, string_to_fermi_word
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
+fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
+fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
 
 
 class TestFermiWord:
@@ -913,3 +915,41 @@ class TestFermiSentenceArithmetic:
         """Test __rsub__ with unsupported type raises an error"""
         with pytest.raises(TypeError, match=f"Cannot multiply {type(bad_type)} by FermiSentence."):
             bad_type * fs  # pylint: disable=pointless-statement
+
+    tup_fw_string = (
+        ("0+ 1-", fw1),
+        ("0+ 0-", fw2),
+        ("0+ 3- 0+ 4-", fw3),
+        ("0+   3- 0+    4-    ", fw3),
+        ("10+ 30- 0+ 400-", fw5),
+        ("10+ 30+ 0- 400-", fw6),
+        ("0^ 1", fw1),
+        ("0^ 0", fw2),
+        ("0^    0", fw2),
+        ("0^ 3 0^ 4", fw3),
+        ("10^ 30 0^ 400", fw5),
+        ("10^ 30^ 0 400", fw6),
+        ("0+ 1", fw1),
+        ("0+  1", fw1),
+        ("0+ 0", fw2),
+        ("0+ 3 0+ 4", fw3),
+        ("10+ 30 0+ 400", fw5),
+        ("10+ 30+ 0 400", fw6),
+        ("", fw4),
+        (" ", fw4),
+    )
+
+    @pytest.mark.parametrize("string, result_fw", tup_fw_string)
+    def test_string_to_fermi_word(self, string, result_fw):
+        assert string_to_fermi_word(string) == result_fw
+
+    tup_fw_string_error = (
+        "0+ a-",
+        "0+ 1-? 3+ 4-",
+    )
+
+    @pytest.mark.parametrize("string", tup_fw_string_error)
+    def test_string_to_fermi_word_error(self, string):
+        with pytest.raises(ValueError, match="Invalid character encountered in string "):
+            string_to_fermi_word(string)  # pylint: disable=pointless-statement
+
