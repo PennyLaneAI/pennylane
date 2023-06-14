@@ -34,7 +34,7 @@ def sum(*summands, do_queue=None, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
@@ -91,7 +91,7 @@ class Sum(CompositeOp):
     r"""Symbolic operator representing the sum of operators.
 
     Args:
-        summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
+        *summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued.
