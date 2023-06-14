@@ -348,7 +348,7 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def _get_ops_indices(self):
+    def _get_ops_indices(self, wires: Wires):
         """Returns a matrix describing the operators as integer sequences.
 
         A Pauli word like ``PauliZ(wires=0) @ PauliX(wires=1) @ PauliY(wires=4)`` for a 6-qubit tape should
@@ -361,7 +361,6 @@ class Hamiltonian(Observable):
             indices: an integer array of operator indices.
         """
         nops = len(self.ops)
-        wires = self.wires.indices(self.wires)
         nwir = len(wires)
         indices = np.zeros((nops, nwir), dtype=np.int16)
         map = {"Identity": 0, "PauliX": 1, "PauliY": 2, "PauliZ": 3}
@@ -369,14 +368,14 @@ class Hamiltonian(Observable):
         for j, op in enumerate(self.ops):
             if len(op.wires) == 1:
                 update_op_dict(map, op.name, count)
-                w = self.wires.index(op.wires[0])
+                w = wires.index(op.wires[0])
                 indices[j, w] = map[
                     "".join(op.name)
                 ]  # join because of cases like `qml.PauliX(0) @ qml.PauliZ(0)`
                 continue
             for obs in op.obs:
                 update_op_dict(map, obs.name, count)
-                w = self.wires.indices(obs.wires)
+                w = wires.indices(obs.wires)
                 indices[j, w] = map["".join(obs.name)]
         return indices
 
@@ -421,7 +420,7 @@ class Hamiltonian(Observable):
             0, 29 - n - 5
         )  # Value of 2**29 arrived at empirically to balance time savings vs memory use.
 
-        pauli_indices = self._get_ops_indices()
+        pauli_indices = self._get_ops_indices(Wires(set(self.wires+wires)))
         is_pauli = np.all(pauli_indices <= 3)
         reduc_indices = np.array(pauli_indices, copy=True)
         # groups tensor products that have the same sparsity pattern
@@ -800,7 +799,7 @@ def sum_sparse_matrix_core(wires, coeffs, ops, mask, is_pauli=False, pauli_indic
     if pauli_indices is None:
         is_pauli = False
     for w, coeff, op in zip(where[0], cef, ops):
-        if not is_pauli:
+        if wires or not is_pauli:
             obs = []
             for o in qml.operation.Tensor(op).obs:
                 if len(o.wires) > 1:
