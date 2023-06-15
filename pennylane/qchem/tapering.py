@@ -602,15 +602,14 @@ def _build_generator(operation, wire_order, op_gen=None):
                 return op_gen.operation(wire_order=wire_order)
             return op_gen.hamiltonian(wire_order=wire_order)
 
-        else:  # Single-parameter gates
-            try:
-                gen_type = "arithmetic" if active_new_opmath() else "hamiltonian"
-                op_gen = qml.generator(operation, format=gen_type)
+        try:  # Single-parameter gates
+            gen_type = "arithmetic" if active_new_opmath() else "hamiltonian"
+            op_gen = qml.generator(operation, format=gen_type)
 
-            except ValueError as exc:
-                raise NotImplementedError(
-                    f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
-                ) from exc
+        except ValueError as exc:
+            raise NotImplementedError(
+                f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
+            ) from exc
 
     # check that user-provided generator is correct
     coeffs = 1.0
