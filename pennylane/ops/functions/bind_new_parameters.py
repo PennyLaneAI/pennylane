@@ -84,6 +84,7 @@ def bind_new_parameters_fermionic_double_excitation(
 
     return qml.FermionicDoubleExcitation(params[0], wires1=wires1, wires2=wires2)
 
+
 @bind_new_parameters.register
 def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
     return qml.Identity(*params, wires=op.wires)
