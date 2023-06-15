@@ -77,6 +77,12 @@ def _get_slice(index, axis, num_axes):
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
+    .. warning::
+
+        The API of ``DefaultQubit`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.experimental.Device`. To view the exact changes coming to
+        ``DefaultQubit``, see :class:`pennylane.devices.experimental.DefaultQubit2`.
+
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
@@ -86,57 +92,11 @@ class DefaultQubit(QubitDevice):
             returns analytical results.
     """
 
-    @property
-    def name(self):
-        return "Default qubit PennyLane plugin"
-
-    @property
-    def short_name(self):
-        """Returns the string used to load the device.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-        return "default.qubit"
-
-    @property
-    def pennylane_requires(self):
-        """The current API version that the device plugin was made for.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-        return __version__
-
-    @property
-    def version(self):
-        """The current version of the plugin.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-        return __version__
-
-    @property
-    def author(self):
-        """The author(s) of the plugin.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-        return "Xanadu Inc."
+    name = "Default qubit PennyLane plugin"
+    short_name = "default.qubit"
+    pennylane_requires = __version__
+    version = __version__
+    author = "Xanadu Inc."
 
     operations = {
         "Identity",
@@ -250,17 +210,6 @@ class DefaultQubit(QubitDevice):
 
     @property
     def stopping_condition(self):
-        """.BooleanFn: Returns the stopping condition for the device. The returned
-        function accepts a queuable object (including a PennyLane operation
-        and observable) and returns ``True`` if supported by the device.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-
         def accepts_obj(obj):
             if obj.name == "QFT" and len(obj.wires) >= 6:
                 return False
@@ -276,20 +225,6 @@ class DefaultQubit(QubitDevice):
 
     @functools.lru_cache()
     def map_wires(self, wires):
-        """Map the wire labels of wires using this device's wire map.
-
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        Args:
-            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
-
-        Returns:
-            Wires: wires with new labels
-        """
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         try:
@@ -302,31 +237,6 @@ class DefaultQubit(QubitDevice):
         return mapped_wires
 
     def define_wire_map(self, wires):
-        """Create the map from user-provided wire labels to the wire labels used by the device.
-
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        The default wire map maps the user wire labels to wire labels that are consecutive integers.
-
-        However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
-        wire labels.
-
-        Args:
-            wires (Wires): user-provided wires for this device
-
-        Returns:
-            OrderedDict: dictionary specifying the wire map
-
-        **Example**
-
-        >>> dev = device('my.device', wires=['b', 'a'])
-        >>> dev.wire_map()
-        OrderedDict( [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)])
-        """
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
@@ -345,45 +255,6 @@ class DefaultQubit(QubitDevice):
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
-        """Apply quantum operations, rotate the circuit into the measurement
-        basis, and compile and execute the quantum circuit.
-
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        This method receives a list of quantum operations queued by the QNode,
-        and should be responsible for:
-
-        * Constructing the quantum program
-        * (Optional) Rotating the quantum circuit using the rotation
-          operations provided. This diagonalizes the circuit so that arbitrary
-          observables can be measured in the computational basis.
-        * Compile the circuit
-        * Execute the quantum circuit
-
-        Both arguments are provided as lists of PennyLane :class:`~.Operation`
-        instances. Useful properties include :attr:`~.Operation.name`,
-        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
-
-        >>> op = qml.RX(0.2, wires=[0])
-        >>> op.name # returns the operation name
-        "RX"
-        >>> op.wires # returns a Wires object representing the wires that the operation acts on
-        <Wires = [0]>
-        >>> op.parameters # returns a list of parameters
-        [0.2]
-
-        Args:
-            operations (list[~.Operation]): operations to apply to the device
-
-        Keyword args:
-            rotations (list[~.Operation]): operations that rotate the circuit
-                pre-measurement into the eigenbasis of the observables.
-            hash (int): the hash value of the circuit constructed by `CircuitGraph.hash`
-        """
         rotations = rotations or []
 
         # apply the circuit operations
@@ -688,7 +559,6 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
-
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
@@ -784,29 +654,6 @@ class DefaultQubit(QubitDevice):
 
     @classmethod
     def capabilities(cls):
-        """Get the capabilities of this device class.
-
-        .. warning::
-
-            Directly requesting this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        Inheriting classes that change or add capabilities must override this method, for example via
-
-        .. code-block:: python
-
-            @classmethod
-            def capabilities(cls):
-                capabilities = super().capabilities().copy()
-                capabilities.update(
-                    supports_a_new_capability=True,
-                )
-                return capabilities
-
-        Returns:
-            dict[str->*]: results
-        """
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -842,15 +689,6 @@ class DefaultQubit(QubitDevice):
 
     @property
     def state(self):
-        """Returns the state vector of the circuit prior to measurement.
-
-        .. warning::
-
-            Directly using this property is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-
         dim = 2**self.num_wires
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
         # Do not flatten the state completely but leave the broadcasting dimension if there is one
@@ -1068,15 +906,7 @@ class DefaultQubit(QubitDevice):
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
-        """Reset the device.
-
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-        """
-
+        """Reset the device."""
         super().reset()
 
         # init the state vector to |00..0>
@@ -1084,21 +914,6 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-        """Compute the analytic probability of all the basis states from the device state vector.
-
-        .. warning::
-
-            Directly calling this method is not recommended and should be avoided where possible.
-            The API of DefaultQubit will be updated soon to follow a new interface described
-            `here <https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.experimental.DefaultQubit2.html>`_.
-
-        Args:
-            wires (Optional[.Wires]): List of wires to compute probabilities for
-
-        Returns:
-            tensor[float]: Array of computed probabilities
-        """
-
         if self._state is None:
             return None
 
@@ -1149,7 +964,6 @@ class DefaultQubit(QubitDevice):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-
         wires = obs.wires
         seed = obs.seed
 
