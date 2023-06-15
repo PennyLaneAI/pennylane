@@ -486,19 +486,4 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
         for _shifts, _multipliers in zip(shifts, multipliers)
     ]
 
-    # params = list(tape.get_parameters())
-    # tapes = []
-
-    # for _shifts, _multipliers in zip(shifts, multipliers):
-    #     new_params = params.copy()
-    #     shifted_tape = tape.copy(copy_operations=True)
-    #     for idx, shift, multiplier in zip(indices, _shifts, _multipliers):
-    #         dtype = getattr(new_params[idx], "dtype", float)
-    #         new_params[idx] = new_params[idx] * qml.math.convert_like(multiplier, new_params[idx])
-    #         new_params[idx] = new_params[idx] + qml.math.convert_like(shift, new_params[idx])
-    #         new_params[idx] = qml.math.cast(new_params[idx], dtype)
-
-    #     shifted_tape.set_parameters(new_params)
-    #     tapes.append(shifted_tape)
-
     return tapes
