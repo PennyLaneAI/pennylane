@@ -81,9 +81,9 @@ def broadcast_expand(tape):
 
     We also can call the transform manually on a tape:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    >>>     qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
-    >>>     qml.expval(qml.PauliZ(0))
+    >>> ops = [qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
+    >>> measurements = [qml.expval(qml.PauliZ(0))]
+    >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
     [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
