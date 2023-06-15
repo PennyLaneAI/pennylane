@@ -292,6 +292,10 @@
    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
   ```
 
+* The `has_unitary_generator` attribute in `qml.ops.qubit.attributes` no longer contains operators
+  with non-unitary generators.
+  [(#4183)](https://github.com/PennyLaneAI/pennylane/pull/4183)
+
 * PennyLane Docker builds have been updated to include the latest plugins and interface versions.
   [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
