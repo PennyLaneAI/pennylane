@@ -53,12 +53,6 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
 
 @bind_new_parameters.register
-def bind_new_parameters_pcphase(op: qml.PCPhase, params: Sequence[TensorLike]):
-    dim = op.hyperparameters["dimension"][0]
-    return qml.PCPhase(params[0], dim, wires=op.wires)
-
-
-@bind_new_parameters.register
 def bind_new_parameters_approx_time_evolution(
     op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]
 ):

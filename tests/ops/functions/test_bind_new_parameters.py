@@ -255,17 +255,46 @@ new_hamiltonian = qml.Hamiltonian(
             [10, 0.4, 0.5, 0.6],
             qml.CommutingEvolution(new_hamiltonian, 10),
         ),
+    ],
+)
+def test_evolution_template_ops(op, new_params, expected_op):
+    """Test that `bind_new_parameters` with template operators returns a new
+    template operator with the new parameters without mutating the original
+    operator."""
+    new_op = bind_new_parameters(op, new_params)
+
+    assert new_op is not op
+    # Need the following assertions since there is a `Hamiltonian` in the hyperparameters so
+    # `qml.equal` fails.
+    assert isinstance(new_op, type(op))
+    assert new_op.arithmetic_depth == expected_op.arithmetic_depth
+    assert all(qml.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data))
+    assert new_op.wires == op.wires
+    for val1, val2 in zip(new_op.hyperparameters.values(), expected_op.hyperparameters.values()):
+        if isinstance(val1, qml.Hamiltonian):
+            assert qml.equal(val1, val2)
+        else:
+            assert val1 == val2
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
         (
             qml.FermionicDoubleExcitation(0.123, wires1=[0, 1, 2], wires2=[3, 4]),
             [0.456],
             qml.FermionicDoubleExcitation(0.456, wires1=[0, 1, 2], wires2=[3, 4]),
         ),
+        (
+            qml.FermionicSingleExcitation(0.123, wires=[0, 1]),
+            [0.456],
+            qml.FermionicSingleExcitation(0.456, wires=[0, 1]),
+        ),
     ],
 )
-def test_template_ops(op, new_params, expected_op):
-    """Test that `bind_new_parameters` with template operators returns a new
-    template operator with the new parameters without mutating the original
-    operator."""
+def test_fermionic_template_ops(op, new_params, expected_op):
+    """Test that `bind_new_parameters` with fermionic template operators returns a new operator
+    with the new parameters."""
     new_op = bind_new_parameters(op, new_params)
 
     assert qml.equal(new_op, expected_op)
@@ -308,5 +337,17 @@ def test_vanilla_operators(op, new_params, expected_op):
     operator."""
     new_op = bind_new_parameters(op, new_params)
 
+    assert qml.equal(new_op, expected_op)
+    assert new_op is not op
+
+
+def test_unsupported_op_copy_and_set():
+    """Test that trying to use `bind_new_parameters` on an operator without
+    a supported dispatcher will fall back to copying the operator and setting
+    `new_op.data` to the new parameters."""
+    op = qml.PCPhase(0.123, 2, wires=[1, 2])
+    new_op = bind_new_parameters(op, [0.456])
+
+    expected_op = qml.PCPhase(0.456, 2, wires=[1, 2])
     assert qml.equal(new_op, expected_op)
     assert new_op is not op
