@@ -275,10 +275,10 @@ class TestHermitian:
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
 
-        # ensure _eigs isn't populated from previoius tests
+        # ensure _eigs isn't populated from previous tests
         qml.Hermitian._eigs = {}
 
-        # calling diagonalizing gates when observable is not in _eigs adds expected entry to _eigs
+        # check calling `diagonalizing_gates` when `observable` is not in `_eigs` adds expected entry to `_eigs`
         spy = mocker.spy(np.linalg, "eigh")
 
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
