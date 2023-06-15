@@ -568,7 +568,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
     ],
 )
-def test_taper_obs(symbols, geometry, charge, op_arithmetic):
+def test_taper_obs(symbols, geometry, charge):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
     # if op_arithmetic:
