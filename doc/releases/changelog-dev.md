@@ -62,6 +62,8 @@
   ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
   ```
 
+  
+
 <h4>Workflow-level resource estimation 🧮</h4>
 
 * PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
@@ -448,7 +450,7 @@
 * The new device interface for Jax has been integrated with `qml.execute`.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
-* The experimental device `devices.experimental.DefaultQubit2` now supports `qml.Snapshot`.
+* The experimental device `DefaultQubit2` now supports `qml.Snapshot`.
   [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
 
 <h4>Handling shots</h4>
@@ -513,6 +515,9 @@
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
 <h4>Other improvements</h4>
+
+* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
+  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
