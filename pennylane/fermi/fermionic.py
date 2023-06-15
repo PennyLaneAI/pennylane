@@ -163,7 +163,6 @@ class FermiWord(dict):
     # TODO: create __sub__ and __isub__ method when FermiSentence is merged.
     # TODO: create __imul__ method.
     # TODO: support multiply by number in __mul__ when FermiSentence is merged.
-    # TODO: create mapping method when the jordan_wigner function is added.
     # TODO: allow multiplication of a FermiWord with a FermiSentence and vice versa
 
 
