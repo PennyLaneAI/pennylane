@@ -327,7 +327,9 @@ class ClassicalShadowMP(MeasurementTransform):
             shots (int): The number of shots
             rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-                If no value is provided, a default RNG will be used.
+                If no value is provided, a default RNG will be used. The random measurement outcomes
+                in the form of bits will be generated from this argument, while the random recipes will be
+                created from the ``seed`` argument provided to ``.ClassicalShadowsMP``.
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -386,7 +388,7 @@ class ClassicalShadowMP(MeasurementTransform):
         transposed_state = np.transpose(state, axes=mapped_wires + unmeasured_wires)
 
         outcomes = np.zeros((shots, n_qubits))
-        stacked_state = np.stack([transposed_state for _ in range(shots)])
+        stacked_state = np.repeat(transposed_state[np.newaxis, ...], shots, axis=0)
 
         for active_qubit in range(n_qubits):
             # stacked_state loses a dimension each loop

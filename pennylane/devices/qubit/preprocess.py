@@ -195,7 +195,7 @@ def validate_measurements(
         for m in circuit.measurements:
             if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
                 raise DeviceError(
-                    f"Circuits with finite shots must only contain SampleMeasurements; got {m}"
+                    f"Circuits with finite shots must only contain SampleMeasurements, ClassicalShadowMP, or ShadowExpvalMP; got {m}"
                 )
 
 
