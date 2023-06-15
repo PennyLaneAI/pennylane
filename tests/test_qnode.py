@@ -21,6 +21,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QNode
+from pennylane.devices.experimental import Device, DefaultQubit2
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
@@ -1568,6 +1569,22 @@ class TestSpecs:
             assert info["num_trainable_params"] == 4
         else:
             assert info["device_name"] == "default.qubit.autograd"
+
+
+class CustomDevice(Device):
+    def execute(self, tape, config):
+        return 0
+
+
+class TestNewDeviceIntegration:
+    def test_initialization(self):
+
+        dev = CustomDevice()
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = QNode(f, dev)
 
 
 class TestTapeExpansion:

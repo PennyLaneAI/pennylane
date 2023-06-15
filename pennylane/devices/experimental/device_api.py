@@ -106,6 +106,9 @@ class Device(abc.ABC):
 
     """
 
+    def __repr__(self):
+        return f"<Device: {self.name}>"
+
     @property
     def name(self) -> str:
         """The name of the device or set of devices.

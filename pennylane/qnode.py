@@ -444,6 +444,16 @@ class QNode:
 
     def __repr__(self):
         """String representation."""
+        if isinstance(self.device, qml.devices.experimental.Device):
+            output = (
+                f"<QNode: function={self.func},"
+                f"\n\tdevice={self.device},"
+                f"\n\tinterface={self.interface},"
+                f"\n\tdiff_method={self.diff_method},"
+                f"\n\texecute_kwargs={self.execute_kwargs}\n>"
+            )
+            return output
+
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
         return detail.format(
             self.device.num_wires,
