@@ -294,7 +294,7 @@ def contract_tensors(
     .. code-block:: python
 
         graph = nx.MultiDiGraph(
-            [(0, 1, {"pair": ((meas[0][0], id(meas[0][0])), (prep[1][0], id(prep[0][0])))})]
+            [(0, 1, {"pair": ((meas[0][0], id(meas[0][0])), (prep[1][0], id(prep[1][0])))})]
         )
 
     The network can then be contracted using:
