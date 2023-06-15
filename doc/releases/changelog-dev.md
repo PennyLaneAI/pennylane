@@ -42,8 +42,10 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
-* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions.
+* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
+  decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+  [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
 <h3>Improvements 🛠</h3>
 
@@ -202,7 +204,10 @@
 
 * Added a transform dispatcher.
   [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
- 
+  
+* Added a transform program.
+  [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
+
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
   [(#4234)](https://github.com/PennyLaneAI/pennylane/pull/4234)
@@ -210,6 +215,10 @@
 * Fix unclear documentation and indicate variable-length argument lists of functions and methods in
   the respective docstrings.
   [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
+
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
@@ -249,8 +258,14 @@
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
+* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
+
 * Updated repr for ParametrizedHamiltonian.
-[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+* The new device interface is integrated with `qml.execute` for Tensorflow.
+  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
 <h3>Breaking changes 💔</h3>
 
@@ -318,6 +333,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
 
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)

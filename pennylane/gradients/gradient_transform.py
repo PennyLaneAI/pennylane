@@ -338,8 +338,7 @@ def reorder_grads(grads, tape_specs):
         grads (list[tensorlike] or list[tuple[tensorlike]] or list[tuple[tuple[tensorlike]]]:
             Gradient entries with leading parameter axis to be reordered.
         tape_specs (tuple): Information about the differentiated original tape in the order
-            ``(bool: single_measure, int: num_params, int: num_measurements, bool: shot_vector,
-            mixed: shots)``.
+            ``(bool: single_measure, int: num_params, int: num_measurements, Shots: shots)``.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: The reordered gradient

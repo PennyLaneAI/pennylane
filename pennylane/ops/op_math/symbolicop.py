@@ -258,27 +258,30 @@ class ScalarSymbolicOp(SymbolicOp):
             base_matrix = self.base.matrix()
 
         scalar_interface = qml.math.get_interface(self.scalar)
+        scalar = self.scalar
         if scalar_interface == "torch":
             # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             base_matrix = qml.math.convert_like(base_matrix, self.scalar)
-        elif scalar_interface == "tensorflow" and not qml.math.iscomplex(self.scalar):
-            # cast scalar to complex to avoid an error
-            self.scalar = qml.math.cast_like(self.scalar, base_matrix)
+        elif scalar_interface == "tensorflow":
+            # just cast everything to complex128. Otherwise we may have casting problems
+            # where things get truncated like in SProd(tf.Variable(0.1), qml.PauliX(0))
+            scalar = qml.math.cast(scalar, "complex128")
+            base_matrix = qml.math.cast(base_matrix, "complex128")
 
         # compute scalar operation on base matrix taking batching into account
-        scalar_size = qml.math.size(self.scalar)
+        scalar_size = qml.math.size(scalar)
         if scalar_size != 1:
             if scalar_size == self.base.batch_size:
                 # both base and scalar are broadcasted
-                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(self.scalar, base_matrix)])
+                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(scalar, base_matrix)])
             else:
                 # only scalar is broadcasted
-                mat = qml.math.stack([self._matrix(s, base_matrix) for s in self.scalar])
+                mat = qml.math.stack([self._matrix(s, base_matrix) for s in scalar])
         elif self.base.batch_size is not None:
             # only base is broadcasted
-            mat = qml.math.stack([self._matrix(self.scalar, ar2) for ar2 in base_matrix])
+            mat = qml.math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
         else:
             # none are broadcasted
-            mat = self._matrix(self.scalar, base_matrix)
+            mat = self._matrix(scalar, base_matrix)
 
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
