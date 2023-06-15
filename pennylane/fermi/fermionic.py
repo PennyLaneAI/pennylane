@@ -25,7 +25,7 @@ class FermiWord(dict):
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
-    <FermiWord = '0+ 1-'>
+    'a⁺(0) a(1)'
     """
 
     def __init__(self, operator):
@@ -116,7 +116,7 @@ class FermiWord(dict):
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w * w
-        <FermiWord = '0+ 1- 0+ 1-'>
+        'a⁺(0) a(1) a⁺(0) a(1)'
         """
 
         if isinstance(other, FermiWord):
@@ -148,7 +148,7 @@ class FermiWord(dict):
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w**3
-        <FermiWord = '0+ 1- 0+ 1- 0+ 1-'>
+        'a⁺(0) a(1) a⁺(0) a(1) a⁺(0) a(1)'
         """
 
         if value < 0 or not isinstance(value, int):
