@@ -152,10 +152,46 @@ with qml.queuing.AnnotatedQueue() as q1:
 
 frag1 = qml.tape.QuantumScript.from_queue(q1)
 frag_edge_data = [
-    (0, 1, {"pair": (frag0.operations[4], frag1.operations[0])}),
-    (1, 0, {"pair": (frag1.operations[2], frag0.operations[5])}),
-    (0, 1, {"pair": (frag0.operations[8], frag1.operations[4])}),
-    (1, 0, {"pair": (frag1.operations[6], frag0.operations[9])}),
+    (
+        0,
+        1,
+        {
+            "pair": (
+                (frag0.operations[4], id(frag0.operations[4])),
+                (frag1.operations[0], id(frag1.operations[0])),
+            )
+        },
+    ),
+    (
+        1,
+        0,
+        {
+            "pair": (
+                (frag1.operations[2], id(frag1.operations[2])),
+                (frag0.operations[5], id(frag0.operations[5])),
+            )
+        },
+    ),
+    (
+        0,
+        1,
+        {
+            "pair": (
+                (frag0.operations[8], id(frag0.operations[8])),
+                (frag1.operations[4], id(frag1.operations[4])),
+            )
+        },
+    ),
+    (
+        1,
+        0,
+        {
+            "pair": (
+                (frag1.operations[6], id(frag1.operations[6])),
+                (frag0.operations[9], id(frag0.operations[9])),
+            )
+        },
+    ),
 ]
 
 
@@ -163,10 +199,10 @@ def compare_nodes(nodes, expected_wires, expected_names):
     """Helper function to compare nodes of directed multigraph"""
 
     for node, exp_wire in zip(nodes, expected_wires):
-        assert node.wires.tolist() == exp_wire
+        assert node[0].wires.tolist() == exp_wire
 
     for node, exp_name in zip(nodes, expected_names):
-        assert node.name == exp_name
+        assert node[0].name == exp_name
 
 
 def compare_fragment_nodes(node_data, expected_data):
@@ -176,7 +212,7 @@ def compare_fragment_nodes(node_data, expected_data):
 
     for data in node_data:
         # The exact ordering of node_data varies on each call
-        assert (data[0].name, data[0].wires, data[1]) in expected
+        assert (data[0][0].name, data[0][0].wires, data[1]) in expected
 
 
 def compare_fragment_edges(edge_data, expected_data):
@@ -186,7 +222,7 @@ def compare_fragment_edges(edge_data, expected_data):
 
     for data in edge_data:
         # The exact ordering of edge_data varies on each call
-        assert (data[0].name, data[1].name, data[2]) in expected
+        assert (data[0][0].name, data[1][0].name, data[2]) in expected
 
 
 def compare_tapes(tape, expected_tape):
@@ -256,8 +292,8 @@ class TestTapeToGraph:
 
         assert len(nodes) == len(ops) + len(tape.observables)
         for op, node in zip(ops, nodes[:-1]):
-            assert op == node
-        assert tape.observables[0] == nodes[-1].obs
+            assert op == node[0]
+        assert tape.observables[0] == nodes[-1][0].obs
 
     def test_converted_graph_edges(self):
         """
@@ -273,13 +309,13 @@ class TestTapeToGraph:
         ops = tape.operations
 
         expected_edge_connections = [
-            (ops[0], ops[2], 0),
-            (ops[1], ops[2], 0),
-            (ops[2], ops[3], 0),
-            (ops[2], ops[3], 1),
-            (ops[3], ops[4], 0),
-            (ops[3], ops[5], 0),
-            (ops[4], tape.measurements[0], 0),
+            ((ops[0], id(ops[0])), (ops[2], id(ops[2])), 0),
+            ((ops[1], id(ops[1])), (ops[2], id(ops[2])), 0),
+            ((ops[2], id(ops[2])), (ops[3], id(ops[3])), 0),
+            ((ops[2], id(ops[2])), (ops[3], id(ops[3])), 1),
+            ((ops[3], id(ops[3])), (ops[4], id(ops[4])), 0),
+            ((ops[3], id(ops[3])), (ops[5], id(ops[5])), 0),
+            ((ops[4], id(ops[4])), (tape.measurements[0], id(tape.measurements[0])), 0),
         ]
 
         for edge, expected_edge in zip(edges, expected_edge_connections):
@@ -410,7 +446,7 @@ class TestTapeToGraph:
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
-        node_observables = [node for node in nodes if hasattr(node, "return_type")]
+        node_observables = [node[0] for node in nodes if hasattr(node[0], "return_type")]
 
         assert node_observables[0].return_type.name == expected_measurement
 
@@ -474,12 +510,12 @@ class TestTapeToGraph:
         ]
 
         for node, expected_node in zip(g.nodes, expected_nodes):
-            assert node.name == expected_node.name
-            assert node.wires == expected_node.wires
+            assert node[0].name == expected_node.name
+            assert node[0].wires == expected_node.wires
 
-            if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.measurements.Sample
-                assert node.obs.name == expected_node.obs.name
+            if getattr(node[0], "obs", None) is not None:
+                assert node[0].return_type is qml.measurements.Sample
+                assert node[0].obs.name == expected_node.obs.name
 
     def test_sample_tensor_obs(self):
         """
@@ -530,12 +566,12 @@ class TestTapeToGraph:
         ]
 
         for node, expected_node in zip(g.nodes, expected_nodes):
-            assert node.name == expected_node.name
-            assert node.wires == expected_node.wires
+            assert node[0].name == expected_node.name
+            assert node[0].wires == expected_node.wires
 
-            if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.measurements.Sample
-                assert node.obs.name == expected_node.obs.name
+            if getattr(node[0], "obs", None) is not None:
+                assert node[0].return_type is qml.measurements.Sample
+                assert node[0].obs.name == expected_node.obs.name
 
 
 class TestReplaceWireCut:
@@ -572,18 +608,18 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.name for op, order in new_node_data]
+        op_names = [op[0].name for op, order in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.name == "MeasureNode":
-                assert op.wires.tolist() == [wire_cut_num]
+            if op[0].name == "MeasureNode":
+                assert op[0].wires.tolist() == [wire_cut_num]
                 assert order == wire_cut_order
-            elif op.name == "PrepareNode":
-                assert op.wires.tolist() == [wire_cut_num]
+            elif op[0].name == "PrepareNode":
+                assert op[0].wires.tolist() == [wire_cut_num]
                 assert order == wire_cut_order
 
     def test_multiple_wire_cuts_replaced(self):
@@ -617,11 +653,11 @@ class TestReplaceWireCut:
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
-        wire_cut_order = [order for op, order in node_data if op.name == "WireCut"]
+        wire_cut_order = [order for op, order in node_data if op[0].name == "WireCut"]
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.name for op, order in new_node_data]
+        op_names = [op[0].name for op, order in new_node_data]
 
         assert "WireCut" not in op_names
         assert op_names.count("MeasureNode") == 3
@@ -630,12 +666,12 @@ class TestReplaceWireCut:
         measure_counter = prepare_counter = 0
 
         for op, order in new_node_data:
-            if op.name == "MeasureNode":
-                assert op.wires.tolist() == [wire_cut_num[measure_counter]]
+            if op[0].name == "MeasureNode":
+                assert op[0].wires.tolist() == [wire_cut_num[measure_counter]]
                 assert order == wire_cut_order[measure_counter]
                 measure_counter += 1
-            elif op.name == "PrepareNode":
-                assert op.wires.tolist() == [wire_cut_num[prepare_counter]]
+            elif op[0].name == "PrepareNode":
+                assert op[0].wires.tolist() == [wire_cut_num[prepare_counter]]
                 assert order == wire_cut_order[prepare_counter]
                 prepare_counter += 1
 
@@ -662,16 +698,16 @@ class TestReplaceWireCut:
         nodes = list(g.nodes)
 
         for node in nodes:
-            if node.name == "MeasureNode":
+            if node[0].name == "MeasureNode":
                 succ = list(g.succ[node])[0]
                 pred = list(g.pred[node])[0]
-                assert succ.name == "PrepareNode"
-                assert pred.name == "RZ"
-            if node.name == "PrepareNode":
+                assert succ[0].name == "PrepareNode"
+                assert pred[0].name == "RZ"
+            if node[0].name == "PrepareNode":
                 succ = list(g.succ[node])[0]
                 pred = list(g.pred[node])[0]
-                assert succ.name == "CNOT"
-                assert pred.name == "MeasureNode"
+                assert succ[0].name == "CNOT"
+                assert pred[0].name == "MeasureNode"
 
     def test_wirecut_has_no_predecessor(self):
         """
@@ -694,18 +730,18 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.name for op, order in new_node_data]
+        op_names = [op[0].name for op, order in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.name == "MeasureNode":
+            if op[0].name == "MeasureNode":
                 assert order == {"order": 0}
                 pred = list(g.pred[op])
                 assert pred == []
-            elif op.name == "PrepareNode":
+            elif op[0].name == "PrepareNode":
                 assert order == {"order": 0}
 
     def test_wirecut_has_no_successor(self):
@@ -728,16 +764,16 @@ class TestReplaceWireCut:
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
-        op_names = [op.name for op, order in new_node_data]
+        op_names = [op[0].name for op, order in new_node_data]
 
         assert "WireCut" not in op_names
         assert "MeasureNode" in op_names
         assert "PrepareNode" in op_names
 
         for op, order in new_node_data:
-            if op.name == "MeasureNode":
+            if op[0].name == "MeasureNode":
                 assert order == {"order": 3}
-            elif op.name == "PrepareNode":
+            elif op[0].name == "PrepareNode":
                 assert order == {"order": 3}
                 succ = list(g.succ[op])
                 assert succ == []
@@ -761,8 +797,8 @@ class TestReplaceWireCut:
         qcut.replace_wire_cut_nodes(g)
 
         nodes = list(g.nodes)
-        measure_nodes = [node for node in nodes if node.name == "MeasureNode"]
-        prepare_nodes = [node for node in nodes if node.name == "PrepareNode"]
+        measure_nodes = [node for node in nodes if node[0].name == "MeasureNode"]
+        prepare_nodes = [node for node in nodes if node[0].name == "PrepareNode"]
 
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
@@ -800,7 +836,7 @@ class TestReplaceWireCut:
             _, _, wire_label_in = in_edges[0]
             _, _, wire_label_out = out_edges[0]
 
-            assert wire_label_in == wire_label_out == node.wires.tolist()[0]
+            assert wire_label_in == wire_label_out == node[0].wires.tolist()[0]
 
 
 class TestFragmentGraph:
@@ -978,8 +1014,8 @@ class TestFragmentGraph:
             assert edge[1] == exp_edge[1]
 
             for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
-                assert node.name == exp_node.name
-                assert node.wires.tolist() == exp_node.wires.tolist()
+                assert node[0].name == exp_node.name
+                assert node[0].wires.tolist() == exp_node.wires.tolist()
 
     def test_fragment_wirecut_first_and_last(self):
         """
@@ -1855,7 +1891,12 @@ class TestExpandFragmentTapesMC:
         tape1 = qml.tape.QuantumScript.from_queue(q1)
         tapes = [tape0, tape1]
 
-        edge_data = {"pair": (tape0.operations[2], tape1.operations[0])}
+        edge_data = {
+            "pair": (
+                (tape0.operations[2], id(tape0.operations[2])),
+                (tape1.operations[0], id(tape1.operations[0])),
+            )
+        }
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
@@ -3210,7 +3251,8 @@ class TestContractTensors:
     # make copies of nodes to ensure id comparisons work correctly
     m = [[qcut.MeasureNode(wires=0)], []]
     p = [[], [qcut.PrepareNode(wires=0)]]
-    edge_dict = {"pair": (copy.copy(m)[0][0], copy.copy(p)[1][0])}
+    m_copy, p_copy = copy.copy(m), copy.copy(p)
+    edge_dict = {"pair": ((m_copy[0][0], id(m_copy[0][0])), (p_copy[1][0], id(p_copy[1][0])))}
     g = MultiDiGraph([(0, 1, edge_dict)])
     expected_result = np.dot(*t)
 
@@ -3399,13 +3441,13 @@ class TestContractTensors:
             ],
         ]
         edges = [
-            (0, 0, 0, {"pair": (m[0][0], p[0][2])}),
-            (0, 1, 0, {"pair": (m[0][1], p[1][0])}),
-            (0, 1, 1, {"pair": (m[0][2], p[1][1])}),
-            (0, 2, 0, {"pair": (m[0][4], p[2][0])}),
-            (0, 2, 1, {"pair": (m[0][3], p[2][1])}),
-            (1, 0, 0, {"pair": (m[1][0], p[0][0])}),
-            (1, 0, 1, {"pair": (m[1][1], p[0][1])}),
+            (0, 0, 0, {"pair": ((m[0][0], id(m[0][0])), (p[0][2], id(p[0][2])))}),
+            (0, 1, 0, {"pair": ((m[0][1], id(m[0][1])), (p[1][0], id(p[1][0])))}),
+            (0, 1, 1, {"pair": ((m[0][2], id(m[0][2])), (p[1][1], id(p[1][1])))}),
+            (0, 2, 0, {"pair": ((m[0][4], id(m[0][4])), (p[2][0], id(p[2][0])))}),
+            (0, 2, 1, {"pair": ((m[0][3], id(m[0][3])), (p[2][1], id(p[2][1])))}),
+            (1, 0, 0, {"pair": ((m[1][0], id(m[1][0])), (p[0][0], id(p[0][0])))}),
+            (1, 0, 1, {"pair": ((m[1][1], id(m[1][1])), (p[0][1], id(p[0][1])))}),
         ]
         g = MultiDiGraph(edges)
 
@@ -3694,8 +3736,8 @@ class TestQCutProcessingFn:
         m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
         edges = [
-            (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
-            (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            (0, 1, 0, {"pair": ((m[0][0], id(m[0][0])), (p[1][0], id(p[1][0])))}),
+            (1, 2, 0, {"pair": ((m[1][0], id(m[1][0])), (p[2][0], id(p[2][0])))}),
         ]
         g = MultiDiGraph(edges)
 
@@ -3722,8 +3764,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
-                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+                (0, 1, 0, {"pair": ((m[0][0], id(m[0][0])), (p[1][0], id(p[1][0])))}),
+                (1, 2, 0, {"pair": ((m[1][0], id(m[1][0])), (p[2][0], id(p[2][0])))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -3759,8 +3801,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
-                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+                (0, 1, 0, {"pair": ((m[0][0], id(m[0][0])), (p[1][0], id(p[1][0])))}),
+                (1, 2, 0, {"pair": ((m[1][0], id(m[1][0])), (p[2][0], id(p[2][0])))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -3797,8 +3839,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
-                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+                (0, 1, 0, {"pair": ((m[0][0], id(m[0][0])), (p[1][0], id(p[1][0])))}),
+                (1, 2, 0, {"pair": ((m[1][0], id(m[1][0])), (p[2][0], id(p[2][0])))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -3838,8 +3880,8 @@ class TestQCutProcessingFn:
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
             edges = [
-                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
-                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+                (0, 1, 0, {"pair": ((m[0][0], id(m[0][0])), (p[1][0], id(p[1][0])))}),
+                (1, 2, 0, {"pair": ((m[1][0], id(m[1][0])), (p[2][0], id(p[2][0])))}),
             ]
             g = MultiDiGraph(edges)
 
@@ -4785,7 +4827,7 @@ class TestCutStrategy:
                 else {num_fragments_probed}
             )
         elif exhaustive:
-            num_tape_gates = sum(not isinstance(n, qml.WireCut) for n in tape_dag.nodes)
+            num_tape_gates = sum(not isinstance(n[0], qml.WireCut) for n in tape_dag.nodes)
             assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
     @pytest.mark.parametrize(
@@ -5039,7 +5081,7 @@ class TestKaHyPar:
                 [
                     n
                     for n in graph.nodes
-                    if isinstance(n, (qml.WireCut, qcut.MeasureNode, qcut.PrepareNode))
+                    if isinstance(n[0], (qml.WireCut, qcut.MeasureNode, qcut.PrepareNode))
                 ]
             )
             == dangling_measure
@@ -5058,17 +5100,17 @@ class TestKaHyPar:
         tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         op0, op1, op2 = tape.operations[0], tape.operations[1], tape.operations[2]
-        cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
-        cut_edges += [e for e in graph.edges if e[0] is op1 and e[1] is op2]
+        cut_edges = [e for e in graph.edges if e[0][0] is op0 and e[1][0] is op1]
+        cut_edges += [e for e in graph.edges if e[0][0] is op1 and e[1][0] is op2]
 
         cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
-        wire_cuts = [n for n in cut_graph.nodes if isinstance(n, qml.WireCut)]
+        wire_cuts = [n for n in cut_graph.nodes if isinstance(n[0], qml.WireCut)]
 
         assert len(wire_cuts) == len(cut_edges)
-        assert list(cut_graph.pred[wire_cuts[0]]) == [op0]
-        assert list(cut_graph.succ[wire_cuts[0]]) == [op1]
-        assert list(cut_graph.pred[wire_cuts[1]]) == [op1]
-        assert list(cut_graph.succ[wire_cuts[1]]) == [op2]
+        assert list(cut_graph.pred[wire_cuts[0]]) == [(op0, id(op0))]
+        assert list(cut_graph.succ[wire_cuts[0]]) == [(op1, id(op1))]
+        assert list(cut_graph.pred[wire_cuts[1]]) == [(op1, id(op1))]
+        assert list(cut_graph.succ[wire_cuts[1]]) == [(op2, id(op2))]
 
         # check if order is unique and also if there's enough nodes.
         assert list({i for _, i in cut_graph.nodes.data("order")}) == list(
@@ -5156,11 +5198,11 @@ class TestKaHyPar:
             assert len(comm_graph.edges) == expected_num_cut_edges
 
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.MeasureNode)])
                 == expected_num_cut_edges
             )
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.PrepareNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.PrepareNode)])
                 == expected_num_cut_edges
             )
 
@@ -5168,9 +5210,9 @@ class TestKaHyPar:
             # wire 1:
             expected_cut_wire = 1 if with_manual_cut else "a"
             assert all(
-                list(n.wires) == [expected_cut_wire]
+                list(n[0].wires) == [expected_cut_wire]
                 for n in cut_graph.nodes
-                if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
+                if isinstance(n[0], (qcut.MeasureNode, qcut.PrepareNode))
             )
 
             expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
@@ -5181,11 +5223,11 @@ class TestKaHyPar:
             assert len(comm_graph.edges) in expected_num_cut_edges
 
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.MeasureNode)])
                 in expected_num_cut_edges
             )
             assert (
-                len([n for n in cut_graph.nodes if isinstance(n, qcut.PrepareNode)])
+                len([n for n in cut_graph.nodes if isinstance(n[0], qcut.PrepareNode)])
                 in expected_num_cut_edges
             )
 

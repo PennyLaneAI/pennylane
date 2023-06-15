@@ -44,6 +44,11 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
+* Added dunder methods to `FermiWord` and `FermiSentence` to allow arithmetic operations 
+  using `+`, `-` and `*` between 
+  `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
+  [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+
 * Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
@@ -296,6 +301,10 @@
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
+
+* The `pennylane.transforms.qcut` module now uses `(op, id(op))` as nodes in directed multigraphs that are used within
+  the circuit cutting workflow instead of `op`. This change removes the dependency of the module on the hash of operators.
+  [(#4227)](https://github.com/PennyLaneAI/pennylane/pull/4227)
 
 * `Operator.data` now returns a `tuple` instead of a `list`.
   [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
