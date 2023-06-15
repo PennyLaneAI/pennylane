@@ -57,14 +57,13 @@ def _assert_has_jax(transform_name):
 
 
 def raise_pulse_diff_on_qnode(transform_name):
-    """Emit a warning that the gradient transform with the provided name only supports
-    direct application to QNodes that have scalar pulse parameters.
+    """Raises an error as the gradient transform with the provided name does
+    not support direct application to QNodes.
     """
     msg = (
         f"Applying the {transform_name} gradient transform to a QNode directly is currently "
-        "only supported for scalar pulse parameters. Non-scalar parameters may lead to wrong "
-        "results or raise exceptions. Please use differentiation via a JAX entry point "
-        "(jax.grad, jax.jacobian, ...) instead for non-scalar parameters.",
+        "not supported. Please use differentiation via a JAX entry point "
+        "(jax.grad, jax.jacobian, ...) instead.",
         UserWarning,
     )
     raise NotImplementedError(msg)
@@ -323,8 +322,8 @@ def _stoch_pulse_grad(
 
     .. warning::
 
-        This transform may only be applied directly to QNodes that only have scalar parameters.
-        For non-scalar parameters, use JAX entrypoints (``jax.grad``, ``jax.jacobian``, ...)
+        This transform may not be applied directly to QNodes. Use JAX entrypoints
+         (``jax.grad``, ``jax.jacobian``, ...)
         instead or apply the transform on the tape level. Also see the examples below.
 
     **Examples**
@@ -696,9 +695,8 @@ stoch_pulse_grad = gradient_transform(
 @stoch_pulse_grad.custom_qnode_wrapper
 def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
-    It is equivalent to the default QNode wrapper of any :func:`~.gradient_transform`,
-    but in addition warns that applying ``stoch_pulse_grad`` to a ``QNode`` directly
-    is only supported for scalar pulse parameters.
+    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    is not supported.
     """
     # pylint:disable=unused-argument
     transform_name = "stochastic pulse parameter-shift"

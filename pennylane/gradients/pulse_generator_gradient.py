@@ -460,9 +460,9 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
     .. warning::
 
-        This transform may only be applied directly to QNodes that only have scalar parameters.
-        For non-scalar parameters, use JAX entrypoints (``jax.grad``, ``jax.jacobian``, ...)
-        instead or apply the transform on the tape level. Also see the examples below.
+        This transform may not be applied directly to QNodes. Use JAX entrypoints 
+        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape
+        level. Also see the examples below.
 
     **Example**
 
@@ -714,9 +714,8 @@ pulse_generator = gradient_transform(
 @pulse_generator.custom_qnode_wrapper
 def pulse_generator_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.pulse_generator`.
-    It is equivalent to the default QNode wrapper of any :func:`~.gradient_transform`,
-    but in addition warns that applying ``pulse_generator`` to a ``QNode`` directly
-    is only supported for scalar pulse parameters.
+    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    is not supported.
     """
     # pylint:disable=unused-argument
     transform_name = "pulse generator parameter-shift"
