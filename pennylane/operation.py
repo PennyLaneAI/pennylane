@@ -2060,7 +2060,7 @@ class Tensor(Observable):
         Returns:
             tuple[Any]: flattened list containing all dependent parameters
         """
-        return functools.reduce(lambda x, y: (*x, *y.data), self.obs, ())
+        return tuple(d for op in self.obs for d in op.data)
 
     @data.setter
     def data(self, new_data):
