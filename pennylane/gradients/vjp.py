@@ -352,15 +352,13 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
-    if shots is None:
-        shots = tape.shots
 
     if num_params == 0:
         # The tape has no trainable parameters; the VJP
         # is simply none.
         return [], lambda _, num=None: None
 
-    shots = qml.measurements.Shots(shots)
+    shots = tape.shots if shots is None else qml.measurements.Shots(shots)
 
     try:
         if _all_close_to_zero(dy):

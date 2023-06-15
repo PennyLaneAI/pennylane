@@ -323,7 +323,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def shape(self, device, shots):  # pylint: disable=unused-argument
         # otherwise, the return type requires a device
-        if not shots.total_shots:
+        if not shots:
             raise MeasurementShapeError(
                 "Shots must be specified to obtain the shape of a classical "
                 "shadow measurement process."

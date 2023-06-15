@@ -106,9 +106,9 @@ def spsa_grad(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
-            outputted by this transform. Note that this argument doesn't influence the shots used for tape execution,
-            but provides information about the shots.
+        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that
+            will be used to execute the tapes outputted by this transform. Note that this argument doesn't
+            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -415,9 +415,9 @@ def _spsa_grad_legacy(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the
-            tapes outputted by this transform. Note that this argument doesn't influence the shots used for tape
-            execution, but provides information about the shots.
+        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will
+            be used to execute the tapes outputted by this transform. Note that this argument doesn't
+            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
