@@ -299,7 +299,6 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
         ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
 
-    ts_ps.simplify()
     wireset = ps_u.wires.union(ps_h.wires)
     wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
@@ -319,7 +318,6 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
         o.append(
             qml.pauli.string_to_pauli_word(
-                # "".join([pw[i] for i in wires_tap]), wire_map=wiremap_tap
                 "".join([pw[wiremap[i]] for i in wires_tap]),
                 wire_map=wiremap_tap,
             )
@@ -331,7 +329,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         qml.simplify(qml.dot(c, o)) if active_new_opmath() else simplify(qml.Hamiltonian(c, o))
     )
     # If simplified Hamiltonian is missing wires, then add wires manually for consistency
-    if wires_tap != list(tapered_ham.wires):
+    if set(wires_tap) != tapered_ham.wires.toset():
         identity_op = functools.reduce(
             lambda i, j: i @ j,
             [
@@ -496,7 +494,8 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
-    fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
+    fermop_ps = pauli_sentence(fermop_taper)
+    fermop_mat = _binary_matrix_from_pws(list(fermop_ps), len(fermop_taper.wires))
 
     # build a wireset to match wires with that of the tapered Hamiltonian
     gen_wires = Wires.all_wires([generator.wires for generator in generators])

@@ -405,7 +405,7 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
     generators_as_ops = [pauli_sentence(g).operation() for g in generators]
 
     enable_new_opmath()
-    perm = optimal_sector(hamiltonian, generators, num_electrons)
+    perm = optimal_sector(h_as_op, generators_as_ops, num_electrons)
     disable_new_opmath()
     assert perm == result
 
@@ -516,6 +516,20 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         num_electrons,
         num_wires,
     )
+    assert np.all(tapered_hf_state == result)
+
+    # test arithmetic op compatibility:
+    generators_as_ops = [pauli_sentence(g).operation() for g in generators]
+
+    enable_new_opmath()
+    tapered_hf_state = taper_hf(
+        generators_as_ops,
+        paulixops,
+        paulix_sector,
+        num_electrons,
+        num_wires,
+    )
+    disable_new_opmath()
     assert np.all(tapered_hf_state == result)
 
 
@@ -717,11 +731,6 @@ def test_taper_excitations(
     ("operation", "op_gen", "message_match"),
     [
         (qml.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
-        # (
-        #     qml.U2(1, 1, 2),
-        #     np.identity(16),
-        #     "Generator for the operation needs to be a qml.Hamiltonian",
-        # ),
         (
             qml.U2(1, 1, 2),
             qml.Hamiltonian([1], [qml.Identity(2)]),
