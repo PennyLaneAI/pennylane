@@ -285,7 +285,7 @@ def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
         ),
     ],
 )
-def test_cliford(generator, paulixops, result):
+def test_clifford(generator, paulixops, result):
     r"""Test that clifford returns the correct operator."""
     u = clifford(generator, paulixops)
     assert u.compare(result)

@@ -167,15 +167,16 @@ def symmetry_generators(h):
     nullspace = _kernel(rref_binary_matrix_red)
 
     generators = []
-    pauli_map = {"00": qml.Identity, "10": qml.PauliX, "11": qml.PauliY, "01": qml.PauliZ}
+    pauli_map = {"00": "I", "10": "X", "11": "Y", "01": "Z"}
 
     for null_vector in nullspace:
-        tau = qml.Identity(0)
+        tau = {}
         for idx, op in enumerate(zip(null_vector[:num_qubits], null_vector[num_qubits:])):
             x, z = op
-            tau @= pauli_map[f"{x}{z}"](idx)
+            tau[idx] = pauli_map[f"{x}{z}"]
 
-        ham = tau if active_new_opmath() else simplify(qml.Hamiltonian([1.0], [tau]))
+        ham = qml.pauli.PauliSentence({qml.pauli.PauliWord(tau): 1.0})
+        ham = ham.operation(h.wires) if active_new_opmath() else ham.hamiltonian(h.wires)
         generators.append(ham)
 
     return generators
