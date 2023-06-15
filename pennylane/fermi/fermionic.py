@@ -103,7 +103,7 @@ class FermiWord(dict):
 
     def __str__(self):
         r"""String representation of a FermiWord."""
-        return f"<FermiWord = '{self.to_string()}'>"
+        return f"{self.to_string()}"
 
     def __repr__(self):
         r"""Terminal representation of a FermiWord"""

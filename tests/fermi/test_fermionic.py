@@ -78,9 +78,9 @@ class TestFermiWord:
         assert fw.wires == wires
 
     tup_fw_compact = (
-        (fw1, "0+ 1-"),
-        (fw2, "0+ 0-"),
-        (fw3, "0+ 3- 0+ 4-"),
+        (fw1, "a\u207a(0) a(1)"),
+        (fw2, "a\u207a(0) a(0)"),
+        (fw3, "a\u207a(0) a(3) a\u207a(0) a(4)"),
         (fw4, "I"),
     )
 
@@ -88,14 +88,7 @@ class TestFermiWord:
     def test_compact(self, fw, str_rep):
         assert fw.to_string() == str_rep
 
-    tup_fw_str = (
-        (fw1, "<FermiWord = '0+ 1-'>"),
-        (fw2, "<FermiWord = '0+ 0-'>"),
-        (fw3, "<FermiWord = '0+ 3- 0+ 4-'>"),
-        (fw4, "<FermiWord = 'I'>"),
-    )
-
-    @pytest.mark.parametrize("fw, str_rep", tup_fw_str)
+    @pytest.mark.parametrize("fw, str_rep", tup_fw_compact)
     def test_str(self, fw, str_rep):
         assert str(fw) == str_rep
         assert repr(fw) == str_rep
@@ -266,9 +259,19 @@ class TestFermiSentence:
         assert new_fw in fs.keys() and fs[new_fw] == 3.45
 
     tup_fs_str = (
-        (fs1, "1.23 * '0+ 1-'\n" + "+ 4j * '0+ 0-'\n" + "+ -0.5 * '0+ 3- 0+ 4-'"),
-        (fs2, "-1.23 * '0+ 1-'\n" + "+ (-0-4j) * '0+ 0-'\n" + "+ 0.5 * '0+ 3- 0+ 4-'"),
-        (fs3, "-0.5 * '0+ 3- 0+ 4-'\n" + "+ 1 * 'I'"),
+        (
+            fs1,
+            "1.23 * 'a\u207a(0) a(1)'\n"
+            + "+ 4j * 'a\u207a(0) a(0)'\n"
+            + "+ -0.5 * 'a\u207a(0) a(3) a\u207a(0) a(4)'",
+        ),
+        (
+            fs2,
+            "-1.23 * 'a\u207a(0) a(1)'\n"
+            + "+ (-0-4j) * 'a\u207a(0) a(0)'\n"
+            + "+ 0.5 * 'a\u207a(0) a(3) a\u207a(0) a(4)'",
+        ),
+        (fs3, "-0.5 * 'a\u207a(0) a(3) a\u207a(0) a(4)'\n" + "+ 1 * 'I'"),
         (fs4, "1 * 'I'"),
         (fs5, "0 * 'I'"),
     )
