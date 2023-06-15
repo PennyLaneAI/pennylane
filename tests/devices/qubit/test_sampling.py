@@ -538,7 +538,7 @@ class TestBroadcasting:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure_shot_vector(self, shots, total_copies, measurement, expected):
+    def test_nonsample_measure_shot_vector(self, shots, measurement, expected):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
