@@ -282,7 +282,7 @@ class TestParshiftAndIntegrate:
     ):
         """Test that ``_parshift_and_integrate`` works with results for a single measurement
         per shift and splitting time, and with a single setting of shots. This corresponds to
-        ``single_measure=True and shot_vector=False``. The test is parametrized with whether
+        ``single_measure=True and has_partitioned_shots=False``. The test is parametrized with whether
         or not there are multiple Hamiltonian terms to take into account (and sum their
         contributions), with the shape of the single measurement and of the parameter, with
         the number of shifts in the shift rule and with the number of splitting times.
@@ -315,7 +315,7 @@ class TestParshiftAndIntegrate:
             prefactor,
             psr_coeffs,
             single_measure=True,
-            shot_vector=False,
+            has_partitioned_shots=False,
             use_broadcasting=False,
         )
 
@@ -340,7 +340,7 @@ class TestParshiftAndIntegrate:
     ):
         """Test that ``_parshift_and_integrate`` works with results for a single measurement
         per shift and splitting time, and with a single setting of shots. This corresponds to
-        ``single_measure=True and shot_vector=False``. The test is parametrized with whether
+        ``single_measure=True and has_partitioned_shots=False``. The test is parametrized with whether
         or not there are multiple Hamiltonian terms to take into account (and sum their
         contributions), with the shape of the single measurement and of the parameter, with
         the number of shifts in the shift rule and with the number of splitting times.
@@ -374,7 +374,7 @@ class TestParshiftAndIntegrate:
             prefactor,
             psr_coeffs,
             single_measure=True,
-            shot_vector=False,
+            has_partitioned_shots=False,
             use_broadcasting=True,
         )
 
@@ -404,8 +404,8 @@ class TestParshiftAndIntegrate:
         """Test that ``_parshift_and_integrate`` works with results for multiple measurements
         per shift and splitting time and with a single setting of shots, or alternatively with
         a single measurement but multiple shot settings. This corresponds to
-        ``single_measure=False and shot_vector=False`` or
-        ``single_measure=True and shot_vector=True``. The test is parametrized with whether
+        ``single_measure=False and has_partitioned_shots=False`` or
+        ``single_measure=True and has_partitioned_shots=True``. The test is parametrized with whether
         or not there are multiple Hamiltonian terms to take into account (and sum their
         contributions), with the shape of the single measurement and of the parameter, with
         the number of shifts in the shift rule and with the number of splitting times.
@@ -438,23 +438,17 @@ class TestParshiftAndIntegrate:
 
         prefactor = 0.3214
 
-        res0 = _parshift_and_integrate(
-            results,
-            cjacs,
-            prefactor,
-            psr_coeffs,
-            single_measure=False,
-            shot_vector=False,
-            use_broadcasting=False,
-        )
-        res1 = _parshift_and_integrate(
-            results,
-            cjacs,
-            prefactor,
-            psr_coeffs,
-            single_measure=True,
-            shot_vector=True,
-            use_broadcasting=False,
+        res0, res1 = (
+            _parshift_and_integrate(
+                results,
+                cjacs,
+                prefactor,
+                psr_coeffs,
+                single_measure=_bool,
+                has_partitioned_shots=_bool,
+                use_broadcasting=False,
+            )
+            for _bool in [False, True]
         )
 
         _results = np.reshape(results, new_results_shape)
@@ -483,8 +477,8 @@ class TestParshiftAndIntegrate:
         """Test that ``_parshift_and_integrate`` works with results for multiple measurements
         per shift and splitting time and with a single setting of shots, or alternatively with
         a single measurement but multiple shot settings. This corresponds to
-        ``single_measure=False and shot_vector=False`` or
-        ``single_measure=True and shot_vector=True``. The test is parametrized with whether
+        ``single_measure=False and has_partitioned_shots=False`` or
+        ``single_measure=True and has_partitioned_shots=True``. The test is parametrized with whether
         or not there are multiple Hamiltonian terms to take into account (and sum their
         contributions), with the shape of the single measurement and of the parameter, with
         the number of shifts in the shift rule and with the number of splitting times.
@@ -519,23 +513,17 @@ class TestParshiftAndIntegrate:
 
         prefactor = 0.3214
 
-        res0 = _parshift_and_integrate(
-            results,
-            cjacs,
-            prefactor,
-            psr_coeffs,
-            single_measure=False,
-            shot_vector=False,
-            use_broadcasting=True,
-        )
-        res1 = _parshift_and_integrate(
-            results,
-            cjacs,
-            prefactor,
-            psr_coeffs,
-            single_measure=True,
-            shot_vector=True,
-            use_broadcasting=True,
+        res0, res1 = (
+            _parshift_and_integrate(
+                results,
+                cjacs,
+                prefactor,
+                psr_coeffs,
+                single_measure=_bool,
+                has_partitioned_shots=_bool,
+                use_broadcasting=True,
+            )
+            for _bool in [False, True]
         )
 
         _results = np.reshape(results, new_results_shape)
@@ -567,7 +555,7 @@ class TestParshiftAndIntegrate:
     ):
         """Test that ``_parshift_and_integrate`` works with results for multiple measurements
         per shift and splitting time and with multiple shot settings. This corresponds to
-        ``single_measure=False and shot_vector=True``. The test is parametrized with whether
+        ``single_measure=False and has_partitioned_shots=True``. The test is parametrized with whether
         or not there are multiple Hamiltonian terms to take into account (and sum their
         contributions), with the shape of the single measurement and of the parameter, with
         the number of shifts in the shift rule and with the number of splitting times.
@@ -609,7 +597,7 @@ class TestParshiftAndIntegrate:
             prefactor,
             psr_coeffs,
             single_measure=False,
-            shot_vector=True,
+            has_partitioned_shots=True,
             use_broadcasting=False,
         )
 
@@ -642,7 +630,7 @@ class TestParshiftAndIntegrate:
     ):
         """Test that ``_parshift_and_integrate`` works with results for multiple measurements
         per shift and splitting time and with multiple shot settings. This corresponds to
-        ``single_measure=False and shot_vector=True``. The test is parametrized with whether
+        ``single_measure=False and has_partitioned_shots=True``. The test is parametrized with whether
         or not there are multiple Hamiltonian terms to take into account (and sum their
         contributions), with the shape of the single measurement and of the parameter, with
         the number of shifts in the shift rule and with the number of splitting times.
@@ -686,7 +674,7 @@ class TestParshiftAndIntegrate:
             prefactor,
             psr_coeffs,
             single_measure=False,
-            shot_vector=True,
+            has_partitioned_shots=True,
             use_broadcasting=True,
         )
 
@@ -712,7 +700,7 @@ class TestParshiftAndIntegrate:
 
     # TODO: Once #2690 is resolved and the corresponding error is removed,
     # remove the following test
-    def test_raises_multi_measure_shot_vector_broadcasting(self):
+    def test_raises_multi_measure_multi_shots_broadcasting(self):
         """Test that an error is raised if multiple measurements, a shot vector and broadcasting
         all are used simultaneously."""
 
@@ -720,7 +708,7 @@ class TestParshiftAndIntegrate:
         with pytest.raises(NotImplementedError, match=_match):
             # Dummy input values that are barely used before raising the error.
             _parshift_and_integrate(
-                [], [], [], [], single_measure=False, shot_vector=True, use_broadcasting=True
+                [], [], [], [], single_measure=False, has_partitioned_shots=True, use_broadcasting=True
             )
 
 
@@ -1446,7 +1434,7 @@ class TestStochPulseGradQNodeIntegration:
             qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
 
-    def test_multi_return_broadcasting_shot_vector_raises(self):
+    def test_multi_return_broadcasting_multi_shots_raises(self):
         """Test that a simple qnode that returns an expectation value and probabilities
         can be differentiated with stoch_pulse_grad with use_broadcasting."""
         import jax
