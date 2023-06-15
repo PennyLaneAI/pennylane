@@ -80,8 +80,8 @@ class Permute(Operation):
 
             import pennylane as qml
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+            op = qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+            tape = qml.tape.QuantumTape([op])
 
         >>> tape_expanded = qml.tape.tape.expand_tape(tape)
         >>> print(qml.drawer.tape_text(tape_expanded, wire_order=range(5)))

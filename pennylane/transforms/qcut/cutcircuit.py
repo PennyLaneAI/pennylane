@@ -175,19 +175,20 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as tape:
-                qml.RX(0.531, wires=0)
-                qml.RY(0.9, wires=1)
-                qml.RX(0.3, wires=2)
+            ops = [
+                qml.RX(0.531, wires=0),
+                qml.RY(0.9, wires=1),
+                qml.RX(0.3, wires=2),
 
-                qml.CZ(wires=[0, 1])
-                qml.RY(-0.4, wires=0)
+                qml.CZ(wires=(0,1)),
+                qml.RY(-0.4, wires=0),
 
-                qml.WireCut(wires=1)
+                qml.WireCut(wires=1),
 
-                qml.CZ(wires=[1, 2])
-
-                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
+                qml.CZ(wires=[1, 2]),
+            ]
+            measurments = [qml.expval(qml.Pauli.string_to_pauli_word("ZZZ"))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -211,17 +212,18 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as uncut_tape:
-                qml.RX(0.531, wires=0)
-                qml.RY(0.9, wires=1)
-                qml.RX(0.3, wires=2)
+            ops = [
+                qml.RX(0.531, wires=0),
+                qml.RY(0.9, wires=1),
+                qml.RX(0.3, wires=2),
 
-                qml.CZ(wires=[0, 1])
-                qml.RY(-0.4, wires=0)
+                qml.CZ(wires=(0,1)),
+                qml.RY(-0.4, wires=0),
 
-                qml.CZ(wires=[1, 2])
-
-                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
+                qml.CZ(wires=[1, 2]),
+            ]
+            measurements = [qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
                 graph = qml.transforms.qcut.tape_to_graph(uncut_tape),

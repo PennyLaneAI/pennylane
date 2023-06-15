@@ -282,7 +282,7 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
@@ -475,7 +475,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
@@ -650,7 +650,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
         r"""Compute the kinetic integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
@@ -858,7 +858,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the electron-nuclear attraction integral
@@ -1003,7 +1003,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
         r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions

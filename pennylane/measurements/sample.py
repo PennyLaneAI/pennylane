@@ -150,7 +150,7 @@ class SampleMP(SampleMeasurement):
         return int if every_term_standard else float
 
     def _shape_legacy(self, device, shots):
-        if shots.total_shots is None:
+        if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
@@ -173,7 +173,7 @@ class SampleMP(SampleMeasurement):
     def shape(self, device, shots):
         if not qml.active_return():
             return self._shape_legacy(device, shots)
-        if shots.total_shots is None:
+        if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
