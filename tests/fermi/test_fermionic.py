@@ -24,6 +24,7 @@ fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
 fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
 fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
+fw7 = FermiWord({(0, 10): "-", (1, 30): "+", (2, 0): "-", (3, 400): "+"})
 
 
 class TestFermiWord:
@@ -82,6 +83,9 @@ class TestFermiWord:
         (fw2, "a\u207a(0) a(0)"),
         (fw3, "a\u207a(0) a(3) a\u207a(0) a(4)"),
         (fw4, "I"),
+        (fw5, "a\u207a(10) a(30) a\u207a(0) a(400)"),
+        (fw6, "a\u207a(10) a\u207a(30) a(0) a(400)"),
+        (fw7, "a(10) a\u207a(30) a(0) a\u207a(400)"),
     )
 
     @pytest.mark.parametrize("fw, str_rep", tup_fw_compact)
