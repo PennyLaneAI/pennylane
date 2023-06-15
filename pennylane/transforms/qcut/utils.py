@@ -406,7 +406,6 @@ def place_wire_cuts(
 
     Args:
         graph (nx.MultiDiGraph): The original (tape-converted) graph to be cut.
-        graph (nx.MultiDiGraph): The original (tape-converted) graph to be cut.
         cut_edges (Sequence[Tuple[Operation, Operation, Any]]): List of ``MultiDiGraph`` edges
             to be replaced with a :class:`~.WireCut` node. Each 3-tuple represents the source node, the
             target node, and the wire key of the (multi)edge.
@@ -430,8 +429,9 @@ def place_wire_cuts(
      0: ──RX(0.432)──╭●──┤ ⟨Z⟩
      a: ──RY(0.543)──╰X──┤
 
-    If we know we want to place a :class:`~.WireCut` node between nodes ``RY(0.543, wires=["a"])`` and
-    ``CNOT(wires=[0, 'a'])`` after the tape is constructed, we can first find the edge in the graph:
+    If we know we want to place a :class:`~.WireCut` node between the nodes corresponding to the
+    ``RY(0.543, wires=["a"])`` and ``CNOT(wires=[0, 'a'])`` operations after the tape is constructed,
+    we can first find the edge in the graph:
 
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> op0, op1 = tape.operations[1], tape.operations[2]

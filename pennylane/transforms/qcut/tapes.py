@@ -55,7 +55,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     Returns:
         nx.MultiDiGraph: a directed multigraph that captures the circuit structure
-        of the input tape
+        of the input tape. The nodes of the graph are formatted as ``(op, id(op))``.
 
     **Example**
 

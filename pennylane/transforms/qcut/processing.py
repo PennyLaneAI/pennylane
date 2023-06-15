@@ -287,11 +287,15 @@ def contract_tensors(
         prep = [[], [qcut.PrepareNode(wires=0)]]
         meas = [[qcut.MeasureNode(wires=0)], []]
 
-    The communication graph describing edges in the tensor network must also be constructed:
+    The communication graph describing edges in the tensor network must also be constructed.
+    The nodes of the fragment graphs are formatted as ``(op, id(op))``, and the same format
+    should be preserved in the pairs stored with the edge data of the communication graph:
 
     .. code-block:: python
 
-        graph = nx.MultiDiGraph([(0, 1, {"pair": (meas[0][0], prep[1][0])})])
+        graph = nx.MultiDiGraph(
+            [(0, 1, {"pair": ((meas[0][0], id(meas[0][0])), (prep[1][0], id(prep[0][0])))})]
+        )
 
     The network can then be contracted using:
 
