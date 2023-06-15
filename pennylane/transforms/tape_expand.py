@@ -70,11 +70,13 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.2, wires=0)
-            qml.RX(qml.numpy.array(-2.4, requires_grad=True), wires=1)
-            qml.Rot(1.7, 0.92, -1.1, wires=0)
+        ops = [
+            qml.RX(0.2, wires=0),
+            qml.RX(qml.numpy.array(-2.4, requires_grad=True), wires=1),
+            qml.Rot(1.7, 0.92, -1.1, wires=0),
             qml.Rot(*qml.numpy.array([-3.1, 0.73, 1.36], requires_grad=True), wires=1)
+        ]
+        tape = qml.tape.QuantumTape(ops)
 
     >>> new_tape = expand_fn(tape)
     >>> print(qml.drawer.tape_text(tape, decimals=1))

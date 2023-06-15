@@ -41,15 +41,8 @@ class Unwrap:
         x = torch.tensor([0.1, 0.2, 0.3], requires_grad=True, dtype=torch.float64)
         y = torch.tensor([0.5, 0.6], dtype=torch.float64)
 
-        with qml.tape.QuantumTape() as tape1:
-            qml.RX(x[0], wires=0)
-            qml.RY(y[1], wires=0)
-            qml.RZ(x[2], wires=0)
-
-        with qml.tape.QuantumTape() as tape2:
-            qml.RX(x[1], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.RZ(y[0], wires=0)
+        tape1 = qml.tape.QuantumTape([qml.RX(x[0], 0), qml.RY(y[1], 0), qml.RZ(x[2], 0)])
+        tape2 = qml.tape.QuantumTape([qml.RX(x[1], 0), qml.RY(x[1], 0), qml.RZ(y[0], 0)])
 
     We can use the ``Unwrap`` context manager to simultaneously unwrap the
     parameters of both tapes:
@@ -109,10 +102,12 @@ class UnwrapTape:
     **Example**
 
     >>> with tf.GradientTape():
-    ...     with qml.tape.QuantumTape() as tape:
-    ...         qml.RX(tf.Variable(0.1), wires=0)
-    ...         qml.RY(tf.constant(0.2), wires=0)
-    ...         qml.RZ(tf.Variable(0.3), wires=0)
+    ...     ops = [
+    ...         qml.RX(tf.Variable(0.1, wires=0)),
+    ...         qml.RY(tf.constant(0.2), wires=0),
+    ...         qml.RZ(tf.Variable(0.3, wires=0))
+    ...     ]
+    ...     tape = qml.tape.QuantumTape(ops)
     ...     with UnwrapTape(tape) as unwrapped_tape:
     ...         print("Trainable params:", unwrapped_tape.trainable_params)
     ...         print("Unwrapped params:", unwrapped_tape.get_parameters())
