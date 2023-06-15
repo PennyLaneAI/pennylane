@@ -211,7 +211,7 @@ def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too
             # codecov complained this line is not covered
             # function to be deprecated next release
             # not going to write a test to cover this line
-            o[i] = qml.Identity(0)  # pragma: no-cover
+            o[i] = qml.Identity(0)  # pragma: no cover
         else:
             k = [pauli_map[t[0]][t[1]] for t in term]
             o[i] = Tensor(*k)
