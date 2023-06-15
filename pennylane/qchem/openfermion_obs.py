@@ -968,16 +968,16 @@ def molecular_hamiltonian(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
 
-        need_grad = args is not None
+        requires_grad = args is not None
         h = (
             qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-            if need_grad
+            if requires_grad
             else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
         )
 
         if active_new_opmath():
             h_as_ps = qml.pauli.pauli_sentence(h)
-            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=need_grad)
+            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
 
             h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
             h = (
@@ -986,8 +986,7 @@ def molecular_hamiltonian(
                 else h_as_ps.operation()
             )
         else:
-            coeffs = h.coeffs
-            coeffs = qml.numpy.real(coeffs, requires_grad=need_grad)
+            coeffs = qml.numpy.real(h.coeffs, requires_grad=requires_grad)
             h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
 
         if wires:
