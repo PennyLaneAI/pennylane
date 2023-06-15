@@ -48,7 +48,7 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
     except:
         new_op = copy.deepcopy(op)
-        op.data = tuple(params)
+        new_op.data = tuple(params)
         return new_op
 
 
