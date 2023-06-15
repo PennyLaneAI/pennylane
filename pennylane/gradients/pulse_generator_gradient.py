@@ -460,7 +460,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
     .. warning::
 
-        This transform may not be applied directly to QNodes. Use JAX entrypoints 
+        This transform may not be applied directly to QNodes. Use JAX entrypoints
         (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape
         level. Also see the examples below.
 
