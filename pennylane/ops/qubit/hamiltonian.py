@@ -269,7 +269,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.data, self.ops
+        return self.parameters, self.ops
 
     @property
     def wires(self):
@@ -475,7 +475,7 @@ class Hamiltonian(Observable):
 
         # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
         # self.terms(). To be improved soon.
-        self.data = new_coeffs
+        self.data = tuple(new_coeffs)
         # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
         # To be improved soon.
         self.hyperparameters["ops"] = new_ops
@@ -752,7 +752,7 @@ class Hamiltonian(Observable):
         """
         cls = self.__class__
         new_op = cls.__new__(cls)
-        new_op.data = self.data.copy()
+        new_op.data = copy(self.data)
         new_op._wires = Wires(  # pylint: disable=protected-access
             [wire_map.get(wire, wire) for wire in self.wires]
         )
