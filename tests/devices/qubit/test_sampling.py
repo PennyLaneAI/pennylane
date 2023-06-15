@@ -477,16 +477,16 @@ class TestBroadcasting:
         assert np.allclose(res, expected, atol=0.01)
 
     @pytest.mark.parametrize(
-        "shots, total_copies",
+        "shots",
         [
-            [((100, 2),), 2],
-            [(100, 100), 2],
-            [(100, 100), 2],
-            [(100, 100, 200), 3],
-            [(200, (100, 2)), 3],
+            ((100, 2),),
+            (100, 100),
+            (100, 100),
+            (100, 100, 200),
+            (200, (100, 2)),
         ],
     )
-    def test_sample_measure_shot_vector(self, shots, total_copies):
+    def test_sample_measure_shot_vector(self, shots):
         """Test that broadcasting works for qml.sample and shot vectors"""
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
@@ -502,7 +502,7 @@ class TestBroadcasting:
         res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
         assert isinstance(res, tuple)
-        assert len(res) == total_copies
+        assert len(res) == shots.num_copies
 
         for s, r in zip(shots, res):
             assert r.shape == (3, s, 2)
@@ -518,13 +518,13 @@ class TestBroadcasting:
             assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
 
     @pytest.mark.parametrize(
-        "shots, total_copies",
+        "shots",
         [
-            [((10000, 2),), 2],
-            [(10000, 10000), 2],
-            [(10000, 20000), 2],
-            [(10000, 10000, 20000), 3],
-            [(20000, (10000, 2)), 3],
+            ((10000, 2),),
+            (10000, 10000),
+            (10000, 20000),
+            (10000, 10000, 20000),
+            (20000, (10000, 2)),
         ],
     )
     @pytest.mark.parametrize(
@@ -553,7 +553,7 @@ class TestBroadcasting:
         res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
         assert isinstance(res, tuple)
-        assert len(res) == total_copies
+        assert len(res) == shots.num_copies
 
         for r in res:
             assert r.shape == expected.shape
