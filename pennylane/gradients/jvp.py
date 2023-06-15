@@ -300,7 +300,6 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = len(tape.measurements) > 1
-    shots = Shots(shots)
 
     try:
         # if qml.math.allclose(qml.math.stack(tangent), 0):
@@ -321,8 +320,7 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         pass
 
     gradient_kwargs = gradient_kwargs or {}
-    if shots is None:
-        shots = tape.shots
+    shots = tape.shots if shots is None else Shots(shots)
     gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
