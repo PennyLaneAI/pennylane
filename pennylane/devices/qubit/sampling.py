@@ -48,7 +48,10 @@ def measure_with_samples(
 
             def _sum_for_single_shot(s):
                 return sum(
-                    c * measure_with_samples(ExpectationMP(t), state, s, is_state_batched=is_state_batched, rng=rng)
+                    c
+                    * measure_with_samples(
+                        ExpectationMP(t), state, s, is_state_batched=is_state_batched, rng=rng
+                    )
                     for c, t in zip(*mp.obs.terms())
                 )
 
@@ -59,7 +62,10 @@ def measure_with_samples(
 
             def _sum_for_single_shot(s):
                 return sum(
-                    measure_with_samples(ExpectationMP(t), state, s, is_state_batched=is_state_batched, rng=rng) for t in mp.obs
+                    measure_with_samples(
+                        ExpectationMP(t), state, s, is_state_batched=is_state_batched, rng=rng
+                    )
+                    for t in mp.obs
                 )
 
             unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
