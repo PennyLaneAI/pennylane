@@ -842,7 +842,7 @@ def molecular_hamiltonian(
     .. warning::
 
         If this function is called with a :code:`grouping_type` while :code:`enable_new_opmath()` is active, then
-        an arithmetic operator will be returned and the grouping will be ignored.
+        an arithmetic operator will be returned and the grouping arguments will be ignored.
 
     |
 
