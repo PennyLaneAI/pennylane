@@ -37,7 +37,7 @@ import pennylane.pauli
 from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
-from pennylane.fermi import FermiC, FermiA
+from pennylane.fermi import FermiC, FermiA, jordan_wigner
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
