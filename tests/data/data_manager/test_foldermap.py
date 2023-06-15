@@ -12,28 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :mod:`pennylane.data.data_manger.types` classes
+Tests for the :class:`pennylane.data.data_manger.FolderMapView` class.
 """
 
-from pennylane.data.data_manager.types import FolderMapView
-from pennylane.data.data_manager import DEFAULT
+from pennylane.data.data_manager.foldermap import FolderMapView, Description
+from pennylane.data.data_manager import DEFAULT, DataPath
 import pytest
 
+
 FOLDERMAP = {
+    "__name": "category",
     "qchem": {
+        "__name": "molname",
         "O2": {
+            "__name": "basis",
             "__default": "STO-3G",
             "STO-3G": {
+                "__name": "bondlength",
                 "__default": "0.5",
                 "0.5": "qchem/O2/STO-3G/0.5.h5",
                 "0.6": "qchem/O2/STO-3G/0.6.h5",
             },
         },
         "H2": {
+            "__name": "molname",
             "__default": "STO-3G",
-            "STO-3G": {"__default": "0.6", "0.6": "qchem/H2/STO-3G/0.6.h5"},
+            "STO-3G": {"__name": "bondlength", "__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
         },
-    }
+    },
 }
 
 
@@ -46,14 +52,36 @@ class TestFolderMapView:
     """Tests for ``FolderMapView``"""
 
     @pytest.mark.parametrize(
+        "kwds, expect",
+        [
+            (
+                {"missing_default": DEFAULT, "molname": "O2"},
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.5"},
+                        "qchem/O2/STO-3G/0.5.h5",
+                    )
+                ],
+            )
+        ],
+    )
+    def test_find(self, foldermap, kwds, expect):
+        """Test that the ``find()`` method returns the expected results
+        for a range of arguments."""
+
+        assert set(foldermap.find("qchem", **kwds)) == set(
+            (Description(desc), DataPath(path)) for desc, path in expect
+        )
+
+    @pytest.mark.parametrize(
         "init, key, expect",
         [
             (FOLDERMAP, "qchem", FolderMapView(FOLDERMAP["qchem"])),
             (FOLDERMAP["qchem"], "H2", FolderMapView(FOLDERMAP["qchem"]["H2"])),
-            (FOLDERMAP["qchem"]["O2"]["STO-3G"], "0.5", "qchem/O2/STO-3G/0.5.h5"),
+            (FOLDERMAP["qchem"]["O2"]["STO-3G"], "0.5", DataPath("qchem/O2/STO-3G/0.5.h5")),
             (FOLDERMAP["qchem"]["O2"], DEFAULT, FolderMapView(FOLDERMAP["qchem"]["O2"]["STO-3G"])),
-            (FOLDERMAP["qchem"]["O2"]["STO-3G"], "0.6", "qchem/O2/STO-3G/0.6.h5"),
-            (FOLDERMAP["qchem"]["O2"]["STO-3G"], DEFAULT, "qchem/O2/STO-3G/0.5.h5"),
+            (FOLDERMAP["qchem"]["O2"]["STO-3G"], "0.6", DataPath("qchem/O2/STO-3G/0.6.h5")),
+            (FOLDERMAP["qchem"]["O2"]["STO-3G"], DEFAULT, DataPath("qchem/O2/STO-3G/0.5.h5")),
         ],
     )
     def test_gettitem(self, init, key, expect):
@@ -62,6 +90,21 @@ class TestFolderMapView:
         assert FolderMapView(init)[key] == expect
 
     @pytest.mark.parametrize(
+        "init, expect",
+        [
+            (FOLDERMAP, "category"),
+            (FOLDERMAP["qchem"], "molname"),
+            (FOLDERMAP["qchem"]["O2"], "basis"),
+            (FOLDERMAP["qchem"]["O2"]["STO-3G"], "bondlength"),
+        ],
+    )
+    def test_name(self, init, expect):
+        """Test that the ``name()`` property returns the expected value for each level."""
+
+        assert FolderMapView(init).name == expect
+
+    @pytest.mark.parametrize("key", ["__default", "__name"])
+    @pytest.mark.parametrize(
         "init",
         [
             FOLDERMAP,
@@ -69,12 +112,12 @@ class TestFolderMapView:
             FOLDERMAP["qchem"]["O2"],
         ],
     )
-    def test_getitem_private_key(self, init):
+    def test_getitem_private_key(self, key, init):
         """Test that ``getitem`` raises a KeyError if the ``__default``
         key is passed."""
 
         with pytest.raises(KeyError):
-            FolderMapView(init)["__default"]
+            FolderMapView(init)[key]
 
     @pytest.mark.parametrize(
         "init",

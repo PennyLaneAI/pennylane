@@ -19,8 +19,9 @@ from collections.abc import Sequence
 from typing import Generic, List, Union, overload
 
 from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import HDF5Any, HDF5Group, T
+from pennylane.data.base.typing_util import T
 
 
 class DatasetList(  # pylint: disable=too-many-ancestors

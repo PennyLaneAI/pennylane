@@ -14,7 +14,6 @@
 """Contains a sentinel object, common type objects utilities for parsing types
 and converting them to strings."""
 
-from collections.abc import MutableMapping
 from enum import Enum
 from functools import lru_cache
 from typing import (
@@ -32,15 +31,6 @@ from typing import (
     get_args,
     get_origin,
 )
-
-from numpy.typing import ArrayLike
-
-# Type aliases for HDF5 objects.
-HDF5Attrs = MutableMapping
-HDF5Array = ArrayLike
-HDF5Group = MutableMapping
-HDF5Any = Union[HDF5Array, HDF5Group]
-HDF5 = TypeVar("HDF5", HDF5Array, HDF5Group, HDF5Any)
 
 JSON = Union[str, int, bool, float, None, Dict[str, Any], List[Any]]
 

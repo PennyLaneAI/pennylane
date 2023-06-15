@@ -12,25 +12,80 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains utility functions for resolving dataset paths from parameter
-arguments.
+Contains types and functions for dataset parameters.
 """
 
 
-from collections.abc import Iterable
-from typing import Any, Dict, List, Tuple, Union
+import enum
+import typing
+from collections.abc import Hashable
+from functools import lru_cache
+from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union
 
-from .types import (
-    DEFAULT,
-    FULL,
-    DataPath,
-    Description,
-    FolderMapView,
-    ParamArg,
-    ParamArgs,
-    ParamName,
-    ParamVal,
-)
+
+class ParamArg(enum.Enum):
+    """Enum representing special args to ``load()``.
+
+    FULL: used to request all attributes
+    DEFAULT: used to request the default attribute
+    """
+
+    FULL = "full"
+    DEFAULT = "default"
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def values(cls) -> FrozenSet[str]:
+        """Returns all values."""
+        return frozenset(arg.value for arg in cls)
+
+    @classmethod
+    def is_arg(cls, val: Union["ParamArg", str]) -> bool:
+        """Returns true if ``val`` is a ``ParamArg``, or one
+        of its values."""
+        return isinstance(val, ParamArg) or val in cls.values()
+
+    def __str__(self) -> str:
+        return self.value
+
+
+DEFAULT = ParamArg.DEFAULT
+FULL = ParamArg.FULL
+
+# Type for the name of a parameter, e.g 'molname', 'bondlength'
+ParamName = str
+# Type for a concrete paramter value, e.g 'H2', '0.5'
+ParamVal = str
+
+
+class Description(typing.Mapping[ParamName, ParamVal], Hashable):
+    """An immutable and hashable dictionary that contains all the parameter
+    values for a dataset."""
+
+    def __init__(self, params: typing.Iterable[Tuple[ParamName, ParamVal]]):
+        self.__data = dict(params)
+        self.__hash = None
+
+    def __getitem__(self, __key: ParamName) -> ParamVal:
+        return self.__data[__key]
+
+    def __iter__(self) -> typing.Iterator[ParamName]:
+        return iter(self.__data)
+
+    def __len__(self) -> int:
+        return len(self.__data)
+
+    def __hash__(self) -> int:
+        if not self.__hash:
+            self.__hash = hash(tuple(self.__data))
+
+        return self.__hash
+
+    def __str__(self) -> str:
+        return str(self.__data)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({repr(self.__data)})"
 
 
 # pylint:disable=too-many-branches
@@ -73,59 +128,9 @@ def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, List[Pa
     return details
 
 
-def format_params(**params: Any) -> ParamArgs:
+def format_params(**params: Any) -> Dict[ParamName, Union[ParamArg, ParamVal]]:
     """Converts params is a dictionary whose keys are parameter names and
     whose values are single ``ParamaterArg`` objects or lists of parameter values."""
     return {
         param_name: format_param_args(param_name, param) for param_name, param in params.items()
     }
-
-
-def resolve_params(
-    data_struct: Dict, foldermap: FolderMapView, category: str, **params: Any
-) -> List[Tuple[Description, DataPath]]:
-    """
-    Returns a 2-tuple of dataset parameters and paths, for each dataset that
-    matches ``params``.
-    """
-    curr: List[Tuple[Tuple[ParamVal, ...], FolderMapView]] = [(tuple(), foldermap[category])]
-    next_: List[Tuple[Tuple[ParamVal, ...], FolderMapView]] = []
-
-    category_params = data_struct[category]["params"]
-    param_args = format_params(**params)
-
-    invalid_names = ",".join(
-        f"'{param_name}'" for param_name in param_args if param_name not in category_params
-    )
-    if invalid_names:
-        valid_names = ",".join(f"'{param_name}'" for param_name in category_params)
-        raise ValueError(
-            f"Invalid parameter(s) for '{category}': {invalid_names}. Valid parameters are: {valid_names}"
-        )
-
-    for param_name in data_struct[category]["params"]:
-        while curr:
-            resolved, dir_map = curr.pop()
-            params = param_args.get(param_name, DEFAULT)
-            if params == FULL:
-                next_params = (param for param in dir_map)
-            elif params == DEFAULT:
-                try:
-                    next_params = (dir_map.get_default_key(),)
-                except ValueError as exc:
-                    raise ValueError(
-                        f"No default available for parameter '{param_name}' of '{category}'."
-                    ) from exc
-            else:
-                next_params = (param for param in params)
-
-            try:
-                next_.extend(((*resolved, param), dir_map[param]) for param in next_params)
-            except KeyError as exc:
-                raise ValueError(
-                    f"No '{category}' dataset exists with {param_name}={exc.args[0]}"
-                ) from exc
-
-        curr, next_ = next_, curr
-
-    return [(dict(zip(category_params, resolved)), data_path) for resolved, data_path in curr]

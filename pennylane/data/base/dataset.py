@@ -39,10 +39,11 @@ from typing import (
 # pylint doesn't think this exists
 from typing_extensions import dataclass_transform  # pylint: disable=no-name-in-module
 
-from pennylane.data.base._hdf5 import h5py
+from pennylane.data.base import hdf5
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
+from pennylane.data.base.hdf5 import HDF5Any, HDF5Group, h5py
 from pennylane.data.base.mapper import MapperMixin, match_obj_type
-from pennylane.data.base.typing_util import UNSET, HDF5Any, HDF5Group, T
+from pennylane.data.base.typing_util import UNSET, T
 
 
 @dataclass
@@ -143,7 +144,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         if isinstance(bind, (h5py.Group, h5py.File)):
             self._bind = bind
         else:
-            self._bind = h5py.group()
+            self._bind = hdf5.create_group()
 
         self._init_bind()
         if params is not None:
@@ -210,54 +211,55 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     def read(
         self,
-        filepath: Union[str, Path],
-        assign_to: Optional[str] = None,
+        source: Union[str, Path, "Dataset"],
+        attributes: Optional[typing.Iterable[str]] = None,
         *,
         overwrite_attrs: bool = False,
     ) -> None:
-        """Load dataset from HDF5 file at filepath. Can also accept an S3 URL.
+        """Load dataset from HDF5 file at filepath.
 
         Args:
-            filepath: Path to file containing dataset
-            assign_to: Attribute name to which the contents of the file should be assigned.
-                If this is ``None`` (the default value), the file's attributes will be assigned
-                to the current dataset
+            source: Dataset, or path to HDF5 file containing dataset, from which
+                to read attributes
+            attributes: Optional list of attributes to copy. If None, all attributes
+                will be copied.
             overwrite_attrs: Whether to overwrite attributes that already exist in this
                 dataset.
         """
-        # TODO: better error message when overwriting attribute fails
-        zgrp = h5py.open_group(filepath, mode="r")
+        if not isinstance(source, Dataset):
+            source = Dataset.open(source, mode="r")
 
-        if assign_to:
-            h5py.copy(zgrp, self.bind, assign_to)
-        else:
-            if_exists = "overwrite" if overwrite_attrs else "raise"
-            h5py.copy_all(zgrp, self.bind, if_exists=if_exists)
+        source.write(self, attributes=attributes, overwrite_attrs=overwrite_attrs)
 
     def write(
         self,
-        filepath: Union[str, Path],
-        mode: Literal["w", "w-", "a"] = "w-",
+        dest: Union[str, Path, "Dataset"],
+        mode: Literal["w", "w-", "a"] = "a",
         attributes: Optional[typing.Iterable[str]] = None,
+        *,
+        overwrite_attrs: bool = False,
     ) -> None:
         """Write dataset to HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
-            filepath: Path of hdf5 file
-            mode: File handling mode. Possible values are "w-" (create, fail if file
-                exists), "w" (create, overwrite existing), and "a" (append existing,
-                create if doesn't exist). Default is "w-".
+            dest: HDF5 file, or path to HDF5 file containing dataset, to write
+                attributes to
+            mode: File handling mode, if ``source`` is a file system path. Possible
+                values are "w-" (create, fail if file exists), "w" (create, overwrite existing),
+                and "a" (append existing, create if doesn't exist). Default is "w-".
             attributes: Optional list of attributes to copy. If None, all attributes
                 will be copied.
+            overwrite_attrs: Whether to overwrite attributes that already exist in this
+                dataset.
         """
-        # TODO: better error message for 'ContainsGroupError'
-        if attributes is None:
-            attributes = self.attrs
+        attributes = attributes if attributes is not None else ()
+        if_exists = "overwrite" if overwrite_attrs else "raise"
 
-        with h5py.open_group(filepath, mode=mode) as grp:
-            grp.attrs.update(self.bind.attrs)
-            for attr in attributes:
-                h5py.copy(self.bind[attr], grp, attr)
+        if not isinstance(dest, Dataset):
+            dest = Dataset.open(dest, mode=mode)
+            dest.info.update(self.info)
+
+        hdf5.copy_all(self.bind, dest.bind, *attributes, if_exists=if_exists)
 
     def _validate_attrs(self) -> None:
         """Validates that ``attrs`` matched the delcared fields of this
@@ -356,6 +358,6 @@ class _DatasetAttributeType(AttributeType[HDF5Group, Dataset, Dataset]):
         return Dataset(bind)
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Dataset) -> HDF5Group:
-        h5py.copy(value.bind, bind_parent, key)
+        hdf5.copy(value.bind, bind_parent, key)
 
         return bind_parent[key]

@@ -35,7 +35,7 @@ from scipy.sparse import (
 )
 
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
-from pennylane.data.base.typing_util import HDF5Group
+from pennylane.data.base.hdf5 import HDF5Group
 
 SparseArray = Union[bsr_array, coo_array, csc_array, csr_array, dia_array, dok_array, lil_array]
 SparseMatrix = Union[

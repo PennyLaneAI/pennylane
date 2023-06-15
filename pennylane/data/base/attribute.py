@@ -36,15 +36,9 @@ from typing import (
     overload,
 )
 
-from pennylane.data.base._hdf5 import h5py
-from pennylane.data.base.typing_util import (
-    HDF5,
-    UNSET,
-    HDF5Any,
-    HDF5Group,
-    get_type,
-    get_type_str,
-)
+from pennylane.data.base import hdf5
+from pennylane.data.base.hdf5 import HDF5, HDF5Any, HDF5Group
+from pennylane.data.base.typing_util import UNSET, get_type, get_type_str
 
 
 class AttributeInfo(MutableMapping):
@@ -260,7 +254,7 @@ class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
         if parent_and_key is not None:
             parent, key = parent_and_key
         else:
-            parent, key = h5py.group(), "_"
+            parent, key = hdf5.create_group(), "_"
 
         if value is UNSET:
             value = self.default_value()
@@ -337,7 +331,7 @@ class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
 
     def _set_parent(self, parent: HDF5Group, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
-        h5py.copy(source=self.bind, dest=parent, key=key, if_exists="replace")
+        hdf5.copy(source=self.bind, dest=parent, key=key, if_exists="overwrite")
 
     def _check_bind(self):
         """
@@ -355,8 +349,8 @@ class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
             )
 
     def __copy__(self: Self) -> Self:
-        impl_group = h5py.group()
-        h5py.copy(self.bind, impl_group, "_")
+        impl_group = hdf5.create_group()
+        hdf5.copy(self.bind, impl_group, "_")
 
         return type(self)(bind=impl_group["_"])
 
@@ -405,12 +399,12 @@ class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
         return super().__init_subclass__()
 
 
-def get_attribute_type(zobj: HDF5) -> Type[AttributeType[HDF5, Any, Any]]:
+def get_attribute_type(h5_obj: HDF5) -> Type[AttributeType[HDF5, Any, Any]]:
     """
     Returns the ``AttributeType`` of the dataset attribute contained
     in ``zobj``.
     """
-    type_id = zobj.attrs[AttributeInfo.bind_key("type_id")]
+    type_id = h5_obj.attrs[AttributeInfo.bind_key("type_id")]
 
     return AttributeType.registry[type_id]
 
