@@ -86,7 +86,7 @@ class FermiWord(dict):
 
         >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
-        '0+ 1-'
+        'a⁺(0) a(1)'
         """
         if len(self) == 0:
             return "I"
