@@ -278,7 +278,6 @@
   of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
-  [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
   ```pycon
   >>> from pennylane.transforms import one_qubit_decomposition
@@ -413,6 +412,15 @@
 
 <h4>The qchem module</h4>
 
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
+* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
+
 * Non-cubic lattice support for all electron resource estimation has been added.
   [(3956)](https://github.com/PennyLaneAI/pennylane/pull/3956)
 
@@ -442,6 +450,7 @@
 * A new function called `measure_with_samples` that returns a sample-based measurement result given a state has been added.
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
@@ -525,6 +534,12 @@
 
 <h4>Other improvements</h4>
 
+* Added a transform dispatcher.
+  [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
+  
+* Added a transform program.
+  [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
+
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
@@ -535,12 +550,6 @@
 
 * PennyLane Docker builds have been updated to include the latest plugins and interface versions.
   [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
-
-* Added a transform dispatcher.
-  [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
-  
-* Added a transform program.
-  [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
 
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
@@ -593,17 +602,9 @@
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
-* Added a function `measure_with_samples` that returns a sample-based measurement result given a state
-  [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
-  [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
-  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
-
 * Added the ability to draw mid-circuit measurements connected by classical control signals
   to conditional operations.
   [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
-
-* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
 
 * The new device interface is integrated with `qml.execute` for Tensorflow.
   [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
@@ -681,7 +682,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+<<<<<<< HEAD
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+=======
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
+
+* Fixed adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+>>>>>>> 0e80977bd9f2c7c6230eceee7ab983dfec03229c
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
