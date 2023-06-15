@@ -329,8 +329,8 @@ def _stoch_pulse_grad(
     .. warning::
 
         This transform may not be applied directly to QNodes. Use JAX entrypoints
-         (``jax.grad``, ``jax.jacobian``, ...)
-        instead or apply the transform on the tape level. Also see the examples below.
+        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape level.
+        Also see the examples below.
 
     **Examples**
 
