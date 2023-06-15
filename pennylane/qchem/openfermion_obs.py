@@ -913,6 +913,14 @@ def molecular_hamiltonian(
     """
 
     if grouping_type is not None:
+        if active_new_opmath():
+            warnings.warn(
+                "The 'grouping_type' and 'grouping_method' arguments are ignored when "
+                "'active_new_opmath() is True. Please disable it (via 'disable_new_opmath()') "
+                "in order to utilize the grouping functionality.",
+                UserWarning,
+            )
+
         warnings.warn(
             "The grouping functionality in molecular_hamiltonian is deprecated. "
             "Please manually compute the groupings via: "
@@ -959,17 +967,24 @@ def molecular_hamiltonian(
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
-        if args is None:
-            h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            coeffs = qml.numpy.real(h.coeffs, requires_grad=False)
-        else:
-            h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-            coeffs = qml.numpy.real(h.coeffs)
+
+        need_grad = args is not None
+        h = (
+            qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+            if need_grad
+            else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+        )
 
         if active_new_opmath():
-            ps = qml.dot(coeffs, h.ops, pauli=True)
-            h = qml.s_prod(0, qml.Identity(h.ops[0].wires[0])) if len(ps) == 0 else ps.operation()
+            h_as_ps = qml.pauli.pauli_sentence(h)
+            h = (
+                qml.s_prod(0, qml.Identity(h.wires[0]))
+                if len(h_as_ps) == 0
+                else h_as_ps.operation()
+            )
         else:
+            coeffs = h.coeffs
+            coeffs = qml.numpy.real(coeffs, requires_grad=need_grad)
             h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
 
         if wires:
@@ -990,7 +1005,4 @@ def molecular_hamiltonian(
 
     h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
-    return (
-        qml.Hamiltonian(h_pl.coeffs, h_pl.ops, grouping_type=grouping_type, method=grouping_method),
-        qubits,
-    )
+    return h_pl, qubits

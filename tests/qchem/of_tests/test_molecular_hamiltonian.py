@@ -1,4 +1,5 @@
 import sys
+import warnings
 
 import pytest
 
@@ -6,6 +7,8 @@ from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.ops import Hamiltonian
+from pennylane.pauli import pauli_sentence
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 # TODO: Bring pytest skip to relevant tests.
 openfermion = pytest.importorskip("openfermion")
@@ -42,6 +45,7 @@ coordinates = np.array(
 )
 
 
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     (
         "charge",
@@ -68,25 +72,40 @@ def test_building_hamiltonian(
     mapping,
     grouping_type,
     tmpdir,
+    op_arithmetic,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
     Hamiltonian class and the correctness of the total number of qubits required to run the
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
-    built_hamiltonian, qubits = qchem.molecular_hamiltonian(
-        symbols,
-        coordinates,
-        charge=charge,
-        mult=mult,
-        method=package,
-        active_electrons=nact_els,
-        active_orbitals=nact_orbs,
-        mapping=mapping,
-        grouping_type=grouping_type,
-        outpath=tmpdir.strpath,
-    )
 
-    assert isinstance(built_hamiltonian, Hamiltonian)
+    args = (symbols, coordinates)
+    kwargs = {
+        "charge": charge,
+        "mult": mult,
+        "method": package,
+        "active_electrons": nact_els,
+        "active_orbitals": nact_orbs,
+        "mapping": mapping,
+        "grouping_type": grouping_type,
+        "outpath": tmpdir.strpath,
+    }
+    if op_arithmetic:
+        enable_new_opmath()
+
+    if grouping_type is not None:
+        with pytest.warns(
+            UserWarning, match="The grouping functionality in molecular_hamiltonian is deprecated."
+        ):
+            built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
+    else:
+        built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
+
+    if op_arithmetic:
+        disable_new_opmath()
+        assert not isinstance(built_hamiltonian, Hamiltonian)
+    else:
+        assert isinstance(built_hamiltonian, Hamiltonian)
     assert qubits == 2 * nact_orbs
 
 
@@ -215,6 +234,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     assert h_noargs.coeffs.requires_grad == False
 
 
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "wiremap", "grouping"),
     [
@@ -234,8 +254,13 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         ),
     ],
 )
-def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, grouping, tmpdir):
+def test_custom_wiremap_hamiltonian_pyscf(
+    symbols, geometry, method, wiremap, grouping, tmpdir, op_arithmetic
+):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    if op_arithmetic:
+        enable_new_opmath()
+
     hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
@@ -247,7 +272,11 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, gr
 
     assert set(hamiltonian.wires) == set(wiremap)
 
+    if op_arithmetic:
+        disable_new_opmath()
 
+
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "wiremap", "args", "grouping"),
     [
@@ -267,8 +296,13 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, gr
         ),
     ],
 )
-def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, grouping, tmpdir):
+def test_custom_wiremap_hamiltonian_dhf(
+    symbols, geometry, wiremap, args, grouping, tmpdir, op_arithmetic
+):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    if op_arithmetic:
+        enable_new_opmath()
+
     hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
@@ -279,6 +313,9 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, groupi
     )
 
     assert list(hamiltonian.wires) == list(wiremap)
+
+    if op_arithmetic:
+        disable_new_opmath()
 
 
 file_content = """\
@@ -327,6 +364,32 @@ def test_diff_hamiltonian_error(symbols, geometry):
 
 
 @pytest.mark.parametrize(
+    ("symbols", "geometry"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+        ),
+    ],
+)
+def test_diff_hamiltonian_warnings(symbols, geometry):
+    r"""Test that molecular_hamiltonian raises a warning when using grouping."""
+
+    with pytest.warns(
+        UserWarning, match="The grouping functionality in molecular_hamiltonian is deprecated. "
+    ):
+        qchem.molecular_hamiltonian(symbols, geometry, grouping_type="qwc")
+
+    with pytest.warns(
+        UserWarning, match="The 'grouping_type' and 'grouping_method' arguments are ignored when "
+    ):
+        enable_new_opmath()
+        qchem.molecular_hamiltonian(symbols, geometry, grouping_type="qwc")
+        disable_new_opmath()
+
+
+@pytest.mark.parametrize("op_arithmetic", [False, True])
+@pytest.mark.parametrize(
     ("symbols", "geometry", "method", "args"),
     [
         (
@@ -349,8 +412,11 @@ def test_diff_hamiltonian_error(symbols, geometry):
         ),
     ],
 )
-def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
+def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic):
     r"""Test that the generated Hamiltonian has real coefficients."""
+    if op_arithmetic:
+        enable_new_opmath()
+
     hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
@@ -359,4 +425,10 @@ def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    assert np.isrealobj(hamiltonian.coeffs)
+    if op_arithmetic:
+        disable_new_opmath()
+        h_as_ps = pauli_sentence(hamiltonian)
+        assert np.isrealobj(np.array(h_as_ps.values()))
+
+    else:
+        assert np.isrealobj(hamiltonian.coeffs)
