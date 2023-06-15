@@ -799,8 +799,8 @@ def sum_sparse_matrix_core(wires, coeffs, ops, mask, is_pauli=False, pauli_indic
     where = np.where(mask)
     ops = [ops[x] for x in where[0]]
     cef = coeffs[where]
-    if pauli_indices is None:
-        is_pauli = False
+    # if pauli_indices is None:
+    #     is_pauli = False
     for w, coeff, op in zip(where[0], cef, ops):
         if not is_pauli:
             obs = []
