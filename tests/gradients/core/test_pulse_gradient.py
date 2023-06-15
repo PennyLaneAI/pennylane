@@ -817,7 +817,7 @@ class TestStochPulseGradQNode:
             qml.evolve(ham_single_q_const)([params], 0.2)
             return qml.expval(qml.PauliZ(0))
 
-        _match = "stochastic pulse parameter-shift .* scalar pulse parameters."
+        _match = "stochastic pulse parameter-shift gradient transform to a QNode directly"
         with pytest.raises(NotImplementedError, match=_match):
             stoch_pulse_grad(circuit, num_split_times=2)
 

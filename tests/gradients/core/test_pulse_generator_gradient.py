@@ -1133,7 +1133,7 @@ class TestPulseGeneratorQNode:
             qml.evolve(ham_single_q_const)([params], 0.2)
             return qml.expval(qml.PauliZ(0))
 
-        _match = "pulse generator parameter-shift .* scalar pulse parameters."
+        _match = "pulse generator parameter-shift gradient transform to a QNode directly"
         with pytest.raises(NotImplementedError, match=_match):
             pulse_generator(circuit)
 
