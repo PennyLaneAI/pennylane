@@ -206,6 +206,23 @@ class TestShotsConstruction:
         with pytest.raises(ValueError, match=ERROR_MSG):
             _ = Shots(0)
 
+
+class TestProperties:
+    """Tests various properties of the Shots class."""
+
+    @pytest.mark.parametrize(
+        "shots,expected",
+        [
+            (None, False),
+            (1, True),
+            ([1, 2], True),
+            ([1, (2, 3)], True),
+        ],
+    )
+    def test_bool_dunder(self, shots, expected):
+        """Tests the Truthy/Falsy values of various Shots objects."""
+        assert bool(Shots(shots)) is expected
+
     def test_Shots_frozen_after_init(self):
         """Tests that Shots instances are frozen after creation."""
         shots = Shots(10)
@@ -216,7 +233,7 @@ class TestShotsConstruction:
         "shots,expected", [(None, False), (100, False), ([1, 2], True), [[100], False]]
     )
     def test_has_partitioned_shots(self, shots, expected):
-        """Tests the has_partitioned_shots method."""
+        """Tests the has_partitioned_shots property."""
         assert Shots(shots).has_partitioned_shots is expected
 
     @pytest.mark.parametrize(
@@ -231,4 +248,5 @@ class TestShotsConstruction:
         ],
     )
     def test_num_copies(self, shots, expected):
+        """Tests the num_copies property."""
         assert Shots(shots).num_copies == expected
