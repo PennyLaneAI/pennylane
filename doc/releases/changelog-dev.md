@@ -43,7 +43,7 @@
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
 * Added dunder methods to `FermiWord` and `FermiSentence` to allow arithmetic operations 
-  using `+`, `-` and `*` as well as in-place addition, subtraction and multiplication, between 
+  using `+`, `-` and `*` between 
   `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
   [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
 
