@@ -25,8 +25,9 @@ from .fermionic import FermiWord, FermiSentence
 
 
 # pylint: disable=unexpected-keyword-arg
+@singledispatch
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), **kwargs
+    fermi_operator: (Union[FermiWord, FermiSentence]), *kwargs
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -69,15 +70,10 @@ def jordan_wigner(
     + (0.25+0j) * X(2) @ X(3)
     + 0.25j * X(2) @ Y(3)
     """
-    return _jordan_wigner_dispatch(fermi_operator, **kwargs)
-
-
-@singledispatch
-def _jordan_wigner_dispatch(fermi_operator, **kwargs):
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
 
 
-@_jordan_wigner_dispatch.register
+@jordan_wigner.register
 def _(fermi_operator: FermiWord, ps=False, wire_map=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
@@ -110,7 +106,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
     return qubit_operator
 
 
-@_jordan_wigner_dispatch.register
+@jordan_wigner.register
 def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
@@ -136,7 +132,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
     return qubit_operator
 
 
-@_jordan_wigner_dispatch.register
+@jordan_wigner.register
 def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too-many-branches
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
