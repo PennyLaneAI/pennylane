@@ -21,9 +21,15 @@ from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 
 torch = pytest.importorskip("torch")
-torch.set_default_tensor_type(torch.DoubleTensor)
 
 pytestmark = pytest.mark.torch
+
+
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests():
+    torch.set_default_tensor_type(torch.DoubleTensor)
+    yield
+    torch.set_default_tensor_type(torch.FloatTensor)
 
 
 # pylint: disable=too-few-public-methods
@@ -576,9 +582,9 @@ class TestHigherOrderDerivatives:
     @pytest.mark.parametrize(
         "params",
         [
-            torch.tensor([0.543, -0.654], requires_grad=True),
-            torch.tensor([0, -0.654], requires_grad=True),
-            torch.tensor([-2.0, 0], requires_grad=True),
+            torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64),
+            torch.tensor([0, -0.654], requires_grad=True, dtype=torch.float64),
+            torch.tensor([-2.0, 0], requires_grad=True, dtype=torch.float64),
         ],
     )
     def test_parameter_shift_hessian(self, params, tol):
