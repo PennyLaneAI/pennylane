@@ -397,7 +397,7 @@ def test_diff_hamiltonian_error(symbols, geometry):
         ),
     ],
 )
-def test_diff_hamiltonian_warnings(symbols, geometry):
+def test_hamiltonian_warnings(symbols, geometry):
     r"""Test that molecular_hamiltonian raises a warning when using grouping."""
 
     with pytest.warns(

@@ -8,8 +8,8 @@ Pending deprecations
 
 * The `grouping_type` and `grouping_method` arguments of `qchem.molecular_hamiltonian()` are deprecated.
 
-  - Deprecated in v0.24
-  - Will be removed in v0.31
+  - Deprecated in v0.31
+  - Will be removed in v0.32
 
   Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
 
