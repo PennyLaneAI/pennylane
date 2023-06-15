@@ -303,7 +303,7 @@ class TestSampleMeasurements:
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
         result = simulate(qs)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, np.float64)
         assert result.shape == ()
         assert np.allclose(result, np.cos(x), atol=0.1)
 
@@ -341,10 +341,10 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
+        assert isinstance(result[0], np.float64)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
-        assert all(isinstance(res, np.ndarray) for res in result)
-
-        assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
 
         assert result[1].shape == (4,)
@@ -380,7 +380,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, np.float64) for res in result)
         assert all(res.shape == () for res in result)
         assert all(np.allclose(res, np.cos(x), atol=0.1) for res in result)
 
@@ -440,9 +440,10 @@ class TestSampleMeasurements:
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
-            assert all(isinstance(meas_res, np.ndarray) for meas_res in shot_res)
+            assert isinstance(shot_res[0], np.float64)
+            assert isinstance(shot_res[1], np.ndarray)
+            assert isinstance(shot_res[2], np.ndarray)
 
-            assert shot_res[0].shape == ()
             assert np.allclose(shot_res[0], np.cos(x), atol=0.1)
 
             assert shot_res[1].shape == (4,)
@@ -475,10 +476,10 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
+        assert isinstance(result[0], np.float64)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
-        assert all(isinstance(res, np.ndarray) for res in result)
-
-        assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
 
         assert result[1].shape == (4,)
