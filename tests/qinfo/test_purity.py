@@ -375,3 +375,20 @@ class TestPurity:
         grad_purity = tape.gradient(purity, param)
 
         assert qml.math.allclose(grad_purity, grad_expected_purity)
+
+
+@pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+def test_broadcasting(device):
+    """Test that the purity transform supports broadcasting"""
+    dev = qml.device(device, wires=2)
+
+    @qml.qnode(dev)
+    def circuit_state(x):
+        qml.IsingXX(x, wires=[0, 1])
+        return qml.state()
+
+    x = np.array([0.4, 0.6, 0.8])
+    purity = qml.qinfo.purity(circuit_state, wires=[0])(x)
+
+    expected = expected_purity_ising_xx(x)
+    assert qml.math.allclose(purity, expected)

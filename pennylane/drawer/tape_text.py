@@ -127,16 +127,19 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0, 1, 2))
-            qml.RX(1.234, wires=0)
-            qml.RY(1.234, wires=1)
-            qml.RZ(1.234, wires=2)
+        ops = [
+            qml.QFT(wires=(0, 1, 2)),
+            qml.RX(1.234, wires=0),
+            qml.RY(1.234, wires=1),
+            qml.RZ(1.234, wires=2),
             qml.Toffoli(wires=(0, 1, "aux"))
-
-            qml.expval(qml.PauliZ("aux"))
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+        ]
+        measurements = [
+            qml.expval(qml.PauliZ("aux")),
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
@@ -208,10 +211,12 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitUnitary(np.eye(2), wires=0)
+        ops = [
+            qml.QubitUnitary(np.eye(2), wires=0),
             qml.QubitUnitary(np.eye(2), wires=1)
-            qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
+        ]
+        measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>

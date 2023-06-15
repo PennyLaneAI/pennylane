@@ -338,8 +338,7 @@ def reorder_grads(grads, tape_specs):
         grads (list[tensorlike] or list[tuple[tensorlike]] or list[tuple[tuple[tensorlike]]]:
             Gradient entries with leading parameter axis to be reordered.
         tape_specs (tuple): Information about the differentiated original tape in the order
-            ``(bool: single_measure, int: num_params, int: num_measurements, bool: shot_vector,
-            mixed: shots)``.
+            ``(bool: single_measure, int: num_params, int: num_measurements, Shots: shots)``.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: The reordered gradient
@@ -355,7 +354,7 @@ def reorder_grads(grads, tape_specs):
         2. Shot vector (if ``shots`` is a ``list`` or ``list[tuple]``. Skipped otherwise)
         3. Measurements (if there are multiple measurements. Skipped otherwise)
         4. Measurement shape
-        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise) TODO: TBC
+        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise)
 
     The final order of axes of gradient results should be:
 

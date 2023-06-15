@@ -13,8 +13,8 @@
 # limitations under the License.
 """Functions to sample a state."""
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import SampleMeasurement, Shots, ExpectationMP
 from pennylane.typing import TensorLike
@@ -42,14 +42,27 @@ def measure_with_samples(
     """
     # if the measurement process involves a Sum or a Hamiltonian, measure each
     # of the terms separately and sum
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Hamiltonian):
-        return sum(
-            c * measure_with_samples(ExpectationMP(t), state, shots, rng=rng)
-            for c, t in zip(*mp.obs.terms())
-        )
+    if isinstance(mp, ExpectationMP):
+        if isinstance(mp.obs, Hamiltonian):
 
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Sum):
-        return sum(measure_with_samples(ExpectationMP(t), state, shots, rng=rng) for t in mp.obs)
+            def _sum_for_single_shot(s):
+                return sum(
+                    c * measure_with_samples(ExpectationMP(t), state, s, rng=rng)
+                    for c, t in zip(*mp.obs.terms())
+                )
+
+            unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+            return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
+
+        if isinstance(mp.obs, Sum):
+
+            def _sum_for_single_shot(s):
+                return sum(
+                    measure_with_samples(ExpectationMP(t), state, s, rng=rng) for t in mp.obs
+                )
+
+            unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+            return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
 
     # measure with the usual method (rotate into the measurement basis)
     return _measure_with_samples_diagonalizing_gates(mp, state, shots, rng=rng)
