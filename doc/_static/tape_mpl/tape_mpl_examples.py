@@ -125,6 +125,18 @@ def postprocessing(tape):
     plt.close()
 
 
+def mid_measure():
+    with qml.queuing.AnnotatedQueue() as q:
+        m0 = qml.measure(0)
+        qml.Hadamard(1)
+        qml.cond(m0, qml.PauliZ)(1)
+
+    circuit = qml.tape.QuantumScript.from_queue(q)
+    _ = tape_mpl(circuit)
+    plt.savefig(folder / "mid_measure.png")
+    plt.close()
+
+
 if __name__ == "__main__":
 
     with qml.tape.QuantumTape() as tape:
@@ -144,3 +156,4 @@ if __name__ == "__main__":
     rcparams(tape)
     wires_and_labels(tape)
     postprocessing(tape)
+    mid_measure()

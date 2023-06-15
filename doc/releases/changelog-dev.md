@@ -410,6 +410,15 @@
 
 <h4>The qchem module</h4>
 
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
+* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
+
 * Non-cubic lattice support for all electron resource estimation has been added.
   [(3956)](https://github.com/PennyLaneAI/pennylane/pull/3956)
 
@@ -516,6 +525,19 @@
 
 <h4>Other improvements</h4>
 
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
+
+* Added a transform dispatcher.
+  [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
+  
+* Added a transform program.
+  [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
+
+* The new device interface is integrated with `qml.execute` for Tensorflow.
+  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
+
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
@@ -602,6 +624,9 @@
 
 * `qml.collections`, `qml.op_sum`, and `qml.utils.sparse_hamiltonian` have been removed.
 
+* `Operator.data` now returns a `tuple` instead of a `list`.
+  [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
+
 <h3>Deprecations 👋</h3>
 
 * `LieAlgebraOptimizer` has been renamed to `RiemannianGradientOptimizer`.
@@ -632,6 +657,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+  [(#4243)](https://github.com/PennyLaneAI/pennylane/pull/4243)
+
 * The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
   `qml.ops.op_math.Adjoint.__new__`.
   [(#4231)](https://github.com/PennyLaneAI/pennylane/pull/4231)
@@ -644,6 +672,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
 
 * Fixed adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
