@@ -1379,12 +1379,12 @@ class TestStochPulseGradQNodeIntegration:
         atol = 1e-5
         dev = qml.device("default.qubit.jax", wires=1)
 
-        def cost(params):
+        def ansatz(params):
             qml.evolve(H, atol=atol)(params, t=timespan)
             return qml.expval(qml.PauliZ(0))
 
-        cost = qml.QNode(cost, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
-        cost_jax = qml.QNode(cost, dev, interface="jax")
+        cost = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+        cost_jax = qml.QNode(ansatz, dev, interface="jax")
         params = (0.42,)
 
         gradfn = jax.grad(cost)
@@ -1398,18 +1398,18 @@ class TestStochPulseGradQNodeIntegration:
         import jax
 
         # values from https://arxiv.org/pdf/2203.06818.pdf
-        timespan = 0.4
+        timespan = 0.1
 
-        H = qml.pulse.transmon_drive(0.0, qml.pulse.constant, 0.0, wires=[0])
+        H = qml.pulse.transmon_drive(1/(2*np.pi), qml.pulse.constant, 0.0, wires=[0])
         atol = 1e-5
         dev = qml.device("default.qubit.jax", wires=1)
 
-        def cost(params):
+        def ansatz(params):
             qml.evolve(H, atol=atol)(params, t=timespan)
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliX(0))
 
         cost = qml.QNode(
-            cost,
+            ansatz,
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
@@ -1417,13 +1417,13 @@ class TestStochPulseGradQNodeIntegration:
             use_broadcasting=True,
             sampler_seed=4123,
         )
-        cost_jax = qml.QNode(cost, dev, interface="jax")
+        cost_jax = qml.QNode(ansatz, dev, interface="jax")
         params = (0.42,)
 
         gradfn = jax.grad(cost)
         res = gradfn(params)
         exact = jax.grad(cost_jax)(params)
-        assert qml.math.allclose(res, exact)
+        assert qml.math.allclose(res, exact, atol=1e-3)
 
 
 @pytest.mark.jax
