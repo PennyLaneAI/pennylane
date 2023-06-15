@@ -103,7 +103,7 @@ def electron_integrals(mol, core=None, active=None):
         r"""Compute the one- and two-electron integrals in the molecular orbital basis.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
@@ -167,7 +167,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         r"""Compute the fermionic hamiltonian.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
@@ -210,7 +210,7 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         r"""Compute the qubit hamiltonian.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             Hamiltonian: the qubit Hamiltonian

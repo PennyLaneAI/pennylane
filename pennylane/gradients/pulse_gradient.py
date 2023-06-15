@@ -144,7 +144,13 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
 
 # pylint: disable=too-many-arguments
 def _parshift_and_integrate(
-    results, cjacs, int_prefactor, psr_coeffs, single_measure, shot_vector, use_broadcasting
+    results,
+    cjacs,
+    int_prefactor,
+    psr_coeffs,
+    single_measure,
+    has_partitioned_shots,
+    use_broadcasting,
 ):
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
@@ -161,7 +167,7 @@ def _parshift_and_integrate(
         psr_coeffs (tensor_like): Coefficients of the parameter-shift rule to contract the results
             with before integrating numerically.
         single_measure (bool): Whether the results contain a single measurement per shot setting
-        shot_vector (bool): Whether the results have a shot vector axis
+        has_partitioned_shots (bool): Whether the results have a shot vector axis
         use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
             ``results``.
     Returns:
@@ -192,10 +198,10 @@ def _parshift_and_integrate(
             parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
-    # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
-    if not single_measure + shot_vector == 1:
+    nesting_layers = (not single_measure) + has_partitioned_shots
+    if nesting_layers == 1:
         return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
-    if single_measure:
+    if nesting_layers == 0:
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
