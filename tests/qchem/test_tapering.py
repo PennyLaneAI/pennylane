@@ -533,6 +533,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
     assert np.all(tapered_hf_state == result)
 
 
+# @pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge"),
     [
@@ -567,9 +568,12 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
     ],
 )
-def test_taper_obs(symbols, geometry, charge):
+def test_taper_obs(symbols, geometry, charge, op_arithmetic):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
+    # if op_arithmetic:
+    #     enable_new_opmath()
+
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
@@ -611,6 +615,9 @@ def test_taper_obs(symbols, geometry, charge):
         ).toarray()
         assert np.isclose(obs_val, obs_val_tapered)
         assert qml.equal(tapered_obs, tapered_ps)
+
+    # if op_arithmetic:
+    #     disable_new_opmath()
 
 
 @pytest.mark.parametrize(

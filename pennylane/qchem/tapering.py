@@ -25,7 +25,7 @@ import scipy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli import simplify, pauli_sentence
-from pennylane.pauli.utils import _binary_matrix, _binary_matrix_from_pws
+from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
 from pennylane.operation import active_new_opmath
@@ -611,23 +611,22 @@ def _build_generator(operation, wire_order, op_gen=None):
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
-    else:  # check that user-provided generator is correct
-        coeffs = 1.0
 
-        if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
-            coeffs = functools.reduce(
-                lambda i, j: i * j, operation.parameters
-            )  # coeffs from operation
+    # check that user-provided generator is correct
+    coeffs = 1.0
 
-        mat1 = scipy.linalg.expm(1j * qml.matrix(op_gen, wire_order=wire_order) * coeffs)
-        mat2 = qml.matrix(operation, wire_order=wire_order)
-        phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
-            np.nonzero(np.round(mat1, 10))
-        ]
-        if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
-            raise ValueError(
-                f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
-            )
+    if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
+        coeffs = functools.reduce(lambda i, j: i * j, operation.parameters)  # coeffs from operation
+
+    mat1 = scipy.linalg.expm(1j * qml.matrix(op_gen, wire_order=wire_order) * coeffs)
+    mat2 = qml.matrix(operation, wire_order=wire_order)
+    phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
+        np.nonzero(np.round(mat1, 10))
+    ]
+    if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
+        raise ValueError(
+            f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
+        )
 
     return op_gen
 
