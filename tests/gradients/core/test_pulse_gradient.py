@@ -708,7 +708,13 @@ class TestParshiftAndIntegrate:
         with pytest.raises(NotImplementedError, match=_match):
             # Dummy input values that are barely used before raising the error.
             _parshift_and_integrate(
-                [], [], [], [], single_measure=False, has_partitioned_shots=True, use_broadcasting=True
+                [],
+                [],
+                [],
+                [],
+                single_measure=False,
+                has_partitioned_shots=True,
+                use_broadcasting=True,
             )
 
 
