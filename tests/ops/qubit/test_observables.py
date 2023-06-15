@@ -283,7 +283,7 @@ class TestHermitian:
 
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
 
-        assert spy.assert_called_once()
+        assert spy.call_count == 1
 
         key = tuple(observable.flatten().tolist())
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
@@ -294,7 +294,7 @@ class TestHermitian:
 
         # calling it again doesn't recalculate or add anything to _eigs (uses cached value)
         _ = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
-        assert spy.assert_called_once()
+        assert spy.call_count == 1
         assert len(qml.Hermitian._eigs) == 1
 
     def test_hermitian_compute_diagonalizing_gates(self, tol):
