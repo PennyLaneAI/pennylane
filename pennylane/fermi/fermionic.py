@@ -189,7 +189,7 @@ class FermiSentence(dict):
         r"""String representation of a FermiSentence."""
         if len(self) == 0:
             return "0 * 'I'"
-        return "\n+ ".join(f"{coeff} * '{fw.to_string()}'" for fw, coeff in self.items())
+        return "\n+ ".join(f"{coeff} * {fw.to_string()}" for fw, coeff in self.items())
 
     def __repr__(self):
         r"""Terminal representation for FermiSentence."""
