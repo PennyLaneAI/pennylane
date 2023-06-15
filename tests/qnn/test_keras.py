@@ -756,7 +756,7 @@ def test_no_attribute():
 
 
 @pytest.mark.tf
-def test_batch_input_single_measure():
+def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
     dev = qml.device("default.qubit.tf", wires=4)
 
@@ -778,11 +778,14 @@ def test_batch_input_single_measure():
     assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
-        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=1e-5)
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
+
+    # reset back to the old name
+    KerasLayer.set_input_argument("inputs")
 
 
 @pytest.mark.tf
-def test_batch_input_multi_measure():
+def test_batch_input_multi_measure(tol):
     """Test input batching in keras for multiple measurements"""
     dev = qml.device("default.qubit.tf", wires=4)
 
@@ -805,7 +808,7 @@ def test_batch_input_multi_measure():
 
     for x_, r in zip(x, res):
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
-        assert qml.math.allclose(r, exp)
+        assert qml.math.allclose(r, exp, atol=tol)
 
     # reset back to the old name
     KerasLayer.set_input_argument("inputs")

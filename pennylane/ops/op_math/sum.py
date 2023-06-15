@@ -34,7 +34,7 @@ def sum(*summands, do_queue=None, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
@@ -91,7 +91,7 @@ class Sum(CompositeOp):
     r"""Symbolic operator representing the sum of operators.
 
     Args:
-        summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
+        *summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued.
@@ -176,11 +176,12 @@ class Sum(CompositeOp):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return (
-            all(s.is_hermitian for s in self)
-            if self._pauli_rep is None
-            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
-        )
+        if self._pauli_rep is not None:
+            coeffs_list = list(self._pauli_rep.values())
+            if not math.is_abstract(coeffs_list[0]):
+                return not any(math.iscomplex(c) for c in coeffs_list)
+
+        return all(s.is_hermitian for s in self)
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.

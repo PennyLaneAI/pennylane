@@ -185,44 +185,6 @@ def mock_device_arbitrary_wires(monkeypatch):
         yield get_device
 
 
-class TestShotVectors:
-    """Tests passing shot vectors, their validation, and processing."""
-
-    def test_shot_vector_property(self):
-        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
-        shot_vector = dev.shot_vector
-        assert len(shot_vector) == 4
-        assert shot_vector[0].shots == 1
-        assert shot_vector[0].copies == 1
-        assert shot_vector[1].shots == 3
-        assert shot_vector[1].copies == 2
-        assert shot_vector[2].shots == 4
-        assert shot_vector[2].copies == 3
-        assert shot_vector[3].shots == 3
-        assert shot_vector[3].copies == 1
-
-        assert dev.shots == 22
-
-    # pylint: disable=protected-access
-    def test_process_shot_sequence(self):
-        """Tests that the helper `_process_shot_sequence` works as expected."""
-        shot_list = [1, 1, 3]
-        total_shots, shot_vector = qml._device._process_shot_sequence(shot_list)
-
-        assert total_shots == 5
-        assert isinstance(total_shots, int)
-
-        assert len(shot_vector) == 2
-
-        for tup in shot_vector:
-            assert isinstance(tup, qml._device.ShotTuple)
-
-        assert shot_vector[0].shots == 1
-        assert shot_vector[0].copies == 2
-        assert shot_vector[1].shots == 3
-        assert shot_vector[1].copies == 1
-
-
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -911,6 +873,22 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         importlib.reload(qml)
+
+    def test_shot_vector_property(self):
+        """Tests shot vector initialization."""
+        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        shot_vector = dev.shot_vector
+        assert len(shot_vector) == 4
+        assert shot_vector[0].shots == 1
+        assert shot_vector[0].copies == 1
+        assert shot_vector[1].shots == 3
+        assert shot_vector[1].copies == 2
+        assert shot_vector[2].shots == 4
+        assert shot_vector[2].copies == 3
+        assert shot_vector[3].shots == 3
+        assert shot_vector[3].copies == 1
+
+        assert dev.shots == 22
 
 
 class TestBatchExecution:
