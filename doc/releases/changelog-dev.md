@@ -109,6 +109,7 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
   the hash of any operators/measurement processes.
@@ -216,6 +217,10 @@
   the respective docstrings.
   [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
 
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
@@ -254,8 +259,14 @@
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
+* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
+
 * Updated repr for ParametrizedHamiltonian.
-[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+* The new device interface is integrated with `qml.execute` for Tensorflow.
+  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
 <h3>Breaking changes 💔</h3>
 
@@ -311,6 +322,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+  [(#4243)](https://github.com/PennyLaneAI/pennylane/pull/4243)
+
 * The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
   `qml.ops.op_math.Adjoint.__new__`.
   [(#4231)](https://github.com/PennyLaneAI/pennylane/pull/4231)
@@ -323,6 +337,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
 
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
