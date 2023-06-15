@@ -2364,16 +2364,15 @@ class TestHamiltonianSupport:
 class TestSumSupport:
     """Tests for custom Sum support in DefaultQubit."""
 
-    expected_grad = [-np.sin(1.3), np.cos(1.4)]
+    expected_grad = [-np.sin(1.3), np.cos(1.3)]
 
     @staticmethod
     def circuit(y, z):
         qml.RX(1.3, 0)
-        qml.RX(1.4, 1)
         return qml.expval(
             qml.sum(
                 qml.s_prod(y, qml.PauliY(0)),
-                qml.s_prod(z, qml.PauliZ(1)),
+                qml.s_prod(z, qml.PauliZ(0)),
             )
         )
 
@@ -2388,7 +2387,7 @@ class TestSumSupport:
     @pytest.mark.autograd
     def test_trainable_autograd(self):
         """Tests that coeffs passed to a sum are trainable with autograd."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
         y, z = np.array([1.1, 2.2])
         actual = qml.grad(qnode)(y, z)
@@ -2399,7 +2398,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with torch."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="torch")
         y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
         qnode(y, z).backward()
@@ -2411,7 +2410,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with tf."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
         y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
         with tf.GradientTape() as tape:
@@ -2424,7 +2423,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with jax."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="jax")
         y, z = jax.numpy.array([1.1, 2.2])
         actual = jax.grad(qnode, argnums=[0, 1])(y, z)
