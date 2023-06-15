@@ -19,7 +19,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.utils import simplify
 from pennylane.operation import active_new_opmath
-from pennylane.fermi.conversion import jordan_wigner
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
@@ -141,3 +140,28 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         return ps.operation()
 
     return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
+
+
+def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-branches
+    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
+
+    For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
+    [2, 0]. The two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
+    as [4, 3, 2, 1] with ``notation='physicist'``. If ``notation`` is set to ``'chemist'``, the
+    two-body operator [4, 3, 2, 1] is constructed as :math:`a_4^\dagger a_3 a_2^\dagger a_1`.
+
+    Args:
+        op (list[int]): the fermionic operator
+        notation (str): notation specifying the order of the two-body fermionic operators
+
+    Returns:
+        tuple(list[complex], list[Operation]): list of coefficients and qubit operators
+
+    **Example**
+
+    >>> f  = [0, 0]
+    >>> q = jordan_wigner(f)
+    >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
+    """
+    return qml.fermi.jordan_wigner(op, notation)
