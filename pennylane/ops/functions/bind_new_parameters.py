@@ -45,12 +45,11 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         .Operator: New operator with updated parameters
     """
     try:
-        new_op = op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+        return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
     except:
         new_op = copy.deepcopy(op)
         op.data = tuple(params)
-
-    return new_op
+        return new_op
 
 
 @bind_new_parameters.register
