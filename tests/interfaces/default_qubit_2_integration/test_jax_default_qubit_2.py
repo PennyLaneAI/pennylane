@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jax specific tests for execute and default qubit 2."""
-# pylint: disable=invalid-sequence-index
 import pytest
 import numpy as np
 
@@ -679,10 +678,8 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
-        if execute_kwargs["gradient_fn"] != param_shift:
-            pytest.skip("trainable hamiltonians only supported with parameter shift")
-        if shots:
-            pytest.xfail("Something is going wrong here when there's finite shots.")
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("trainable hamiltonians not supported with adjoint")
         if use_new_op_math:
             pytest.skip("parameter shift derivatives do not yet support sums.")
 

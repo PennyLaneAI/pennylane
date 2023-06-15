@@ -268,16 +268,17 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         x = jax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(x[0, 1], wires=1)
-            qml.RZ(x[0, 2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x[1, 0], wires=1)
-            qml.RY(x[1, 1], wires=0)
+        ops = [
+            qml.RX(x[0, 0], wires=0),
+            qml.RY(x[0, 1], wires=1),
+            qml.RZ(x[0, 2], wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RX(x[1, 0], wires=1),
+            qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=1)
+        ]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can use the ``jvp`` function to compute the Jacobian vector product,
     given a tangent vector ``tangent``:
@@ -300,7 +301,6 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = len(tape.measurements) > 1
-    shots = Shots(shots)
 
     try:
         # if qml.math.allclose(qml.math.stack(tangent), 0):
@@ -321,8 +321,7 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         pass
 
     gradient_kwargs = gradient_kwargs or {}
-    if shots is None:
-        shots = tape.shots
+    shots = tape.shots if shots is None else Shots(shots)
     gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
@@ -373,23 +372,20 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
         x = jax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 
-        def ansatz(x):
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(x[0, 1], wires=1)
-            qml.RZ(x[0, 2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x[1, 0], wires=1)
-            qml.RY(x[1, 1], wires=0)
+        ops = [
+            qml.RX(x[0, 0], wires=0),
+            qml.RY(x[0, 1], wires=1),
+            qml.RZ(x[0, 2], wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RX(x[1, 0], wires=1),
+            qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
+        ]
+        measurements1 = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        tape1 = qml.tape.QuantumTape(ops, measurements1)
 
-        with qml.tape.QuantumTape() as tape1:
-            ansatz(x)
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=1)
-
-        with qml.tape.QuantumTape() as tape2:
-            ansatz(x)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        measurements2 = [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))]
+        tape2 = qml.tape.QuantumTape(ops, measurements2)
 
         tapes = [tape1, tape2]
 
