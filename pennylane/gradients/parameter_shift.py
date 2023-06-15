@@ -389,9 +389,9 @@ def expval_param_shift(
                 saving a quantum evaluation.
             broadcast (bool): Whether or not to use parameter broadcasting to create the
                 a single broadcasted tape per operation instead of one tape per shift angle.
-            shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
-                outputted by this transform. Note that this argument doesn't influence the shots used for tape
-                execution, but provides information to the transform about the shots.
+            shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will be
+                used to execute the tapes outputted by this transform. Note that this argument doesn't influence
+                the shots used for tape execution, but provides information to the transform about the shots.
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing a
@@ -1408,7 +1408,7 @@ def param_shift(
     if unsupported_params:
         # If shots were provided, assume that the fallback function also takes that arg
 
-        fallback_fn = partial(fallback_fn, shots=shots) if shots.total_shots else fallback_fn
+        fallback_fn = partial(fallback_fn, shots=shots) if shots else fallback_fn
         if not argnum:
             return fallback_fn(tape)
 
