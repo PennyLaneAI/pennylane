@@ -130,7 +130,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert prod_op.id == id
         assert prod_op.queue_idx is None
 
-        assert prod_op.data == [0.23]
+        assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
         assert prod_op.num_params == 1
 
