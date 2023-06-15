@@ -277,11 +277,16 @@ class TestParshiftAndIntegrate:
     @pytest.mark.parametrize("par_shape", [(), (3,), (2, 7)])
     @pytest.mark.parametrize("num_shifts", [2, 5])
     @pytest.mark.parametrize("num_split_times", [1, 7])
-    @pytest.mark.parametrize("use_broadcasting", [False, True])
     def test_single_measure_single_shots(
-        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape, use_broadcasting
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
     ):
-        """Test with single_measure=True and shot_vector=False."""
+        """Test that ``_parshift_and_integrate`` works with results for a single measurement
+        per shift and splitting time, and with a single setting of shots. This corresponds to
+        ``single_measure=True and shot_vector=False``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        """
         from jax import numpy as jnp
 
         np.random.seed(3751)
@@ -294,20 +299,12 @@ class TestParshiftAndIntegrate:
             cjacs = np.random.random(cjac_shape)
             psr_coeffs = np.random.random(num_shifts)
 
-        if use_broadcasting:
-            results_shape = (num_shifts * multi_term, (num_split_times + 2)) + meas_shape
-            new_results_shape = (
-                multi_term,
-                num_shifts,
-                num_split_times + 2,
-            ) + meas_shape
-        else:
-            results_shape = (num_split_times * num_shifts * multi_term,) + meas_shape
-            new_results_shape = (
-                multi_term,
-                num_split_times,
-                num_shifts,
-            ) + meas_shape
+        results_shape = (num_split_times * num_shifts * multi_term,) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_split_times,
+            num_shifts,
+        ) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -319,7 +316,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs,
             single_measure=True,
             shot_vector=False,
-            use_broadcasting=use_broadcasting,
+            use_broadcasting=False,
         )
 
         assert isinstance(res, jnp.ndarray)
@@ -329,14 +326,70 @@ class TestParshiftAndIntegrate:
         _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
         _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
         meas_letter = "" if meas_shape == () else "a"
-        if use_broadcasting:
-            # Slice away excess results
-            _results = _results[:, :, 1:-1]
-            # With broadcasting, the axes of different shifts and splitting times are
-            # switched for the results tensor, compared to without broadcasting.
-            contraction = f"ms,mst{meas_letter},mt...->{meas_letter}..."
+        contraction = f"ms,mts{meas_letter},mt...->{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+        assert np.allclose(res, expected * prefactor)
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 7)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 7])
+    def test_single_measure_single_shots_broadcast(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for a single measurement
+        per shift and splitting time, and with a single setting of shots. This corresponds to
+        ``single_measure=True and shot_vector=False``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        This is the variant of the previous test that uses broadcasting.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
         else:
-            contraction = f"ms,mts{meas_letter},mt...->{meas_letter}..."
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (num_shifts * multi_term, (num_split_times + 2)) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_shifts,
+            num_split_times + 2,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=True,
+            shot_vector=False,
+            use_broadcasting=True,
+        )
+
+        assert isinstance(res, jnp.ndarray)
+        assert res.shape == meas_shape + par_shape
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        # Slice away excess results
+        _results = _results[:, :, 1:-1]
+        # With broadcasting, the axes of different shifts and splitting times are
+        # switched for the results tensor, compared to without broadcasting.
+        contraction = f"ms,mst{meas_letter},mt...->{meas_letter}..."
         expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
         assert np.allclose(res, expected * prefactor)
 
@@ -345,12 +398,18 @@ class TestParshiftAndIntegrate:
     @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
     @pytest.mark.parametrize("num_shifts", [2, 5])
     @pytest.mark.parametrize("num_split_times", [1, 3])
-    @pytest.mark.parametrize("use_broadcasting", [False, True])
     def test_multi_measure_or_multi_shots(
-        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape, use_broadcasting
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
     ):
-        """Test with (single_measure=False and shot_vector=False) or
-        (single_measure=True and shot_vector=True)."""
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with a single setting of shots, or alternatively with
+        a single measurement but multiple shot settings. This corresponds to
+        ``single_measure=False and shot_vector=False`` or
+        ``single_measure=True and shot_vector=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        """
         from jax import numpy as jnp
 
         np.random.seed(3751)
@@ -365,29 +424,16 @@ class TestParshiftAndIntegrate:
             cjacs = np.random.random(cjac_shape)
             psr_coeffs = np.random.random(num_shifts)
 
-        if use_broadcasting:
-            results_shape = (
-                num_shifts * multi_term,
-                num_meas_or_shots,
-                (num_split_times + 2),
-            ) + meas_shape
-            new_results_shape = (
-                multi_term,
-                num_shifts,
-                num_meas_or_shots,
-                num_split_times + 2,
-            ) + meas_shape
-        else:
-            results_shape = (
-                num_split_times * num_shifts * multi_term,
-                num_meas_or_shots,
-            ) + meas_shape
-            new_results_shape = (
-                multi_term,
-                num_split_times,
-                num_shifts,
-                num_meas_or_shots,
-            ) + meas_shape
+        results_shape = (
+            num_split_times * num_shifts * multi_term,
+            num_meas_or_shots,
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_split_times,
+            num_shifts,
+            num_meas_or_shots,
+        ) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -399,7 +445,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs,
             single_measure=False,
             shot_vector=False,
-            use_broadcasting=use_broadcasting,
+            use_broadcasting=False,
         )
         res1 = _parshift_and_integrate(
             results,
@@ -408,21 +454,14 @@ class TestParshiftAndIntegrate:
             psr_coeffs,
             single_measure=True,
             shot_vector=True,
-            use_broadcasting=use_broadcasting,
+            use_broadcasting=False,
         )
 
         _results = np.reshape(results, new_results_shape)
         _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
         _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
         meas_letter = "" if meas_shape == () else "a"
-        if use_broadcasting:
-            # Slice away excess results
-            _results = _results[:, :, :, 1:-1]
-            # With broadcasting, the axes of different shifts and splitting times are
-            # switched for the results tensor, compared to without broadcasting.
-            contraction = f"ms,msnt{meas_letter},mt...->n{meas_letter}..."
-        else:
-            contraction = f"ms,mtsn{meas_letter},mt...->n{meas_letter}..."
+        contraction = f"ms,mtsn{meas_letter},mt...->n{meas_letter}..."
         expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
 
         for res in [res0, res1]:
@@ -433,25 +472,29 @@ class TestParshiftAndIntegrate:
 
             assert np.allclose(np.stack(res), expected * prefactor)
 
-    # TODO: Once #2690 is resolved and the corresponding error is removed, uncomment the
-    # following parametrization and remove the hardcoded value below.
-    # @pytest.mark.parametrize("use_broadcasting", [False, True])
     @pytest.mark.parametrize("multi_term", [1, 4])
     @pytest.mark.parametrize("meas_shape", [(), (4,)])
     @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
     @pytest.mark.parametrize("num_shifts", [2, 5])
     @pytest.mark.parametrize("num_split_times", [1, 3])
-    def test_multi_measure_multi_shots(
+    def test_multi_measure_or_multi_shots_broadcast(
         self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
     ):
-        """Test with single_measure=False and shot_vector=True."""
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with a single setting of shots, or alternatively with
+        a single measurement but multiple shot settings. This corresponds to
+        ``single_measure=False and shot_vector=False`` or
+        ``single_measure=True and shot_vector=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        This is the variant of the previous test that uses broadcasting.
+        """
         from jax import numpy as jnp
 
         np.random.seed(3751)
 
-        num_shots = 3
-        num_meas = 5
-        use_broadcasting = False
+        num_meas_or_shots = 5
 
         cjac_shape = (num_split_times,) + par_shape
         if multi_term > 1:
@@ -461,33 +504,101 @@ class TestParshiftAndIntegrate:
             cjacs = np.random.random(cjac_shape)
             psr_coeffs = np.random.random(num_shifts)
 
-        if use_broadcasting:
-            results_shape = (
-                num_shifts * multi_term,
-                num_shots,
-                num_meas,
-                (num_split_times + 2),
-            ) + meas_shape
-            new_results_shape = (
-                multi_term,
-                num_shifts,
-                num_shots,
-                num_meas,
-                num_split_times + 2,
-            ) + meas_shape
+        results_shape = (
+            num_shifts * multi_term,
+            num_meas_or_shots,
+            (num_split_times + 2),
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_shifts,
+            num_meas_or_shots,
+            num_split_times + 2,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res0 = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=False,
+            shot_vector=False,
+            use_broadcasting=True,
+        )
+        res1 = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=True,
+            shot_vector=True,
+            use_broadcasting=True,
+        )
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        # Slice away excess results
+        _results = _results[:, :, :, 1:-1]
+        # With broadcasting, the axes of different shifts and splitting times are
+        # switched for the results tensor, compared to without broadcasting.
+        contraction = f"ms,msnt{meas_letter},mt...->n{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+
+        for res in [res0, res1]:
+            assert isinstance(res, tuple)
+            assert len(res) == num_meas_or_shots
+            assert all(isinstance(r, jnp.ndarray) for r in res)
+            assert all(r.shape == meas_shape + par_shape for r in res)
+
+            assert np.allclose(np.stack(res), expected * prefactor)
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_multi_measure_multi_shots(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with multiple shot settings. This corresponds to
+        ``single_measure=False and shot_vector=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        num_shots = 3
+        num_meas = 5
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
         else:
-            results_shape = (
-                num_split_times * num_shifts * multi_term,
-                num_shots,
-                num_meas,
-            ) + meas_shape
-            new_results_shape = (
-                multi_term,
-                num_split_times,
-                num_shifts,
-                num_shots,
-                num_meas,
-            ) + meas_shape
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (
+            num_split_times * num_shifts * multi_term,
+            num_shots,
+            num_meas,
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_split_times,
+            num_shifts,
+            num_shots,
+            num_meas,
+        ) + meas_shape
         results = np.random.random(results_shape)
 
         prefactor = 0.3214
@@ -499,7 +610,7 @@ class TestParshiftAndIntegrate:
             psr_coeffs,
             single_measure=False,
             shot_vector=True,
-            use_broadcasting=use_broadcasting,
+            use_broadcasting=False,
         )
 
         assert isinstance(res, tuple)
@@ -514,17 +625,93 @@ class TestParshiftAndIntegrate:
         _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
         _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
         meas_letter = "" if meas_shape == () else "a"
-        if use_broadcasting:
-            # Slice away excess results
-            _results = _results[:, :, :, :, 1:-1]
-            # With broadcasting, the axes of different shifts and splitting times are
-            # switched for the results tensor, compared to without broadcasting.
-            contraction = f"ms,msNnt{meas_letter},mt...->Nn{meas_letter}..."
-        else:
-            contraction = f"ms,mtsNn{meas_letter},mt...->Nn{meas_letter}..."
+        contraction = f"ms,mtsNn{meas_letter},mt...->Nn{meas_letter}..."
         expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
         assert np.allclose(np.stack(res), expected * prefactor)
 
+    # TODO: Once #2690 is resolved and the corresponding error is removed,
+    # unskip the following test
+    @pytest.mark.skip("Broadcasting, shot vector and multi-measurement not supported.")
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_multi_measure_multi_shots_broadcast(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with multiple shot settings. This corresponds to
+        ``single_measure=False and shot_vector=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        This is the variant of the previous test that uses broadcasting.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        num_shots = 3
+        num_meas = 5
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (
+            num_shifts * multi_term,
+            num_shots,
+            num_meas,
+            (num_split_times + 2),
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_shifts,
+            num_shots,
+            num_meas,
+            num_split_times + 2,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=False,
+            shot_vector=True,
+            use_broadcasting=True,
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == num_shots
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == num_meas
+            assert all(isinstance(_r, jnp.ndarray) for _r in r)
+            assert all(_r.shape == meas_shape + par_shape for _r in r)
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        # Slice away excess results
+        _results = _results[:, :, :, :, 1:-1]
+        # With broadcasting, the axes of different shifts and splitting times are
+        # switched for the results tensor, compared to without broadcasting.
+        contraction = f"ms,msNnt{meas_letter},mt...->Nn{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+        assert np.allclose(np.stack(res), expected * prefactor)
+
+    # TODO: Once #2690 is resolved and the corresponding error is removed,
+    # remove the following test
     def test_raises_multi_measure_shot_vector_broadcasting(self):
         """Test that an error is raised if multiple measurements, a shot vector and broadcasting
         all are used simultaneously."""
@@ -1400,7 +1587,7 @@ class TestStochPulseGradQNodeIntegration:
         # values from https://arxiv.org/pdf/2203.06818.pdf
         timespan = 0.1
 
-        H = qml.pulse.transmon_drive(1/(2*np.pi), qml.pulse.constant, 0.0, wires=[0])
+        H = qml.pulse.transmon_drive(1 / (2 * np.pi), qml.pulse.constant, 0.0, wires=[0])
         atol = 1e-5
         dev = qml.device("default.qubit.jax", wires=1)
 
