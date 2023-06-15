@@ -175,10 +175,9 @@ def classical_shadow(wires, seed=None):
 
             dev = qml.device("default.qubit", wires=2, shots=5)
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1])
+            ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
+            measurements = [qml.classical_shadow(wires=(0,1))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
@@ -194,15 +193,11 @@ def classical_shadow(wires, seed=None):
 
             dev = qml.device("default.qubit", wires=2, shots=5)
 
-            with qml.tape.QuantumTape() as tape1:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1], seed=10)
+            measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
+            tape1 = qml.tape.QuantumTape(ops, measurements1)
 
-            with qml.tape.QuantumTape() as tape2:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1], seed=15)
+            measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
+            tape2 = qml.tape.QuantumTape(ops, measurements2)
 
         >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]

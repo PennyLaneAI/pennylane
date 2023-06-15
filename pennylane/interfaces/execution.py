@@ -379,16 +379,17 @@ def execute(
         dev = qml.device("lightning.qubit", wires=2)
 
         def cost_fn(params, x):
-            with qml.tape.QuantumTape() as tape1:
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                qml.expval(qml.PauliZ(0))
+            ops1 = [qml.RX(params[0], wires=0), qml.RY(params[1], wires=0)]
+            measurements1 = [qml.expval(qml.PauliZ(0))]
+            tape1 = qml.tape.QuantumTape(ops1, measurements1)
 
-            with qml.tape.QuantumTape() as tape2:
-                qml.RX(params[2], wires=0)
-                qml.RY(x[0], wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.probs(wires=0)
+            ops2 = [
+                qml.RX(params[2], wires=0),
+                qml.RY(x[0], wires=1),
+                qml.CNOT(wires=(0,1))
+            ]
+            measurements2 = [qml.probs(wires=0)]
+            tape2 = qml.tape.QuantumTape(ops2, measurements2)
 
             tapes = [tape1, tape2]
 
@@ -712,16 +713,17 @@ def _execute_legacy(
         dev = qml.device("lightning.qubit", wires=2)
 
         def cost_fn(params, x):
-            with qml.tape.QuantumTape() as tape1:
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                qml.expval(qml.PauliZ(0))
+            ops1 = [qml.RX(params[0], wires=0), qml.RY(params[1], wires=0)]
+            measurements1 = [qml.expval(qml.PauliZ(0))]
+            tape1 = qml.tape.QuantumTape(ops1, measurements1)
 
-            with qml.tape.QuantumTape() as tape2:
-                qml.RX(params[2], wires=0)
-                qml.RY(x[0], wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.probs(wires=0)
+            ops2 = [
+                qml.RX(params[2], wires=0),
+                qml.RY(x[0], wires=1),
+                qml.CNOT(wires=(0,1))
+            ]
+            measurements2 = [qml.probs(wires=0)]
+            tape2 = qml.tape.QuantumTape(ops2, measurements2)
 
             tapes = [tape1, tape2]
 
