@@ -126,7 +126,7 @@ class TestInitialization:
         if sum_method.__name__ == sum.__name__:
             assert sum_op.id == id
 
-        assert sum_op.data == [0.23]
+        assert sum_op.data == (0.23,)
         assert sum_op.parameters == [0.23]
         assert sum_op.num_params == 1
 
@@ -142,7 +142,7 @@ class TestInitialization:
         assert sum_op.name == "Sum"
         assert sum_op.id is None
 
-        assert sum_op.data == [0.23, 9.87]
+        assert sum_op.data == (0.23, 9.87)
         assert sum_op.parameters == [0.23, 9.87]
         assert sum_op.num_params == 2
 

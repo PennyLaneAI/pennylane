@@ -334,7 +334,7 @@ class TestConditionalOperations:
         op1 = tape.operations[0]
         assert isinstance(op1, qml.RY)
         assert op1.wires == qml.wires.Wires(0)
-        assert op1.data == [rads]
+        assert op1.data == (rads,)
 
         op2 = tape.operations[1]
         assert isinstance(op2, qml.Hadamard)
