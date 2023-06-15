@@ -1685,6 +1685,26 @@ class TestNewDeviceIntegration:
         qn(shots=10)
         assert getattr(self.dev, "shots", "not here") == "not here"
 
+    def test_shots_integration(self):
+        """Test that shots provided at call time are passed through the workflow."""
+
+        dev = experimental.DefaultQubit2()
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            return qml.sample(wires=(0, 1))
+
+        with pytest.raises(
+            qml.DeviceError, match="Analytic circuits must only contain StateMeasurements"
+        ):
+            circuit()
+
+        results = circuit(shots=10)
+        assert qml.math.allclose(results, np.zeros((10, 2)))
+
+        results = circuit(shots=20)
+        assert qml.math.allclose(results, np.zeros((20, 2)))
+
 
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
