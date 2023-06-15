@@ -432,7 +432,7 @@ class Projector(Observable):
 
     def __copy__(self):
         copied_op = self.__new__(Projector, self.data[0], self.wires)
-        copied_op.data = self.data.copy()
+        copied_op.data = copy(self.data)
         for attr, value in vars(self).items():
             if attr != "data":
                 setattr(copied_op, attr, value)
