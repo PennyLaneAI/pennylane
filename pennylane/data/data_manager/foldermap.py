@@ -12,33 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains types representing dataset parameters and the dataset
-folder map.
+Contains ``FolderMapView`` for reading the ``foldermap.json`` file in the
+datasets bucket.
 """
 
-import enum
-import json
+
 import typing
 from collections.abc import Mapping
-from functools import lru_cache
-from pathlib import Path, PurePosixPath
-from typing import (
-    Any,
-    Dict,
-    FrozenSet,
-    Hashable,
-    Iterator,
-    KeysView,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    TypedDict,
-    Union,
-)
+from pathlib import PurePosixPath
+from typing import Any, List, Literal, Optional, Tuple, Union
 
-from pennylane.data.base._lazy_modules import fsspec
-from .params import ParamName, ParamArg, ParamVal, Description
+
+from .params import Description, ParamArg, ParamName, ParamVal
 
 # Type for a dataset path, relative to the foldermap.json file
 DataPath = PurePosixPath

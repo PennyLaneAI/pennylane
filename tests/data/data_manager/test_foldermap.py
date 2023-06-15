@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :mod:`pennylane.data.data_manger.types` classes
+Tests for the :class:`pennylane.data.data_manger.FolderMapView` class.
 """
 
-from pennylane.data.data_manager.types import FolderMapView, Description
+from pennylane.data.data_manager.foldermap import FolderMapView, Description
 from pennylane.data.data_manager import DEFAULT, DataPath
 import pytest
 

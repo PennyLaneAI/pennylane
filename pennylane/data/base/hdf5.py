@@ -86,7 +86,7 @@ def copy_all(
         copy(source[key], dest, key=key, if_exists=if_exists)
 
 
-def open_hdf5_s3(s3_url: str, cache_dir: Optional[Path]) -> HDF5Group:
+def open_hdf5_s3(s3_url: str, cache_dir: Optional[Path] = None) -> HDF5Group:
     """Uses ``fsspec`` module to open the HDF5 file at ``s3_url``.
 
     This requires both ``fsspec`` and ``aiohttp`` to be installed.

@@ -28,8 +28,8 @@ import requests
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
 
-from ._params import DEFAULT, FULL, resolve_params
-from .types import DataPath, FolderMapView, ParamArg
+from .foldermap import DataPath, FolderMapView, ParamArg
+from .params import DEFAULT, FULL, format_params
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
@@ -55,27 +55,31 @@ def _get_data_struct():
 
 
 def _download_partial(
-    s3_url: str, dest: Path, attributes: typing.Iterable[str], cache_dir: Optional[Path]
+    s3_url: str, dest: Path, attributes: typing.Iterable[str], overwrite_attrs: bool
 ) -> None:
-    """Download only the requested attributes of the Dataset at ``s3_path``."""
+    """Download only the requested attributes of the Dataset at ``s3_path`` into ``dest``.
+    If a dataset already exists at ``dest``, the attributes will be loaded into
+    the existing dataset.
+    """
 
-    h5_file = open_hdf5_s3(s3_url, cache_dir=cache_dir)
-    remote_dataset = Dataset(h5_file)
-    remote_dataset.write(dest, "w", attributes)
+    remote_dataset = Dataset(open_hdf5_s3(s3_url))
+    remote_dataset.write(dest, "a", attributes, overwrite_attrs=overwrite_attrs)
+
+    del remote_dataset
 
 
 def _download_dataset(
     data_path: DataPath,
     dest: Path,
     attributes: Optional[typing.Iterable[str]],
-    cache_dir: Optional[Path],
+    force: bool = False,
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
     only requested attributes."""
     s3_path = f"{S3_URL}/{data_path}"
 
     if attributes is not None:
-        _download_partial(s3_path, dest, attributes, cache_dir)
+        _download_partial(s3_path, dest, attributes, overwrite_attrs=force)
         return
 
     with open(dest, "wb") as f:
@@ -110,31 +114,26 @@ def load(  # pylint: disable=too-many-arguments
     Returns:
         list[:class:`~pennylane.data.Dataset`]
     """
+    params = format_params(**params)
 
     folder_path = Path(folder_path)
-    if cache_dir is not None and not Path(cache_dir).is_absolute():
+    if cache_dir and not Path(cache_dir).is_absolute():
         cache_dir = folder_path / cache_dir
 
     foldermap = _get_foldermap()
-    data_struct = _get_data_struct()
 
-    data_paths = [
-        data_path for _, data_path in resolve_params(data_struct, foldermap, data_name, **params)
-    ]
-    dest_paths = [
-        local_path
-        for local_path in (folder_path / data_path for data_path in data_paths)
-        if force or not local_path.exists()
-    ]
-    if not dest_paths:
+    data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
+    if not data_paths:
         return []
+
+    dest_paths = [folder_path / data_path for data_path in data_paths]
 
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
 
     with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
         futures = [
-            pool.submit(_download_dataset, data_path, dest_path, attributes, cache_dir)
+            pool.submit(_download_dataset, data_path, dest_path, attributes, force=force)
             for data_path, dest_path in zip(data_paths, dest_paths)
         ]
         results = wait(futures, return_when=FIRST_EXCEPTION)

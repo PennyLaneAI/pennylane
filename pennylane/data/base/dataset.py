@@ -211,54 +211,55 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     def read(
         self,
-        filepath: Union[str, Path],
-        assign_to: Optional[str] = None,
+        source: Union[str, Path, "Dataset"],
+        attributes: Optional[typing.Iterable[str]] = None,
         *,
         overwrite_attrs: bool = False,
     ) -> None:
-        """Load dataset from HDF5 file at filepath. Can also accept an S3 URL.
+        """Load dataset from HDF5 file at filepath.
 
         Args:
-            filepath: Path to file containing dataset
-            assign_to: Attribute name to which the contents of the file should be assigned.
-                If this is ``None`` (the default value), the file's attributes will be assigned
-                to the current dataset
+            source: Dataset, or path to HDF5 file containing dataset, from which
+                to read attributes
+            attributes: Optional list of attributes to copy. If None, all attributes
+                will be copied.
             overwrite_attrs: Whether to overwrite attributes that already exist in this
                 dataset.
         """
-        # TODO: better error message when overwriting attribute fails
-        zgrp = hdf5.open_group(filepath, mode="r")
+        if not isinstance(source, Dataset):
+            source = Dataset.open(source, mode="r")
 
-        if assign_to:
-            hdf5.copy(zgrp, self.bind, assign_to)
-        else:
-            if_exists = "overwrite" if overwrite_attrs else "raise"
-            hdf5.copy_all(zgrp, self.bind, if_exists=if_exists)
+        source.write(self, attributes=attributes, overwrite_attrs=overwrite_attrs)
 
     def write(
         self,
-        filepath: Union[str, Path],
-        mode: Literal["w", "w-", "a"] = "w-",
+        dest: Union[str, Path, "Dataset"],
+        mode: Literal["w", "w-", "a"] = "a",
         attributes: Optional[typing.Iterable[str]] = None,
+        *,
+        overwrite_attrs: bool = False,
     ) -> None:
         """Write dataset to HDF5 file at filepath. Can also accept an S3 URL.
 
         Args:
-            filepath: Path of hdf5 file
-            mode: File handling mode. Possible values are "w-" (create, fail if file
-                exists), "w" (create, overwrite existing), and "a" (append existing,
-                create if doesn't exist). Default is "w-".
+            dest: HDF5 file, or path to HDF5 file containing dataset, to write
+                attributes to
+            mode: File handling mode, if ``source`` is a file system path. Possible
+                values are "w-" (create, fail if file exists), "w" (create, overwrite existing),
+                and "a" (append existing, create if doesn't exist). Default is "w-".
             attributes: Optional list of attributes to copy. If None, all attributes
                 will be copied.
+            overwrite_attrs: Whether to overwrite attributes that already exist in this
+                dataset.
         """
-        # TODO: better error message for 'ContainsGroupError'
-        if attributes is None:
-            attributes = self.attrs
+        attributes = attributes if attributes is not None else ()
+        if_exists = "overwrite" if overwrite_attrs else "raise"
 
-        with hdf5.open_group(filepath, mode=mode) as grp:
-            grp.attrs.update(self.bind.attrs)
-            for attr in attributes:
-                hdf5.copy(self.bind[attr], grp, attr)
+        if not isinstance(dest, Dataset):
+            dest = Dataset.open(dest, mode=mode)
+            dest.info.update(self.info)
+
+        hdf5.copy_all(self.bind, dest.bind, *attributes, if_exists=if_exists)
 
     def _validate_attrs(self) -> None:
         """Validates that ``attrs`` matched the delcared fields of this
