@@ -269,7 +269,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.data, self.ops
+        return self.parameters, self.ops
 
     @property
     def wires(self):
