@@ -132,6 +132,11 @@ class FermiWord(dict):
             return self_fs + other_fs
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
 
@@ -161,6 +166,11 @@ class FermiWord(dict):
             return self_fs + other_fs
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             other_fs = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self_fs + other_fs
 
@@ -169,6 +179,11 @@ class FermiWord(dict):
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             self_fs = FermiSentence({self: -1.0})
             other_fs = FermiSentence({FermiWord({}): other})
             return self_fs + other_fs
@@ -209,6 +224,11 @@ class FermiWord(dict):
             return FermiSentence({self: 1}) * other
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -222,6 +242,11 @@ class FermiWord(dict):
         will fail to multiply with a FermiWord"""
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             return FermiSentence({self: other})
 
         raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
@@ -293,11 +318,10 @@ class FermiSentence(dict):
             other = FermiSentence({FermiWord({}): other})
         if isinstance(other, ndarray):
             if len(other) > 1:
-                raise RuntimeError(
-                    f"Cannot add {type(other)} of length {len(other)} to a FermiSentence"
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
                 )
-            other = FermiSentence({FermiWord({}): other})
-
             other = FermiSentence({FermiWord({}): other})
 
         if isinstance(other, FermiSentence):
@@ -325,7 +349,16 @@ class FermiSentence(dict):
             other = FermiSentence({other: -1})
             return self.__add__(other)
 
-        if isinstance(other, (Number, ndarray)):
+        if isinstance(other, Number):
+            other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
+            return self.__add__(other)
+
+        if isinstance(other, ndarray):
+            if len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self.__add__(other)
 
@@ -342,6 +375,11 @@ class FermiSentence(dict):
         """
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             self_fs = FermiSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
             other_fs = FermiSentence({FermiWord({}): other})  # constant * I
             return self_fs + other_fs
@@ -368,6 +406,11 @@ class FermiSentence(dict):
             return product
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 
@@ -382,6 +425,11 @@ class FermiSentence(dict):
         will fail to multiply with a FermiSentence"""
 
         if isinstance(other, (Number, ndarray)):
+            if isinstance(other, ndarray) and len(other) > 1:
+                raise ValueError(
+                    f"Arithmetic Fermi operations can only accept an array of length 1, "
+                    f"but received {other} of length {len(other)}"
+                )
             vals = [i * other for i in self.values()]
             return FermiSentence(dict(zip(self.keys(), vals)))
 

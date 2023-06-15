@@ -410,6 +410,16 @@ class TestFermiWordArithmetic:
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
 
+    @pytest.mark.parametrize(
+        "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
+    )
+    def test_array_must_not_exceed_length_1(self, method_name):
+        with pytest.raises(
+            ValueError, match="Arithmetic Fermi operations can only accept an array of length 1"
+        ):
+            method_to_test = getattr(fw1, method_name)
+            _ = method_to_test(np.array([1, 2]))
+
 
 fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
 fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
@@ -953,3 +963,13 @@ class TestFermiSentenceArithmetic:
     def test_string_to_fermi_word_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
             string_to_fermi_word(string)  # pylint: disable=pointless-statement
+
+    @pytest.mark.parametrize(
+        "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
+    )
+    def test_array_must_not_exceed_length_1(self, method_name):
+        with pytest.raises(
+            ValueError, match="Arithmetic Fermi operations can only accept an array of length 1"
+        ):
+            method_to_test = getattr(fs1, method_name)
+            _ = method_to_test(np.array([1, 2]))
