@@ -275,7 +275,7 @@ class TestFermiWordArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         sum_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in sum.items()}
         )
         assert sum_rounded == res
 
@@ -296,7 +296,7 @@ class TestFermiWordArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         sum_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in sum.items()}
         )
         assert sum_rounded == res
 
@@ -308,7 +308,7 @@ class TestFermiWordArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         sum_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in sum.items()}
         )
         assert sum_rounded == res
 
@@ -337,7 +337,7 @@ class TestFermiWordArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         diff_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in diff.items()}
         )
 
         assert diff_rounded == res
@@ -359,7 +359,7 @@ class TestFermiWordArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         diff_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in diff.items()}
         )
         assert diff_rounded == res
 
@@ -380,7 +380,7 @@ class TestFermiWordArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         diff_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in diff.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in diff.items()}
         )
         assert diff_rounded == res
 
@@ -701,7 +701,7 @@ class TestFermiSentenceArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         sum_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in sum.items()}
         )
         assert sum_rounded == res
 
@@ -738,7 +738,7 @@ class TestFermiSentenceArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         sum_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in sum.items()}
         )
         assert sum_rounded == res
 
@@ -749,7 +749,7 @@ class TestFermiSentenceArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         sum_rounded = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in sum.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in sum.items()}
         )
         assert sum_rounded == res
 
@@ -772,7 +772,7 @@ class TestFermiSentenceArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in simplified_diff.items()}
         )
 
         assert simplified_diff == result
@@ -808,7 +808,7 @@ class TestFermiSentenceArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in simplified_diff.items()}
         )
         assert simplified_diff == result
 
@@ -839,7 +839,7 @@ class TestFermiSentenceArithmetic:
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
         simplified_diff = FermiSentence(
-            {k: round(v, 2) if isinstance(v, float) else v for k, v in simplified_diff.items()}
+            {k: round(v, 10) if isinstance(v, float) else v for k, v in simplified_diff.items()}
         )
         assert simplified_diff == result
 
