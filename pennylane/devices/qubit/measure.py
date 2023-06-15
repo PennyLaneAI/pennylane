@@ -46,10 +46,8 @@ def state_diagonalizing_gates(
     total_indices = len(state.shape) - is_state_batched
     wires = Wires(range(total_indices))
 
-    if is_state_batched:
-        return measurementprocess.process_state(math.reshape(state, (state.shape[0], -1)), wires)
-
-    return measurementprocess.process_state(math.flatten(state), wires)
+    flattened_state = math.reshape(state, (state.shape[0], -1)) if is_state_batched else math.flatten(state)
+    return measurementprocess.process_state(flattened_state, wires)
 
 
 def csr_dot_products(
@@ -75,7 +73,7 @@ def csr_dot_products(
         bra = csr_matrix(math.conj(state))
         ket = csr_matrix(state)
         new_bra = bra.dot(Hmat)
-        res = new_bra.multiply(ket).sum(axis=1)
+        res = new_bra.multiply(ket).sum(axis=1).getA()
 
     else:
         state = math.toarray(state).flatten()
