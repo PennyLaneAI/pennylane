@@ -186,7 +186,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def data(self):
-        return [self.scalar, *self.base.data]
+        return (self.scalar, *self.base.data)
 
     @data.setter
     def data(self, new_data):
