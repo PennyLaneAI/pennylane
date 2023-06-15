@@ -906,7 +906,7 @@ class DefaultQubit(QubitDevice):
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
-        """Reset the device."""
+        """Reset the device"""
         super().reset()
 
         # init the state vector to |00..0>
