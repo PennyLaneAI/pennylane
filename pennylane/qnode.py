@@ -445,14 +445,7 @@ class QNode:
     def __repr__(self):
         """String representation."""
         if isinstance(self.device, qml.devices.experimental.Device):
-            output = (
-                f"<QNode: function={self.func},"
-                f"\n\tdevice={self.device},"
-                f"\n\tinterface={self.interface},"
-                f"\n\tdiff_method={self.diff_method},"
-                f"\n\texecute_kwargs={self.execute_kwargs}\n>"
-            )
-            return output
+            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
 
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
         return detail.format(
@@ -749,7 +742,7 @@ class QNode:
         else:
             config = qml.devices.experimental.ExecutionConfig(gradient_method="device")
             if device.supports_derivatives(config):
-                return True
+                return "device", {}, device
             name = device.name
 
         raise qml.QuantumFunctionError(

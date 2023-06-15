@@ -21,7 +21,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QNode
-from pennylane.devices.experimental import Device, DefaultQubit2
+from pennylane.devices import experimental
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
@@ -1571,20 +1571,139 @@ class TestSpecs:
             assert info["device_name"] == "default.qubit.autograd"
 
 
-class CustomDevice(Device):
-    def execute(self, tape, config):
-        return 0
+class CustomDevice(experimental.Device):
+    """A null device that just returns 0."""
+
+    def __repr__(self):
+        return "CustomDevice"
+
+    def execute(self, tape, execution_config=None):
+        return (0,)
 
 
 class TestNewDeviceIntegration:
+    """Basic tests for integration of the experimental device interface and the QNode."""
+
+    dev = CustomDevice()
+
     def test_initialization(self):
+        """Test that a qnode can be initialized with the new device without error."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = QNode(f, self.dev)
+        assert qnode.device is self.dev
+
+    def test_repr(self):
+        """Test that the repr works with the new device."""
 
         dev = CustomDevice()
 
         def f():
             return qml.expval(qml.PauliZ(0))
 
-        qnode = QNode(f, dev)
+        qnode = QNode(f, self.dev)
+        assert repr(qnode) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
+
+    def test_get_gradient_fn_custom_device(self):
+        """Test get_gradient_fn is parameter for best for null device."""
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
+        assert gradient_fn is qml.gradients.param_shift
+        assert len(kwargs) == 0
+        assert new_dev is self.dev
+
+    def test_get_gradient_fn_default_qubit2(self):
+        """Tests the get_gradient_fn is backprop for best for default qubit2."""
+        dev = experimental.DefaultQubit2()
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
+        assert gradient_fn == "backprop"
+        assert len(kwargs) == 0
+        assert new_dev is dev
+
+    def test_get_gradient_fn_default_qubit2_adjoint(self):
+        """Test that the get_gradient_fn and _validate_adjoint_methods work for default qubit 2."""
+        dev = experimental.DefaultQubit2()
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "adjoint")
+        assert gradient_fn == "adjoint"
+        assert len(kwargs) == 0
+        assert new_dev is dev
+
+        gradient_fn, kwargs, new_dev = QNode._validate_adjoint_method(dev)
+        assert gradient_fn == "adjoint"
+        assert len(kwargs) == 0
+        assert new_dev is dev
+
+    def test_get_gradient_fn_custom_dev_adjoint(self):
+        """Test that an error is raised if adjoint is requested for a device that does not support it."""
+        with pytest.raises(ValueError, match=r"The CustomDevice device does not support."):
+            QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
+
+        with pytest.raises(ValueError, match=r"The CustomDevice device does not support."):
+            QNode._validate_adjoint_method(self.dev)
+
+    def test_error_for_backprop_with_custom_device(self):
+        """Test that an error is raised when backprop is requested for a device that does not support it."""
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
+        ):
+            QNode.get_gradient_fn(self.dev, "autograd", "backprop")
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
+        ):
+            QNode._validate_backprop_method(self.dev, "autograd")
+
+    def test_custom_device_that_supports_backprop(self):
+        """Test that a custom device and designate that it supports backprop derivatives."""
+
+        class BackpropDevice(experimental.Device):
+            """A device that says it supports backpropagation."""
+
+            def execute(self, tapes, config):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
+                return execution_config.gradient_method == "backprop"
+
+        dev = BackpropDevice()
+        gradient_fn, kwargs, new_dev = QNode._validate_backprop_method(dev, "torch")
+        assert gradient_fn == "backprop"
+        assert kwargs == {}
+        assert new_dev is dev
+
+    def test_custom_device_with_device_derivative(self):
+        """Test that a custom device can specify that it supports device derivatives."""
+
+        class DerivativeDevice(experimental.Device):
+            """A device that says it supports device derivatives."""
+
+            def execute(self, tapes, config):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
+                return execution_config.gradient_method == "device"
+
+        dev = DerivativeDevice()
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
+        assert gradient_fn == "device"
+        assert kwargs == {}
+        assert new_dev is dev
+
+        gradient_fn, kwargs, new_dev = QNode._validate_device_method(dev)
+        assert gradient_fn == "device"
+        assert kwargs == {}
+        assert new_dev is dev
+
+    def test_shots_not_set_on_device(self):
+        """Test that shots are not set on the device when override shots are passed on a call."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = QNode(f, self.dev)
+        qnode(shots=10)
+        assert getattr(self.dev, "shots", "not here") == "not here"
 
 
 class TestTapeExpansion:

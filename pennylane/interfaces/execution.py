@@ -512,7 +512,16 @@ def execute(
 
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing
-    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    if new_device_interface:
+
+        def device_execution_with_config(tapes):
+            return device.execute(tapes, execution_config=config)
+
+        execute_fn = qml.interfaces.cache_execute(
+            device_execution_with_config, cache, expand_fn=expand_fn
+        )
+    else:
+        execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
 
     _grad_on_execution = False
 
