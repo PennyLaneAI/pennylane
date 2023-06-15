@@ -297,6 +297,10 @@
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
+* The `pennylane.transforms.qcut` module now uses `(op, id(op))` as nodes in directed multigraphs that are used within
+  the circuit cutting workflow instead of `op`. This change removes the dependency of the module on the hash of operators.
+  [(#4227)](https://github.com/PennyLaneAI/pennylane/pull/4227)
+
 * `Operator.data` now returns a `tuple` instead of a `list`.
   [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
 
