@@ -175,7 +175,7 @@ class Adjoint(SymbolicOp):
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
     (PauliX(wires=[0]), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
-    [1.234]
+    (1.234,)
 
     .. details::
         :title: Developer Details
@@ -220,6 +220,8 @@ class Adjoint(SymbolicOp):
         >>> Adjoint(op).__class__ is Adjoint(op).__class__
         True
         >>> type(Adjoint(op)) == type(Adjoint(op))
+        True
+        >>> isinstance(Adjoint(op), type(Adjoint(op)))
         True
         >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
         True
