@@ -44,7 +44,7 @@ class TestInitialization:
 
         assert op.num_params == 1
         assert op.parameters == [1]
-        assert op.data == [1]
+        assert op.data == (1,)
 
         assert op.wires == qml.wires.Wires("a")
 
@@ -63,7 +63,7 @@ class TestInitialization:
 
         assert op.num_params == 1
         assert op.parameters == [coeff]
-        assert op.data == [coeff]
+        assert op.data == (coeff,)
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
@@ -81,7 +81,7 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 2
-        assert op.data == [coeff, base_coeff]
+        assert op.data == (coeff, base_coeff)
 
         assert op.wires == qml.wires.Wires(5)
 
@@ -110,14 +110,14 @@ class TestProperties:
         base = qml.RX(phi, wires=0)
         op = Exp(base, coeff)
 
-        assert op.data == [coeff, phi]
+        assert op.data == (coeff, phi)
 
         new_phi = np.array(0.1234)
         new_coeff = np.array(3.456)
-        op.data = [new_coeff, new_phi]
+        op.data = (new_coeff, new_phi)
 
-        assert op.data == [new_coeff, new_phi]
-        assert op.base.data == [new_phi]
+        assert op.data == (new_coeff, new_phi)
+        assert op.base.data == (new_phi,)
         assert op.scalar == new_coeff
 
     # pylint: disable=protected-access
