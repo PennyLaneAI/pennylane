@@ -106,9 +106,9 @@ def spsa_grad(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
-            outputted by this transform. Note that this argument doesn't influence the shots used for tape execution,
-            but provides information about the shots.
+        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that
+            will be used to execute the tapes outputted by this transform. Note that this argument doesn't
+            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -275,6 +275,7 @@ def spsa_grad(
             sampler_seed=sampler_seed,
         )
 
+    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 
@@ -417,9 +418,9 @@ def _spsa_grad_legacy(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the
-            tapes outputted by this transform. Note that this argument doesn't influence the shots used for tape
-            execution, but provides information about the shots.
+        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will
+            be used to execute the tapes outputted by this transform. Note that this argument doesn't
+            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.

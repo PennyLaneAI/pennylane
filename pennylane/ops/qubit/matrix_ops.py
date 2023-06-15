@@ -87,7 +87,9 @@ class QubitUnitary(Operation):
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
+            recorded when created in a tape context.
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
@@ -119,7 +121,7 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, do_queue=True, id=None, unitary_check=False
+        self, U, wires, do_queue=None, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
@@ -184,7 +186,7 @@ class QubitUnitary(Operation):
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
 
-        See :func:`~.transforms.zyz_decomposition` and :func:`~.transforms.two_qubit_decomposition`
+        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.transforms.two_qubit_decomposition`
         for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
@@ -211,7 +213,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
+            return qml.transforms.decompositions.one_qubit_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -433,7 +435,9 @@ class BlockEncode(Operation):
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     Raises:
@@ -494,7 +498,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, do_queue=True, id=None):
+    def __init__(self, A, wires, do_queue=None, id=None):
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])
@@ -534,8 +538,8 @@ class BlockEncode(Operation):
         .. seealso:: :meth:`~.BlockEncode.matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
 
         Returns:

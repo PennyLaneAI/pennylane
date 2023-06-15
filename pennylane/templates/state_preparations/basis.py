@@ -46,13 +46,16 @@ class BasisStatePreparation(Operation):
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
-        print(circuit(basis_state)) # [ 1. -1. -1.  1.]
+
+    >>> print(circuit(basis_state))
+    [ 1. -1. -1.  1.]
+
     """
     num_params = 1
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, basis_state, wires, do_queue=True, id=None):
+    def __init__(self, basis_state, wires, do_queue=None, id=None):
         basis_state = qml.math.stack(basis_state)
 
         # check if the `basis_state` param is batched

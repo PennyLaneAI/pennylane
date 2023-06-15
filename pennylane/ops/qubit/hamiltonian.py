@@ -174,7 +174,7 @@ class Hamiltonian(Observable):
         grouping_type=None,
         method="rlf",
         id=None,
-        do_queue=True,
+        do_queue=None,
     ):
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -269,7 +269,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.coeffs, self.ops
+        return self.data, self.ops
 
     @property
     def wires(self):

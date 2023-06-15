@@ -33,10 +33,10 @@ devices = [
 interfaces = [
     "autograd",
     "torch",
-    "tf",
+    "tensorflow",
     "jax",
 ]
-wires_list = [[0], [1], [0, 1]]
+wires_list = [[0], [1], [0, 1], [1, 0]]
 check_state = [False, True]
 
 
@@ -54,20 +54,30 @@ class TestDensityMatrixQNode:
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
+            qml.PauliX(0)
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
         density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(angle)
 
         def expected_density_matrix(x, wires):
-            if wires == [0] or wires == [1]:
+            if wires == [0]:
+                return [[np.sin(x / 2) ** 2, 0], [0, np.cos(x / 2) ** 2]]
+            if wires == [1]:
                 return [[np.cos(x / 2) ** 2, 0], [0, np.sin(x / 2) ** 2]]
             elif wires == [0, 1]:
                 return [
-                    [np.cos(x / 2) ** 2, 0, 0, 0.0 + np.cos(x / 2) * np.sin(x / 2) * 1j],
                     [0, 0, 0, 0],
+                    [0, np.sin(x / 2) ** 2, 0.0 - np.cos(x / 2) * np.sin(x / 2) * 1j, 0],
+                    [0, 0.0 + np.cos(x / 2) * np.sin(x / 2) * 1j, np.cos(x / 2) ** 2, 0],
                     [0, 0, 0, 0],
-                    [0.0 - np.cos(x / 2) * np.sin(x / 2) * 1j, 0, 0, np.sin(x / 2) ** 2],
+                ]
+            elif wires == [1, 0]:
+                return [
+                    [0, 0, 0, 0],
+                    [0, np.cos(x / 2) ** 2, 0.0 + np.cos(x / 2) * np.sin(x / 2) * 1j, 0],
+                    [0, 0.0 - np.cos(x / 2) * np.sin(x / 2) * 1j, np.sin(x / 2) ** 2, 0],
+                    [0, 0, 0, 0],
                 ]
 
         assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
@@ -139,3 +149,49 @@ class TestDensityMatrixQNode:
 
         density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(0.5)
         assert density_matrix.dtype == c_dtype
+
+
+class TestBroadcasting:
+    """Test that the reduced_dm transform supports broadcasting"""
+
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_sv_broadcast(self, device, interface, tol):
+        """Test that broadcasting works for circuits returning state vectors"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.PauliX(0)
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        x = qml.math.asarray([0.4, 0.6, 0.8], like=interface)
+        density_matrix = qml.qinfo.reduced_dm(circuit, wires=[0])(x)
+
+        expected = np.zeros((3, 2, 2))
+        expected[:, 0, 0] = np.sin(x / 2) ** 2
+        expected[:, 1, 1] = np.cos(x / 2) ** 2
+
+        assert qml.math.allclose(expected, density_matrix, atol=tol)
+
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_dm_broadcast(self, device, interface, tol):
+        """Test that broadcasting works for circuits returning density matrices"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.PauliX(0)
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.density_matrix(wires=[0, 1])
+
+        x = qml.math.asarray([0.4, 0.6, 0.8], like=interface)
+        density_matrix = qml.qinfo.reduced_dm(circuit, wires=[0])(x)
+
+        expected = np.zeros((3, 2, 2))
+        expected[:, 0, 0] = np.sin(x / 2) ** 2
+        expected[:, 1, 1] = np.cos(x / 2) ** 2
+
+        assert qml.math.allclose(expected, density_matrix, atol=tol)

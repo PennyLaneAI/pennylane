@@ -93,11 +93,6 @@ The basic components of operators are the following:
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
       [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-    .. note::
-
-        The :meth:`.Operator.matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
-        upcoming release. It is recommended to use the higher-level :func:`~.matrix` function where possible.
-
    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
      >>> from scipy.sparse.coo import coo_matrix
@@ -154,7 +149,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         grad_method = "A"
 
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                           do_queue=True, id=None):
+                           do_queue=None, id=None):
 
             # checking the inputs --------------
 
@@ -184,6 +179,8 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # The id keyword argument allows users to give their instance a custom name.
             # The do_queue keyword argument specifies whether or not
             # the operator is queued when created in a tape context.
+            # Note that do_queue is deprecated. In the future, please use
+            # qml.QueuingManager.stop_recording().
             super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
 
         @property

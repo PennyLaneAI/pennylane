@@ -59,7 +59,7 @@ class AmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
+    def __init__(self, gamma, wires, do_queue=None, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -132,14 +132,16 @@ class GeneralizedAmplitudeDamping(Channel):
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires, do_queue=True, id=None):
+    def __init__(self, gamma, p, wires, do_queue=None, id=None):
         super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -217,7 +219,7 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
+    def __init__(self, gamma, wires, do_queue=None, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -297,7 +299,9 @@ class DepolarizingChannel(Channel):
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -305,7 +309,7 @@ class DepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
+    def __init__(self, p, wires, do_queue=None, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -372,7 +376,9 @@ class BitFlip(Channel):
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -380,7 +386,7 @@ class BitFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
+    def __init__(self, p, wires, do_queue=None, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -456,14 +462,16 @@ class ResetError(Channel):
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires, do_queue=True, id=None):
+    def __init__(self, p0, p1, wires, do_queue=None, id=None):
         super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -548,7 +556,9 @@ class PauliError(Channel):
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -568,7 +578,7 @@ class PauliError(Channel):
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, operators, p, wires=None, do_queue=True, id=None):
+    def __init__(self, operators, p, wires=None, do_queue=None, id=None):
         super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
 
         # check if the specified operators are legal
@@ -662,7 +672,9 @@ class PhaseFlip(Channel):
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -670,7 +682,7 @@ class PhaseFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
+    def __init__(self, p, wires, do_queue=None, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
@@ -714,13 +726,15 @@ class QubitChannel(Channel):
         K_list (list[array[complex]]): list of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, K_list, wires=None, do_queue=True, id=None):
+    def __init__(self, K_list, wires=None, do_queue=None, id=None):
         super().__init__(*K_list, wires=wires, do_queue=do_queue, id=id)
 
         # check all Kraus matrices are square matrices
@@ -750,7 +764,7 @@ class QubitChannel(Channel):
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
-            K_list (list[array[complex]]): list of Kraus matrices
+            *K_list (list[array[complex]]): list of Kraus matrices
 
         Returns:
             list (array): list of Kraus matrices
@@ -842,14 +856,16 @@ class ThermalRelaxationError(Channel):
         tg (float): the gate time for relaxation error
         wires (Sequence[int] or int): the wire the channel acts on
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+            immediately pushed into the Operator queue (optional).
+            This argument is deprecated, instead of setting it to ``False``
+            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_params = 4
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
+    def __init__(self, pe, t1, t2, tq, wires, do_queue=None, id=None):
         super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

@@ -1668,8 +1668,10 @@ class TestParametrizedEvolutionComparisons:
         ev2 = qml.evolve(h1)
         ev3 = qml.evolve(h2)
 
-        params = [[6.0, 7.0]]
+        params1 = [6.0, 7.0]
+        params2 = [6.0, 7.0]
+        params3 = [[6.0, 7.0]]
         t = 3
 
-        assert qml.equal(ev1(params, t), ev2(params, t))
-        assert not qml.equal(ev1(params, t), ev3(params, t))
+        assert qml.equal(ev1(params1, t), ev2(params2, t))
+        assert not qml.equal(ev1(params1, t), ev3(params3, t))

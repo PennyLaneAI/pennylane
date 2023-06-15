@@ -29,6 +29,24 @@ from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumTape, make_qscript
 
 
+def _convert_to_interface(res, interface):
+    """
+    Recursively convert res to the given interface.
+    """
+    interface = INTERFACE_MAP[interface]
+
+    if interface in ["Numpy"]:
+        return res
+
+    if isinstance(res, (list, tuple)):
+        return type(res)(_convert_to_interface(r, interface) for r in res)
+
+    if isinstance(res, dict):
+        return {k: _convert_to_interface(v, interface) for k, v in res.items()}
+
+    return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
+
+
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
@@ -439,6 +457,7 @@ class QNode:
 
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
+        self._transform_program = qml.transforms.core.TransformProgram()
 
     def __repr__(self):
         """String representation."""
@@ -464,6 +483,21 @@ class QNode:
 
         self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn()
+
+    @property
+    def transform_program(self):
+        """The transform program used by the QNode.
+
+        .. warning:: This is an experimental feature.
+        """
+        return self._transform_program
+
+    def add_transform(self, transform_container):
+        """Add a transform container to the transform program.
+
+        .. warning:: This is an experimental feature.
+        """
+        self._transform_program.push_back(transform_container=transform_container)
 
     def _update_gradient_fn(self):
         if self.diff_method is None:
@@ -891,6 +925,11 @@ class QNode:
             )
 
             res = res[0]
+
+            # convert result to the interface in case the qfunc has no parameters
+
+            if len(self.tape.get_parameters(trainable_only=False)) == 0:
+                res = _convert_to_interface(res, self.interface)
 
             if old_interface == "auto":
                 self.interface = "auto"

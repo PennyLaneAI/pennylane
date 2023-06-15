@@ -139,7 +139,7 @@ class QuantumPhaseEstimation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=True, id=None):
+    def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=None, id=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
