@@ -109,6 +109,7 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
   the hash of any operators/measurement processes.
