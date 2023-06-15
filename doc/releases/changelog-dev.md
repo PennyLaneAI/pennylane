@@ -169,6 +169,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+
 * `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
   [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
 
