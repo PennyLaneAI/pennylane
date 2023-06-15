@@ -576,6 +576,22 @@ class TestHamiltonianSamples:
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
+    def test_hamiltonian_expval_shot_vector(self):
+        """Test that sampling works well for Hamiltonian observables with a shot vector"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
+
+        qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
+        res = simulate(qs, rng=100)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert np.allclose(res[0], expected, atol=0.01)
+        assert np.allclose(res[1], expected, atol=0.01)
+
     def test_sum_expval(self):
         """Test that sampling works well for Sum observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -587,6 +603,22 @@ class TestHamiltonianSamples:
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
+
+    def test_sum_expval_shot_vector(self):
+        """Test that sampling works well for Sum observables with a shot vector."""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
+
+        qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
+        res = simulate(qs, rng=100)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert np.allclose(res[0], expected, atol=0.01)
+        assert np.allclose(res[1], expected, atol=0.01)
 
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""
