@@ -7,6 +7,7 @@ from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.ops import Hamiltonian
+from pennylane.ops.functions import dot
 from pennylane.pauli import pauli_sentence
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 
@@ -109,6 +110,7 @@ def test_building_hamiltonian(
     assert qubits == 2 * nact_orbs
 
 
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "h_ref_data"),
     [
@@ -208,9 +210,12 @@ def test_building_hamiltonian(
         ),
     ],
 )
-def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
+def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic):
     r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
     backend."""
+    if op_arithmetic:
+        enable_new_opmath()
+
     geometry.requires_grad = True
     args = [geometry.reshape(2, 3)]
     h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
@@ -218,20 +223,40 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     geometry.requires_grad = False
     h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", grouping_type="qwc")[0]
 
-    h_ref = Hamiltonian(h_ref_data[0], h_ref_data[1])
-
-    assert np.allclose(np.sort(h_args.coeffs), np.sort(h_ref.coeffs))
-    assert Hamiltonian(np.ones(len(h_args.coeffs)), h_args.ops).compare(
-        Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
+    h_ref = (
+        dot(h_ref_data[0], h_ref_data[1], pauli=True)
+        if op_arithmetic
+        else Hamiltonian(h_ref_data[0], h_ref_data[1])
     )
 
-    assert np.allclose(np.sort(h_noargs.coeffs), np.sort(h_ref.coeffs))
-    assert Hamiltonian(np.ones(len(h_noargs.coeffs)), h_noargs.ops).compare(
-        Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
-    )
+    if op_arithmetic:
+        disable_new_opmath()
+        h_args_ps = pauli_sentence(h_args)
+        h_noargs_ps = pauli_sentence(h_noargs)
+        h_ref_sorted_coeffs = np.sort(list(h_ref.values()))
 
-    assert h_args.coeffs.requires_grad == True
-    assert h_noargs.coeffs.requires_grad == False
+        assert set(h_args_ps) == set(h_ref)
+        assert set(h_noargs_ps) == set(h_ref)
+
+        assert np.allclose(np.sort(list(h_args_ps.values())), h_ref_sorted_coeffs)
+        assert np.allclose(np.sort(list(h_noargs_ps.values())), h_ref_sorted_coeffs)
+
+        assert all([val.requires_grad is True for val in h_args_ps.values()])
+        assert all([val.requires_grad is False for val in h_noargs_ps.values()])
+
+    else:
+        assert np.allclose(np.sort(h_args.coeffs), np.sort(h_ref.coeffs))
+        assert Hamiltonian(np.ones(len(h_args.coeffs)), h_args.ops).compare(
+            Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
+        )
+
+        assert np.allclose(np.sort(h_noargs.coeffs), np.sort(h_ref.coeffs))
+        assert Hamiltonian(np.ones(len(h_noargs.coeffs)), h_noargs.ops).compare(
+            Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
+        )
+
+        assert h_args.coeffs.requires_grad == True
+        assert h_noargs.coeffs.requires_grad == False
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])

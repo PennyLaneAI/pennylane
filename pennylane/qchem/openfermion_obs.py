@@ -977,6 +977,9 @@ def molecular_hamiltonian(
 
         if active_new_opmath():
             h_as_ps = qml.pauli.pauli_sentence(h)
+            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=need_grad)
+
+            h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
             h = (
                 qml.s_prod(0, qml.Identity(h.wires[0]))
                 if len(h_as_ps) == 0
