@@ -17,8 +17,8 @@ This module contains the functions needed for creating fermionic and qubit obser
 # pylint: disable= too-many-branches,
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli.utils import _get_pauli_map, _pauli_mult, simplify
-from pennylane.operation import Tensor, active_new_opmath
+from pennylane.pauli.utils import simplify
+from pennylane.operation import active_new_opmath
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
@@ -142,7 +142,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
 
-def jordan_wigner(op, notation="physicist"):
+def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-branches
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
@@ -164,61 +164,4 @@ def jordan_wigner(op, notation="physicist"):
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
-    if len(op) == 1:
-        op = [(op[0], 1)]
-
-    if len(op) == 2:
-        op = [(op[0], 1), (op[1], 0)]
-
-    if len(op) == 4:
-        if notation == "physicist":
-            if op[0] == op[1] or op[2] == op[3]:
-                return [0], [qml.Identity(wires=[min(op)])]
-            op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
-        elif notation == "chemist":
-            if (op[0] == op[2] or op[1] == op[3]) and op[1] != op[2]:
-                return [0], [qml.Identity(wires=[min(op)])]
-            op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
-        else:
-            raise ValueError(
-                f"Currently, the only supported notations for the two-body terms are 'physicist'"
-                f" and 'chemist', got notation = '{notation}'."
-            )
-
-    q = [[(0, "I"), 1.0]]
-    for l in op:
-        z = [(index, "Z") for index in range(l[0])]
-        x = z + [(l[0], "X"), 0.5]
-        if l[1]:
-            y = z + [(l[0], "Y"), -0.5j]
-        else:
-            y = z + [(l[0], "Y"), 0.5j]
-
-        m = []
-        for t1 in q:
-            for t2 in [x, y]:
-                q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
-                m.append(q1 + [c1 * t1[-1] * t2[-1]])
-        q = m
-
-    c = [p[-1] for p in q]
-    o = [p[:-1] for p in q]
-
-    for item in o:
-        k = [i for i, x in enumerate(o) if x == item]
-        if len(k) >= 2:
-            for j in k[::-1][:-1]:
-                del o[j]
-                c[k[0]] = c[k[0]] + c[j]
-                del c[j]
-
-    # Pauli gates objects pregenerated for speed
-    pauli_map = _get_pauli_map(np.max(op))
-    for i, term in enumerate(o):
-        if len(term) == 0:
-            o[i] = qml.Identity(0)
-        else:
-            k = [pauli_map[t[0]][t[1]] for t in term]
-            o[i] = Tensor(*k)
-
-    return c, o
+    return qml.fermi.jordan_wigner(op, notation)

@@ -72,20 +72,22 @@ def find_and_place_cuts(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-            qml.RY(0.2, wires=1)
-            qml.RX(0.3, wires="a")
-            qml.RY(0.4, wires="b")
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=["a", "b"])
-            qml.CNOT(wires=[1, "a"])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=["a", "b"])
-            qml.RX(0.5, wires="a")
-            qml.RY(0.6, wires="b")
-            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+        ops = [
+            qml.RX(0.1, wires=0),
+            qml.RY(0.2, wires=1),
+            qml.RX(0.3, wires="a"),
+            qml.RY(0.4, wires="b"),
+            qml.CNOT(wires=[0, 1]),
+            qml.WireCut(wires=1),
+            qml.CNOT(wires=["a", "b"]),
+            qml.CNOT(wires=[1, "a"]),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=["a", "b"]),
+            qml.RX(0.5, wires="a"),
+            qml.RY(0.6, wires="b"),
+        ]
+        measurements = [qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape.text(tape))
      0: ──RX(0.1)──╭●──────────╭●───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
@@ -302,11 +304,13 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
         wire_cut = qml.WireCut(wires=0)
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut)
-            qml.RY(0.5, wires=0)
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            wire_cut,
+            qml.RY(0.5, wires=0),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove the wire cut node using:
 
@@ -379,15 +383,17 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
         wire_cut_1 = qml.WireCut(wires=1)
         multi_wire_cut = qml.WireCut(wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut_0)
-            qml.RY(0.5, wires=0)
-            qml.apply(wire_cut_1)
-            qml.CNOT(wires=[0, 1])
-            qml.apply(multi_wire_cut)
-            qml.RZ(0.6, wires=1)
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            wire_cut_0,
+            qml.RY(0.5, wires=0),
+            wire_cut_1,
+            qml.CNOT(wires=[0, 1]),
+            multi_wire_cut,
+            qml.RZ(0.6, wires=1),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove all the wire cut nodes using:
 
@@ -419,11 +425,13 @@ def place_wire_cuts(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires="a")
-            qml.CNOT(wires=[0, "a"])
-            qml.expval(qml.PauliZ(wires=[0]))
+        ops = [
+            qml.RX(0.432, wires=0),
+            qml.RY(0.543, wires="a"),
+            qml.CNOT(wires=[0, "a"]),
+        ]
+        measurements = [qml.expval(qml.PauliZ(wires=[0]))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
      0: ──RX(0.432)──╭●──┤ ⟨Z⟩
@@ -538,15 +546,17 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
         wire_cut_1 = qml.WireCut(wires=1)
         multi_wire_cut = qml.WireCut(wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut_0)
-            qml.RY(0.5, wires=0)
-            qml.apply(wire_cut_1)
-            qml.CNOT(wires=[0, 1])
-            qml.apply(multi_wire_cut)
-            qml.RZ(0.6, wires=1)
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            wire_cut_0,
+            qml.RY(0.5, wires=0),
+            wire_cut_1,
+            qml.CNOT(wires=[0, 1]),
+            multi_wire_cut,
+            qml.RZ(0.6, wires=1),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the corresponding graph, remove all the wire cut nodes, and
     find the subgraphs and communication graph by using:

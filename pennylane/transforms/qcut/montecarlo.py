@@ -198,13 +198,15 @@ def cut_circuit_mc(
 
             np.random.seed(42)
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=1)
-                qml.WireCut(wires=1)
-                qml.CNOT(wires=[1, 2])
-                qml.sample(wires=[0, 1, 2])
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(wires=1),
+                qml.WireCut(wires=1),
+                qml.CNOT(wires=[1, 2]),
+            ]
+            measurements = [qml.sample(wires=[0, 1, 2])]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(tape.draw())
         0: ──H─╭●───────────┤ ╭Sample
@@ -223,12 +225,14 @@ def cut_circuit_mc(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as uncut_tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=1)
-                qml.CNOT(wires=[1, 2])
-                qml.sample(wires=[0, 1, 2])
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(wires=1),
+                qml.CNOT(wires=[1, 2]),
+            ]
+            measurements = [qml.sample(wires=[0, 1, 2])]
+            uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
         ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
@@ -623,12 +627,14 @@ def expand_fragment_tapes_mc(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.sample(wires=[0, 1, 2])
+        ops = [
+            qml.Hadamard(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.WireCut(wires=1),
+            qml.CNOT(wires=[1, 2]),
+        ]
+        measurements = [qml.sample(wires=[0, 1, 2])]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can generate the fragment tapes using the following workflow:
 

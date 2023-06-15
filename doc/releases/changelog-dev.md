@@ -28,8 +28,10 @@
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
 
 * Added a conversion function `jordan_wigner` that converts a fermionic operator (`FermiWord`) to a qubit 
-  operator (`PauliSentence`) using the Jordan-Wigner mapping.
+  `Operator` (or its equivalent `PauliSentence` based on an optional kwarg) using the Jordan-Wigner mapping. 
+  It also includes the behaviour of the existing `qchem.jordan_wigner` function, and replaces it.
   [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
+  [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
 
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
@@ -109,6 +111,7 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
   the hash of any operators/measurement processes.
@@ -167,6 +170,9 @@
 
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
+
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
 
 * `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
   [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
@@ -295,6 +301,9 @@
   the circuit cutting workflow instead of `op`. This change removes the dependency of the module on the hash of operators.
   [(#4227)](https://github.com/PennyLaneAI/pennylane/pull/4227)
 
+* `Operator.data` now returns a `tuple` instead of a `list`.
+  [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
+
 <h3>Deprecations 👋</h3>
 
 * `LieAlgebraOptimizer` is renamed. Please use `RiemannianGradientOptimizer` instead.
@@ -324,6 +333,9 @@
   [(#4230)](https://github.com/PennyLaneAI/pennylane/pull/4230)
 
 <h3>Documentation 📝</h3>
+
+* The documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+  [(#4243)](https://github.com/PennyLaneAI/pennylane/pull/4243)
 
 * The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
   `qml.ops.op_math.Adjoint.__new__`.

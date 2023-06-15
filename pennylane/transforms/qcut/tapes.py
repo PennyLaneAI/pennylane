@@ -63,11 +63,13 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.RY(0.9, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(1))
+        ops = [
+            qml.RX(0.4, wires=0),
+            qml.RY(0.9, wires=0),
+            qml.CNOT(wires=[0, 1]),
+        ]
+        measurements = [qml.expval(qml.PauliZ(1))]
+        tape = qml.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
 
@@ -131,14 +133,16 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.transforms.qcut.MeasureNode(wires=1)
-            qml.transforms.qcut.PrepareNode(wires=1)
-            qml.CNOT(wires=[1, 0])
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            qml.RY(0.5, wires=1),
+            qml.CNOT(wires=[0, 1]),
+            qml.transforms.qcut.MeasureNode(wires=1),
+            qml.transforms.qcut.PrepareNode(wires=1),
+            qml.CNOT(wires=[1, 0]),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
     subsequently act on wire ``2`` instead of wire ``1``:
@@ -262,10 +266,12 @@ def expand_fragment_tape(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.transforms.qcut.PrepareNode(wires=0)
-            qml.RX(0.5, wires=0)
-            qml.transforms.qcut.MeasureNode(wires=0)
+        ops = [
+            qml.transforms.qcut.PrepareNode(wires=0),
+            qml.RX(0.5, wires=0),
+            qml.transforms.qcut.MeasureNode(wires=0),
+        ]
+        tape = qml.tape.QuantumTape(ops)
 
     We can expand over the measurement and preparation nodes using:
 
