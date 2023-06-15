@@ -161,6 +161,25 @@ class TestProcessState:
         # now test that the second qubit samples are all 0s when the recipe is Z
         assert np.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
 
+    def test_subset_wires(self):
+        """Test that the measurement is correct when only a subset of wires is measured"""
+        mp = qml.classical_shadow(wires=[0, 1])
+
+        # GHZ state
+        state = np.zeros((2, 2, 2))
+        state[np.array([0, 1]), np.array([0, 1]), np.array([0, 1])] = 1 / np.sqrt(2)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+
     def test_same_rng(self):
         """Test results when the rng is the same"""
         state = np.ones((2, 2)) / 2

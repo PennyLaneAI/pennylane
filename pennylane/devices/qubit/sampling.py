@@ -29,7 +29,10 @@ from .apply_operation import apply_operation
 
 
 def measure_with_samples(
-    mp: SampleMeasurement, state: np.ndarray, shots: Shots, rng=None
+    mp: Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP],
+    state: np.ndarray,
+    shots: Shots,
+    rng=None,
 ) -> TensorLike:
     """
     Returns the samples of the measurement process performed on the given state.
@@ -37,7 +40,8 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (~.measurements.SampleMeasurement): The sample measurement to perform
+        mp (Union[~.measurements.SampleMeasurement, ~.measurements.ClassicalShadowMP, ~.measurements.ShadowExpvalMP]):
+            The sample measurement to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A

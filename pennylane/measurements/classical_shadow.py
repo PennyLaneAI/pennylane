@@ -321,7 +321,8 @@ class ClassicalShadowMP(MeasurementTransform):
         """Process the given quantum state with the given number of shots
 
         Args:
-            state (Sequence[complex]): quantum state
+            state (Sequence[complex]): quantum state vector given as a rank-N tensor, where
+                each dim has size 2 and N is the number of wires.
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
             shots (int): The number of shots
@@ -364,7 +365,7 @@ class ClassicalShadowMP(MeasurementTransform):
             ]
         )
         obs = obs_list[recipes]
-        uni = diag_list[recipes]
+        diagonalizers = diag_list[recipes]
 
         # There's a significant speedup if we use the following iterative
         # process to perform the randomized Pauli measurements:
@@ -415,7 +416,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
-            rotated_state = np.einsum("ab...,acb->ac...", stacked_state, uni[:, active_qubit])
+            rotated_state = np.einsum(
+                "ab...,acb->ac...", stacked_state, diagonalizers[:, active_qubit]
+            )
             stacked_state = rotated_state[np.arange(shots), samples.astype(np.int8)]
 
             # re-normalize the collapsed state
