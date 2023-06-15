@@ -440,13 +440,12 @@ def vjp(
         dy = dy[0]
 
         computing_jacobian = _n == max_diff
-        if new_device_interface := isinstance(
-            device, qml.devices.experimental.Device
-        ):  # pragma: no-cover
+        if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
             # assumes all tapes have the same shot vector
-            has_partitioned_shots = any(t.shots.has_partitioned_shots for t in tapes)
+            has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+            vjp_shots = None
         else:
-            has_partitioned_shots = device.shot_vector
+            has_partitioned_shots = vjp_shots = device.shot_vector
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -470,7 +469,7 @@ def vjp(
                         unwrapped_tapes,
                         dy,
                         gradient_fn,
-                        shots=None if new_device_interface else device.shot_vector,
+                        shots=vjp_shots,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -482,7 +481,7 @@ def vjp(
                         tapes,
                         dy,
                         gradient_fn,
-                        shots=None if new_device_interface else device.shot_vector,
+                        shots=vjp_shots,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
