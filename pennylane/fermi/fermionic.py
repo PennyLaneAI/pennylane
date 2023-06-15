@@ -174,8 +174,8 @@ class FermiSentence(dict):
     >>> w2 = FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = FermiSentence({w1 : 1.2, w2: 3.1})
     >>> s
-    1.2 * '0+ 1-'
-    + 3.1 * '1+ 2-'
+    1.2 * 'a⁺(0) a(1)'
+    + 3.1 * 'a⁺(1) a(2)'
     """
 
     @property
@@ -262,13 +262,13 @@ def string_to_fermi_word(fermi_string):
     **Example**
 
     >>> string_to_fermi_word('0+ 1- 0+ 1-')
-    <FermiWord = '0+ 1- 0+ 1-'>
+    'a⁺(0) a(1) a⁺(0) a(1)'
 
     >>> string_to_fermi_word('0+ 1 0+ 1')
-    <FermiWord = '0+ 1- 0+ 1-'>
+    'a⁺(0) a(1) a⁺(0) a(1)'
 
     >>> string_to_fermi_word('0^ 1 0^ 1')
-    <FermiWord = '0+ 1- 0+ 1-'>
+    'a⁺(0) a(1) a⁺(0) a(1)'
 
     >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
     >>> op2 = string_to_fermi_word('0+ 1- 2+ 3-')
@@ -310,13 +310,13 @@ class FermiC(FermiWord):
     To construct the operator :math:`a^\dagger_0`:
 
     >>> FermiC(0)
-    <FermiWord = '0+'>
+    'a⁺(0)'
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
     :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
-    <FermiWord = '0+ 1- 2+ 3-'>
+    'a⁺(0) a(1) a⁺(2) a(3)'
     """
 
     def __init__(self, orbital):
@@ -347,13 +347,13 @@ class FermiA(FermiWord):
     To construct the operator :math:`a_0`:
 
     >>> FermiA(0)
-    <FermiWord = '0-'>
+    'a(0)'
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
     :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
-    <FermiWord = '0+ 1- 2+ 3-'>
+    'a⁺(0) a(1) a⁺(0) a(1)'
     """
 
     def __init__(self, orbital):
