@@ -169,6 +169,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+
 * `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
   [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
 
@@ -292,6 +295,9 @@
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
+* `Operator.data` now returns a `tuple` instead of a `list`.
+  [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
+
 <h3>Deprecations 👋</h3>
 
 * `LieAlgebraOptimizer` is renamed. Please use `RiemannianGradientOptimizer` instead.
@@ -321,6 +327,9 @@
   [(#4230)](https://github.com/PennyLaneAI/pennylane/pull/4230)
 
 <h3>Documentation 📝</h3>
+
+* The documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+  [(#4243)](https://github.com/PennyLaneAI/pennylane/pull/4243)
 
 * The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
   `qml.ops.op_math.Adjoint.__new__`.
