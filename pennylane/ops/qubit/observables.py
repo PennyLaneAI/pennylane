@@ -348,7 +348,7 @@ class Projector(Observable):
 
     Args:
         state (tensor-like): Input state of shape ``(n,)`` for a basis-state projector, or ``(2**n,)``
-            for a state-vector projector corresponding to a non-computational basis state.
+            for a state-vector projector.
         wires (Iterable): wires that the projector acts on.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional).

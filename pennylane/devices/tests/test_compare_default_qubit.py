@@ -71,7 +71,20 @@ class TestComparison:
 
     @pytest.mark.parametrize(
         "state",
-        [[0, 0], [0, 1], [1, 0], [1, 1], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+        [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+            [1, 1],
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+            np.array([1, 1, 0, 0]) / np.sqrt(2),
+            np.array([0, 1, 0, 1]) / np.sqrt(2),
+            np.array([1, 1, 1, 0]) / np.sqrt(3),
+            np.array([1, 1, 1, 1]) / 2,
+        ],
     )
     def test_projector_expectation(self, device, state, tol):
         """Test that arbitrary multi-mode Projector expectation values are correct"""

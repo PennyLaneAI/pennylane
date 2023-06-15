@@ -51,7 +51,23 @@
 
 * `Projector` now accepts a state vector representation, which enables the creation of projectors
   in any basis.
-  [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)  
+  [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(state):
+      return qml.expval(qml.Projector(state, wires=[0, 1]))
+  zero_state = [0, 0]
+  plusplus_state = np.array([1, 1, 1, 1]) / 2
+  ```
+  ```pycon
+  >>> circuit(zero_state)
+  1.
+  >>> 
+  >>> circuit(plusplus_state)
+  0.25
+  ```
 
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
   of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
