@@ -63,8 +63,6 @@
   ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
   ```
 
-  
-
 <h4>Workflow-level resource estimation 🧮</h4>
 
 * PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
@@ -439,6 +437,17 @@
 * `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
   [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
 
+* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
+  that the `pyscf` backend can be used for open-shell calculations.
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
+* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
+
 <h4>Next-generation device API</h4>
 
 * The new device interface has been integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
@@ -532,6 +541,8 @@
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
+<h4>Circuit drawing</h4>
+
 <h4>Other improvements</h4>
 
 * Added a transform dispatcher.
@@ -539,17 +550,6 @@
   
 * Added a transform program.
   [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
-
-* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
-  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
-
-* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
-  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
-  that the `pyscf` backend can be used for open-shell calculations.
-  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
-
-* PennyLane Docker builds have been updated to include the latest plugins and interface versions.
-  [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
@@ -564,15 +564,12 @@
   `HardwareHamiltonian`s which are not checked.
   [(#4216)](https://github.com/PennyLaneAI/pennylane/pull/4216)
 
-* One qubit unitaries can now be decomposed into a `ZXZ` gate sequence (apart from the pre-existing `XYX` and `ZYZ`).
-  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
-
 * The default value for the `show_matrices` keyword argument in all drawing methods is now `True`. 
   This allows for quick insights into broadcasted tapes, for example.
   [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
 
 * Type variables for `qml.typing.Result` and `qml.typing.ResultBatch` have been added for type hinting the result of an execution.
-  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
+  [(#4108)](https://github.com/PennyLaneAI/pennylane/pull/4108)
   
 * The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
@@ -584,9 +581,6 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
-* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
-
 * Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -594,9 +588,6 @@
 * Fix unclear documentation and indicate variable-length argument lists of functions and methods in
   the respective docstrings.
   [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
-
-* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
-  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
 
 * `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
   equality or hash to work correctly.
@@ -682,14 +673,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-<<<<<<< HEAD
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
-=======
-* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
-  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
-
-* Fixed adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
->>>>>>> 0e80977bd9f2c7c6230eceee7ab983dfec03229c
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
