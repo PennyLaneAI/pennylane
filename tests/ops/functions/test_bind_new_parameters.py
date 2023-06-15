@@ -234,6 +234,44 @@ def test_tensor(op, new_params, expected_op):
     assert all(n_obs is not obs for n_obs, obs in zip(new_op.obs, op.obs))
 
 
+old_hamiltonian = qml.Hamiltonian(
+    [0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(2)]
+)
+new_hamiltonian = qml.Hamiltonian(
+    [0.4, 0.5, 0.6], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(2)]
+)
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (
+            qml.ApproxTimeEvolution(old_hamiltonian, 5, 10),
+            [0.4, 0.5, 0.6, 10],
+            qml.ApproxTimeEvolution(new_hamiltonian, 10, 10),
+        ),
+        (
+            qml.CommutingEvolution(old_hamiltonian, 5),
+            [10, 0.4, 0.5, 0.6],
+            qml.CommutingEvolution(new_hamiltonian, 10),
+        ),
+        (
+            qml.FermionicDoubleExcitation(0.123, wires1=[0, 1, 2], wires2=[3, 4]),
+            [0.456],
+            qml.FermionicDoubleExcitation(0.456, wires1=[0, 1, 2], wires2=[3, 4]),
+        ),
+    ],
+)
+def test_template_ops(op, new_params, expected_op):
+    """Test that `bind_new_parameters` with template operators returns a new
+    template operator with the new parameters without mutating the original
+    operator."""
+    new_op = bind_new_parameters(op, new_params)
+
+    assert qml.equal(new_op, expected_op)
+    assert new_op is not op
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
@@ -261,6 +299,7 @@ def test_tensor(op, new_params, expected_op):
             [0.456],
             qml.RX(0.456, wires=0),
         ),
+        (qml.PCPhase(0.123, 2, wires=[0, 1]), [0.456], qml.PCPhase(0.456, 2, wires=[0, 1])),
     ],
 )
 def test_vanilla_operators(op, new_params, expected_op):

@@ -44,8 +44,13 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     Returns:
         .Operator: New operator with updated parameters
     """
+    try:
+        new_op = op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+    except:
+        new_op = copy.deepcopy(op)
+        op.data = tuple(params)
 
-    return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+    return new_op
 
 
 @bind_new_parameters.register
@@ -58,7 +63,7 @@ def bind_new_parameters_pcphase(op: qml.PCPhase, params: Sequence[TensorLike]):
 def bind_new_parameters_approx_time_evolution(
     op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]
 ):
-    new_hamiltonian = qml.Hamiltonian(params[:-1], op.hyperparameters["hamiltonian"].ops)
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[:-1])
     time = params[-1]
     n = op.hyperparameters["n"]
 
@@ -69,7 +74,7 @@ def bind_new_parameters_approx_time_evolution(
 def bind_new_parameters_commuting_evolution(
     op: qml.CommutingEvolution, params: Sequence[TensorLike]
 ):
-    new_hamiltonian = qml.Hamiltonian(params[1:], op.hyperparameters["hamiltonian"].ops)
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[1:])
     freq = op.hyperparameters["frequencies"]
     shifts = op.hyperparameters["shifts"]
     time = params[0]
