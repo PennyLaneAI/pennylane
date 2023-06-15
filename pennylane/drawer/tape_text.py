@@ -127,7 +127,8 @@ def tape_text(
 
     .. code-block:: python
 
-        ops = [qml.QFT(wires=(0, 1, 2)),
+        ops = [
+            qml.QFT(wires=(0, 1, 2)),
             qml.RX(1.234, wires=0),
             qml.RY(1.234, wires=1),
             qml.RZ(1.234, wires=2),
@@ -210,7 +211,8 @@ def tape_text(
 
     .. code-block:: python
 
-        ops = [qml.QubitUnitary(np.eye(2), wires=0),
+        ops = [
+            qml.QubitUnitary(np.eye(2), wires=0),
             qml.QubitUnitary(np.eye(2), wires=1)
         ]
         measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]

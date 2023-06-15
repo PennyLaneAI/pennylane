@@ -180,14 +180,14 @@ def cut_circuit(
                 qml.RY(0.9, wires=1),
                 qml.RX(0.3, wires=2),
 
-                qml.CZ(wires=[0, 1]),
+                qml.CZ(wires=(0,1)),
                 qml.RY(-0.4, wires=0),
 
                 qml.WireCut(wires=1),
 
                 qml.CZ(wires=[1, 2]),
             ]
-            measurments = [qml.expval(qml.Pauli.string_to_pauli_word("ZZZ))]
+            measurments = [qml.expval(qml.Pauli.string_to_pauli_word("ZZZ"))]
             tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(qml.drawer.tape_text(tape))
@@ -217,7 +217,7 @@ def cut_circuit(
                 qml.RY(0.9, wires=1),
                 qml.RX(0.3, wires=2),
 
-                qml.CZ(wires=[0, 1]),
+                qml.CZ(wires=(0,1)),
                 qml.RY(-0.4, wires=0),
 
                 qml.CZ(wires=[1, 2]),

@@ -262,7 +262,9 @@ a datastructure representing variational quantum algorithms:
 
     weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-    ops = [qml.RX(weights[0], wires=0),
+    ops = [
+        qml.RX(weights[0], wires=0),
+
         qml.RY(weights[1], wires=1),
         qml.CNOT(wires=[0, 1]),
         qml.RX(weights[2], wires=1)]

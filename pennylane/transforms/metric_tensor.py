@@ -210,7 +210,8 @@ def metric_tensor(
         function, which together define the metric tensor are directly returned:
 
         >>> params = np.array([1.7, 1.0, 0.5], requires_grad=True)
-        >>> ops = [qml.RX(params[0], wires=0),
+        >>> ops = [
+        ...     qml.RX(params[0], wires=0),
         ...     qml.RY(params[1], wires=0),
         ...     qml.CNOT(wires=(0,1)),
         ...     qml.PhaseShift(params[2], wires=1),
