@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
-  without mutating the original operator.
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+  [(#4256)](https://github.com/PennyLaneAI/pennylane/pull/4256)
 
 * Added the `TRX` qutrit rotation operation, which allows applying an X rotation on a
   given subspace.
