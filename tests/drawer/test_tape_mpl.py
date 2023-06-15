@@ -382,6 +382,44 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_MidMeasureMP(self):
+        """Tests MidMeasureMP has correct special handling."""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.measure(0)
+        tape = QuantumScript.from_queue(q)
+        _, ax = tape_mpl(tape)
+        assert [l.get_data() for l in ax.lines] == [((-1, 0), (0, 0))]
+
+    def test_Conditional(self, mocker):
+        """Tests Conditional has correct special handling."""
+        cond_spy = mocker.spy(qml.drawer.MPLDrawer, "cond")
+        box_gate_spy = mocker.spy(qml.drawer.MPLDrawer, "box_gate")
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.Hadamard)(1)
+
+        tape = QuantumScript.from_queue(q)
+        _, ax = tape_mpl(tape)
+        assert [l.get_data() for l in ax.lines] == [
+            ((-1, 0), (0, 0)),
+            ((-1, 2), (1, 1)),
+            ((0.375, 1.03), (-0.03, -0.03)),
+            ((0.375, 0.97), (0.03, 0.03)),
+            ((1.03, 1.03), (-0.03, 1)),
+            ((0.97, 0.97), (0.03, 1)),
+        ]
+
+        cond_spy.assert_called_with(mocker.ANY, 1, 0, [0], [1])
+        box_gate_spy.assert_called_with(
+            mocker.ANY,
+            1,
+            [1],
+            "H",
+            box_options={"zorder": 4, "linestyle": "dashed"},
+            text_options={"zorder": 5},
+        )
+
 
 controlled_data = [
     (qml.CY(wires=(0, 1)), "Y"),
@@ -460,6 +498,7 @@ class TestControlledGates:
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
+            # pylint:disable=no-member
             qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
             qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 

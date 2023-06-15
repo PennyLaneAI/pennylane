@@ -117,6 +117,17 @@ def wires_labels(circuit):
     plt.close()
 
 
+def mid_measure():
+    def circuit():
+        m0 = qml.measure(0)
+        qml.Hadamard(1)
+        qml.cond(m0, qml.PauliZ)(1)
+
+    _ = draw_mpl(circuit)()
+    plt.savefig(folder / "mid_measure.png")
+    plt.close()
+
+
 if __name__ == "__main__":
 
     dev = qml.device("lightning.qubit", wires=(0, 1, 2, 3))
@@ -139,3 +150,4 @@ if __name__ == "__main__":
     use_style(circuit)
     rcparams(circuit)
     wires_labels(circuit)
+    mid_measure()

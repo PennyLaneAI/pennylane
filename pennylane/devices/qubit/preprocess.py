@@ -173,7 +173,7 @@ def validate_measurements(
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
     """
-    if circuit.shots.total_shots is None:
+    if not circuit.shots:
         for m in circuit.measurements:
             if not isinstance(m, StateMeasurement):
                 raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
