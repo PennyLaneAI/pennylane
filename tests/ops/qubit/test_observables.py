@@ -272,15 +272,29 @@ class TestHermitian:
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
-    def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol):
+    def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
+
+        # ensure _eigs isn't populated from previoius tests
+        qml.Hermitian._eigs = {}
+
+        # calling diagonalizing gates when observable is not in _eigs adds expected entry to _eigs
+        spy = mocker.spy(np.linalg, "eigh")
+
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
+
+        assert spy.assert_called_once()
 
         key = tuple(observable.flatten().tolist())
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
         assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
+        assert len(qml.Hermitian._eigs) == 1
+
+        # calling it again doesn't recalculate or add anything to _eigs (uses cached value)
+        _ = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
+        assert spy.assert_called_once()
         assert len(qml.Hermitian._eigs) == 1
 
     def test_hermitian_compute_diagonalizing_gates(self, tol):
