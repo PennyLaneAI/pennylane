@@ -93,13 +93,13 @@ class FermiWord(dict):
 
         string = " ".join(
             [
-                i + j
+                "a" + j + "(" + i + ")"
                 for i, j in zip(
                     [str(i[1]) for i in self.sorted_dic.keys()], self.sorted_dic.values()
                 )
             ]
         )
-        return string
+        return string.replace("+", "\u207a").replace("-", "")
 
     def __str__(self):
         r"""String representation of a FermiWord."""
