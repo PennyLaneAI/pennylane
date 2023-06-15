@@ -295,6 +295,9 @@
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
+* `Operator.data` now returns a `tuple` instead of a `list`.
+  [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
+
 <h3>Deprecations 👋</h3>
 
 * `LieAlgebraOptimizer` is renamed. Please use `RiemannianGradientOptimizer` instead.
