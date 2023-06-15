@@ -52,7 +52,6 @@
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
   [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
-
 <h3>Improvements 🛠</h3>
 
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number

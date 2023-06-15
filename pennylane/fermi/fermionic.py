@@ -128,8 +128,7 @@ class FermiWord(dict):
             return self_fs + other
 
         if isinstance(other, FermiWord):
-            other_fs = FermiSentence({other: 1.0})
-            return self_fs + other_fs
+            return self_fs + FermiSentence({other: 1.0})
 
         if isinstance(other, (Number, ndarray)):
             if isinstance(other, ndarray) and len(other) > 1:
@@ -137,8 +136,7 @@ class FermiWord(dict):
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
                 )
-            other_fs = FermiSentence({FermiWord({}): other})
-            return self_fs + other_fs
+            return self_fs + FermiSentence({FermiWord({}): other})
 
         raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
 
@@ -158,8 +156,7 @@ class FermiWord(dict):
         self_fs = FermiSentence({self: 1.0})
 
         if isinstance(other, FermiWord):
-            other_fs = FermiSentence({other: -1.0})
-            return self_fs + other_fs
+            return self_fs + FermiSentence({other: -1.0})
 
         if isinstance(other, FermiSentence):
             other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
@@ -171,8 +168,7 @@ class FermiWord(dict):
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
                 )
-            other_fs = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
-            return self_fs + other_fs
+            return self_fs + FermiSentence({FermiWord({}): -1 * other})  # -constant * I
 
         raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
 
