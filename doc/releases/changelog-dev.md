@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
-  without mutating the original operator.
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+  [(#4256)](https://github.com/PennyLaneAI/pennylane/pull/4256)
 
 * Added the `TRX` qutrit rotation operation, which allows applying an X rotation on a
   given subspace.
@@ -148,6 +148,7 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4162)](https://github.com/PennyLaneAI/pennylane/pull/4162)
   [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
