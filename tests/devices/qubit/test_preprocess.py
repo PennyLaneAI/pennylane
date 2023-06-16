@@ -354,13 +354,33 @@ class TestBatchTransform:
         input = (("a", "b"), "c")
         assert batch_fn(input) == input[0]
 
-    def test_batch_transform_broadcast(self):
-        """Test that batch_transform splits broadcasted tapes correctly."""
+    def test_batch_transform_broadcast_not_adjoint(self):
+        """Test that batch_transform does nothing when batching is required but
+        internal PennyLane broadcasting can be used (diff method != adjoint)"""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = QuantumScript(ops=ops, measurements=measurements)
 
         tapes, batch_fn = batch_transform(tape)
+
+        assert len(tapes) == 1
+        for op, expected in zip(tapes[0].circuit, ops + measurements):
+            assert qml.equal(op, expected)
+
+        input = ([[1, 2], [3, 4]],)
+        assert np.array_equal(batch_fn(input), np.array([[1, 2], [3, 4]]))
+
+    def test_batch_transform_broadcast_adjoint(self):
+        """Test that batch_transform splits broadcasted tapes correctly when
+        the diff method is adjoint"""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
+        measurements = [qml.expval(qml.PauliZ(1))]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        execution_config = ExecutionConfig()
+        execution_config.gradient_method = "adjoint"
+
+        tapes, batch_fn = batch_transform(tape, execution_config=execution_config)
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
@@ -502,7 +522,7 @@ class TestPreprocess:
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
 
-    def test_preprocess_batch_transform(self):
+    def test_preprocess_batch_transform_not_adjoint(self):
         """Test that preprocess returns the correct tapes when a batch transform
         is needed."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
@@ -514,6 +534,35 @@ class TestPreprocess:
         ]
 
         res_tapes, batch_fn, _ = preprocess(tapes)
+
+        assert len(res_tapes) == 2
+        for i, t in enumerate(res_tapes):
+            for op, expected_op in zip(t.operations, ops):
+                assert qml.equal(op, expected_op)
+            assert len(t.measurements) == 1
+            if i == 0:
+                assert qml.equal(t.measurements[0], measurements[0])
+            else:
+                assert qml.equal(t.measurements[0], measurements[1])
+
+        input = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
+        assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+
+    def test_preprocess_batch_transform_adjoint(self):
+        """Test that preprocess returns the correct tapes when a batch transform
+        is needed."""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
+        tapes = [
+            QuantumScript(ops=ops, measurements=[measurements[0]]),
+            QuantumScript(ops=ops, measurements=[measurements[1]]),
+        ]
+
+        execution_config = ExecutionConfig()
+        execution_config.gradient_method = "adjoint"
+
+        res_tapes, batch_fn, _ = preprocess(tapes, execution_config=execution_config)
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
@@ -552,7 +601,7 @@ class TestPreprocess:
         input = (("a", "b"), "c", "d")
         assert batch_fn(input) == [("a", "b"), "c"]
 
-    def test_preprocess_split_and_expand(self):
+    def test_preprocess_split_and_expand_not_adjoint(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
         is needed."""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
@@ -564,6 +613,41 @@ class TestPreprocess:
         ]
 
         res_tapes, batch_fn, _ = preprocess(tapes)
+        expected_ops = [
+            qml.Hadamard(0),
+            qml.PauliX(1),
+            qml.PauliY(1),
+            qml.RX([np.pi, np.pi / 2], wires=1),
+        ]
+
+        assert len(res_tapes) == 2
+        for i, t in enumerate(res_tapes):
+            for op, expected_op in zip(t.operations, expected_ops):
+                assert qml.equal(op, expected_op)
+            assert len(t.measurements) == 1
+            if i == 0:
+                assert qml.equal(t.measurements[0], measurements[0])
+            else:
+                assert qml.equal(t.measurements[0], measurements[1])
+
+        input = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
+        assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+
+    def test_preprocess_split_and_expand_adjoint(self):
+        """Test that preprocess returns the correct tapes when splitting and expanding
+        is needed."""
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
+        tapes = [
+            QuantumScript(ops=ops, measurements=[measurements[0]]),
+            QuantumScript(ops=ops, measurements=[measurements[1]]),
+        ]
+
+        execution_config = ExecutionConfig()
+        execution_config.gradient_method = "adjoint"
+
+        res_tapes, batch_fn, _ = preprocess(tapes, execution_config=execution_config)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
