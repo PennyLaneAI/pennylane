@@ -36,8 +36,12 @@ single_qubit_decomps = [
     (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4]),
     (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15]),
-    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zyz, [-0.25, 0.0, -0.25]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, -0.3]),
+    (
+        qml.RZ(-0.5, wires=0).matrix(),
+        typeof_gates_zyz,
+        [12.316370614359172, 0.0, 12.316370614359172],
+    ),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 12.266370614359172]),
     (
         np.array(
             [
@@ -46,14 +50,14 @@ single_qubit_decomps = [
             ]
         ),
         typeof_gates_zyz,
-        [-0.18409714468526372, np.pi, 0.18409714468526372],
+        [12.382273469673908, np.pi, 0.18409714468526372],
     ),
-    (H, typeof_gates_zyz, [-np.pi, np.pi / 2, 0.0]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, -np.pi / 2]),
+    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 10.995574287564276]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
-        [-1.0, 2.0, -3.0],
+        [11.566370614359172, 2.0, 9.566370614359172],
     ),
 ]
 

@@ -66,10 +66,10 @@ def test_copy():
     copied_op = copy(op)
 
     assert copied_op.__class__ is op.__class__
-    assert copied_op.data == [param1]
+    assert copied_op.data == (param1,)
 
-    copied_op.data = [6.54]
-    assert op.data == [param1]
+    copied_op.data = (6.54,)
+    assert op.data == (param1,)
 
 
 def test_map_wires():
@@ -101,18 +101,18 @@ class TestProperties:
         base = Operator(x, "a")
         op = SymbolicOp(base)
 
-        assert op.data == [x]
+        assert op.data == (x,)
 
         # update parameters through op
         x_new = np.array(2.345)
-        op.data = [x_new]
-        assert base.data == [x_new]
-        assert op.data == [x_new]
+        op.data = (x_new,)
+        assert base.data == (x_new,)
+        assert op.data == (x_new,)
 
         # update base data updates symbolic data
         x_new2 = np.array(3.45)
-        base.data = [x_new2]
-        assert op.data == [x_new2]
+        base.data = (x_new2,)
+        assert op.data == (x_new2,)
 
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
@@ -232,7 +232,7 @@ class TestScalarSymbolicOp:
         op = TempScalar(base, scalar)
         assert isinstance(op.scalar, float)
         assert op.scalar == 2.2
-        assert op.data == [2.2, 1.1]
+        assert op.data == (2.2, 1.1)
 
         base = Operator(1.1, wires=[0])
         scalar = [2.2, 3.3]
@@ -246,19 +246,19 @@ class TestScalarSymbolicOp:
         """Tests the data property."""
         op = TempScalar(Operator(1.1, wires=[0]), 2.2)
         assert op.scalar == 2.2
-        assert op.data == [2.2, 1.1]
+        assert op.data == (2.2, 1.1)
 
         # check setting through ScalarSymbolicOp
-        op.data = [3.3, 4.4]  # pylint:disable=attribute-defined-outside-init
-        assert op.data == [3.3, 4.4]
+        op.data = (3.3, 4.4)  # pylint:disable=attribute-defined-outside-init
+        assert op.data == (3.3, 4.4)
         assert op.scalar == 3.3
-        assert op.base.data == [4.4]
+        assert op.base.data == (4.4,)
 
         # check setting through base
-        op.base.data = [5.5]
-        assert op.data == [3.3, 5.5]
+        op.base.data = (5.5,)
+        assert op.data == (3.3, 5.5)
         assert op.scalar == 3.3
-        assert op.base.data == [5.5]
+        assert op.base.data == (5.5,)
 
     def test_hash(self):
         """Test that a hash correctly identifies ScalarSymbolicOps."""
