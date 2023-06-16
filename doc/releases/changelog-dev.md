@@ -312,6 +312,9 @@
 * The new device interface is integrated with `qml.execute` for Tensorflow.
   [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
+* Updated various qubit tapering methods to support operator arithmetic.
+  [(#4252)](https://github.com/PennyLaneAI/pennylane/pull/4252)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -434,6 +437,7 @@
 This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
+Utkarsh Azad
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Emiliano Godinez Ramirez
