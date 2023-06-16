@@ -136,7 +136,7 @@ def symmetry_generators(h):
         h (~.Operator): Hamiltonian for which symmetries are to be generated to perform tapering
 
     Returns:
-        list[Union[~.Hamiltonian, ~.Operator]]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
+        list[~.Operator]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
 
     **Example**
 
@@ -188,7 +188,7 @@ def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[Union[~.Hamiltonian, ~.Operator]]): list of generators of symmetries, :math:`\tau`'s,
+        generators (list[~.Operator]): list of generators of symmetries, :math:`\tau`'s,
             for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
 
@@ -236,7 +236,7 @@ def clifford(generators, paulixops):
         paulixops (list[~.Operation]): list of single-qubit Pauli-X operators
 
     Returns:
-        Union[~.Operator]: Clifford operator expressed as a PennyLane operator
+        (~.Operator): Clifford operator expressed as a PennyLane operator
 
     **Example**
 
@@ -290,7 +290,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators.
 
     Returns:
-        Union[~.Hamiltonian, ~.Operator]: the tapered Hamiltonian
+        (~.Operator): the tapered Hamiltonian
     """
 
     u = clifford(generators, paulixops)
@@ -363,7 +363,7 @@ def taper(h, generators, paulixops, paulix_sector):
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
 
     Returns:
-        Union[~.Hamiltonian, ~.Operator]: the tapered Hamiltonian
+        (~.Operator): the tapered Hamiltonian
 
     **Example**
 
