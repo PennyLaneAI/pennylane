@@ -752,7 +752,7 @@ def taper_operation(
     if active_new_opmath():
         raise qml.QuantumFunctionError(
             "This function is currently not supported with the new operator arithmetic "
-            "framework. Please de-activate it using qml.disable_new_opmath()"
+            "framework. Please de-activate it using `qml.disable_new_opmath()`"
         )
 
     # maintain a flag to track functional form of the operation
