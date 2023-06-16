@@ -17,8 +17,8 @@ FermiC and FermiA
 -----------------
 
 The fermionic creation and annihilation operators are constructed with :class:`~pennylane.FermiC`
-and :class:`~pennylane.FermiA`, respectively, by passing the index of the orbital that the fermionic
-operator acts on. For instance, the operators :math:`a^{\dagger}_0` and :math:`a_3` are constructed as
+and :class:`~pennylane.FermiA`. We pass in the index of the orbital that the
+operator acts on. For example, the operators :math:`a^{\dagger}_0` and :math:`a_3`, acting on the 0th and 3rd orbitals, are constructed as
 
 >>> qml.FermiC(0)
 a⁺(0)
@@ -26,7 +26,7 @@ a⁺(0)
 a(3)
 
 These operators can be multiplied by each other to create :math:`n`-orbital fermionic operators such
-as :math:`a^{\dagger}_0 a_0 a^{\dagger}_3 a_3` that we call a Fermi word.
+as :math:`a^{\dagger}_0 a_0 a^{\dagger}_3 a_3`. We call these :math:`n`-orbital fermionic operators "Fermi words".
 
 >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
 a⁺(0) a(0) a⁺(3) a(3)
@@ -44,8 +44,8 @@ Mapping to qubit operators
 --------------------------
 
 The fermionic operators can be mapped to the qubit basis by using the
-:func:`~pennylane.jordan_wigner` function. This function can be used to map creation and
-annihilation operators as well as Fermi words and Fermi sentences.
+:func:`~pennylane.jordan_wigner` function. This function can be used to map :class:`~pennylane.FermiC` and
+:class:`~pennylane.FermiA` operators as well as Fermi words and Fermi sentences.
 
 >>> qml.jordan_wigner(qml.FermiA(1))
 (0.5*(PauliZ(wires=[0]) @ PauliX(wires=[1])))
