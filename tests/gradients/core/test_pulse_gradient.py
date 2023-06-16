@@ -803,8 +803,56 @@ class TestStochPulseGrad:
 
 
 @pytest.mark.jax
-class TestStochPulseGradQNodeIntegration:
-    """Test that stoch_pulse_grad integrates correctly with QNodes."""
+class TestStochPulseGradQNode:
+    """Test that pulse_generator integrates correctly with QNodes."""
+
+    def test_raises_for_application_to_qnodes(self):
+        """Test that an error is raised when applying ``stoch_pulse_grad``
+        to a QNode directly."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], 0.2)
+            return qml.expval(qml.PauliZ(0))
+
+        _match = "stochastic pulse parameter-shift gradient transform to a QNode directly"
+        with pytest.raises(NotImplementedError, match=_match):
+            stoch_pulse_grad(circuit, num_split_times=2)
+
+    # TODO: include the following tests when #4225 is resolved.
+    @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
+    def test_qnode_expval_single_par(self):
+        """Test that a simple qnode that returns an expectation value
+        can be differentiated with pulse_generator."""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.2
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], T)
+            return qml.expval(qml.PauliZ(0))
+
+        params = jnp.array(0.4)
+        with qml.Tracker(dev) as tracker:
+            _match = "stochastic pulse parameter-shift .* scalar pulse parameters."
+            grad = stoch_pulse_grad(circuit, num_split_times=2)(params)
+
+        p = params * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        assert jnp.allclose(grad, exp_grad)
+        assert tracker.totals["executions"] == 4  # two shifted tapes, two splitting times
+
+
+@pytest.mark.jax
+class TestStochPulseGradIntegration:
+    """Test that stoch_pulse_grad integrates correctly with QNodes and ML interfaces."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])

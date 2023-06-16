@@ -56,6 +56,19 @@ def _assert_has_jax(transform_name):
         )
 
 
+def raise_pulse_diff_on_qnode(transform_name):
+    """Raises an error as the gradient transform with the provided name does
+    not support direct application to QNodes.
+    """
+    msg = (
+        f"Applying the {transform_name} gradient transform to a QNode directly is currently "
+        "not supported. Please use differentiation via a JAX entry point "
+        "(jax.grad, jax.jacobian, ...) instead.",
+        UserWarning,
+    )
+    raise NotImplementedError(msg)
+
+
 def _split_evol_ops(op, ob, tau):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
@@ -313,10 +326,11 @@ def _stoch_pulse_grad(
         rules when used with simple pulses (see details and examples below), potentially leading
         to imprecise results and/or unnecessarily large computational efforts.
 
-    .. note::
+    .. warning::
 
-        Currently this function only supports pulses for which each *parametrized* term is a
-        simple Pauli word. More general Hamiltonian terms are not supported yet.
+        This transform may not be applied directly to QNodes. Use JAX entrypoints
+        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape level.
+        Also see the examples below.
 
     **Examples**
 
@@ -682,3 +696,14 @@ def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
 stoch_pulse_grad = gradient_transform(
     _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
 )
+
+
+@stoch_pulse_grad.custom_qnode_wrapper
+def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
+    """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
+    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    is not supported.
+    """
+    # pylint:disable=unused-argument
+    transform_name = "stochastic pulse parameter-shift"
+    raise_pulse_diff_on_qnode(transform_name)
