@@ -39,13 +39,52 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
     Args:
         op (.Operator): Operator to update
-        params (Sequence[TensorLike]): New parameters to create operator with
+        params (Sequence[TensorLike]): New parameters to create operator with. This
+            must have the same shape as `op.data`.
 
     Returns:
         .Operator: New operator with updated parameters
     """
+    try:
+        return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+    except TypeError:
+        # operation is doing something different with its call signature.
+        new_op = copy.deepcopy(op)
+        new_op.data = tuple(params)
+        return new_op
 
-    return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+
+@bind_new_parameters.register
+def bind_new_parameters_approx_time_evolution(
+    op: qml.ApproxTimeEvolution, params: Sequence[TensorLike]
+):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[:-1])
+    time = params[-1]
+    n = op.hyperparameters["n"]
+
+    return qml.ApproxTimeEvolution(new_hamiltonian, time, n)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_commuting_evolution(
+    op: qml.CommutingEvolution, params: Sequence[TensorLike]
+):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[1:])
+    freq = op.hyperparameters["frequencies"]
+    shifts = op.hyperparameters["shifts"]
+    time = params[0]
+
+    return qml.CommutingEvolution(new_hamiltonian, time, frequencies=freq, shifts=shifts)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_fermionic_double_excitation(
+    op: qml.FermionicDoubleExcitation, params: Sequence[TensorLike]
+):
+    wires1 = op.hyperparameters["wires1"]
+    wires2 = op.hyperparameters["wires2"]
+
+    return qml.FermionicDoubleExcitation(params[0], wires1=wires1, wires2=wires2)
 
 
 @bind_new_parameters.register

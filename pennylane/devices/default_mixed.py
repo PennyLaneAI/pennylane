@@ -48,6 +48,20 @@ tolerance = 1e-10
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
+    .. warning::
+
+        The API of ``DefaultMixed`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.experimental.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.experimental.Device` and the implementation in
+        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
+
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers
