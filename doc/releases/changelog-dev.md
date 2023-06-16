@@ -63,6 +63,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The experimental device interface is integrated with the `QNode`.
+  [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
+
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
   of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
   `HardwareHamiltonian`s which are not checked.
