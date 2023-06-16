@@ -63,6 +63,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad` now raise an error when they
+  are applied to a `QNode` directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
+  [(4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
+
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
   of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
   `HardwareHamiltonian`s which are not checked.
