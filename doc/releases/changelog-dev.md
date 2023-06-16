@@ -25,7 +25,7 @@
 
   ```
   >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
-  <FermiWord = '0+ 0- 3+ 3-'>
+  a⁺(0) a(0) a⁺(3) a(3)
   ```
 
   Alternatively, Fermi words can be created via `qml.fermi.FermiWord`:
