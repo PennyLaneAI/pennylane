@@ -305,11 +305,9 @@
   Hamiltonians.
   [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
-  This new feature generalizes the stochastic parameter-shift gradient transform for pulses, 
-  `stoch_pulse_grad`, to support generating terms beyond just Pauli words in pulse Hamiltonians.
-
-  The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
-  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+  This new feature generalizes the stochastic parameter-shift gradient transform for pulses 
+  (`stoch_pulse_grad`) to support Hermitian generating terms beyond just Pauli words in pulse Hamiltonians, 
+  which makes it hardware-compatible.
 
 * `qml.pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
   This allows for computing Jacobians of the unitary directly even when `dense=False`.
