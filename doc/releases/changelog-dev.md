@@ -63,6 +63,26 @@
 
 <h3>Improvements 🛠</h3>
 
+* `Projector` now accepts a state vector representation, which enables the creation of projectors
+  in any basis.
+  [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(state):
+      return qml.expval(qml.Projector(state, wires=[0, 1]))
+  zero_state = [0, 0]
+  plusplus_state = np.array([1, 1, 1, 1]) / 2
+  ```
+  ```pycon
+  >>> circuit(zero_state)
+  1.
+  >>> 
+  >>> circuit(plusplus_state)
+  0.25
+  ```
+
 * The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad` now raise an error when they
   are applied to a `QNode` directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
   [(4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
@@ -241,6 +261,9 @@
 * Added the ability to draw mid-circuit measurements connected by classical control signals
   to conditional operations.
   [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
+
+* The new device interface in integrated with `qml.execute` for Torch.
+  [(#4257)](https://github.com/PennyLaneAI/pennylane/pull/4257)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
