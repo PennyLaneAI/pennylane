@@ -6,20 +6,13 @@
 
 <h4>Seamlessly create and combine fermionic operators 🔬</h4>
 
-* Added dunder methods to `FermiWord` and `FermiSentence` to allow arithmetic operations 
-  using `+`, `-` and `*` between 
-  `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
-  [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
-
-* Added the function `string_to_fermi_word` to create a `FermiWord` object from a compact string
-  representation.
-  [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
-
 * Fermionic operators and arithmetic are now available. 
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
   [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
+  [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+  [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
   [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
   [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
 
