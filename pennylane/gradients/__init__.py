@@ -344,7 +344,7 @@ from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
 from .pulse_generator_gradient import pulse_generator
 
-from .hamiltonian_grad import hamiltonian_grad, sum_grad, sprod_grad
+from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
     eigvals_to_frequencies,
     generate_shift_rule,
