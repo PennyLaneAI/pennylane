@@ -879,6 +879,7 @@ def test_consistent_taper_ops(operation, op_gen):
 
 def test_taper_ops_opmath_error():
     """Test that an error is raised if taper_operations() is used with enable_new_opmath()."""
+    enable_new_opmath()
     symbols, geometry, charge, operation, op_wires, op_gen = (
         ["He", "H"],
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
@@ -895,7 +896,6 @@ def test_taper_ops_opmath_error():
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
-    enable_new_opmath()
     with pytest.raises(qml.QuantumFunctionError, match="This function is currently not supported"):
         taper_operation(
             operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
