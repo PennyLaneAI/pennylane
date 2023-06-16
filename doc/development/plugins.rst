@@ -60,10 +60,9 @@ and subclassing it:
 
 .. warning::
 
-    The API of :class:`pennylane.devices.DefaultQubit` will be updated soon to follow a new interface
+    The API of :class:`~.DefaultQubit` will be updated soon to follow a new interface
     defined by the experimental :class:`pennylane.devices.experimental.Device` class. To view the
-    exact changes coming to :class:`pennylane.devices.DefaultQubit`, see
-    :class:`pennylane.devices.experimental.DefaultQubit2`.
+    exact changes coming to :class:`~.DefaultQubit`, see :class:`pennylane.devices.experimental.DefaultQubit2`.
 
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
