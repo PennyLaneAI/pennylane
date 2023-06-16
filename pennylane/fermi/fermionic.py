@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Fermionic representation classes and functions."""
+"""The fermionic representation classes and functions."""
 import re
 from copy import copy
 from numbers import Number
@@ -22,10 +22,13 @@ import pennylane as qml
 
 class FermiWord(dict):
     r"""Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
-    annihilation operators, associating wires with their respective operators. Can be constructed
-    from a standard dictionary.
+    annihilation operators, that can be constructed from a standard dictionary.
 
-    To construct the operator :math:`a\dagger_0 a_1`, for example:
+    The keys of the dictionary are tuples of two integers. The first integer represents the
+    position of the creation/annihilation operator in the Fermi word and the second integer
+    represents the orbital it acts on. The values of the dictionary are one of ``'+'`` or ``'-'``
+    symbols that denote creation and annihilation operators, respectively. The operator
+    :math:`a^{\dagger}_0 a_1` can then be constructed as
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
@@ -270,6 +273,7 @@ class FermiWord(dict):
         return operator
 
 
+# pylint: disable=useless-super-delegation
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
     as FermiWord instances and the values correspond to coefficients.
@@ -286,6 +290,9 @@ class FermiSentence(dict):
     # (i.e. ensure `np.array + FermiSentence` uses `FermiSentence.__radd__` instead of `np.array.__add__`)
     __numpy_ufunc__ = None
     __array_ufunc__ = None
+
+    def __init__(self, operator):
+        super().__init__(operator)
 
     @property
     def wires(self):
@@ -458,11 +465,12 @@ class FermiSentence(dict):
 def string_to_fermi_word(fermi_string):
     r"""Return a fermionic operator object from its string representation.
 
-    The string representation is a compact format that uses the orbital index and `+` or `-` symbols
-    to indicate creation and annihilation operators, respectively. For instance, the string
-    representation for the operator :math:`a\dagger_0 a_1 a\dagger_0 a_1` is '0+ 1- 0+ 1-'. The `-`
-    symbols can be optionally dropped such that '0+ 1 0+ 1' represents the same operator. The format
-    commonly used in OpenFermion, '0^ 1 0^ 1' to represent the same operator, is also supported.
+    The string representation is a compact format that uses the orbital index and ``'+'`` or ``'-'``
+    symbols to indicate creation and annihilation operators, respectively. For instance, the string
+    representation for the operator :math:`a^{\dagger}_0 a_1 a^{\dagger}_0 a_1` is
+    ``'0+ 1- 0+ 1-'``. The ``'-'`` symbols can be optionally dropped such that ``'0+ 1 0+ 1'``
+    represents the same operator. The format commonly used in OpenFermion to represent the same
+    operator, ``'0^ 1 0^ 1'`` , is also supported.
 
     Args:
         fermi_string (str): string representation of the fermionic object
@@ -504,9 +512,9 @@ def string_to_fermi_word(fermi_string):
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(orbital)
-    The fermionic creation operator :math:`a^\dagger`
+    The fermionic creation operator :math:`a^{\dagger}`
 
-    For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^\dagger_2`. This operator applied
+    For instance, the operator ``qml.FermiC(2)`` denotes :math:`a^{\dagger}_2`. This operator applied
     to :math:`\ket{0000}` gives :math:`\ket{0010}`.
 
     Args:
@@ -518,13 +526,13 @@ class FermiC(FermiWord):
 
     **Example**
 
-    To construct the operator :math:`a^\dagger_0`:
+    To construct the operator :math:`a^{\dagger}_0`:
 
     >>> FermiC(0)
     a⁺(0)
 
     This can be combined with the annihilation operator :class:`~pennylane.FermiA`. For example,
-    :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
+    :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
     a⁺(0) a(1) a⁺(2) a(3)
@@ -561,10 +569,10 @@ class FermiA(FermiWord):
     a(0)
 
     This can be combined with the creation operator :class:`~pennylane.FermiC`. For example,
-    :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
+    :math:`a^{\dagger}_0 a_1 a^{\dagger}_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
-    a⁺(0) a(1) a⁺(0) a(1)
+    a⁺(0) a(1) a⁺(2) a(3)
     """
 
     def __init__(self, orbital):
