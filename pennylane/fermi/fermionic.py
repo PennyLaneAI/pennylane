@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Fermionic representation classes and functions."""
+"""The fermionic representation classes and functions."""
 import re
 from copy import copy
 from numbers import Number
@@ -20,10 +20,13 @@ from numpy import ndarray
 
 class FermiWord(dict):
     r"""Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
-    annihilation operators, associating wires with their respective operators. Can be constructed
-    from a standard dictionary.
+    annihilation operators, that can be constructed from a standard dictionary.
 
-    To construct the operator :math:`a\dagger_0 a_1`, for example:
+    The keys of the dictionary are tuples of two integers. The first integer represents the
+    position of the creation/annihilation operator in the Fermi word and the second integer
+    represents the orbital it acts on. The values of the dictionary are one of ``'+'`` or ``'-'``
+    symbols that denote creation and annihilation operators, respectively. The operator
+    :math:`a\dagger_0 a_1` can then be constructed as
 
     >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
@@ -284,6 +287,9 @@ class FermiSentence(dict):
     # (i.e. ensure `np.array + FermiSentence` uses `FermiSentence.__radd__` instead of `np.array.__add__`)
     __numpy_ufunc__ = None
     __array_ufunc__ = None
+
+    def __init__(self, operator):
+        super().__init__(operator)
 
     @property
     def wires(self):
@@ -562,7 +568,7 @@ class FermiA(FermiWord):
     :math:`a^\dagger_0 a_1 a^\dagger_2 a_3` can be constructed as:
 
     >>> qml.FermiC(0) * qml.FermiA(1) * qml.FermiC(2) * qml.FermiA(3)
-    a⁺(0) a(1) a⁺(0) a(1)
+    a⁺(0) a(1) a⁺(2) a(3)
     """
 
     def __init__(self, orbital):

@@ -33,8 +33,8 @@ Fermi words.
 >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
 a⁺(0) a(0) a⁺(3) a(3)
 
-The Fermi words can be linearly combined to create fermionic operators that we call a Fermi
-sentence. For instance, a fermionic Hamiltonian such as
+The Fermi words can be linearly combined to create fermionic operators that we call Fermi
+sentences. For instance, a fermionic Hamiltonian such as
 :math:`H = 1.2 a^{\dagger}_0 a_0  + 2.3 a^{\dagger}_3 a_3` can be constructed from Fermi words with
 
 >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
@@ -74,9 +74,9 @@ dictionaries that define the fermionic operators.
 For Fermi words, the dictionary items define the fermionic creation and annihilation operators.
 The keys of the dictionary are tuples of two integers. The first integer represents the
 position of the creation/annihilation operator in the Fermi word and the second integer represents
-the orbital it acts on. The values of the dictionary are ``'+'`` or ``'-'`` symbols that denote
-creation and annihilation operators, respectively. The operator
-:math:`a^{\dagger}_0 a_0 a^{\dagger}_3 a_3` can then be constructed with
+the orbital it acts on. The values of the dictionary are one of ``'+'`` or ``'-'`` symbols that
+denote creation and annihilation operators, respectively. The operator
+:math:`a^{\dagger}_0 a_3 a^{\dagger}_1` can then be constructed with
 
 >>> qml.fermi.FermiWord({(0, 0): '+', (1, 3): '-', (2, 1): '+'})
 a⁺(0) a(3) a⁺(1)
