@@ -4,12 +4,13 @@
 
 <h3>New features since last release</h3>
 
-<h4>An all-new Fermi module 🔬</h4>
+<h4>Seamlessly create and combine fermionic operators 🔬</h4>
 
 * The `qml.fermi` module is now available, including intuitive fermionic operators. 
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
+  [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
 
   The foundational operators of the Fermi module are `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, 
   respectively. These operators are defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
@@ -24,45 +25,43 @@
 
   ```
   >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
-  <FermiWord = '0+ 0- 3+ 3-'>
+  a⁺(0) a(0) a⁺(3) a(3)
   ```
 
   Alternatively, Fermi words can be created via `qml.fermi.FermiWord`:
 
-  ```pycon
-  >>> qml.fermi.FermiWord({(0, 3): '+', (0, 3): '-'})
-  <FermiWord = '0+ 0- 3+ 3-'>
+  ```
+  >>> qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
+  a⁺(3) a(3)
   ```
 
   Fermi words can then be linearly combined to create a fermionic operator that we call a Fermi
   sentence. Here is an example of creating a fermionic Hamiltonian:
 
-  ```pycon
+  ```
   >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
   >>> h
-  1.2 * '0+ 0-'
-  + 2.3 * '3+ 3-'
+  1.2 * a⁺(0) a(0)
+  + 2.3 * a⁺(3) a(3)
   ```
 
   Alternatively, Fermi sentences can be created via `qml.fermi.FermiSentence`:
 
-  ```pycon
+  ```
   >>> fw1 = qml.fermi.FermiWord({(0, 0): '+', (1, 0): '-'})
   >>> fw2 = qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
-  >>> qml.FermiSentence({fw1: 1.2, fw2, 2.3})
-  1.2 * '0+ 0-'
-  + 2.3 * '3+ 3-'
+  >>> qml.fermi.FermiSentence({fw1: 1.2, fw2: 2.3})
+  1.2 * a⁺(0) a(0)
+  + 2.3 * a⁺(3) a(3)
   ```
 
   Any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence
-  can be mapped back to the qubit basis by using `qml.jordan_wigner`:
+  can be mapped to the qubit basis by using `qml.jordan_wigner`:
 
   ```pycon
   >>> qml.jordan_wigner(h)
   ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
   ```
-
-  
 
 <h4>Workflow-level resource estimation 🧮</h4>
 
@@ -274,7 +273,8 @@
   ```
 
 * Added the `one_qubit_decomposition` function to provide a unified interface for decompositions
-  of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. 
+  of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. All
+  decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
   ```pycon
@@ -291,6 +291,10 @@
    RX(tensor(0.45246584, requires_grad=True), wires=[0]),
    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
   ```
+
+* The `has_unitary_generator` attribute in `qml.ops.qubit.attributes` no longer contains operators
+  with non-unitary generators.
+  [(#4183)](https://github.com/PennyLaneAI/pennylane/pull/4183)
 
 * PennyLane Docker builds have been updated to include the latest plugins and interface versions.
   [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
@@ -437,6 +441,23 @@
 * Jordan-Wigner transforms that cache Pauli gate objects have been accelerated.
   [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
 
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+
+* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
+  that the `pyscf` backend can be used for open-shell calculations.
+  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+
+* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
+
+* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
+
 <h4>Next-generation device API</h4>
 
 * The new device interface has been integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
@@ -448,6 +469,7 @@
 * A new function called `measure_with_samples` that returns a sample-based measurement result given a state has been added.
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
   `use_device_gradient`, and `grad_on_execution`.
@@ -529,31 +551,15 @@
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
-<h4>Other improvements</h4>
+<h4>Circuit drawing</h4>
 
-* Added the ability to draw mid-circuit measurements connected by classical control signals
-  to conditional operations.
-  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
+<h4>Other improvements</h4>
 
 * Added a transform dispatcher.
   [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
   
 * Added a transform program.
   [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
-
-* The new device interface is integrated with `qml.execute` for Tensorflow.
-  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
-
-* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
-  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
-
-* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
-  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
-  that the `pyscf` backend can be used for open-shell calculations.
-  [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
-
-* PennyLane Docker builds have been updated to include the latest plugins and interface versions.
-  [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
@@ -568,15 +574,12 @@
   `HardwareHamiltonian`s which are not checked.
   [(#4216)](https://github.com/PennyLaneAI/pennylane/pull/4216)
 
-* One qubit unitaries can now be decomposed into a `ZXZ` gate sequence (apart from the pre-existing `XYX` and `ZYZ`).
-  [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
-
 * The default value for the `show_matrices` keyword argument in all drawing methods is now `True`. 
   This allows for quick insights into broadcasted tapes, for example.
   [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
 
 * Type variables for `qml.typing.Result` and `qml.typing.ResultBatch` have been added for type hinting the result of an execution.
-  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
+  [(#4108)](https://github.com/PennyLaneAI/pennylane/pull/4108)
   
 * The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
@@ -588,9 +591,6 @@
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
-* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
-
 * Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -599,12 +599,16 @@
   the respective docstrings.
   [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
 
-* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
-  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
-
 * `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
+
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
+
+* The new device interface is integrated with `qml.execute` for Tensorflow.
+  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
 <h3>Breaking changes 💔</h3>
 
@@ -679,12 +683,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
-  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
-
-* Fixed adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+* Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
+ 
 * Fixed a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
   generating terms of a pulse Hamiltonian.
   [(4156)](https://github.com/PennyLaneAI/pennylane/pull/4156)
