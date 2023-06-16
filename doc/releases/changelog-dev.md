@@ -15,7 +15,7 @@
   representation.
   [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
 
-* The `qml.fermi` module is now available, including intuitive fermionic operators. 
+* Fermionic operators and arithmetic are now available. 
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
@@ -23,50 +23,52 @@
   [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
   [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
 
-  The foundational operators of the Fermi module are `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, 
-  respectively. These operators are defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
-  the operators $a^{\dagger}_0$ and $a_3$ are respectively constructed as
+  There are a few ways to create fermionic operators with this new feature:
 
-  ```pycon
-  >>> qml.FermiC(0)
-  >>> qml.FermiA(3)
-  ```
+  - via `qml.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
+    multiplied by each other, which we call a Fermi word.
 
-  These operators can be multiplied by each other to create a fermionic operator that we call a Fermi word.
+    ```pycon
+    >>> qml.string_to_fermi_word('0+ 1- 0+ 1-')
+    <FermiWord = '0+ 1- 0+ 1-'>
+    >>> string_to_fermi_word('0^ 1 0^ 1')
+    <FermiWord = '0+ 1- 0+ 1-'>
+    ```
 
-  ```
-  >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
-  a⁺(0) a(0) a⁺(3) a(3)
-  ```
+    Fermi words can be linearly combined to create a fermionic operator that we call a Fermi sentence:
 
-  Alternatively, Fermi words can be created via `qml.fermi.FermiWord`:
+    ```pycon 
+    >>> word1 = qml.string_to_fermi_word('0+ 0- 3+ 3-')
+    >>> word2 = string_to_fermi_word('3+ 3-')
+    >>> sentence = 1.2 * word1 - 0.345 * word2
+    >>> sentence
+    1.2 * a⁺(0) a(0) a⁺(3) a(3)
+    - 0.345 * a⁺(3) a(3)
+    ```
 
-  ```
-  >>> qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
-  a⁺(3) a(3)
-  ```
+  - via `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, respectively. These operators are 
+    defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
+    the operators $a^{\dagger}_0$ and $a_3$ are respectively constructed as
 
-  Fermi words can then be linearly combined to create a fermionic operator that we call a Fermi
-  sentence. Here is an example of creating a fermionic Hamiltonian:
+    ```pycon
+    >>> qml.FermiC(0)
+    >>> qml.FermiA(3)
+    ```
 
-  ```
-  >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
-  >>> h
-  1.2 * a⁺(0) a(0)
-  + 2.3 * a⁺(3) a(3)
-  ```
+    These operators can be composed with (`@`), linearly combined with (`+` and `-`) and multiplied by (`*`) other Fermi operators
+    to create Fermi words, sentences, and Hamiltonians. Here is an example of creating a Fermi sentence:
+    
+    ```
+    >>> word = qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
+    >>> sentence = 1.2 * word - 0.345 * qml.FermiC(3) * qml.FermiA(3)
+    >>> sentence
+    1.2 * a⁺(0) a(0) a⁺(3) a(3)
+    - 0.345 * a⁺(3) a(3)
+    ```
 
-  Alternatively, Fermi sentences can be created via `qml.fermi.FermiSentence`:
-
-  ```
-  >>> fw1 = qml.fermi.FermiWord({(0, 0): '+', (1, 0): '-'})
-  >>> fw2 = qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
-  >>> qml.fermi.FermiSentence({fw1: 1.2, fw2: 2.3})
-  1.2 * a⁺(0) a(0)
-  + 2.3 * a⁺(3) a(3)
-  ```
-
-  Any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence
+  Fermi words and sentences can also be created via `qml.fermi.FermiWord` and `qml.fermi.FermiSentence`, respectively.
+    
+  Additionally, any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence,
   can be mapped to the qubit basis by using `qml.jordan_wigner`:
 
   ```pycon
@@ -315,21 +317,21 @@
 
 * The stochastic parameter-shift gradient method can now be used with hardware-compatible
   Hamiltonians.
-  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+  [(#4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
   This new feature generalizes the stochastic parameter-shift gradient transform for pulses 
   (`stoch_pulse_grad`) to support Hermitian generating terms beyond just Pauli words in pulse Hamiltonians, 
   which makes it hardware-compatible.
 
-* The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad` now raise an error when they
-  are applied to a `QNode` directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
-  [(#4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
+* A new differentiation method called `qml.gradients.pulse_generator` is available, which combines classical processing 
+  with the parameter-shift rule for multivariate gates to differentiate pulse programs. Access it in your pulse
+  programs by setting `diff_method=qml.gradients.pulse_generator`. 
+  [(#4160)](https://github.com/PennyLaneAI/pennylane/pull/4132) 
 
 * `qml.pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
   This allows for computing Jacobians of the unitary directly even when `dense=False`.
   [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
 
-  
   ```python
   def U(params):
       H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
@@ -398,7 +400,7 @@
 
 <h4>A more flexible projector</h4>
 
-* `Projector` now accepts a state vector representation, which enables the creation of projectors
+* `qml.Projector` now accepts a state vector representation, which enables the creation of projectors
   in any basis.
   [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)
 
@@ -680,6 +682,10 @@
   [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
 
 <h3>Deprecations 👋</h3>
+
+* The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad`, now raise an error when they
+  are applied to a QNode directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
+  [(#4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
 
 * `LieAlgebraOptimizer` has been renamed to `RiemannianGradientOptimizer`.
   [(#4153)(https://github.com/PennyLaneAI/pennylane/pull/4153)]
