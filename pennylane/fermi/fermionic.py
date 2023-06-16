@@ -273,6 +273,7 @@ class FermiWord(dict):
         return operator
 
 
+# pylint: disable=useless-super-delegation
 class FermiSentence(dict):
     r"""Immutable dictionary used to represent a Fermi sentence, a linear combination of Fermi words, with the keys
     as FermiWord instances and the values correspond to coefficients.
