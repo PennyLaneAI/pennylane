@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>An all-new Fermi module 🔬</h4>
+<h4>Seamlessly create and combine fermionic operators 🔬</h4>
 
 * The `qml.fermi` module is now available, including intuitive fermionic operators. 
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
