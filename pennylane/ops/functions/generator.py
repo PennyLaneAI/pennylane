@@ -29,23 +29,21 @@ def _generator_hamiltonian(gen, op):
     wires = op.wires
 
     if isinstance(gen, qml.Hamiltonian):
-        return gen
+        H = gen
 
-    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
+    elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
         if isinstance(gen, qml.Hermitian):
             mat = gen.parameters[0]
 
         elif isinstance(gen, qml.SparseHamiltonian):
             mat = gen.parameters[0].toarray()
 
-        return qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
+        H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
-    if isinstance(gen, qml.operation.Observable):
-        return 1.0 * gen
+    elif isinstance(gen, qml.operation.Observable):
+        H = 1.0 * gen
 
-    mat = qml.matrix(gen)
-    H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True, pauli=True)
-    return H.hamiltonian(wire_order=wires)
+    return H
 
 
 def _generator_prefactor(gen):

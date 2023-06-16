@@ -744,6 +744,11 @@ def test_taper_excitations(
         (qml.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
         (
             qml.U2(1, 1, 2),
+            np.identity(16),
+            "Generator for the operation needs to be a qml.Hamiltonian",
+        ),
+        (
+            qml.U2(1, 1, 2),
             qml.Hamiltonian([1], [qml.Identity(2)]),
             "doesn't seem to be the correct generator for the",
         ),
@@ -870,40 +875,6 @@ def test_consistent_taper_ops(operation, op_gen):
                 @ scipy.sparse.coo_matrix(evolved_state_tapered).getH()
             ).toarray()
             assert np.isclose(expec_val, expec_val_tapered)
-
-
-@pytest.mark.parametrize(
-    ("operation", "op_gen"),
-    [
-        (qml.PauliX(1), qml.s_prod(np.pi / 2, qml.PauliX(wires=[1]))),
-        (qml.PauliY(2), qml.s_prod(np.pi / 2, qml.PauliY(wires=[2]))),
-        (qml.PauliZ(3), qml.s_prod(np.pi / 2, qml.PauliZ(wires=[3]))),
-        (
-            qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
-            qml.dot(
-                [0.25, -0.25, 0.25, -0.25],
-                [
-                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
-                ],
-            ),
-        ),
-    ],
-)
-def test_build_generators_with_opmath(operation, op_gen):
-    """Test that build generators returns the correct output using operator arithmetic when no generator
-    is provided."""
-    enable_new_opmath()
-    gen = _build_generator(operation, wire_order=operation.wires)
-    disable_new_opmath()
-
-    assert type(gen) == type(op_gen)
-    assert np.allclose(
-        qml.matrix(gen, wire_order=op_gen.wires),
-        qml.matrix(op_gen, wire_order=op_gen.wires),
-    )
 
 
 def test_taper_ops_opmath_error():
