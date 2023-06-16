@@ -32,6 +32,7 @@ The following frameworks are currently supported:
 * JAX
 """
 import autoray as ar
+from autoray import shape, ndim
 
 from .is_independent import is_independent
 from .matrix_manipulation import expand_matrix, reduce_matrices
