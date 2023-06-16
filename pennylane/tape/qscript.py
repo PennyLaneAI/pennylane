@@ -729,10 +729,20 @@ class QuantumScript:
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 
+        op_data = []
+        for pinfo in self._par_info:
+            if pinfo["p_idx"] == 0:
+                op_data.append((pinfo["op"], list(pinfo["op"].data)))
+            else:
+                op_data.append(op_data[-1])
+
         for idx, p in iterator:
-            op = self._par_info[idx]["op"]
-            op.data[self._par_info[idx]["p_idx"]] = p
+            op_data[idx][1][self._par_info[idx]["p_idx"]] = p
+
+        for op, d in op_data:
+            op.data = tuple(d)
             op._check_batching(op.data)
+
         self._update_batch_size()
         self._update_output_dim()
 
