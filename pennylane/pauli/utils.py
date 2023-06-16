@@ -1516,7 +1516,7 @@ def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):
 
     Returns:
         array[int]: binary matrix representation of the Hamiltonian of shape
-        :math:`len(terms) \times 2*num_qubits`
+        :math:`len(terms) * 2*num_qubits`
 
     **Example**
 
