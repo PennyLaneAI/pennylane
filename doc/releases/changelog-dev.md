@@ -36,10 +36,17 @@
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
 
-* Add `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
+* Added `FermiC` and `FermiA` classes as representations of the fermionic creation and annihilation 
   operators. These user-facing classes for creating fermonic operators are accessible as, e.g.,
   `qml.FermiC(0)` and `qml.FermiA(3)`.
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
+
+* Added the function `string_to_fermi_word` to create a `FermiWord` object from a compact string
+  representation.
+  [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
+
+* Added new string representation to `FermiWord` and `FermiSentence`.
+  [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
 
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
