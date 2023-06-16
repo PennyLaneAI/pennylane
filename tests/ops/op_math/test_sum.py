@@ -321,7 +321,7 @@ class TestMatrix:
         wires = [0, 1]
         sum_op = Sum(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
-            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+            qml.Projector(state=qnp.array([0, 1]), wires=wires),
         )
         mat = sum_op.matrix()
 

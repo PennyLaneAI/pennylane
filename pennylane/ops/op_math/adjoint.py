@@ -214,7 +214,7 @@ class Adjoint(SymbolicOp):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Adjoint", their *identity* and location in memory will
-        be different based on ``base``'s inheritance.  We cache the different types in private class
+        be different based on ``base``'s inheritance. We cache the different types in private class
         variables so that:
 
         >>> Adjoint(op).__class__ is Adjoint(op).__class__
