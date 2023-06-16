@@ -110,6 +110,8 @@ ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 # qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
+ar.register_function("autograd", "ndim", _i("autograd").numpy.ndim)
+ar.register_function("autograd", "shape", _i("autograd").numpy.shape)
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])

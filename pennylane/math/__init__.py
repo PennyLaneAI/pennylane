@@ -32,8 +32,8 @@ The following frameworks are currently supported:
 * JAX
 """
 import autoray as ar
-from autoray import shape, ndim
 
+from .single_dispatch import _i
 from .is_independent import is_independent
 from .matrix_manipulation import expand_matrix, reduce_matrices
 from .multi_dispatch import (
@@ -108,6 +108,19 @@ class NumpyMimic(ar.autoray.NumpyMimic):
         if fn == "fft":
             return numpy_fft
         return super().__getattribute__(fn)
+
+
+def ndim(a):
+    if "autograd.numpy.numpy_boxes.ArrayBox" in str(type(a)):
+        return _i("autograd").numpy.ndim(a)
+
+    return numpy_mimic.ndim(a)
+
+def shape(a):
+    if "autograd.numpy.numpy_boxes.ArrayBox" in str(type(a)):
+        return _i("autograd").numpy.shape(a)
+
+    return numpy_mimic.shape(a)
 
 
 numpy_mimic = NumpyMimic()

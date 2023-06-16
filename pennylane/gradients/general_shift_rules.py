@@ -412,7 +412,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         ) + qml.math.convert_like(shift, new_params[idx])
 
         shifted_tape = tape.copy(copy_operations=True)
-        shifted_tape.set_parameters(new_params)
+        shifted_tape.set_parameters(new_params, disable_check_batching=True)
         return shifted_tape
 
     params = list(tape.get_parameters())
