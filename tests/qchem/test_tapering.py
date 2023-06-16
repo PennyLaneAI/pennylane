@@ -533,7 +533,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
     assert np.all(tapered_hf_state == result)
 
 
-# @pytest.mark.parametrize("op_arithmetic", [False, True])
+@pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge"),
     [
@@ -568,12 +568,11 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
     ],
 )
-def test_taper_obs(symbols, geometry, charge):
+def test_taper_obs(symbols, geometry, charge, op_arithmetic):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
-    # if op_arithmetic:
-    #     enable_new_opmath()
-
+    if op_arithmetic:
+        enable_new_opmath()
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
@@ -599,25 +598,29 @@ def test_taper_obs(symbols, geometry, charge):
         qml.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
+        if op_arithmetic:
+            enable_new_opmath()
+
         obs_ps = qml.pauli.pauli_sentence(observable)
         tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
         tapered_ps = _taper_pauli_sentence(obs_ps, generators, paulixops, paulix_sector)
 
         obs_val = (
             scipy.sparse.coo_matrix(state)
-            @ observable.sparse_matrix()
+            @ observable.sparse_matrix(wire_order=range(len(observable.wires)))
             @ scipy.sparse.coo_matrix(state).T
         ).toarray()
         obs_val_tapered = (
             scipy.sparse.coo_matrix(state_tapered)
-            @ tapered_obs.sparse_matrix()
+            @ tapered_obs.sparse_matrix(wire_order=range(len(tapered_obs.wires)))
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
+
+        if op_arithmetic:
+            disable_new_opmath()
+
         assert np.isclose(obs_val, obs_val_tapered)
         assert qml.equal(tapered_obs, tapered_ps)
-
-    # if op_arithmetic:
-    #     disable_new_opmath()
 
 
 @pytest.mark.parametrize(
