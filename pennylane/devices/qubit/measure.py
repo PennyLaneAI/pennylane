@@ -135,17 +135,23 @@ def get_measurement_function(
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
-            if isinstance(measurementprocess.obs, Hamiltonian) or (
-                isinstance(measurementprocess.obs, Sum)
-                and measurementprocess.obs.has_overlapping_wires
-                and len(measurementprocess.obs.wires) > 7
-            ):
-                # Use tensor contraction for `Sum` expectation values with non-commuting summands
-                # and 8 or more wires as it's faster than using eigenvalues.
-
+            backprop_mode = math.get_interface(state) != "numpy"
+            if isinstance(measurementprocess.obs, Hamiltonian):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
-                backprop_mode = math.get_interface(state) != "numpy"
                 return sum_of_terms_method if backprop_mode else csr_dot_products
+
+            if isinstance(measurementprocess.obs, Sum):
+                if backprop_mode:
+                    # always use sum_of_terms_method for Sum observables in backprop mode
+                    return sum_of_terms_method
+                if (
+                    measurementprocess.obs.has_overlapping_wires
+                    and len(measurementprocess.obs.wires) > 7
+                ):
+                    # Use tensor contraction for `Sum` expectation values with non-commuting summands
+                    # and 8 or more wires as it's faster than using eigenvalues.
+
+                    return csr_dot_products
 
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
