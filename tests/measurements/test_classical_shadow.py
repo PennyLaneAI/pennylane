@@ -233,8 +233,8 @@ class TestProcessState:
         mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
         mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
 
-        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000)
-        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000)
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=100)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=200)
 
         # test results are different
         assert res1 != res2
