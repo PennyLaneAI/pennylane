@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Fermionic representation classes."""
+"""The Fermionic representation classes and functions."""
 import re
 from copy import copy
 from numbers import Number
