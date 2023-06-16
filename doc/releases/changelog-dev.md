@@ -30,33 +30,33 @@
 
   Alternatively, Fermi words can be created via `qml.fermi.FermiWord`:
 
-  ```pycon
-  >>> qml.fermi.FermiWord({(0, 3): '+', (0, 3): '-'})
-  <FermiWord = '0+ 0- 3+ 3-'>
+  ```
+  >>> qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
+  a⁺(3) a(3)
   ```
 
   Fermi words can then be linearly combined to create a fermionic operator that we call a Fermi
   sentence. Here is an example of creating a fermionic Hamiltonian:
 
-  ```pycon
+  ```
   >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
   >>> h
-  1.2 * '0+ 0-'
-  + 2.3 * '3+ 3-'
+  1.2 * a⁺(0) a(0)
+  + 2.3 * a⁺(3) a(3)
   ```
 
   Alternatively, Fermi sentences can be created via `qml.fermi.FermiSentence`:
 
-  ```pycon
+  ```
   >>> fw1 = qml.fermi.FermiWord({(0, 0): '+', (1, 0): '-'})
   >>> fw2 = qml.fermi.FermiWord({(0, 3): '+', (1, 3): '-'})
-  >>> qml.FermiSentence({fw1: 1.2, fw2, 2.3})
-  1.2 * '0+ 0-'
-  + 2.3 * '3+ 3-'
+  >>> qml.fermi.FermiSentence({fw1: 1.2, fw2: 2.3})
+  1.2 * a⁺(0) a(0)
+  + 2.3 * a⁺(3) a(3)
   ```
 
   Any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence
-  can be mapped back to the qubit basis by using `qml.jordan_wigner`:
+  can be mapped to the qubit basis by using `qml.jordan_wigner`:
 
   ```pycon
   >>> qml.jordan_wigner(h)
