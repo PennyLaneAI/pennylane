@@ -360,6 +360,10 @@
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
 
+* The public methods of `DefaultQubit` are pending changes to follow the new device API, as used in
+  `DefaultQubit2`. Warnings have been added to the docstrings to reflect this.
+  [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
+
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
