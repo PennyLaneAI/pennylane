@@ -359,7 +359,6 @@ def test_projector(op, new_params, expected_op):
     assert new_op is not op
 
 
-
 def test_unsupported_op_copy_and_set():
     """Test that trying to use `bind_new_parameters` on an operator without
     a supported dispatcher will fall back to copying the operator and setting
