@@ -25,6 +25,7 @@ from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
 
 from ..identity import Identity
+from ..qubit import Projector
 from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow, SProd
 
 
@@ -118,6 +119,14 @@ def bind_new_parameters_adjoint(op: Adjoint, params: Sequence[TensorLike]):
     # signature results in a call to `Adjoint.__new__` which doesn't raise an
     # error but does return an unusable object.
     return Adjoint(bind_new_parameters(op.base, params))
+
+
+@bind_new_parameters.register
+def bind_new_parameters_projector(op: Projector, params: Sequence[TensorLike]):
+    # Need a separate dispatch for `Projector` because using a more general class
+    # signature results in a call to `Projector.__new__` which doesn't raise an
+    # error but does return an unusable object.
+    return Projector(*params, wires=op.wires)
 
 
 @bind_new_parameters.register
