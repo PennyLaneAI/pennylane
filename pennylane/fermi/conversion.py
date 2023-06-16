@@ -15,15 +15,19 @@
 
 from functools import singledispatch
 from typing import Union
+import numpy as np
 
-from pennylane.operation import Operator
+import pennylane as qml
+from pennylane.operation import Operator, Tensor
 from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli.utils import _get_pauli_map, _pauli_mult
 from .fermionic import FermiWord, FermiSentence
 
 
+# pylint: disable=unexpected-keyword-arg
 @singledispatch
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), ps=False, wire_order=None
+    fermi_operator: (Union[FermiWord, FermiSentence]), *kwargs
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -133,3 +137,90 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
         return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
+
+
+@jordan_wigner.register
+def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too-many-branches
+    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
+
+    For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
+    [2, 0]. The two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
+    as [4, 3, 2, 1] with ``notation='physicist'``. If ``notation`` is set to ``'chemist'``, the
+    two-body operator [4, 3, 2, 1] is constructed as :math:`a_4^\dagger a_3 a_2^\dagger a_1`.
+
+    Args:
+        op (list[int]): the fermionic operator
+        notation (str): notation specifying the order of the two-body fermionic operators
+
+    Returns:
+        tuple(list[complex], list[Operation]): list of coefficients and qubit operators
+
+    **Example**
+
+    >>> f  = [0, 0]
+    >>> q = jordan_wigner(f)
+    >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
+    """
+    if len(op) == 1:
+        op = [(op[0], 1)]
+
+    if len(op) == 2:
+        op = [(op[0], 1), (op[1], 0)]
+
+    if len(op) == 4:
+        if notation == "physicist":
+            if op[0] == op[1] or op[2] == op[3]:
+                return [0], [qml.Identity(wires=[min(op)])]
+            op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
+        elif notation == "chemist":
+            if (op[0] == op[2] or op[1] == op[3]) and op[1] != op[2]:
+                return [0], [qml.Identity(wires=[min(op)])]
+            op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
+        else:
+            raise ValueError(
+                f"Currently, the only supported notations for the two-body terms are 'physicist'"
+                f" and 'chemist', got notation = '{notation}'."
+            )
+
+    q = [[(0, "I"), 1.0]]
+    for l in op:
+        z = [(index, "Z") for index in range(l[0])]
+        x = z + [(l[0], "X"), 0.5]
+        if l[1]:
+            y = z + [(l[0], "Y"), -0.5j]
+        else:
+            y = z + [(l[0], "Y"), 0.5j]
+
+        m = []
+        for t1 in q:
+            for t2 in [x, y]:
+                q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
+                m.append(q1 + [c1 * t1[-1] * t2[-1]])
+        q = m
+
+    c = [p[-1] for p in q]
+    o = [p[:-1] for p in q]
+
+    for item in o:
+        k = [i for i, x in enumerate(o) if x == item]
+        if len(k) >= 2:
+            for j in k[::-1][:-1]:
+                del o[j]
+                c[k[0]] = c[k[0]] + c[j]
+                del c[j]
+
+    # Pauli gates objects pregenerated for speed
+    pauli_map = _get_pauli_map(np.max(op))
+    for i, term in enumerate(o):
+        if len(term) == 0:
+            # moved function from qchem.observable_hf without any changes to tests
+            # codecov complained this line is not covered
+            # function to be deprecated next release
+            # not going to write a test to cover this line
+            o[i] = qml.Identity(0)  # pragma: no cover
+        else:
+            k = [pauli_map[t[0]][t[1]] for t in term]
+            o[i] = Tensor(*k)
+
+    return c, o
