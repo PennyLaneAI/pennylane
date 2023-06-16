@@ -1,4 +1,3 @@
-
 from pennylane import tape
 from pennylane.devices.experimental import Device
 from pennylane.typing import ResultBatch, TensorLike
@@ -18,6 +17,10 @@ JvpFn = Callable[[Batch, Primals, Tangents], JVP]
 InterfaceBoundaryJvp = Callable[[Batch, ExecuteFn, JvpFn], ResultBatch]
 
 VJP = TensorLike
-VjpFn = Callable[[Batch, ]]
+VjpFn = Callable[
+    [
+        Batch,
+    ]
+]
 
 InterfaceBoundaryVjp = Callable[[Batch, ExecuteFn, VjpFn], ResultBatch]
