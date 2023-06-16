@@ -18,6 +18,7 @@ that they are supported for execution by a device."""
 from dataclasses import replace
 from typing import Generator, Callable, Tuple, Union
 import warnings
+from functools import partial
 
 import pennylane as qml
 
@@ -248,7 +249,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
 
 
 def batch_transform(
-    circuit: qml.tape.QuantumScript,
+    circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
 ) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
@@ -265,15 +266,18 @@ def batch_transform(
 
     Args:
         circuit (.QuantumTape): the circuit to preprocess
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
 
     Returns:
         tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
         the sequence of circuits to be executed, and a post-processing function
         to be applied to the list of evaluated circuit results.
     """
-    # Check whether the circuit was broadcasted
-    if circuit.batch_size is None:
-        # If the circuit wasn't broadcasted, no action required
+    # Check whether the circuit was broadcasted or if the diff method is anything other than adjoint
+    if circuit.batch_size is None or execution_config.gradient_method != "adjoint":
+        # If the circuit wasn't broadcasted, or if built-in PennyLane broadcasting
+        # can be used, then no action required
         circuits = [circuit]
 
         def batch_fn(res: ResultBatch) -> Result:
@@ -340,6 +344,7 @@ def preprocess(
             if isinstance(circuit_or_error, DeviceError):
                 raise circuit_or_error  # it's an error
 
-    circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
+    transform = partial(batch_transform, execution_config=execution_config)
+    circuits, batch_fn = qml.transforms.map_batch_transform(transform, circuits)
 
     return circuits, batch_fn, _update_config(execution_config)

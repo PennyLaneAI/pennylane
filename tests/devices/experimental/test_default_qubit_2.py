@@ -1337,7 +1337,11 @@ def test_broadcasted_parameter():
     dev = DefaultQubit2()
     x = np.array([0.536, 0.894])
     qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-    batch, post_processing_fn, config = dev.preprocess(qs)
+
+    config = ExecutionConfig()
+    config.gradient_method = "adjoint"
+    batch, post_processing_fn, config = dev.preprocess(qs, config)
+
     assert len(batch) == 2
     results = dev.execute(batch, config)
     processed_results = post_processing_fn(results)

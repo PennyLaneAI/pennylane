@@ -192,6 +192,7 @@ class TestFermiWordArithmetic:
         (fw2, 2j, FermiSentence({fw2: 2j})),  # complex
         (fw2, np.array([2]), FermiSentence({fw2: 2})),  # numpy array
         (fw1, pnp.array([2]), FermiSentence({fw1: 2})),  # pennylane numpy array
+        (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 2})),  # pennylane tensor with no length
     )
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
@@ -282,6 +283,11 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: 5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane numpy array
+        (
+            fw1,
+            pnp.array([2, 2])[0],
+            FermiSentence({fw1: 1, fw4: 2}),
+        ),  # pennylane tensor with no length
         (fw4, 2, FermiSentence({fw4: 3})),  # FermiWord is Identity
     ]
 
@@ -345,6 +351,11 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: -(1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: -5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: -2.8})),  # pennylane numpy array
+        (
+            fw1,
+            pnp.array([2, 2])[0],
+            FermiSentence({fw1: 1, fw4: -2}),
+        ),  # pennylane tensor with no length
         (fw4, 2, FermiSentence({fw4: -1})),  # FermiWord is Identity
     ]
 
@@ -366,6 +377,11 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: -1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: -1, fw4: 5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane numpy array
+        (
+            fw1,
+            pnp.array([2, 2])[0],
+            FermiSentence({fw1: -1, fw4: 2}),
+        ),  # pennylane tensor with no length
         (fw4, 2, FermiSentence({fw4: 1})),  # FermiWord is Identity
     ]
 
@@ -665,6 +681,11 @@ class TestFermiSentenceArithmetic:
             pnp.array([2]),
             FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
         ),  # pennylane numpy array
+        (
+            fs1,
+            pnp.array([2, 2])[0],
+            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
+        ),  # pennylane tensor with no length
     )
 
     @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
@@ -736,6 +757,11 @@ class TestFermiSentenceArithmetic:
             pnp.array([3]),
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
         ),  # pennylane numpy array
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            pnp.array([3, 0])[0],
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
+        ),  # pennylane tensor with no length
     ]
 
     @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
@@ -803,6 +829,11 @@ class TestFermiSentenceArithmetic:
             pnp.array([3]),
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
         ),  # pennylane numpy array
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            pnp.array([3, 2])[0],
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
+        ),  # pennylane tensor with no len
     )
 
     @pytest.mark.parametrize("fs, c, result", SENTENCE_MINUS_CONSTANT)
@@ -834,6 +865,11 @@ class TestFermiSentenceArithmetic:
             pnp.array([3]),
             FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
         ),  # pennylane numpy array
+        (
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            pnp.array([3, 3])[0],
+            FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
+        ),  # pennylane tensor with to len
     )
 
     @pytest.mark.parametrize("fs, c, result", CONSTANT_MINUS_SENTENCE)

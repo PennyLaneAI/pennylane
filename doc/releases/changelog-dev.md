@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
-  without mutating the original operator.
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+  [(#4256)](https://github.com/PennyLaneAI/pennylane/pull/4256)
 
 * Added the `TRX` qutrit rotation operation, which allows applying an X rotation on a
   given subspace.
@@ -55,6 +55,7 @@
   using `+`, `-` and `*` between 
   `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
   [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+  [(#4262)](https://github.com/PennyLaneAI/pennylane/pull/4262)
 
 * Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
@@ -313,6 +314,9 @@
 * The new device interface is integrated with `qml.execute` for Tensorflow.
   [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
+* Updated various qubit tapering methods to support operator arithmetic.
+  [(#4252)](https://github.com/PennyLaneAI/pennylane/pull/4252)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -356,6 +360,10 @@
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
+* The public methods of `DefaultQubit` are pending changes to follow the new device API, as used in
+  `DefaultQubit2`. Warnings have been added to the docstrings to reflect this.
+  [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
 
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -435,6 +443,7 @@
 This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
+Utkarsh Azad
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Emiliano Godinez Ramirez
