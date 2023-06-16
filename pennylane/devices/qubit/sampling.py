@@ -32,6 +32,7 @@ def measure_with_samples(
     mp: Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
+    is_state_batched: bool = False,
     rng=None,
 ) -> TensorLike:
     """
@@ -44,6 +45,7 @@ def measure_with_samples(
             The sample measurement to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
+        is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -58,7 +60,10 @@ def measure_with_samples(
 
             def _sum_for_single_shot(s):
                 return sum(
-                    c * measure_with_samples(ExpectationMP(t), state, s, rng=rng)
+                    c
+                    * measure_with_samples(
+                        ExpectationMP(t), state, s, is_state_batched=is_state_batched, rng=rng
+                    )
                     for c, t in zip(*mp.obs.terms())
                 )
 
@@ -69,7 +74,10 @@ def measure_with_samples(
 
             def _sum_for_single_shot(s):
                 return sum(
-                    measure_with_samples(ExpectationMP(t), state, s, rng=rng) for t in mp.obs
+                    measure_with_samples(
+                        ExpectationMP(t), state, s, is_state_batched=is_state_batched, rng=rng
+                    )
+                    for t in mp.obs
                 )
 
             unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
@@ -79,11 +87,13 @@ def measure_with_samples(
         return _measure_classical_shadow(mp, state, shots, rng=rng)
 
     # measure with the usual method (rotate into the measurement basis)
-    return _measure_with_samples_diagonalizing_gates(mp, state, shots, rng=rng)
+    return _measure_with_samples_diagonalizing_gates(
+        mp, state, shots, is_state_batched=is_state_batched, rng=rng
+    )
 
 
 def _measure_with_samples_diagonalizing_gates(
-    mp: SampleMeasurement, state: np.ndarray, shots: Shots, rng=None
+    mp: SampleMeasurement, state: np.ndarray, shots: Shots, is_state_batched: bool = False, rng=None
 ) -> TensorLike:
     """
     Returns the samples of the measurement process performed on the given state,
@@ -94,6 +104,7 @@ def _measure_with_samples_diagonalizing_gates(
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
+        is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -104,9 +115,12 @@ def _measure_with_samples_diagonalizing_gates(
     # apply diagonalizing gates
     pre_rotated_state = state
     for op in mp.diagonalizing_gates():
-        pre_rotated_state = apply_operation(op, pre_rotated_state)
+        pre_rotated_state = apply_operation(
+            op, pre_rotated_state, is_state_batched=is_state_batched
+        )
 
-    wires = qml.wires.Wires(range(len(state.shape)))
+    total_indices = len(state.shape) - is_state_batched
+    wires = qml.wires.Wires(range(total_indices))
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -115,7 +129,9 @@ def _measure_with_samples_diagonalizing_gates(
             # currently we call sample_state for each shot entry, but it may be
             # better to call sample_state just once with total_shots, then use
             # the shot_range keyword argument
-            samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
+            samples = sample_state(
+                pre_rotated_state, shots=s, is_state_batched=is_state_batched, wires=wires, rng=rng
+            )
 
             if not isinstance(processed := mp.process_samples(samples, wires), dict):
                 processed = qml.math.squeeze(processed)
@@ -124,7 +140,13 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed_samples)
 
-    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=wires, rng=rng)
+    samples = sample_state(
+        pre_rotated_state,
+        shots=shots.total_shots,
+        is_state_batched=is_state_batched,
+        wires=wires,
+        rng=rng,
+    )
 
     if not isinstance(processed := mp.process_samples(samples, wires), dict):
         processed = qml.math.squeeze(processed)
@@ -161,13 +183,16 @@ def _measure_classical_shadow(
     return mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)
 
 
-def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
+def sample_state(
+    state, shots: int, is_state_batched: bool = False, wires=None, rng=None
+) -> np.ndarray:
     """
     Returns a series of samples of a state.
 
     Args:
         state (array[complex]): A state vector to be sampled
         shots (int): The number of samples to take
+        is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
@@ -177,12 +202,21 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
         ndarray[bool]: Sample values of the shape (shots, num_wires)
     """
     rng = np.random.default_rng(rng)
-    state_wires = qml.wires.Wires(range(len(state.shape)))
+
+    total_indices = len(state.shape) - is_state_batched
+    state_wires = qml.wires.Wires(range(total_indices))
+
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
     basis_states = np.arange(2**num_wires)
 
     probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
-    samples = rng.choice(basis_states, shots, p=probs)
+
+    if is_state_batched:
+        # rng.choice doesn't support broadcasting
+        samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
+    else:
+        samples = rng.choice(basis_states, shots, p=probs)
+
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     return (samples[..., None] & powers_of_two).astype(np.bool8)

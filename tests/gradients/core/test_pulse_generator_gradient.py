@@ -1121,6 +1121,24 @@ class TestPulseGeneratorTape:
 class TestPulseGeneratorQNode:
     """Test that pulse_generator integrates correctly with QNodes."""
 
+    def test_raises_for_application_to_qnodes(self):
+        """Test that an error is raised when applying ``stoch_pulse_grad``
+        to a QNode directly."""
+
+        dev = qml.device("default.qubit.jax", wires=1)
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], 0.2)
+            return qml.expval(qml.PauliZ(0))
+
+        _match = "pulse generator parameter-shift gradient transform to a QNode directly"
+        with pytest.raises(NotImplementedError, match=_match):
+            pulse_generator(circuit)
+
+    # TODO: include the following tests when #4225 is resolved.
+    @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_expval_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
@@ -1146,8 +1164,7 @@ class TestPulseGeneratorQNode:
         assert jnp.allclose(grad, exp_grad)
         assert tracker.totals["executions"] == 2  # two shifted tapes
 
-    # Applying QNode-level gradient transforms with non-scalar parameters is not supported yet
-    @pytest.mark.xfail
+    @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_expval_probs_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
@@ -1179,8 +1196,7 @@ class TestPulseGeneratorQNode:
         for j, e in zip(jac, exp_jac):
             assert qml.math.allclose(j, e)
 
-    # Applying QNode-level gradient transforms with non-scalar parameters is not supported yet
-    @pytest.mark.xfail
+    @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_probs_expval_multi_par(self):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
