@@ -31,7 +31,7 @@ def _generator_hamiltonian(gen, op):
     if isinstance(gen, qml.Hamiltonian):
         return gen
 
-    elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
+    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
         if isinstance(gen, qml.Hermitian):
             mat = gen.parameters[0]
 
@@ -40,7 +40,7 @@ def _generator_hamiltonian(gen, op):
 
         return qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
-    elif isinstance(gen, qml.operation.Observable):
+    if isinstance(gen, qml.operation.Observable):
         return 1.0 * gen
 
     mat = qml.matrix(gen)
