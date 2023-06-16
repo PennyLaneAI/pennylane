@@ -1699,10 +1699,10 @@ class TestNewDeviceIntegration:
         ):
             circuit()
 
-        results = circuit(shots=10)  # pylint: disable-unexpected-keyword-arg
+        results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((10, 2)))
 
-        results = circuit(shots=20)  # pylint: disable-unexpected-keyword-arg
+        results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
