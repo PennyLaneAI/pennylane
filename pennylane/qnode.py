@@ -504,7 +504,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    def _update_gradient_fn(self):
+    def _update_gradient_fn(self, shots=None):
         if self.diff_method is None:
             self._interface = None
             self.gradient_fn = None
@@ -523,7 +523,7 @@ class QNode:
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
-            self._original_device, self.interface, self.diff_method
+            self._original_device, self.interface, self.diff_method, shots=shots
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
@@ -547,7 +547,7 @@ class QNode:
 
     # pylint: disable=too-many-return-statements
     @staticmethod
-    def get_gradient_fn(device, interface, diff_method="best"):
+    def get_gradient_fn(device, interface, diff_method="best", shots=None):
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
@@ -564,10 +564,10 @@ class QNode:
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         if diff_method == "best":
-            return QNode.get_best_method(device, interface)
+            return QNode.get_best_method(device, interface, shots=shots)
 
         if diff_method == "backprop":
-            return QNode._validate_backprop_method(device, interface)
+            return QNode._validate_backprop_method(device, interface, shots=shots)
 
         if diff_method == "adjoint":
             return QNode._validate_adjoint_method(device)
@@ -602,7 +602,7 @@ class QNode:
         )
 
     @staticmethod
-    def get_best_method(device, interface):
+    def get_best_method(device, interface, shots=None):
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
 
@@ -630,7 +630,7 @@ class QNode:
             return QNode._validate_device_method(device)
         except qml.QuantumFunctionError:
             try:
-                return QNode._validate_backprop_method(device, interface)
+                return QNode._validate_backprop_method(device, interface, shots=shots)
             except qml.QuantumFunctionError:
                 try:
                     return QNode._validate_parameter_shift(device)
@@ -676,7 +676,10 @@ class QNode:
         return transform
 
     @staticmethod
-    def _validate_backprop_method(device, interface):
+    def _validate_backprop_method(device, interface, shots=None):
+        if shots is not None or getattr(device, "shots", None) is not None:
+            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+
         if isinstance(device, qml.devices.experimental.Device):
             config = qml.devices.experimental.ExecutionConfig(
                 gradient_method="backprop", interface=interface
@@ -684,8 +687,6 @@ class QNode:
             if device.supports_derivatives(config):
                 return "backprop", {}, device
             raise qml.QuantumFunctionError(f"Device {device.name} does not support backprop")
-        if device.shots is not None:
-            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
         mapped_interface = INTERFACE_MAP.get(interface, interface)
 
@@ -918,6 +919,8 @@ class QNode:
                 # update the gradient function
                 if isinstance(self._original_device, Device):
                     set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
+                else:
+                    self._update_gradient_fn(shots=override_shots)
 
             else:
                 if isinstance(self._original_device, Device):
