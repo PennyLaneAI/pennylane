@@ -419,6 +419,12 @@ class TestHamiltonianReturn:
         expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
         assert gen.compare(expected)
 
+    def test_arithmetic(self):
+        """Test a generator that returns a sum"""
+        gen = qml.generator(qml.OrbitalRotation, format="hamiltonian")(np.pi, wires=[0, 1, 2, 3])
+        assert gen.name == "Hamiltonian"
+        assert gen.compare(qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]).generator())
+
 
 class TestArithmeticReturn:
     """Tests for format="arithmetic". This format always returns the generator as an Arithmetic Operator."""

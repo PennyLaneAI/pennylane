@@ -34,6 +34,7 @@ from pennylane.qchem.tapering import (
     taper_operation,
     _split_pauli_sentence,
     _taper_pauli_sentence,
+    _build_generator,
 )
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 
@@ -869,6 +870,66 @@ def test_consistent_taper_ops(operation, op_gen):
                 @ scipy.sparse.coo_matrix(evolved_state_tapered).getH()
             ).toarray()
             assert np.isclose(expec_val, expec_val_tapered)
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_gen"),
+    [
+        (qml.PauliX(1), qml.s_prod(np.pi / 2, qml.PauliX(wires=[1]))),
+        (qml.PauliY(2), qml.s_prod(np.pi / 2, qml.PauliY(wires=[2]))),
+        (qml.PauliZ(3), qml.s_prod(np.pi / 2, qml.PauliZ(wires=[3]))),
+        (
+            qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
+            qml.dot(
+                [0.25, -0.25, 0.25, -0.25],
+                [
+                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+                ],
+            ),
+        ),
+    ],
+)
+def test_build_generators_with_opmath(operation, op_gen):
+    """Test that build generators returns the correct output using operator arithmetic when no generator
+    is provided."""
+    enable_new_opmath()
+    gen = _build_generator(operation, wire_order=operation.wires)
+    disable_new_opmath()
+
+    assert type(gen) == type(op_gen)
+    assert np.allclose(
+        qml.matrix(gen, wire_order=op_gen.wires),
+        qml.matrix(op_gen, wire_order=op_gen.wires),
+    )
+
+
+def test_taper_ops_opmath_error():
+    """Test that an error is raised if taper_operations() is used with enable_new_opmath()."""
+    symbols, geometry, charge, operation, op_wires, op_gen = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+        qml.RZ,
+        [3],
+        None,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    enable_new_opmath()
+    with pytest.raises(qml.QuantumFunctionError, match="This function is currently not supported"):
+        taper_operation(
+            operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
+        )
+    disable_new_opmath()
 
 
 @pytest.mark.parametrize(

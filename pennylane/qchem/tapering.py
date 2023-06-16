@@ -758,6 +758,12 @@ def taper_operation(
 
             V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
     """
+    if active_new_opmath():
+        raise qml.QuantumFunctionError(
+            "This function is currently not supported with the new operator arithmetic "
+            "framework. Please de-activate it using qml.disable_new_opmath()"
+        )
+
     # maintain a flag to track functional form of the operation
     callable_op = callable(operation)
     # get dummy objects in case functional form of operation or op_gen is being used
