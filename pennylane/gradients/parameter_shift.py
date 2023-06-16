@@ -419,9 +419,9 @@ def expval_param_shift(
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, *_ = tape.get_operation(idx)
+        op, op_idx, _ = tape.get_operation(idx)
 
-        if op.name == "Hamiltonian":
+        if op.name in ("Hamiltonian", "SProd", "Sum"):
             # operation is a Hamiltonian
             if op.return_type is not qml.measurements.Expectation:
                 raise ValueError(
@@ -429,7 +429,12 @@ def expval_param_shift(
                     f"coefficients for expectations, not {op.return_type.value}"
                 )
 
-            g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
+            if op.name == "Hamiltonian":
+                g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
+            elif op.name == "Sum":
+                g_tapes, h_fn = qml.gradients.sum_grad(tape, idx)
+            else:
+                g_tapes, h_fn = qml.gradients.sprod_grad(tape, op_idx, op)
             gradient_tapes.extend(g_tapes)
             # hamiltonian_grad always returns a list with a single tape!
             gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))

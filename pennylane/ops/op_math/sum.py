@@ -167,6 +167,7 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+    grad_method = "A"
 
     @property
     def hash(self):

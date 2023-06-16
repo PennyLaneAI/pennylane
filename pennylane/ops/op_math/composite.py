@@ -77,6 +77,7 @@ class CompositeOp(Operator):
             self.queue()
 
         self._check_batching(None)  # unused param
+        self.grad_recipe = [None] * self.num_params
 
     def _check_batching(self, _):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}

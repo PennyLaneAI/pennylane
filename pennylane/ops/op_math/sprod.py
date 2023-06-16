@@ -138,6 +138,7 @@ class SProd(ScalarSymbolicOp):
 
     """
     _name = "SProd"
+    grad_method = "A"
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=None, id=None):
         super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
@@ -151,6 +152,8 @@ class SProd(ScalarSymbolicOp):
             self._pauli_rep = qml.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None
+
+        self.grad_recipe = [None] * self.num_params
 
     def __repr__(self):
         """Constructor-call-like representation."""
