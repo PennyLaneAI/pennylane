@@ -441,6 +441,9 @@
 * Fixed bug that caused `ShotAdaptiveOptimizer` to truncate dimensions of parameter-distributed shots during optimization.
   [(#4240)](https://github.com/PennyLaneAI/pennylane/pull/4240)
 
+* Allow for `Sum` observables with trainable parameters.
+  [(#4251)](https://github.com/PennyLaneAI/pennylane/pull/4251)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
