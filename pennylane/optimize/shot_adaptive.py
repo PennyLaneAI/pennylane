@@ -422,7 +422,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             list[array]: The new variable values :math:`x^{(t+1)}`.
             If single arg is provided, list[array] is replaced by array.
         """
-
         self.trainable_args = set()
 
         for index, arg in enumerate(args):
@@ -479,11 +478,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
             smax = max(s[argmax_gamma], 2)
-            self.s[idx] = (
-                np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
-                if len(self.s[idx].shape) <= 1
-                else self.s[idx][:, np.newaxis]
-            )
+
+            clipped_s = np.int64(np.clip(s, min(2, self.min_shots), smax))
+            # self.s[idx] = np.squeeze(clipped_s) if len(self.s[idx].shape) < 2 else clipped_s
+            # self.s[idx] = np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
+            self.s[idx] = clipped_s
 
         self.k += 1
 
