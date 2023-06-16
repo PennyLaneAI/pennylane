@@ -25,7 +25,7 @@ from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_deco
 from pennylane.measurements import Shots
 
 from .parameter_shift import _make_zero_rep
-from .pulse_gradient import _assert_has_jax
+from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 from .gradient_transform import (
     _all_zero_grad,
     assert_active_return,
@@ -455,7 +455,14 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         This function requires the JAX interface and does not work with other autodiff interfaces
         commonly encountered with PennyLane.
-        In addition, this transform is only JIT-compatible with pulses that only have scalar parameters.
+        In addition, this transform is only JIT-compatible with pulses that only have scalar
+        parameters.
+
+    .. warning::
+
+        This transform may not be applied directly to QNodes. Use JAX entrypoints
+        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape
+        level. Also see the examples below.
 
     **Example**
 
@@ -702,3 +709,14 @@ def expand_invalid_trainable_pulse_generator(x, *args, **kwargs):
 pulse_generator = gradient_transform(
     _pulse_generator, expand_fn=expand_invalid_trainable_pulse_generator
 )
+
+
+@pulse_generator.custom_qnode_wrapper
+def pulse_generator_qnode_wrapper(self, qnode, targs, tkwargs):
+    """A custom QNode wrapper for the gradient transform :func:`~.pulse_generator`.
+    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    is not supported.
+    """
+    # pylint:disable=unused-argument
+    transform_name = "pulse generator parameter-shift"
+    raise_pulse_diff_on_qnode(transform_name)

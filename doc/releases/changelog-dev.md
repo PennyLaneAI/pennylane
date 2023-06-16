@@ -55,6 +55,7 @@
   using `+`, `-` and `*` between 
   `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
   [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+  [(#4262)](https://github.com/PennyLaneAI/pennylane/pull/4262)
 
 * Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
@@ -65,6 +66,30 @@
 
 * The experimental device interface is integrated with the `QNode`.
   [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
+
+* `Projector` now accepts a state vector representation, which enables the creation of projectors
+  in any basis.
+  [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(state):
+      return qml.expval(qml.Projector(state, wires=[0, 1]))
+  zero_state = [0, 0]
+  plusplus_state = np.array([1, 1, 1, 1]) / 2
+  ```
+  ```pycon
+  >>> circuit(zero_state)
+  1.
+  >>> 
+  >>> circuit(plusplus_state)
+  0.25
+  ```
+
+* The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad` now raise an error when they
+  are applied to a `QNode` directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
+  [(4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
 
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
   of parametrized coefficients in the `ParametrizedHamiltonian` that generates it. An exception is made for
@@ -241,6 +266,9 @@
   to conditional operations.
   [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
 
+* The new device interface in integrated with `qml.execute` for Torch.
+  [(#4257)](https://github.com/PennyLaneAI/pennylane/pull/4257)
+
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
 * The quantum information module now supports computation of [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
@@ -288,6 +316,9 @@
 * The new device interface is integrated with `qml.execute` for Tensorflow.
   [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
+* Updated various qubit tapering methods to support operator arithmetic.
+  [(#4252)](https://github.com/PennyLaneAI/pennylane/pull/4252)
+
 <h3>Breaking changes 💔</h3>
 
 * All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
@@ -331,6 +362,10 @@
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * `qml.grouping` module is removed. The functionality has been reorganized in the `qml.pauli` module.
+
+* The public methods of `DefaultQubit` are pending changes to follow the new device API, as used in
+  `DefaultQubit2`. Warnings have been added to the docstrings to reflect this.
+  [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
 
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -410,6 +445,7 @@
 This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna
+Utkarsh Azad
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Emiliano Godinez Ramirez

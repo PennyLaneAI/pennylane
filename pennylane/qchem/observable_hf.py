@@ -91,7 +91,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
-        Union[~.Hamiltonian, ~.Operator]: Simplified PennyLane Hamiltonian
+        (~.Operator): Simplified PennyLane Hamiltonian
 
     **Example**
 
@@ -164,4 +164,4 @@ def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-br
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
-    return qml.fermi.jordan_wigner(op, notation)
+    return qml.fermi.jordan_wigner(op, notation=notation)
