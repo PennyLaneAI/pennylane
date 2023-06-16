@@ -401,6 +401,7 @@ class TestQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
+        # pylint: disable=too-few-public-methods
         class U3(qml.U3):
             """Custom U3."""
 
@@ -742,6 +743,7 @@ class TestQubitIntegration:
     def test_chained_qnodes(self, interface, dev, diff_method, grad_on_execution):
         """Test that the gradient of chained QNodes works without error"""
 
+        # pylint: disable=too-few-public-methods
         class Template(qml.templates.StronglyEntanglingLayers):
             """Custom template."""
 
@@ -1361,6 +1363,7 @@ class TestTapeExpansion:
         if max_diff == 2 and diff_method == "hadamard":
             pytest.skip("Max diff > 1 not supported for Hadamard gradient.")
 
+        # pylint: disable=too-few-public-methods
         class PhaseShift(qml.PhaseShift):
             """dummy phase shift."""
 
