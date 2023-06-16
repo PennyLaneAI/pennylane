@@ -55,6 +55,7 @@
   using `+`, `-` and `*` between 
   `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
   [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+  [(#4262)](https://github.com/PennyLaneAI/pennylane/pull/4262)
 
 * Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
