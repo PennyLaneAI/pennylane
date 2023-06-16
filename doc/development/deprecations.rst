@@ -113,8 +113,8 @@ Pending deprecations
   for more information on what the new interface will look like and be prepared
   to make updates in a coming release. If you have any feedback on these
   changes, please create an
-  [issue](https://github.com/PennyLaneAI/pennylane/issues) or post in our
-  [discussion forum](https://discuss.pennylane.ai/).
+  `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+  `discussion forum <https://discuss.pennylane.ai/>`_.
 
   - Deprecated in v0.31
 
