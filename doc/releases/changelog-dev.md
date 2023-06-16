@@ -297,6 +297,16 @@
 
 <h4>Extended support for differentiating pulses</h4>
 
+* The stochastic parameter-shift gradient method can now be used with hardware-compatible
+  Hamiltonians.
+  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+
+  This new feature generalizes the stochastic parameter-shift gradient transform for pulses, 
+  `stoch_pulse_grad`, to support generating terms beyond just Pauli words in pulse Hamiltonians.
+
+  The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
+  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
+
 * `qml.pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
   This allows for computing Jacobians of the unitary directly even when `dense=False`.
   [(#4126)](https://github.com/PennyLaneAI/pennylane/pull/4126)
@@ -310,10 +320,6 @@
   params = jnp.array([[0.5]], dtype=complex)
   jac = jax.jacobian(U, holomorphic=True)(params)
   ```
-
-* The stochastic parameter-shift gradient transform for pulses, `stoch_pulse_grad`, now
-  supports arbitrary Hermitian generating terms in pulse Hamiltonians.
-  [(4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
