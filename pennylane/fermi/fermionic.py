@@ -17,6 +17,8 @@ from copy import copy
 from numbers import Number
 from numpy import ndarray
 
+import pennylane as qml
+
 
 class FermiWord(dict):
     r"""Immutable dictionary used to represent a Fermi word, a product of fermionic creation and
@@ -136,7 +138,7 @@ class FermiWord(dict):
             return self_fs + FermiSentence({other: 1.0})
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -168,7 +170,7 @@ class FermiWord(dict):
             return self_fs + other_fs
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -180,7 +182,7 @@ class FermiWord(dict):
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -225,7 +227,7 @@ class FermiWord(dict):
             return FermiSentence({self: 1}) * other
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -243,7 +245,7 @@ class FermiWord(dict):
         will fail to multiply with a FermiWord"""
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -320,7 +322,7 @@ class FermiSentence(dict):
         if isinstance(other, Number):
             other = FermiSentence({FermiWord({}): other})
         if isinstance(other, ndarray):
-            if len(other) > 1:
+            if qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -357,7 +359,7 @@ class FermiSentence(dict):
             return self.__add__(other)
 
         if isinstance(other, ndarray):
-            if len(other) > 1:
+            if qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -378,7 +380,7 @@ class FermiSentence(dict):
         """
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -409,7 +411,7 @@ class FermiSentence(dict):
             return product
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -428,7 +430,7 @@ class FermiSentence(dict):
         will fail to multiply with a FermiSentence"""
 
         if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and len(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
