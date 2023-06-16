@@ -93,11 +93,6 @@ The basic components of operators are the following:
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
       [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-    .. note::
-
-        The :meth:`.Operator.matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
-        upcoming release. It is recommended to use the higher-level :func:`~.matrix` function where possible.
-
    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
      >>> from scipy.sparse.coo import coo_matrix

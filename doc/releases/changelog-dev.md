@@ -24,8 +24,14 @@
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
 * Added the `FermiWord` class to represent a fermionic operator such as
-  $\hat{c}_1 c_0 \hat{c}_2 c_3$.
+  :math:`a^\dagger_1 a_0 a^\dagger_2 a_3`.
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
+
+* Added a conversion function `jordan_wigner` that converts a fermionic operator (`FermiWord`) to a qubit 
+  `Operator` (or its equivalent `PauliSentence` based on an optional kwarg) using the Jordan-Wigner mapping. 
+  It also includes the behaviour of the existing `qchem.jordan_wigner` function, and replaces it.
+  [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
+  [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
 
 * Added the `FermiSentence` class to represent a linear combination of fermionic operators.
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
@@ -38,8 +44,15 @@
 * Added the `QutritBasisState` operator to support qutrit state preparation for the `default.qutrit` device
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
-* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions.
+* Added dunder methods to `FermiWord` and `FermiSentence` to allow arithmetic operations 
+  using `+`, `-` and `*` between 
+  `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
+  [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+
+* Added the `one_qubit_decomposition` function to provide a unified interface for all one qubit decompositions. All
+  decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+  [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
 <h3>Improvements 🛠</h3>
 
@@ -103,6 +116,7 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
   the hash of any operators/measurement processes.
@@ -162,6 +176,9 @@
 * The construction of the pauli representation for the `Sum` class is now faster.
   [(#4142)](https://github.com/PennyLaneAI/pennylane/pull/4142)
 
+* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+
 * `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
   [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
 
@@ -182,6 +199,9 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
+* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
+
 * Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
   Both functions have broadcasting support.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -193,9 +213,23 @@
   `qml.math.relative_entropy`, `qml.math.max_entropy`, and `qml.math.sqrt_matrix`.
   [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
 
+* Added a transform dispatcher.
+  [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
+  
+* Added a transform program.
+  [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
+
 * Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
   `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
   [(#4234)](https://github.com/PennyLaneAI/pennylane/pull/4234)
+
+* Fix unclear documentation and indicate variable-length argument lists of functions and methods in
+  the respective docstrings.
+  [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
+
+* Added the ability to draw mid-circuit measurements connected by classical control signals
+  to conditional operations.
+  [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
 
 <h4>Trace distance is now available in qml.qinfo 💥</h4>
 
@@ -235,8 +269,14 @@
 * The `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` classes now natively support parameter broadcasting.
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
+* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
+
 * Updated repr for ParametrizedHamiltonian.
-[(##4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+* The new device interface is integrated with `qml.execute` for Tensorflow.
+  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
 <h3>Breaking changes 💔</h3>
 
@@ -261,6 +301,13 @@
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
+
+* The `pennylane.transforms.qcut` module now uses `(op, id(op))` as nodes in directed multigraphs that are used within
+  the circuit cutting workflow instead of `op`. This change removes the dependency of the module on the hash of operators.
+  [(#4227)](https://github.com/PennyLaneAI/pennylane/pull/4227)
+
+* `Operator.data` now returns a `tuple` instead of a `list`.
+  [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
 
 <h3>Deprecations 👋</h3>
 
@@ -292,6 +339,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation is updated to construct `QuantumTape` upon initialization instead of with queuing.
+  [(#4243)](https://github.com/PennyLaneAI/pennylane/pull/4243)
+
 * The docstring for `qml.ops.op_math.Pow.__new__` is now complete and it has been updated along with
   `qml.ops.op_math.Adjoint.__new__`.
   [(#4231)](https://github.com/PennyLaneAI/pennylane/pull/4231)
@@ -304,6 +354,9 @@
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+  [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
 
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
