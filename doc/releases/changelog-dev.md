@@ -64,6 +64,8 @@
   Additionally, any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence,
   can be mapped to the qubit basis by using `qml.jordan_wigner`:
 
+  TODO: update code example
+
   ```pycon
   >>> qml.jordan_wigner(h)
   ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
