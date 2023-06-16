@@ -1699,10 +1699,10 @@ class TestNewDeviceIntegration:
         ):
             circuit()
 
-        results = circuit(shots=10)
+        results = circuit(shots=10)  # pylint: disable-unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((10, 2)))
 
-        results = circuit(shots=20)
+        results = circuit(shots=20)  # pylint: disable-unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
@@ -1801,6 +1801,7 @@ class TestTapeExpansion:
         expanded when applying the gradient transform, but not for execution."""
         dev = qml.device("default.qubit", wires=1)
 
+        # pylint: disable=too-few-public-methods
         class PhaseShift(qml.PhaseShift):
             """custom phase shift."""
 
