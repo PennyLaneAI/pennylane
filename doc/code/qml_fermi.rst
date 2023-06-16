@@ -19,7 +19,7 @@ FermiC and FermiA
 The fermionic creation and annihilation operators are constructed with :class:`~pennylane.FermiC`
 and :class:`~pennylane.FermiA`. We pass in the index of the orbital that the
 operator acts on. For example, the operators :math:`a^{\dagger}_0` and :math:`a_3`, acting on the
-:math:`0`th and :math:`3`rd orbitals, are constructed as
+:math:`0\text{th}` and :math:`3\text{rd}` orbitals, are constructed as
 
 >>> qml.FermiC(0)
 a⁺(0)
