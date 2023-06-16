@@ -271,3 +271,21 @@ def test_vanilla_operators(op, new_params, expected_op):
 
     assert qml.equal(new_op, expected_op)
     assert new_op is not op
+
+
+@pytest.mark.parametrize(
+    "op, new_params, expected_op",
+    [
+        (qml.Projector([0, 0], [0, 1]), [[0, 1]], qml.Projector([0, 1], [0, 1])),
+        (qml.Projector([1, 0, 0, 0], [0, 1]), [[0, 0]], qml.Projector([0, 0], [0, 1])),
+        (qml.Projector([1, 1], [0, 1]), [[0.5] * 4], qml.Projector([0.5] * 4, [0, 1])),
+        (qml.Projector([1, 0, 0, 0], [0, 1]), [[0.5] * 4], qml.Projector([0.5] * 4, [0, 1])),
+    ],
+)
+def test_projector(op, new_params, expected_op):
+    """Test that `bind_new_parameters` with projectors returns a new projector with the new
+    parameters without mutating the original operator."""
+    new_op = bind_new_parameters(op, new_params)
+
+    assert qml.equal(new_op, expected_op)
+    assert new_op is not op

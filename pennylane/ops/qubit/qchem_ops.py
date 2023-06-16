@@ -995,9 +995,9 @@ class OrbitalRotation(Operation):
         w0, w1, w2, w3 = self.wires
         return 0.25 * (
             qml.PauliX(w0) @ qml.PauliZ(w1) @ qml.PauliY(w2)
-            - qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2)
-            + qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3)
-            - qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3)
+            - (qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2))
+            + (qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3))
+            - (qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3))
         )
 
     def __init__(self, phi, wires, do_queue=None, id=None):
