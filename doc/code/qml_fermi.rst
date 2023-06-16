@@ -28,13 +28,13 @@ a(3)
 
 These operators can be multiplied by each other to create :math:`n`-orbital fermionic operators such
 as :math:`a^{\dagger}_0 a_0 a^{\dagger}_3 a_3`. We call these :math:`n`-orbital fermionic operators
-"Fermi words".
+Fermi words.
 
 >>> qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
 a⁺(0) a(0) a⁺(3) a(3)
 
-The Fermi words can be linearly combined to create fermionic operators that we call a "Fermi
-sentence". For instance, a fermionic Hamiltonian such as
+The Fermi words can be linearly combined to create fermionic operators that we call a Fermi
+sentence. For instance, a fermionic Hamiltonian such as
 :math:`H = 1.2 a^{\dagger}_0 a_0  + 2.3 a^{\dagger}_3 a_3` can be constructed from Fermi words with
 
 >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
