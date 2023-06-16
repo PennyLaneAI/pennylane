@@ -40,8 +40,7 @@ def set_shots(device, shots):
     >>> set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    # don't set shots on experimental device that gets shots from tape
-    if not hasattr(device, "shots") or shots == device.shots:
+    if shots == device.shots:
         yield
         return
 
