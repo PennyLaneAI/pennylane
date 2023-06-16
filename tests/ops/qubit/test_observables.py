@@ -25,6 +25,13 @@ from gate_data import (
     H,
 )
 
+
+@pytest.fixture(autouse=True)
+def run_before_tests():
+    qml.Hermitian._eigs = {}
+    yield
+
+
 # Standard observables, their matrix representation, and eigenvalues
 OBSERVABLES = [
     (qml.PauliX, X, [1, -1]),
