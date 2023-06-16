@@ -18,7 +18,7 @@ FermiC and FermiA
 
 The fermionic creation and annihilation operators are constructed with :class:`~pennylane.FermiC`
 and :class:`~pennylane.FermiA`, respectively, by passing the index of the orbital that the fermionic
-operator acts on. For instance, the operators :math:`a^{\dagger}_0` :math:`a_3` are constructed as
+operator acts on. For instance, the operators :math:`a^{\dagger}_0` and :math:`a_3` are constructed as
 
 >>> qml.FermiC(0)
 a⁺(0)
@@ -32,7 +32,7 @@ as :math:`a^{\dagger}_0 a_0 a^{\dagger}_3 a_3` that we call a Fermi word.
 a⁺(0) a(0) a⁺(3) a(3)
 
 The Fermi words can be linearly combined to create fermionic operators that we call a Fermi
-Sentence. For instance, a fermionic Hamiltonian such as
+sentence. For instance, a fermionic Hamiltonian such as
 :math:`H = 1.2 a^{\dagger}_0 a_0  + 2.3 a^{\dagger}_3 a_3` can be constructed as
 
 >>> h = 1.2 * qml.FermiC(0) * qml.FermiA(0) + 2.3 * qml.FermiC(3) * qml.FermiA(3)
