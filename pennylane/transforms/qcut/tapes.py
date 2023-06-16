@@ -55,7 +55,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     Returns:
         nx.MultiDiGraph: a directed multigraph that captures the circuit structure
-        of the input tape
+        of the input tape. The nodes of the graph are formatted as ``(op, id(op))``.
 
     **Example**
 
@@ -156,10 +156,10 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     """
 
-    wires = Wires.all_wires([n.wires for n in graph.nodes])
+    wires = Wires.all_wires([n[0].wires for n in graph.nodes])
 
     ordered_ops = sorted(
-        [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
+        [(order, op[0]) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
     reverse_wire_map = {v: k for k, v in wire_map.items()}
@@ -218,12 +218,13 @@ def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_lates
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
-    graph.add_node(op, order=order)
+    node = (op, id(op))
+    graph.add_node(node, order=order)
     for wire in op.wires:
         if wire_latest_node[wire] is not None:
-            parent_op = wire_latest_node[wire]
-            graph.add_edge(parent_op, op, wire=wire)
-        wire_latest_node[wire] = op
+            parent_node = wire_latest_node[wire]
+            graph.add_edge(parent_node, node, wire=wire)
+        wire_latest_node[wire] = node
 
 
 def _find_new_wire(wires: Wires) -> int:
@@ -313,14 +314,14 @@ def expand_fragment_tape(
                 group = []
 
             prepare_mapping = {
-                n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+                id(n): PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
             with AnnotatedQueue() as q:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
-                        prepare_mapping[op](w)
+                        prepare_mapping[id(op)](w)
                     elif not isinstance(op, MeasureNode):
                         apply(op)
 

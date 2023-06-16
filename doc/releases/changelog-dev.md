@@ -6,11 +6,22 @@
 
 <h4>Seamlessly create and combine fermionic operators 🔬</h4>
 
+* Added dunder methods to `FermiWord` and `FermiSentence` to allow arithmetic operations 
+  using `+`, `-` and `*` between 
+  `FermiWord`, `FermiSentence` and `int`, `float` and `complex` objects.
+  [(#4209)](https://github.com/PennyLaneAI/pennylane/pull/4209)
+
+* Added the function `string_to_fermi_word` to create a `FermiWord` object from a compact string
+  representation.
+  [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
+
 * The `qml.fermi` module is now available, including intuitive fermionic operators. 
   [(#4191)](https://github.com/PennyLaneAI/pennylane/pull/4191)
   [(#4195)](https://github.com/PennyLaneAI/pennylane/pull/4195)
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
   [(#4201)](https://github.com/PennyLaneAI/pennylane/pull/4201)
+  [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
+  [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
 
   The foundational operators of the Fermi module are `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, 
   respectively. These operators are defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
@@ -276,6 +287,7 @@
   of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+  [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
   ```pycon
   >>> from pennylane.transforms import one_qubit_decomposition
@@ -308,6 +320,10 @@
   This new feature generalizes the stochastic parameter-shift gradient transform for pulses 
   (`stoch_pulse_grad`) to support Hermitian generating terms beyond just Pauli words in pulse Hamiltonians, 
   which makes it hardware-compatible.
+
+* The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad` now raise an error when they
+  are applied to a `QNode` directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
+  [(#4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
 
 * `qml.pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
   This allows for computing Jacobians of the unitary directly even when `dense=False`.
@@ -381,6 +397,27 @@
 <h3>Improvements 🛠</h3>
 
 <h4>A more flexible projector</h4>
+
+* `Projector` now accepts a state vector representation, which enables the creation of projectors
+  in any basis.
+  [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(state):
+      return qml.expval(qml.Projector(state, wires=[0, 1]))
+  zero_state = [0, 0]
+  plusplus_state = np.array([1, 1, 1, 1]) / 2
+  ```
+
+  ```pycon
+  >>> circuit(zero_state)
+  1.
+  >>> 
+  >>> circuit(plusplus_state)
+  0.25
+  ```
 
 <h4>Do more with qutrits</h4>
 
@@ -553,6 +590,9 @@
 
 <h4>Other improvements</h4>
 
+* The new device interface in integrated with `qml.execute` for Torch.
+  [(#4257)](https://github.com/PennyLaneAI/pennylane/pull/4257)
+
 * Added a transform dispatcher.
   [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
   
@@ -631,6 +671,10 @@
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
 
 * `qml.collections`, `qml.op_sum`, and `qml.utils.sparse_hamiltonian` have been removed.
+
+* The `pennylane.transforms.qcut` module now uses `(op, id(op))` as nodes in directed multigraphs that are used within
+  the circuit cutting workflow instead of `op`. This change removes the dependency of the module on the hash of operators.
+  [(#4227)](https://github.com/PennyLaneAI/pennylane/pull/4227)
 
 * `Operator.data` now returns a `tuple` instead of a `list`.
   [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
