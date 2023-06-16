@@ -137,7 +137,7 @@ def generator(op, format="prefactor"):
         * ``"arithmetic"``: Similar to ``"hamiltonian"``, however the returned observable
           will always be converted into an arithmetic operator. The returned generator may be
           any type, including:
-          :class:`SProd`, :class:`Prod`, :class:`Sum`, or the operator itself.
+          :class:`~.ops.op_math.SProd`, :class:`~.ops.op_math.Prod`, :class:`~.ops.op_math.Sum`, or the operator itself.
 
     **Example**
 
