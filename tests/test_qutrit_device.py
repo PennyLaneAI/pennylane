@@ -1045,7 +1045,7 @@ class TestShotList:
         with pytest.raises(qml.DeviceError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=0.5)
 
-        with pytest.raises(ValueError, match="Unknown shot sequence"):
+        with pytest.raises(ValueError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
 
     shot_data = [

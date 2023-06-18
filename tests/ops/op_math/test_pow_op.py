@@ -186,7 +186,7 @@ class TestInitialization:
 
         assert op.num_params == 0
         assert op.parameters == []
-        assert op.data == []
+        assert op.data == ()
 
         assert op.wires == qml.wires.Wires("a")
         assert op.num_wires == 1
@@ -266,18 +266,18 @@ class TestProperties:
         base = qml.RX(x, wires="a")
         op: Pow = power_method(base=base, z=3.21)
 
-        assert op.data == [x]
+        assert op.data == (x,)
 
         # update parameters through pow
         x_new = np.array(2.3456)
-        op.data = [x_new]
-        assert base.data == [x_new]
-        assert op.data == [x_new]
+        op.data = (x_new,)
+        assert base.data == (x_new,)
+        assert op.data == (x_new,)
 
         # update base data updates pow data
         x_new2 = np.array(3.456)
-        base.data = [x_new2]
-        assert op.data == [x_new2]
+        base.data = (x_new2,)
+        assert op.data == (x_new2,)
 
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -503,10 +503,10 @@ class TestMiscMethods:
 
         assert copied_op.__class__ is op.__class__
         assert copied_op.z == op.z
-        assert copied_op.data == [param1]
+        assert copied_op.data == (param1,)
 
-        copied_op.data = [6.54]
-        assert op.data == [param1]
+        copied_op.data = (6.54,)
+        assert op.data == (param1,)
 
     def test_label(self):
         """Test that the label draws the exponent as superscript."""

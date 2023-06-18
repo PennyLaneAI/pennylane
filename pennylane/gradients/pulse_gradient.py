@@ -56,6 +56,19 @@ def _assert_has_jax(transform_name):
         )
 
 
+def raise_pulse_diff_on_qnode(transform_name):
+    """Raises an error as the gradient transform with the provided name does
+    not support direct application to QNodes.
+    """
+    msg = (
+        f"Applying the {transform_name} gradient transform to a QNode directly is currently "
+        "not supported. Please use differentiation via a JAX entry point "
+        "(jax.grad, jax.jacobian, ...) instead.",
+        UserWarning,
+    )
+    raise NotImplementedError(msg)
+
+
 def _split_evol_ops(op, ob, tau):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
@@ -144,7 +157,13 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
 
 # pylint: disable=too-many-arguments
 def _parshift_and_integrate(
-    results, cjacs, int_prefactor, psr_coeffs, single_measure, shot_vector, use_broadcasting
+    results,
+    cjacs,
+    int_prefactor,
+    psr_coeffs,
+    single_measure,
+    has_partitioned_shots,
+    use_broadcasting,
 ):
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
@@ -161,7 +180,7 @@ def _parshift_and_integrate(
         psr_coeffs (tensor_like): Coefficients of the parameter-shift rule to contract the results
             with before integrating numerically.
         single_measure (bool): Whether the results contain a single measurement per shot setting
-        shot_vector (bool): Whether the results have a shot vector axis
+        has_partitioned_shots (bool): Whether the results have a shot vector axis
         use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
             ``results``.
     Returns:
@@ -192,10 +211,10 @@ def _parshift_and_integrate(
             parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
             return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
 
-    # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
-    if not single_measure + shot_vector == 1:
+    nesting_layers = (not single_measure) + has_partitioned_shots
+    if nesting_layers == 1:
         return tuple(_psr_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
-    if single_measure:
+    if nesting_layers == 0:
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
@@ -307,10 +326,11 @@ def _stoch_pulse_grad(
         rules when used with simple pulses (see details and examples below), potentially leading
         to imprecise results and/or unnecessarily large computational efforts.
 
-    .. note::
+    .. warning::
 
-        Currently this function only supports pulses for which each *parametrized* term is a
-        simple Pauli word. More general Hamiltonian terms are not supported yet.
+        This transform may not be applied directly to QNodes. Use JAX entrypoints
+        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape level.
+        Also see the examples below.
 
     **Examples**
 
@@ -676,3 +696,14 @@ def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
 stoch_pulse_grad = gradient_transform(
     _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
 )
+
+
+@stoch_pulse_grad.custom_qnode_wrapper
+def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
+    """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
+    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    is not supported.
+    """
+    # pylint:disable=unused-argument
+    transform_name = "stochastic pulse parameter-shift"
+    raise_pulse_diff_on_qnode(transform_name)

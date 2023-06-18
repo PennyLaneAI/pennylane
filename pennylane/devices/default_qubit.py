@@ -28,9 +28,12 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
+from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.measurements import ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
@@ -76,6 +79,20 @@ def _get_slice(index, axis, num_axes):
 # pylint: disable=unused-argument
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
+
+    .. warning::
+
+        The API of ``DefaultQubit`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.experimental.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.experimental.Device` and the implementation in
+        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -553,6 +570,12 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        # intercept Sums
+        if isinstance(observable, Sum) and not self.shots:
+            return measure(
+                ExpectationMP(observable.map_wires(self.wire_map)), self._pre_rotated_state
+            )
+
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.

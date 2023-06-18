@@ -175,7 +175,7 @@ class Adjoint(SymbolicOp):
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
     (PauliX(wires=[0]), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
-    [1.234]
+    (1.234,)
 
     .. details::
         :title: Developer Details
@@ -214,12 +214,14 @@ class Adjoint(SymbolicOp):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Adjoint", their *identity* and location in memory will
-        be different based on ``base``'s inheritance.  We cache the different types in private class
+        be different based on ``base``'s inheritance. We cache the different types in private class
         variables so that:
 
         >>> Adjoint(op).__class__ is Adjoint(op).__class__
         True
         >>> type(Adjoint(op)) == type(Adjoint(op))
+        True
+        >>> isinstance(Adjoint(op), type(Adjoint(op)))
         True
         >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
         True

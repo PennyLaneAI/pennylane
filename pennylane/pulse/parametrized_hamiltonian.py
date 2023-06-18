@@ -234,8 +234,9 @@ class ParametrizedHamiltonian:
     def __call__(self, params, t):
         if len(params) != len(self.coeffs_parametrized):
             raise ValueError(
-                "The length of the params argument and the number of scalar-valued functions must be the same."
-                f"Received len(params) = {len(params)} but expected {len(self.coeffs_parametrized)}"
+                "The length of the params argument and the number of scalar-valued functions "
+                f"must be the same. Received len(params) = {len(params)} parameters but "
+                f"expected {len(self.coeffs_parametrized)} parameters."
             )
         return self.H_fixed() + self.H_parametrized(params, t)
 

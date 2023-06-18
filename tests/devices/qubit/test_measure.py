@@ -165,6 +165,77 @@ class TestMeasurements:
         assert np.allclose(res, expected)
 
 
+class TestBroadcasting:
+    """Test that measurements work when the state has a batch dim"""
+
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.state(),
+                np.array(
+                    [
+                        [0, 0, 0, 1],
+                        [1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0],
+                        [1 / 2, 1 / 2, 1 / 2, 1 / 2],
+                    ]
+                ),
+            ),
+            (
+                qml.density_matrix(wires=[0, 1]),
+                np.array(
+                    [
+                        [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]],
+                        [[1 / 2, 0, 1 / 2, 0], [0, 0, 0, 0], [1 / 2, 0, 1 / 2, 0], [0, 0, 0, 0]],
+                        [
+                            [1 / 4, 1 / 4, 1 / 4, 1 / 4],
+                            [1 / 4, 1 / 4, 1 / 4, 1 / 4],
+                            [1 / 4, 1 / 4, 1 / 4, 1 / 4],
+                            [1 / 4, 1 / 4, 1 / 4, 1 / 4],
+                        ],
+                    ]
+                ),
+            ),
+            (
+                qml.probs(wires=[0, 1]),
+                np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
+            ),
+            (qml.expval(qml.PauliZ(1)), np.array([-1, 1, 0])),
+            (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
+        ],
+    )
+    def test_state_measurement(self, measurement, expected):
+        """Test that broadcasting works for regular state measurements"""
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        res = measure(measurement, state, is_state_batched=True)
+        assert np.allclose(res, expected)
+
+    def test_sparse_hamiltonian(self):
+        """Test that broadcasting works for expectation values of SparseHamiltonians"""
+        H = qml.Hamiltonian([2], [qml.PauliZ(1)])
+        measurement = qml.expval(H)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        measurement_fn = get_measurement_function(measurement, state)
+        assert measurement_fn is csr_dot_products
+
+        res = measure(measurement, state, is_state_batched=True)
+        expected = np.array([-2, 2, 0])
+        assert np.allclose(res, expected)
+
+
 class TestSumOfTermsDifferentiability:
     @staticmethod
     def f(scale, coeffs, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
