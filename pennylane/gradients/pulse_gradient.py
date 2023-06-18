@@ -626,11 +626,31 @@ def _stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
 
 
-def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcasting, par_idx=None):
+def _generate_tapes_and_cjacs(
+    tape, operation, key, num_split_times, use_broadcasting, par_idx=None
+):
     """Generate the tapes and compute the classical Jacobians for one given
     generating Hamiltonian term of one pulse.
+
+    Args:
+        tape (QuantumScript): Tape for which to compute the stochastic pulse parameter-shift
+            gradient tapes.
+        operation (tuple[Operation, int, int]): Information about the pulse operation to be
+            shifted. The first entry is the operation itself, the second entry is its position
+            in the ``tape``, and the third entry is the index of the differentiated parameter
+            (and generating term) within the ``HardwareHamiltonian`` of the operation.
+        key (tuple[int]): Randomness key to create spliting times.
+        num_split_times (int): Number of splitting times at which to create shifted tapes for
+            the stochastic shift rule.
+        use_broadcasting (bool): Whether to use broadcasting in the shift rule or not.
+
+    Returns:
+        list[QuantumScript]: Gradient tapes for the indicated operation and Hamiltonian term.
+        list[tensor_like]: Classical Jacobian at the splitting times for the given parameter.
+        float: Prefactor for the Monte Carlo estimate of the integral in the stochastic shift rule.
+        tensor_like: Parameter-shift coefficients for the shift rule of the indicated term.
     """
-    op, op_idx, term_idx = op_id
+    op, op_idx, term_idx = operation
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
     if par_idx is None:
         cjac_fn = jax.jacobian(coeff, argnums=0)
@@ -658,16 +678,54 @@ def _generate_tapes_and_cjacs(tape, op_id, key, num_split_times, use_broadcastin
             split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, tau)
             tapes.extend(_split_evol_tape(tape, split_evolve_ops, op_idx))
     int_prefactor = (t1 - t0) / num_split_times
-    return cjacs, tapes, int_prefactor, psr_coeffs
+    return tapes, cjacs, int_prefactor, psr_coeffs
 
 
-def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
+def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting):
     """Create tapes and gradient data for a trainable parameter of a HardwareHamiltonian,
-    taking into account its reordering function."""
-    op, op_idx, term_idx = op_id
+    taking into account its reordering function.
+
+    Args:
+        tape (QuantumScript): Tape for which to compute the stochastic pulse parameter-shift
+            gradient tapes.
+        operation (tuple[Operation, int, int]): Information about the pulse operation to be
+            shifted. The first entry is the operation itself, the second entry is its position
+            in the ``tape``, and the third entry is the index of the differentiated parameter
+            within the ``HardwareHamiltonian`` of the operation.
+        key (tuple[int]): Randomness key to create spliting times in ``_generate_tapes_and_cjacs``
+        num_split_times (int): Number of splitting times at which to create shifted tapes for
+            the stochastic shift rule.
+        use_broadcasting (bool): Whether to use broadcasting in the shift rule or not.
+
+    Returns:
+        list[QuantumScript]: Gradient tapes for the indicated operation and Hamiltonian term.
+        tuple: Gradient postprocessing data.
+            See comment below.
+
+    This function analyses the ``reorder_fn`` of the ``HardwareHamiltonian`` of the pulse
+    that is being differentiated. Given a ``term_idx``, the index of the parameter
+    in the Hamiltonian, stochastic parameter shift tapes are created for all terms in the
+    Hamiltonian into which the parameter feeds. While this is a one-to-one relation for
+    standard ``ParametrizedHamiltonian`` objects, the reordering function of
+    the ``HardwareHamiltonian`` requires to create tapes for multiple Hamiltonian terms,
+    and for each term ``_generate_tapes_and_cjacs`` is called.
+
+    The returned gradient data has four entries:
+
+      1. ``int``: Total number of tapes created for all the terms that depend on the indicated
+         parameter.
+      2. ``tuple[tensor_like]``: Classical Jacobians for all terms and splitting times
+      3. ``float``: Prefactor for the Monte Carlo estimate of the integral in the stochastic
+         shift rule.
+      4. ``tuple[tensor_like]``: Parameter-shift coefficients for all terms.
+
+    The tuple axes in the second and fourth entry correspond to the different terms in the
+    Hamiltonian.
+    """
+    op, op_idx, term_idx = operation
     # Map a simple enumeration of numbers from HardwareHamiltonian input parameters to
     # ParametrizedHamiltonian parameters. This is typically a fan-out function.
-    fake_params, allowed_outputs = jnp.arange(op.num_params), set(range(op.num_params))
+    fake_params, allowed_outputs = np.arange(op.num_params), set(range(op.num_params))
     reordered = op.H.reorder_fn(fake_params, op.H.coeffs_parametrized)
 
     def _raise():
@@ -693,23 +751,21 @@ def _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting):
                 _raise()
             if term_idx not in x:
                 continue
-            cjac_idx = jnp.argwhere(x == term_idx)[0][0]
+            cjac_idx = np.argwhere(x == term_idx)[0][0]
 
-        _op_id = (op, op_idx, coeff_idx)
+        _operation = (op, op_idx, coeff_idx)
         # Overwriting int_prefactor does not matter, it is equal for all parameters in this op,
         # because it only consists of the duration `op.t[-1]-op.t[0]` and `num_split_times`
-        _cjacs, _tapes, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
-            tape, _op_id, key, num_split_times, use_broadcasting, cjac_idx
+        _tapes, _cjacs, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
+            tape, _operation, key, num_split_times, use_broadcasting, cjac_idx
         )
-        cjacs.append(_cjacs)
+        cjacs.append(qml.math.stack(_cjacs))
         tapes.extend(_tapes)
         psr_coeffs.append(_psr_coeffs)
 
     # The fact that psr_coeffs are a tuple only for hardware Hamiltonian generators will be
     # used in `_parshift_and_integrate`.
-    psr_coeffs = tuple(psr_coeffs)
-
-    data = (len(tapes), tuple(qml.math.stack(cj) for cj in cjacs), int_prefactor, psr_coeffs)
+    data = (len(tapes), tuple(cjacs), int_prefactor, tuple(psr_coeffs))
     return tapes, data
 
 
@@ -728,8 +784,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             continue
 
         key, _key = jax.random.split(key)
-        op_id = tape.get_operation(idx)
-        op, *_ = op_id
+        operation = tape.get_operation(idx)
+        op, *_ = operation
         if not isinstance(op, ParametrizedEvolution):
             raise ValueError(
                 "stoch_pulse_grad does not support differentiating parameters of "
@@ -737,10 +793,12 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             )
         if isinstance(op.H, HardwareHamiltonian):
             # Treat HardwareHamiltonians separately because they have a reordering function
-            _tapes, data = _tapes_data_hardware(tape, op_id, key, num_split_times, use_broadcasting)
+            _tapes, data = _tapes_data_hardware(
+                tape, operation, key, num_split_times, use_broadcasting
+            )
         else:
-            cjacs, _tapes, int_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
-                tape, op_id, _key, num_split_times, use_broadcasting
+            _tapes, cjacs, int_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
+                tape, operation, _key, num_split_times, use_broadcasting
             )
             data = (len(_tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
 

@@ -793,6 +793,26 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="Broadcasting is not supported for tapes that"):
             stoch_pulse_grad(tape, use_broadcasting=True)
 
+    @pytest.mark.parametrize(
+        "reorder_fn",
+        [
+            lambda x, _: [x[0] + 10, x[0] - 2],
+            lambda x, _: [[x[0], x[0] + 10], [x[0] - 2, x[0]]],
+        ],
+    )
+    def test_raises_for_invalid_reorder_fn(self, reorder_fn):
+        """Test that an error is raised for an invalid reordering function of
+        a HardwareHamiltonian."""
+
+        H = qml.pulse.transmon_drive(qml.pulse.constant, 0.0, 0.0, wires=[0])
+        H.reorder_fn = reorder_fn
+        ops = [qml.evolve(H)([0.152], 0.3)]
+        tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
+        tape.trainable_params = [0]
+        _match = "Only permutations, fan-out or fan-in functions are allowed as reordering"
+        with pytest.raises(ValueError, match=_match):
+            stoch_pulse_grad(tape)
+
 
 @pytest.mark.jax
 class TestStochPulseGrad:
@@ -1553,7 +1573,6 @@ class TestStochPulseGradQNodeIntegration:
         for a constant amplitude and zero frequency and phase."""
         import jax
 
-        # values from https://arxiv.org/pdf/2203.06818.pdf
         timespan = 0.4
 
         H = qml.pulse.transmon_drive(qml.pulse.constant, 0.0, 0.0, wires=[0])
@@ -1578,7 +1597,6 @@ class TestStochPulseGradQNodeIntegration:
         approximately correctly for a constant phase and zero frequency."""
         import jax
 
-        # values from https://arxiv.org/pdf/2203.06818.pdf
         timespan = 0.1
 
         H = qml.pulse.transmon_drive(1 / (2 * np.pi), qml.pulse.constant, 0.0, wires=[0])
@@ -1600,6 +1618,41 @@ class TestStochPulseGradQNodeIntegration:
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
         params = (0.42,)
+
+        gradfn = jax.grad(cost)
+        res = gradfn(params)
+        exact = jax.grad(cost_jax)(params)
+        assert qml.math.allclose(res, exact, atol=1e-3)
+
+    def test_with_drive_two_pars(self):
+        """Test that a HardwareHamiltonian only containing a drive is differentiated
+        approximately correctly for a constant amplitude and phase and zero frequency."""
+        import jax
+
+        timespan = 0.1
+
+        H = qml.pulse.transmon_drive(qml.pulse.constant, qml.pulse.constant, 0.0, wires=[0])
+        atol = 1e-5
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        def ansatz(params):
+            qml.evolve(H, atol=atol)(params, t=timespan)
+            return qml.expval(qml.PauliX(0))
+
+        cost = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=20,
+            use_broadcasting=True,
+            sampler_seed=4123,
+        )
+        cost_jax = qml.QNode(ansatz, dev, interface="jax")
+        params = (
+            1 / (2 * np.pi),
+            0.42,
+        )
 
         gradfn = jax.grad(cost)
         res = gradfn(params)
