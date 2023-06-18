@@ -72,20 +72,22 @@ def find_and_place_cuts(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-            qml.RY(0.2, wires=1)
-            qml.RX(0.3, wires="a")
-            qml.RY(0.4, wires="b")
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=["a", "b"])
-            qml.CNOT(wires=[1, "a"])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=["a", "b"])
-            qml.RX(0.5, wires="a")
-            qml.RY(0.6, wires="b")
-            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+        ops = [
+            qml.RX(0.1, wires=0),
+            qml.RY(0.2, wires=1),
+            qml.RX(0.3, wires="a"),
+            qml.RY(0.4, wires="b"),
+            qml.CNOT(wires=[0, 1]),
+            qml.WireCut(wires=1),
+            qml.CNOT(wires=["a", "b"]),
+            qml.CNOT(wires=[1, "a"]),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=["a", "b"]),
+            qml.RX(0.5, wires="a"),
+            qml.RY(0.6, wires="b"),
+        ]
+        measurements = [qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape.text(tape))
      0: ──RX(0.1)──╭●──────────╭●───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
@@ -242,7 +244,7 @@ def find_and_place_cuts(
             # The easiest way to tell if a cut is valid is to just do the fragment graph.
 
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
-            num_cuts = sum(isinstance(n, WireCut) for n in cut_graph.nodes)
+            num_cuts = sum(isinstance(n[0], WireCut) for n in cut_graph.nodes)
 
             replace_wire_cut_nodes(cut_graph)
             frags, comm = fragment_graph(cut_graph)
@@ -302,19 +304,22 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
         wire_cut = qml.WireCut(wires=0)
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut)
-            qml.RY(0.5, wires=0)
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            wire_cut,
+            qml.RY(0.5, wires=0),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove the wire cut node using:
 
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> qml.transforms.qcut.replace_wire_cut_node(wire_cut, graph)
     """
-    predecessors = graph.pred[node]
-    successors = graph.succ[node]
+    node_tuple = (node, id(node))
+    predecessors = graph.pred[node_tuple]
+    successors = graph.succ[node_tuple]
 
     predecessor_on_wire = {}
     for op, data in predecessors.items():
@@ -328,8 +333,8 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
             wire = d["wire"]
             successor_on_wire[wire] = op
 
-    order = graph.nodes[node]["order"]
-    graph.remove_node(node)
+    order = graph.nodes[node_tuple]["order"]
+    graph.remove_node(node_tuple)
 
     for wire in node.wires:
         predecessor = predecessor_on_wire.get(wire, None)
@@ -341,15 +346,17 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
         # We are introducing a degeneracy in the order of the measure and prepare nodes
         # here but the order can be inferred as MeasureNode always precedes
         # the corresponding PrepareNode
-        graph.add_node(meas, order=order)
-        graph.add_node(prep, order=order)
+        meas_node = (meas, id(meas))
+        prep_node = (prep, id(prep))
+        graph.add_node(meas_node, order=order)
+        graph.add_node(prep_node, order=order)
 
-        graph.add_edge(meas, prep, wire=wire)
+        graph.add_edge(meas_node, prep_node, wire=wire)
 
         if predecessor is not None:
-            graph.add_edge(predecessor, meas, wire=wire)
+            graph.add_edge(predecessor, meas_node, wire=wire)
         if successor is not None:
-            graph.add_edge(prep, successor, wire=wire)
+            graph.add_edge(prep_node, successor, wire=wire)
 
 
 def replace_wire_cut_nodes(graph: MultiDiGraph):
@@ -376,22 +383,24 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
         wire_cut_1 = qml.WireCut(wires=1)
         multi_wire_cut = qml.WireCut(wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut_0)
-            qml.RY(0.5, wires=0)
-            qml.apply(wire_cut_1)
-            qml.CNOT(wires=[0, 1])
-            qml.apply(multi_wire_cut)
-            qml.RZ(0.6, wires=1)
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            wire_cut_0,
+            qml.RY(0.5, wires=0),
+            wire_cut_1,
+            qml.CNOT(wires=[0, 1]),
+            multi_wire_cut,
+            qml.RZ(0.6, wires=1),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove all the wire cut nodes using:
 
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
     """
-    for op in list(graph.nodes):
+    for op, _ in list(graph.nodes):
         if isinstance(op, WireCut):
             replace_wire_cut_node(op, graph)
 
@@ -402,7 +411,6 @@ def place_wire_cuts(
     """Inserts a :class:`~.WireCut` node for each provided cut edge into a circuit graph.
 
     Args:
-        graph (nx.MultiDiGraph): The original (tape-converted) graph to be cut.
         graph (nx.MultiDiGraph): The original (tape-converted) graph to be cut.
         cut_edges (Sequence[Tuple[Operation, Operation, Any]]): List of ``MultiDiGraph`` edges
             to be replaced with a :class:`~.WireCut` node. Each 3-tuple represents the source node, the
@@ -417,18 +425,21 @@ def place_wire_cuts(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires="a")
-            qml.CNOT(wires=[0, "a"])
-            qml.expval(qml.PauliZ(wires=[0]))
+        ops = [
+            qml.RX(0.432, wires=0),
+            qml.RY(0.543, wires="a"),
+            qml.CNOT(wires=[0, "a"]),
+        ]
+        measurements = [qml.expval(qml.PauliZ(wires=[0]))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
      0: ──RX(0.432)──╭●──┤ ⟨Z⟩
      a: ──RY(0.543)──╰X──┤
 
-    If we know we want to place a :class:`~.WireCut` node between nodes ``RY(0.543, wires=["a"])`` and
-    ``CNOT(wires=[0, 'a'])`` after the tape is constructed, we can first find the edge in the graph:
+    If we know we want to place a :class:`~.WireCut` node between the nodes corresponding to the
+    ``RY(0.543, wires=["a"])`` and ``CNOT(wires=[0, 'a'])`` operations after the tape is constructed,
+    we can first find the edge in the graph:
 
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> op0, op1 = tape.operations[1], tape.operations[2]
@@ -462,9 +473,10 @@ def place_wire_cuts(
                 cut_graph.nodes[op]["order"] += 1
         # Add WireCut
         wire_cut = WireCut(wires=wire)
-        cut_graph.add_node(wire_cut, order=order)
-        cut_graph.add_edge(op0, wire_cut, wire=wire)
-        cut_graph.add_edge(wire_cut, op1, wire=wire)
+        wire_cut_node = (wire_cut, id(wire_cut))
+        cut_graph.add_node(wire_cut_node, order=order)
+        cut_graph.add_edge(op0, wire_cut_node, wire=wire)
+        cut_graph.add_edge(wire_cut_node, op1, wire=wire)
 
     return cut_graph
 
@@ -480,16 +492,16 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
         (MultiDiGraph): Copy of the input graph with all its existing cuts removed.
     """
     uncut_graph = graph.copy()
-    for op in list(graph.nodes):
-        if isinstance(op, WireCut):
-            uncut_graph.remove_node(op)
-        elif isinstance(op, MeasureNode):
-            for op1 in graph.neighbors(op):
-                if isinstance(op1, PrepareNode):
-                    uncut_graph.remove_node(op)
-                    uncut_graph.remove_node(op1)
+    for node in list(graph.nodes):
+        if isinstance(node[0], WireCut):
+            uncut_graph.remove_node(node)
+        elif isinstance(node[0], MeasureNode):
+            for node1 in graph.neighbors(node):
+                if isinstance(node1[0], PrepareNode):
+                    uncut_graph.remove_node(node)
+                    uncut_graph.remove_node(node1)
 
-    if len([n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
+    if len([n for n in uncut_graph.nodes if isinstance(n[0], (MeasureNode, PrepareNode))]) > 0:
         warnings.warn(
             "The circuit contains `MeasureNode` or `PrepareNode` operations that are "
             "not paired up correctly. Please check.",
@@ -534,15 +546,17 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
         wire_cut_1 = qml.WireCut(wires=1)
         multi_wire_cut = qml.WireCut(wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut_0)
-            qml.RY(0.5, wires=0)
-            qml.apply(wire_cut_1)
-            qml.CNOT(wires=[0, 1])
-            qml.apply(multi_wire_cut)
-            qml.RZ(0.6, wires=1)
-            qml.expval(qml.PauliZ(0))
+        ops = [
+            qml.RX(0.4, wires=0),
+            wire_cut_0,
+            qml.RY(0.5, wires=0),
+            wire_cut_1,
+            qml.CNOT(wires=[0, 1]),
+            multi_wire_cut,
+            qml.RZ(0.6, wires=1),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can find the corresponding graph, remove all the wire cut nodes, and
     find the subgraphs and communication graph by using:
@@ -560,11 +574,11 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     graph_copy = graph.copy()
 
     cut_edges = []
-    measure_nodes = [n for n in graph.nodes if isinstance(n, MeasurementProcess)]
+    measure_nodes = [n for n in graph.nodes if isinstance(n[0], MeasurementProcess)]
 
     for node1, node2, wire_key in graph.edges:
-        if isinstance(node1, MeasureNode):
-            assert isinstance(node2, PrepareNode)
+        if isinstance(node1[0], MeasureNode):
+            assert isinstance(node2[0], PrepareNode)
             cut_edges.append((node1, node2, wire_key))
             graph_copy.remove_edge(node1, node2, key=wire_key)
 
@@ -603,7 +617,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             subgraphs_connected_to_measurements.append(s)
         else:
             subgraphs_indices_to_remove.append(i)
-            prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
+            prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n[0], PrepareNode)])
 
     measure_nodes_to_remove = [
         m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_

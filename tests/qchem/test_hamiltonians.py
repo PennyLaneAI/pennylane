@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -274,6 +275,17 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     assert np.allclose(h.terms()[0], h_ref.terms()[0])
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
+    )
+
+    enable_new_opmath()
+    h_pl_op = qchem.diff_hamiltonian(mol)(*args)
+    disable_new_opmath()
+
+    wire_order = h_ref.wires
+    assert not isinstance(h_pl_op, qml.Hamiltonian)
+    assert np.allclose(
+        qml.matrix(h_pl_op, wire_order=wire_order),
+        qml.matrix(h_ref, wire_order=wire_order),
     )
 
 

@@ -545,7 +545,6 @@ class TestScriptCopying:
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
         # the data list is copied, but the elements of the list remain th same
-        assert copied_qs.operations[0].data is not qs.operations[0].data
         assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
 
         assert qs.get_parameters() == copied_qs.get_parameters()

@@ -4,10 +4,10 @@ tests/devices/experimental/**
 tests/devices/qubit/**
 tests/devices/**
 tests/docs/**
-tests/drawer/test_draw_mpl.py
-tests/drawer/test_drawer_utils.py
-tests/drawer/test_tape_mpl.py
+tests/drawer/**
+tests/fermi/test_fermi_mapping.py
 tests/fermi/test_fermionic.py
+tests/fermi/test_fermionic_operators.py
 tests/fourier/**
 tests/gpu/**
 tests/gradients/core/**
@@ -37,6 +37,7 @@ tests/tape/test_qscript.py
 tests/templates/test_state_preparations/test_qutrit_basis_state_prep.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/templates/test_subroutines/test_qsvt.py
+tests/transforms/test_experimental/**
 tests/transforms/test_convert_to_numpy_parameters.py
 tests/transforms/test_decompositions.py
 tests/transforms/test_qfunc_transform.py

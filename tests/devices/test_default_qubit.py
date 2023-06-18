@@ -2368,6 +2368,75 @@ class TestHamiltonianSupport:
         assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
 
 
+class TestSumSupport:
+    """Tests for custom Sum support in DefaultQubit."""
+
+    expected_grad = [-np.sin(1.3), np.cos(1.3)]
+
+    @staticmethod
+    def circuit(y, z):
+        qml.RX(1.3, 0)
+        return qml.expval(
+            qml.sum(
+                qml.s_prod(y, qml.PauliY(0)),
+                qml.s_prod(z, qml.PauliZ(0)),
+            )
+        )
+
+    def test_super_expval_not_called(self, mocker):
+        """Tests basic expval result, and ensures QubitDevice.expval is not called."""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.QubitDevice, "expval")
+        obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
+        assert np.isclose(dev.expval(obs), 0.2)
+        spy.assert_not_called()
+
+    @pytest.mark.autograd
+    def test_trainable_autograd(self):
+        """Tests that coeffs passed to a sum are trainable with autograd."""
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+        y, z = np.array([1.1, 2.2])
+        actual = qml.grad(qnode)(y, z)
+        assert np.allclose(actual, self.expected_grad)
+
+    @pytest.mark.torch
+    def test_trainable_torch(self):
+        """Tests that coeffs passed to a sum are trainable with torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="torch")
+        y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
+        qnode(y, z).backward()
+        actual = [y.grad, z.grad]
+        assert np.allclose(actual, self.expected_grad)
+
+    @pytest.mark.tf
+    def test_trainable_tf(self):
+        """Tests that coeffs passed to a sum are trainable with tf."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
+        y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
+        with tf.GradientTape() as tape:
+            res = qnode(y, z)
+        actual = tape.gradient(res, [y, z])
+        assert np.allclose(actual, self.expected_grad)
+
+    @pytest.mark.jax
+    def test_trainable_jax(self):
+        """Tests that coeffs passed to a sum are trainable with jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="jax")
+        y, z = jax.numpy.array([1.1, 2.2])
+        actual = jax.grad(qnode, argnums=[0, 1])(y, z)
+        assert np.allclose(actual, self.expected_grad)
+
+
 class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
 
