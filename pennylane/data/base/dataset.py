@@ -194,7 +194,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         mode: Literal["w", "w-", "a", "r"] = "r",
         validate: bool = False,
     ) -> "Dataset":
-        """Open existing dataset or create a new one file at ``filepath``.
+        """Open existing dataset or create a new one at ``filepath``.
 
         Args:
             filepath: Path to dataset file
