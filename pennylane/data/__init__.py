@@ -41,6 +41,7 @@ from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
 from .data_manager import (
     DEFAULT,
+    FULL,
     list_attributes,
     list_datasets,
     load,
@@ -67,4 +68,5 @@ __all__ = (
     "list_attributes",
     "list_datasets",
     "DEFAULT",
+    "FULL",
 )
