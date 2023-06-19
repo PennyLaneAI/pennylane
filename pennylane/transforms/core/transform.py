@@ -58,9 +58,9 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
             return [tape1, tape2], post_processing_fn
 
-    Of course, we want to be able to apply this transform on `qfunc` and `qnodes`. That's where the `transform` function
+    Of course, we want to be able to apply this transform on ``qfunc`` and ``qnodes``. That's where the ``transform`` function
     comes into play. This function validates the signature of your quantum transform and dispatches it on the different
-    object. Let's define a circuit as a qfunc and as qnode.
+    object. Let's define a circuit as a qfunc and as a qnode.
 
         .. code-block:: python
 
@@ -85,7 +85,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     Now you can use the dispatched transform directly on qfunc and qnodes.
 
-    For QNodes, the dispatched transform populates the `TransformProgram` of your QNode. The transform and its
+    For QNodes, the dispatched transform populates the ``TransformProgram`` of your QNode. The transform and its
     processing function are applied in the execution.
 
     >>> transformed_qnode = dispatched_transform(qfunc_circuit)
