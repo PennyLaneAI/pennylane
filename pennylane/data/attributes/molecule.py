@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definition for ``pennylane.qchem.Molecule``."""
+"""Contains DatasetAttribute definition for ``pennylane.qchem.Molecule``."""
 
 from typing import Tuple, Type
 
 import numpy as np
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.qchem import Molecule
 
 
-class DatasetMolecule(AttributeType[HDF5Group, Molecule, Molecule]):
+class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
     """Attribute type for ``pennylane.qchem.Molecule``."""
 
     type_id = "molecule"

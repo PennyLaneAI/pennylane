@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional, Type
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
-    AttributeType,
+    DatasetAttribute,
     get_attribute_type,
     match_obj_type,
 )
@@ -36,13 +36,13 @@ class AttributeTypeMapper(MutableMapping):
     """
 
     bind: HDF5Group
-    _cache: Dict[str, AttributeType]
+    _cache: Dict[str, DatasetAttribute]
 
     def __init__(self, bind: HDF5Group) -> None:
         self._cache = {}
         self.bind = bind
 
-    def __getitem__(self, key: str) -> AttributeType:
+    def __getitem__(self, key: str) -> DatasetAttribute:
         if key in self._cache:
             return self._cache[key]
 
@@ -64,7 +64,7 @@ class AttributeTypeMapper(MutableMapping):
         key: str,
         value: Any,
         info: Optional[AttributeInfo],
-        require_type: Optional[Type[AttributeType]] = None,
+        require_type: Optional[Type[DatasetAttribute]] = None,
     ) -> None:
         """Creates or replaces attribute ``key`` with ``value``, optionally
         including ``info``.
@@ -72,13 +72,13 @@ class AttributeTypeMapper(MutableMapping):
         Args:
             key: Name of attribute in HDF5 group
             value: Attribute value, either a compatible object or an already
-                initialized ``AttributeType``.
+                initialized ``DatasetAttribute``.
             info: Extra info to attach to attribute
             require_type: Force the ``value`` to be serialized as this type.
-                If ``value`` is an ``AttributeType``, it must be an instance of ``require_type``.
+                If ``value`` is an ``DatasetAttribute``, it must be an instance of ``require_type``.
                 Otherwise, ``value`` must be serializable by ``require_type``.
         """
-        if isinstance(value, AttributeType):
+        if isinstance(value, DatasetAttribute):
             if require_type and not isinstance(value, require_type):
                 raise TypeError(key, require_type, type(value))
 
@@ -101,7 +101,7 @@ class AttributeTypeMapper(MutableMapping):
         self.bind.move(src, dest)
         self._cache.pop(src, None)
 
-    def view(self) -> typing.Mapping[str, AttributeType]:
+    def view(self) -> typing.Mapping[str, DatasetAttribute]:
         """Returns a read-only mapping of the attributes in ``bind``."""
         return MappingProxyType(self)
 

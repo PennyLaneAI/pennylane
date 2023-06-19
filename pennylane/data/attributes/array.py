@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definition for numpy arrays."""
+"""Contains DatasetAttribute definition for numpy arrays."""
 
 import numpy
 from numpy.typing import ArrayLike
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
 
-class DatasetArray(AttributeType[HDF5Array, numpy.ndarray, ArrayLike]):
+class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
     """
     Attribute type for objects that implement the Array protocol, including numpy arrays.
     """

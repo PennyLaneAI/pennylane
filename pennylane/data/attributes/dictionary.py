@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains an AttributeType that allows for heterogenous dictionaries
+"""Contains an DatasetAttribute that allows for heterogenous dictionaries
 of Dataset attributes."""
 
 
@@ -19,7 +19,7 @@ import typing
 from collections.abc import Mapping
 from typing import Dict, Generic, TypeVar, Union
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
@@ -27,7 +27,7 @@ from pennylane.data.base.typing_util import T
 
 class DatasetDict(  # pylint: disable=too-many-ancestors
     Generic[T],
-    AttributeType[HDF5Group, typing.Mapping[str, T], typing.Mapping[str, T]],
+    DatasetAttribute[HDF5Group, typing.Mapping[str, T], typing.Mapping[str, T]],
     typing.MutableMapping[str, T],
     MapperMixin,
 ):
@@ -66,7 +66,7 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 
         return self._mapper[__key].get_value()
 
-    def __setitem__(self, __key: str, __value: Union[T, AttributeType[HDF5Any, T, T]]) -> None:
+    def __setitem__(self, __key: str, __value: Union[T, DatasetAttribute[HDF5Any, T, T]]) -> None:
         self._check_key(__key)
 
         if __key in self:

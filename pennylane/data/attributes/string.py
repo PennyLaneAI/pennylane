@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains an AttributeType for str objects."""
+"""Contains an DatasetAttribute for str objects."""
 
 
 from typing import Tuple, Type
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
 
-class DatasetString(AttributeType[HDF5Array, str, str]):
+class DatasetString(DatasetAttribute[HDF5Array, str, str]):
     """Attribute type for strings."""
 
     type_id = "string"

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definition for pennylane operators, and lists
+"""Contains DatasetAttribute definition for pennylane operators, and lists
 of operators."""
 
 import json
@@ -22,7 +22,7 @@ from typing import Dict, FrozenSet, Generic, List, Type, TypeVar
 import numpy as np
 
 import pennylane as qml
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
 from pennylane.operation import Operator, Tensor
 
@@ -31,8 +31,8 @@ from ._wires import wires_to_json
 Op = TypeVar("Op", bound=Operator)
 
 
-class DatasetOperator(Generic[Op], AttributeType[HDF5Group, Op, Op]):
-    """``AttributeType`` for ``pennylane.operation.Operator`` classes.
+class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
+    """``DatasetAttribute`` for ``pennylane.operation.Operator`` classes.
 
     Supports all operator types that meet the following conditions:
         - The ``__init__()`` method matches the signature of ``Operator.__init__``,

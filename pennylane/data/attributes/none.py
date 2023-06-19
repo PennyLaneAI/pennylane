@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definition for None"""
+"""Contains DatasetAttribute definition for None"""
 
 from typing import Literal, Tuple, Type
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
 
-class DatasetNone(AttributeType[HDF5Array, type(None), type(None)]):
+class DatasetNone(DatasetAttribute[HDF5Array, type(None), type(None)]):
     """Datasets type for 'None' values."""
 
     type_id = "none"

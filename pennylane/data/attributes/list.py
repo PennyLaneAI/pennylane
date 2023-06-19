@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains an AttributeType that allows for heterogeneous lists of dataset
+"""Contains an DatasetAttribute that allows for heterogeneous lists of dataset
 types."""
 
 import typing
 from collections.abc import Sequence
 from typing import Generic, List, Union, overload
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
@@ -26,7 +26,7 @@ from pennylane.data.base.typing_util import T
 
 class DatasetList(  # pylint: disable=too-many-ancestors
     Generic[T],
-    AttributeType[HDF5Group, typing.Sequence[T], typing.Iterable[T]],
+    DatasetAttribute[HDF5Group, typing.Sequence[T], typing.Iterable[T]],
     typing.MutableSequence[T],
     MapperMixin,
 ):
@@ -59,7 +59,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
         elements copied.."""
         return self.copy_value()
 
-    def insert(self, index: int, value: Union[T, AttributeType[HDF5Any, T, T]]):
+    def insert(self, index: int, value: Union[T, DatasetAttribute[HDF5Any, T, T]]):
         """Implements the insert() method."""
         if index < 0:
             index = len(self) + index
@@ -114,7 +114,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
 
         return self._mapper[str(index)].get_value()
 
-    def __setitem__(self, index: int, value: Union[T, AttributeType[HDF5Any, T, T]]):
+    def __setitem__(self, index: int, value: Union[T, DatasetAttribute[HDF5Any, T, T]]):
         if index < 0:
             index = len(self) + index
         if not 0 <= index < len(self):

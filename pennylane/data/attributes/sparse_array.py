@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definition for ``scipy.sparse.csr_array``."""
+"""Contains DatasetAttribute definition for ``scipy.sparse.csr_array``."""
 
 from functools import lru_cache
 from typing import Dict, Generic, Tuple, Type, TypeVar, Union, cast
@@ -34,7 +34,7 @@ from scipy.sparse import (
     lil_matrix,
 )
 
-from pennylane.data.base.attribute import AttributeInfo, AttributeType
+from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
 
 SparseArray = Union[bsr_array, coo_array, csc_array, csr_array, dia_array, dok_array, lil_array]
@@ -45,7 +45,7 @@ SparseMatrix = Union[
 SparseT = TypeVar("SparseT", bound=Union[SparseArray, SparseMatrix])
 
 
-class DatasetSparseArray(Generic[SparseT], AttributeType[HDF5Group, SparseT, SparseT]):
+class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, SparseT]):
     """Attribute type for Scipy sparse arrays. Can accept values of any type in
     ``scipy.sparse``. Arrays are serialized using the CSR format."""
 

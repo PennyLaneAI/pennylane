@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains an AttributeType for JSON-serializable data."""
+"""Contains an DatasetAttribute for JSON-serializable data."""
 
 
 import json
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 from pennylane.data.base.typing_util import JSON
 
 
-class DatasetJSON(AttributeType[HDF5Array, JSON, JSON]):
+class DatasetJSON(DatasetAttribute[HDF5Array, JSON, JSON]):
     """Dataset type for JSON-serializable data."""
 
     type_id = "json"

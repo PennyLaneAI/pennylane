@@ -37,8 +37,8 @@ from .attributes import (
     DatasetSparseArray,
     DatasetString,
 )
-from .base.attribute import AttributeInfo, AttributeType
-from .base.dataset import Dataset, attribute
+from .base.attribute import AttributeInfo, DatasetAttribute, attribute
+from .base.dataset import Dataset, field
 from .data_manager import (
     DEFAULT,
     FULL,
@@ -49,9 +49,10 @@ from .data_manager import (
 )
 
 __all__ = (
-    "AttributeType",
+    "DatasetAttribute",
     "AttributeInfo",
     "attribute",
+    "field",
     "Dataset",
     "DatasetArray",
     "DatasetScalar",

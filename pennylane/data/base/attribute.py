@@ -40,6 +40,8 @@ from pennylane.data.base import hdf5
 from pennylane.data.base.hdf5 import HDF5, HDF5Any, HDF5Group
 from pennylane.data.base.typing_util import UNSET, get_type, get_type_str
 
+T = TypeVar("T")
+
 
 class AttributeInfo(MutableMapping):
     """Contains metadata that may be assigned to a dataset
@@ -155,26 +157,26 @@ class AttributeInfo(MutableMapping):
         return ".".join((cls.attrs_namespace, __name))
 
 
-# Type variable for value returned by ``AttributeType.get_value()``
+# Type variable for value returned by ``DatasetAttribute.get_value()``
 ValueType = TypeVar("ValueType")
-# Type variable for ``value`` argument to ``AttributeType.__init__()``
+# Type variable for ``value`` argument to ``DatasetAttribute.__init__()``
 InitValueType = TypeVar("InitValueType")
 
 
-class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
+class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     """
-    The AttributeType class provides an interface for converting Python objects to and from a HDF5
+    The DatasetAttribute class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
-    AttributeType, and Python types to compatible AttributeTypes.
+    DatasetAttribute, and Python types to compatible AttributeTypes.
 
     Attributes:
-        type_id: Unique identifier for this AttributeType class. Must be declared
+        type_id: Unique identifier for this DatasetAttribute class. Must be declared
             in subclasses.
-        registry: Maps type_ids to their AttributeType classes
-        type_consumer_registry: Maps types to their default AttributeType
+        registry: Maps type_ids to their DatasetAttribute classes
+        type_consumer_registry: Maps types to their default DatasetAttribute
     """
 
-    Self = TypeVar("Self", bound="AttributeType")
+    Self = TypeVar("Self", bound="DatasetAttribute")
 
     type_id: ClassVar[str]
 
@@ -366,11 +368,11 @@ class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
     def __str__(self) -> str:
         return str(self.get_value())
 
-    __registry: typing.Mapping[str, Type["AttributeType"]] = {}
-    __type_consumer_registry: typing.Mapping[type, Type["AttributeType"]] = {}
+    __registry: typing.Mapping[str, Type["DatasetAttribute"]] = {}
+    __type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = {}
 
-    registry: typing.Mapping[str, Type["AttributeType"]] = MappingProxyType(__registry)
-    type_consumer_registry: typing.Mapping[type, Type["AttributeType"]] = MappingProxyType(
+    registry: typing.Mapping[str, Type["DatasetAttribute"]] = MappingProxyType(__registry)
+    type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = MappingProxyType(
         __type_consumer_registry
     )
 
@@ -380,68 +382,76 @@ class AttributeType(ABC, Generic[HDF5, ValueType, InitValueType]):
         if abstract:
             return super().__init_subclass__()
 
-        existing_type = AttributeType.__registry.get(cls.type_id)
+        existing_type = DatasetAttribute.__registry.get(cls.type_id)
         if existing_type is not None:
             raise TypeError(
-                f"AttributeType with type_id '{cls.type_id}' already exists: {existing_type}"
+                f"DatasetAttribute with type_id '{cls.type_id}' already exists: {existing_type}"
             )
 
-        AttributeType.__registry[cls.type_id] = cls  # type: ignore
+        DatasetAttribute.__registry[cls.type_id] = cls  # type: ignore
 
         for type_ in cls.consumes_types():
-            existing_type = AttributeType.type_consumer_registry.get(type_)
+            existing_type = DatasetAttribute.type_consumer_registry.get(type_)
             if existing_type is not None:
                 warnings.warn(
                     f"Conflicting default types: Both '{cls}' and '{existing_type}' consume type '{type_}'. '{type_}' will now be consumed by '{cls}'"
                 )
-            AttributeType.__type_consumer_registry[type_] = cls
+            DatasetAttribute.__type_consumer_registry[type_] = cls
 
         return super().__init_subclass__()
 
 
-def get_attribute_type(h5_obj: HDF5) -> Type[AttributeType[HDF5, Any, Any]]:
+def attribute(
+    val: T, doc: Optional[str] = None, **kwargs: Any
+) -> DatasetAttribute[HDF5Any, T, Any]:
+    """Returns ``DatasetAttribute`` class matching ``val``, with other arguments passed
+    to the ``AttributeInfo`` class."""
+    return match_obj_type(val)(val, AttributeInfo(doc=doc, py_type=type(val), **kwargs))
+
+
+def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
     """
-    Returns the ``AttributeType`` of the dataset attribute contained
+    Returns the ``DatasetAttribute`` of the dataset attribute contained
     in ``zobj``.
     """
     type_id = h5_obj.attrs[AttributeInfo.bind_key("type_id")]
 
-    return AttributeType.registry[type_id]
+    return DatasetAttribute.registry[type_id]
 
 
 def match_obj_type(
     type_or_obj: Union[ValueType, Type[ValueType]]
-) -> Type[AttributeType[HDF5Any, ValueType, ValueType]]:
+) -> Type[DatasetAttribute[HDF5Any, ValueType, ValueType]]:
     """
-    Returns an ``AttributeType`` that can accept an object of type ``type_or_obj``
+    Returns an ``DatasetAttribute`` that can accept an object of type ``type_or_obj``
     as a value.
 
     Args:
         type_or_obj: A type or an object
 
     Returns:
-        AttributeType that can accept ``type_or_obj`` (or an object of that
+        DatasetAttribute that can accept ``type_or_obj`` (or an object of that
             type) as a value.
 
     Raises:
-        TypeError, if no AttributeType can accept an object of that type
+        TypeError, if no DatasetAttribute can accept an object of that type
     """
 
     type_ = get_type(type_or_obj)
     if hasattr(type_, "type_id"):
-        return AttributeType.registry[type_.type_id]
+        return DatasetAttribute.registry[type_.type_id]
 
-    ret = AttributeType.registry["array"]
+    ret = DatasetAttribute.registry["array"]
 
-    if type_ in AttributeType.type_consumer_registry:
-        ret = AttributeType.type_consumer_registry[type_]
+    if type_ in DatasetAttribute.type_consumer_registry:
+        ret = DatasetAttribute.type_consumer_registry[type_]
     elif issubclass(type_, Number):
-        ret = AttributeType.registry["scalar"]
+        ret = DatasetAttribute.registry["scalar"]
     elif hasattr(type_, "__array__"):
-        ret = AttributeType.registry["array"]
+        ret = DatasetAttribute.registry["array"]
     elif issubclass(type_, Sequence):
-        ret = AttributeType.registry["list"]
+        ret = DatasetAttribute.registry["list"]
     elif issubclass(type_, Mapping):
-        ret = AttributeType.registry["dict"]
+        ret = DatasetAttribute.registry["dict"]
 
     return ret

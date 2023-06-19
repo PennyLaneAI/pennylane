@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definition for scalars (numbers)."""
+"""Contains DatasetAttribute definition for scalars (numbers)."""
 
 from numbers import Number
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
 
-class DatasetScalar(AttributeType[HDF5Array, Number, Number]):
+class DatasetScalar(DatasetAttribute[HDF5Array, Number, Number]):
     """
     Attribute type for numbers.
     """

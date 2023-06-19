@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pennylane.data import AttributeInfo, Dataset, DatasetScalar, attribute
+from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field
 from pennylane.data.base.hdf5 import h5py, open_group
 
 
@@ -31,7 +31,7 @@ class MyDataset(Dataset):  # pylint: disable=too-few-public-methods
 
     category_id = "testing"
 
-    description: str = attribute(doc="description")
+    description: str = field(doc="description")
 
 
 class TestDataset:
