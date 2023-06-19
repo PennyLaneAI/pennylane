@@ -151,6 +151,7 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4162)](https://github.com/PennyLaneAI/pennylane/pull/4162)
   [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
@@ -439,6 +440,9 @@
 * Fixed buggy calculation of angle in `xyx_decomposition` causing it to give an incorrect decomposition.
   An if conditional was intended to prevent divide by zero errors but the division was by the sine of the argument so any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
+
+* Allow for `Sum` observables with trainable parameters.
+  [(#4251)](https://github.com/PennyLaneAI/pennylane/pull/4251)
 
 <h3>Contributors ✍️</h3>
 
