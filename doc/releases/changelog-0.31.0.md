@@ -162,7 +162,7 @@
   {1: 100, 2: 100}
   ```
 
-* Custom operations can now be defined that solely include resource requirements — an explicit
+* Custom operations can now be constructed that solely define resource requirements — an explicit
   decomposition or matrix representation is not needed.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
@@ -301,11 +301,11 @@
   >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
   ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
   >>> one_qubit_decomposition(U, 0, "ZYZ")
-  [RZ(array(-0.2420953), wires=[0]),
-   RY(array(1.14938178), wires=[0]),
-   RZ(array(1.73305815), wires=[0])]
+  [RZ(tensor(12.32427531, requires_grad=True), wires=[0]),
+   RY(tensor(1.14938178, requires_grad=True), wires=[0]),
+   RZ(tensor(1.73305815, requires_grad=True), wires=[0])]
   >>> one_qubit_decomposition(U, 0, "XYX", return_global_phase=True)
-  [RX(tensor(-1.72101925, requires_grad=True), wires=[0]),
+  [RX(tensor(10.84535137, requires_grad=True), wires=[0]),
    RY(tensor(1.39749741, requires_grad=True), wires=[0]),
    RX(tensor(0.45246584, requires_grad=True), wires=[0]),
    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
