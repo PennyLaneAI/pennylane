@@ -424,7 +424,6 @@ def vjp(
         g_tapes, fn = qml.transforms.map_batch_transform(partial_gradient_fn, tapes)
         unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
 
-        # why does the execute_fn take gradient kwargs?
         res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
         jacs = fn(res)
