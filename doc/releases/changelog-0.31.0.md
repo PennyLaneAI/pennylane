@@ -64,6 +64,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* The autograd interface now submits all required tapes in a single batch on the backward pass.
+  [(#4245)](https://github.com/PennyLaneAI/pennylane/pull/4245)
 * The experimental device interface is integrated with the `QNode`.
   [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
 
