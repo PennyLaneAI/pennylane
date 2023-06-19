@@ -16,28 +16,7 @@
   [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
   [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
 
-  There are a few ways to create fermionic operators with this new feature:
-
-  - via `qml.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
-    multiplied by each other, which we call a Fermi word.
-
-    ```pycon
-    >>> qml.string_to_fermi_word('0+ 1- 0+ 1-')
-    <FermiWord = '0+ 1- 0+ 1-'>
-    >>> string_to_fermi_word('0^ 1 0^ 1')
-    <FermiWord = '0+ 1- 0+ 1-'>
-    ```
-
-    Fermi words can be linearly combined to create a fermionic operator that we call a Fermi sentence:
-
-    ```pycon 
-    >>> word1 = qml.string_to_fermi_word('0+ 0- 3+ 3-')
-    >>> word2 = string_to_fermi_word('3+ 3-')
-    >>> sentence = 1.2 * word1 - 0.345 * word2
-    >>> sentence
-    1.2 * a⁺(0) a(0) a⁺(3) a(3)
-    - 0.345 * a⁺(3) a(3)
-    ```
+  There are a couple of ways to create fermionic operators with this new feature:
 
   - via `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, respectively. These operators are 
     defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
@@ -54,6 +33,27 @@
     ```
     >>> word = qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
     >>> sentence = 1.2 * word - 0.345 * qml.FermiC(3) * qml.FermiA(3)
+    >>> sentence
+    1.2 * a⁺(0) a(0) a⁺(3) a(3)
+    - 0.345 * a⁺(3) a(3)
+    ```
+
+  - via `qml.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
+    multiplied by each other, which we call a Fermi word.
+
+    ```pycon
+    >>> qml.string_to_fermi_word('0+ 1- 0+ 1-')
+    a⁺(0) a(1) a⁺(0) a(1)
+    >>> qml.string_to_fermi_word('0^ 1 0^ 1')
+    a⁺(0) a(1) a⁺(0) a(1)
+    ```
+
+    Fermi words can be linearly combined to create a fermionic operator that we call a Fermi sentence:
+
+    ```pycon 
+    >>> word1 = qml.string_to_fermi_word('0+ 0- 3+ 3-')
+    >>> word2 = string_to_fermi_word('3+ 3-')
+    >>> sentence = 1.2 * word1 - 0.345 * word2
     >>> sentence
     1.2 * a⁺(0) a(0) a⁺(3) a(3)
     - 0.345 * a⁺(3) a(3)
