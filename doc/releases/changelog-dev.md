@@ -315,7 +315,7 @@
 * PennyLane Docker builds have been updated to include the latest plugins and interface versions.
   [(#4178)](https://github.com/PennyLaneAI/pennylane/pull/4178)
 
-<h4>Extended support for differentiating pulses</h4>
+<h4>Extended support for differentiating pulses ⚛️</h4>
 
 * The stochastic parameter-shift gradient method can now be used with hardware-compatible
   Hamiltonians.
@@ -446,9 +446,9 @@
 
 * Three qutrit rotation operators have been added that are analogous to `RX`, `RY`, and `RZ`:
 
-  - `TRX`: an X rotation
-  - `TRY`: a Y rotation
-  - `TRZ`: a Z rotation
+  - `qml.TRX`: an X rotation
+  - `qml.TRY`: a Y rotation
+  - `qml.TRZ`: a Z rotation
 
   [(#2845)](https://github.com/PennyLaneAI/pennylane/pull/2845)
   [(#2846)](https://github.com/PennyLaneAI/pennylane/pull/2846)
@@ -459,19 +459,16 @@
 
 <h4>The qchem module</h4>
 
-* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
-
-* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
+* `qchem.molecular_hamiltonian()`, `qchem.qubit_observable()`, `qchem.import_operator()`, and `qchem.dipole_moment()` now return an arithmetic operator if `enable_new_opmath()` is active.
   [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
-
-* `qchem.import_operator()` will now return an arithmetic operator if `enable_new_opmath()` is active.
+  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
+  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
   [(#4204)](https://github.com/PennyLaneAI/pennylane/pull/4204)
 
 * Non-cubic lattice support for all electron resource estimation has been added.
   [(3956)](https://github.com/PennyLaneAI/pennylane/pull/3956)
 
-* The `qchem.molecular_hamiltonian` function has been upgraded to support custom wires for constructing
+* The `qchem.molecular_hamiltonian()` function has been upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients have been
   removed.
   [(#4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
@@ -480,22 +477,10 @@
 * Jordan-Wigner transforms that cache Pauli gate objects have been accelerated.
   [(#4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
 
-* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
-  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
-
-* `qchem.molecular_hamiltonian()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#4159)](https://github.com/PennyLaneAI/pennylane/pull/4159)
-
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it clear
   that the `pyscf` backend can be used for open-shell calculations.
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
-
-* `qchem.qubit_observable()` will now return an arithmetic operator if `enable_new_opmath()` is active. 
-  [(#4138)](https://github.com/PennyLaneAI/pennylane/pull/4138)
-
-* `qml.dipole_moment()` will now return an arithmetic operator if `enable_new_opmath()` is active.
-  [(#4189)](https://github.com/PennyLaneAI/pennylane/pull/4189)
 
 <h4>Next-generation device API</h4>
 
@@ -537,13 +522,16 @@
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
   [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
-* Several Python built-in functions are now properly defined for instances of the `Shots` class:
+* Several Python built-in functions are now properly defined for instances of the `Shots` class.
+* 
   - `print`: printing `Shots` instances is now human-readable
   - `str`: converting `Shots` instances to human-readable strings
   - `==`: equating two different `Shots` instances
   - `hash`: obtaining the hash values of `Shots` instances
+  
   [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
   [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
+
 
 * `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`. It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"` instead of a string.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
@@ -597,18 +585,36 @@
 * The new device interface in integrated with `qml.execute` for Torch.
   [(#4257)](https://github.com/PennyLaneAI/pennylane/pull/4257)
 
-* Added a transform dispatcher.
+* A transform dispatcher and program have been added.
   [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
-  
-* Added a transform program.
   [(#4187)](https://github.com/PennyLaneAI/pennylane/pull/4187)
+  
+* Reduced density matrix functionality has been added via `qml.math.reduce_dm` and `qml.math.reduce_statevector`.
+  Both functions have broadcasting support.
+  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
 
-* Added broadcasting support for `qml.qinfo.reduced_dm`, `qml.qinfo.purity`, `qml.qinfo.vn_entropy`,
-  `qml.qinfo.mutual_info`, `qml.qinfo.fidelity`, `qml.qinfo.relative_entropy`, and `qml.qinfo.trace_distance`.
+* The following functions in `qml.qinfo` now support parameter broadcasting:
+
+  - `reduced_dm`
+  - `purity`
+  - `vn_entropy`
+  - `mutual_info`
+  - `fidelity`
+  - `relative_entropy`
+  - `trace_distance`
+
   [(#4234)](https://github.com/PennyLaneAI/pennylane/pull/4234)
 
-* Added broadcasting support for `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
-  `qml.math.relative_entropy`, `qml.math.max_entropy`, and `qml.math.sqrt_matrix`.
+* The following functions in `qml.math` now support parameter broadcasting:
+
+  - `purity`
+  - `vn_entropy`
+  - `mutual_info`
+  - `fidelity`
+  - `relative_entropy`
+  - `max_entropy`
+  - `sqrt_matrix`
+  
   [(#4186)](https://github.com/PennyLaneAI/pennylane/pull/4186)
 
 * `pulse.ParametrizedEvolution` now raises an error if the number of input parameters does not match the number
@@ -629,27 +635,17 @@
 * A new function called `pauli.pauli_word_prefactor()` that extracts the prefactor for a given Pauli word has been added.
   [(#4164)](https://github.com/PennyLaneAI/pennylane/pull/4164)
 
-* Reduced density matrix functionality has been added via `qml.math.reduce_dm` and `qml.math.reduce_statevector`.
-  Both functions have broadcasting support.
-  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
-
-* Added `qml.math.reduce_dm` and `qml.math.reduce_statevector` to produce reduced density matrices.
-  Both functions have broadcasting support.
-  [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
-
-* Fix unclear documentation and indicate variable-length argument lists of functions and methods in
-  the respective docstrings.
+* Variable-length argument lists of functions and methods in some docstrings is now more clear.
   [(#4242)](https://github.com/PennyLaneAI/pennylane/pull/4242)
 
 * `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
-* Added the ability to draw mid-circuit measurements connected by classical control signals
-  to conditional operations.
+* Drawing mid-circuit measurements connected by classical control signals to conditional operations is now possible.
   [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
 
-* The new device interface is integrated with `qml.execute` for Tensorflow.
+* The new device interface is now integrated with `qml.execute` for Tensorflow.
   [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
 <h3>Breaking changes 💔</h3>
