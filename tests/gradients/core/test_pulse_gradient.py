@@ -1639,7 +1639,6 @@ class TestStochPulseGradIntegration:
         res = gradfn(params)
         exact = jax.grad(cost_jax)(params)
         assert qml.math.allclose(res, exact)
-        assert False
 
     def test_with_drive_approx(self):
         """Test that a HardwareHamiltonian only containing a drive is differentiated
@@ -1672,7 +1671,6 @@ class TestStochPulseGradIntegration:
         res = gradfn(params)
         exact = jax.grad(cost_jax)(params)
         assert qml.math.allclose(res, exact, atol=1e-3)
-        assert False
 
     @pytest.mark.parametrize("num_params", [1, 2])
     def test_with_two_drives(self, num_params):
