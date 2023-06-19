@@ -422,31 +422,11 @@
   ```pycon
   >>> circuit(zero_state)
   1.
-  >>> 
   >>> circuit(plusplus_state)
   0.25
   ```
 
 <h4>Do more with qutrits</h4>
-
-* It is now possible to prepare qutrit basis states with `qml.QutritBasisState`.
-  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
-
-  ```python
-  wires = range(2)
-  dev = qml.device("default.qutrit", wires=wires)
-
-  @qml.qnode(dev)
-  def qutrit_circuit():
-      qml.QutritBasisState([1, 1], wires=wires)
-      qml.TAdd(wires=wires)
-      return qml.probs(wires=1)
-  ```
-
-  ```pycon
-  >>> qutrit_circuit()
-  array([0., 0., 1.])
-  ```
 
 * Three qutrit rotation operators have been added that are analogous to `RX`, `RY`, and `RZ`:
 
@@ -486,6 +466,9 @@
   that the `pyscf` backend can be used for open-shell calculations.
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
+* Updated various qubit tapering methods to support operator arithmetic.
+  [(#4252)](https://github.com/PennyLaneAI/pennylane/pull/4252)
+
 <h4>Next-generation device API</h4>
 
 * The new device interface has been integrated with `qml.execute` for autograd, backpropagation, and no differentiation.
@@ -516,11 +499,17 @@
 * The new device interface for Jax has been integrated with `qml.execute`.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
+* The new device interface is now integrated with `qml.execute` for Tensorflow.
+  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
+
 * The experimental device `DefaultQubit2` now supports `qml.Snapshot`.
   [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
 
 * The experimental device interface is integrated with the `QNode`.
   [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
+
+* The new device interface in integrated with `qml.execute` for Torch.
+  [(#4257)](https://github.com/PennyLaneAI/pennylane/pull/4257)
 
 <h4>Handling shots</h4>
 
@@ -531,7 +520,7 @@
   [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
 * Several Python built-in functions are now properly defined for instances of the `Shots` class.
-* 
+
   - `print`: printing `Shots` instances is now human-readable
   - `str`: converting `Shots` instances to human-readable strings
   - `==`: equating two different `Shots` instances
@@ -539,7 +528,6 @@
   
   [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
   [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
-
 
 * `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`. It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"` instead of a string.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
@@ -586,12 +574,7 @@
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
 
-<h4>Circuit drawing</h4>
-
 <h4>Other improvements</h4>
-
-* The new device interface in integrated with `qml.execute` for Torch.
-  [(#4257)](https://github.com/PennyLaneAI/pennylane/pull/4257)
 
 * A transform dispatcher and program have been added.
   [(#4109)](https://github.com/PennyLaneAI/pennylane/pull/4109)
@@ -652,12 +635,6 @@
 
 * Drawing mid-circuit measurements connected by classical control signals to conditional operations is now possible.
   [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
-
-* The new device interface is now integrated with `qml.execute` for Tensorflow.
-  [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
-
-* Updated various qubit tapering methods to support operator arithmetic.
-  [(#4252)](https://github.com/PennyLaneAI/pennylane/pull/4252)
 
 <h3>Breaking changes 💔</h3>
 
