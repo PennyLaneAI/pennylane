@@ -327,6 +327,8 @@ class Dataset(MapperMixin, _DatasetTransform):
         fields = {}
         reserved_names = ("params", "bind", "validate")
 
+        # get field info from annotated class attributes, e.g:
+        # name: int = field(...)
         for name, annotated_type in cls.__annotations__.items():
             if (
                 name in reserved_names
@@ -335,17 +337,18 @@ class Dataset(MapperMixin, _DatasetTransform):
             ):
                 continue
 
-            attr = getattr(cls, name, field())
             try:
+                field_ = getattr(cls, name)
                 delattr(cls, name)
             except AttributeError:
-                pass
+                # field only has type annotation
+                field_ = field()
 
-            attr.info.py_type = annotated_type
-            if attr.attribute_type is UNSET:
-                attr.attribute_type = match_obj_type(annotated_type)
+            field_.info.py_type = annotated_type
+            if field_.attribute_type is UNSET:
+                field_.attribute_type = match_obj_type(annotated_type)
 
-            fields[name] = attr
+            fields[name] = field_
 
         cls.fields = MappingProxyType(fields)
 
