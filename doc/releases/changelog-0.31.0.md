@@ -667,11 +667,11 @@
 * `Operator.data` now returns a `tuple` instead of a `list`.
   [(#4222)](https://github.com/PennyLaneAI/pennylane/pull/4222)
 
-<h3>Deprecations 👋</h3>
-
 * The pulse differentiation methods, `pulse_generator` and `stoch_pulse_grad`, now raise an error when they
   are applied to a QNode directly. Instead, use differentiation via a JAX entry point (`jax.grad`, `jax.jacobian`, ...).
   [(#4241)](https://github.com/PennyLaneAI/pennylane/pull/4241)
+
+<h3>Deprecations 👋</h3>
 
 * `LieAlgebraOptimizer` has been renamed to `RiemannianGradientOptimizer`.
   [(#4153)(https://github.com/PennyLaneAI/pennylane/pull/4153)]
