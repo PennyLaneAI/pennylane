@@ -138,7 +138,7 @@ def resolve_special_type(type_: Any) -> Optional[Tuple[type, List[type]]]:
     Further examples:
         >>> resolve_special_type(Union[str, int])
         (typing.Union, [<class 'str'>, <class 'int'>])
-        >>> resolve_special_type(List[str])
+        >>> resolve_special_type(List[int])
         (<class 'list'>, [<class 'int'>])
         >>> resolve_special_type(List)
         (<class 'list'>, [])
