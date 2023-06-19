@@ -422,11 +422,32 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=2)
 
         def f(x):
-            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))])
+            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
+            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.probs(wires=0)])
 
             results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
             return results[0] + results[1]
+
+        x = qml.numpy.array(0.1)
+        with dev.tracker:
+            out = qml.jacobian(f)(x)
+
+        assert dev.tracker.totals["batches"] == 2
+        assert dev.tracker.history["batch_len"] == [2, 4]
+        expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
+        assert qml.math.allclose(out, expected)
+
+    def test_single_backward_pass_split_hamiltonian(self):
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
+        derivatives are requested for a a tape that the device split into batches."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliZ(0)], grouping_type="qwc")
+
+        def f(x):
+            tape = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.expval(H)])
+            return qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)[0]
 
         x = qml.numpy.array(0.1)
         with dev.tracker:
@@ -434,7 +455,8 @@ class TestCaching:
 
         assert dev.tracker.totals["batches"] == 2
         assert dev.tracker.history["batch_len"] == [2, 4]
-        assert qml.math.allclose(out, -2 * qml.math.sin(x))
+
+        assert qml.math.allclose(out, -np.cos(x) - np.sin(x))
 
 
 execute_kwargs = [

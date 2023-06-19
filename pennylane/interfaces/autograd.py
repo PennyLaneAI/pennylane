@@ -411,8 +411,7 @@ def vjp(
             return cached_jac["jacobian"]
 
         jacs = []
-        if isinstance(device, qml.devices.experimental.Device):  # pragma:  no-cover
-            # cant test until we integrate device with shot vector
+        if isinstance(device, qml.devices.experimental.Device):
             shot_vector = (
                 tapes[0].shots.shot_vector if tapes[0].shots.has_partitioned_shots else None
             )
