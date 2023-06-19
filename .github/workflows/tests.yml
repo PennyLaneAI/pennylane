@@ -246,7 +246,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 2 --group ${{ matrix.group }} -m "core and not qcut and not legacy and not finite-diff and not param-shift and not data" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 2 --group ${{ matrix.group }} -m "core and not qcut and not legacy and not finite-diff and not param-shift" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
