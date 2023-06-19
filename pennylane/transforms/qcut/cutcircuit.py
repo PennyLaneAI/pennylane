@@ -187,7 +187,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2]),
             ]
-            measurments = [qml.expval(qml.Pauli.string_to_pauli_word("ZZZ"))]
+            measurements = [qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))]
             tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(qml.drawer.tape_text(tape))
