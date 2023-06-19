@@ -108,7 +108,7 @@ class TestInitialization:
 
         assert op.num_params == 0
         assert op.parameters == []
-        assert op.data == []
+        assert op.data == ()
 
         assert op.wires == qml.wires.Wires("a")
 
@@ -176,18 +176,18 @@ class TestProperties:
         base = qml.RX(x, wires="a")
         adj = Adjoint(base)
 
-        assert adj.data == [x]
+        assert adj.data == (x,)
 
         # update parameters through adjoint
         x_new = np.array(2.3456)
-        adj.data = [x_new]
-        assert base.data == [x_new]
-        assert adj.data == [x_new]
+        adj.data = (x_new,)
+        assert base.data == (x_new,)
+        assert adj.data == (x_new,)
 
         # update base data updates Adjoint data
         x_new2 = np.array(3.456)
-        base.data = [x_new2]
-        assert adj.data == [x_new2]
+        base.data = (x_new2,)
+        assert adj.data == (x_new2,)
 
     def test_has_matrix_true(self):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -866,7 +866,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert out == tape[0]
         assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.RX
-        assert out.data == [1.234]
+        assert out.data == (1.234,)
         assert out.wires == qml.wires.Wires("a")
 
     def test_adjoint_template(self):
@@ -908,9 +908,9 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert tape[2].base.__class__ is qml.RX
 
         # check parameters assigned correctly
-        assert tape[0].data == [z]
-        assert tape[1].data == [y]
-        assert tape[2].data == [x]
+        assert tape[0].data == (z,)
+        assert tape[1].data == (y,)
+        assert tape[2].data == (x,)
 
     def test_nested_adjoint(self):
         """Test the adjoint transform on an adjoint transform."""
@@ -923,7 +923,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, Adjoint)
         assert out.base.base.__class__ is qml.RX
-        assert out.data == [x]
+        assert out.data == (x,)
         assert out.wires == qml.wires.Wires("b")
 
 
@@ -942,7 +942,7 @@ class TestAdjointConstructorNonLazyExecution:
         assert q.queue[0] is out
 
         assert isinstance(out, qml.RX)
-        assert out.data == [-1.23]
+        assert out.data == (-1.23,)
 
     def test_single_nondecomposable_op(self):
         """Test lazy=false for a single op that can't be decomposed."""
@@ -966,7 +966,7 @@ class TestAdjointConstructorNonLazyExecution:
         assert out is tape[0]
         assert not isinstance(out, Adjoint)
         assert isinstance(out, qml.RX)
-        assert out.data == [-x]
+        assert out.data == (-x,)
 
     def test_single_nondecomposable_op_function(self):
         """Test lazy=False for a single op function that can't be decomposed."""
@@ -1009,7 +1009,7 @@ class TestAdjointConstructorOutsideofQueuing:
 
         assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.RZ
-        assert out.data == [1.234]
+        assert out.data == (1.234,)
         assert out.wires == qml.wires.Wires(0)
 
     def test_single_op_eager(self):
@@ -1020,7 +1020,7 @@ class TestAdjointConstructorOutsideofQueuing:
         out = adjoint(base, lazy=False)
 
         assert isinstance(out, qml.RX)
-        assert out.data == [-x]
+        assert out.data == (-x,)
 
     def test_observable(self):
         """Test providing a preconstructed Observable outside of a queuing context."""
@@ -1039,7 +1039,7 @@ class TestAdjointConstructorOutsideofQueuing:
 
         assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.IsingXX
-        assert out.data == [1.234]
+        assert out.data == (1.234,)
         assert out.wires == qml.wires.Wires((0, 1))
 
     def test_function(self):

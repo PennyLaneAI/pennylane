@@ -101,14 +101,14 @@ class TestConstruction:
     def test_data(self):
         """Test that data is initialized correctly."""
         op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
-        assert op.data == [9.87, 1.23, 4.0, 5.67]
+        assert op.data == (9.87, 1.23, 4.0, 5.67)
 
     def test_data_setter(self):
         """Test the setter method for data"""
         op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
-        assert op.data == [9.87, 1.23, 4.0, 5.67]
+        assert op.data == (9.87, 1.23, 4.0, 5.67)
 
-        new_data = [1.23, 0.0, -1.0, -2.0]
+        new_data = (1.23, 0.0, -1.0, -2.0)
         op.data = new_data  # pylint:disable=attribute-defined-outside-init
         assert op.data == new_data
 
