@@ -16,9 +16,13 @@
   [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
   [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
   [(#4262)](https://github.com/PennyLaneAI/pennylane/pull/4262)
+
   There are a couple of ways to create fermionic operators with this new feature:
 
-  - via `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, respectively. These operators are 
+  - via `qml.FermiC` and `qml.FermiA`: the
+    [fermionic creation](https://docs.pennylane.ai/en/stable/code/api/pennylane.FermiC.html) and
+    [annihilation operators](https://docs.pennylane.ai/en/stable/code/api/pennylane.FermiA.html),
+    respectively. These operators are 
     defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
     the operators $a^{\dagger}_0$ and $a_3$ are respectively constructed as
 
@@ -45,38 +49,37 @@
     - 0.345 * a⁺(3) a(3)
     ```
 
-  - via `qml.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
+  - via `qml.fermi.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
     multiplied by each other (a Fermi word).
 
     ```pycon
-    >>> qml.string_to_fermi_word('0+ 1- 0+ 1-')
+    >>> qml.fermi.string_to_fermi_word('0+ 1- 0+ 1-')
     a⁺(0) a(1) a⁺(0) a(1)
-    >>> qml.string_to_fermi_word('0^ 1 0^ 1')
+    >>> qml.fermi.string_to_fermi_word('0^ 1 0^ 1')
     a⁺(0) a(1) a⁺(0) a(1)
     ```
 
-    Fermi words created with `string_to_fermi_word` can be linearly combined to create a Fermi sentence:
+    Fermi words created with `string_to_fermi_word` can also be linearly combined to create a Fermi sentence:
 
     ```pycon 
-    >>> word1 = qml.string_to_fermi_word('0+ 0- 3+ 3-')
-    >>> word2 = string_to_fermi_word('3+ 3-')
+    >>> word1 = qml.fermi.string_to_fermi_word('0+ 0- 3+ 3-')
+    >>> word2 = qml.fermi.string_to_fermi_word('3+ 3-')
     >>> sentence = 1.2 * word1 - 0.345 * word2
     >>> sentence
     1.2 * a⁺(0) a(0) a⁺(3) a(3)
     - 0.345 * a⁺(3) a(3)
     ```
-
-  Fermi words and sentences can also be created via `qml.fermi.FermiWord` and `qml.fermi.FermiSentence`, respectively.
     
   Additionally, any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence,
   can be mapped to the qubit basis by using `qml.jordan_wigner`:
 
-  TODO: update code example
-
   ```pycon
-  >>> qml.jordan_wigner(h)
-  ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
+  >>> qml.jordan_wigner(sentence)
+  ((0.1275+0j)*(Identity(wires=[0]))) + ((-0.1275+0j)*(PauliZ(wires=[3]))) + ((-0.3+0j)*(PauliZ(wires=[0]))) + ((0.3+0j)*(PauliZ(wires=[0]) @ PauliZ(wires=[3])))
   ```
+
+  Learn how to create fermionic Hamiltonians describing some simple chemical systems by checking
+  out our [fermionic operators demo](https://pennylane.ai/qml/demos/tutorial_fermionic_operators)!
 
 <h4>Workflow-level resource estimation 🧮</h4>
 
