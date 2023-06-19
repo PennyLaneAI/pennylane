@@ -27,11 +27,18 @@
     >>> qml.FermiA(3)
     ```
 
-    These operators can be composed with (`@`), linearly combined with (`+` and `-`) and multiplied by (`*`) other Fermi operators
-    to create Fermi words, sentences, and Hamiltonians. Here is an example of creating a Fermi sentence:
-    
-    ```
+    These operators can be composed with (`@`), linearly combined with (`+` and `-`), and multiplied by (`*`) other Fermi operators
+    to create arbitrary fermionic Hamiltonians. Multiplying several Fermi operators together creates an operator that we call a Fermi word:
+
+    ```pycon
     >>> word = qml.FermiC(0) * qml.FermiA(0) * qml.FermiC(3) * qml.FermiA(3)
+    >>> word 
+    a⁺(0) a(0) a⁺(3) a(3)
+    ```
+
+    Fermi words can be linearly combined to create a fermionic operator that we call a Fermi sentence:
+
+    ```pycon
     >>> sentence = 1.2 * word - 0.345 * qml.FermiC(3) * qml.FermiA(3)
     >>> sentence
     1.2 * a⁺(0) a(0) a⁺(3) a(3)
@@ -39,7 +46,7 @@
     ```
 
   - via `qml.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
-    multiplied by each other, which we call a Fermi word.
+    multiplied by each other (a Fermi word).
 
     ```pycon
     >>> qml.string_to_fermi_word('0+ 1- 0+ 1-')
@@ -48,7 +55,7 @@
     a⁺(0) a(1) a⁺(0) a(1)
     ```
 
-    Fermi words can be linearly combined to create a fermionic operator that we call a Fermi sentence:
+    Fermi words created with `string_to_fermi_word` can be linearly combined to create a Fermi sentence:
 
     ```pycon 
     >>> word1 = qml.string_to_fermi_word('0+ 0- 3+ 3-')
