@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utility functions to convert between ``~.FermiWord`` and other PennyLane formats."""
+"""Functions to convert a fermionic operator to the qubit basis."""
 
 from functools import singledispatch
 from typing import Union
@@ -25,9 +25,8 @@ from .fermionic import FermiWord, FermiSentence
 
 
 # pylint: disable=unexpected-keyword-arg
-@singledispatch
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), *kwargs
+    fermi_operator: (Union[FermiWord, FermiSentence]), **kwargs
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -35,8 +34,15 @@ def jordan_wigner(
 
     .. math::
 
-        a^{\dagger}_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X-iY}{2} \right ),
-        a_N = Z_0 \otimes  ... \otimes Z_{N-1} \otimes \left ( \frac{X+iY}{2} \right ),
+        a^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        a^{\dagger}_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n - iY_n}{2} \right ),
+
+    and
+
+    .. math::
+
+        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        a_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n + iY_n}{2}  \right ),
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
 
@@ -70,10 +76,17 @@ def jordan_wigner(
     + (0.25+0j) * X(2) @ X(3)
     + 0.25j * X(2) @ Y(3)
     """
+    return _jordan_wigner_dispatch(fermi_operator, **kwargs)
+
+
+@singledispatch
+def _jordan_wigner_dispatch(fermi_operator, **kwargs):
+    """Dispatches to appropriate function if fermi_operator is a FermiWord,
+    FermiSentence or list"""
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
 
 
-@jordan_wigner.register
+@_jordan_wigner_dispatch.register
 def _(fermi_operator: FermiWord, ps=False, wire_map=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
@@ -106,7 +119,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
     return qubit_operator
 
 
-@jordan_wigner.register
+@_jordan_wigner_dispatch.register
 def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
@@ -132,7 +145,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
     return qubit_operator
 
 
-@jordan_wigner.register
+@_jordan_wigner_dispatch.register
 def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too-many-branches
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 

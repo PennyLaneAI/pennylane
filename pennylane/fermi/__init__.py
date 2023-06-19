@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A module containing utility functions and reduced representation classes for working with
-Fermionic operators. """
+fermionic operators. """
 
 
 from .conversion import jordan_wigner
-from .fermionic import FermiWord, FermiC, FermiA, FermiSentence
+from .fermionic import FermiWord, FermiC, FermiA, FermiSentence, string_to_fermi_word

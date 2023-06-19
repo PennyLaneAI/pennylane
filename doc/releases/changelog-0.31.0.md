@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.31.0-dev (development release)
+# Release 0.31.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -15,7 +15,7 @@
   [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
   [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
   [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
-
+  [(#4262)](https://github.com/PennyLaneAI/pennylane/pull/4262)
   There are a couple of ways to create fermionic operators with this new feature:
 
   - via `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, respectively. These operators are 
@@ -320,6 +320,7 @@
 * The stochastic parameter-shift gradient method can now be used with hardware-compatible
   Hamiltonians.
   [(#4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
+  [(#4215)](https://github.com/PennyLaneAI/pennylane/pull/4215)
 
   This new feature generalizes the stochastic parameter-shift gradient transform for pulses 
   (`stoch_pulse_grad`) to support Hermitian generating terms beyond just Pauli words in pulse Hamiltonians, 
@@ -328,7 +329,7 @@
 * A new differentiation method called `qml.gradients.pulse_generator` is available, which combines classical processing 
   with the parameter-shift rule for multivariate gates to differentiate pulse programs. Access it in your pulse
   programs by setting `diff_method=qml.gradients.pulse_generator`. 
-  [(#4160)](https://github.com/PennyLaneAI/pennylane/pull/4132) 
+  [(#4160)](https://github.com/PennyLaneAI/pennylane/pull/4160) 
 
 * `qml.pulse.ParametrizedEvolution` now uses _batched_ compressed sparse row (`BCSR`) format. 
   This allows for computing Jacobians of the unitary directly even when `dense=False`.
@@ -438,7 +439,7 @@
       qml.TAdd(wires=wires)
       return qml.probs(wires=1)
   ```
-  
+
   ```pycon
   >>> qutrit_circuit()
   array([0., 0., 1.])
@@ -493,6 +494,7 @@
 * A new function called `measure_with_samples` that returns a sample-based measurement result given a state has been added.
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+  [(#4162)](https://github.com/PennyLaneAI/pennylane/pull/4162)
   [(#4254)](https://github.com/PennyLaneAI/pennylane/pull/4254)
 
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
@@ -513,6 +515,9 @@
 
 * The experimental device `DefaultQubit2` now supports `qml.Snapshot`.
   [(#4193)](https://github.com/PennyLaneAI/pennylane/pull/4193)
+
+* The experimental device interface is integrated with the `QNode`.
+  [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
 
 <h4>Handling shots</h4>
 
@@ -560,9 +565,9 @@
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
-* A new function called `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters
-  without mutating the original operator has been added.
+* Added a new function `qml.ops.functions.bind_new_parameters` that creates a copy of an operator with new parameters without mutating the original operator.
   [(#4113)](https://github.com/PennyLaneAI/pennylane/pull/4113)
+  [(#4256)](https://github.com/PennyLaneAI/pennylane/pull/4256)
 
 * `qml.CY` has been moved from `qml.ops.qubit.non_parametric_ops` to `qml.ops.op_math.controlled_ops`
   and now inherits from `qml.ops.op_math.ControlledOp`.
@@ -648,6 +653,9 @@
 * The new device interface is now integrated with `qml.execute` for Tensorflow.
   [(#4169)](https://github.com/PennyLaneAI/pennylane/pull/4169)
 
+* Updated various qubit tapering methods to support operator arithmetic.
+  [(#4252)](https://github.com/PennyLaneAI/pennylane/pull/4252)
+
 <h3>Breaking changes 💔</h3>
 
 * The default value for the `show_matrices` keyword argument in all drawing methods is now `True`. 
@@ -695,6 +703,10 @@
   [(#4141)](https://github.com/PennyLaneAI/pennylane/pull/4141)
 
 * The `qml.grouping` module has been removed. Its functionality has been reorganized in the `qml.pauli` module.
+
+* The public methods of `DefaultQubit` are pending changes to follow the new device API, as used in
+  `DefaultQubit2`. Warnings have been added to the docstrings to reflect this.
+  [(#4145)](https://github.com/PennyLaneAI/pennylane/pull/4145)
 
 * `qml.math.reduced_dm` has been deprecated. Please use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4173)](https://github.com/PennyLaneAI/pennylane/pull/4173)
@@ -769,11 +781,15 @@
   An if conditional was intended to prevent divide by zero errors but the division was by the sine of the argument so any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
+* Allow for `Sum` observables with trainable parameters.
+  [(#4251)](https://github.com/PennyLaneAI/pennylane/pull/4251)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Venkatakrishnan AnushKrishna,
+Utkarsh Azad,
 Thomas Bromley,
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
