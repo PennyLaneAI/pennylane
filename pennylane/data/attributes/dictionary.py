@@ -89,7 +89,10 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
         if not len(self) == len(__value):
             return False
 
-        return all(__value[key] == self[key] for key in self.keys())
+        if self.keys() != __value.keys():
+            return False
+
+        return all(__value[key] == self[key] for key in __value.keys())
 
     def __iter__(self) -> typing.Iterator[str]:
         return (key for key in self.bind.keys())
