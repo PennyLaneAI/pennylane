@@ -64,6 +64,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The experimental device interface is integrated with the `QNode`.
+  [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
+
 * `Projector` now accepts a state vector representation, which enables the creation of projectors
   in any basis.
   [(#4192)](https://github.com/PennyLaneAI/pennylane/pull/4192)
