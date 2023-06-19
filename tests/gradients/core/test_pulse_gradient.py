@@ -1639,6 +1639,7 @@ class TestStochPulseGradIntegration:
         res = gradfn(params)
         exact = jax.grad(cost_jax)(params)
         assert qml.math.allclose(res, exact)
+        assert False
 
     def test_with_drive_approx(self):
         """Test that a HardwareHamiltonian only containing a drive is differentiated
@@ -1671,21 +1672,33 @@ class TestStochPulseGradIntegration:
         res = gradfn(params)
         exact = jax.grad(cost_jax)(params)
         assert qml.math.allclose(res, exact, atol=1e-3)
+        assert False
 
-    def test_with_drive_two_pars(self):
-        """Test that a HardwareHamiltonian only containing a drive is differentiated
-        approximately correctly for a constant amplitude and phase and zero frequency."""
+    @pytest.mark.parametrize("num_params", [1, 2])
+    def test_with_two_drives(self, num_params):
+        """Test that a HardwareHamiltonian only containing two drives
+        is differentiated approximately correctly. The two cases
+        of the parametrization test the cases where reordered parameters
+        are returned as inner lists and where they remain scalars."""
         import jax
 
         timespan = 0.1
 
-        H = qml.pulse.transmon_drive(qml.pulse.constant, qml.pulse.constant, 0.0, wires=[0])
+        if num_params == 1:
+            amps = [1 / 5, 1 / 6]
+            params = (0.42, -0.91)
+        else:
+            amps = [qml.pulse.constant] * 2
+            params = (1 / (2 * np.pi), 0.42, 1 / 5, -0.91)
+        H = qml.pulse.rydberg_drive(
+            amps[0], qml.pulse.constant, 0.0, wires=[0]
+        ) + qml.pulse.rydberg_drive(amps[1], qml.pulse.constant, 0.0, wires=[1])
         atol = 1e-5
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         def ansatz(params):
             qml.evolve(H, atol=atol)(params, t=timespan)
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         cost = qml.QNode(
             ansatz,
@@ -1697,10 +1710,6 @@ class TestStochPulseGradIntegration:
             sampler_seed=4123,
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
-        params = (
-            1 / (2 * np.pi),
-            0.42,
-        )
 
         gradfn = jax.grad(cost)
         res = gradfn(params)

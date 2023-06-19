@@ -765,7 +765,7 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
                 _raise()
             if term_idx not in x:
                 continue
-            cjac_idx = np.argwhere(x == term_idx)[0][0]
+            cjac_idx = np.argwhere([_x == term_idx for _x in x])[0][0]
 
         _operation = (op, op_idx, coeff_idx)
         # Overwriting int_prefactor does not matter, it is equal for all parameters in this op,
