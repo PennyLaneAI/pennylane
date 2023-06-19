@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.31.0-dev (development release)
+# Release 0.31.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -63,6 +63,9 @@
   [(#4246)](https://github.com/PennyLaneAI/pennylane/pull/4246)
 
 <h3>Improvements 🛠</h3>
+
+* The experimental device interface is integrated with the `QNode`.
+  [(#4196)](https://github.com/PennyLaneAI/pennylane/pull/4196)
 
 * `Projector` now accepts a state vector representation, which enables the creation of projectors
   in any basis.
