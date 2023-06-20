@@ -76,6 +76,7 @@ def copy_all(
     dest: HDF5Group,
     *keys: str,
     if_exists: Literal["raise", "overwrite"] = "raise",
+    without_attrs: bool = False,
 ) -> None:
     """Copies all the elements of ``source`` named ``keys`` into ``dest``. If no keys
     are provided, all elements of ``source`` will be copied."""
@@ -84,6 +85,9 @@ def copy_all(
 
     for key in keys:
         copy(source[key], dest, key=key, if_exists=if_exists)
+
+    if not without_attrs:
+        dest.attrs.update(source.attrs)
 
 
 def open_hdf5_s3(s3_url: str, cache_dir: Optional[Path] = None) -> HDF5Group:

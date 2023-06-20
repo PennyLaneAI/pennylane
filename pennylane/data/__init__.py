@@ -66,7 +66,7 @@ Attributes can also be assigned to the instance after creation:
     >>> dataset.ground_state
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
 
-
+    
 Attribute Metadata
 ~~~~~~~~~~~~~~~~~~
 
@@ -87,6 +87,40 @@ This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
     >>> dataset.attr_info["hamiltonian"]["doc"]
     'The hamiltonian of the system'
 
+
+Reading and Writing Datasets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Datasets can be saved to disk for later use. Datasets use the HDF5 format for serialization,
+which uses the '.h5' file extension.
+
+To save a dataset, use the :meth:`Dataset.write()` method:
+
+    >>> my_dataset = Dataset(...)
+    >>> my_dataset.write("~/datasets/my_dataset.h5")
+
+To open a dataset from a file, use :meth:`Dataset.open()` class method:
+
+    >>> my_dataset = Dataset.open("~/datasets/my_dataset.h5", mode="r")
+
+The `mode` argument follow the standard library convention - 'r' for reading, 'w-' and `w` for create and overwrite,
+and 'a' for editing. ``open()`` can be used to create a new dataset directly on disk:
+
+    >>> new_dataset = Dataset.open("~/datasets/new_datasets.h5", mode="w")
+
+By default, any changes made to an opened dataset will be committed directly to the file, which will fail
+if the file is opened read-only. The `copy` argument can be used to load the dataset into memory and detach
+it from the file:
+
+    >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="r", copy=True)
+    >>> my_dataset.new_attribute = "abc"
+
+    
+Declarative API
+~~~~~~~~~~~~~~~
+
+When creating datasets to describe a physical system, it is common to collect the same data for
+a system under different conditions or assumptions.
 """
 
 from .attributes import (

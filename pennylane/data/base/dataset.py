@@ -19,7 +19,6 @@ for declaratively defining dataset classes.
 import json
 import typing
 from dataclasses import InitVar, dataclass
-from functools import cached_property
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -114,7 +113,6 @@ class Dataset(MapperMixin, _DatasetTransform):
     Self = TypeVar("Self", bound="Dataset")
 
     type_id = "dataset"
-    category_id: ClassVar[str]
 
     fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
 
@@ -158,6 +156,40 @@ class Dataset(MapperMixin, _DatasetTransform):
         if validate:
             self._validate_attrs()
 
+    @classmethod
+    def open(
+        cls,
+        filepath: Union[str, Path],
+        mode: Literal["w", "w-", "a", "r"] = "r",
+        copy: bool = False,
+    ) -> "Dataset":
+        """Open existing dataset or create a new one at ``filepath``.
+
+        Args:
+            filepath: Path to dataset file
+            mode: File handling mode. Possible values are "w-" (create, fail if file
+                exists), "w" (create, overwrite existing), "a" (append existing,
+                create if doesn't exist), "r" (read existing, must exist). Default is "r".
+            copy: Whether to load the dataset into memory after opening. If False, any changes
+                made to the dataset will be automatically written to the file, if it is opened
+                in write mode
+
+        Returns:
+            Dataset object from file
+        """
+        filepath = Path(filepath).expanduser()
+
+        f = h5py.File(filepath, mode)
+
+        if copy:
+            f_copy = hdf5.create_group()
+            hdf5.copy_all(f, f_copy)
+            f.close()
+
+            f = f_copy
+
+        return cls(f)
+
     @property
     def category(self) -> Optional[str]:
         """Returns the category ID of this dataset."""
@@ -165,7 +197,7 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     @property
     def info(self) -> AttributeInfo:
-        """Return attribute info associated with this dataset."""
+        """Return metadata associated with this dataset."""
         return AttributeInfo(self.bind.attrs)
 
     @property
@@ -173,7 +205,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         """Return the HDF5 group that contains this dataset."""
         return self._bind
 
-    @cached_property
+    @property
     def params(self) -> typing.Mapping[str, str]:  # pylint: disable=function-redefined
         """Returns this dataset's parameters."""
         return json.loads(self.info.get("params", "{}"))
@@ -197,30 +229,6 @@ class Dataset(MapperMixin, _DatasetTransform):
         """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
 
-    @classmethod
-    def open(
-        cls,
-        filepath: Union[str, Path],
-        mode: Literal["w", "w-", "a", "r"] = "r",
-        validate: bool = False,
-    ) -> "Dataset":
-        """Open existing dataset or create a new one at ``filepath``.
-
-        Args:
-            filepath: Path to dataset file
-            mode: File handling mode. Possible values are "w-" (create, fail if file
-                exists), "w" (create, overwrite existing), "a" (append existing,
-                create if doesn't exist), "r" (read existing, must exist). Default is "r".
-        Returns:
-            Dataset object from file
-        """
-        if mode in ("w-", "w"):
-            validate = False
-
-        f = h5py.File(filepath, mode)
-
-        return cls(bind=f, validate=validate)
-
     def read(
         self,
         source: Union[str, Path, "Dataset"],
@@ -239,6 +247,7 @@ class Dataset(MapperMixin, _DatasetTransform):
                 dataset.
         """
         if not isinstance(source, Dataset):
+            source = Path(source).expanduser()
             source = Dataset.open(source, mode="r")
 
         source.write(self, attributes=attributes, overwrite_attrs=overwrite_attrs)
@@ -268,6 +277,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         if_exists = "overwrite" if overwrite_attrs else "raise"
 
         if not isinstance(dest, Dataset):
+            dest = Path(dest).expanduser()
             dest = Dataset.open(dest, mode=mode)
             dest.info.update(self.info)
 
