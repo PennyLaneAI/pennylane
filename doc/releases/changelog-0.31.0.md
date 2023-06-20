@@ -636,6 +636,9 @@
 * Drawing mid-circuit measurements connected by classical control signals to conditional operations is now possible.
   [(#4228)](https://github.com/PennyLaneAI/pennylane/pull/4228)
 
+* The autograd interface now submits all required tapes in a single batch on the backward pass.
+  [(#4245)](https://github.com/PennyLaneAI/pennylane/pull/4245)
+
 <h3>Breaking changes 💔</h3>
 
 * The default value for the `show_matrices` keyword argument in all drawing methods is now `True`. 
