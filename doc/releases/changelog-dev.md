@@ -18,13 +18,15 @@
 
   There are a couple of ways to create fermionic operators with this new feature:
 
-  - via `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, respectively. These operators are 
+  - `qml.FermiC` and `qml.FermiA`: the fermionic creation and annihilation operators, respectively. These operators are 
     defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
     the operators $a^{\dagger}_0$ and $a_3$ are respectively constructed as
 
     ```pycon
     >>> qml.FermiC(0)
+    a⁺(0)
     >>> qml.FermiA(3)
+    a(3)
     ```
 
     These operators can be composed with (`@`), linearly combined with (`+` and `-`), and multiplied by (`*`) other Fermi operators
@@ -45,21 +47,21 @@
     - 0.345 * a⁺(3) a(3)
     ```
 
-  - via `qml.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
+  - `qml.fermi.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
     multiplied by each other (a Fermi word).
 
     ```pycon
-    >>> qml.string_to_fermi_word('0+ 1- 0+ 1-')
+    >>> qml.fermi.string_to_fermi_word('0+ 1- 0+ 1-')
     a⁺(0) a(1) a⁺(0) a(1)
-    >>> qml.string_to_fermi_word('0^ 1 0^ 1')
+    >>> qml.fermi.string_to_fermi_word('0^ 1 0^ 1')
     a⁺(0) a(1) a⁺(0) a(1)
     ```
 
     Fermi words created with `string_to_fermi_word` can be linearly combined to create a Fermi sentence:
 
     ```pycon 
-    >>> word1 = qml.string_to_fermi_word('0+ 0- 3+ 3-')
-    >>> word2 = qml.string_to_fermi_word('3+ 3-')
+    >>> word1 = qml.fermi.string_to_fermi_word('0+ 0- 3+ 3-')
+    >>> word2 = qml.fermi.string_to_fermi_word('3+ 3-')
     >>> sentence = 1.2 * word1 - 0.345 * word2
     >>> sentence
     1.2 * a⁺(0) a(0) a⁺(3) a(3)
@@ -71,11 +73,9 @@
   Additionally, any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence,
   can be mapped to the qubit basis by using `qml.jordan_wigner`:
 
-  TODO: update code example
-
   ```pycon
-  >>> qml.jordan_wigner(h)
-  ((-1.75+0j)*(Identity(wires=[0]))) + ((0.6+0j)*(PauliZ(wires=[0]))) + ((1.15+0j)*(PauliZ(wires=[3])))
+  >>> qml.jordan_wigner(sentence)
+  ((0.1275+0j)*(Identity(wires=[0]))) + ((-0.1275+0j)*(PauliZ(wires=[3]))) + ((-0.3+0j)*(PauliZ(wires=[0]))) + ((0.3+0j)*(PauliZ(wires=[0]) @ PauliZ(wires=[3])))
   ```
 
 <h4>Workflow-level resource estimation 🧮</h4>
@@ -220,21 +220,6 @@
 
 <h4>Community contributions from UnitaryHack 🤝</h4>
 
-* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
-  now has an improved string representation.
-  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
-
-  ```pycon
-  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
-  >>> def f2(p, t): return p * t
-  >>> coeffs = [2., f1, f2]
-  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-  >>> qml.dot(coeffs, observables)
-    (2.0*(PauliX(wires=[0])))
-  + (f1(params_0, t)*(PauliY(wires=[0])))
-  + (f2(params_1, t)*(PauliZ(wires=[0])))
-  ```
-
 * The quantum information module now supports [trace distance](https://en.wikipedia.org/wiki/Trace_distance).
   [(#4181)](https://github.com/PennyLaneAI/pennylane/pull/4181)
 
@@ -287,6 +272,21 @@
   array([0., 0., 1.])
   ```
 
+* [ParametrizedHamiltonian](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedHamiltonian.html)
+  now has an improved string representation.
+  [(#4176)](https://github.com/PennyLaneAI/pennylane/pull/4176)
+
+  ```pycon
+  >>> def f1(p, t): return p[0] * jnp.sin(p[1] * t)
+  >>> def f2(p, t): return p * t
+  >>> coeffs = [2., f1, f2]
+  >>> observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+  >>> qml.dot(coeffs, observables)
+    (2.0*(PauliX(wires=[0])))
+  + (f1(params_0, t)*(PauliY(wires=[0])))
+  + (f2(params_1, t)*(PauliZ(wires=[0])))
+  ```
+
 * A new transform called `one_qubit_decomposition` has been added that provides a unified interface for decompositions
   of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
@@ -317,8 +317,7 @@
 
 <h4>Extended support for differentiating pulses ⚛️</h4>
 
-* The stochastic parameter-shift gradient method can now be used with hardware-compatible
-  Hamiltonians.
+* The stochastic parameter-shift gradient method can now be used with hardware-compatible Hamiltonians.
   [(#4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
 
   This new feature generalizes the stochastic parameter-shift gradient transform for pulses 
@@ -376,7 +375,7 @@
     True
     ```
 
-  - Ability to draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
+  - The ability to draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
     `qml.draw_mpl()`.
     [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
 
@@ -513,7 +512,6 @@
   [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
   [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
 
-
 * `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`. It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"` instead of a string.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
@@ -549,7 +547,7 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
-* `CZ` now inherits from the `ControlledOp` class and supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
+* `qml.CZ` now inherits from the `ControlledOp` class and supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
   [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
 
 * The construction of the Pauli representation for the `Sum` class is now faster.
@@ -558,8 +556,6 @@
 * `qml.drawer.drawable_layers.drawable_layers` and `qml.CircuitGraph` have been updated to not rely on `Operator`
   equality or hash to work correctly.
   [(#4143)](https://github.com/PennyLaneAI/pennylane/pull/4143)
-
-<h4>Circuit drawing</h4>
 
 <h4>Other improvements</h4>
 
@@ -746,8 +742,7 @@
 * Fixed a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
 
-* Fixed buggy calculation of angle in `xyx_decomposition` causing it to give an incorrect decomposition.
-  An if conditional was intended to prevent divide by zero errors but the division was by the sine of the argument so any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
+* Fixed a bug where calculating the angle in `xyx_decomposition` caused it to give an incorrect decomposition.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
 <h3>Contributors ✍️</h3>
