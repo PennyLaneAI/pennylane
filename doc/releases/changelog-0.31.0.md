@@ -341,7 +341,7 @@
   ```python
   def U(params):
       H = jnp.polyval * qml.PauliZ(0) # time dependent Hamiltonian
-      Um = qml.evolve(H)(params, t=10., dense=False)
+      Um = qml.evolve(H, dense=False)(params, t=10.)
       return qml.matrix(Um)
   params = jnp.array([[0.5]], dtype=complex)
   jac = jax.jacobian(U, holomorphic=True)(params)
