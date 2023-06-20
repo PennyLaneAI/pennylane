@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.pulse import ParametrizedEvolution
+from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
 
 from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -177,8 +177,8 @@ def _parshift_and_integrate(
         cjacs (tensor_like): classical Jacobian evaluated at the splitting times
         int_prefactor (float): prefactor of the numerical integration, corresponding to the size
             of the time range divided by the number of splitting time samples
-        psr_coeffs (tensor_like): Coefficients of the parameter-shift rule to contract the results
-            with before integrating numerically.
+        psr_coeffs (tensor_like or tuple[tensor_like]): Coefficients of the parameter-shift
+            rule to contract the results with before integrating numerically.
         single_measure (bool): Whether the results contain a single measurement per shot setting
         has_partitioned_shots (bool): Whether the results have a shot vector axis
         use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
@@ -187,29 +187,79 @@ def _parshift_and_integrate(
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
 
-    if use_broadcasting:
+    def _contract(coeffs, res, cjac):
+        """Contract three tensors, the first two like a standard matrix multiplication
+        and the result with the third tensor along the first axes."""
+        return jnp.tensordot(jnp.tensordot(coeffs, res, axes=1), cjac, axes=[[0], [0]])
+
+    if isinstance(psr_coeffs, tuple):
+        num_shifts = [len(c) for c in psr_coeffs]
 
         def _psr_and_contract(res_list, cjacs, int_prefactor):
-            # Stack results and slice away the first and last values, corresponding to the initial
-            # condition and the final value of the time evolution, but not to a splitting time
-            res = qml.math.stack(res_list)[:, 1:-1]
-            # Contract the results with the parameter-shift rule coefficients
-            parshift = qml.math.tensordot(psr_coeffs, res, axes=1)
-            return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
+            """Execute the parameter-shift rule and contract with classical Jacobians.
+            This function assumes multiple generating terms for the pulse parameter
+            of interest"""
+            res = jnp.stack(res_list)
+            idx = 0
+
+            # Preprocess the results: Reshape, create slices for different generating terms
+            if use_broadcasting:
+                # Slice the results according to the different generating terms. Slice away the
+                # first and last value for each term, which correspond to the initial condition
+                # and the final value of the time evolution, but not to splitting times
+                res = tuple(res[idx : (idx := idx + n), 1:-1] for n in num_shifts)
+            else:
+                shape = jnp.shape(res)
+                num_taus = shape[0] // sum(num_shifts)
+                # Reshape the slices of the results corresponding to different generating terms.
+                # Afterwards the first axis corresponds to the splitting times and the second axis
+                # corresponds to the different shifts of the respective term.
+                # Finally move the shifts-axis to the first position of each term.
+                res = tuple(
+                    jnp.moveaxis(
+                        jnp.reshape(
+                            res[idx : (idx := idx + n * num_taus)], (num_taus, n) + shape[1:]
+                        ),
+                        1,
+                        0,
+                    )
+                    for n in num_shifts
+                )
+
+            # Contract the results, parameter-shift rule coefficients and (classical) Jacobians,
+            # and include the rescaling factor from the Monte Carlo integral and from global
+            # prefactors of Pauli word generators.
+            diff_per_term = jnp.array(
+                [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
+            )
+            return qml.math.sum(diff_per_term, axis=0) * int_prefactor
 
     else:
         num_shifts = len(psr_coeffs)
 
         def _psr_and_contract(res_list, cjacs, int_prefactor):
-            res = qml.math.stack(res_list)
-            # Reshape the results such that the first axis corresponds to the splitting times
-            # and the second axis corresponds to different shifts. All other axes are untouched
-            shape = qml.math.shape(res)
-            new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
-            res = qml.math.reshape(res, new_shape)
-            # Contract the results with the parameter-shift rule coefficients
-            parshift = qml.math.tensordot(psr_coeffs, res, axes=[[0], [1]])
-            return qml.math.tensordot(parshift, cjacs, axes=[[0], [0]]) * int_prefactor
+            """Execute the parameter-shift rule and contract with classical Jacobians.
+            This function assumes a single generating term for the pulse parameter
+            of interest"""
+            res = jnp.stack(res_list)
+
+            # Preprocess the results: Reshape, create slices for different generating terms
+            if use_broadcasting:
+                # Slice away the first and last values, corresponding to the initial condition
+                # and the final value of the time evolution, but not to splitting times
+                res = res[:, 1:-1]
+            else:
+                # Reshape the results such that the first axis corresponds to the splitting times
+                # and the second axis corresponds to different shifts. All other axes are untouched.
+                # Afterwards move the shifts-axis to the first position.
+                shape = jnp.shape(res)
+                new_shape = (shape[0] // num_shifts, num_shifts) + shape[1:]
+                res = jnp.moveaxis(jnp.reshape(res, new_shape), 1, 0)
+
+            # Contract the results, parameter-shift rule coefficients and (classical) Jacobians,
+            # and include the rescaling factor from the Monte Carlo integral and from global
+            # prefactors of Pauli word generators.
+            return _contract(psr_coeffs, res, cjacs) * int_prefactor
 
     nesting_layers = (not single_measure) + has_partitioned_shots
     if nesting_layers == 1:
@@ -263,13 +313,13 @@ def _stoch_pulse_grad(
             \bra{\psi^{(\pm)}_{j}(\boldsymbol{v}, \tau)} B
             \ket{\psi^{(\pm)}_{j}(\boldsymbol{v}, \tau)} \\
             \ket{\psi^{(\pm)}_{j}(\boldsymbol{v}, \tau)}
-            &= U_{\boldsymbol{v}}(T, \tau) e^{-i \pm \frac{\pi}{2} H_j}
+            &= U_{\boldsymbol{v}}(T, \tau) e^{-i (\pm \frac{\pi}{4}) H_j}
             U_{\boldsymbol{v}}(\tau, 0)\ket{\psi_0}.
 
     That is, the :math:`j`\ th modified time evolution in these circuit interrupts the
     evolution generated by the pulse Hamiltonian by inserting a rotation gate generated by
     the corresponding Hamiltonian term :math:`H_j` with a rotation angle of
-    :math:`\pm\frac{\pi}{2}`.
+    :math:`\pm\frac{\pi}{4}`.
 
     See below for a more detailed description. The integral in the first equation above
     is estimated numerically in the stochastic parameter-shift rule. For this, it samples
@@ -590,26 +640,49 @@ def _stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
 
 
-def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting):
+def _generate_tapes_and_cjacs(
+    tape, operation, key, num_split_times, use_broadcasting, par_idx=None
+):
     """Generate the tapes and compute the classical Jacobians for one given
     generating Hamiltonian term of one pulse.
-    """
-    # Obtain the operation into which the indicated parameter feeds, its position in the tape,
-    # and the index of the parameter within the operation
-    op, op_idx, term_idx = tape.get_operation(idx)
-    if not isinstance(op, ParametrizedEvolution):
-        # Only pulses are supported
-        raise ValueError(
-            "stoch_pulse_grad does not support differentiating parameters of "
-            "other operations than pulses."
-        )
 
+    Args:
+        tape (QuantumScript): Tape for which to compute the stochastic pulse parameter-shift
+            gradient tapes.
+        operation (tuple[Operation, int, int]): Information about the pulse operation to be
+            shifted. The first entry is the operation itself, the second entry is its position
+            in the ``tape``, and the third entry is the index of the differentiated parameter
+            (and generating term) within the ``HardwareHamiltonian`` of the operation.
+        key (tuple[int]): Randomness key to create spliting times.
+        num_split_times (int): Number of splitting times at which to create shifted tapes for
+            the stochastic shift rule.
+        use_broadcasting (bool): Whether to use broadcasting in the shift rule or not.
+
+    Returns:
+        list[QuantumScript]: Gradient tapes for the indicated operation and Hamiltonian term.
+        list[tensor_like]: Classical Jacobian at the splitting times for the given parameter.
+        float: Prefactor for the Monte Carlo estimate of the integral in the stochastic shift rule.
+        tensor_like: Parameter-shift coefficients for the shift rule of the indicated term.
+    """
+    op, op_idx, term_idx = operation
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-    cjac_fn = jax.jacobian(coeff, argnums=0)
+    if par_idx is None:
+        cjac_fn = jax.jacobian(coeff, argnums=0)
+    else:
+        # For `par_idx is not None`, we need to extract the entry of the coefficient
+        # Jacobian that belongs to the parameter of interest. This only happens when
+        # more than one parameter effectively feeds into one coefficient (HardwareHamiltonian)
+
+        def cjac_fn(params, t):
+            return jax.jacobian(coeff, argnums=0)(params, t)[par_idx]
 
     t0, *_, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
-    cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
+    if isinstance(op.H, HardwareHamiltonian):
+        op_data = op.H.reorder_fn(op.data, op.H.coeffs_parametrized)
+    else:
+        op_data = op.data
+    cjacs = [cjac_fn(op_data[term_idx], tau) for tau in taus]
     if use_broadcasting:
         split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, taus)
         tapes = _split_evol_tape(tape, split_evolve_ops, op_idx)
@@ -618,8 +691,96 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
         for tau in taus:
             split_evolve_ops, psr_coeffs = _split_evol_ops(op, ob, tau)
             tapes.extend(_split_evol_tape(tape, split_evolve_ops, op_idx))
-    avg_prefactor = (t1 - t0) / num_split_times
-    return cjacs, tapes, avg_prefactor, psr_coeffs
+    int_prefactor = (t1 - t0) / num_split_times
+    return tapes, cjacs, int_prefactor, psr_coeffs
+
+
+def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting):
+    """Create tapes and gradient data for a trainable parameter of a HardwareHamiltonian,
+    taking into account its reordering function.
+
+    Args:
+        tape (QuantumScript): Tape for which to compute the stochastic pulse parameter-shift
+            gradient tapes.
+        operation (tuple[Operation, int, int]): Information about the pulse operation to be
+            shifted. The first entry is the operation itself, the second entry is its position
+            in the ``tape``, and the third entry is the index of the differentiated parameter
+            within the ``HardwareHamiltonian`` of the operation.
+        key (tuple[int]): Randomness key to create spliting times in ``_generate_tapes_and_cjacs``
+        num_split_times (int): Number of splitting times at which to create shifted tapes for
+            the stochastic shift rule.
+        use_broadcasting (bool): Whether to use broadcasting in the shift rule or not.
+
+    Returns:
+        list[QuantumScript]: Gradient tapes for the indicated operation and Hamiltonian term.
+        tuple: Gradient postprocessing data.
+            See comment below.
+
+    This function analyses the ``reorder_fn`` of the ``HardwareHamiltonian`` of the pulse
+    that is being differentiated. Given a ``term_idx``, the index of the parameter
+    in the Hamiltonian, stochastic parameter shift tapes are created for all terms in the
+    Hamiltonian into which the parameter feeds. While this is a one-to-one relation for
+    standard ``ParametrizedHamiltonian`` objects, the reordering function of
+    the ``HardwareHamiltonian`` requires to create tapes for multiple Hamiltonian terms,
+    and for each term ``_generate_tapes_and_cjacs`` is called.
+
+    The returned gradient data has four entries:
+
+      1. ``int``: Total number of tapes created for all the terms that depend on the indicated
+         parameter.
+      2. ``tuple[tensor_like]``: Classical Jacobians for all terms and splitting times
+      3. ``float``: Prefactor for the Monte Carlo estimate of the integral in the stochastic
+         shift rule.
+      4. ``tuple[tensor_like]``: Parameter-shift coefficients for all terms.
+
+    The tuple axes in the second and fourth entry correspond to the different terms in the
+    Hamiltonian.
+    """
+    op, op_idx, term_idx = operation
+    # Map a simple enumeration of numbers from HardwareHamiltonian input parameters to
+    # ParametrizedHamiltonian parameters. This is typically a fan-out function.
+    fake_params, allowed_outputs = np.arange(op.num_params), set(range(op.num_params))
+    reordered = op.H.reorder_fn(fake_params, op.H.coeffs_parametrized)
+
+    def _raise():
+        raise ValueError(
+            "Only permutations, fan-out or fan-in functions are allowed as reordering functions "
+            "in HardwareHamiltonians treated by stoch_pulse_grad. The reordering function of "
+            f"{op.H} mapped {fake_params} to {reordered}."
+        )
+
+    cjacs, tapes, psr_coeffs = [], [], []
+    for coeff_idx, x in enumerate(reordered):
+        # Find out whether the value term_idx, corresponding to the current parameter of interest,
+        # has been mapped to x (for scalar x) or into x (for 1d x). If so, generate tapes and data
+        # Also check that only allowed outputs have been produced by the reordering function.
+        if not hasattr(x, "__len__"):
+            if x not in allowed_outputs:
+                _raise()
+            if x != term_idx:
+                continue
+            cjac_idx = None
+        else:
+            if not all(_x in list(range(op.num_params)) for _x in x):
+                _raise()
+            if term_idx not in x:
+                continue
+            cjac_idx = np.argwhere([_x == term_idx for _x in x])[0][0]
+
+        _operation = (op, op_idx, coeff_idx)
+        # Overwriting int_prefactor does not matter, it is equal for all parameters in this op,
+        # because it only consists of the duration `op.t[-1]-op.t[0]` and `num_split_times`
+        _tapes, _cjacs, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
+            tape, _operation, key, num_split_times, use_broadcasting, cjac_idx
+        )
+        cjacs.append(qml.math.stack(_cjacs))
+        tapes.extend(_tapes)
+        psr_coeffs.append(_psr_coeffs)
+
+    # The fact that psr_coeffs are a tuple only for hardware Hamiltonian generators will be
+    # used in `_parshift_and_integrate`.
+    data = (len(tapes), tuple(cjacs), int_prefactor, tuple(psr_coeffs))
+    return tapes, data
 
 
 # pylint: disable=too-many-arguments
@@ -637,12 +798,26 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             continue
 
         key, _key = jax.random.split(key)
-        cjacs, _tapes, avg_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
-            tape, idx, _key, num_split_times, use_broadcasting
-        )
+        operation = tape.get_operation(idx)
+        op, *_ = operation
+        if not isinstance(op, ParametrizedEvolution):
+            raise ValueError(
+                "stoch_pulse_grad does not support differentiating parameters of "
+                "other operations than pulses."
+            )
+        if isinstance(op.H, HardwareHamiltonian):
+            # Treat HardwareHamiltonians separately because they have a reordering function
+            _tapes, data = _tapes_data_hardware(
+                tape, operation, key, num_split_times, use_broadcasting
+            )
+        else:
+            _tapes, cjacs, int_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
+                tape, operation, _key, num_split_times, use_broadcasting
+            )
+            data = (len(_tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
 
-        gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor, psr_coeffs))
         tapes.extend(_tapes)
+        gradient_data.append(data)
 
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
@@ -653,7 +828,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     def processing_fn(results):
         start = 0
         grads = []
-        for num_tapes, cjacs, avg_prefactor, psr_coeffs in gradient_data:
+        for num_tapes, cjacs, int_prefactor, psr_coeffs in gradient_data:
             if num_tapes == 0:
                 grads.append(None)
                 continue
@@ -664,7 +839,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             g = _parshift_and_integrate(
                 res,
                 cjacs,
-                avg_prefactor,
+                int_prefactor,
                 psr_coeffs,
                 single_measure,
                 has_partitioned_shots,
