@@ -984,7 +984,8 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "spsa":
             spsa_kwargs = dict(
                 sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=10,
+                num_directions=100,
+                h=0.001
             )
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
