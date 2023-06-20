@@ -6,7 +6,7 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.7
+* `Python <http://python.org/>`_ >= 3.8
 
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
