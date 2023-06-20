@@ -341,15 +341,15 @@
   params = jnp.array([[0.5]], dtype=complex)
   jac = jax.jacobian(U, holomorphic=True)(params)
   ```
-
+`
 <h4>Broadcasting and other tweaks to Torch and Keras layers 🦾</h4>
 
 * The `TorchLayer` and `KerasLayer` integrations with `torch.nn` and `Keras` have been upgraded.
   Consider the following `TorchLayer`:
   [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
   [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
-  [(#4149)](https://github.com/PennyLaneAI/pennylane/pull/4149)
-  [(#4158)](https://github.com/PennyLaneAI/pennylane/pull/4158)
+    [(#4149)](https://github.com/PennyLaneAI/pennylane/pull/4149)
+    [(#4158)](https://github.com/PennyLaneAI/pennylane/pull/4158)
 
   ```python
   n_qubits = 2
@@ -634,7 +634,7 @@
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ`, and `MultiRZ` gates rather than a `QubitUnitary`.
   [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
 
-* Jax trainable parameters are now `Tracer` instead of `JVPTracer`, it is not always the right definition for the JIT 
+* Jax trainable parameters are now `Tracer` instead of `JVPTracer`. It is not always the right definition for the JIT 
   interface, but we update them in the custom JVP using symbolic zeros.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
