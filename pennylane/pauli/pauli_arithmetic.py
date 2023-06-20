@@ -57,18 +57,18 @@ mat_map = {
 
 
 @lru_cache
-def _cached_sparse_data(mat):
-    """Returns the sparse data and indices of a Pauli matrix."""
-    if mat == "I":
+def _cached_sparse_data(op):
+    """Returns the sparse data and indices of a Pauli operator."""
+    if op == "I":
         data = np.array([1.0, 1.0], dtype=np.complex128)
         indices = np.array([0, 1], dtype=np.int64)
-    elif mat == "X":
+    elif op == "X":
         data = np.array([1.0, 1.0], dtype=np.complex128)
         indices = np.array([1, 0], dtype=np.int64)
-    elif mat == "Y":
+    elif op == "Y":
         data = np.array([-1.0j, 1.0j], dtype=np.complex128)
         indices = np.array([1, 0], dtype=np.int64)
-    elif mat == "Z":
+    elif op == "Z":
         data = np.array([1.0, -1.0], dtype=np.complex128)
         indices = np.array([0, 1], dtype=np.int64)
     return data, indices
