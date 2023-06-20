@@ -92,12 +92,11 @@ class ParametrizedHamiltonianPytree:
             tuple: tuple containing the matrices and the parametrized coefficients defining the class
         """
         matrices = (self.mat_fixed, self.mats_parametrized)
-        param_coeffs = self.coeffs_parametrized
-        reorder_fn = self.reorder_fn
-        return (matrices, param_coeffs, reorder_fn)
+        metadata = (self.coeffs_parametrized, self.reorder_fn)
+        return (matrices, metadata)
 
     @classmethod
-    def tree_unflatten(cls, param_coeffs: tuple, matrices: tuple, reorder_fn: callable):
+    def tree_unflatten(cls, metadata: tuple, matrices: tuple):
         """Function used by ``jax`` to unflatten the JaxParametrizedOperator.
 
         Args:
@@ -109,6 +108,7 @@ class ParametrizedHamiltonianPytree:
         Returns:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
+        param_coeffs, reorder_fn = metadata
         return cls(*matrices, param_coeffs, reorder_fn)
 
 
