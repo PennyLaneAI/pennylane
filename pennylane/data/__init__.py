@@ -119,8 +119,30 @@ it from the file:
 Declarative API
 ~~~~~~~~~~~~~~~
 
-When creating datasets to describe a physical system, it is common to collect the same data for
-a system under different conditions or assumptions.
+When creating datasets to model a physical system, it is common to collect the same data for
+a system under different conditions or assumptions. For example, a collection of datasets describing
+a quantum oscillator, which contains the first 1000 energy levels for different masses and force constants.
+
+The datasets declarative API allows us to create subclasses of ``Dataset`` that define the required attributes,
+or 'fields', and their associated type and documentation:
+
+.. code-block
+
+    class QuantumOscillator(qml.data.Dataset):
+        \"""Dataset describing a quantum oscillator.\"""
+        
+        mass: float = qml.data.field(doc = "The mass of the particle")
+        force_constant: float = qml.data.field(doc = "The force constant of the oscillator")
+        hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
+        energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
+
+When a ``QuantumOscillator`` dataset is created, its attributes will have the documentation from the field
+definition: 
+
+    >>> dataset = QuantumOscillator(mass=1, force_constant=0.5, hamiltonian=..., energy_levels=...)
+    >>> dataset.attr_info["mass"]["doc"]
+    'The mass of the particle'
+
 """
 
 from .attributes import (
