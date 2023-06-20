@@ -343,8 +343,8 @@ class DiagonalQubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``DiagonalQubitUnitary`` decomposes into :class:`~.RZ`, :class:`IsingZZ`, and/or
-        :class:`MultiRZ` depending on the number of wires.
+        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, :class:`~.RZ`,
+        :class:`IsingZZ`, and/or :class:`MultiRZ` depending on the number of wires.
 
         .. note::
 
