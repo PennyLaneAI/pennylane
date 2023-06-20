@@ -417,10 +417,10 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
     r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations. (batched operation)
 
-    Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
+    Any one qubit unitary operation can be implemented up to a global phase by composing RX, RY,
     and RZ gates.
 
-    Currently supported values for `rotations` are "ZYZ", "XYX", and "ZXZ".
+    Currently supported values for ``rotations`` are "ZYZ", "XYX", and "ZXZ".
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
@@ -431,7 +431,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
-        the list is equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
+        the list is equivalent to the unitary :math:`U` up to a global phase. If ``return_global_phase=True``,
         the global phase is returned as the last element of the list.
 
     **Example**
