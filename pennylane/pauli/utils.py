@@ -51,8 +51,7 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     return {label: i for i, label in enumerate(wire_labels)}
 
 
-@singledispatch
-def is_pauli_word(observable):  # pylint:disable=unused-argument
+def is_pauli_word(observable):
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
 
@@ -93,36 +92,45 @@ def is_pauli_word(observable):  # pylint:disable=unused-argument
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    return _is_pauli_word(observable)
+
+
+@singledispatch
+def _is_pauli_word(observable):  # pylint:disable=unused-argument
+    """
+    Private implementation of is_pauli_word, to prevent all of the
+    registered functions from appearing in the Sphinx docs.
+    """
     return False
 
 
-@is_pauli_word.register(PauliX)
-@is_pauli_word.register(PauliY)
-@is_pauli_word.register(PauliZ)
-@is_pauli_word.register(Identity)
+@_is_pauli_word.register(PauliX)
+@_is_pauli_word.register(PauliY)
+@_is_pauli_word.register(PauliZ)
+@_is_pauli_word.register(Identity)
 def _is_pw_pauli(
     observable: Union[PauliX, PauliY, PauliZ, Identity]
 ):  # pylint:disable=unused-argument
     return True
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_tensor(observable: Tensor):
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     return set(observable.name).issubset(pauli_word_names)
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_ham(observable: Hamiltonian):
     return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_prod(observable: Prod):
     return all(is_pauli_word(op) for op in observable)
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_sprod(observable: SProd):
     return is_pauli_word(observable.base)
 
