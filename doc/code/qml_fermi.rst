@@ -12,8 +12,9 @@ Functions
 .. currentmodule:: pennylane
 
 .. autosummary::
+    :toctree: api
 
-    jordan_wigner
+    ~jordan_wigner
     ~fermi.string_to_fermi_word
 
 
@@ -23,6 +24,7 @@ Classes
 .. currentmodule:: pennylane
 
 .. autosummary::
+    :toctree: api
 
     FermiA
     FermiC
