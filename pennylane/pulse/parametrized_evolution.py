@@ -18,7 +18,7 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
-from typing import List, Union
+from typing import Any, Callable, List, Tuple, Union
 import warnings
 
 import pennylane as qml
@@ -37,13 +37,6 @@ try:
     from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 except ImportError as e:
     has_jax = False
-
-
-def ham_fun_callable(args_metadata, y, t, *flatten_data):
-    """dy/dt = -i H(t) y"""
-    H_jax, data = jax.tree_util.tree_unflatten(args_metadata, flatten_data)
-    res = (-1j * H_jax(data, t=t)) @ y
-    return res
 
 
 class ParametrizedEvolution(Operation):
@@ -497,12 +490,9 @@ class ParametrizedEvolution(Operation):
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 self.H, dense=self.dense, wire_order=self.wires
             )
-        args = (H_jax, operation.data)
-        args_flat, args_metadata = jax.tree_flatten(args)
+        fun, args = make_odefun_and_args(H_jax, self.data)
 
-        fun = nk.jax.HashablePartial(ham_fun_callable, args_metadata)
-
-        mat = odeint(fun, y0, self.t, *args_flat, **self.odeint_kwargs)
+        mat = odeint(fun, y0, self.t, args, **self.odeint_kwargs)
 
         if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
             # Compute U(t_0, t_f)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
@@ -512,3 +502,43 @@ class ParametrizedEvolution(Operation):
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+
+
+def make_odefun_and_args(
+        H_jax: ParametrizedHamiltonianPytree, 
+        operation_data: Any
+        ) -> Callable[[jax.Array, float, Tuple[jax.Array,...]], jax.Array]:
+    """
+    Creates a function with a stable hash that can be called with the provided extra
+    arguments, which are already flattened.
+
+    This function is necessary to adhere to the limitations of the current odefun, which
+    does not support pytree inputs. If this limitation was ever lifted, this function
+    could be removed.
+    """
+    def ham_fun_callable(y, t, flat_args, pytree_structure):
+        """Computes 
+        dy/dt = -i H(t) y
+        
+        Unfortunately jax.experimental.odeint does not support pytree arguments,
+        so we need to flatten all args manually and unflatten them.
+    
+        the flattened arguments 'flat_args' are unflattened according to the structure
+        'pytree_structure'. Note that 'pytree_structure' must be declared as a static
+        argument to jax.
+        """
+        # unflatten the data necessary to compute this function
+        H_jax, data = jax.tree_util.tree_unflatten(pytree_structure, flat_args)
+        # compute the actual df/dt
+        print("ciao")
+        return (-1j * H_jax(data, t=t)) @ y
+
+    args = (H_jax, operation_data)
+    args_flat, pytree_structure = jax.tree_util.tree_flatten(args)
+    # We use HashablePartial instead of `functools.partial` to make sure that its
+    # hash does not change every time we construct a new object with the same 
+    # pytree_structure.
+    #
+    # This fixes bug #4264
+    odefun = HashablePartial(ham_fun_callable, pytree_structure=pytree_structure)
+    return odefun, args_flat

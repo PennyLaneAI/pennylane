@@ -16,6 +16,7 @@ reference plugin.
 """
 # pylint: disable=ungrouped-imports
 import numpy as np
+from typing import Any, Callable, Tuple
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
@@ -34,12 +35,6 @@ try:
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
-
-def ham_fun_callable(args_metadata, y, t, *flatten_data):
-    """dy/dt = -i H(t) y"""
-    H_jax, data = jax.tree_util.tree_unflatten(args_metadata, flatten_data)
-    res = (-1j * H_jax(data, t=t)) @ y
-    return res
 
 class DefaultQubitJax(DefaultQubit):
     """Simulator plugin based on ``"default.qubit"``, written using jax.
@@ -234,13 +229,10 @@ class DefaultQubitJax(DefaultQubit):
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 operation.H, dense=operation.dense, wire_order=self.wires
             )
-        args = (H_jax, operation.data)
-        args_flat, args_metadata = jax.tree_flatten(args)
-        fun = HashablePartial(ham_fun_callable, args_metadata)
-        #from functools import partial
-        #fun = partial(ham_fun_callable, args_metadata)
 
-        result = odeint(fun, state, operation.t, *args_flat, **operation.odeint_kwargs)
+        fun, args = make_odefun_and_args(H_jax, operation.data)
+
+        result = odeint(fun, state, operation.t, args, **operation.odeint_kwargs)
         out_shape = [2] * self.num_wires
         if operation.hyperparameters["return_intermediate"]:
             return self._reshape(result, [-1] + out_shape)
@@ -365,3 +357,42 @@ class DefaultQubitJax(DefaultQubit):
                     prob = prob.at[i, state, b].set(count / bin_size)
         # resize prob which discards the 'filled values'
         return prob[:, :-1]
+
+
+def make_odefun_and_args(
+        H_jax: ParametrizedHamiltonianPytree, 
+        operation_data: Any
+        ) -> Callable[[jax.Array, float, Tuple[jax.Array,...]], jax.Array]:
+    """
+    Creates a function with a stable hash that can be called with the provided extra
+    arguments, which are already flattened.
+
+    This function is necessary to adhere to the limitations of the current odefun, which
+    does not support pytree inputs. If this limitation was ever lifted, this function
+    could be removed.
+    """
+    def ham_fun_callable(y, t, flat_args, pytree_structure):
+        """Computes 
+        dy/dt = -i H(t) y
+        
+        Unfortunately jax.experimental.odeint does not support pytree arguments,
+        so we need to flatten all args manually and unflatten them.
+    
+        the flattened arguments 'flat_args' are unflattened according to the structure
+        'pytree_structure'. Note that 'pytree_structure' must be declared as a static
+        argument to jax.
+        """
+        # unflatten the data necessary to compute this function
+        H_jax, data = jax.tree_util.tree_unflatten(pytree_structure, flat_args)
+        # compute the actual df/dt
+        return (-1j * H_jax(data, t=t)) @ y
+
+    args = (H_jax, operation_data)
+    args_flat, pytree_structure = jax.tree_util.tree_flatten(args)
+    # We use HashablePartial instead of `functools.partial` to make sure that its
+    # hash does not change every time we construct a new object with the same 
+    # pytree_structure.
+    #
+    # This fixes bug #4264
+    odefun = HashablePartial(ham_fun_callable, pytree_structure=pytree_structure)
+    return odefun, args_flat
