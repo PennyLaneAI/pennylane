@@ -130,6 +130,7 @@ class TestPauliWord:
 
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
+        (pw1, [2, 1, 0], np.kron(np.kron(matY, matX), matI)),
         (pw2, ["c", "b", "a"], np.kron(np.kron(matZ, matX), matX)),
         (pw3, [0, "b", "c"], np.kron(np.kron(matZ, matZ), matZ)),
     )
@@ -147,6 +148,7 @@ class TestPauliWord:
         """Test that an identity matrix is return if wire_order is provided."""
         assert np.allclose(pw4.to_mat(wire_order=[0, 1]), np.eye(4))
         assert sparse.issparse(pw4.to_mat(wire_order=[0, 1], format="csr"))
+        assert not (pw4.to_mat(wire_order=[0, 1], format="csr") != sparse.eye(4)).sum()
 
     @pytest.mark.parametrize("pw, wire_order, true_matrix", tup_pws_mat_wire)
     def test_to_mat(self, pw, wire_order, true_matrix):

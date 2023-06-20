@@ -202,7 +202,7 @@ class PauliWord(dict):
         """Track wires in a PauliWord."""
         return set(self)
 
-    def to_mat(self, wire_order=None, format="dense", coeff=1.0):
+    def to_mat(self, wire_order, format="dense", coeff=1.0):
         """Returns the matrix representation.
 
         Keyword Args:
@@ -226,7 +226,6 @@ class PauliWord(dict):
                 else coeff * sparse.eye(2 ** len(wire_order), format=format)
             )
 
-        wire_order = wire_order or self.wires
         if format == "dense":
             return coeff * reduce(math.kron, (mat_map[self[w]] for w in wire_order))
 
@@ -366,7 +365,7 @@ class PauliSentence(dict):
         """Track wires of the PauliSentence."""
         return set().union(*(pw.wires for pw in self.keys()))
 
-    def to_mat(self, wire_order=None, format="dense"):
+    def to_mat(self, wire_order, format="dense"):
         """Returns the matrix representation.
 
         Keyword Args:
