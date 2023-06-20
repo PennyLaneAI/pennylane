@@ -346,6 +346,10 @@
 
 * The `TorchLayer` and `KerasLayer` integrations with `torch.nn` and `Keras` have been upgraded.
   Consider the following `TorchLayer`:
+  [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
+  [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
+  [(#4149)](https://github.com/PennyLaneAI/pennylane/pull/4149)
+  [(#4158)](https://github.com/PennyLaneAI/pennylane/pull/4158)
 
   ```python
   n_qubits = 2
@@ -365,7 +369,6 @@
   The following features are now available:
 
   - Native support for parameter broadcasting.
-    [(#4131)](https://github.com/PennyLaneAI/pennylane/pull/4131)
 
     ```pycon
     >>> batch_size = 10
@@ -377,7 +380,6 @@
 
   - The ability to draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
     `qml.draw_mpl()`.
-    [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
 
     ```pycon
     >>> print(qml.draw(qlayer, show_matrices=False)(inputs))
@@ -386,8 +388,6 @@
     ```
 
   - Support for `KerasLayer` model saving and clearer instructions on `TorchLayer` model saving.
-    [(#4149)](https://github.com/PennyLaneAI/pennylane/pull/4149)
-    [(#4158)](https://github.com/PennyLaneAI/pennylane/pull/4158)
 
     ```pycon
     >>> torch.save(qlayer.state_dict(), "weights.pt")  # Saving
