@@ -705,7 +705,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`.Operator.matrix` and :func:`~pennylane.matrix`
+        .. seealso:: :meth:`.Operator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
