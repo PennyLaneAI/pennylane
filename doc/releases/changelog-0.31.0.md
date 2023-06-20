@@ -19,7 +19,7 @@
 
   There are a couple of ways to create fermionic operators with this new feature:
 
-  - via `qml.FermiC` and `qml.FermiA`: the
+  - `qml.FermiC` and `qml.FermiA`: the
     [fermionic creation](https://docs.pennylane.ai/en/stable/code/api/pennylane.FermiC.html) and
     [annihilation operators](https://docs.pennylane.ai/en/stable/code/api/pennylane.FermiA.html),
     respectively. These operators are 
@@ -28,7 +28,9 @@
 
     ```pycon
     >>> qml.FermiC(0)
+    a⁺(0)
     >>> qml.FermiA(3)
+    a(3)
     ```
 
     These operators can be composed with (`@`), linearly combined with (`+` and `-`), and multiplied by (`*`) other Fermi operators
@@ -271,7 +273,7 @@
     0.19999999999999998
     ```
 
-* It is now possible to use basis-state preparations in Qutrit circuits.
+* It is now possible to prepare qutrit basis states with `qml.QutritBasisState`.
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
   ```python
@@ -320,8 +322,7 @@
 
 <h4>Extended support for differentiating pulses ⚛️</h4>
 
-* The stochastic parameter-shift gradient method can now be used with hardware-compatible
-  Hamiltonians.
+* The stochastic parameter-shift gradient method can now be used with hardware-compatible Hamiltonians.
   [(#4132)](https://github.com/PennyLaneAI/pennylane/pull/4132)
   [(#4215)](https://github.com/PennyLaneAI/pennylane/pull/4215)
 
@@ -380,7 +381,7 @@
     True
     ```
 
-  - Ability to draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
+  - The ability to draw a `TorchLayer` and `KerasLayer` using `qml.draw()` and
     `qml.draw_mpl()`.
     [(#4197)](https://github.com/PennyLaneAI/pennylane/pull/4197)
 
@@ -564,7 +565,7 @@
   and now inherits from `qml.ops.op_math.ControlledOp`.
   [(#4116)](https://github.com/PennyLaneAI/pennylane/pull/4116/)
 
-* `CZ` now inherits from the `ControlledOp` class and supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
+* `qml.CZ` now inherits from the `ControlledOp` class and supports exponentiation to arbitrary powers with `pow`, which is no longer limited to integers. It also supports `sparse_matrix` and `decomposition` representations.
   [(#4117)](https://github.com/PennyLaneAI/pennylane/pull/4117)
 
 * The construction of the Pauli representation for the `Sum` class is now faster.
@@ -648,7 +649,7 @@
 * `DiagonalQubitUnitary` now decomposes into `RZ`, `IsingZZ`, and `MultiRZ` gates rather than a `QubitUnitary`.
   [(#4035)](https://github.com/PennyLaneAI/pennylane/pull/4035)
 
-* Jax trainable parameters are now `Tracer` instead of `JVPTracer`, it is not always the right definition for the JIT 
+* Jax trainable parameters are now `Tracer` instead of `JVPTracer`. It is not always the right definition for the JIT 
   interface, but we update them in the custom JVP using symbolic zeros.
   [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
