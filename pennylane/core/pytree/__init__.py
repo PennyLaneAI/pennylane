@@ -1,0 +1,1 @@
+from .partial import HashablePartial
