@@ -148,7 +148,7 @@ class TestInitialization:
 
         assert op.num_params == 0
         assert op.parameters == []
-        assert op.data == []
+        assert op.data == ()
 
         assert op.num_wires == 4
 
@@ -207,16 +207,16 @@ class TestProperties:
         base = qml.RX(x, wires="a")
         op = Controlled(base, (0, 1))
 
-        assert op.data == [x]
+        assert op.data == (x,)
 
-        x_new = np.array(2.3454)
+        x_new = (np.array(2.3454),)
         op.data = x_new
-        assert op.data == [x_new]
-        assert base.data == [x_new]
+        assert op.data == (x_new,)
+        assert base.data == (x_new,)
 
-        x_new2 = np.array(3.456)
+        x_new2 = (np.array(3.456),)
         base.data = x_new2
-        assert op.data == [x_new2]
+        assert op.data == (x_new2,)
         assert op.parameters == [x_new2]
 
     @pytest.mark.parametrize(
@@ -386,10 +386,10 @@ class TestMiscMethods:
         assert copied_op.__class__ is op.__class__
         assert copied_op.control_wires == op.control_wires
         assert copied_op.control_values == op.control_values
-        assert copied_op.data == [param1]
+        assert copied_op.data == (param1,)
 
-        copied_op.data = [6.54]
-        assert op.data == [param1]
+        copied_op.data = (6.54,)
+        assert op.data == (param1,)
 
     def test_label(self):
         """Test that the label method defers to the label of the base."""
@@ -450,7 +450,7 @@ class TestMiscMethods:
 
         for wire, ob in zip(op.control_wires, gen_tensor.operands):
             assert isinstance(ob, qml.Projector)
-            assert ob.data == [[1]]
+            assert ob.data == ([1],)
             assert ob.wires == qml.wires.Wires(wire)
 
         assert gen_tensor.operands[-1].__class__ is base_gen.__class__

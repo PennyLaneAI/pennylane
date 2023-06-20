@@ -406,12 +406,7 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        if diff_method == "adjoint" and not grad_on_execution:
-            # TODO: jit here too when the following issue is resolved:
-            # https://github.com/PennyLaneAI/pennylane/issues/3475
-            jac_fn = jax.jacobian(circuit, argnums=[0, 1])
-        else:
-            jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
+        jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
 
         res = jac_fn(a, b)
 
@@ -2860,9 +2855,6 @@ class TestSubsetArgnums:
     ):
         """Test single measurement with different diff methods with argnums."""
 
-        if diff_method == "adjoint" and not grad_on_execution:
-            pytest.skip("Adjoint and backward pass do not work because of issue #3475")
-
         dev = qml.device(dev_name, wires=3)
 
         @qml.qnode(
@@ -2912,9 +2904,6 @@ class TestSubsetArgnums:
     ):
         """Test multiple measurements with different diff methods with argnums."""
         dev = qml.device(dev_name, wires=3)
-
-        if diff_method == "adjoint" and not grad_on_execution:
-            pytest.skip("Adjoint and backward pass do not work because of issue #3475")
 
         @qml.qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution

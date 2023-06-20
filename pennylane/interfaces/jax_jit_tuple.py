@@ -222,7 +222,7 @@ def _execute_bwd(
 
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-        # Execution: execute the function first
+        # Execution: execute the function first (execution on the device does not happen)
         evaluation_results = execute_wrapper(params)
 
         # Backward: branch off based on the gradient function is a device method.
