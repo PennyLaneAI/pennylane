@@ -32,6 +32,7 @@ try:
     import jax
     import jax.numpy as jnp
     from jax.experimental.ode import odeint
+    from pennylane.core.pytree import HashablePartial
 
     from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 except ImportError as e:
@@ -498,10 +499,8 @@ class ParametrizedEvolution(Operation):
             )
         args = (H_jax, operation.data)
         args_flat, args_metadata = jax.tree_flatten(args)
-        import netket as nk
+
         fun = nk.jax.HashablePartial(ham_fun_callable, args_metadata)
-        #from functools import partial
-        #fun = partial(ham_fun_callable, args_metadata)
 
         mat = odeint(fun, y0, self.t, *args_flat, **self.odeint_kwargs)
 

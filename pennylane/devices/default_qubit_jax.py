@@ -28,6 +28,7 @@ try:
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
+    from pennylane.core.pytree import HashablePartial
     from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 except ImportError as e:  # pragma: no cover
@@ -235,8 +236,7 @@ class DefaultQubitJax(DefaultQubit):
             )
         args = (H_jax, operation.data)
         args_flat, args_metadata = jax.tree_flatten(args)
-        import netket as nk
-        fun = nk.jax.HashablePartial(ham_fun_callable, args_metadata)
+        fun = HashablePartial(ham_fun_callable, args_metadata)
         #from functools import partial
         #fun = partial(ham_fun_callable, args_metadata)
 
