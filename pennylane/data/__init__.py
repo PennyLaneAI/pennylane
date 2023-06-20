@@ -23,6 +23,70 @@ Additionally, users can easily create, write to disk, and read custom datasets u
 .. autosummary::
    :toctree: api
 
+Description
+-----------
+
+Datasets
+~~~~~~~~
+The :class:`Dataset` class provides a portable storage format for information describing a physical
+system and its evolution. For example, a dataset for an arbitrary quantum system could have
+a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state. Datasets
+can contain a range of object types, including:
+
+    - ``numpy.ndarray``
+    - any numeric type
+    - :class:`qml.qchem.Molecule`
+    - most :class:`qml.operation.Operator` types
+    - `list` of any supported type
+    - `dict` of any supported type, as long as the keys are strings
+
+
+Creating a Dataset
+~~~~~~~~~~~~~~~~~~
+
+To create a new dataset in-memory, initialize a new ``Dataset`` with the desired attributes:
+
+    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
+    >>> dataset = qml.data.Dataset(
+            hamiltonian = hamiltonian,
+            eigen = {"eigvals": eigvals, "eigvecs": eigvecs})
+    >>> dataset.hamiltonian
+    <Hamiltonian: terms=2, wires=[0, 1]>
+    >>> dataset.eigen
+    {'eigvals': array([-2.,  0.,  0.,  2.]), 
+    'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+       [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
+       [1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])}
+
+Attributes can also be assigned to the instance after creation:
+
+    >>> dataset.ground_state = np.transpose(eigvecs)[np.argmin(eigvals)]
+    >>> dataset.ground_state
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
+
+
+Attribute Metadata
+~~~~~~~~~~~~~~~~~~
+
+Dataset attributes can also contain additional metadata, such as docstrings. The :func:`qml.data.attribute`
+function can be used to attach metadata on assignment or initialization.
+
+    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
+    >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
+            hamiltonian, 
+            doc="The hamiltonian of the system"))
+    >>> dataset.eigen = attribute(
+            {"eigvals": eigvals, "eigvecs": eigvecs}, 
+            doc="Eigenvalues and eigenvectors of the hamiltonain")
+    
+This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
+
+    >>> dataset.attr_info["hamiltonian"]["doc"]
+    'The hamiltonian of the system'
+
 """
 
 from .attributes import (

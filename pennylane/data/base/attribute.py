@@ -150,6 +150,9 @@ class AttributeInfo(MutableMapping):
             key.split(ns, maxsplit=1)[1:2] for key in self.attrs_bind
         )
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({repr(dict(self))})"
+
     @classmethod
     @lru_cache()
     def bind_key(cls, __name: str) -> str:

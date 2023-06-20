@@ -183,6 +183,16 @@ class Dataset(MapperMixin, _DatasetTransform):
         """Returns all attributes of this Dataset."""
         return self._mapper.view()
 
+    @property
+    def attr_info(self) -> typing.Mapping[str, AttributeInfo]:
+        """Returns a mapping of the ``AttributeInfo`` for each of this dataset's attributes."""
+        return MappingProxyType(
+            {
+                attr_name: AttributeInfo(self.bind[attr_name].attrs)
+                for attr_name in self.list_attributes()
+            }
+        )
+
     def list_attributes(self) -> List[str]:
         """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
