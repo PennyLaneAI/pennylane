@@ -38,9 +38,11 @@ except ImportError as e:
     has_jax = False
 
 
-def ham_fun_callable(y, t, H_jax, data):
+def ham_fun_callable(args_metadata, y, t, *flatten_data):
     """dy/dt = -i H(t) y"""
-    return (-1j * H_jax(data, t=t)) @ y
+    H_jax, data = jax.tree_util.tree_unflatten(args_metadata, flatten_data)
+    res = (-1j * H_jax(data, t=t)) @ y
+    return res
 
 
 class ParametrizedEvolution(Operation):
@@ -494,8 +496,15 @@ class ParametrizedEvolution(Operation):
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 self.H, dense=self.dense, wire_order=self.wires
             )
+        args = (H_jax, operation.data)
+        args_flat, args_metadata = jax.tree_flatten(args)
+        import netket as nk
+        fun = nk.jax.HashablePartial(ham_fun_callable, args_metadata)
+        #from functools import partial
+        #fun = partial(ham_fun_callable, args_metadata)
 
-        mat = odeint(ham_fun_callable, y0, self.t, H_jax, self.data, **self.odeint_kwargs)
+        mat = odeint(fun, y0, self.t, *args_flat, **self.odeint_kwargs)
+
         if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
             # Compute U(t_0, t_f)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
             mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])

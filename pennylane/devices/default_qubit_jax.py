@@ -34,6 +34,12 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 
+def ham_fun_callable(args_metadata, y, t, *flatten_data):
+    """dy/dt = -i H(t) y"""
+    H_jax, data = jax.tree_util.tree_unflatten(args_metadata, flatten_data)
+    res = (-1j * H_jax(data, t=t)) @ y
+    return res
+
 class DefaultQubitJax(DefaultQubit):
     """Simulator plugin based on ``"default.qubit"``, written using jax.
 
@@ -227,12 +233,14 @@ class DefaultQubitJax(DefaultQubit):
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 operation.H, dense=operation.dense, wire_order=self.wires
             )
+        args = (H_jax, operation.data)
+        args_flat, args_metadata = jax.tree_flatten(args)
+        import netket as nk
+        fun = nk.jax.HashablePartial(ham_fun_callable, args_metadata)
+        #from functools import partial
+        #fun = partial(ham_fun_callable, args_metadata)
 
-        def fun(y, t):
-            """dy/dt = -i H(t) y"""
-            return (-1j * H_jax(operation.data, t=t)) @ y
-
-        result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
+        result = odeint(fun, state, operation.t, *args_flat, **operation.odeint_kwargs)
         out_shape = [2] * self.num_wires
         if operation.hyperparameters["return_intermediate"]:
             return self._reshape(result, [-1] + out_shape)
