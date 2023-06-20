@@ -97,6 +97,28 @@ class TestCaching:
         assert tracker2.totals["executions"] == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
 
+    def test_single_backward_pass_batch(self):
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
+        is requested for multiple tapes."""
+
+        dev = DefaultQubit2()
+
+        def f(x):
+            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
+            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.probs(wires=0)])
+
+            results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
+            return results[0] + results[1]
+
+        x = qml.numpy.array(0.1)
+        with dev.tracker:
+            out = qml.jacobian(f)(x)
+
+        assert dev.tracker.totals["batches"] == 2
+        assert dev.tracker.history["executions"] == [2, 4]
+        expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
+        assert qml.math.allclose(out, expected)
+
 
 # add tests for lightning 2 when possible
 # set rng for device when possible
