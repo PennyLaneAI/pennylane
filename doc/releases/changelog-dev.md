@@ -268,7 +268,7 @@
     0.19999999999999998
     ```
 
-* It is now possible to use basis-state preparations in Qutrit circuits.
+* It is now possible to prepare qutrit basis states with `qml.QutritBasisState`.
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
   ```python
@@ -424,25 +424,6 @@
   ```
 
 <h4>Do more with qutrits</h4>
-
-* It is now possible to prepare qutrit basis states with `qml.QutritBasisState`.
-  [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
-
-  ```python
-  wires = range(2)
-  dev = qml.device("default.qutrit", wires=wires)
-
-  @qml.qnode(dev)
-  def qutrit_circuit():
-      qml.QutritBasisState([1, 1], wires=wires)
-      qml.TAdd(wires=wires)
-      return qml.probs(wires=1)
-  ```
-  
-  ```pycon
-  >>> qutrit_circuit()
-  array([0., 0., 1.])
-  ```
 
 * Three qutrit rotation operators have been added that are analogous to `RX`, `RY`, and `RZ`:
 
