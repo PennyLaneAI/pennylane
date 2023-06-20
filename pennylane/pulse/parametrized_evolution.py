@@ -38,6 +38,11 @@ except ImportError as e:
     has_jax = False
 
 
+def ham_fun_callable(y, t, H_jax, data):
+    """dy/dt = -i H(t) y"""
+    return (-1j * H_jax(data, t=t)) @ y
+
+
 class ParametrizedEvolution(Operation):
     r"""
     ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=None, id=None, **odeint_kwargs)
@@ -490,11 +495,7 @@ class ParametrizedEvolution(Operation):
                 self.H, dense=self.dense, wire_order=self.wires
             )
 
-        def fun(y, t):
-            """dy/dt = -i H(t) y"""
-            return (-1j * H_jax(self.data, t=t)) @ y
-
-        mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
+        mat = odeint(ham_fun_callable, y0, self.t, H_jax, self.data, **self.odeint_kwargs)
         if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
             # Compute U(t_0, t_f)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
             mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
