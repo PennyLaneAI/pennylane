@@ -544,7 +544,7 @@ def _stoch_pulse_grad(
 
             H(\boldsymbol{v}, t) = \frac{1}{2} X_0 + v_1 Z_0 Z_1 + \sin(v_2 t) X_1
 
-        and the observable :math:`B= Y_1`. There are two variational parameters, :math:`v_1`
+        and the observable :math:`B=Y_1`. There are two variational parameters, :math:`v_1`
         and :math:`v_2`, for which we may compute the derivative of the cost function:
 
         .. math::
