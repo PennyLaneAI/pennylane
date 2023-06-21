@@ -419,7 +419,7 @@ def _stoch_pulse_grad(
 
     >>> jax.grad(qnode)(params)
     [Array(0.00109782, dtype=float64, weak_type=True),
-     Array(-0.05833371, dtype=float64, weak_type=True)]
+     Array(-0.05833371, dtype=float64, weak_type=True)] # results may differ
 
     Note that the derivative is computed using a stochastic parameter-shift rule,
     which is based on a sampled approximation of an integral expression (see theoretical
