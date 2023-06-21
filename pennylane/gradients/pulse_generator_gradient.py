@@ -407,7 +407,8 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules.
     It allows for the evaluation of parameter-shift gradients for many-qubit pulse programs
-    on hardware, with the limitation that the individual pulses must be acting on a reduced number of qubits.
+    on hardware, with the limitation that the individual pulses must be acting on a 
+    sufficiently small number of qubits.
 
     For this differentiation method, the unitary matrix :math:`U` and its derivative :math:`\partial_k U`
     of a pulse gate are computed classically with an autodiff framework. From :math:`\partial_k U` and :math:`U` we can
