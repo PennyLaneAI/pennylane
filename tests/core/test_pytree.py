@@ -25,6 +25,7 @@ def test_hashable_partial_merges_with_partial():
     Test nesting of partials builds the correct HashablePartial
     (this checks for a bug arising in python 3.10+ only)
     """
+
     def f(a, b, c, d, e, f, g):
         pass
 
@@ -46,6 +47,7 @@ def test_hashable_partial_merges_with_hashable_partial():
     """
     Test nesting of HashablePartials
     """
+
     def f(a, b, c):
         pass
 
@@ -57,6 +59,7 @@ def test_hashable_partial_merges_with_hashable_partial():
 
 def test_hashable_partial_repr():
     """tests the repr method does not crash"""
+
     def f(a, b, c):
         pass
 
