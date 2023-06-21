@@ -92,8 +92,8 @@ class ParametrizedHamiltonianPytree:
             tuple: tuple containing the matrices and the static metadata
                 used to reconstruct this object.
         """
-        matrices = (self.mat_fixed, self.mats_parametrized, self.coeffs_parametrized)
-        metadata = (self.reorder_fn,)
+        matrices = (self.mat_fixed, self.mats_parametrized)
+        metadata = (self.coeffs_parametrized, self.reorder_fn)
         return (matrices, metadata)
 
     @classmethod
@@ -108,8 +108,8 @@ class ParametrizedHamiltonianPytree:
         Returns:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
-        (reorder_fn,) = metadata
-        return cls(*matrices, reorder_fn)
+        param_coeffs, reorder_fn = metadata
+        return cls(*matrices, param_coeffs, reorder_fn)
 
 
 @register_pytree_node_class
