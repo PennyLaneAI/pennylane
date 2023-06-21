@@ -413,7 +413,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     For this differentiation method, the unitary matrix :math:`U` of a pulse gate and its derivative
     :math:`\partial_k U` are computed classically with an autodiff framework.
     From :math:`\partial_k U` and :math:`U` we can deduce the so-called effective generators
-    :math:`\Omega_{k}` by assuming the form
+    :math:`\Omega_{k}` assuming the form
 
     .. math:: \partial_k U = U \Omega_k.
 
