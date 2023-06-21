@@ -531,7 +531,6 @@ if has_jax:
             # unflatten the data necessary to compute this function
             H_jax, data = jax.tree_util.tree_unflatten(pytree_structure, flat_args)
             # compute the actual df/dt
-            print("ciao")
             return (-1j * H_jax(data, t=t)) @ y
 
         args = (H_jax, operation_data)
