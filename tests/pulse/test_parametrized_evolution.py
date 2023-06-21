@@ -604,3 +604,31 @@ class TestIntegration:
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
+
+    def test_parametrized_evolution_integration(self):
+        """Test that all works together with complex parametrisations
+        without crashing."""
+        import jax
+        import jax.numpy as jnp
+
+        n_wires = 2
+        H_obj = qml.Hamiltonian(
+            [1.0 for i in range(n_wires)],
+            [qml.PauliZ(i) @ qml.PauliZ((i + 1) % n_wires) for i in range(n_wires)],
+        )
+        H = qml.dot(
+            [qml.pulse.constant for i in range(n_wires)],
+            [qml.PauliY(i) @ qml.PauliY((i + 1) % n_wires) for i in range(n_wires)],
+        )
+
+        dev = qml.device("default.qubit.jax", wires=n_wires)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H, atol=1e-5)(params, t=0.1)
+            return qml.expval(H_obj)
+
+        params = jnp.ones(n_wires)
+        res = circuit(params)
+        res_jit = jax.jit(circuit)(params)
+        assert qml.math.allclose(res, res_jit)
