@@ -52,7 +52,7 @@
     - 0.345 * a⁺(3) a(3)
     ```
 
-  - via `qml.fermi.from_string`: create a fermionic operator that represents multiple creation and annihilation operators being 
+  - via [qml.fermi.from_string](https://docs.pennylane.ai/en/stable/code/api/pennylane.fermi.from_string.html): create a fermionic operator that represents multiple creation and annihilation operators being 
     multiplied by each other (a Fermi word).
 
     ```pycon
@@ -74,7 +74,7 @@
     ```
     
   Additionally, any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence,
-  can be mapped to the qubit basis by using `qml.jordan_wigner`:
+  can be mapped to the qubit basis by using [qml.jordan_wigner](https://docs.pennylane.ai/en/stable/code/api/pennylane.jordan_wigner.html):
 
   ```pycon
   >>> qml.jordan_wigner(sentence)
@@ -86,11 +86,13 @@
 
 <h4>Workflow-level resource estimation 🧮</h4>
 
-* PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
-  monitors the resource requirements of circuits being executed by the device.
+* Functionality has been added that allows for obtaining a detailed breakdown of resource requirements of
+  quantum circuits.
   [(#4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
   [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
+  PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
+  monitors the resource requirements of circuits being executed by the device.
   Suppose we have a workflow that involves executing circuits with different qubit numbers. We
   can obtain the resource requirements as a function of the number of qubits by executing the 
   workflow with the `Tracker` context:
@@ -246,7 +248,7 @@
 
   Two cases are enabled for calculating the trace distance:
   
-  - A QNode transform via `qml.qinfo.trace_distance`:
+  - A QNode transform via [qml.qinfo.trace_distance](https://docs.pennylane.ai/en/stable/code/api/pennylane.qinfo.transforms.trace_distance.html):
 
     ```python
     dev = qml.device('default.qubit', wires=2)
@@ -265,7 +267,7 @@
     0.047862689546603415
     ```
 
-  - Flexible post-processing via `qml.math.trace_distance`:
+  - Flexible post-processing via [qml.math.trace_distance](https://docs.pennylane.ai/en/stable/code/api/pennylane.math.trace_distance.html):
 
     ```pycon
     >>> rho = np.array([[0.3, 0], [0, 0.7]])
@@ -274,7 +276,7 @@
     0.19999999999999998
     ```
 
-* It is now possible to prepare qutrit basis states with `qml.QutritBasisState`.
+* It is now possible to prepare qutrit basis states with [qml.QutritBasisState](https://docs.pennylane.ai/en/stable/code/api/pennylane.QutritBasisState.html).
   [(#4185)](https://github.com/PennyLaneAI/pennylane/pull/4185)
 
   ```python
@@ -293,7 +295,7 @@
   array([0., 0., 1.])
   ```
 
-* Added the `one_qubit_decomposition` function to provide a unified interface for decompositions
+* A new transform called [one_qubit_decomposition](https://docs.pennylane.ai/en/latest/code/api/pennylane.transforms.one_qubit_decomposition.html) has been added to provide a unified interface for decompositions
   of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
@@ -331,7 +333,7 @@
   (`stoch_pulse_grad`) to support Hermitian generating terms beyond just Pauli words in pulse Hamiltonians, 
   which makes it hardware-compatible.
 
-* A new differentiation method called `qml.gradients.pulse_generator` is available, which combines classical processing 
+* A new differentiation method called [qml.gradients.pulse_generator](https://docs.pennylane.ai/en/latest/code/api/pennylane.gradients.pulse_generator.html) is available, which combines classical processing 
   with the parameter-shift rule for multivariate gates to differentiate pulse programs. Access it in your pulse
   programs by setting `diff_method=qml.gradients.pulse_generator`. 
   [(#4160)](https://github.com/PennyLaneAI/pennylane/pull/4160) 
@@ -727,7 +729,7 @@
 
 <h3>Bug Fixes 🐛</h3>
 
-* Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
+* Fixed adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
 * Fixed the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
