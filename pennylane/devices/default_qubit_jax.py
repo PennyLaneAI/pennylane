@@ -24,6 +24,7 @@ from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
 
 try:
+    has_jax = True
     import jax
     import jax.numpy as jnp
     from jax.config import config as jax_config
@@ -33,6 +34,7 @@ try:
     from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 except ImportError as e:  # pragma: no cover
+    has_jax = False
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 
