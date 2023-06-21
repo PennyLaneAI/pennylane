@@ -264,7 +264,6 @@ a datastructure representing variational quantum algorithms:
 
     ops = [
         qml.RX(weights[0], wires=0),
-
         qml.RY(weights[1], wires=1),
         qml.CNOT(wires=[0, 1]),
         qml.RX(weights[2], wires=1)]
