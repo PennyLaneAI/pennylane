@@ -41,7 +41,7 @@
   `qml.FermiC(0)` and `qml.FermiA(3)`.
   [(#4200)](https://github.com/PennyLaneAI/pennylane/pull/4200)
 
-* Added the function `string_to_fermi_word` to create a `FermiWord` object from a compact string
+* Added the function `from_string` to create a `FermiWord` object from a compact string
   representation.
   [(#4229)](https://github.com/PennyLaneAI/pennylane/pull/4229)
 
