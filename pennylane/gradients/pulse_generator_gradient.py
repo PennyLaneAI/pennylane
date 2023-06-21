@@ -410,7 +410,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     on hardware, with the limitation that the individual pulses must be acting on a reduced number of qubits.
 
     For this differentiation method, the unitary matrix :math:`U` and its derivative :math:`\partial_k U`
-    are computed classically with an autodiff framework. From :math:`\partial_k U` and :math:`U` we can
+    of a pulse gate are computed classically with an autodiff framework. From :math:`\partial_k U` and :math:`U` we can
     deduce the so-called effective generators :math:`\Omega_{k}` by assuming the form
 
     .. math:: \partial_k U = U \Omega_k.
@@ -479,7 +479,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         H = (
             qml.pulse.constant * qml.PauliY(0)
             + jnp.polyval * qml.PauliY(1)
-            + qml.pulse.constant * (qml.PauliZ(0)@qml.PauliX(1))
+            + qml.pulse.constant * (qml.PauliZ(0) @ qml.PauliX(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -663,9 +663,9 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         .. math::
 
-            \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x)\large|_{x=0} = \frac{1}{2} \left(C_\ell(\pi/2) - C_\ell(-\pi/2))
+            \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x)\large|_{x=0} = \frac{1}{2} \left(C_\ell(\pi/2) - C_\ell(-\pi/2)\right)
         
-        with :math:`C_\ell(x) = \langle\psi_0|e^{i\frac{x}{2}P_\ell} U^\dagger B U e^{-i\frac{x}{2}P_\ell} |\psi_0\rangle`
+        with :math:`C_\ell(x) = \langle\psi_0|e^{i\frac{x}{2}P_\ell} U^\dagger B U e^{-i\frac{x}{2}P_\ell} |\psi_0\rangle`.
 
         **Caching**
 
