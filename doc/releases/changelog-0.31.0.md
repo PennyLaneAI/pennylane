@@ -86,13 +86,11 @@
 
 <h4>Workflow-level resource estimation 🧮</h4>
 
-* Functionality has been added that allows for obtaining a detailed breakdown of resource requirements of
-  quantum circuits.
+* PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
+  monitors the resource requirements of circuits being executed by the device.
   [(#4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
   [(#4110)](https://github.com/PennyLaneAI/pennylane/pull/4110)
 
-  PennyLane's [Tracker](https://docs.pennylane.ai/en/stable/code/api/pennylane.Tracker.html) now
-  monitors the resource requirements of circuits being executed by the device.
   Suppose we have a workflow that involves executing circuits with different qubit numbers. We
   can obtain the resource requirements as a function of the number of qubits by executing the 
   workflow with the `Tracker` context:
