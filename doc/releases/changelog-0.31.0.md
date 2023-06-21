@@ -16,6 +16,7 @@
   [(#4253)](https://github.com/PennyLaneAI/pennylane/pull/4253)
   [(#4255)](https://github.com/PennyLaneAI/pennylane/pull/4255)
   [(#4262)](https://github.com/PennyLaneAI/pennylane/pull/4262)
+  [(#4278)](https://github.com/PennyLaneAI/pennylane/pull/4278)
 
   There are a couple of ways to create fermionic operators with this new feature:
 
@@ -51,21 +52,21 @@
     - 0.345 * a⁺(3) a(3)
     ```
 
-  - via `qml.fermi.string_to_fermi_word`: create a fermionic operator that represents multiple creation and annihilation operators being 
+  - via `qml.fermi.from_string`: create a fermionic operator that represents multiple creation and annihilation operators being 
     multiplied by each other (a Fermi word).
 
     ```pycon
-    >>> qml.fermi.string_to_fermi_word('0+ 1- 0+ 1-')
+    >>> qml.fermi.from_string('0+ 1- 0+ 1-')
     a⁺(0) a(1) a⁺(0) a(1)
-    >>> qml.fermi.string_to_fermi_word('0^ 1 0^ 1')
+    >>> qml.fermi.from_string('0^ 1 0^ 1')
     a⁺(0) a(1) a⁺(0) a(1)
     ```
 
-    Fermi words created with `string_to_fermi_word` can also be linearly combined to create a Fermi sentence:
+    Fermi words created with `from_string` can also be linearly combined to create a Fermi sentence:
 
     ```pycon 
-    >>> word1 = qml.fermi.string_to_fermi_word('0+ 0- 3+ 3-')
-    >>> word2 = qml.fermi.string_to_fermi_word('3+ 3-')
+    >>> word1 = qml.fermi.from_string('0+ 0- 3+ 3-')
+    >>> word2 = qml.fermi.from_string('3+ 3-')
     >>> sentence = 1.2 * word1 - 0.345 * word2
     >>> sentence
     1.2 * a⁺(0) a(0) a⁺(3) a(3)
