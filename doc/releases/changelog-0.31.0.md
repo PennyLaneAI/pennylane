@@ -133,8 +133,6 @@
   zeros. Consider the following workflow that takes the gradient of a `50`-qubit circuit:
 
   ```python
-  from pennylane import numpy as np
-
   n_wires = 50
   dev = qml.device("null.qubit", wires=n_wires)
 
@@ -425,9 +423,9 @@
 
   ```pycon
   >>> circuit(zero_state)
-  1.
+  tensor(1., requires_grad=True)
   >>> circuit(plusplus_state)
-  0.25
+  tensor(0.25, requires_grad=True)
   ```
 
 <h4>Do more with qutrits</h4>
