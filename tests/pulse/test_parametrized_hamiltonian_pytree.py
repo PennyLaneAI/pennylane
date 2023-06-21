@@ -36,6 +36,8 @@ except ImportError:
 # if this fails, test file will be skipped
 jnp = pytest.importorskip("jax.numpy")
 
+import jax
+import jax.numpy as jnp
 
 def f1(p, t):
     """Compute the function p * sin(t) * (t - 1)."""
@@ -125,14 +127,11 @@ class TestParametrizedHamiltonianPytree:
             H, dense=False, wire_order=[2, 3, 1, 0]
         )
 
-        flat_tree = H_pytree.tree_flatten()
+        flat_tree, tree_struct = H_pytree.tree_flatten()
 
         assert isinstance(flat_tree, tuple)
-        assert flat_tree == (
-            (H_pytree.mat_fixed, H_pytree.mats_parametrized),
-            H_pytree.coeffs_parametrized,
-            fn,
-        )
+        assert flat_tree == (H_pytree.mat_fixed, H_pytree.mats_parametrized, H_pytree.coeffs_parametrized)
+        assert tree_struct == (fn,)
 
     @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _reorder_parameters)])
     def test_unflatten_method(self, H, fn):
@@ -141,15 +140,31 @@ class TestParametrizedHamiltonianPytree:
             H, dense=False, wire_order=[2, 3, 1, 0]
         )
 
-        flat_tree = H_pytree.tree_flatten()
+        flat_tree, tree_struct = H_pytree.tree_flatten()
 
-        new_H_pytree = H_pytree.tree_unflatten(flat_tree[1], flat_tree[0], flat_tree[2])
+        new_H_pytree = H_pytree.tree_unflatten(tree_struct, flat_tree)
 
         assert new_H_pytree.mat_fixed == H_pytree.mat_fixed
         assert new_H_pytree.mats_parametrized == H_pytree.mats_parametrized
         assert new_H_pytree.coeffs_parametrized == H_pytree.coeffs_parametrized
         assert new_H_pytree.reorder_fn == fn
 
+
+    @pytest.mark.parametrize("dense", [True, False])
+    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _reorder_parameters)])
+    def test_parametrized_hamiltonian_pytree(self, H, fn, dense):
+        """Test the parametrizedHamiltonianPyTree methods work correctly."""
+        H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
+            H, dense=False, wire_order=[2, 3, 1, 0]
+        )
+
+        H_flat, H_struct = jax.tree_util.tree_flatten(H_pytree)
+        H_flat, H_struct2 = jax.tree_util.tree_flatten(H_pytree)
+        H_reconstructed = jax.tree_util.tree_unflatten(H_struct, H_flat)
+
+        # check hash stability for jax dispatch 
+        assert H_struct == H_struct2
+        assert hash(H_struct) == hash(H_struct2)
 
 @pytest.mark.jax
 class TestLazyDotPytree:

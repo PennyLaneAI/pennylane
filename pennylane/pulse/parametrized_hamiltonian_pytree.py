@@ -89,10 +89,11 @@ class ParametrizedHamiltonianPytree:
         """Function used by ``jax`` to flatten the JaxParametrizedOperator.
 
         Returns:
-            tuple: tuple containing the matrices and the parametrized coefficients defining the class
+            tuple: tuple containing the matrices and the static metadata
+                used to reconstruct this object.
         """
-        matrices = (self.mat_fixed, self.mats_parametrized)
-        metadata = (self.coeffs_parametrized, self.reorder_fn)
+        matrices = (self.mat_fixed, self.mats_parametrized, self.coeffs_parametrized)
+        metadata = (self.reorder_fn,)
         return (matrices, metadata)
 
     @classmethod
@@ -100,16 +101,15 @@ class ParametrizedHamiltonianPytree:
         """Function used by ``jax`` to unflatten the JaxParametrizedOperator.
 
         Args:
-            param_coeffs (tuple): tuple containing the parametrized coefficients of the class
+            metadata (tuple): tuple containing the static information about this parametrised
+                hamiltonian (namely, the `param_coeff` and `reorder_fn` fields).
             matrices (tuple): tuple containing the matrices of the class
-            reorder_fn(callable): callable or None indicating how parameters should be
-                re-orderd to pass to the __call__ method
 
         Returns:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
-        param_coeffs, reorder_fn = metadata
-        return cls(*matrices, param_coeffs, reorder_fn)
+        reorder_fn, = metadata
+        return cls(*matrices, reorder_fn)
 
 
 @register_pytree_node_class
