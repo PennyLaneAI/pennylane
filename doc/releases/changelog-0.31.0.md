@@ -25,7 +25,7 @@
     [annihilation operators](https://docs.pennylane.ai/en/stable/code/api/pennylane.FermiA.html),
     respectively. These operators are 
     defined by passing the index of the orbital that the fermionic operator acts on. For instance, 
-    the operators `a^{\dagger}_0` and `a_3` are respectively constructed as
+    the operators `a⁺(0)` and `a(3)` are respectively constructed as
 
     ```pycon
     >>> qml.FermiC(0)
