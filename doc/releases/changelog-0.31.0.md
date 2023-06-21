@@ -723,12 +723,12 @@
   of `mult` that is supported.
   [(#4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
-<h3>Bug fixes 🐛</h3>
+<h3>Bug Fixes 🐛</h3>
 
 * Fixes adjoint jacobian results with `grad_on_execution=False` in the JAX-JIT interface.
   [(4217)](https://github.com/PennyLaneAI/pennylane/pull/4217)
 
-* Fixes the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
+* Fixed the matrix of `SProd` when the coefficient is tensorflow and the target matrix is not `complex128`.
   [(#4249)](https://github.com/PennyLaneAI/pennylane/pull/4249)
  
 * Fixed a bug where `stoch_pulse_grad` would ignore prefactors of rescaled Pauli words in the
@@ -761,11 +761,11 @@
 * Fixed a bug where `op = qml.qsvt()` was incorrect up to a global phase when using `convention="Wx""` and `qml.matrix(op)`.
   [(#4214)](https://github.com/PennyLaneAI/pennylane/pull/4214)
 
-* Fixed buggy calculation of angle in `xyx_decomposition` causing it to give an incorrect decomposition.
-  An if conditional was intended to prevent divide by zero errors but the division was by the sine of the argument so any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
+* Fixed a buggy calculation of the angle in `xyx_decomposition` that causes it to give an incorrect decomposition.
+  An `if` conditional was intended to prevent divide by zero errors, but the division was by the sine of the argument. So, any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
-* Allow for `Sum` observables with trainable parameters.
+* `Sum` observables can now have trainable parameters.
   [(#4251)](https://github.com/PennyLaneAI/pennylane/pull/4251)
   [(#4275)](https://github.com/PennyLaneAI/pennylane/pull/4275)
 
