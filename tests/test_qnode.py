@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
+# pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 from collections import defaultdict
 
@@ -21,6 +22,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QNode
+from pennylane.devices import experimental
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
@@ -28,6 +30,7 @@ from pennylane.resource import Resources
 
 
 def dummyfunc():
+    """dummy func."""
     return None
 
 
@@ -51,7 +54,9 @@ class TestValidation:
         test_interface = "something"
 
         @qnode(dev)
-        def circuit():
+        def circuit(x):
+            """a circuit."""
+            qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
@@ -63,10 +68,12 @@ class TestValidation:
     def test_valid_interface(self):
         """Test that changing to a valid interface works as expected, and the
         diff method is updated as required."""
+
         dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev, interface="autograd", diff_method="best")
-        def circuit():
+        def circuit(x):
+            qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
         assert circuit.device.short_name == "default.qubit.autograd"
@@ -98,7 +105,8 @@ class TestValidation:
 
         assert method == "device"
         assert device is dev
-        assert diff_options == {}
+
+        assert not diff_options
 
     # pylint: disable=protected-access
     def test_validate_backprop_method_invalid_device(self):
@@ -133,7 +141,7 @@ class TestValidation:
 
         assert method == "backprop"
         assert device is dev
-        assert diff_options == {}
+        assert not diff_options
 
     # pylint: disable=protected-access
     @pytest.mark.all_interfaces
@@ -165,7 +173,7 @@ class TestValidation:
 
         assert method == "backprop"
         assert isinstance(device, qml.devices.DefaultGaussian)
-        assert diff_options == {}
+        assert not diff_options
 
     # pylint: disable=protected-access
     def test_validate_backprop_child_method_wrong_interface(self, monkeypatch):
@@ -521,14 +529,14 @@ class TestValidation:
         qn = QNode(func, dev)
 
         assert (
-            qn.__repr__()
+            repr(qn)
             == "<QNode: wires=1, device='default.qubit', interface='auto', diff_method='best'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
-            qn.__repr__()
+            repr(qn)
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
@@ -584,7 +592,7 @@ class TestValidation:
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
             @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-            def circuit1(params):
+            def circuit2(params):
                 qml.RX(params[0], wires=0)
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
@@ -706,26 +714,26 @@ class TestTapeConstruction:
         ):
             qn(5, 1)
 
-        def func1(x, y):
+        def func2(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), 5
 
-        qn = QNode(func1, dev)
+        qn = QNode(func2, dev)
 
         with pytest.raises(
             qml.QuantumFunctionError, match="must return either a single measurement"
         ):
             qn(5, 1)
 
-        def func2(x, y):
+        def func3(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             return []
 
-        qn = QNode(func2, dev)
+        qn = QNode(func3, dev)
 
         with pytest.raises(
             qml.QuantumFunctionError, match="must return either a single measurement"
@@ -752,82 +760,30 @@ class TestTapeConstruction:
         ):
             qn(5, 1)
 
-    # pylint: disable=global-variable-undefined
     def test_consistent_measurement_order(self):
         """Test evaluation proceeds as expected if measurements are returned in the
         same order to how they were queued on the tape"""
         dev = qml.device("default.qubit", wires=2)
 
+        contents = []
+
         def func(x, y):
-            global op1, op2, op3, m1, m2
             op1 = qml.RX(x, wires=0)
             op2 = qml.RY(y, wires=1)
             op3 = qml.CNOT(wires=[0, 1])
             m1 = qml.expval(qml.PauliZ(0))
             m2 = qml.expval(qml.PauliX(1))
+            contents.append(op1)
+            contents.append(op2)
+            contents.append(op3)
+            contents.append(m1)
+            contents.append(m2)
             return [m1, m2]
 
         qn = QNode(func, dev)
         qn(5, 1)  # evaluate the QNode
-        assert qn.qtape.operations == [op1, op2, op3]
-        assert qn.qtape.measurements == [m1, m2]
-
-    @pytest.mark.xfail
-    def test_multiple_observables_same_wire_expval(self, mocker):
-        """Test that the QNode supports returning expectation values of observables that are on the
-        same wire (provided that they are Pauli words and qubit-wise commuting)"""
-        dev = qml.device("default.qubit", wires=3)
-
-        w = np.random.random((2, 3, 3))
-
-        @qnode(dev)
-        def f(w):
-            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
-            return (
-                qml.expval(qml.PauliX(0)),
-                qml.expval(qml.PauliX(0) @ qml.PauliZ(1)),
-                qml.expval(qml.PauliX(2)),
-            )
-
-        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
-        res = f(w)
-        spy.assert_called_once()
-
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs, dev)
-        res_2 = qnodes(w)
-
-        assert np.allclose(res, res_2)
-
-    @pytest.mark.xfail
-    def test_multiple_observables_same_wire_mixed(self, mocker):
-        """Test that the QNode supports returning observables that are on the
-        same wire but with different return types (provided that the observables are Pauli words and
-        qubit-wise commuting)"""
-        dev = qml.device("default.qubit", wires=3)
-
-        w = np.random.random((2, 3, 3))
-
-        @qnode(dev)
-        def f(w):
-            qml.templates.StronglyEntanglingLayers(w, wires=range(3))
-            return qml.expval(qml.PauliX(0)), qml.var(qml.PauliX(0) @ qml.PauliZ(1))
-
-        spy = mocker.spy(qml.devices.DefaultQubit, "apply")
-        res = f(w)
-        spy.assert_called_once()
-
-        q1 = qml.map(qml.templates.StronglyEntanglingLayers, [qml.PauliX(0)], dev, measure="expval")
-        q2 = qml.map(
-            qml.templates.StronglyEntanglingLayers,
-            [qml.PauliX(0) @ qml.PauliZ(1)],
-            dev,
-            measure="var",
-        )
-
-        res_2 = np.array([q1(w), q2(w)]).squeeze()
-
-        assert np.allclose(res, res_2)
+        assert qn.qtape.operations == contents[0:3]
+        assert qn.qtape.measurements == contents[3:]
 
     def test_operator_all_wires(self, monkeypatch, tol):
         """Test that an operator that must act on all wires
@@ -839,14 +795,14 @@ class TestTapeConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
-        node = QNode(circuit, dev)
+        qn = QNode(circuit, dev)
 
         with pytest.raises(qml.QuantumFunctionError, match="Operator RX must act on all wires"):
-            node(0.5)
+            qn(0.5)
 
         dev = qml.device("default.qubit", wires=1)
-        node = QNode(circuit, dev)
-        assert np.allclose(node(0.5), np.cos(0.5), atol=tol, rtol=0)
+        qn = QNode(circuit, dev)
+        assert np.allclose(qn(0.5), np.cos(0.5), atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jit_counts_raises_error(self):
@@ -862,8 +818,8 @@ class TestTapeConstruction:
             qml.CNOT([1, 0])
             return qml.counts()
 
-        node = qml.QNode(circuit1, dev)
-        jitted_qnode1 = jax.jit(node)
+        qn = qml.QNode(circuit1, dev)
+        jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
             qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
@@ -886,44 +842,40 @@ class TestTapeConstruction:
             jitted_qnode2(0.123)
 
 
-# pylint: disable=too-few-public-methods
-class TestDecorator:
-    """Unit tests for the decorator"""
+def test_decorator(tol):
+    """Test that the decorator correctly creates a QNode."""
+    dev = qml.device("default.qubit", wires=2)
 
-    def test_decorator(self, tol):
-        """Test that the decorator correctly creates a QNode."""
-        dev = qml.device("default.qubit", wires=2)
+    @qnode(dev)
+    def func(x, y):
+        """My function docstring"""
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
 
-        @qnode(dev)
-        def func(x, y):
-            """My function docstring"""
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+    assert isinstance(func, QNode)
+    assert func.__doc__ == "My function docstring"
 
-        assert isinstance(func, QNode)
-        assert func.__doc__ == "My function docstring"
+    x = pnp.array(0.12, requires_grad=True)
+    y = pnp.array(0.54, requires_grad=True)
 
-        x = pnp.array(0.12, requires_grad=True)
-        y = pnp.array(0.54, requires_grad=True)
+    res = func(x, y)
 
-        res = func(x, y)
+    assert isinstance(func.qtape, QuantumScript)
+    assert len(func.qtape.operations) == 3
+    assert len(func.qtape.observables) == 1
+    assert func.qtape.num_params == 2
 
-        assert isinstance(func.qtape, QuantumScript)
-        assert len(func.qtape.operations) == 3
-        assert len(func.qtape.observables) == 1
-        assert func.qtape.num_params == 2
+    expected = qml.execute([func.tape], dev, None)
+    assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        expected = qml.execute([func.tape], dev, None)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+    # when called, a new quantum tape is constructed
+    old_tape = func.qtape
+    res2 = func(x, y)
 
-        # when called, a new quantum tape is constructed
-        old_tape = func.qtape
-        res2 = func(x, y)
-
-        assert np.allclose(res, res2, atol=tol, rtol=0)
-        assert func.qtape is not old_tape
+    assert np.allclose(res, res2, atol=tol, rtol=0)
+    assert func.qtape is not old_tape
 
 
 class TestIntegration:
@@ -1029,7 +981,7 @@ class TestIntegration:
         # Although we've evaluated the QNode more than once, due to caching,
         # there was one device execution recorded
         assert dev.num_executions == 1
-        assert cache != {}
+        assert cache
 
     def test_num_exec_caching_device_swap_two_exec(self):
         """Tests that if we swapped the original device (e.g., when
@@ -1048,17 +1000,17 @@ class TestIntegration:
             circuit0()
 
         @qml.qnode(dev, diff_method="backprop", cache=cache)
-        def circuit1():
+        def circuit2():
             qml.RZ(0.345, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         for _ in range(15):
-            circuit1()
+            circuit2()
 
         # Although we've evaluated the QNode several times, due to caching,
         # there were two device executions recorded
         assert dev.num_executions == 2
-        assert cache != {}
+        assert cache
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
@@ -1070,7 +1022,6 @@ class TestIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-
         dev = qml.device("default.qubit", wires=3)
 
         x = pnp.array(0.543, requires_grad=True)
@@ -1089,6 +1040,7 @@ class TestIntegration:
         assert len(res) == 2
 
         expected = (0, np.cos(y) * np.cos(x))
+
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -1499,6 +1451,7 @@ class TestShots:
         ],
     )
     def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
+        """test that shots are placed on the tape if they are specified during a call."""
         dev = qml.device("default.qubit", wires=2, shots=5)
 
         def func(x, y):
@@ -1549,7 +1502,7 @@ class TestSpecs:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match=r"The QNode specifications"):
-            circuit.specs
+            circuit.specs  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
@@ -1570,7 +1523,7 @@ class TestSpecs:
         x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
         y = pnp.array(0.1, requires_grad=False)
 
-        circuit(x, y)
+        _ = circuit(x, y)
 
         info = circuit.specs
 
@@ -1597,6 +1550,162 @@ class TestSpecs:
             assert info["device_name"] == "default.qubit.autograd"
 
 
+# pylint: disable=unused-argument
+class CustomDevice(experimental.Device):
+    """A null device that just returns 0."""
+
+    def __repr__(self):
+        return "CustomDevice"
+
+    def execute(self, circuits, execution_config=None):
+        return (0,)
+
+
+class TestNewDeviceIntegration:
+    """Basic tests for integration of the experimental device interface and the QNode."""
+
+    dev = CustomDevice()
+
+    def test_initialization(self):
+        """Test that a qnode can be initialized with the new device without error."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qn = QNode(f, self.dev)
+        assert qn.device is self.dev
+
+    def test_repr(self):
+        """Test that the repr works with the new device."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qn = QNode(f, self.dev)
+        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
+
+    def test_get_gradient_fn_custom_device(self):
+        """Test get_gradient_fn is parameter for best for null device."""
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
+        assert gradient_fn is qml.gradients.param_shift
+        assert not kwargs
+        assert new_dev is self.dev
+
+    def test_get_gradient_fn_default_qubit2(self):
+        """Tests the get_gradient_fn is backprop for best for default qubit2."""
+        dev = experimental.DefaultQubit2()
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
+        assert gradient_fn == "backprop"
+        assert not kwargs
+        assert new_dev is dev
+
+    def test_get_gradient_fn_default_qubit2_adjoint(self):
+        """Test that the get_gradient_fn and _validate_adjoint_methods work for default qubit 2."""
+        dev = experimental.DefaultQubit2()
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "adjoint")
+        assert gradient_fn == "adjoint"
+        assert len(kwargs) == 0
+        assert new_dev is dev
+
+        gradient_fn, kwargs, new_dev = QNode._validate_adjoint_method(dev)
+        assert gradient_fn == "adjoint"
+        assert len(kwargs) == 0
+        assert new_dev is dev
+
+    def test_get_gradient_fn_custom_dev_adjoint(self):
+        """Test that an error is raised if adjoint is requested for a device that does not support it."""
+        with pytest.raises(ValueError, match=r"The CustomDevice device does not support."):
+            QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
+
+        with pytest.raises(ValueError, match=r"The CustomDevice device does not support."):
+            QNode._validate_adjoint_method(self.dev)
+
+    def test_error_for_backprop_with_custom_device(self):
+        """Test that an error is raised when backprop is requested for a device that does not support it."""
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
+        ):
+            QNode.get_gradient_fn(self.dev, "autograd", "backprop")
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
+        ):
+            QNode._validate_backprop_method(self.dev, "autograd")
+
+    def test_custom_device_that_supports_backprop(self):
+        """Test that a custom device and designate that it supports backprop derivatives."""
+
+        # pylint: disable=unused-argument
+        class BackpropDevice(experimental.Device):
+            """A device that says it supports backpropagation."""
+
+            def execute(self, circuits, execution_config=None):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
+                return execution_config.gradient_method == "backprop"
+
+        dev = BackpropDevice()
+        gradient_fn, kwargs, new_dev = QNode._validate_backprop_method(dev, "torch")
+        assert gradient_fn == "backprop"
+        assert not kwargs
+        assert new_dev is dev
+
+    def test_custom_device_with_device_derivative(self):
+        """Test that a custom device can specify that it supports device derivatives."""
+
+        # pylint: disable=unused-argument
+        class DerivativeDevice(experimental.Device):
+            """A device that says it supports device derivatives."""
+
+            def execute(self, circuits, execution_config=None):
+                return 0
+
+            def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
+                return execution_config.gradient_method == "device"
+
+        dev = DerivativeDevice()
+        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
+        assert gradient_fn == "device"
+        assert not kwargs
+        assert new_dev is dev
+
+        gradient_fn, kwargs, new_dev = QNode._validate_device_method(dev)
+        assert gradient_fn == "device"
+        assert not kwargs
+        assert new_dev is dev
+
+    def test_shots_not_set_on_device(self):
+        """Test that shots are not set on the device when override shots are passed on a call."""
+
+        def f():
+            return qml.expval(qml.PauliZ(0))
+
+        qn = QNode(f, self.dev)
+        qn(shots=10)
+        assert getattr(self.dev, "shots", "not here") == "not here"
+
+    def test_shots_integration(self):
+        """Test that shots provided at call time are passed through the workflow."""
+
+        dev = experimental.DefaultQubit2()
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            return qml.sample(wires=(0, 1))
+
+        with pytest.raises(
+            qml.DeviceError, match="Analytic circuits must only contain StateMeasurements"
+        ):
+            circuit()
+
+        results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
+        assert qml.math.allclose(results, np.zeros((10, 2)))
+
+        results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
+        assert qml.math.allclose(results, np.zeros((20, 2)))
+
+
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
@@ -1610,6 +1719,8 @@ class TestTapeExpansion:
 
         # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):
+            """custom unsupported op."""
+
             num_wires = 1
 
             def expand(self):
@@ -1644,6 +1755,8 @@ class TestTapeExpansion:
 
         # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):
+            """custom unsupported op."""
+
             num_wires = 1
 
             grad_method = "A"
@@ -1688,7 +1801,10 @@ class TestTapeExpansion:
         expanded when applying the gradient transform, but not for execution."""
         dev = qml.device("default.qubit", wires=1)
 
+        # pylint: disable=too-few-public-methods
         class PhaseShift(qml.PhaseShift):
+            """custom phase shift."""
+
             grad_method = None
 
             def expand(self):

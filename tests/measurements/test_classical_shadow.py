@@ -116,6 +116,136 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
 wires_list = [1, 3]
 
 
+class TestProcessState:
+    """Unit tests for process_state_with_shots for the classical_shadow
+    and shadow_expval measurements"""
+
+    def test_shape_and_dtype(self):
+        """Test that the shape and dtype of the measurement is correct"""
+        mp = qml.classical_shadow(wires=[0, 1])
+        res = mp.process_state_with_shots(np.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+
+    def test_wire_order(self):
+        """Test that the wire order is respected"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+
+        mp = qml.classical_shadow(wires=[0, 1])
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000)
+
+        assert res.shape == (2, 1000, 2)
+        assert res.dtype == np.int8
+
+        # test that the first qubit samples are all 0s when the recipe is Z
+        assert np.all(res[0][res[1, ..., 0] == 2][:, 0] == 0)
+
+        # test that the second qubit samples contain 1s when the recipe is Z
+        assert np.any(res[0][res[1, ..., 1] == 2][:, 1] == 1)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=1000)
+
+        assert res.shape == (2, 1000, 2)
+        assert res.dtype == np.int8
+
+        # now test that the first qubit samples contain 1s when the recipe is Z
+        assert np.any(res[0][res[1, ..., 0] == 2][:, 0] == 1)
+
+        # now test that the second qubit samples are all 0s when the recipe is Z
+        assert np.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
+
+    def test_subset_wires(self):
+        """Test that the measurement is correct when only a subset of wires is measured"""
+        mp = qml.classical_shadow(wires=[0, 1])
+
+        # GHZ state
+        state = np.zeros((2, 2, 2))
+        state[np.array([0, 1]), np.array([0, 1]), np.array([0, 1])] = 1 / np.sqrt(2)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+
+    def test_same_rng(self):
+        """Test results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
+
+        mp1 = qml.classical_shadow(wires=[0, 1], seed=123)
+        mp2 = qml.classical_shadow(wires=[0, 1], seed=123)
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+
+        # test recipes are the same but bits are different
+        assert np.all(res1[1] == res2[1])
+        assert np.any(res1[0] != res2[0])
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100, rng=456)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100, rng=456)
+
+        # now test everything is the same
+        assert np.all(res1[1] == res2[1])
+        assert np.all(res1[0] == res2[0])
+
+    def test_expval_shape_and_val(self):
+        """Test that shadow expval measurements work as expected"""
+        mp = qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)
+        res = mp.process_state_with_shots(
+            np.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=1000, rng=100
+        )
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+    def test_expval_wire_order(self):
+        """Test that shadow expval respects the wire order"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+
+        mp = qml.shadow_expval(qml.PauliZ(0), seed=200)
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=3000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=3000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 0.0, atol=0.05)
+
+    def test_expval_same_rng(self):
+        """Test expval results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
+
+        mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+        mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=100)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=200)
+
+        # test results are different
+        assert res1 != res2
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
+
+        # now test that results are the same
+        assert res1 == res2
+
+
 @pytest.mark.parametrize("wires", wires_list)
 class TestClassicalShadow:
     """Unit tests for classical_shadow measurement"""

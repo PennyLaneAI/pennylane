@@ -29,15 +29,19 @@ from gate_data import I, Z, S, T, H, X, CNOT
 
 from test_optimization.utils import check_matrix_equivalence
 
+typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
 single_qubit_decomps = [
-    # First set of gates are diagonal and converted to RZ
-    (I, qml.RZ, [0.0]),
-    (Z, qml.RZ, [np.pi]),
-    (S, qml.RZ, [np.pi / 2]),
-    (T, qml.RZ, [np.pi / 4]),
-    (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
-    (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
-    # Next set of gates are non-diagonal and decomposed as Rots
+    (I, typeof_gates_zyz, [0.0, 0.0, 0.0]),
+    (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2]),
+    (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4]),
+    (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8]),
+    (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15]),
+    (
+        qml.RZ(-0.5, wires=0).matrix(),
+        typeof_gates_zyz,
+        [12.316370614359172, 0.0, 12.316370614359172],
+    ),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 12.266370614359172]),
     (
         np.array(
             [
@@ -45,16 +49,15 @@ single_qubit_decomps = [
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
-        qml.Rot,
-        [-0.18409714468526372, np.pi, 0.18409714468526372],
+        typeof_gates_zyz,
+        [12.382273469673908, np.pi, 0.18409714468526372],
     ),
-    (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
-    (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 10.995574287564276]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
-        qml.Rot,
-        [-1.0, 2.0, -3.0],
+        typeof_gates_zyz,
+        [11.566370614359172, 2.0, 9.566370614359172],
     ),
 ]
 
@@ -69,24 +72,27 @@ def qfunc(U):
 class TestDecomposeSingleQubitUnitaryTransform:
     """Tests to ensure the transform itself works in all interfaces."""
 
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_unitary_to_rot(self, U, expected_gate, expected_params):
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot(self, U, expected_gates, expected_params):
         """Test that the transform works in the autograd interface."""
         transformed_qfunc = unitary_to_rot(qfunc)
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == 3
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gate)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(ops[1].parameters, expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     def test_unitary_to_rot_too_big_unitary(self):
         """Test that the transform ignores QubitUnitary instances that are too big
@@ -102,17 +108,23 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
-        assert len(ops) == 2
+        assert len(ops) == 4
 
-        assert ops[0].name == "Rot"
+        assert ops[0].name == "RZ"
         assert ops[0].wires == Wires("a")
 
-        assert ops[1].name == "QubitUnitary"
-        assert ops[1].wires == Wires(["a", "b", "c"])
+        assert ops[1].name == "RY"
+        assert ops[1].wires == Wires("a")
+
+        assert ops[2].name == "RZ"
+        assert ops[2].wires == Wires("a")
+
+        assert ops[3].name == "QubitUnitary"
+        assert ops[3].wires == Wires(["a", "b", "c"])
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_unitary_to_rot_torch(self, U, expected_gate, expected_params):
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot_torch(self, U, expected_gates, expected_params):
         """Test that the transform works in the torch interface."""
         import torch
 
@@ -122,21 +134,24 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == 3
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gate)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_unitary_to_rot_tf(self, U, expected_gate, expected_params):
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot_tf(self, U, expected_gates, expected_params):
         """Test that the transform works in the Tensorflow interface."""
         import tensorflow as tf
 
@@ -146,21 +161,24 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == 3
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gate)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_unitary_to_rot_jax(self, U, expected_gate, expected_params):
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot_jax(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface."""
         import jax
 
@@ -176,21 +194,24 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
-        assert len(ops) == 3
+        assert len(ops) == 5
 
         assert isinstance(ops[0], qml.Hadamard)
         assert ops[0].wires == Wires("a")
 
-        assert isinstance(ops[1], expected_gate)
-        assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
+        for i in range(3):
+            assert isinstance(ops[1 + i], expected_gates[i])
+            assert ops[1 + i].wires == Wires("a")
+            assert qml.math.allclose(
+                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
+            )
 
-        assert isinstance(ops[2], qml.CNOT)
-        assert ops[2].wires == Wires(["b", "a"])
+        assert isinstance(ops[4], qml.CNOT)
+        assert ops[4].wires == Wires(["b", "a"])
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_unitary_to_rot_jax_jit(self, U, expected_gate, expected_params):
+    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
+    def test_unitary_to_rot_jax_jit(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
         import jax
 
@@ -541,8 +562,8 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_qnode(x, y, z), transformed_qnode(x, y, z))
 
-        # 3 normal operations + 10 for the first decomp and 2 for the second
-        assert len(transformed_qnode.qtape.operations) == 15
+        # 3 normal operations + 18 for the first decomp and 6 for the second
+        assert len(transformed_qnode.qtape.operations) == 27
 
         original_grad = qml.grad(original_qnode)(x, y, z)
         transformed_grad = qml.grad(transformed_qnode)(x, y, z)
@@ -590,7 +611,7 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_result, transformed_result)
 
-        assert len(transformed_qnode.qtape.operations) == 15
+        assert len(transformed_qnode.qtape.operations) == 27
 
         original_result.backward()
         transformed_result.backward()
@@ -635,7 +656,7 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_result, transformed_result)
 
-        assert len(transformed_qnode.qtape.operations) == 13
+        assert len(transformed_qnode.qtape.operations) == 25
 
         with tf.GradientTape() as tape:
             loss = original_qnode(x)
@@ -684,8 +705,8 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
 
-        # 3 normal operations + 10 for the first decomp and 2 for the second
-        assert len(transformed_qnode.qtape.operations) == 13
+        # 1 normal operations + 18 for the first decomp and 6 for the second
+        assert len(transformed_qnode.qtape.operations) == 25
 
         original_grad = jax.grad(original_qnode, argnums=(0))(x)
         transformed_grad = jax.grad(transformed_qnode, argnums=(0))(x)

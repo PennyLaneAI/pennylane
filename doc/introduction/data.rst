@@ -11,16 +11,8 @@ where the quantum dataset is a collection of `quantum data` obtained from variou
 
 .. note::
 
-    The packages ``zstd`` and ``dill`` are required to use the :mod:`~pennylane.data` module. 
-    These can be installed with ``pip install zstd dill``.
-
-.. warning::
-    
-        PennyLane datasets use the ``dill`` module to compress, store, and read data. Since ``dill``
-        is built on the ``pickle`` module, we reproduce an important warning from the ``pickle``
-        module: it is possible to construct malicious pickle data which will execute arbitrary code
-        during unpickling. Never unpickle data that could have come from an untrusted source, or
-        that could have been tampered with.
+    The packages ``aiohttp``, ``fsspec``, and ``h5py`` are required to use the :mod:`~pennylane.data` module. 
+    These can be installed with ``pip install aiohttp fsspec h5py``.
 
 Loading Datasets in PennyLane
 -----------------------------
