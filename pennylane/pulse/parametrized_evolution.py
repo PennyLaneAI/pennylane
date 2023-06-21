@@ -503,42 +503,40 @@ class ParametrizedEvolution(Operation):
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
 
-if has_jax:
+def make_odefun_and_args(
+    H_jax: "ParametrizedHamiltonianPytree", operation_data: Any
+) -> "Callable[[jax.Array, float, Tuple[jax.Array, ...]], jax.Array]":
+    """
+    Creates a function with a stable hash that can be called with the provided extra
+    arguments, which are already flattened.
 
-    def make_odefun_and_args(
-        H_jax: ParametrizedHamiltonianPytree, operation_data: Any
-    ) -> Callable[[jax.Array, float, Tuple[jax.Array, ...]], jax.Array]:
+    This function is necessary to adhere to the limitations of the current odefun, which
+    does not support pytree inputs. If this limitation was ever lifted, this function
+    could be removed.
+    """
+
+    def ham_fun_callable(y, t, flat_args, pytree_structure):
+        """Computes
+        dy/dt = -i H(t) y
+
+        Unfortunately jax.experimental.odeint does not support pytree arguments,
+        so we need to flatten all args manually and unflatten them.
+
+        the flattened arguments 'flat_args' are unflattened according to the structure
+        'pytree_structure'. Note that 'pytree_structure' must be declared as a static
+        argument to jax.
         """
-        Creates a function with a stable hash that can be called with the provided extra
-        arguments, which are already flattened.
+        # unflatten the data necessary to compute this function
+        H_jax, data = jax.tree_util.tree_unflatten(pytree_structure, flat_args)
+        # compute the actual df/dt
+        return (-1j * H_jax(data, t=t)) @ y
 
-        This function is necessary to adhere to the limitations of the current odefun, which
-        does not support pytree inputs. If this limitation was ever lifted, this function
-        could be removed.
-        """
-
-        def ham_fun_callable(y, t, flat_args, pytree_structure):
-            """Computes
-            dy/dt = -i H(t) y
-
-            Unfortunately jax.experimental.odeint does not support pytree arguments,
-            so we need to flatten all args manually and unflatten them.
-
-            the flattened arguments 'flat_args' are unflattened according to the structure
-            'pytree_structure'. Note that 'pytree_structure' must be declared as a static
-            argument to jax.
-            """
-            # unflatten the data necessary to compute this function
-            H_jax, data = jax.tree_util.tree_unflatten(pytree_structure, flat_args)
-            # compute the actual df/dt
-            return (-1j * H_jax(data, t=t)) @ y
-
-        args = (H_jax, operation_data)
-        args_flat, pytree_structure = jax.tree_util.tree_flatten(args)
-        # We use HashablePartial instead of `functools.partial` to make sure that its
-        # hash does not change every time we construct a new object with the same
-        # pytree_structure.
-        #
-        # This fixes bug #4264
-        odefun = HashablePartial(ham_fun_callable, pytree_structure=pytree_structure)
-        return odefun, args_flat
+    args = (H_jax, operation_data)
+    args_flat, pytree_structure = jax.tree_util.tree_flatten(args)
+    # We use HashablePartial instead of `functools.partial` to make sure that its
+    # hash does not change every time we construct a new object with the same
+    # pytree_structure.
+    #
+    # This fixes bug #4264
+    odefun = HashablePartial(ham_fun_callable, pytree_structure=pytree_structure)
+    return odefun, args_flat
