@@ -504,10 +504,10 @@ class ParametrizedEvolution(Operation):
 
 
 if has_jax:
+
     def make_odefun_and_args(
-            H_jax: ParametrizedHamiltonianPytree,
-            operation_data: Any
-            ) -> Callable[[jax.Array, float, Tuple[jax.Array,...]], jax.Array]:
+        H_jax: ParametrizedHamiltonianPytree, operation_data: Any
+    ) -> Callable[[jax.Array, float, Tuple[jax.Array, ...]], jax.Array]:
         """
         Creates a function with a stable hash that can be called with the provided extra
         arguments, which are already flattened.
@@ -516,13 +516,14 @@ if has_jax:
         does not support pytree inputs. If this limitation was ever lifted, this function
         could be removed.
         """
+
         def ham_fun_callable(y, t, flat_args, pytree_structure):
-            """Computes 
+            """Computes
             dy/dt = -i H(t) y
-            
+
             Unfortunately jax.experimental.odeint does not support pytree arguments,
             so we need to flatten all args manually and unflatten them.
-        
+
             the flattened arguments 'flat_args' are unflattened according to the structure
             'pytree_structure'. Note that 'pytree_structure' must be declared as a static
             argument to jax.

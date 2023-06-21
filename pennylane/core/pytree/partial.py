@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains an implementation of `functools.partial` that
+has a stable hash and equality comparison, which is needed to reduce
+recompilation with jax.
+"""
+
 import sys
 
 from functools import partial
@@ -35,21 +41,19 @@ class HashablePartial(partial):
         # This is necessary since functools.partial objects do not have a __code__
         # property which we use for the hash
         # For python 3.10+ we still need to take care of merging with another HashablePartial
-        while isinstance(
-            func, partial if sys.version_info < (3, 10) else HashablePartial
-        ):
+        while isinstance(func, partial if sys.version_info < (3, 10) else HashablePartial):
             original_func = func
             func = original_func.func
             args = original_func.args + args
             keywords = {**original_func.keywords, **keywords}
         return super(HashablePartial, cls).__new__(cls, func, *args, **keywords)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
         self._hash = None
 
     def __eq__(self, other):
         return (
-            type(other) is HashablePartial
+            isinstance(other, HashablePartial)
             and self.func.__code__ == other.func.__code__
             and self.args == other.args
             and self.keywords == other.keywords
@@ -57,9 +61,7 @@ class HashablePartial(partial):
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash(
-                (self.func.__code__, self.args, frozenset(self.keywords.items()))
-            )
+            self._hash = hash((self.func.__code__, self.args, frozenset(self.keywords.items())))
 
         return self._hash
 
