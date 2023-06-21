@@ -119,7 +119,7 @@ def cut_circuit(
     Futhermore, the output of the cut circuit is also differentiable:
 
     >>> qml.grad(circuit)(x)
-    -0.276982865449393
+    tensor(-0.27698287, requires_grad=True)
 
     Alternatively, if the optimal wire-cut placement is unknown for an arbitrary circuit, the
     ``auto_cutter`` option can be enabled to make attempts in finding such an optimal cut. The
@@ -146,7 +146,7 @@ def cut_circuit(
     >>> circuit(x)
     0.47165198882111165
     >>> qml.grad(circuit)(x)
-    -0.276982865449393
+    tensor(-0.27698287, requires_grad=True)
 
     .. details::
         :title: Usage Details
@@ -223,12 +223,12 @@ def cut_circuit(
                 qml.CZ(wires=[1, 2]),
             ]
             measurements = [qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))]
-            tape = qml.tape.QuantumTape(ops, measurements)
+            uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-                graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
-                cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
-            )
+        ...     graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
+        ...     cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
+        ... )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
         1: ──RY─╰Z──//─╭●─┤ ├<Z@Z@Z>
