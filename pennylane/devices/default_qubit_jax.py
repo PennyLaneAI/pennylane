@@ -15,8 +15,9 @@
 reference plugin.
 """
 # pylint: disable=ungrouped-imports
-import numpy as np
 from typing import Any, Callable, Tuple
+
+import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
@@ -363,7 +364,7 @@ class DefaultQubitJax(DefaultQubit):
 
 if has_jax:
     def make_odefun_and_args(
-            H_jax: ParametrizedHamiltonianPytree, 
+            H_jax: ParametrizedHamiltonianPytree,
             operation_data: Any
             ) -> Callable[[jax.Array, float, Tuple[jax.Array,...]], jax.Array]:
         """
@@ -393,7 +394,7 @@ if has_jax:
         args = (H_jax, operation_data)
         args_flat, pytree_structure = jax.tree_util.tree_flatten(args)
         # We use HashablePartial instead of `functools.partial` to make sure that its
-        # hash does not change every time we construct a new object with the same 
+        # hash does not change every time we construct a new object with the same
         # pytree_structure.
         #
         # This fixes bug #4264

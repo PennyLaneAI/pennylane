@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
+# pylint: disable=too-few-public-methods,function-redefined,ungrouped-imports
 
 """
 This file contains the ``ParametrizedEvolution`` operator.
 """
-
 from typing import Any, Callable, List, Tuple, Union
 import warnings
 
@@ -506,7 +505,7 @@ class ParametrizedEvolution(Operation):
 
 if has_jax:
     def make_odefun_and_args(
-            H_jax: ParametrizedHamiltonianPytree, 
+            H_jax: ParametrizedHamiltonianPytree,
             operation_data: Any
             ) -> Callable[[jax.Array, float, Tuple[jax.Array,...]], jax.Array]:
         """
@@ -536,7 +535,7 @@ if has_jax:
         args = (H_jax, operation_data)
         args_flat, pytree_structure = jax.tree_util.tree_flatten(args)
         # We use HashablePartial instead of `functools.partial` to make sure that its
-        # hash does not change every time we construct a new object with the same 
+        # hash does not change every time we construct a new object with the same
         # pytree_structure.
         #
         # This fixes bug #4264
