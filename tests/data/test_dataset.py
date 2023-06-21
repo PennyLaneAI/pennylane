@@ -26,10 +26,8 @@ from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field
 from pennylane.data.base.hdf5 import h5py, open_group
 
 
-class MyDataset(Dataset):  # pylint: disable=too-few-public-methods
+class MyDataset(Dataset, data_name="my_dataset"):  # pylint: disable=too-few-public-methods
     """A dataset subclass for testing."""
-
-    category_id = "testing"
 
     description: str = field(doc="description")
 
@@ -76,7 +74,7 @@ class TestDataset:
         category_id."""
 
         ds = MyDataset(description="test")
-        assert ds.category == "testing"
+        assert ds.data_name == "testing"
 
     def test_dataset_bind_init_from_subclass(self):
         """Test that Dataset can be bind-initialized from a HDF5 group that
@@ -86,7 +84,7 @@ class TestDataset:
 
         ds = Dataset(bind)
 
-        assert ds.category == MyDataset.category_id
+        assert ds.data_name == "data_name"
         assert ds.params == {"x": "y"}
 
     def test_setattr_preserves_field_info(self):
