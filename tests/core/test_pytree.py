@@ -1,6 +1,7 @@
 from functools import partial
 from pennylane.core.pytree import HashablePartial
 
+
 def test_hashable_partial_merges_with_partial():
     def f(a, b, c, d, e, f, g):
         pass
@@ -27,6 +28,7 @@ def test_hashable_partial_merges_with_hashable_partial():
     h = HashablePartial(g, 2)
 
     assert h.args == (1, 2)
+
 
 def test_hashable_partial_repr():
     def f(a, b, c):

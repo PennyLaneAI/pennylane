@@ -108,7 +108,7 @@ class ParametrizedHamiltonianPytree:
         Returns:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
-        reorder_fn, = metadata
+        (reorder_fn,) = metadata
         return cls(*matrices, reorder_fn)
 
 
