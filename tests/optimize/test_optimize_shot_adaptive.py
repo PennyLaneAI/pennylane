@@ -282,12 +282,7 @@ class TestSingleShotGradientIntegration:
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
         x_init = np.ones(shape) * 0.5
-
-        # Step twice to ensure that `opt.s` does not get reshaped.
-        # If it was reshaped, its shape would not match `new_x`
-        # and an error would get raised.
         new_x = opt.step(cost_fn, x_init)
-        new_x = opt.step(cost_fn, new_x)
 
         assert isinstance(new_x, np.ndarray)
         assert not np.allclose(new_x, x_init)
@@ -347,6 +342,11 @@ class TestSingleShotGradientIntegration:
         assert np.allclose(
             grad_variance[0][0, 0, 1], np.var(single_shot_grads[0][:5, 0, 0, 1], ddof=1)
         )
+
+        # Step twice to ensure that `opt.s` does not get reshaped.
+        # If it was reshaped, its shape would not match `new_x`
+        # and an error would get raised.
+        _ = opt.step(cost_fn, new_x)
 
     def test_multiple_argument_step(self, mocker, monkeypatch):
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,
