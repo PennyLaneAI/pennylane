@@ -407,11 +407,13 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules.
     It allows for the evaluation of parameter-shift gradients for many-qubit pulse programs
-    on hardware, with the limitation that the individual pulses must be acting on a reduced number of qubits.
+    on hardware, with the limitation that the individual pulses must be acting on a 
+    sufficiently small number of qubits.
 
-    For this differentiation method, the unitary matrix :math:`U` and its derivative :math:`\partial_k U`
-    of a pulse gate are computed classically with an autodiff framework. From :math:`\partial_k U` and :math:`U` we can
-    deduce the so-called effective generators :math:`\Omega_{k}` by assuming the form
+    For this differentiation method, the unitary matrix :math:`U` of a pulse gate and its derivative
+    :math:`\partial_k U` are computed classically with an autodiff framework.
+    From :math:`\partial_k U` and :math:`U` we can deduce the so-called effective generators
+    :math:`\Omega_{k}` by assuming the form
 
     .. math:: \partial_k U = U \Omega_k.
 
@@ -659,7 +661,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         before the parametrized time evolution. Here, the variable :math:`x` is just a
         convenient way to write the modified cost function. Note that its derivative with
         respect to :math:`x` can be computed with the standard two-term parameter-shift
-        rule for Pauli rotation gates. I.e.
+        rule for Pauli rotation gates, i.e.
 
         .. math::
 
