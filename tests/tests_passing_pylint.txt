@@ -1,4 +1,5 @@
 tests/circuit_graph/**
+tests/core/test_pytree.py
 tests/data/**
 tests/devices/experimental/**
 tests/devices/qubit/**
