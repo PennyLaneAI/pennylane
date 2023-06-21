@@ -664,6 +664,7 @@
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
 
 * `qml.collections`, `qml.op_sum`, and `qml.utils.sparse_hamiltonian` have been removed.
+  [(#4071)](https://github.com/PennyLaneAI/pennylane/pull/4071)
 
 * The `pennylane.transforms.qcut` module now uses `(op, id(op))` as nodes in directed multigraphs that are used within
   the circuit cutting workflow instead of `op`. This change removes the dependency of the module on the hash of operators.
