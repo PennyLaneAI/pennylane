@@ -198,7 +198,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = zyz_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _zyz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
     [RZ(tensor(-0.2420953, requires_grad=True), wires=[0]),
     RY(tensor(1.14938178, requires_grad=True), wires=[0]),
