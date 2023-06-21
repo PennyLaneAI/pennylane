@@ -27,3 +27,10 @@ def test_hashable_partial_merges_with_hashable_partial():
     h = HashablePartial(g, 2)
 
     assert h.args == (1, 2)
+
+def test_hashable_partial_repr():
+    def f(a, b, c):
+        pass
+
+    g = HashablePartial(f, 1)
+    assert isinstance(repr(g), str)
