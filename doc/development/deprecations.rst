@@ -6,6 +6,29 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The `grouping_type` and `grouping_method` arguments of `qchem.molecular_hamiltonian()` are deprecated.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
+  Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
+
+  .. code-block:: python
+
+    H, qubits = molecular_hamiltonian(symbols, coordinates)
+    grouped_h = qml.Hamiltonian(
+        H.coeffs,
+        H.ops,
+        grouping_type=grouping_type,
+        method=grouping_method,
+    )
+
+* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use ``one_qubit_decomposition`` with a rotations
+  keyword instead.
+
+  - Deprecated in v0.31
+  - Will be removed in v0.32
+
 * The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
   all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
   setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
@@ -26,6 +49,13 @@ Pending deprecations
 * ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
 
   - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
   - Removed in v0.32
 
 * The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
@@ -67,6 +97,26 @@ Pending deprecations
     def ansatz(params):
         some_qfunc(params)
         return qml.expval(Hamiltonian)
+
+* The public methods of ``DefaultQubit`` are pending changes to
+  follow the new device API, as used in ``DefaultQubit2``.
+
+  We will be switching to the new device interface in a coming release.
+  In this new interface, simulation implementation details
+  will be abstracted away from the device class itself and provided by composition, rather than inheritance.
+  Therefore, some public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
+  in a workflow will remain the same.
+  
+  If you directly interact with device methods, please consult
+  :class:`pennylane.devices.experimental.Device` and
+  :class:`pennylane.devices.experimental.DefaultQubit2`
+  for more information on what the new interface will look like and be prepared
+  to make updates in a coming release. If you have any feedback on these
+  changes, please create an
+  `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+  `discussion forum <https://discuss.pennylane.ai/>`_.
+
+  - Deprecated in v0.31
 
 
 Completed deprecation cycles

@@ -323,7 +323,7 @@ class TestConstruction:
         assert isinstance(tape.circuit[2], qml.transforms.condition.Conditional)
         assert isinstance(tape.circuit[2].then_op, qml.RY)
         assert tape.circuit[2].then_op.wires == target_wire
-        assert tape.circuit[2].then_op.data == [r]
+        assert tape.circuit[2].then_op.data == (r,)
 
         assert isinstance(tape.circuit[3], qml.transforms.condition.Conditional)
         assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
@@ -770,13 +770,13 @@ class TestParameters:
 
         assert tape.get_parameters() == new_params
 
-        new_params = [0.1, -0.2, 1, 5, 0]
+        new_params = (0.1, -0.2, 1, 5, 0)
         tape.data = new_params
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
-        assert tape.get_parameters() == new_params
+        assert tape.get_parameters() == list(new_params)
 
     def test_setting_free_parameters(self, make_tape):
         """Test that free parameters are correctly modified after construction"""

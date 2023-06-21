@@ -106,9 +106,9 @@ def spsa_grad(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
-            outputted by this transform. Note that this argument doesn't influence the shots used for tape execution,
-            but provides information about the shots.
+        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that
+            will be used to execute the tapes outputted by this transform. Note that this argument doesn't
+            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -212,12 +212,9 @@ def spsa_grad(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
-        ...     qml.var(qml.PauliZ(0))
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]
@@ -418,9 +415,9 @@ def _spsa_grad_legacy(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the
-            tapes outputted by this transform. Note that this argument doesn't influence the shots used for tape
-            execution, but provides information about the shots.
+        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will
+            be used to execute the tapes outputted by this transform. Note that this argument doesn't
+            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -512,12 +509,9 @@ def _spsa_grad_legacy(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
-        ...     qml.var(qml.PauliZ(0))
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]

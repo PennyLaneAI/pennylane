@@ -218,7 +218,7 @@ class TestTranspile:
         assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
 
         assert isinstance(transpiled_ops[3], qml.MultiRZ)
-        assert transpiled_ops[3].data == [param]
+        assert transpiled_ops[3].data == (param,)
         assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
 
         assert isinstance(transpiled_ops[4], qml.measurements.MeasurementProcess)
@@ -261,7 +261,7 @@ class TestTranspile:
         assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
 
         assert isinstance(transpiled_ops[3], qml.MultiRZ)
-        assert transpiled_ops[3].data == [param]
+        assert transpiled_ops[3].data == (param,)
         assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
 
         assert isinstance(transpiled_ops[4], qml.measurements.MeasurementProcess)

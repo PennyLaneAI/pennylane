@@ -33,7 +33,6 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
-from pennylane.ops.qubit.attributes import has_unitary_generator_types
 from pennylane.wires import Wires
 
 from .sprod import SProd
@@ -246,6 +245,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return d
 
+    # pylint:disable=too-many-branches
     def _recursive_decomposition(self, base: Operator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
@@ -279,9 +279,22 @@ class Exp(ScalarSymbolicOp, Operation):
             ops = base.ops if isinstance(base, Hamiltonian) else base.operands
             return self._trotter_decomposition(ops, coeffs)
 
-        for op_class in has_unitary_generator_types:
-            # Check if the exponentiated operator is a generator of another operator
-            if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
+        # Store operator classes with generators
+        has_generator_types = []
+        has_generator_types_anywires = []
+        for op_name in qml.ops.qubit.__all__:  # pylint:disable=no-member
+            op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
+            if op_class.has_generator:
+                if op_class.num_wires == AnyWires:
+                    has_generator_types_anywires.append(op_class)
+                elif op_class.num_wires == len(base.wires):
+                    has_generator_types.append(op_class)
+        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires == AnyWires
+        has_generator_types.extend(has_generator_types_anywires)
+
+        for op_class in has_generator_types:
+            # PauliRot and PCPhase have different positional args
+            if op_class not in {qml.PauliRot, qml.PCPhase}:
                 g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
                 new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
