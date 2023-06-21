@@ -661,7 +661,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         before the parametrized time evolution. Here, the variable :math:`x` is just a
         convenient way to write the modified cost function. Note that its derivative with
         respect to :math:`x` can be computed with the standard two-term parameter-shift
-        rule for Pauli rotation gates. I.e.
+        rule for Pauli rotation gates, i.e.
 
         .. math::
 
