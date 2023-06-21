@@ -666,7 +666,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
 
         .. math::
 
-            \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x)\large|_{x=0} = \frac{1}{2} \left(C_\ell(\pi/2) - C_\ell(-\pi/2)\right)
+            \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x) {\large|}_{x=0} = \frac{1}{2} \left(C_\ell(\pi/2) - C_\ell(-\pi/2)\right)
         
         with :math:`C_\ell(x) = \langle\psi_0|e^{i\frac{x}{2}P_\ell} U^\dagger B U e^{-i\frac{x}{2}P_\ell} |\psi_0\rangle`.
 
