@@ -14,11 +14,11 @@
 """
 The data subpackage provides functionality to access, store and manipulate quantum datasets.
 
-Datasets are generally stored and accessed using the :class:`~pennylane.data.Dataset` class.
+Datasets are generally stored and accessed using the :class:`~pennylane.data_old.Dataset` class.
 Pre-computed datasets are available for download and can be accessed using the :func:`~pennylane.data.load` or
-:func:`~pennylane.data.load_interactive` functions.
+:func:`~pennylane.data_old.load_interactive` functions.
 Additionally, users can easily create, write to disk, and read custom datasets using functions within the
-:class:`~pennylane.data.Dataset` class.
+:class:`~pennylane.data_old.Dataset` class.
 
 """
 
