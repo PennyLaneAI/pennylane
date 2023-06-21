@@ -621,7 +621,8 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
             \omega_{k}^{(\ell)} = \frac{1}{2^N}\mathrm{Tr}\left[P_\ell \Omega_{k}\right]
 
         where :math:`N` is the number of qubits and :math:`\ell = 1, .. , L` the Pauli word index.
-        The number of non-zero Pauli words :math:`L` is the dimension of the dynamical Lie algebra
+        The number of non-zero Pauli words :math:`L` is typically the dimension of the dynamical Lie algebra
+        (can be lower if coefficients happen to be zero)
         and at most :math:`4^N-1`.
 
         Thus far, we discussed the derivative of the time evolution, or pulse.
