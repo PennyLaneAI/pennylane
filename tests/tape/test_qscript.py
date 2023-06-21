@@ -474,7 +474,7 @@ class TestInfomationProperties:
         copied_specs = qs.specs.copy()
 
         assert isinstance(copied_specs, qml.tape.qscript.SpecsDict)
-        with pytest.warns(UserWarning, match='key is deprecated and will be removed'):
+        with pytest.warns(UserWarning, match="key is deprecated and will be removed"):
             for k, v in qs.specs.items():
                 assert copied_specs[k] == v
 
