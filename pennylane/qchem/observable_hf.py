@@ -91,7 +91,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
-        (~.Operator): Simplified PennyLane Hamiltonian
+        (Operator): Simplified PennyLane Hamiltonian
 
     **Example**
 
