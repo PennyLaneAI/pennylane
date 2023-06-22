@@ -22,15 +22,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field
+from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field, attribute
 from pennylane.data.base.hdf5 import h5py, open_group
 
 
-class MyDataset(Dataset):  # pylint: disable=too-few-public-methods
+class MyDataset(Dataset, data_name="my_dataset"):  # pylint: disable=too-few-public-methods
     """A dataset subclass for testing."""
 
-    category_id = "testing"
-
+    x: str = field(is_param=True)
+    y: str = field(is_param=True)
     description: str = field(doc="description")
 
 
@@ -52,6 +52,24 @@ class TestDataset:
         assert ds.x == 1
         assert (ds.y == np.array([1, 2, 3])).all()
         assert ds.z == "abc"
+
+    @pytest.mark.parametrize("data_name, expect", [(None, "generic"), ("other_name", "other_name")])
+    def test_init_dataname(self, data_name, expect):
+        """Test that a base dataset's data_name can be set on init, and that
+        it defaults to the class data name if none is provided."""
+        ds = Dataset(data_name=data_name)
+
+        assert ds.data_name == expect
+
+    @pytest.mark.parametrize(
+        "data_name, expect", [(None, "my_dataset"), ("other_name", "other_name")]
+    )
+    def test_subclass_init_dataname(self, data_name, expect):
+        """Test that a subclassed datasets' data_name can be set on init, and that
+        it defaults to the class data name if none is provided."""
+        ds = MyDataset(x="1", y="2", description="abc", data_name=data_name)
+
+        assert ds.data_name == expect
 
     def test_setattr(self):
         """Test that __setattrr__ successfully sets new attributes."""
@@ -75,19 +93,19 @@ class TestDataset:
         """Test that a subclass of Dataset preserves the defined
         category_id."""
 
-        ds = MyDataset(description="test")
-        assert ds.category == "testing"
+        ds = MyDataset(x="1", y="2", description="test")
+        assert ds.data_name == "my_dataset"
 
     def test_dataset_bind_init_from_subclass(self):
         """Test that Dataset can be bind-initialized from a HDF5 group that
         was initialized by a subclass of Dataset."""
 
-        bind = MyDataset(description="test", params={"x": "y"}).bind
+        bind = MyDataset(x="1", y="2", description="test").bind
 
         ds = Dataset(bind)
 
-        assert ds.category == MyDataset.category_id
-        assert ds.params == {"x": "y"}
+        assert ds.data_name == "my_dataset"
+        assert ds.params == {"x": "1", "y": "2"}
 
     def test_setattr_preserves_field_info(self):
         """Test that __setattr__ preserves AttributeInfo for fields."""
@@ -114,15 +132,17 @@ class TestDataset:
         assert ds.attrs == ds_2.attrs
 
     @pytest.mark.parametrize("params", [{}, {"x": "y", "z": "a"}])
-    def test_params(self, params):
+    def test_params_base(self, params):
         """Test that dataset params can be set."""
-        ds = Dataset(params=params)
+        ds = Dataset(
+            **{param: attribute(param_val, is_param=True) for param, param_val in params.items()}
+        )
 
         assert ds.params == params
 
-    @pytest.mark.parametrize("params", [{}, {"x": "y", "z": "a"}])
+    @pytest.mark.parametrize("params", [{"x": "1", "y": "2"}])
     def test_subclass_params(self, params):
         """Test that dataset subclasses' params can be set."""
-        ds = MyDataset(params=params, description="abc")
+        ds = MyDataset(**params, description="abc")
 
         assert ds.params == params

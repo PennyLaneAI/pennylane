@@ -405,11 +405,13 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
 
 def attribute(
-    val: T, doc: Optional[str] = None, **kwargs: Any
+    val: T, doc: Optional[str] = None, is_param: bool = False, **kwargs: Any
 ) -> DatasetAttribute[HDF5Any, T, Any]:
     """Returns ``DatasetAttribute`` class matching ``val``, with other arguments passed
     to the ``AttributeInfo`` class."""
-    return match_obj_type(val)(val, AttributeInfo(doc=doc, py_type=type(val), **kwargs))
+    return match_obj_type(val)(
+        val, AttributeInfo(doc=doc, py_type=type(val), is_param=is_param, **kwargs)
+    )
 
 
 def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:

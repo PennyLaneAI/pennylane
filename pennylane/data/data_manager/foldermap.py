@@ -41,7 +41,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     For example:
 
         {
-            "__name": "category",
+            "__name": "data_name",
             "qchem": {
                 "__name": "molname",
                 "O2": {
@@ -79,7 +79,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
 
     @property
     def name(self) -> str:
-        """Returns the the name of the current parameter, e.g 'category', 'molname'."""
+        """Returns the the name of the current parameter, e.g 'data_name', 'molname'."""
         return self.__curr_level["__name"]
 
     def get_default_key(self) -> str:
@@ -93,26 +93,26 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
 
     def find(
         self,
-        category: str,
+        data_name: str,
         missing_default: Optional[ParamArg] = ParamArg.DEFAULT,
         **params: Union[typing.Iterable[ParamVal], ParamArg],
     ) -> List[Tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
-        if self.name != "category":
+        if self.name != "data_name":
             raise RuntimeError("Can only call 'find()' from top level.")
 
         try:
-            category_map = self[category]
+            data_name_map = self[data_name]
         except KeyError as exc:
-            raise ValueError(f"No such category: '{category}'") from exc
+            raise ValueError(f"No such data_name: '{data_name}'") from exc
 
         todo: List[
             Tuple[Union[FolderMapView, DataPath], Tuple[Tuple[ParamName, ParamVal], ...]]
         ] = []
         done: List[Tuple[Description, DataPath]] = []
 
-        todo.append((category_map, tuple()))
+        todo.append((data_name_map, tuple()))
 
         while todo:
             curr_level, params_acc = todo.pop()

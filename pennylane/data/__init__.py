@@ -67,27 +67,6 @@ Attributes can also be assigned to the instance after creation:
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
 
     
-Attribute Metadata
-~~~~~~~~~~~~~~~~~~
-
-Dataset attributes can also contain additional metadata, such as docstrings. The :func:`qml.data.attribute`
-function can be used to attach metadata on assignment or initialization.
-
-    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
-    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
-    >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
-            hamiltonian, 
-            doc="The hamiltonian of the system"))
-    >>> dataset.eigen = attribute(
-            {"eigvals": eigvals, "eigvecs": eigvecs}, 
-            doc="Eigenvalues and eigenvectors of the hamiltonain")
-    
-This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
-
-    >>> dataset.attr_info["hamiltonian"]["doc"]
-    'The hamiltonian of the system'
-
-
 Reading and Writing Datasets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -115,6 +94,28 @@ it from the file:
     >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="r", copy=True)
     >>> my_dataset.new_attribute = "abc"
 
+
+Attribute Metadata
+~~~~~~~~~~~~~~~~~~
+
+Dataset attributes can also contain additional metadata, such as docstrings. The :func:`qml.data.attribute`
+function can be used to attach metadata on assignment or initialization.
+
+    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
+    >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
+            hamiltonian, 
+            doc="The hamiltonian of the system"))
+    >>> dataset.eigen = attribute(
+            {"eigvals": eigvals, "eigvecs": eigvecs}, 
+            doc="Eigenvalues and eigenvectors of the hamiltonain")
+    
+This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
+
+    >>> dataset.attr_info["hamiltonian"]["doc"]
+    'The hamiltonian of the system'
+
+
     
 Declarative API
 ~~~~~~~~~~~~~~~
@@ -131,8 +132,8 @@ or 'fields', and their associated type and documentation:
     class QuantumOscillator(qml.data.Dataset):
         \"""Dataset describing a quantum oscillator.\"""
         
-        mass: float = qml.data.field(doc = "The mass of the particle")
-        force_constant: float = qml.data.field(doc = "The force constant of the oscillator")
+        mass: float = qml.data.field(doc = "The mass of the particle", is_param=True)
+        force_constant: float = qml.data.field(doc = "The force constant of the oscillator", is_param=True)
         hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
         energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
 
