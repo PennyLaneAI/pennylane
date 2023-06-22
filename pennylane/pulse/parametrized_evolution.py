@@ -413,7 +413,9 @@ class ParametrizedEvolution(Operation):
         self._check_time_batching()
         self.dense = len(self.wires) < 3 if dense is None else dense
 
-    def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
+    def __call__(
+        self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
+    ):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
@@ -427,6 +429,8 @@ class ParametrizedEvolution(Operation):
             return_intermediate = self.hyperparameters["return_intermediate"]
         if complementary is None:
             complementary = self.hyperparameters["complementary"]
+        if dense is None:
+            dense = self.dense
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
@@ -437,7 +441,7 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
-            dense=self.dense,
+            dense=dense,
             do_queue=None,
             id=self.id,
             **odeint_kwargs,
