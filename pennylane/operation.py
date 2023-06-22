@@ -808,7 +808,7 @@ class Operator(abc.ABC):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Operator.eigvals` and :func:`~.eigvals`
+        .. seealso:: :meth:`~.eigvals` and :func:`pennylane.eigvals`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
