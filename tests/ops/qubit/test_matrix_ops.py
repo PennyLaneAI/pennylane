@@ -537,6 +537,21 @@ class TestDiagonalQubitUnitary:
         assert qml.math.allclose(orig_mat, decomp_mat)
         assert qml.math.allclose(orig_mat, decomp_mat2)
 
+    @pytest.mark.parametrize(
+        "dtype", [np.float64, np.float32, np.int64, np.int32, np.complex128, np.complex64]
+    )
+    def test_decomposition_cast_to_complex128(self, dtype):
+        """Test that the parameters of decomposed operations are of the correct dtype."""
+        D = np.array([1, 1, -1, -1]).astype(dtype)
+        wires = [0, 1]
+        decomp1 = qml.DiagonalQubitUnitary(D, wires).decomposition()
+        decomp2 = qml.DiagonalQubitUnitary.compute_decomposition(D, wires)
+
+        assert decomp1[0].data[0].dtype == np.complex128
+        assert decomp2[0].data[0].dtype == np.complex128
+        assert all(op.data[0].dtype == np.float64 for op in decomp1[1:])
+        assert all(op.data[0].dtype == np.float64 for op in decomp2[1:])
+
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
         # pylint: disable=protected-access
