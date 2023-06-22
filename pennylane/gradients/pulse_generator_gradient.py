@@ -407,7 +407,7 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules.
     It allows for the evaluation of parameter-shift gradients for many-qubit pulse programs
-    on hardware, with the limitation that the individual pulses must be acting on a 
+    on hardware, with the limitation that the individual pulses must be acting on a
     sufficiently small number of qubits.
 
     For this differentiation method, the unitary matrix :math:`U` of a pulse gate and its derivative
@@ -667,14 +667,14 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         .. math::
 
             \frac{\mathrm{d}}{\mathrm{d}x} C_\ell(x) {\large|}_{x=0} = \frac{1}{2} \left(C_\ell(\pi/2) - C_\ell(-\pi/2)\right)
-        
+
         with :math:`C_\ell(x) = \langle\psi_0|e^{i\frac{x}{2}P_\ell} U^\dagger B U e^{-i\frac{x}{2}P_\ell} |\psi_0\rangle`.
 
         **Caching**
 
         Considering the derivation above, we notice that the same modified cost function
         :math:`C_\ell(x)` may appear in the derivatives of distinct parameters
-        :math:`\theta_k` and :math:`\theta_m`, because they are shared by two terms in the pulse Hamiltonian. 
+        :math:`\theta_k` and :math:`\theta_m`, because they are shared by two terms in the pulse Hamiltonian.
         In order to not evaluate the same
         modified quantum circuit derivatives multiple times, we use an internal
         cache that avoids repeated creation of the same parameter-shifted circuits.
