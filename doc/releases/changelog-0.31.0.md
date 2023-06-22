@@ -496,6 +496,20 @@
 * The `DefaultQubit2` device now has a `seed` keyword argument.
   [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
 
+* Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
+  [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
+  [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
+  [(#4285)](https://github.com/PennyLaneAI/pennylane/pull/4285)
+
+* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
+  an execution.
+  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
+
+* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  
+  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a 
+  request for `"best"`, instead of a string.
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
 * The new device interface for Jax has been integrated with `qml.execute`.
   [(#4137)](https://github.com/PennyLaneAI/pennylane/pull/4137)
 
