@@ -291,7 +291,7 @@
   array([0., 0., 1.])
   ```
 
-* A new transform called [one_qubit_decomposition](https://docs.pennylane.ai/en/latest/code/api/pennylane.transforms.one_qubit_decomposition.html) has been added to provide a unified interface for decompositions
+* A new transform called [one_qubit_decomposition](https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.one_qubit_decomposition.html) has been added to provide a unified interface for decompositions
   of a single-qubit unitary matrix into sequences of X, Y, and Z rotations. All
   decompositions simplify the rotations angles to be between `0` and `4` pi.
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
@@ -329,7 +329,7 @@
   (`stoch_pulse_grad`) to support Hermitian generating terms beyond just Pauli words in pulse Hamiltonians, 
   which makes it hardware-compatible.
 
-* A new differentiation method called [qml.gradients.pulse_generator](https://docs.pennylane.ai/en/latest/code/api/pennylane.gradients.pulse_generator.html) is available, which combines classical processing 
+* A new differentiation method called [qml.gradients.pulse_generator](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.pulse_generator.html) is available, which combines classical processing 
   with the parameter-shift rule for multivariate gates to differentiate pulse programs. Access it in your pulse
   programs by setting `diff_method=qml.gradients.pulse_generator`. 
   [(#4160)](https://github.com/PennyLaneAI/pennylane/pull/4160) 
