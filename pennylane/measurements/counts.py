@@ -58,8 +58,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
 
     .. note::
 
-        QNodes that return counts cannot, in general, be differentiated, since the derivative
-        with respect to a stochastic process is ill-defined. Please, refer to
+        Differentiation of QNodes that return ``counts`` is currently not supported. Please refer to
         :func:`~.pennylane.sample` if differentiability is required.
 
     **Example**
