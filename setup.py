@@ -24,7 +24,7 @@ requirements = [
     "scipy",
     "networkx",
     "rustworkx",
-    "autograd",
+    "autograd>=1.4,<=1.5",
     "toml",
     "appdirs",
     "semantic-version>=2.7",
