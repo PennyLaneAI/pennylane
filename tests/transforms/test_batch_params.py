@@ -69,6 +69,33 @@ def test_simple_circuit_one_batch(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+def test_simple_circuit_with_prep(mocker):
+    """Test that batching works for a simple circuit with a state preparation"""
+    dev = qml.device("default.qubit", wires=3)
+
+    init_state = np.array([0, 0, 0, 0, 1, 0, 0, 0], requires_grad=False)
+
+    @qml.batch_params
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, x, weights):
+        qml.QubitStateVector(init_state, wires=[0, 1, 2])
+        qml.RX(x, wires=0)
+        qml.RY(0.2, wires=1)
+        qml.RZ(data, wires=1)
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 2])
+
+    batch_size = 5
+    data = np.random.random((batch_size,))
+    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, x, weights)
+    assert res.shape == (batch_size, 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+
 def test_basic_entangler_layers(mocker):
     """Test that batching works for BasicEngtanglerLayers"""
     dev = qml.device("default.qubit", wires=2)

@@ -40,6 +40,7 @@ def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
     with qml.queuing.AnnotatedQueue() as q:
+        qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=[0, 1])
         RX_broadcasted(x, wires=0)
         qml.PauliY(0)
         RX_broadcasted(y, wires=1)

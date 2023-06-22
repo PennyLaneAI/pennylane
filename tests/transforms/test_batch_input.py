@@ -60,6 +60,27 @@ def test_simple_circuit_one_batch():
     assert res.shape == (batch_size,)
 
 
+def test_simple_circuit_with_prep():
+    """Test that batching works for a simple circuit with a state preparation"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=1)
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(inputs, weights):
+        qml.QubitStateVector(np.array([0, 0, 1, 0]), wires=[0, 1])
+        qml.RX(inputs, wires=0)
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+    batch_size = 5
+    inputs = np.random.uniform(0, np.pi, (batch_size,), requires_grad=False)
+    weights = np.random.uniform(-np.pi, np.pi, (2,))
+
+    res = circuit(inputs, weights)
+    assert res.shape == (batch_size,)
+
+
 def test_circuit_non_param_operator_before_batched_operator():
     """Test a circuit where a non-parametric operation is located before a batched operator."""
     dev = qml.device("default.qubit", wires=2)
