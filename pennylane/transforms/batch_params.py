@@ -125,34 +125,93 @@ def batch_params(tape, all_operations=False):
     >>> qml.grad(cost_fn)(x, weights)[0]
     -0.30262974103192636
     """
-    params = tape.get_parameters(trainable_only=not all_operations)
-    if not params:
+    # pylint: disable=too-many-branches
+
+    params = tape.get_parameters(trainable_only=False)
+    indices = list(range(len(params))) if all_operations else list(tape.trainable_params)
+
+    if not indices:
         raise ValueError(
             "There are no operations to transform. Either add trainable parameters, "
             "or specify `all_operations=True`."
         )
-    output_tapes = []
 
     try:
-        batch_dim = qml.math.shape(params[0])[0]
+        batch_dim = qml.math.shape(params[indices[0]])[0]
     except IndexError:
         raise ValueError(f"Parameter {params[0]} does not contain a batch dimension.") from None
 
-    unbatched_params = [[] for i in range(batch_dim)]
+    for i in indices:
+        shape = qml.math.shape(params[i])
+        if len(shape) == 0 or shape[0] != batch_dim:
+            raise ValueError(
+                f"Parameter {params[i]} has incorrect batch dimension. Expecting "
+                f"first dimension of length {batch_dim}."
+            )
 
-    for p in params:
-        for i in range(batch_dim):
-            try:
-                unbatched_params[i].append(p[i])
-            except IndexError:
-                raise ValueError(
-                    f"Parameter {p} has incorrect batch dimension. Expecting "
-                    f"first dimension of length {batch_dim}."
-                ) from None
+    new_preps = [[] for _ in range(batch_dim)]
+    new_ops = [[] for _ in range(batch_dim)]
+    new_measurements = [[] for _ in range(batch_dim)]
 
-    for p in unbatched_params:
-        new_tape = tape.copy(copy_operations=True)
-        new_tape.set_parameters(p, trainable_only=not all_operations)
+    idx = 0
+    for prep in tape.prep:
+        # determine if any parameters of the operator are batched
+        if any(i in indices for i in range(idx, idx + len(prep.data))):
+            for b in range(batch_dim):
+                new_params = tuple(
+                    params[i][b] if i in indices else params[i]
+                    for i in range(idx, idx + len(prep.data))
+                )
+                new_prep = qml.ops.functions.bind_new_parameters(prep, new_params)
+                new_preps[b].append(new_prep)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(batch_dim):
+                new_preps[b].append(prep)
+
+        idx += len(prep.data)
+
+    ops = [op for op in tape.operations if op not in tape.prep]
+    for op in ops:
+        # determine if any parameters of the operator are batched
+        if any(i in indices for i in range(idx, idx + len(op.data))):
+            for b in range(batch_dim):
+                new_params = tuple(
+                    params[i][b] if i in indices else params[i]
+                    for i in range(idx, idx + len(op.data))
+                )
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_ops[b].append(new_op)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(batch_dim):
+                new_ops[b].append(op)
+
+        idx += len(op.data)
+
+    for m in tape.measurements:
+        # determine if any parameters of the measurement are batched
+        if m.obs is not None and any(i in indices for i in range(idx, idx + len(m.obs.data))):
+            for b in range(batch_dim):
+                new_params = tuple(
+                    params[i][b] if i in indices else params[i]
+                    for i in range(idx, idx + len(m.obs.data))
+                )
+                new_op = qml.ops.functions.bind_new_parameters(m.obs, new_params)
+                new_m = m.copy()
+                new_m.obs = new_op
+                new_measurements[b].append(new_m)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(batch_dim):
+                new_measurements[b].append(m)
+
+        idx += 0 if m.obs is None else len(m.obs.data)
+
+    output_tapes = []
+    for prep, ops, ms in zip(new_preps, new_ops, new_measurements):
+        new_tape = qml.tape.QuantumScript(ops, ms, prep, shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(res):

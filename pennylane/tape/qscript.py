@@ -296,6 +296,16 @@ class QuantumScript:
         return self.operations + self.measurements
 
     @property
+    def prep(self) -> List[Operator]:
+        """
+        Returns the state preparations on the quantum script.
+
+        Return:
+            list[.Operator]: state preparations
+        """
+        return self._prep
+
+    @property
     def operations(self) -> List[Operator]:
         """Returns the state preparations and operations on the quantum script.
 
