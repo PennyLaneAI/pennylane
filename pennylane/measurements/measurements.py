@@ -23,8 +23,6 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -175,7 +173,7 @@ class MeasurementProcess(ABC):
             if obs is not None:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
-            self._eigvals = np.array(eigvals)
+            self._eigvals = qml.math.asarray(eigvals)
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand receiving

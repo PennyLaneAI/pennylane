@@ -678,9 +678,9 @@ class PCPhase(Operation):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
             wires (Iterable[Any], Wires): wires that the operator acts on
-            hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
+            **hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             list[Operator]: decomposition of the operator

@@ -152,8 +152,7 @@ class SProd(ScalarSymbolicOp):
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
             scalar = copy(self.scalar)
             if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
-                c = qnp.convert_like(1 + 0j, scalar)  # get a complex dtype in the same interface
-                scalar = qnp.cast_like(scalar, c)  # cast scalar to complex dtype
+                scalar = qnp.cast(scalar, "complex128")
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
@@ -237,7 +236,10 @@ class SProd(ScalarSymbolicOp):
         Returns:
             array: array containing the eigenvalues of the operator.
         """
-        return self.scalar * self.base.eigvals()
+        base_eigs = self.base.eigvals()
+        if qml.math.get_interface(self.scalar) == "torch" and self.scalar.requires_grad:
+            base_eigs = qml.math.convert_like(base_eigs, self.scalar)
+        return self.scalar * base_eigs
 
     def sparse_matrix(self, wire_order=None):
         """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
@@ -261,9 +263,6 @@ class SProd(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if qml.math.get_interface(scalar) == "tensorflow":
-            # we must cast ``scalar`` to complex to avoid an error
-            scalar = qml.math.cast_like(scalar, mat)
         return scalar * mat
 
     @property

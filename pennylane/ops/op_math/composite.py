@@ -18,6 +18,7 @@ This submodule defines a base class for composite operations.
 import abc
 from typing import Callable, List
 import warnings
+import copy
 
 import numpy as np
 
@@ -129,7 +130,7 @@ class CompositeOp(Operator):
     @property
     def data(self):
         """Create data property"""
-        return [d for op in self for d in op.data]
+        return tuple(d for op in self for d in op.data)
 
     @data.setter
     def data(self, new_data):
@@ -358,7 +359,7 @@ class CompositeOp(Operator):
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op.data = self.data.copy()
+        new_op.data = copy.copy(self.data)
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires"}:
                 setattr(new_op, attr, value)

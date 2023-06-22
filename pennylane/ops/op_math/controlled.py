@@ -177,7 +177,7 @@ class Controlled(SymbolicOp):
     >>> op.base
     RX(1.234, wires=[1])
     >>> op.data
-    [1.234]
+    (1.234,)
     >>> op.wires
     <Wires = [0, 1]>
     >>> op.control_wires

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autograd specific tests for execute and default qubit 2."""
-# pylint: disable=invalid-sequence-index
 import autograd
 import pytest
 from pennylane import numpy as np
@@ -97,6 +96,28 @@ class TestCaching:
         expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
         assert tracker2.totals["executions"] == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
+
+    def test_single_backward_pass_batch(self):
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
+        is requested for multiple tapes."""
+
+        dev = DefaultQubit2()
+
+        def f(x):
+            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
+            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.probs(wires=0)])
+
+            results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
+            return results[0] + results[1]
+
+        x = qml.numpy.array(0.1)
+        with dev.tracker:
+            out = qml.jacobian(f)(x)
+
+        assert dev.tracker.totals["batches"] == 2
+        assert dev.tracker.history["executions"] == [2, 4]
+        expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
+        assert qml.math.allclose(out, expected)
 
 
 # add tests for lightning 2 when possible
@@ -698,8 +719,8 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
-        if execute_kwargs["gradient_fn"] != param_shift:
-            pytest.skip("trainable hamiltonians only supported with parameter shift")
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("trainable hamiltonians not supported with adjoint")
         if use_new_op_math:
             pytest.skip("parameter shift derivatives do not yet support sums.")
 

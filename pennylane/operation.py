@@ -417,7 +417,7 @@ class Operator(abc.ABC):
     ``hyperparameters`` are the respective attributes of the operator class.
 
     Args:
-        params (tuple[tensor_like]): trainable parameters
+        *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): indicates whether the operator should be recorded when created in
@@ -660,7 +660,7 @@ class Operator(abc.ABC):
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()
+        copied_op.data = copy.copy(self.data)
         for attr, value in vars(self).items():
             if attr != "data":
                 setattr(copied_op, attr, value)
@@ -680,7 +680,7 @@ class Operator(abc.ABC):
                 # Shallow copy the list of parameters. We avoid a deep copy
                 # here, since PyTorch does not support deep copying of tensors
                 # within a differentiable computation.
-                copied_op.data = value.copy()
+                copied_op.data = copy.copy(value)
             else:
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
@@ -717,11 +717,11 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
+        .. seealso:: :meth:`.Operator.matrix` and :func:`qml.matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             tensor_like: matrix representation
@@ -774,8 +774,8 @@ class Operator(abc.ABC):
         .. seealso:: :meth:`~.Operator.sparse_matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
                 attribute
 
         Returns:
@@ -823,8 +823,8 @@ class Operator(abc.ABC):
         .. seealso:: :meth:`~.Operator.eigvals` and :func:`~.eigvals`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             tensor_like: eigenvalues
@@ -1036,7 +1036,7 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
+        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
         if do_queue is not None:
             do_queue_deprecation_warning = (
@@ -1060,6 +1060,7 @@ class Operator(abc.ABC):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
+
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
@@ -1074,6 +1075,12 @@ class Operator(abc.ABC):
             if any(qml.math.is_abstract(p) for p in params):
                 return
             raise e
+
+        if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
+            # if the batch dimension is unknown, then skip the validation
+            # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
+            # typically during compilation of a function decorated with jax.jit or tf.function
+            return
 
         self._ndim_params = ndims
         if ndims != self.ndim_params:
@@ -1179,7 +1186,7 @@ class Operator(abc.ABC):
     @property
     def parameters(self):
         """Trainable parameters that the operator depends on."""
-        return self.data.copy()
+        return list(self.data)
 
     @property
     def hyperparameters(self):
@@ -1239,9 +1246,9 @@ class Operator(abc.ABC):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
             wires (Iterable[Any], Wires): wires that the operator acts on
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -1725,8 +1732,8 @@ class Channel(Operation, abc.ABC):
             of a particular operator.
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator,
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator,
                 as stored in the ``hyperparameters`` attribute
 
         Returns:
@@ -2077,9 +2084,9 @@ class Tensor(Observable):
         """Raw parameters of all constituent observables in the tensor product.
 
         Returns:
-            list[Any]: flattened list containing all dependent parameters
+            tuple[Any]: flattened list containing all dependent parameters
         """
-        return sum((o.data for o in self.obs), [])
+        return tuple(d for op in self.obs for d in op.data)
 
     @data.setter
     def data(self, new_data):
@@ -2100,8 +2107,14 @@ class Tensor(Observable):
         [array([[5., 0.],
         [0., 5.]])]
         """
-        for new_entry, op in zip(new_data, self.obs):
-            op.data = new_entry
+        if isinstance(new_data, tuple):
+            start = 0
+            for op in self.obs:
+                op.data = new_data[start : start + len(op.data)]
+                start += len(op.data)
+        else:
+            for new_entry, op in zip(new_data, self.obs):
+                op.data = tuple(new_entry)
 
     @property
     def num_params(self):

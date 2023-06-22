@@ -234,13 +234,27 @@ class ParametrizedHamiltonian:
     def __call__(self, params, t):
         if len(params) != len(self.coeffs_parametrized):
             raise ValueError(
-                "The length of the params argument and the number of scalar-valued functions must be the same."
-                f"Received len(params) = {len(params)} but expected {len(self.coeffs_parametrized)}"
+                "The length of the params argument and the number of scalar-valued functions "
+                f"must be the same. Received len(params) = {len(params)} parameters but "
+                f"expected {len(self.coeffs_parametrized)} parameters."
             )
         return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
-        return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+        terms = []
+
+        for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
+            term = f"({coeff}*({op}))"
+            terms.append(term)
+
+        for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
+            if callable(coeff) and hasattr(coeff, "__name__"):
+                term = f"({coeff.__name__}(params_{i}, t)*({op}))"
+            elif hasattr(coeff, "__class__") and hasattr(coeff.__class__, "__name__"):
+                term = f"({coeff.__class__.__name__}(params_{i}, t)*({op}))"
+            terms.append(term)
+
+        return "  " + "\n+ ".join(terms)
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``

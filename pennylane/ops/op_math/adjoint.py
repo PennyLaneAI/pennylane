@@ -177,7 +177,7 @@ class Adjoint(SymbolicOp):
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
     (PauliX(wires=[0]), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
-    [1.234]
+    (1.234,)
 
     .. details::
         :title: Developer Details
@@ -213,6 +213,54 @@ class Adjoint(SymbolicOp):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0])
+
+    _operation_type = None  # type if base inherits from operation and not observable
+    _operation_observable_type = None  # type if base inherits from both operation and observable
+    _observable_type = None  # type if base inherits from observable and not operation
+
+    # pylint: disable=unused-argument
+    def __new__(cls, base=None, do_queue=None, id=None):
+        """Mixes in parents based on inheritance structure of base.
+
+        Though all the types will be named "Adjoint", their *identity* and location in memory will
+        be different based on ``base``'s inheritance. We cache the different types in private class
+        variables so that:
+
+        >>> Adjoint(op).__class__ is Adjoint(op).__class__
+        True
+        >>> type(Adjoint(op)) == type(Adjoint(op))
+        True
+        >>> isinstance(Adjoint(op), type(Adjoint(op)))
+        True
+        >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
+        True
+        >>> Adjoint(qml.PauliX(0)).__class__ is Adjoint._operation_observable_type
+        True
+
+        """
+
+        if isinstance(base, Operation):
+            if isinstance(base, Observable):
+                if cls._operation_observable_type is None:
+                    class_bases = (AdjointOperation, Adjoint, SymbolicOp, Observable, Operation)
+                    cls._operation_observable_type = type(
+                        "Adjoint", class_bases, dict(cls.__dict__)
+                    )
+                return object.__new__(cls._operation_observable_type)
+
+            # not an observable
+            if cls._operation_type is None:
+                class_bases = (AdjointOperation, Adjoint, SymbolicOp, Operation)
+                cls._operation_type = type("Adjoint", class_bases, dict(cls.__dict__))
+            return object.__new__(cls._operation_type)
+
+        if isinstance(base, Observable):
+            if cls._observable_type is None:
+                class_bases = (Adjoint, SymbolicOp, Observable)
+                cls._observable_type = type("Adjoint", class_bases, dict(cls.__dict__))
+            return object.__new__(cls._observable_type)
+
+        return object.__new__(Adjoint)
 
     def __init__(self, base=None, do_queue=None, id=None):
         self._name = f"Adjoint({base.name})"

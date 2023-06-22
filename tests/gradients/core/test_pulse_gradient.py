@@ -15,6 +15,7 @@
 Tests for the gradients.pulse_gradient module.
 """
 
+import warnings
 import copy
 import pytest
 import numpy as np
@@ -22,6 +23,7 @@ import pennylane as qml
 
 from pennylane.gradients.general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from pennylane.gradients.pulse_gradient import (
+    _parshift_and_integrate,
     _split_evol_ops,
     _split_evol_tape,
     stoch_pulse_grad,
@@ -179,6 +181,27 @@ class TestSplitEvolOps:
             # Check that the inserted exponential is correct
             assert qml.equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
+    def test_warnings(self):
+        """Test that a warning is raised for computing eigenvalues of a Hamiltonian
+        for more than four wires but not for fewer wires."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        ham = qml.pulse.constant * qml.PauliY(0)
+        op = qml.evolve(ham)([0.3], 2.0)
+        ob = qml.Hamiltonian(
+            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(5)]), qml.PauliX(0)]
+        )
+        with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
+            _split_evol_ops(op, ob, tau=0.4)
+
+        ob = qml.Hamiltonian(
+            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(4)]), qml.PauliX(0)]
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _split_evol_ops(op, ob, tau=0.4)
+
 
 @pytest.mark.jax
 class TestSplitEvolTapes:
@@ -240,6 +263,459 @@ class TestSplitEvolTapes:
             assert qml.equal(t.operations[0], ops[0])
             assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[1:-1], new_ops))
             assert qml.equal(t.operations[-1], ops[2])
+
+
+@pytest.mark.jax
+class TestParshiftAndIntegrate:
+    """Test the helper routine ``_parshift_and_integrate``. Most tests use uniform
+    return types and parameters, so that we can test against simple tensor contractions."""
+
+    # pylint: disable=too-many-arguments
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 7)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 7])
+    def test_single_measure_single_shots(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for a single measurement
+        per shift and splitting time, and with a single setting of shots. This corresponds to
+        ``single_measure=True and has_partitioned_shots=False``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (num_split_times * num_shifts * multi_term,) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_split_times,
+            num_shifts,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=True,
+            has_partitioned_shots=False,
+            use_broadcasting=False,
+        )
+
+        assert isinstance(res, jnp.ndarray)
+        assert res.shape == meas_shape + par_shape
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        contraction = f"ms,mts{meas_letter},mt...->{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+        assert np.allclose(res, expected * prefactor)
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 7)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 7])
+    def test_single_measure_single_shots_broadcast(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for a single measurement
+        per shift and splitting time, and with a single setting of shots. This corresponds to
+        ``single_measure=True and has_partitioned_shots=False``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        This is the variant of the previous test that uses broadcasting.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (num_shifts * multi_term, (num_split_times + 2)) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_shifts,
+            num_split_times + 2,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=True,
+            has_partitioned_shots=False,
+            use_broadcasting=True,
+        )
+
+        assert isinstance(res, jnp.ndarray)
+        assert res.shape == meas_shape + par_shape
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        # Slice away excess results
+        _results = _results[:, :, 1:-1]
+        # With broadcasting, the axes of different shifts and splitting times are
+        # switched for the results tensor, compared to without broadcasting.
+        contraction = f"ms,mst{meas_letter},mt...->{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+        assert np.allclose(res, expected * prefactor)
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_multi_measure_or_multi_shots(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with a single setting of shots, or alternatively with
+        a single measurement but multiple shot settings. This corresponds to
+        ``single_measure=False and has_partitioned_shots=False`` or
+        ``single_measure=True and has_partitioned_shots=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        num_meas_or_shots = 5
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (
+            num_split_times * num_shifts * multi_term,
+            num_meas_or_shots,
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_split_times,
+            num_shifts,
+            num_meas_or_shots,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res0, res1 = (
+            _parshift_and_integrate(
+                results,
+                cjacs,
+                prefactor,
+                psr_coeffs,
+                single_measure=_bool,
+                has_partitioned_shots=_bool,
+                use_broadcasting=False,
+            )
+            for _bool in [False, True]
+        )
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        contraction = f"ms,mtsn{meas_letter},mt...->n{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+
+        for res in [res0, res1]:
+            assert isinstance(res, tuple)
+            assert len(res) == num_meas_or_shots
+            assert all(isinstance(r, jnp.ndarray) for r in res)
+            assert all(r.shape == meas_shape + par_shape for r in res)
+
+            assert np.allclose(np.stack(res), expected * prefactor)
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_multi_measure_or_multi_shots_broadcast(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with a single setting of shots, or alternatively with
+        a single measurement but multiple shot settings. This corresponds to
+        ``single_measure=False and has_partitioned_shots=False`` or
+        ``single_measure=True and has_partitioned_shots=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        This is the variant of the previous test that uses broadcasting.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        num_meas_or_shots = 5
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (
+            num_shifts * multi_term,
+            num_meas_or_shots,
+            (num_split_times + 2),
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_shifts,
+            num_meas_or_shots,
+            num_split_times + 2,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res0, res1 = (
+            _parshift_and_integrate(
+                results,
+                cjacs,
+                prefactor,
+                psr_coeffs,
+                single_measure=_bool,
+                has_partitioned_shots=_bool,
+                use_broadcasting=True,
+            )
+            for _bool in [False, True]
+        )
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        # Slice away excess results
+        _results = _results[:, :, :, 1:-1]
+        # With broadcasting, the axes of different shifts and splitting times are
+        # switched for the results tensor, compared to without broadcasting.
+        contraction = f"ms,msnt{meas_letter},mt...->n{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+
+        for res in [res0, res1]:
+            assert isinstance(res, tuple)
+            assert len(res) == num_meas_or_shots
+            assert all(isinstance(r, jnp.ndarray) for r in res)
+            assert all(r.shape == meas_shape + par_shape for r in res)
+
+            assert np.allclose(np.stack(res), expected * prefactor)
+
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_multi_measure_multi_shots(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with multiple shot settings. This corresponds to
+        ``single_measure=False and has_partitioned_shots=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        num_shots = 3
+        num_meas = 5
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (
+            num_split_times * num_shifts * multi_term,
+            num_shots,
+            num_meas,
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_split_times,
+            num_shifts,
+            num_shots,
+            num_meas,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=False,
+            has_partitioned_shots=True,
+            use_broadcasting=False,
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == num_shots
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == num_meas
+            assert all(isinstance(_r, jnp.ndarray) for _r in r)
+            assert all(_r.shape == meas_shape + par_shape for _r in r)
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        contraction = f"ms,mtsNn{meas_letter},mt...->Nn{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+        assert np.allclose(np.stack(res), expected * prefactor)
+
+    # TODO: Once #2690 is resolved and the corresponding error is removed,
+    # unskip the following test
+    @pytest.mark.skip("Broadcasting, shot vector and multi-measurement not supported.")
+    @pytest.mark.parametrize("multi_term", [1, 4])
+    @pytest.mark.parametrize("meas_shape", [(), (4,)])
+    @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
+    @pytest.mark.parametrize("num_shifts", [2, 5])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_multi_measure_multi_shots_broadcast(
+        self, num_split_times, num_shifts, par_shape, multi_term, meas_shape
+    ):
+        """Test that ``_parshift_and_integrate`` works with results for multiple measurements
+        per shift and splitting time and with multiple shot settings. This corresponds to
+        ``single_measure=False and has_partitioned_shots=True``. The test is parametrized with whether
+        or not there are multiple Hamiltonian terms to take into account (and sum their
+        contributions), with the shape of the single measurement and of the parameter, with
+        the number of shifts in the shift rule and with the number of splitting times.
+        This is the variant of the previous test that uses broadcasting.
+        """
+        from jax import numpy as jnp
+
+        np.random.seed(3751)
+
+        num_shots = 3
+        num_meas = 5
+
+        cjac_shape = (num_split_times,) + par_shape
+        if multi_term > 1:
+            cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
+            psr_coeffs = tuple(np.random.random(num_shifts) for _ in range(multi_term))
+        else:
+            cjacs = np.random.random(cjac_shape)
+            psr_coeffs = np.random.random(num_shifts)
+
+        results_shape = (
+            num_shifts * multi_term,
+            num_shots,
+            num_meas,
+            (num_split_times + 2),
+        ) + meas_shape
+        new_results_shape = (
+            multi_term,
+            num_shifts,
+            num_shots,
+            num_meas,
+            num_split_times + 2,
+        ) + meas_shape
+        results = np.random.random(results_shape)
+
+        prefactor = 0.3214
+
+        res = _parshift_and_integrate(
+            results,
+            cjacs,
+            prefactor,
+            psr_coeffs,
+            single_measure=False,
+            has_partitioned_shots=True,
+            use_broadcasting=True,
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == num_shots
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == num_meas
+            assert all(isinstance(_r, jnp.ndarray) for _r in r)
+            assert all(_r.shape == meas_shape + par_shape for _r in r)
+
+        _results = np.reshape(results, new_results_shape)
+        _cjacs = np.stack(cjacs).reshape((multi_term,) + cjac_shape)
+        _psr_coeffs = np.stack(psr_coeffs).reshape((multi_term, num_shifts))
+        meas_letter = "" if meas_shape == () else "a"
+        # Slice away excess results
+        _results = _results[:, :, :, :, 1:-1]
+        # With broadcasting, the axes of different shifts and splitting times are
+        # switched for the results tensor, compared to without broadcasting.
+        contraction = f"ms,msNnt{meas_letter},mt...->Nn{meas_letter}..."
+        expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
+        assert np.allclose(np.stack(res), expected * prefactor)
+
+    # TODO: Once #2690 is resolved and the corresponding error is removed,
+    # remove the following test
+    def test_raises_multi_measure_multi_shots_broadcasting(self):
+        """Test that an error is raised if multiple measurements, a shot vector and broadcasting
+        all are used simultaneously."""
+
+        _match = "Broadcasting, multiple measurements and shot vectors are currently"
+        with pytest.raises(NotImplementedError, match=_match):
+            # Dummy input values that are barely used before raising the error.
+            _parshift_and_integrate(
+                [],
+                [],
+                [],
+                [],
+                single_measure=False,
+                has_partitioned_shots=True,
+                use_broadcasting=True,
+            )
 
 
 @pytest.mark.jax
@@ -317,6 +793,26 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="Broadcasting is not supported for tapes that"):
             stoch_pulse_grad(tape, use_broadcasting=True)
 
+    @pytest.mark.parametrize(
+        "reorder_fn",
+        [
+            lambda x, _: [x[0] + 10, x[0] - 2],
+            lambda x, _: [[x[0], x[0] + 10], [x[0] - 2, x[0]]],
+        ],
+    )
+    def test_raises_for_invalid_reorder_fn(self, reorder_fn):
+        """Test that an error is raised for an invalid reordering function of
+        a HardwareHamiltonian."""
+
+        H = qml.pulse.transmon_drive(qml.pulse.constant, 0.0, 0.0, wires=[0])
+        H.reorder_fn = reorder_fn
+        ops = [qml.evolve(H)([0.152], 0.3)]
+        tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
+        tape.trainable_params = [0]
+        _match = "Only permutations, fan-out or fan-in functions are allowed as reordering"
+        with pytest.raises(ValueError, match=_match):
+            stoch_pulse_grad(tape)
+
 
 @pytest.mark.jax
 class TestStochPulseGrad:
@@ -355,6 +851,7 @@ class TestStochPulseGrad:
     def test_all_zero_grads(self, ops, arg, exp_shapes):
         """Test that a zero gradient is returned when all trainable parameters are
         identified to have zero gradient in advance."""
+        import jax
         from jax import numpy as jnp
 
         arg = None if arg is None else jnp.array(arg)
@@ -371,6 +868,7 @@ class TestStochPulseGrad:
                 assert all(qml.math.allclose(_r, np.zeros(_sh)) for _r, _sh in zip(r, exp_shape))
             else:
                 assert qml.math.allclose(r, np.zeros(exp_shape))
+        jax.clear_caches()
 
     def test_some_zero_grads(self):
         """Test that a zero gradient is returned for trainable parameters that are
@@ -393,10 +891,11 @@ class TestStochPulseGrad:
         assert isinstance(res, tuple) and len(res) == 2
         assert qml.math.allclose(res[0][0], np.zeros(5))
         assert qml.math.allclose(res[1][0], np.zeros((2, 5)))
+        jax.clear_caches()
 
     @pytest.mark.parametrize("num_split_times", [1, 3])
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6), (0.1, 0.9, 1.2)])
-    def test_constant_pauliword(self, num_split_times, t):
+    def test_constant_ry(self, num_split_times, t):
         """Test that the derivative of a pulse generated by a constant Hamiltonian,
         which is a Pauli word, is computed correctly."""
         import jax
@@ -419,10 +918,11 @@ class TestStochPulseGrad:
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("num_split_times", [1, 3])
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6), (0.1, 0.9, 1.2)])
-    def test_constant_paulisentence(self, num_split_times, t):
+    def test_constant_ry_rescaled(self, num_split_times, t):
         """Test that the derivative of a pulse generated by a constant Hamiltonian,
         which is a Pauli sentence, is computed correctly."""
         import jax
@@ -449,11 +949,13 @@ class TestStochPulseGrad:
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t * prefactor)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_sin_envelope_rx_expval(self, t):
+    def test_sin_envelope_rz_expval(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
         is computed correctly when returning an expectation value."""
+        import jax
         import jax.numpy as jnp
 
         T = t if isinstance(t, tuple) else (0, t)
@@ -486,11 +988,13 @@ class TestStochPulseGrad:
         exp_grad = -2 * jnp.sin(2 * theta) * theta_jac
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(res, exp_grad, atol=0.2)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
     def test_sin_envelope_rx_probs(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
         is computed correctly when returning probabilities."""
+        import jax
         import jax.numpy as jnp
 
         T = t if isinstance(t, tuple) else (0, t)
@@ -525,11 +1029,13 @@ class TestStochPulseGrad:
         exp_jac = jnp.tensordot(probs_jac, theta_jac, axes=0)
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(jac, exp_jac, atol=0.2)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
     def test_sin_envelope_rx_expval_probs(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
         is computed correctly when returning expectation."""
+        import jax
         import jax.numpy as jnp
 
         T = t if isinstance(t, tuple) else (0, t)
@@ -568,11 +1074,13 @@ class TestStochPulseGrad:
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         for j, e in zip(jac, exp_jac):
             assert qml.math.allclose(j, e, atol=0.2)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
     def test_pwc_envelope_rx(self, t):
         """Test that the derivative of a pulse generated by a piecewise constant Hamiltonian
         is computed correctly."""
+        import jax
         import jax.numpy as jnp
 
         T = t if isinstance(t, tuple) else (0, t)
@@ -596,6 +1104,7 @@ class TestStochPulseGrad:
         assert qml.math.allclose(
             res, -2 * jnp.sin(2 * p) * (T[1] - T[0]) / len(params[0]), atol=0.01
         )
+        jax.clear_caches()
 
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6)])
     def test_constant_commuting(self, t):
@@ -626,6 +1135,7 @@ class TestStochPulseGrad:
             -2 * jnp.sin(2 * p[1]) * jnp.cos(2 * p[0]) * (T[1] - T[0]),
         ]
         assert qml.math.allclose(res, exp_grad)
+        jax.clear_caches()
 
     def test_advanced_pulse(self):
         """Test the derivative of a more complex pulse."""
@@ -663,6 +1173,7 @@ class TestStochPulseGrad:
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode)(params)
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        jax.clear_caches()
 
     def test_randomness(self):
         """Test that the derivative of a pulse is exactly the same when reusing a seed and
@@ -701,6 +1212,7 @@ class TestStochPulseGrad:
 
         assert res_a_0 == res_a_1
         assert not res_a_0 == res_b
+        jax.clear_caches()
 
     def test_two_pulses(self):
         """Test that the derivatives of two pulses in a circuit are computed correctly."""
@@ -732,6 +1244,7 @@ class TestStochPulseGrad:
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        jax.clear_caches()
 
     @pytest.mark.parametrize(
         "generator, exp_num_tapes, prefactor",
@@ -769,6 +1282,7 @@ class TestStochPulseGrad:
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * (T[1] - T[0]) * prefactor)
         res_jit = jax.jit(fun)(params)
         assert qml.math.isclose(res, res_jit)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
@@ -781,8 +1295,56 @@ class TestStochPulseGrad:
 
 
 @pytest.mark.jax
-class TestStochPulseGradQNodeIntegration:
-    """Test that stoch_pulse_grad integrates correctly with QNodes."""
+class TestStochPulseGradQNode:
+    """Test that pulse_generator integrates correctly with QNodes."""
+
+    def test_raises_for_application_to_qnodes(self):
+        """Test that an error is raised when applying ``stoch_pulse_grad``
+        to a QNode directly."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], 0.2)
+            return qml.expval(qml.PauliZ(0))
+
+        _match = "stochastic pulse parameter-shift gradient transform to a QNode directly"
+        with pytest.raises(NotImplementedError, match=_match):
+            stoch_pulse_grad(circuit, num_split_times=2)
+
+    # TODO: include the following tests when #4225 is resolved.
+    @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
+    def test_qnode_expval_single_par(self):
+        """Test that a simple qnode that returns an expectation value
+        can be differentiated with pulse_generator."""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.2
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(ham_single_q_const)([params], T)
+            return qml.expval(qml.PauliZ(0))
+
+        params = jnp.array(0.4)
+        with qml.Tracker(dev) as tracker:
+            _match = "stochastic pulse parameter-shift .* scalar pulse parameters."
+            grad = stoch_pulse_grad(circuit, num_split_times=2)(params)
+
+        p = params * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        assert jnp.allclose(grad, exp_grad)
+        assert tracker.totals["executions"] == 4  # two shifted tapes, two splitting times
+
+
+@pytest.mark.jax
+class TestStochPulseGradIntegration:
+    """Test that stoch_pulse_grad integrates correctly with QNodes and ML interfaces."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
@@ -809,6 +1371,7 @@ class TestStochPulseGradQNodeIntegration:
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
@@ -839,6 +1402,7 @@ class TestStochPulseGradQNodeIntegration:
         p_y = params[1][0] * T_y
         exp_grad = [[-2 * jnp.sin(2 * (p_x + p_y)) * T_x], [-2 * jnp.sin(2 * (p_x + p_y)) * T_y]]
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
@@ -865,6 +1429,7 @@ class TestStochPulseGradQNodeIntegration:
         p = params[0] * T
         exp_jac = jnp.array([-1, 1]) * jnp.sin(2 * p) * T
         assert qml.math.allclose(jac, exp_jac, atol=tol, rtol=0.0)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
@@ -897,6 +1462,7 @@ class TestStochPulseGradQNodeIntegration:
         else:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        jax.clear_caches()
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("num_split_times", [1, 2])
@@ -923,6 +1489,7 @@ class TestStochPulseGradQNodeIntegration:
         exp_grad = -2 * jnp.sin(2 * p) * T
         jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
+        jax.clear_caches()
 
     @pytest.mark.slow
     def test_advanced_qnode(self):
@@ -963,8 +1530,9 @@ class TestStochPulseGradQNodeIntegration:
         assert all(
             qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
+        jax.clear_caches()
 
-    def test_multi_return_broadcasting_shot_vector_raises(self):
+    def test_multi_return_broadcasting_multi_shots_raises(self):
         """Test that a simple qnode that returns an expectation value and probabilities
         can be differentiated with stoch_pulse_grad with use_broadcasting."""
         import jax
@@ -990,6 +1558,7 @@ class TestStochPulseGradQNodeIntegration:
         params = [jnp.array(0.4)]
         with pytest.raises(NotImplementedError, match="Broadcasting, multiple measurements and"):
             jax.jacobian(circuit)(params)
+        jax.clear_caches()
 
     # TODO: delete error test above and uncomment the following test case once #2690 is resolved.
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1)])  # , ([100, 100], 0.1)])
@@ -1027,6 +1596,7 @@ class TestStochPulseGradQNodeIntegration:
         else:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_broadcasting_coincides_with_nonbroadcasting(self, num_split_times):
@@ -1071,6 +1641,108 @@ class TestStochPulseGradQNodeIntegration:
         jac_no_bc = jax.jacobian(circuit_no_bc)(params)
         for j0, j1 in zip(jac_bc, jac_no_bc):
             assert qml.math.allclose(j0, j1)
+        jax.clear_caches()
+
+    def test_with_drive_exact(self):
+        """Test that a HardwareHamiltonian only containing a drive is differentiated correctly
+        for a constant amplitude and zero frequency and phase."""
+        import jax
+
+        timespan = 0.4
+
+        H = qml.pulse.transmon_drive(qml.pulse.constant, 0.0, 0.0, wires=[0])
+        atol = 1e-5
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        def ansatz(params):
+            qml.evolve(H, atol=atol)(params, t=timespan)
+            return qml.expval(qml.PauliZ(0))
+
+        cost = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+        cost_jax = qml.QNode(ansatz, dev, interface="jax")
+        params = (0.42,)
+
+        gradfn = jax.grad(cost)
+        res = gradfn(params)
+        exact = jax.grad(cost_jax)(params)
+        assert qml.math.allclose(res, exact, atol=6e-5)
+        jax.clear_caches()
+
+    def test_with_drive_approx(self):
+        """Test that a HardwareHamiltonian only containing a drive is differentiated
+        approximately correctly for a constant phase and zero frequency."""
+        import jax
+
+        timespan = 0.1
+
+        H = qml.pulse.transmon_drive(1 / (2 * np.pi), qml.pulse.constant, 0.0, wires=[0])
+        atol = 1e-5
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        def ansatz(params):
+            qml.evolve(H, atol=atol)(params, t=timespan)
+            return qml.expval(qml.PauliX(0))
+
+        cost = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=7,
+            use_broadcasting=True,
+            sampler_seed=4123,
+        )
+        cost_jax = qml.QNode(ansatz, dev, interface="jax")
+        params = (0.42,)
+
+        gradfn = jax.grad(cost)
+        res = gradfn(params)
+        exact = jax.grad(cost_jax)(params)
+        assert qml.math.allclose(res, exact, atol=1e-3)
+        jax.clear_caches()
+
+    @pytest.mark.parametrize("num_params", [1, 2])
+    def test_with_two_drives(self, num_params):
+        """Test that a HardwareHamiltonian only containing two drives
+        is differentiated approximately correctly. The two cases
+        of the parametrization test the cases where reordered parameters
+        are returned as inner lists and where they remain scalars."""
+        import jax
+
+        timespan = 0.1
+
+        if num_params == 1:
+            amps = [1 / 5, 1 / 6]
+            params = (0.42, -0.91)
+        else:
+            amps = [qml.pulse.constant] * 2
+            params = (1 / (2 * np.pi), 0.42, 1 / 5, -0.91)
+        H = qml.pulse.rydberg_drive(
+            amps[0], qml.pulse.constant, 0.0, wires=[0]
+        ) + qml.pulse.rydberg_drive(amps[1], qml.pulse.constant, 0.0, wires=[1])
+        atol = 1e-5
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        def ansatz(params):
+            qml.evolve(H, atol=atol)(params, t=timespan)
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+
+        cost = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=7,
+            use_broadcasting=True,
+            sampler_seed=4123,
+        )
+        cost_jax = qml.QNode(ansatz, dev, interface="jax")
+
+        gradfn = jax.grad(cost)
+        res = gradfn(params)
+        exact = jax.grad(cost_jax)(params)
+        assert qml.math.allclose(res, exact, atol=1e-3)
+        jax.clear_caches()
 
 
 @pytest.mark.jax

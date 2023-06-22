@@ -19,6 +19,7 @@ import cmath
 # pylint: disable=protected-access,cell-var-from-loop
 import math
 
+from functools import partial
 import pytest
 
 import pennylane as qml
@@ -2359,6 +2360,83 @@ class TestHamiltonianSupport:
         assert len(call_args.operations) == 0
         assert len(call_args.measurements) == 1
         assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
+
+
+@pytest.mark.parametrize("is_state_batched", [False, True])
+class TestSumSupport:
+    """Tests for custom Sum support in DefaultQubit."""
+
+    @staticmethod
+    def expected_grad(is_state_batched):
+        if is_state_batched:
+            return [[-np.sin(1.3), -np.sin(0.4)], [np.cos(1.3), np.cos(0.4)]]
+        return [-np.sin(1.3), np.cos(1.3)]
+
+    @staticmethod
+    def circuit(y, z, is_state_batched):
+        rx_param = [1.3, 0.4] if is_state_batched else 1.3
+        qml.RX(rx_param, 0)
+        return qml.expval(
+            qml.sum(
+                qml.s_prod(y, qml.PauliY(0)),
+                qml.s_prod(z, qml.PauliZ(0)),
+            )
+        )
+
+    def test_super_expval_not_called(self, is_state_batched, mocker):
+        """Tests basic expval result, and ensures QubitDevice.expval is not called."""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.QubitDevice, "expval")
+        obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
+        assert np.isclose(dev.expval(obs), 0.2)
+        spy.assert_not_called()
+
+    @pytest.mark.autograd
+    def test_trainable_autograd(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with autograd."""
+        if is_state_batched:
+            pytest.skip(msg="Broadcasting, qml.jacobian and new return types do not work together")
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+        y, z = np.array([1.1, 2.2])
+        actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
+
+    @pytest.mark.torch
+    def test_trainable_torch(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="torch")
+        y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
+        _qnode = partial(qnode, is_state_batched=is_state_batched)
+        actual = torch.stack(torch.autograd.functional.jacobian(_qnode, (y, z)))
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
+
+    @pytest.mark.tf
+    def test_trainable_tf(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with tf."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
+        y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
+        with tf.GradientTape() as tape:
+            res = qnode(y, z, is_state_batched)
+        actual = tape.jacobian(res, [y, z])
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
+
+    @pytest.mark.jax
+    def test_trainable_jax(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="jax")
+        y, z = jax.numpy.array([1.1, 2.2])
+        actual = jax.jacobian(qnode, argnums=[0, 1])(y, z, is_state_batched)
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
 
 
 class TestGetBatchSize:

@@ -298,7 +298,7 @@ class QubitDevice(Device):
 
         * :meth:`~.probability`
 
-        Additional keyword arguments may be passed to the this method
+        Additional keyword arguments may be passed to this method
         that can be utilised by :meth:`apply`. An example would be passing
         the ``QNode`` hash that can be used later for parametric compilation.
 
@@ -1649,8 +1649,10 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if observable.name == "Projector" and len(observable.parameters[0]) == len(
+            observable.wires
+        ):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1679,8 +1681,10 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if observable.name == "Projector" and len(observable.parameters[0]) == len(
+            observable.wires
+        ):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1909,6 +1913,11 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        if tape.batch_size is not None:
+            raise qml.QuantumFunctionError(
+                "Parameter broadcasting is not supported with adjoint differentiation"
+            )
+
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment

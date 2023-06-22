@@ -152,6 +152,31 @@ class Pow(ScalarSymbolicOp):
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], z=data[1])
+      
+    _operation_type = None  # type if base inherits from operation and not observable
+    _operation_observable_type = None  # type if base inherits from both operation and observable
+    _observable_type = None  # type if base inherits from observable and not oepration
+
+    # pylint: disable=unused-argument
+    def __new__(cls, base=None, z=1, do_queue=None, id=None):
+        """Mixes in parents based on inheritance structure of base.
+
+        Though all the types will be named "Pow", their *identity* and location in memory will be
+        different based on ``base``'s inheritance.  We cache the different types in private class
+        variables so that:
+
+        >>> Pow(op, z).__class__ is Pow(op, z).__class__
+        True
+        >>> type(Pow(op, z)) == type(Pow(op, z))
+        True
+        >>> isinstance(Pow(op, z), type(Pow(op, z)))
+        True
+        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
+        True
+        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        True
+
+        """
 
     def __init__(self, base=None, z=1, do_queue=None, id=None):
         self.hyperparameters["z"] = z
