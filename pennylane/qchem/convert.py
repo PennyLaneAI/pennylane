@@ -332,6 +332,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
     + (-0.0548) [X0 X1 Y2 Y3]
 
     If the new op-math is active, an arithmetic operator is returned instead.
+
     >>> qml.operation.enable_new_opmath()
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
