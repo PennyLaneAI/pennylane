@@ -43,3 +43,9 @@ class TestDatasetsNone:
         assert bool(dsets_none) is False
         assert dsets_none.info["type_id"] == "none"
         assert dsets_none.bind.shape is None
+
+    def test_default_value():
+        dsets_none = DatasetNone(None)
+        dsets_default = DatasetNone()
+
+        assert dsets_none == dsets_default
