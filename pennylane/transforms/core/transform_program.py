@@ -14,7 +14,34 @@
 """
 This module contains the transform program class.
 """
+from typing import Tuple, Callable
+
+from pennylane.typing import Result, ResultBatch
+
 from .transform_dispatcher import TransformContainer, TransformError
+
+from pennylane.transforms import map_batch_transform
+
+
+def apply_transform_program(program, circuits):
+
+    post_processing_queue = []
+    for transform_container in program:
+
+        def transform_partial(tape):
+            return transform_container.transform(
+                tape, *transform_container.args, **transform_container.kwargs
+            )
+
+        circuits, post_processing_fn = map_batch_transform(transform_partial, circuits)
+        post_processing_queue.append(post_processing_fn)
+
+    def total_post_processing_fn(results: ResultBatch) -> ResultBatch:
+        for fn in post_processing_queue[::-1]:
+            results = fn(results)
+        return results
+
+    return circuits, total_post_processing_fn
 
 
 class TransformProgram:

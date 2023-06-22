@@ -94,6 +94,9 @@ class DefaultQubit2(Device):
 
     """
 
+    def __repr__(self):
+        return "DefaultQubit2"
+
     @property
     def name(self):
         """The name of the device."""
