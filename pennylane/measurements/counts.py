@@ -56,6 +56,12 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
 
+    .. note::
+
+        QNodes that return counts cannot, in general, be differentiated, since the derivative
+        with respect to a stochastic process is ill-defined. Please, refer to
+        :func:`~.pennylane.sample` if differentiability is required.
+
     **Example**
 
     .. code-block:: python3
@@ -116,7 +122,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     .. code-block:: python3
 
         @qml.qnode(dev)
-        def circuit(x):
+        def circuit():
             qml.PauliX(wires=0)
             return qml.counts(all_outcomes=True)
 
@@ -125,13 +131,6 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     >>> circuit()
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
