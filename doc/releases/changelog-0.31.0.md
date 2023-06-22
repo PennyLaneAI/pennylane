@@ -187,7 +187,9 @@
   an execution.
   [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
 
-* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
+* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  
+  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a 
+  request for `"best"`, instead of a string.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
 * `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
