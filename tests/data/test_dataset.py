@@ -53,6 +53,24 @@ class TestDataset:
         assert (ds.y == np.array([1, 2, 3])).all()
         assert ds.z == "abc"
 
+    @pytest.mark.parametrize("data_name, expect", [(None, "generic"), ("other_name", "other_name")])
+    def test_init_dataname(self, data_name, expect):
+        """Test that a base dataset's data_name can be set on init, and that
+        it defaults to the class data name if none is provided."""
+        ds = Dataset(data_name=data_name)
+
+        assert ds.data_name == expect
+
+    @pytest.mark.parametrize(
+        "data_name, expect", [(None, "my_dataset"), ("other_name", "other_name")]
+    )
+    def test_subclass_init_dataname(self, data_name, expect):
+        """Test that a subclassed datasets' data_name can be set on init, and that
+        it defaults to the class data name if none is provided."""
+        ds = MyDataset(x="1", y="2", description="abc", data_name=data_name)
+
+        assert ds.data_name == expect
+
     def test_setattr(self):
         """Test that __setattrr__ successfully sets new attributes."""
         ds = Dataset()

@@ -127,11 +127,14 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
     validate: InitVar[bool] = _init_arg(default=False, kw_only=False)
+    data_name_: Optional[str] = _init_arg(default=None, alias="data_name")
 
     def __init__(
         self,
         bind: Optional[HDF5Group] = None,
         validate: bool = False,
+        *,
+        data_name: Optional[str] = None,
         **attrs: Any,
     ):
         """
@@ -143,6 +146,9 @@ class Dataset(MapperMixin, _DatasetTransform):
                 in ``bind`` will be loaded into this dataset.
             validate: If ``True``, all declared fields of this dataset must
                 be provided in ``attrs`` or contained in ``bind``.
+            data_name: String describing the type of data this datasets contains, e.g
+                'qchem' for quantum chemistry. Defaults to the data name defined by
+                the class, this is 'generic' for base datasets.
             **attrs: Attributes to add to this dataset.
         """
         if isinstance(bind, (h5py.Group, h5py.File)):
@@ -150,7 +156,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         else:
             self._bind = hdf5.create_group()
 
-        self._init_bind()
+        self._init_bind(data_name)
 
         for name, attr in attrs.items():
             setattr(self, name, attr)
@@ -303,12 +309,12 @@ class Dataset(MapperMixin, _DatasetTransform):
                 f"__init__() missing {len(missing)} required keyword argument(s): {missing_args}"
             )
 
-    def _init_bind(self):
+    def _init_bind(self, data_name: Optional[str] = None):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
                 self.info["type_id"] = self.type_id
             if "data_name" not in self.info:
-                self.info["data_name"] = self.__data_name__
+                self.info["data_name"] = data_name or self.__data_name__
 
     def __setattr__(self, __name: str, __value: Union[Any, DatasetAttribute]) -> None:
         if __name.startswith("_") or __name in type(self).__dict__:
