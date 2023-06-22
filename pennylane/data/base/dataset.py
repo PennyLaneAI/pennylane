@@ -99,7 +99,9 @@ def _init_arg(  # pylint: disable=unused-argument
     return _InitArg
 
 
-@dataclass_transform(order_default=False, eq_default=False, field_specifiers=(field, _InitArg))
+@dataclass_transform(
+    order_default=False, eq_default=False, kw_only_default=True, field_specifiers=(field, _init_arg)
+)
 class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """This base class that tells the type system that ``Dataset`` behaves like a dataclass.
     See: https://peps.python.org/pep-0681/
@@ -115,7 +117,6 @@ class Dataset(MapperMixin, _DatasetTransform):
             this contains attributes declared on the class, not attributes added to
             an instance. Use ``attrs`` to view all attributes on an instance.
         bind: The HDF5 group that contains this dataset's attributes
-        params: The parameters of this Dataset
     """
 
     Self = TypeVar("Self", bound="Dataset")
@@ -124,8 +125,8 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
 
-    bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=True)
-    validate: InitVar[bool] = _init_arg(default=False, kw_only=True)
+    bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
+    validate: InitVar[bool] = _init_arg(default=False, kw_only=False)
 
     def __init__(
         self,

@@ -21,7 +21,7 @@ import pytest
 
 
 FOLDERMAP = {
-    "__name": "category",
+    "__name": "data_name",
     "qchem": {
         "__name": "molname",
         "O2": {
@@ -92,7 +92,7 @@ class TestFolderMapView:
     @pytest.mark.parametrize(
         "init, expect",
         [
-            (FOLDERMAP, "category"),
+            (FOLDERMAP, "data_name"),
             (FOLDERMAP["qchem"], "molname"),
             (FOLDERMAP["qchem"]["O2"], "basis"),
             (FOLDERMAP["qchem"]["O2"]["STO-3G"], "bondlength"),
