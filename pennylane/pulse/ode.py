@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # pylint: skip-file
+# fmt: off
 
 """JAX-based Dormand-Prince ODE integration with adaptive stepsize.
 
