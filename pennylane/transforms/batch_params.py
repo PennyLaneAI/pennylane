@@ -151,7 +151,6 @@ def batch_params(tape, all_operations=False):
 
     new_preps = [[] for _ in range(batch_dim)]
     new_ops = [[] for _ in range(batch_dim)]
-    new_measurements = [[] for _ in range(batch_dim)]
 
     idx = 0
     for prep in tape.prep:
@@ -189,28 +188,9 @@ def batch_params(tape, all_operations=False):
 
         idx += len(op.data)
 
-    for m in tape.measurements:
-        # determine if any parameters of the measurement are batched
-        if m.obs is not None and any(i in indices for i in range(idx, idx + len(m.obs.data))):
-            for b in range(batch_dim):
-                new_params = tuple(
-                    params[i][b] if i in indices else params[i]
-                    for i in range(idx, idx + len(m.obs.data))
-                )
-                new_op = qml.ops.functions.bind_new_parameters(m.obs, new_params)
-                new_m = m.copy()
-                new_m.obs = new_op
-                new_measurements[b].append(new_m)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(batch_dim):
-                new_measurements[b].append(m)
-
-        idx += 0 if m.obs is None else len(m.obs.data)
-
     output_tapes = []
-    for prep, ops, ms in zip(new_preps, new_ops, new_measurements):
-        new_tape = qml.tape.QuantumScript(ops, ms, prep, shots=tape.shots)
+    for prep, ops in zip(new_preps, new_ops):
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, prep, shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 

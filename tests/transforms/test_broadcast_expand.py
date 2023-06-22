@@ -113,6 +113,22 @@ class TestBroadcastExpand:
         with pytest.raises(ValueError, match="The provided tape is not broadcasted."):
             qml.transforms.broadcast_expand(tape)
 
+    def test_state_prep(self):
+        """Test that expansion works for state preparations"""
+        ops = [qml.CNOT([0, 1])]
+        meas = [qml.expval(qml.PauliZ(1))]
+        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        tape = qml.tape.QuantumScript(ops, meas, prep)
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == 4
+        assert all(t.batch_size is None for t in tapes)
+
+        result = fn(qml.execute(tapes, dev, None))
+        expected = np.array([1, -1, -1, 1])
+
+        assert qml.math.allclose(result, expected)
+
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params, size", parameters_and_size)

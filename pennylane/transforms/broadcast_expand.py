@@ -98,13 +98,10 @@ def broadcast_expand(tape):
 
     new_preps = [[] for _ in range(num_tapes)]
     new_ops = [[] for _ in range(num_tapes)]
-    new_measurements = [[] for _ in range(num_tapes)]
 
     for prep in tape.prep:
         # determine if any parameters of the operator are batched
-        if prep.batch_size and any(
-            qml.math.ndim(p) != prep.ndim_params[j] for j, p in enumerate(prep.data)
-        ):
+        if prep.batch_size:
             for b in range(num_tapes):
                 new_params = tuple(
                     p if qml.math.ndim(p) == prep.ndim_params[j] else p[b]
@@ -120,9 +117,7 @@ def broadcast_expand(tape):
     ops = [op for op in tape.operations if op not in tape.prep]
     for op in ops:
         # determine if any parameters of the operator are batched
-        if op.batch_size and any(
-            qml.math.ndim(p) != op.ndim_params[j] for j, p in enumerate(op.data)
-        ):
+        if op.batch_size:
             for b in range(num_tapes):
                 new_params = tuple(
                     p if qml.math.ndim(p) == op.ndim_params[j] else p[b]
@@ -135,30 +130,9 @@ def broadcast_expand(tape):
             for b in range(num_tapes):
                 new_ops[b].append(op)
 
-    for m in tape.measurements:
-        # determine if any parameters of the operator are batched
-        if (
-            m.obs is not None
-            and m.obs.batch_size
-            and any(qml.math.ndim(p) != m.obs.ndim_params[j] for j, p in enumerate(m.obs.data))
-        ):
-            for b in range(num_tapes):
-                new_params = tuple(
-                    p if qml.math.ndim(p) == m.obs.ndim_params[j] else p[b]
-                    for j, p in enumerate(m.obs.data)
-                )
-                new_op = qml.ops.functions.bind_new_parameters(m.obs, new_params)
-                new_m = m.copy()
-                new_m.obs = new_op
-                new_measurements[b].append(new_m)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(num_tapes):
-                new_measurements[b].append(m)
-
     output_tapes = []
-    for prep, ops, ms in zip(new_preps, new_ops, new_measurements):
-        new_tape = qml.tape.QuantumScript(ops, ms, prep, shots=tape.shots)
+    for prep, ops in zip(new_preps, new_ops):
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, prep, shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
