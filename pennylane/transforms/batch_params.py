@@ -125,7 +125,7 @@ def batch_params(tape, all_operations=False):
     >>> qml.grad(cost_fn)(x, weights)[0]
     -0.30262974103192636
     """
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, no-member
 
     params = tape.get_parameters(trainable_only=False)
     indices = list(range(len(params))) if all_operations else list(tape.trainable_params)
