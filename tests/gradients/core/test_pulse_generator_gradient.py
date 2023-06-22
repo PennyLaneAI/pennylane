@@ -280,7 +280,7 @@ class TestOneParameterGenerators:
         commuting time-dependent terms."""
         import jax
         import jax.numpy as jnp
-        from jax.experimental.ode import odeint
+        from pennylane.pulse.ode import odeint
 
         jax.config.update("jax_enable_x64", True)
 

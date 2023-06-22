@@ -30,7 +30,7 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-    from jax.experimental.ode import odeint
+    from pennylane.pulse.ode import odeint
     from pennylane.core.pytree import HashablePartial
 
     from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree

@@ -27,7 +27,7 @@ try:
     import jax
     import jax.numpy as jnp
     from jax.config import config as jax_config
-    from jax.experimental.ode import odeint
+    from pennylane.pulse.ode import odeint
 
     from pennylane.pulse.parametrized_evolution import make_odefun_and_args
     from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
