@@ -79,6 +79,7 @@ class DefaultQubit2(Device):
     For example, we can use jax to jit computing the derivative:
 
     .. code-block:: python
+
         import jax
 
         @jax.jit
