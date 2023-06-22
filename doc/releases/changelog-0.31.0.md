@@ -34,7 +34,7 @@
     a(3)
     ```
 
-    These operators can be composed with (`@`), linearly combined with (`+` and `-`), and multiplied by (`*`) other Fermi operators
+    These operators can be composed with (`*`) and linearly combined with (`+` and `-`) other Fermi operators
     to create arbitrary fermionic Hamiltonians. Multiplying several Fermi operators together creates an operator that we call a Fermi word:
 
     ```pycon
