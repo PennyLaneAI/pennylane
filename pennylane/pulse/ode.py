@@ -43,6 +43,49 @@ from jax._src import linear_util as lu
 map = safe_map
 zip = safe_zip
 
+"""Added by me
+"""
+def flatten_separate_int_arrays(tree):
+  """
+  This function takes a tree, flattens it with jax.tree_flatten, and then separates
+  the resulting tree into a flat list of non-integer arrays and a list of integer-dtype
+  arrays.
+
+  It then returns those two flat lists as well as a function to merge the two lists
+  and then calls jax.tree_util.tree_unflatten.
+
+  Necessary to split integer dtype from non integer dtype things.
+  """
+  tree_flat, unflatten_fun = jax.tree_util.tree_flatten(tree)
+  tree_flat_noints, tree_flat_ints, int_indices = _separate_int_arrays(tree_flat)
+  from jax._src.util import as_hashable_function
+  @as_hashable_function(closure=(unflatten_fun, int_indices))
+  def merge_unflatten(args_noint, args_ints):
+    flat_tree = _reinsert_integer_arrays(args_noint, args_ints, int_indices)
+    return jax.tree_util.tree_unflatten(unflatten_fun, flat_tree)
+
+  return tree_flat_noints, tree_flat_ints, merge_unflatten
+
+def _separate_int_arrays(tree_flat):
+  tree_flat_noints = []
+  tree_flat_ints = []
+  int_indices = []
+  for i,arr in enumerate(tree_flat):
+    if jnp.issubdtype(arr.dtype, jnp.integer):
+      int_indices.append(i)
+      tree_flat_ints.append(arr)
+    else:
+      tree_flat_noints.append(arr)
+  return tree_flat_noints, tree_flat_ints, int_indices
+
+def _reinsert_integer_arrays(tree_flat_noints, tree_flat_ints, int_indices):
+  # create a copy to not modify it
+  tree_flat = [arr for arr in tree_flat_noints]
+  for arr, idx in zip(tree_flat_ints, int_indices):
+    tree_flat.insert(idx, arr)
+  return tree_flat
+"""
+"""
 
 def ravel_first_arg(f, unravel):
   return ravel_first_arg_(lu.wrap_init(f), unravel).call_wrapped
@@ -227,38 +270,62 @@ def _odeint_fwd(func, rtol, atol, mxstep, hmax, y0, ts, *args):
 def _odeint_rev(func, rtol, atol, mxstep, hmax, res, g):
   ys, ts, args = res
 
-  def aug_dynamics(augmented_state, t, *args):
+  # split the args in non-integer (non diffable) and integer args
+  args_noint, args_int, merge_args = flatten_separate_int_arrays(args)
+
+  def _func_noint(y, t, *args_noint):
+    # this is func but that only takes as argument non-integer things.
+    # necessary to compute the adjoint dynamics only for those args
+    # that are diffable/transposable
+    _args = merge_args(args_noint, args_int)
+    return func(y, t, *_args)
+
+  def aug_dynamics(augmented_state, t, *args_noint):
     """Original system augmented with vjp_y, vjp_t and vjp_args."""
-    y, y_bar, *_ = augmented_state
+    # does not perform the backward dynamics for integer-dtype args.
+    y, y_noint_bar, *_ = augmented_state
+
     # `t` here is negatice time, so we need to negate again to get back to
     # normal time. See the `odeint` invocation in `scan_fun` below.
-    y_dot, vjpfun = jax.vjp(func, y, -t, *args)
-    return (-y_dot, *vjpfun(y_bar))
+    y_dot, vjpfun = jax.vjp(_func_noint, y, -t, *args_noint)
+    return (-y_dot, *vjpfun(y_noint_bar))
 
   y_bar = g[-1]
   ts_bar = []
   t0_bar = 0.
 
   def scan_fun(carry, i):
-    y_bar, t0_bar, args_bar = carry
+    y_bar, t0_bar, args_noint_bar = carry
     # Compute effect of moving measurement time
     # `t_bar` should not be complex as it represents time
-    t_bar = jnp.dot(func(ys[i], ts[i], *args), g[i]).real
+    t_bar = jnp.dot(_func_noint(ys[i], ts[i], *args_noint), g[i]).real
     t0_bar = t0_bar - t_bar
     # Run augmented system backwards to previous observation
-    _, y_bar, t0_bar, args_bar = odeint(
-        aug_dynamics, (ys[i], y_bar, t0_bar, args_bar),
+    # only pass as argument non-integer arguments and their adjoints (bar)
+    _, y_bar, t0_bar, args_noint_bar = odeint(
+        aug_dynamics, (ys[i], y_bar, t0_bar, args_noint_bar),
         jnp.array([-ts[i], -ts[i - 1]]),
-        *args, rtol=rtol, atol=atol, mxstep=mxstep, hmax=hmax)
-    y_bar, t0_bar, args_bar = tree_map(op.itemgetter(1), (y_bar, t0_bar, args_bar))
+        *args_noint, rtol=rtol, atol=atol, mxstep=mxstep, hmax=hmax)
+    y_bar, t0_bar, args_noint_bar = tree_map(op.itemgetter(1), (y_bar, t0_bar, args_noint_bar))
     # Add gradient from current output
     y_bar = y_bar + g[i - 1]
-    return (y_bar, t0_bar, args_bar), t_bar
+    return (y_bar, t0_bar, args_noint_bar), t_bar
 
-  init_carry = (g[-1], 0., tree_map(jnp.zeros_like, args))
-  (y_bar, t0_bar, args_bar), rev_ts_bar = lax.scan(
+
+  # only perform the reverse dynamics for noint arguments
+  init_carry = (g[-1], 0., tree_map(jnp.zeros_like, args_noint))
+
+  (y_bar, t0_bar, args_noint_bar), rev_ts_bar = lax.scan(
       scan_fun, init_carry, jnp.arange(len(ts) - 1, 0, -1))
+
+  # the gradient wrt integer arguments is zero, so we hardcode it.
+  args_int_bar = tree_map(jnp.zeros_like, args_int)
+
+  # merge the result of the reverse-dynamics for the non-integer arguments
+  # with the strong-zero result for integer arguments
+  args_bar = merge_args(args_noint_bar, args_int_bar)
   ts_bar = jnp.concatenate([jnp.array([t0_bar]), rev_ts_bar[::-1]])
+
   return (y_bar, ts_bar, *args_bar)
 
 _odeint.defvjp(_odeint_fwd, _odeint_rev)
