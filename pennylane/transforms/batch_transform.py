@@ -82,6 +82,9 @@ class batch_transform:
             '''Generates two tapes, one with all RX replaced with RY,
             and the other with all RX replaced with RZ.'''
 
+            ops1 = []
+            ops2 = []
+
             # loop through all operations on the input tape
             for op in tape._ops:
                 if op.name == "RX":
@@ -94,7 +97,7 @@ class batch_transform:
                     ops1.append(op)
                     ops2.append(op)
 
-            tape1 = qml.tape.QuantumTape(ops1, tape.measurments, tape._prep)
+            tape1 = qml.tape.QuantumTape(ops1, tape.measurements, tape._prep)
             tape2 = qml.tape.QuantumTape(ops2, tape.measurements, tape._prep)
 
             def processing_fn(results):
