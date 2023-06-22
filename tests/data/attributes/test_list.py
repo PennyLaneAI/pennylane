@@ -92,6 +92,9 @@ class TestList:
         with pytest.raises(IndexError):
             _ = ds[index]
 
+        with pytest.raises(IndexError):
+            del ds[index]
+
     @pytest.mark.parametrize("index", range(-5, 5))
     def test_insert(self, index):
         """Test that insert on a DatasetList works exactly like inserting
@@ -138,3 +141,40 @@ class TestList:
 
         with pytest.raises(IndexError):
             ds[index] = 1
+
+    @pytest.mark.parametrize("input_type", (list, tuple))
+    @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
+    def test_copy(self, input_type, value):
+        """Test that a `DatasetList` can be copied."""
+        ds = DatasetList(input_type(value))
+        ds_copy = ds.copy()
+
+        assert ds_copy == value
+        assert repr(ds_copy) == repr(value)
+        assert len(ds_copy) == len(value)
+
+    @pytest.mark.parametrize("input_type", (list, tuple))
+    @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
+    def test_equality(self, input_type, value):
+        """Test that a `DatasetList`  can be compared to other objects."""
+        ds = DatasetList(input_type(value))
+
+        assert ds == ds
+        assert ds != value.append('additional')
+        for variable in ['string', 1, 1.0, {'0':1}, True]:
+            assert ds != variable
+
+    @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
+    def test_string_conversion(self, value):
+        """Test that a `DatasetList` is converted to a string correctly."""
+        dset_dict = DatasetList(value)
+        assert str(dset_dict) == str(value)
+
+    @pytest.mark.parametrize("value", [[1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
+    def test_deleting_elements(self,value):
+        """Test that elements can be removed from a `DatasetList`."""
+        ds = DatasetList(value)
+        del value[0]
+        del ds[0]
+        assert ds == value   
+        
