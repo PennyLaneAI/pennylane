@@ -447,6 +447,7 @@
 
 * Allow for `Sum` observables with trainable parameters.
   [(#4251)](https://github.com/PennyLaneAI/pennylane/pull/4251)
+  [(#4275)](https://github.com/PennyLaneAI/pennylane/pull/4275)
 
 <h3>Contributors ✍️</h3>
 
