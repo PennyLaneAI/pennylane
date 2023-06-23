@@ -19,13 +19,13 @@ page in the developement guide.
 """
 # pylint: disable=protected-access,wrong-import-position
 
+import warnings
 import pytest
 
 plt = pytest.importorskip("matplotlib.pyplot")
 
 from matplotlib.colors import to_rgba
 from matplotlib.patches import FancyArrow
-import warnings
 
 from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
