@@ -91,13 +91,16 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
             * ``"num_operations"``
             * ``"num_observables"``
             * ``"num_diagonalizing_gates"``
+            * ``"num_gradient_executions"``
+            * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
             * ``"gate_sizes"``: dictionary mapping gate number of wires to number of occurances
             * ``"gate_types"``: dictionary mapping gate types to number of occurances
             * ``"num_used_wires"``: number of wires used by the circuit
             * ``"num_device_wires"``: number of wires in device
             * ``"depth"``: longest path in directed acyclic graph representation
             * ``"dev_short_name"``: name of QNode device
-            * ``"diff_method"``
+            * ``"diff_method"``: a string specifying the differntiation method
+            * ``"gradient_fn"``: executable to compute the gradient of the qnode
 
         Potential Additional Information:
             * ``"num_trainable_params"``: number of individual scalars that are trainable
