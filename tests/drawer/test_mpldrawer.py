@@ -436,6 +436,7 @@ class TestCTRL:
             ((1,), (0, 2)),
             ((0, 2), (1, 3)),
             ((1, 3), (0, 2)),
+            ((0, 2, 4), (1, 3)),
         ],
     )
     def test_ctrl_raises_warning_with_overlap(self, control_wires, target_wires):

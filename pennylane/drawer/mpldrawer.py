@@ -594,10 +594,7 @@ class MPLDrawer:
 
         if len(wires_target) > 1:
             min_target, max_target = min(wires_target), max(wires_target)
-            if (
-                min_target < min(wires_ctrl) < max_target
-                or min_target < max(wires_ctrl) < max_target
-            ):
+            if any(min_target < w < max_target for w in wires_ctrl):
                 warnings.warn(
                     "Some control indicators are hidden behind an operator. Consider re-ordering "
                     "your circuit wires to ensure all control indicators are visible.",
