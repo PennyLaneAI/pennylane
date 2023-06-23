@@ -780,6 +780,9 @@
   An `if` conditional was intended to prevent divide by zero errors, but the division was by the sine of the argument. So, any multiple of $\pi$ should trigger the conditional, but it was only checking if the argument was 0. Example: `qml.Rot(2.3, 2.3, 2.3)`
   [(#4210)](https://github.com/PennyLaneAI/pennylane/pull/4210)
 
+* Fixed bug that caused `ShotAdaptiveOptimizer` to truncate dimensions of parameter-distributed shots during optimization.
+  [(#4240)](https://github.com/PennyLaneAI/pennylane/pull/4240)
+
 * `Sum` observables can now have trainable parameters.
   [(#4251)](https://github.com/PennyLaneAI/pennylane/pull/4251)
   [(#4275)](https://github.com/PennyLaneAI/pennylane/pull/4275)

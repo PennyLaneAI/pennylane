@@ -54,6 +54,8 @@ Symbolic Classes
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
