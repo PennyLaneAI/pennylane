@@ -171,7 +171,7 @@ class QuantumScript:
     >>> s_vec = [1, 1, 2, 2, 2]
     >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))], shots=s_vec)
     >>> qscript.shots.shot_vector
-    (ShotCopies(shots=1, copies=2), ShotCopies(shots=2, copies=3))
+    (ShotCopies(1 shots x 2), ShotCopies(2 shots x 3))
 
     ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
@@ -731,10 +731,20 @@ class QuantumScript:
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 
+        op_data = []
+        for pinfo in self._par_info:
+            if pinfo["p_idx"] == 0:
+                op_data.append((pinfo["op"], list(pinfo["op"].data)))
+            else:
+                op_data.append(op_data[-1])
+
         for idx, p in iterator:
-            op = self._par_info[idx]["op"]
-            op.data[self._par_info[idx]["p_idx"]] = p
+            op_data[idx][1][self._par_info[idx]["p_idx"]] = p
+
+        for op, d in op_data:
+            op.data = tuple(d)
             op._check_batching(op.data)
+
         self._update_batch_size()
         self._update_output_dim()
 

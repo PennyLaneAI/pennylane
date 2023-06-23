@@ -16,6 +16,8 @@ operations into elementary gates.
 """
 import warnings
 
+import numpy
+
 import pennylane as qml
 from pennylane import math
 
@@ -230,11 +232,11 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     phis = -angles_U10 - angles_U00
     omegas = angles_U10 - angles_U00
 
-    # Wrap angles to range [-\pi, \pi]
-    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-    omegas = (omegas + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-
     phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
+
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    omegas = omegas % (4 * numpy.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
@@ -323,10 +325,6 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     lams = lams_plus_phis + lams_minus_phis
     phis = lams_plus_phis - lams_minus_phis
 
-    # Wrap angles to range [-\pi, \pi]
-    lams = (lams + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
     thetas = math.where(
@@ -336,6 +334,10 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     )
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
+
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    lams = lams % (4 * numpy.pi)
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
@@ -384,21 +386,25 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     # Use top row to solve for \phi and \psi
     phis_plus_psis = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
     phis_minus_psis = math.arctan2(-math.real(U_det1[:, 0, 1]), -math.imag(U_det1[:, 0, 1]) + EPS)
+
     phis = phis_plus_psis + phis_minus_psis
     psis = phis_plus_psis - phis_minus_psis
-
-    # Wrap angles to range [-\pi, \pi]
-    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-    psis = (psis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # Conditional to avoid divide by 0 errors
     thetas = math.where(
         math.isclose(math.sin(phis_plus_psis), math.zeros_like(phis_plus_psis)),
-        2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS)),
-        2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS)),
+        math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS),
+        -math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS),
     )
+    # Arcos is only defined between -1 and 1
+    thetas = qml.math.clip(thetas, -1.0, 1.0)
+    thetas = 2 * math.arccos(thetas)
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
+
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    psis = psis % (4 * numpy.pi)
 
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
@@ -411,10 +417,10 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
     r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations. (batched operation)
 
-    Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
+    Any one qubit unitary operation can be implemented up to a global phase by composing RX, RY,
     and RZ gates.
 
-    Currently supported values for `rotations` are "ZYZ", "XYX", and "ZXZ".
+    Currently supported values for ``rotations`` are "ZYZ", "XYX", and "ZXZ".
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
@@ -425,7 +431,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
-        the list is equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
+        the list is equivalent to the unitary :math:`U` up to a global phase. If ``return_global_phase=True``,
         the global phase is returned as the last element of the list.
 
     **Example**

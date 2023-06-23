@@ -43,8 +43,16 @@ single_qubit_decomps_zyz = [
     (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4, 0.70710678 + 0.70710678j]),
     (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8, 0.92387953 + 0.38268343j]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15, 1]),
-    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zyz, [-0.25, 0.0, -0.25, 1]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, -0.3, 1]),
+    (
+        qml.RZ(-0.5, wires=0).matrix(),
+        typeof_gates_zyz,
+        [12.316370614359172, 0.0, 12.316370614359172, 1],
+    ),
+    (
+        qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
+        typeof_gates_zyz,
+        [0.2, 0.5, 12.266370614359172, 1],
+    ),
     (
         np.array(
             [
@@ -53,14 +61,14 @@ single_qubit_decomps_zyz = [
             ]
         ),
         typeof_gates_zyz,
-        [-0.18409714468526372, np.pi, 0.18409714468526372, 1],
+        [12.382273469673908, np.pi, 0.18409714468526372, 1],
     ),
-    (H, typeof_gates_zyz, [-np.pi, np.pi / 2, 0.0, 1j]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, -np.pi / 2, 1j]),
+    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0, 1j]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 10.995574287564276, 1j]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
-        [-1.0, 2.0, -3.0, 0.9998000066665778 + 0.019998666693333122j],
+        [11.566370614359172, 2.0, 9.566370614359172, 0.9998000066665778 + 0.019998666693333122j],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
@@ -169,7 +177,7 @@ single_qubit_decomps_xyx = [
         ),
         typeof_gates_xyx,
         (
-            -1.7210192479534632,
+            10.845351366405708,
             1.3974974118006183,
             0.45246583660683803,
             0.38469215914523336 - 0.9230449299422961j,
@@ -177,20 +185,25 @@ single_qubit_decomps_xyx = [
     ),
     # Try a few specific special unitaries
     (I, typeof_gates_xyx, [0, 0, 0, 1]),  # This triggers the if conditional trivially
-    (X, typeof_gates_xyx, [-1 / 2 * np.pi, 0, -1 / 2 * np.pi, 1j]),
+    (X, typeof_gates_xyx, [4.71238898038469, 0.0, 10.995574287564276, 1j]),
     (Y, typeof_gates_xyx, [1 / 2 * np.pi, np.pi, 1 / 2 * np.pi, 1j]),
-    (Z, typeof_gates_xyx, [-1 / 2 * np.pi, np.pi, 1 / 2 * np.pi, 1j]),
+    (Z, typeof_gates_xyx, [10.995574287564276, np.pi, 1 / 2 * np.pi, 1j]),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
         qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
         typeof_gates_xyx,
-        [[-np.pi / 2, -np.pi / 2], [np.pi, np.pi / 2], [np.pi / 2, np.pi / 2], [1, 1]],
+        [[10.99557429, 10.99557429], [np.pi, np.pi / 2], [np.pi / 2, np.pi / 2], [1, 1]],
     ),
     (
         # This triggers the if conditional non-trivially
-        qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
+        qml.Rot(np.array([1.2, 1.5]), np.array([1.2, 1.5]), np.array([1.2, 1.5]), wires=0).matrix(),
         typeof_gates_xyx,
-        [[-0.93760008, 2.81949056], [2.53416365, 2.59030735], [0.93760008, -2.81949056], [1, 1]],
+        [
+            [11.62877054, 11.74682533],
+            [2.53416365, 3.03803113],
+            [0.93760008, 0.81954528],
+            [1, 1],
+        ],
     ),
 ]
 
@@ -282,11 +295,15 @@ single_qubit_decomps_zxz = [
     (S, typeof_gates_zxz, [np.pi / 4, 0.0, np.pi / 4, 0.70710678 + 0.70710678j]),
     (T, typeof_gates_zxz, [np.pi / 8, 0.0, np.pi / 8, 0.92387953 + 0.38268343j]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zxz, [0.15, 0.0, 0.15, 1]),
-    (qml.RZ(-0.5, wires=0).matrix(), typeof_gates_zxz, [-0.25, 0.0, -0.25, 1]),
+    (
+        qml.RZ(-0.5, wires=0).matrix(),
+        typeof_gates_zxz,
+        [12.316370614359172, 0.0, 12.316370614359172, 1],
+    ),
     (
         qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
         typeof_gates_zxz,
-        [-1.37079633, 0.5, 1.27079633, 1],
+        [11.195574287564275, 0.5, 1.27079633, 1],
     ),
     (
         np.array(
@@ -296,14 +313,14 @@ single_qubit_decomps_zxz = [
             ]
         ),
         typeof_gates_zxz,
-        [-1.7548934714801603, np.pi, 1.7548934714801607, 1],
+        [10.811477142879012, np.pi, 1.7548934714801607, 1],
     ),
     (H, typeof_gates_zxz, [np.pi / 2, np.pi / 2, np.pi / 2, 1j]),
-    (X, typeof_gates_zxz, [0, np.pi, 0, 1j]),
+    (X, typeof_gates_zxz, [0, np.pi, 4 * np.pi, 1j]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zxz,
-        [-1.0 - np.pi / 2, 2.0, -3.0 + np.pi / 2, 0.9998000066665778 + 0.019998666693333122j],
+        [9.995574287564276, 2.0, 11.137166941154069, 0.9998000066665778 + 0.019998666693333122j],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
@@ -315,9 +332,9 @@ single_qubit_decomps_zxz = [
         qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
         typeof_gates_zxz,
         [
-            [1.2 - np.pi / 2, 2.3 - np.pi / 2],
+            [12.19557429, 0.72920367],
             [1.2, 2.3],
-            [1.2 + np.pi / 2, -3 * np.pi / 2 + 2.3],
+            [2.77079633, 3.87079633],
             [1, 1],
         ],
     ),
@@ -415,7 +432,7 @@ single_qubit_decomps = [
         ),
         "ZYZ",
         typeof_gates_zyz,
-        [-0.18409714468526372, np.pi, 0.18409714468526372, 1],
+        [12.382273469673908, np.pi, 0.18409714468526372, 1],
     ),
     (
         np.array(
@@ -427,7 +444,7 @@ single_qubit_decomps = [
         "XYX",
         typeof_gates_xyx,
         (
-            -1.7210192479534632,
+            10.845351366405708,
             1.3974974118006183,
             0.45246583660683803,
             0.38469215914523336 - 0.9230449299422961j,
@@ -442,7 +459,7 @@ single_qubit_decomps = [
         ),
         "ZXZ",
         typeof_gates_zxz,
-        [-1.7548934714801603, np.pi, 1.7548934714801607, 1],
+        [10.811477142879012, np.pi, 1.7548934714801607, 1],
     ),
 ]
 

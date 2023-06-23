@@ -117,9 +117,8 @@ def split_non_commuting(tape):
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliY(0))
+            measurements = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))]
+            tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
@@ -132,11 +131,13 @@ def split_non_commuting(tape):
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-                qml.expval(qml.PauliX(0) @ qml.PauliX(1))
-                qml.expval(qml.PauliZ(0))
+            measurements = [
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+                qml.expval(qml.PauliZ(0)),
                 qml.expval(qml.PauliX(0))
+            ]
+            tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
