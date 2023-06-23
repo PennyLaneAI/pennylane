@@ -496,7 +496,7 @@ def einsum(indices, *operands, like=None, optimize=None):
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
-        operands (tuple[tensor_like]): The tensors for the operation.
+        *operands (tuple[tensor_like]): The tensors for the operation.
 
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
