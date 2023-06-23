@@ -1361,7 +1361,7 @@ class QubitDevice(Device):
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~pennylane.classical_shadow`
+        .. seealso:: :func:`~.pennylane.classical_shadow`
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
@@ -1441,7 +1441,7 @@ class QubitDevice(Device):
 
         .. note::
 
-            :meth:`marginal_prob` may be used as a utility method
+            :meth:`~.marginal_prob` may be used as a utility method
             to calculate the marginal probability distribution.
 
         Args:
