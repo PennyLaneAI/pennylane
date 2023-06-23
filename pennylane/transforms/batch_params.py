@@ -43,6 +43,8 @@ def _split_operations(ops, params, indices, start_index, num_tapes):
     of new operators with length num_tapes, with the parameters
     at the given indices split.
     """
+    # for some reason pylint thinks "qml.ops" is a set
+    # pylint: disable=no-member
     new_ops = [[] for _ in range(num_tapes)]
     idx = start_index
 
@@ -154,8 +156,6 @@ def batch_params(tape, all_operations=False):
     >>> qml.grad(cost_fn)(x, weights)[0]
     -0.30262974103192636
     """
-    # pylint: disable=too-many-branches, no-member
-
     params = tape.get_parameters(trainable_only=False)
     indices = list(range(len(params))) if all_operations else list(tape.trainable_params)
 
