@@ -14,6 +14,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Matthew Silverman
