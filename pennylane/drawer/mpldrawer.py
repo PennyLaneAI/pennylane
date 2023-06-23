@@ -594,7 +594,11 @@ class MPLDrawer:
 
         min_target, max_target = min(wires_target), max(wires_target)
         if min_target < min(wires_ctrl) < max_target or min_target < max(wires_ctrl) < max_target:
-            warnings.warn("Some control indicators are hidden behind an operator", UserWarning)
+            warnings.warn(
+                "Some control indicators are hidden behind an operator. Consider "
+                "re-ordering your circuit wires to ensure all control indicators are visible.",
+                UserWarning,
+            )
 
         line = plt.Line2D((layer, layer), (min_wire, max_wire), **options)
         self._ax.add_line(line)
