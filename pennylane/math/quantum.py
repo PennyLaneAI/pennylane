@@ -268,7 +268,6 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     >>> reduce_dm(x, indices=[1])
     array([[[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]],
-
            [[0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j]]])
     """
