@@ -65,7 +65,7 @@ def test_simple_circuit_with_prep():
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_input(argnum=1)
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev)
     def circuit(inputs, weights):
         qml.QubitStateVector(np.array([0, 0, 1, 0]), wires=[0, 1])
         qml.RX(inputs, wires=0)
@@ -839,3 +839,31 @@ class TestDiffMulti:
             )
         )
         assert qml.math.allclose(grad, expected, atol=tol, rtol=0)
+
+
+def test_unbatched_not_copied():
+    """Test that operators containing unbatched parameters are not copied"""
+    batch_size = 5
+    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
+    weights = np.random.uniform(-np.pi, np.pi, (2,))
+
+    ops = [
+        qml.RY(weights[0], wires=0),
+        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y"),
+        qml.RY(weights[1], wires=1),
+    ]
+    meas = [qml.expval(qml.PauliZ(1))]
+
+    tape = qml.tape.QuantumScript(ops, meas)
+    tape.trainable_params = [0, 2]
+
+    new_tapes, fn = qml.batch_input(argnum=1)(tape)
+    assert len(new_tapes) == batch_size
+
+    for new_tape in new_tapes:
+        # same instance of RY operators
+        assert new_tape.operations[0] is tape.operations[0]
+        assert new_tape.operations[2] is tape.operations[2]
+
+        # different instance of AngleEmbedding
+        assert new_tape.operations[1] is not tape.operations[1]

@@ -130,6 +130,26 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
+    def test_not_copied(self):
+        """Test that unbroadcasted operators are not copied"""
+        x = np.array([0.5, 0.7, 0.9])
+        y = np.array(1.5)
+
+        ops = [qml.RX(x, wires=0), qml.RY(y, wires=0)]
+        meas = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumScript(ops, meas)
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == 3
+        assert all(t.batch_size is None for t in tapes)
+
+        for t in tapes:
+            # different instance of RX
+            assert t.operations[0] is not tape.operations[0]
+
+            # same instance of RY
+            assert t.operations[1] is tape.operations[1]
+
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params, size", parameters_and_size)

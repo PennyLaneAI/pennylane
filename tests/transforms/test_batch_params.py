@@ -859,3 +859,35 @@ def test_no_batch_param_error():
     x = [0.2, 0.6, 3]
     with pytest.raises(ValueError, match="There are no operations to transform"):
         circuit(x)
+
+
+def test_unbatched_not_copied():
+    """Test that operators containing unbatched parameters are not copied"""
+
+    batch_size = 5
+    data = np.random.random((batch_size, 8))
+    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    x = np.array(0.4, requires_grad=False)
+
+    ops = [
+        qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True),
+        qml.RX(x, wires=0),
+        qml.RY(0.2, wires=1),
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2]),
+    ]
+    meas = [qml.probs(wires=[0, 2])]
+
+    tape = qml.tape.QuantumScript(ops, meas)
+    tape.trainable_params = [0, 3]
+
+    new_tapes, fn = qml.batch_params(tape)
+    assert len(new_tapes) == batch_size
+
+    for new_tape in new_tapes:
+        # same instance of RX and RY operators
+        assert new_tape.operations[1] is tape.operations[1]
+        assert new_tape.operations[2] is tape.operations[2]
+
+        # different instance of AmplitudeEmbedding and StronglyEntanglingLayers
+        assert new_tape.operations[0] is not tape.operations[0]
+        assert new_tape.operations[3] is not tape.operations[3]
