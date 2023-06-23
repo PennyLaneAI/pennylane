@@ -238,8 +238,7 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))`` or ``(batch_dim, 2**len(indices), 2**len(indices))``
 
-    .. seealso:: :func:`pennylane.math.reduce_statevector`, :func:`pennylane.qinfo.transforms.reduced_dm`,
-        and :func:`pennylane.density_matrix`
+    .. seealso:: :func:`pennylane.math.reduce_statevector`, and :func:`pennylane.density_matrix`
 
     **Example**
 
@@ -436,8 +435,7 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))`` or ``(batch_dim, 2**len(indices), 2**len(indices))``
 
-    .. seealso:: :func:`pennylane.math.reduce_dm`, :func:`pennylane.qinfo.transforms.reduced_dm`,
-        and :func:`pennylane.density_matrix`
+    .. seealso:: :func:`pennylane.math.reduce_dm` and :func:`pennylane.density_matrix`
 
     **Example**
 
@@ -548,68 +546,6 @@ def dm_from_state_vector(state, check_state=False, c_dtype="complex128"):
     return reduce_statevector(
         state, indices=list(range(num_wires)), check_state=check_state, c_dtype=c_dtype
     )
-
-
-def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
-    """Compute the reduced density matrix from a state vector or a density matrix. It supports all interfaces (Numpy,
-    Autograd, Torch, Tensorflow and Jax).
-
-    Args:
-        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
-        indices (Sequence(int)): List of indices in the considered subsystem.
-        check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex floating point precision type.
-
-    Returns:
-        tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
-
-    **Example**
-
-    >>> x = [1, 0, 1, 0] / np.sqrt(2)
-    >>> reduced_dm(x, indices=[0])
-    [[0.5+0.j 0.5+0.j]
-     [0.5+0.j 0.5+0.j]]
-
-    >>> reduced_dm(x, indices=[1])
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]]
-
-    >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> reduced_dm(y, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
-
-    >>> z = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
-    >>> reduced_dm(z, indices=[0])
-    [[0.5+0.j 0.0+0.j]
-     [0.0+0.j 0.5+0.j]]
-
-    >>> reduced_dm(z, indices=[1])
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]]
-
-    >>> y_mat_tf = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> reduced_dm(y_mat_tf, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
-
-    .. seealso:: :func:`pennylane.qinfo.transforms.reduced_dm` and :func:`pennylane.density_matrix`
-    """
-    warnings.warn(
-        "reduced_dm has been deprecated. Please use reduce_statevector or reduce_dm instead",
-        UserWarning,
-    )
-
-    # Cast as a c_dtype array
-    state = cast(state, dtype=c_dtype)
-    len_state = state.shape[0]
-    # State vector
-    if state.shape == (len_state,):
-        return reduce_statevector(state, indices, check_state)
-
-    return reduce_dm(state, indices, check_state)
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):
