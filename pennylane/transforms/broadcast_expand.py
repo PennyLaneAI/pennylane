@@ -17,6 +17,30 @@ import pennylane as qml
 from .batch_transform import batch_transform
 
 
+def _split_operations(ops, num_tapes):
+    """
+    Given a list of operators, return a list containing lists
+    of new operators with length num_tapes, with the parameters split.
+    """
+    new_ops = [[] for _ in range(num_tapes)]
+    for op in ops:
+        # determine if any parameters of the operator are batched
+        if op.batch_size:
+            for b in range(num_tapes):
+                new_params = tuple(
+                    p if qml.math.ndim(p) == op.ndim_params[j] else p[b]
+                    for j, p in enumerate(op.data)
+                )
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_ops[b].append(new_op)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(num_tapes):
+                new_ops[b].append(op)
+
+    return new_ops
+
+
 @batch_transform
 def broadcast_expand(tape):
     r"""Expand a broadcasted tape into multiple tapes
@@ -96,39 +120,8 @@ def broadcast_expand(tape):
     if num_tapes is None:
         raise ValueError("The provided tape is not broadcasted.")
 
-    new_preps = [[] for _ in range(num_tapes)]
-    new_ops = [[] for _ in range(num_tapes)]
-
-    for prep in tape.prep:
-        # determine if any parameters of the operator are batched
-        if prep.batch_size:
-            for b in range(num_tapes):
-                new_params = tuple(
-                    p if qml.math.ndim(p) == prep.ndim_params[j] else p[b]
-                    for j, p in enumerate(prep.data)
-                )
-                new_prep = qml.ops.functions.bind_new_parameters(prep, new_params)
-                new_preps[b].append(new_prep)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(num_tapes):
-                new_preps[b].append(prep)
-
-    ops = [op for op in tape.operations if op not in tape.prep]
-    for op in ops:
-        # determine if any parameters of the operator are batched
-        if op.batch_size:
-            for b in range(num_tapes):
-                new_params = tuple(
-                    p if qml.math.ndim(p) == op.ndim_params[j] else p[b]
-                    for j, p in enumerate(op.data)
-                )
-                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
-                new_ops[b].append(new_op)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(num_tapes):
-                new_ops[b].append(op)
+    new_preps = _split_operations(tape.prep, num_tapes)
+    new_ops = _split_operations([op for op in tape.operations if op not in tape.prep], num_tapes)
 
     output_tapes = []
     for prep, ops in zip(new_preps, new_ops):

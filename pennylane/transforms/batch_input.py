@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_transform import batch_transform
-from pennylane.transforms.batch_params import _nested_stack
+from pennylane.transforms.batch_params import _nested_stack, _split_operations
 
 
 @batch_transform
@@ -96,44 +96,11 @@ def batch_input(
 
     batch_size = batch_dims[0]
 
-    new_preps = [[] for _ in range(batch_size)]
-    new_ops = [[] for _ in range(batch_size)]
-
     idx = 0
-    for prep in tape.prep:
-        # determine if any parameters of the operator are batched
-        if any(i in argnum for i in range(idx, idx + len(prep.data))):
-            for b in range(batch_size):
-                new_params = tuple(
-                    all_parameters[i][b] if i in argnum else all_parameters[i]
-                    for i in range(idx, idx + len(prep.data))
-                )
-                new_prep = qml.ops.functions.bind_new_parameters(prep, new_params)
-                new_preps[b].append(new_prep)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(batch_size):
-                new_preps[b].append(prep)
-
-        idx += len(prep.data)
+    new_preps, idx = _split_operations(tape.prep, all_parameters, argnum, idx, batch_size)
 
     ops = [op for op in tape.operations if op not in tape.prep]
-    for op in ops:
-        # determine if any parameters of the operator are batched
-        if any(i in argnum for i in range(idx, idx + len(op.data))):
-            for b in range(batch_size):
-                new_params = tuple(
-                    all_parameters[i][b] if i in argnum else all_parameters[i]
-                    for i in range(idx, idx + len(op.data))
-                )
-                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
-                new_ops[b].append(new_op)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(batch_size):
-                new_ops[b].append(op)
-
-        idx += len(op.data)
+    new_ops, _ = _split_operations(ops, all_parameters, argnum, idx, batch_size)
 
     output_tapes = []
     for prep, ops in zip(new_preps, new_ops):

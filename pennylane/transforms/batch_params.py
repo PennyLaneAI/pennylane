@@ -37,6 +37,35 @@ def _nested_stack(res):
     return tuple(stacked_results)
 
 
+def _split_operations(ops, params, indices, start_index, num_tapes):
+    """
+    Given a list of operators, return a list containing lists
+    of new operators with length num_tapes, with the parameters
+    at the given indices split.
+    """
+    new_ops = [[] for _ in range(num_tapes)]
+    idx = start_index
+
+    for op in ops:
+        # determine if any parameters of the operator are batched
+        if any(i in indices for i in range(idx, idx + len(op.data))):
+            for b in range(num_tapes):
+                new_params = tuple(
+                    params[i][b] if i in indices else params[i]
+                    for i in range(idx, idx + len(op.data))
+                )
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_ops[b].append(new_op)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(num_tapes):
+                new_ops[b].append(op)
+
+        idx += len(op.data)
+
+    return new_ops, idx
+
+
 @batch_transform
 def batch_params(tape, all_operations=False):
     """Transform a QNode to support an initial batch dimension
@@ -149,44 +178,11 @@ def batch_params(tape, all_operations=False):
                 f"first dimension of length {batch_dim}."
             )
 
-    new_preps = [[] for _ in range(batch_dim)]
-    new_ops = [[] for _ in range(batch_dim)]
-
     idx = 0
-    for prep in tape.prep:
-        # determine if any parameters of the operator are batched
-        if any(i in indices for i in range(idx, idx + len(prep.data))):
-            for b in range(batch_dim):
-                new_params = tuple(
-                    params[i][b] if i in indices else params[i]
-                    for i in range(idx, idx + len(prep.data))
-                )
-                new_prep = qml.ops.functions.bind_new_parameters(prep, new_params)
-                new_preps[b].append(new_prep)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(batch_dim):
-                new_preps[b].append(prep)
-
-        idx += len(prep.data)
+    new_preps, idx = _split_operations(tape.prep, params, indices, idx, batch_dim)
 
     ops = [op for op in tape.operations if op not in tape.prep]
-    for op in ops:
-        # determine if any parameters of the operator are batched
-        if any(i in indices for i in range(idx, idx + len(op.data))):
-            for b in range(batch_dim):
-                new_params = tuple(
-                    params[i][b] if i in indices else params[i]
-                    for i in range(idx, idx + len(op.data))
-                )
-                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
-                new_ops[b].append(new_op)
-        else:
-            # no batching in the operator; don't copy
-            for b in range(batch_dim):
-                new_ops[b].append(op)
-
-        idx += len(op.data)
+    new_ops, _ = _split_operations(ops, params, indices, idx, batch_dim)
 
     output_tapes = []
     for prep, ops in zip(new_preps, new_ops):
