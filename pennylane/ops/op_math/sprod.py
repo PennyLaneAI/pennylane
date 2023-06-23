@@ -139,6 +139,13 @@ class SProd(ScalarSymbolicOp):
     """
     _name = "SProd"
 
+    def _flatten(self):
+        return (self.scalar, self.base), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1])
+
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=None, id=None):
         super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
 

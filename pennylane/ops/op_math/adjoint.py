@@ -25,7 +25,6 @@ from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
-
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
@@ -131,7 +130,10 @@ def adjoint(fn, lazy=True):
     def wrapper(*args, **kwargs):
         qscript = make_qscript(fn)(*args, **kwargs)
         if lazy:
-            adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
+            adjoint_ops = [
+                AdjointOperation(op) if isinstance(op, Operation) else Adjoint(op)
+                for op in reversed(qscript.operations)
+            ]
         else:
             adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
 
@@ -147,7 +149,7 @@ def _single_op_eager(op, update_queue=False):
             QueuingManager.remove(op)
             QueuingManager.append(adj)
         return adj
-    return Adjoint(op)
+    return AdjointOperation(op) if isinstance(op, Operation) else Adjoint(op)
 
 
 # pylint: disable=too-many-public-methods
@@ -204,6 +206,13 @@ class Adjoint(SymbolicOp):
     Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
 
     """
+
+    def _flatten(self):
+        return (self.base,), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0])
 
     _operation_type = None  # type if base inherits from operation and not observable
     _operation_observable_type = None  # type if base inherits from both operation and observable
@@ -324,7 +333,7 @@ class Adjoint(SymbolicOp):
 
 
 # pylint: disable=no-member
-class AdjointOperation(Operation):
+class AdjointOperation(Adjoint, Operation):
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
 

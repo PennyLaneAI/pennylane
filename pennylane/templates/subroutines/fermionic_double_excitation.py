@@ -497,6 +497,13 @@ class FermionicDoubleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
+    def _flatten(self):
+        return self.data, (self.hyperparameters["wires1"], self.hyperparameters["wires2"])
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
+        return cls(data[0], wires1=metadata[0], wires2=metadata[1])
+
     def __init__(self, weight, wires1=None, wires2=None, do_queue=None, id=None):
         if len(wires1) < 2:
             raise ValueError(

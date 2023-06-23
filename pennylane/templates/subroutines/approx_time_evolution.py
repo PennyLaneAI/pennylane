@@ -101,6 +101,15 @@ class ApproxTimeEvolution(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    def _flatten(self):
+        h = self.hyperparameters["hamiltonian"]
+        data = (h, self.data[-1])
+        return data, (self.hyperparameters["n"])
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1], n=metadata[0])
+
     def __init__(self, hamiltonian, time, n, do_queue=None, id=None):
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(

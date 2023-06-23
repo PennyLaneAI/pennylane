@@ -15,6 +15,8 @@ r"""
 Contains the RandomLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import warnings
+
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
@@ -52,7 +54,7 @@ class RandomLayers(Operation):
         wires (Iterable): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+        rotations (tuple[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
@@ -186,7 +188,7 @@ class RandomLayers(Operation):
         self._hyperparameters = {
             "ratio_imprimitive": ratio_imprim,
             "imprimitive": imprimitive or qml.CNOT,
-            "rotations": rotations or [qml.RX, qml.RY, qml.RZ],
+            "rotations": tuple(rotations) or (qml.RX, qml.RY, qml.RZ),
             "seed": seed,
         }
 
@@ -198,7 +200,7 @@ class RandomLayers(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, ratio_imprimitive, imprimitive, rotations, seed
+        weights, wires, ratio_imprimitive, imprimitive, rotations, seed, ratio_imprim=None
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -211,7 +213,7 @@ class RandomLayers(Operation):
         Args:
             weights (tensor_like): weight tensor
             wires (Any or Iterable[Any]): wires that the operator acts on
-            ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
+            ratio_imprimitive (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
             imprimitive (pennylane.ops.Operation): two-qubit gate to use
             rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates.
             seed (int): seed to generate random architecture
@@ -231,6 +233,12 @@ class RandomLayers(Operation):
          CNOT(wires=['b', 'a']),
          RX(tensor(1.4000), wires=['a'])]
         """
+        if ratio_imprim:
+            warnings.warn(
+                "In RandomLayers.compute_decomposition, ratio_imprim has been changed to `ratio_imprimitive` to match the "
+                "call signature of the operation.",
+                UserWarning,
+            )
         wires = qml.wires.Wires(wires)
         rng = np.random.default_rng(seed)
 

@@ -6,15 +6,18 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_impriv` has been changed to `ratio_imprimitive` to
+  match the call signature of the operation. 
+
 * The `grouping_type` and `grouping_method` arguments of `qchem.molecular_hamiltonian()` are deprecated.
 
-  - Deprecated in v0.31
+  - Deprecated in ∂v0.31
   - Will be removed in v0.32
 
   Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
 
   .. code-block:: python
-
+ 
     H, qubits = molecular_hamiltonian(symbols, coordinates)
     grouped_h = qml.Hamiltonian(
         H.coeffs,

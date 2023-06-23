@@ -101,6 +101,15 @@ class GroverOperator(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    def __repr__(self):
+        return (
+            f"GroverOperator(wires={self.wires}, work_wires={self.hyperparameters['work_wires']})"
+        )
+
+    def _flatten(self):
+        hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
+        return (), (self.wires, hyperparameters)
+
     def __init__(self, wires=None, work_wires=None, do_queue=None, id=None):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")

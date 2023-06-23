@@ -588,6 +588,13 @@ class PCPhase(Operation):
         mat = np.diag([1 if index < dim else -1 for index in range(shape)])
         return qml.Hermitian(mat, wires=self.wires)
 
+    def _flatten(self):
+        return tuple(self.data), (self.wires, self.hyperparameters["dimension"])
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, dim=metadata[1], wires=metadata[0])
+
     def __init__(self, phi, dim, wires, do_queue=None, id=None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 

@@ -96,6 +96,8 @@ class HilbertSchmidt(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    # will have to think about this.  We can't currently flatten and unflatten a tape.
+
     def __init__(self, *params, v_function, v_wires, u_tape, do_queue=None, id=None):
         self._num_params = len(params)
 
@@ -152,7 +154,8 @@ class HilbertSchmidt(Operation):
         # Unitary U
         for op_u in u_tape.operations:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
-            qml.apply(op_u)
+            if qml.QueuingManager.recording():
+                qml.apply(op_u)
             decomp_ops.append(op_u)
 
         # Unitary V conjugate

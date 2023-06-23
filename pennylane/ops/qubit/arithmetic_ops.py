@@ -359,6 +359,21 @@ class IntegerComparator(Operation):
 
     grad_method = None
 
+    def _flatten(self):
+        hp = self.hyperparameters
+        return tuple(), tuple(
+            hp["control_wires"], hp["target_wires"], hp["work_wires"], hp["value"], hp["geq"]
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(
+            wires=metadata[0] + metadata[1],
+            work_wires=metadata[2],
+            value=metadata[3],
+            geq=metadata[4],
+        )
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
