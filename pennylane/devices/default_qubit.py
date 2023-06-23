@@ -570,10 +570,13 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        is_state_batched = self._ndim(self.state) == 2
         # intercept Sums
         if isinstance(observable, Sum) and not self.shots:
             return measure(
-                ExpectationMP(observable.map_wires(self.wire_map)), self._pre_rotated_state
+                ExpectationMP(observable.map_wires(self.wire_map)),
+                self._pre_rotated_state,
+                is_state_batched,
             )
 
         # intercept other Hamiltonians
@@ -592,7 +595,7 @@ class DefaultQubit(QubitDevice):
 
         if backprop_mode:
             # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-            if self._ndim(self.state) == 2:
+            if is_state_batched:
                 raise NotImplementedError(
                     "Expectation values of Hamiltonians for interface!=None are "
                     "not supported together with parameter broadcasting yet"
@@ -632,7 +635,7 @@ class DefaultQubit(QubitDevice):
             Hmat = observable.sparse_matrix(wire_order=self.wires)
 
             state = qml.math.toarray(self.state)
-            if self._ndim(state) == 2:
+            if is_state_batched:
                 res = qml.math.array(
                     [
                         csr_matrix.dot(
