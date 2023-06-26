@@ -57,8 +57,16 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
 
     state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
 
+    # initial state is batched only if the state preparation (if it exists) is batched
+    is_state_batched = False
+    if circuit._prep and circuit._prep[0].batch_size is not None:
+        is_state_batched = True
+
     for op in circuit._ops:
-        state = apply_operation(op, state, debugger=debugger)
+        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+
+        # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
+        is_state_batched = is_state_batched or op.batch_size is not None
 
     if not circuit.shots:
         # analytic case
@@ -66,7 +74,9 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
         if len(circuit.measurements) == 1:
             return measure(circuit.measurements[0], state)
 
-        return tuple(measure(mp, state) for mp in circuit.measurements)
+        return tuple(
+            measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
+        )
 
     # finite-shot case
 
@@ -75,7 +85,10 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
 
     rng = default_rng(rng)
     results = tuple(
-        measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
+        measure_with_samples(
+            mp, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
+        )
+        for mp in circuit.measurements
     )
 
     # no shot vector

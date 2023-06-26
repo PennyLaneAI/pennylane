@@ -229,7 +229,10 @@ class SProd(ScalarSymbolicOp):
         Returns:
             array: array containing the eigenvalues of the operator.
         """
-        return self.scalar * self.base.eigvals()
+        base_eigs = self.base.eigvals()
+        if qml.math.get_interface(self.scalar) == "torch" and self.scalar.requires_grad:
+            base_eigs = qml.math.convert_like(base_eigs, self.scalar)
+        return self.scalar * base_eigs
 
     def sparse_matrix(self, wire_order=None):
         """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
