@@ -17,8 +17,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
+  [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Borja Requena,
+Matthew Silverman
