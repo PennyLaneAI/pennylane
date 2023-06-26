@@ -56,12 +56,15 @@ def primitive_norm(l, alpha):
     array([1.79444183])
     """
     lx, ly, lz = l
-    n = (
+    fac_x = fac2(2 * lx - 1) if lx > 0 else 1.0
+    fac_y = fac2(2 * ly - 1) if ly > 0 else 1.0
+    fac_z = fac2(2 * lz - 1) if ly > 0 else 1.0
+
+    return (
         (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
-        / qml.math.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
+        / qml.math.sqrt(fac_x * fac_y * fac_z)
     )
-    return n
 
 
 def contracted_norm(l, alpha, a):
