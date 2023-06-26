@@ -67,10 +67,10 @@
     ```pycon 
     >>> word1 = qml.fermi.from_string('0+ 0- 3+ 3-')
     >>> word2 = qml.fermi.from_string('3+ 3-')
-    >>> sentence = 1.2 * word1 - 0.345 * word2
+    >>> sentence = 1.2 * word1 + 0.345 * word2
     >>> sentence
     1.2 * a⁺(0) a(0) a⁺(3) a(3)
-    - 0.345 * a⁺(3) a(3)
+    + 0.345 * a⁺(3) a(3)
     ```
     
   Additionally, any fermionic operator, be it a single fermionic creation/annihilation operator, a Fermi word, or a Fermi sentence,
@@ -78,7 +78,7 @@
 
   ```pycon
   >>> qml.jordan_wigner(sentence)
-  ((0.1275+0j)*(Identity(wires=[0]))) + ((-0.1275+0j)*(PauliZ(wires=[3]))) + ((-0.3+0j)*(PauliZ(wires=[0]))) + ((0.3+0j)*(PauliZ(wires=[0]) @ PauliZ(wires=[3])))
+  ((0.4725+0j)*(Identity(wires=[0]))) + ((-0.4725+0j)*(PauliZ(wires=[3]))) + ((-0.3+0j)*(PauliZ(wires=[0]))) + ((0.3+0j)*(PauliZ(wires=[0]) @ PauliZ(wires=[3])))
   ```
 
   Learn how to create fermionic Hamiltonians describing some simple chemical systems by checking
