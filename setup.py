@@ -21,7 +21,7 @@ with open("pennylane/_version.py") as f:
 
 requirements = [
     "numpy<1.24",
-    "scipy",
+    "scipy>=1.8,<=1.10",
     "networkx",
     "rustworkx",
     "autograd>=1.4,<=1.5",
