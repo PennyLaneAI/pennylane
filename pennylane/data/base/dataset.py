@@ -158,6 +158,13 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         self._init_bind(data_name)
 
+        for name in self.fields:
+            try:
+                attr_value = attrs.pop(name)
+                setattr(self, name, attr_value)
+            except KeyError:
+                pass
+
         for name, attr in attrs.items():
             setattr(self, name, attr)
 
@@ -178,9 +185,9 @@ class Dataset(MapperMixin, _DatasetTransform):
             mode: File handling mode. Possible values are "w-" (create, fail if file
                 exists), "w" (create, overwrite existing), "a" (append existing,
                 create if doesn't exist), "r" (read existing, must exist). Default is "r".
-            copy: Whether to load the dataset into memory after opening. If False, any changes
-                made to the dataset will be automatically written to the file, if it is opened
-                in write mode
+            copy: Whether to load the dataset into memory after opening. If False, and the dataset
+                is opened in write mode, any changes made to the dataset will be automatically written
+                to the file.
 
         Returns:
             Dataset object from file
@@ -385,6 +392,10 @@ class Dataset(MapperMixin, _DatasetTransform):
         cls.fields = MappingProxyType(fields)
 
     __data_name__ = "generic"
+
+
+def fn():
+    ...
 
 
 class _DatasetAttributeType(DatasetAttribute[HDF5Group, Dataset, Dataset]):

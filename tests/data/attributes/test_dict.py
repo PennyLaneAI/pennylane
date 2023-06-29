@@ -86,7 +86,7 @@ class TestDatasetDict:
         dset_dict = DatasetDict(value)
         builtin_dict = dset_dict.copy()
 
-        assert isinstance(builtin_dict,dict)
+        assert isinstance(builtin_dict, dict)
         assert builtin_dict == value
 
         assert builtin_dict.keys() == value.keys()
@@ -106,7 +106,7 @@ class TestDatasetDict:
         assert dset_dict == value
 
         assert dset_dict != []
-        dset_dict2['additional'] = 'additional'
+        dset_dict2["additional"] = "additional"
         assert dset_dict != dset_dict2
 
     def test_equality_same_length(self):

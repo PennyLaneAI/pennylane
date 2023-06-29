@@ -160,8 +160,8 @@ class TestList:
         ds = DatasetList(input_type(value))
 
         assert ds == ds
-        assert ds != value.append('additional')
-        for variable in ['string', 1, 1.0, {'0':1}, True]:
+        assert ds != value.append("additional")
+        for variable in ["string", 1, 1.0, {"0": 1}, True]:
             assert ds != variable
 
     @pytest.mark.parametrize("value", [[], [1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
@@ -171,10 +171,9 @@ class TestList:
         assert str(dset_dict) == str(value)
 
     @pytest.mark.parametrize("value", [[1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_deleting_elements(self,value):
+    def test_deleting_elements(self, value):
         """Test that elements can be removed from a `DatasetList`."""
         ds = DatasetList(value)
         del value[0]
         del ds[0]
-        assert ds == value   
-        
+        assert ds == value
