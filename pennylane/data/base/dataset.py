@@ -123,6 +123,8 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     type_id = "dataset"
 
+    __data_name__: ClassVar[str]
+
     fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
 
     bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
@@ -392,10 +394,6 @@ class Dataset(MapperMixin, _DatasetTransform):
         cls.fields = MappingProxyType(fields)
 
     __data_name__ = "generic"
-
-
-def fn():
-    ...
 
 
 class _DatasetAttributeType(DatasetAttribute[HDF5Group, Dataset, Dataset]):

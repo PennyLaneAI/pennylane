@@ -72,7 +72,7 @@ class lazy_module:  # pylint: disable=too-few-public-methods
             self.__post_import_cb(self.__module)
 
 
-def _configure_h5py(h5py: ModuleType) -> None:
+def _configure_h5py(h5py_module: ModuleType) -> None:
     """Configures the ``h5py`` module after import.
 
     Sets the ``track_order`` flag, so that groups and files remember
@@ -80,7 +80,7 @@ def _configure_h5py(h5py: ModuleType) -> None:
 
     See https://docs.h5py.org/en/stable/config.html
     """
-    h5py.get_config().track_order = True
+    h5py_module.get_config().track_order = True
 
 
 h5py = lazy_module("h5py", _MISSING_MODULES_EXC, _configure_h5py)
