@@ -22,15 +22,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field, attribute
-from pennylane.data.base.hdf5 import h5py, open_group
+from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field
+from pennylane.data.base.hdf5 import open_group
 
 
-class MyDataset(Dataset, data_name="my_dataset"):  # pylint: disable=too-few-public-methods
+class MyDataset(
+    Dataset, data_name="my_dataset", params=("x", "y")
+):  # pylint: disable=too-few-public-methods
     """A dataset subclass for testing."""
 
-    x: str = field(is_param=True)
-    y: str = field(is_param=True)
+    x: str = field()
+    y: str = field()
     description: str = field(doc="description")
 
 
@@ -131,18 +133,17 @@ class TestDataset:
         assert ds_2.bind is not ds.bind
         assert ds.attrs == ds_2.attrs
 
-    @pytest.mark.parametrize("params", [{}, {"x": "y", "z": "a"}])
-    def test_params_base(self, params):
+    @pytest.mark.parametrize(
+        "params, expect", [(None, {}), (tuple(), {}), (("x", "y"), {"x": "1", "y": "2"})]
+    )
+    def test_params_base(self, params, expect):
         """Test that dataset params can be set."""
-        ds = Dataset(
-            **{param: attribute(param_val, is_param=True) for param, param_val in params.items()}
-        )
+        ds = Dataset(x="1", y="2", params=params)
 
-        assert ds.params == params
+        assert ds.params == expect
 
-    @pytest.mark.parametrize("params", [{"x": "1", "y": "2"}])
-    def test_subclass_params(self, params):
+    def test_subclass_params(self):
         """Test that dataset subclasses' params can be set."""
-        ds = MyDataset(**params, description="abc")
+        ds = MyDataset(x="1", y="2", description="abc")
 
-        assert ds.params == params
+        assert ds.params == {"x": "1", "y": "2"}
