@@ -14,6 +14,7 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
+from typing import Callable, Tuple, Sequence
 import numpy as np
 
 import pennylane as qml
@@ -938,7 +939,6 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     return evaluate_relative_entropy
 
 
-<<<<<<< HEAD
 def trace_distance(qnode0, qnode1, wires0, wires1):
     r"""
     Compute the trace distance for two :class:`.QNode` returning a :func:`~pennylane.state` (a state can be a state vector
@@ -1058,39 +1058,61 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
         return qml.math.trace_distance(state0, state1)
 
     return evaluate_trace_distance
-=======
-def expressibility(qnode: qml.QNode, rng: np.random.Generator):
+
+
+def expressibility(
+        qnode: qml.QNode,
+        parameter_shape: Tuple[int],
+        rng: np.random.Generator,
+        parameter_range: Tuple[int] = (0., 2*np.pi),
+        num_samples: int = 100
+    ):
     '''
     Expressibility of a paramtrized quantum circuit given by the (estimated) KL-divergence
     of the output probabilities of the circuit and the Haar measure.
 
     Args:
-        qnode:
-        rng:
+        qnode (qml.QNode): Must return a ``~.state()``.
+        parameter_shape (tuple[int]): Shape of the Qnode input parameters.
+        rng (np.random.Generator): Pseudo-random number generator.
+        num_samples (int): Number of states to use to estimate the expressibilty.
 
     Returns:
-        float:
+        float: A sample estimate of the expressibility.
     '''
     num_wires = qnode.num_wires
 
-    def qr_haar(N):
-        """Generate a Haar-random matrix using the QR decomposition."""
-        A, B = rng.normal(size=(N, N)), rng.normal(size=(N, N))
-        Z = A + 1j * B
-        Q, R = np.linalg.qr(Z)
-        Lambda = np.diag([R[i, i] / np.abs(R[i, i]) for i in range(N)])
-        return np.dot(Q, Lambda)
+    low, high = parameter_range
+    parameters = low + (high - low) * rng.random((num_samples, *parameter_shape))
+    state = qnode(parameters[0])
+    if not isinstance(qnode.tape.measurements[0], StateMP):
+        raise qml.QuantumFunctionError(
+            'Qnode has to return the state. This can be done via qml.state().'
+        )
+    random_states = [state] + [qnode(w) for w in parameters[1:]]
+    
+    # This step is a bit redundant since we only need the upper (or lower) triangular part
+    fidelity_matrix = np.abs(
+        np.tensordot(random_states, random_states.conj(), axes=(1, 1))
+    ) ** 2
+    fidelity_samples = [fidelity_matrix[i, j] for i in range(num_samples) for j in range(i)]
 
-    @qml.qnode(dev)
-    def qr_haar_random_unitary():
-        qml.QubitUnitary(qr_haar(2), wires=0)
-        return qml.state()
+    def prob_haar(fidelity: float) -> float:
+        '''
+        The probability distribution over fidelities under the Haar measure,
+        where fidelity refers to the Hilber-Schmitt inner product of two states drawn
+        from the Haar measure.
+        
+        The exact formula has been worked out in
+        K. Zyczkowski and H.-J. Sommers, Phys. Rev. A 71, 032313 (2005).
+        '''
+        return (2 ** num_wires - 1) * (1 - fidelity) ** (2 ** num_wires - 1)
 
-    prob_circuit: np.ndarray
-    '''The probability distribution over fidelities given by the paramtrized circuit.'''
+    histogram, bins = np.histogram(fidelity_samples, bins=50)
+    bin_midpoints = [bins[i+1] - bins[i] for i in range(len(histogram))]
 
-    prob_haar: np.ndarray
-    '''The probability distribution over fidelities under the Haar measure.'''
-
-    return kl_estimate(prob_circuit, prob_haar)
->>>>>>> 2209369f6 (Initial layout.)
+    kl_estimate = 0.
+    for fidelity, p in zip(bin_midpoints, histogram):
+        kl_estimate += p * np.log(p / prob_haar(fidelity))
+    
+    return kl_estimate
