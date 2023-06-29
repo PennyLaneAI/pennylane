@@ -23,8 +23,6 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -128,6 +126,34 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    def __init_subclass__(cls, **kwargs):
+        # for the sake of prototypetyping, I assume jax is installed
+        import jax
+
+        def flatten(op):
+            return op._flatten()
+
+        def unflatten(aux, parameters):
+            return cls._unflatten(parameters, aux)
+
+        jax.tree_util.register_pytree_node(cls, flatten, unflatten)
+
+        def torch_unflatten(parameters, aux):
+            return cls._unflatten(parameters, aux)
+
+        from torch.utils._pytree import _register_pytree_node
+
+        _register_pytree_node(cls, flatten, torch_unflatten)
+
+    def _flatten(self):
+        metadata = (self.wires,) if self.obs is None else tuple()
+        return (self.obs, self._eigvals), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        wires = metadata[0] if data[0] is None else None
+        return cls(obs=data[0], wires=wires, eigvals=data[1])
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -154,7 +180,7 @@ class MeasurementProcess(ABC):
             if obs is not None:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
-            self._eigvals = np.array(eigvals)
+            self._eigvals = qml.math.asarray(eigvals)
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand receiving

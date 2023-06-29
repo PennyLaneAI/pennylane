@@ -142,7 +142,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
         """Device preprocessing function.
 
         .. warning::
@@ -189,7 +189,14 @@ class Device(abc.ABC):
             return res
 
         circuit_batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
-        return circuit_batch, blank_postprocessing_fn, execution_config
+        return circuit_batch, blank_postprocessing_fn
+
+    def setup_configuration(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> ExecutionConfig:
+        return execution_config
 
     @abc.abstractmethod
     def execute(

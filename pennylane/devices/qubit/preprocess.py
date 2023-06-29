@@ -282,7 +282,7 @@ def batch_transform(
     return tapes, batch_fn
 
 
-def _update_config(config: ExecutionConfig) -> ExecutionConfig:
+def _update_config(config: ExecutionConfig, shots=None) -> ExecutionConfig:
     """Choose the "best" options for the configuration if they are left unspecified.
 
     Args:
@@ -292,10 +292,10 @@ def _update_config(config: ExecutionConfig) -> ExecutionConfig:
         ExecutionConfig: a new config with the best choices selected.
     """
     updated_values = {}
-    if config.gradient_method == "best":
+    if config.gradient_method == "best" and not shots:
         updated_values["gradient_method"] = "backprop"
     if config.use_device_gradient is None:
-        updated_values["use_device_gradient"] = config.gradient_method in {
+        updated_values["use_device_gradient"] = not shots and config.gradient_method in {
             "best",
             "adjoint",
             "backprop",
@@ -335,4 +335,4 @@ def preprocess(
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return circuits, batch_fn, _update_config(execution_config)
+    return circuits, batch_fn, _update_config(execution_config, shots=circuits[0].shots)

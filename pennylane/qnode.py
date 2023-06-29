@@ -832,6 +832,7 @@ class QNode:
             )
 
         for obj in self.tape.operations + self.tape.observables:
+            # not applicable under new device interface
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
                 and len(obj.wires) != self.device.num_wires
@@ -839,6 +840,7 @@ class QNode:
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
+            # role of backprop device to validate this
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
@@ -853,9 +855,11 @@ class QNode:
         # operations
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
+        # choice of device. We shouldn't need this here.
         if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
+        # not needed if we allow access to outer and inner transform programs
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
@@ -902,12 +906,14 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
+        # why here instead of in qml.execute?
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (
             hasattr(cache, "__getitem__")
             and hasattr(cache, "__setitem__")
             and hasattr(cache, "__delitem__")
         )
+        # necessary to update the tracker. no longer necessary when we aren't switching the device
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():

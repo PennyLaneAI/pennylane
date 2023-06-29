@@ -102,10 +102,10 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, seed=None) -> None:
+    def __init__(self, seed=None, set_rng=True) -> None:
         super().__init__()
 
-        self._rng = np.random.default_rng(seed)
+        self._rng = np.random.default_rng(seed) if set_rng else None
         self._debugger = None
 
     def supports_derivatives(
@@ -178,9 +178,18 @@ class DefaultQubit2(Device):
                 """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
                 return post_processing_fn(results)[0]
 
-            return batch, convert_batch_to_single_output, config
+            return batch, convert_batch_to_single_output
 
-        return batch, post_processing_fn, config
+        return batch, post_processing_fn
+
+    def setup_configuration(
+        self,
+        circuits: QuantumTape_or_Batch = None,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> ExecutionConfig:
+        circuits = circuits or QuantumTape()
+        _, _, config = preprocess(circuits, execution_config=execution_config)
+        return config
 
     def execute(
         self,

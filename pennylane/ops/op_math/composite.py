@@ -47,6 +47,13 @@ class CompositeOp(Operator):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
+    def _flatten(self):
+        return tuple(self.operands), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data)
+
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(

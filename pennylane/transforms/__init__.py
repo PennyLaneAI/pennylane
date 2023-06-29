@@ -202,6 +202,9 @@ Transforms core
     ~transforms.core.transform_dispatcher
 
 """
+
+from .cache_results import cache_results
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform

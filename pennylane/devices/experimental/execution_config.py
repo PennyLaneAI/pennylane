@@ -62,9 +62,6 @@ class ExecutionConfig:
     device_options = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: str = "autograd"
-    """The machine learning framework to use"""
-
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
@@ -74,10 +71,6 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        if self.interface not in SUPPORTED_INTERFACES:
-            raise ValueError(
-                f"Unknown interface. interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
-            )
 
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(

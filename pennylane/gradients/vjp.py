@@ -380,7 +380,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
     except (AttributeError, TypeError, NotImplementedError):
         pass
 
-    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape)
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
@@ -520,7 +520,7 @@ def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_
 
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
-        g_tapes, fn = vjp(tape, dy, gradient_fn, shots=shots, gradient_kwargs=gradient_kwargs)
+        g_tapes, fn = vjp(tape, dy, gradient_fn)
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)

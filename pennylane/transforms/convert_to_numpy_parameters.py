@@ -19,7 +19,37 @@ import copy
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
+from pennylane.typing import ResultBatch
+
+from typing import Tuple, Callable
+
+from .core import transform
+
+
+def _is_count_result(r):
+    """Checks if ``r`` is a single count (or broadcasted count) result"""
+    return isinstance(r, dict) or isinstance(r, list) and all(isinstance(i, dict) for i in r)
+
+
+def _recursive_asarray(res, like="jax"):
+    """From a list of tapes results (each result is either a np.array or tuple), transform it to a list of Jax
+    results (structure stay the same)."""
+    res_ = []
+    for r in res:
+        if _is_count_result(r):
+            res_.append(r)
+        elif not isinstance(r, tuple):
+            res_.append(math.asarray(r, like=like))
+        else:
+            sub_r = []
+            for r_i in r:
+                if _is_count_result(r_i):
+                    sub_r.append(r_i)
+                else:
+                    sub_r.append(math.asarray(r_i, like=like))
+            res_.append(tuple(sub_r))
+    return tuple(res_) if len(res_) > 1 else res_[0]
 
 
 def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Operator:
@@ -46,11 +76,13 @@ def _convert_measurement_to_numpy_data(
 
 
 # pylint: disable=protected-access
-def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
+def convert_to_numpy_parameters(
+    circuit: QuantumTape,
+) -> Tuple[Tuple[QuantumTape], Callable[[ResultBatch], ResultBatch]]:
     """Transforms a circuit to one with purely numpy parameters.
 
     Args:
-        circuit (QuantumScript): a circuit with parameters of any interface
+        tape (QuantumScript): a circuit with parameters of any interface
 
     Returns:
         QuantumScript: A circuit with purely numpy parameters
@@ -83,6 +115,9 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     False
 
     """
+    all_parameters = circuit.get_parameters()
+    initial_interface = math.get_interface(*all_parameters)
+
     new_prep = (_convert_op_to_numpy_data(op) for op in circuit._prep)
     new_ops = (_convert_op_to_numpy_data(op) for op in circuit._ops)
     new_measurements = (_convert_measurement_to_numpy_data(m) for m in circuit.measurements)
@@ -90,4 +125,22 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     # must preserve trainable params as we lose information about the machine learning interface
     new_circuit.trainable_params = circuit.trainable_params
     new_circuit._qfunc_output = circuit._qfunc_output
-    return new_circuit
+
+    def cast_result_back_to_initial_interface(results: ResultBatch) -> ResultBatch:
+        """Returns results to the initial interface removed in convert_to_numpy_parameters
+
+        Args:
+            results (ResultBatch): the result of executions
+
+        Returns:
+            ResultBatch
+
+        Closure:
+            initial_interface: the interface we need to cast the data back to.
+        """
+        return _recursive_asarray(results, like=initial_interface)
+
+    return (new_circuit,), cast_result_back_to_initial_interface
+
+
+convert_to_numpy_parameters_dispatcher = transform(convert_to_numpy_parameters)

@@ -138,12 +138,15 @@ class TransformContainer:
     .. seealso:: :func:`~.pennylane.transforms.core.transform`
     """
 
+    def __repr__(self):
+        return f"{self._transform.__name__}({self._args}, {self._kwargs})"
+
     def __init__(
         self, transform, args=None, kwargs=None, classical_cotransform=None, is_informative=False
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
-        self._args = args if args else []
-        self._kwargs = kwargs if kwargs else {}
+        self._args = args or tuple()
+        self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
 
@@ -157,6 +160,9 @@ class TransformContainer:
                 self._is_informative,
             )
         )
+
+    def __call__(self, tape):
+        return self._transform(tape, *self._args, **self._kwargs)
 
     @property
     def transform(self):

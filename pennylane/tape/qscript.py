@@ -182,6 +182,13 @@ class QuantumScript:
 
     """
 
+    def _flatten(self):
+        return (self._ops, self.measurements, self._prep), (self.shots,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, shots=metadata[0])
+
     do_queue = False
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
@@ -1483,3 +1490,26 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
         return qscript
 
     return wrapper
+
+
+import jax
+
+
+def flatten(circuit):
+    return circuit._flatten()
+
+
+def unflatten(aux, parameters):
+    return QuantumScript._unflatten(parameters, aux)
+
+
+jax.tree_util.register_pytree_node(QuantumScript, flatten, unflatten)
+
+
+def torch_unflatten(parameters, aux):
+    return QuantumScript._unflatten(parameters, aux)
+
+
+from torch.utils._pytree import _register_pytree_node
+
+_register_pytree_node(QuantumScript, flatten, torch_unflatten)

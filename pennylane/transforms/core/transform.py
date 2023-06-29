@@ -103,7 +103,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
 
     signature_transform = get_type_hints(quantum_transform)
     # Check signature of transform to force the fn style (tape, ...) - > (Sequence(tape), fn)
-    _transform_signature_check(signature_transform)
+    # _transform_signature_check(signature_transform)
 
     # 2: Checks for the expand transform
     if expand_transform is not None:
@@ -111,7 +111,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
             raise TransformError("The expand function must be a valid Python function.")
         signature_expand_transform = get_type_hints(expand_transform)
         # Check the signature of expand_transform to force the fn style tape - > (Sequence(tape), fn)
-        _transform_signature_check(signature_expand_transform)
+        # _transform_signature_check(signature_expand_transform)
 
         if len(signature_expand_transform) > 2:
             raise TransformError(

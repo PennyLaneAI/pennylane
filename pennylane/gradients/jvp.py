@@ -236,7 +236,7 @@ def compute_jvp_multi(tangent, jac):
     return tuple(compute_jvp_single(tangent, j) for j in jac)
 
 
-def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
+def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector product of a tape. This function only works with the new return type system on.
 
@@ -246,8 +246,6 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
             matching the number of trainable parameters.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape
-        shots (None, int, list[int]): The device shots that will be used to
-            execute the tapes outputted by this
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
 
@@ -320,26 +318,19 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     except (AttributeError, TypeError):
         pass
 
-    gradient_kwargs = gradient_kwargs or {}
-    shots = tape.shots if shots is None else Shots(shots)
-    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
         _jvp_fn = compute_jvp_multi if multi_m else compute_jvp_single
 
-        # Jacobian without shot vectors
-        if not shots.has_partitioned_shots:
-            return _jvp_fn(tangent, jac)
-
-        # The jacobian is calculated for shot vectors
-        return tuple(_jvp_fn(tangent, jac[i]) for i in range(shots.num_copies))
+        return _jvp_fn(tangent, jac)
 
     return gradient_tapes, processing_fn
 
 
-def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", gradient_kwargs=None):
+def batch_jvp(tapes, tangents, gradient_fn, reduction="append"):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector products of a batch of tapes.
 
@@ -412,14 +403,13 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
     We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """
     # pylint: disable=too-many-arguments
-    gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
     gradient_tapes = []
     processing_fns = []
 
     # Loop through the tapes and dys vector
     for tape, tangent in zip(tapes, tangents):
-        g_tapes, fn = jvp(tape, tangent, gradient_fn, shots, gradient_kwargs)
+        g_tapes, fn = jvp(tape, tangent, gradient_fn)
 
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
@@ -450,7 +440,7 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
 
         return jvps
 
-    return gradient_tapes, processing_fn
+    return tuple(gradient_tapes), processing_fn
 
 
 def _single_measurement_zero(m, tangent):
