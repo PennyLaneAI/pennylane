@@ -459,19 +459,21 @@ def apply(op, context=QueuingManager):
     >>> print(qml.draw(circuit)(0.6))
     0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
 
-    Note: if you use ``apply`` on an operator that has already been queued, it will
-    be queued for a second time. For example:
+    .. warning::
 
-    .. code-block:: python
+        If you use ``apply`` on an operator that has already been queued, it will
+        be queued for a second time. For example:
 
-        @qml.qnode(dev)
-        def circuit():
-            op = qml.Hadamard(0)
-            qml.apply(op)
-            return qml.expval(qml.PauliZ(0))
+        .. code-block:: python
 
-    >>> print(qml.draw(circuit)())
-    0: ──H──H─┤  <Z>
+            @qml.qnode(dev)
+            def circuit():
+                op = qml.Hadamard(0)
+                qml.apply(op)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──H─┤  <Z>
 
     .. details::
         :title: Usage Details
