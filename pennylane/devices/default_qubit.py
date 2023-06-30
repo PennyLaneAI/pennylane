@@ -28,9 +28,12 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
+from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.measurements import ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
@@ -567,6 +570,15 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        is_state_batched = self._ndim(self.state) == 2
+        # intercept Sums
+        if isinstance(observable, Sum) and not self.shots:
+            return measure(
+                ExpectationMP(observable.map_wires(self.wire_map)),
+                self._pre_rotated_state,
+                is_state_batched,
+            )
+
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
@@ -583,7 +595,7 @@ class DefaultQubit(QubitDevice):
 
         if backprop_mode:
             # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-            if self._ndim(self.state) == 2:
+            if is_state_batched:
                 raise NotImplementedError(
                     "Expectation values of Hamiltonians for interface!=None are "
                     "not supported together with parameter broadcasting yet"
@@ -623,7 +635,7 @@ class DefaultQubit(QubitDevice):
             Hmat = observable.sparse_matrix(wire_order=self.wires)
 
             state = qml.math.toarray(self.state)
-            if self._ndim(state) == 2:
+            if is_state_batched:
                 res = qml.math.array(
                     [
                         csr_matrix.dot(

@@ -111,6 +111,24 @@ class TestInitialization:
         assert ev3.dense is False
         assert ev3(params=[], t=2).dense is False  # Test that calling inherits the dense keyword
 
+    @pytest.mark.parametrize("dense_bool", [True, False])
+    def test_updating_dense_in_call(self, dense_bool):
+        """Test that the flag dense updated correctly if set when calling ParametrizedEvolution"""
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        coeffs = [1, 2, 3]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=None, t=2)
+        assert ev.dense is False
+        assert ev(params=[], t=2, dense=dense_bool).dense is dense_bool
+
+        ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
+        assert ev2.dense is True
+        assert ev2(params=[], t=2, dense=dense_bool).dense is dense_bool
+
+        ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
+        assert ev3.dense is False
+        assert ev3(params=[], t=2, dense=dense_bool).dense is dense_bool
+
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
         """Test that the keyword arguments return_intermediate and complementary are taken into

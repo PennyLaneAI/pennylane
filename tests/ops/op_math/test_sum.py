@@ -1067,7 +1067,7 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=None)
         def my_circ():
             qml.PauliX(0)
             return qml.expval(sum_op)
@@ -1079,7 +1079,7 @@ class TestIntegration:
         """Tests that the parameters of a Sum are considered trainable."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=None)
         def circuit():
             return qml.expval(Sum(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 0)))
 
