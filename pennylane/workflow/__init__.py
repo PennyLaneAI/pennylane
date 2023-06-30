@@ -13,9 +13,10 @@
 # limitations under the License.
 """
 
-.. image:: architecture.png
-  :width: 400
-  :alt: Alternative text
+.. figure:: ../../_static/workflow_architecture.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
 Contents
 --------
@@ -30,7 +31,7 @@ Construction Utilities:
 
     ~build_workflow
     ~get_interface_boundary
-    ~QNode
+    ~QNode2
 
 Executor types
 ~~~~~~~~~~~~~~
@@ -51,13 +52,14 @@ Executor types
     ~interfaces.torch_boundary.TorchLayer
     ~interfaces.tf_boundary.TFLayer
 
-.. currentmodule:: pennylane.operation
+.. currentmodule:: pennylane.workflow
 
 .. inheritance-diagram:: Executor, DeviceExecutor, TransformProgramLayer, MultiProcessingLayer, NullLayer, AutogradLayer, JaxLayer, TorchLayer, TFLayer
-    :parts: 1
 
 Derivatives
 ~~~~~~~~~~~
+
+.. currentmodule:: pennylane.workflow
 
 .. autosummary::
     :toctree: api
@@ -65,6 +67,8 @@ Derivatives
     ~DerivativeExecutor
     ~DeviceDerivatives
     ~TransformDerivatives
+
+.. currentmodule:: pennylane.workflow
 
 .. inheritance-diagram:: DerivativeExecutor, DeviceDerivatives, TransformDerivatives, Executor
 
@@ -78,4 +82,4 @@ from .interfaces import get_interface_boundary
 
 from .build_workflow import build_workflow
 
-from .qnode import QNode
+from .qnode import QNode2

@@ -26,7 +26,7 @@ _gradient_transform_map = {
 }
 
 
-class QNode:
+class QNode2:
 
     _qfunc_uses_shots_arg = False  # bool: whether or not the qfunc has shots as a keyword argument
 
