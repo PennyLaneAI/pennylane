@@ -57,6 +57,7 @@ class TorchBoundary(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
+        print(dy)
         vjps = ctx.vjp_function(ctx.tapes, dy, reduction="extend")
 
         # Remove empty vjps (from tape with non trainable params)

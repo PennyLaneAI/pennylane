@@ -15,6 +15,7 @@ def autograd_registered_function(
 
 def wrapped_vjp(ans, parameters, tapes, next_executor, derivative_executor):
     def vjp(dy):
+        print(tapes, dy)
         vjps = derivative_executor.compute_vjp(tapes, dy, reduction_method="append")
         return [to_numpy(v, max_depth=2) if isinstance(v, ArrayBox) else v for v in vjps]
 

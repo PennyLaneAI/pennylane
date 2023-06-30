@@ -30,6 +30,7 @@ Construction Utilities:
 
     ~build_workflow
     ~get_interface_boundary
+    ~QNode
 
 Executor types
 ~~~~~~~~~~~~~~
@@ -65,7 +66,7 @@ Derivatives
     ~DeviceDerivatives
     ~TransformDerivatives
 
-.. inheritance-diagram:: DerivativeExecutor, DeviceDerivatives, TransformDerivatives
+.. inheritance-diagram:: DerivativeExecutor, DeviceDerivatives, TransformDerivatives, Executor
 
 """
 
@@ -76,3 +77,5 @@ from .gradient_layers import DerivativeExecutor, DeviceDerivatives, TransformDer
 from .interfaces import get_interface_boundary
 
 from .build_workflow import build_workflow
+
+from .qnode import QNode

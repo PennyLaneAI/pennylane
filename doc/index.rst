@@ -214,3 +214,4 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_tape
    code/qml_utils
    code/qml_wires
+   code/qml_workflow

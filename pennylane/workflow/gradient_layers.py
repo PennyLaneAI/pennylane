@@ -3,10 +3,13 @@ from typing import Tuple
 from cachetools import LRUCache
 
 from .executor import Executor
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer
 from pennylane.transforms import convert_to_numpy_parameters
 
-from pennylane.typing import ResultBatch
+from pennylane.typing import ResultBatch, TensorLike
+
+Batch = Tuple[QuantumScript]
 
 from pennylane.gradients import (
     batch_jvp,
@@ -41,24 +44,92 @@ def _compute_vjps(dys, jacs, multi_measurements, reduction_method="extend"):
 
 
 class DerivativeExecutor(abc.ABC):
+    """Provides methods for calculating the jvp and vjps for tapes and tangents/ cotangents."""
+
     @abc.abstractmethod
     def execute_and_compute_jvp(
-        self, tapes, tangents, reduction_method="extend"
+        self, tapes: Batch, tangents: TensorLike, reduction_method: str = "extend"
     ) -> Tuple[ResultBatch, Tuple]:
+        """Calculate both the results for a batch of tapes and the jvp.
+
+        Args:
+            tapes: The batch of tapes to take the derivatives of
+            tangents (Iterable[TensorLike]): the tangents for the parameters of the tape
+            reduction_method (str): Either ``"append"`` or ``"extend"``
+
+        Returns:
+            ResultBatch, TensorLike
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> batch = (tape0, )
+        >>> tangent_variables = (1.5, )
+        >>> derivatives_executor.execute_and_compute_vjp(batch, tangent_variables)
+        ((array(0.99500417),), (-0.14975012497024237,))
+
+        """
         pass
 
     @abc.abstractmethod
-    def compute_jvp(self, tapes, tangent_variables, reduction_method="extend") -> Tuple:
+    def compute_jvp(
+        self, tapes: Batch, tangent_variables: TensorLike, reduction_method="extend"
+    ) -> Tuple:
+        """Calculate both the results for a batch of tapes and the jvp.
+
+        Args:
+            tapes: The batch of tapes to take the derivatives of
+            tangents (Iterable[TensorLike]): the tangents for the parameters of the tape
+            reduction_method (str): Either ``"append"`` or ``"extend"``
+
+        Returns:
+            TensorLike
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> batch = (tape0, )
+        >>> tangent_variables = (1.5, )
+        >>> derivatives_executor.compute_vjp(batch, tangent_variables)
+        (-0.14975012497024237, )
+
+        """
         pass
 
     @abc.abstractmethod
     def execute_and_compute_vjp(
-        self, tapes, dy, reduction_method="extend"
+        self, tapes: Batch, dy: TensorLike, reduction_method: str = "extend"
     ) -> Tuple[ResultBatch, Tuple]:
+        """Compute the vjp for a given batch of tapes.
+
+        Args:
+            tapes: the batch of tapes to the the derivatives of
+            dy: the derivatives of the results of an execution
+            reduction_method (str): Either ``"append"`` or ``"extend"``
+
+        Returns:
+            ResultBatch, TensorLike
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> batch = (tape0, )
+        >>> derivatives_executor.execute_and_compute_vjp(batch, (0.5, ))
+        ((array(0.99500417),), (-0.04991670832341412,))
+        """
         pass
 
     @abc.abstractmethod
-    def compute_vjp(self, tapes, dy, reduction_method="extend") -> Tuple:
+    def compute_vjp(self, tapes, dy, reduction_method: str = "extend") -> Tuple:
+        """Compute the vjp for a given batch of tapes.
+
+        Args:
+            tapes: the batch of tapes to the the derivatives of
+            dy: the derivatives of the results of an execution
+            reduction_method (str): Either ``"append"`` or ``"extend"``
+
+        Returns:
+            TensorLike
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> batch = (tape0, )
+        >>> derivatives_executor.compute_vjp(batch, (0.5, ))
+        (-0.04991670832341412,)
+        """
         pass
 
 
@@ -86,7 +157,7 @@ class TransformDerivatives(DerivativeExecutor):
 
         results = full_results[:num_result_tapes]
         jvp_results = full_results[num_result_tapes:]
-
+        print(jvp_results)
         jvps = jvp_processing_fn(jvp_results)
 
         return tuple(results), tuple(jvps)
@@ -96,9 +167,11 @@ class TransformDerivatives(DerivativeExecutor):
         jvp_tapes, jvp_processing_fn = batch_jvp(
             tapes, tangent_variables, self._gradient_transform, reduction=reduction_method
         )
+        print(jvp_tapes)
         jvp_results = self._next_executor(jvp_tapes)
+        print(jvp_results)
 
-        return jvp_processing_fn(jvp_results)
+        return tuple(jvp_processing_fn(jvp_results))
 
     def execute_and_compute_vjp(
         self, tapes, dy, reduction_method="extend"
@@ -109,7 +182,7 @@ class TransformDerivatives(DerivativeExecutor):
             tapes, dy, self._gradient_transform, reduction=reduction_method
         )
 
-        full_batch = tapes + jvp_tapes
+        full_batch = tuple(tapes) + tuple(jvp_tapes)
 
         full_results = self._next_executor(full_batch)
 
@@ -129,7 +202,7 @@ class TransformDerivatives(DerivativeExecutor):
 
         vjp_results = self._next_executor(vjp_tapes)
 
-        return processing_fn(vjp_results)
+        return tuple(processing_fn(vjp_results))
 
 
 class DeviceDerivatives(DerivativeExecutor):

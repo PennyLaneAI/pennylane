@@ -31,7 +31,7 @@ def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.copy(copy_operations=True)
     tc.set_parameters(a)
-    return convert_to_numpy_parameters(tc) if unwrap else tc
+    return convert_to_numpy_parameters(tc)[0][0] if unwrap else tc
 
 
 def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
@@ -264,7 +264,7 @@ def _execute_legacy(
             return (tuple(res),)
 
         # Gradient function is a device method.
-        unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+        unwrapped_tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
         jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
@@ -464,11 +464,9 @@ def _execute_bwd(
                 new_tapes,
                 tangents[0],
                 gradient_fn,
-                jvp_shots,
             )
             _kwargs = {
                 "reduction": "append",
-                "gradient_kwargs": gradient_kwargs,
             }
             if at_max_diff:
                 jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)

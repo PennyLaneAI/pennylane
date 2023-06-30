@@ -53,16 +53,17 @@ class ExecutionConfig:
     True indicates a request to either use the device gradient or fail.
     """
 
-    interface = None
-
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments = None
+    gradient_keyword_arguments: Optional[dict] = None
     """Arguments used to control a gradient transform"""
 
-    device_options = None
+    device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
+
+    interface: str = "autograd"
+    """The machine learning framework to use"""
 
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
@@ -73,7 +74,6 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."

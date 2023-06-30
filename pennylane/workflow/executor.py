@@ -14,9 +14,7 @@ PostProcessingFn = Callable[[ResultBatch], ResultBatch]
 
 
 class Executor(abc.ABC):
-    def __hash__(self):
-        name = type(self).__name__
-        return hash((name, self.configuration))
+    """A callable class capable of turning quantum tapes into results."""
 
     def __repr__(self):
         config_str = repr(self.configuration).replace("\n", "\n\t")
@@ -27,19 +25,23 @@ class Executor(abc.ABC):
         pass
 
     @property
-    def next_layer(self):
-        return None
-
-    @property
-    def configuration(self):
-        """All the information needed to fully reproduce the executor.
-
-        Should be able to reproduce the object by ``type(obj)(*obj.configuration)`.
+    def next_layer(self) -> Optional["Executor"]:
         """
-        return tuple()
+        Points to the next executor if the instance is nested.
+        """
+        return None
 
 
 class DeviceExecutor(Executor):
+    """Device execution with a bound configuration.
+
+    Args:
+        execution_config (ExecutionConfig): the configuration for the device execution
+        Device (Device): the device to perform the execution on.
+
+
+    """
+
     def __repr__(self):
         return f"DeviceExecutor({self._device})"
 
@@ -56,6 +58,15 @@ class DeviceExecutor(Executor):
 
 
 class TransformProgramLayer(Executor):
+    """Applies a transform program's pre and post processing around the next stage in the pipeline.
+
+    Args:
+        next_executor (Executor):
+        transform_program (TransformProgram)
+
+
+    """
+
     def __init__(self, next_executor: Executor, transform_program: TransformProgram):
         self._next_executor = next_executor
         self._transform_program = transform_program
@@ -67,7 +78,7 @@ class TransformProgramLayer(Executor):
 
     @property
     def configuration(self):
-        return (self._next_executor, self._transform_program)
+        return (self._transform_program, self._next_executor)
 
     @property
     def next_layer(self):
@@ -83,13 +94,22 @@ class TransformProgramLayer(Executor):
 
 
 class MultiProcessingLayer(Executor):
-    def __init__(self, next_executor, num_processes: int = 1):
+    """Uses ``concurrent.futures.ProcessPoolExecutor`` to dispatch execution over multiple processes.
+
+    Args:
+        next_executor (Executor): Where to perform the executions
+        max_workers (int): how many workers to use.
+
+
+    """
+
+    def __init__(self, next_executor, max_workers: int = 1):
         self._next_executor = next_executor
-        self._num_processes = num_processes
+        self._max_workers = max_workers
 
     def __call__(self, circuits) -> ResultBatch:
         results = None
-        with ProcessPoolExecutor(max_workers=self._num_processes) as executor:
+        with ProcessPoolExecutor(max_workers=self._max_workers) as executor:
             future = executor.map(self._next_executor, [(c,) for c in circuits])
             results = tuple(f[0] for f in future)
         return results

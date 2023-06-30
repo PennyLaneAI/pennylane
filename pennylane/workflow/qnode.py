@@ -195,5 +195,6 @@ class QNode:
 
         circuit = make_qscript(self.func, shots=shots)(*args, **kwargs)
         workflow = self.construct_workflow(circuit)
+        print(workflow)
         result_batch = workflow((circuit,))
         return result_batch[0]

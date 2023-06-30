@@ -52,5 +52,22 @@ _get_boundary_map = {
 
 
 def get_interface_boundary(ml_interface: str) -> Executor:
-    """Chooses the proper executor for the requested interface."""
+    """Choose the proper executor for the requested interface.
+
+    Args:
+        ml_interface (str): the requested machine learning interface.
+
+    Returns:
+        Executor: A class that registers a given ``Executor`` and ``DerivativeExecutor`` to
+        a machine learning interface.
+
+    Raises:
+        ImportError: if the requested interface is not available.
+
+    >>> get_interface_boundary("torch")
+    pennylane.workflow.interfaces.torch_boundary.TorchLayer
+    >>> get_interface_boundary("numpy")
+    pennylane.workflow.interfaces.dispatcher.NullLayer
+
+    """
     return _get_boundary_map[ml_interface]()
