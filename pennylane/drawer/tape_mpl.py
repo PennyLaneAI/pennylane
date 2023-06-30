@@ -92,6 +92,20 @@ def _add_mid_circuit_measurement(drawer, layer, mapped_wires, op):
     line.set_xdata((start_x, layer))
 
 
+def _add_drawable_op(drawer, layer, mapped_target_wires, op, mapped_ctrl_wires=None):
+    if mapped_ctrl_wires:
+        drawer.compressed_control(layer, mapped_ctrl_wires, wires_target=mapped_target_wires)
+    drawer.box_gate(
+        layer,
+        mapped_target_wires,
+        op.label(),
+        box_options={
+            "zorder": 4
+        },  # make sure box and text above control wires if controlled
+        text_options={"zorder": 5},
+    )
+
+
 special_cases = {
     ops.SWAP: _add_swap,
     ops.CSWAP: _add_cswap,
@@ -103,6 +117,7 @@ special_cases = {
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
     MidMeasureMP: _add_mid_circuit_measurement,
+    ops.DrawableOp._DrawableOperation: _add_drawable_op,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
@@ -140,7 +155,13 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
                     [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
                 )
                 # It is assumed that if `len(op.wires) == 0`, `op` acts on all wires
-                specialfunc(drawer, layer, mapped_wires, op)
+
+                if isinstance(op, ops.DrawableOp._DrawableOperation) and len(op.cntrl_wires) != 0:
+                    mapped_ctrl_wires = [wire_map[w] for w in op.cntrl_wires]
+                    mapped_target_wires = [wire_map[w] for w in op.target_wires]
+                    _add_drawable_op(drawer, layer, mapped_ctrl_wires=mapped_ctrl_wires, mapped_target_wires=mapped_target_wires, op=op)
+                else:
+                    specialfunc(drawer, layer, mapped_wires, op)
 
             elif type(op).__name__ == "Conditional":
                 measured_layer = {_measured_layers[i] for i in op.meas_val.measurement_ids}.pop()

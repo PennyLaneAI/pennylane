@@ -20,8 +20,12 @@ from functools import wraps
 import warnings
 
 import pennylane as qml
+from pennylane.ops.DrawableOp import _DrawableOperation
+from pennylane.operation import Operation
+from pennylane.wires import Wires
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+from .utils import unwrap_controls
 
 
 def draw(
@@ -32,6 +36,8 @@ def draw(
     max_length=100,
     show_matrices=True,
     expansion_strategy=None,
+    blockify=False,
+    blockify_sections=[],
 ):
     """Create a function that draws the given qnode or quantum function.
 
@@ -204,6 +210,8 @@ def draw(
             max_length=max_length,
             show_matrices=show_matrices,
             expansion_strategy=expansion_strategy,
+            blockify=blockify,
+            blockify_sections=blockify_sections,
         )
 
     if expansion_strategy is not None:
@@ -237,6 +245,8 @@ def _draw_qnode(
     max_length=100,
     show_matrices=True,
     expansion_strategy=None,
+    blockify=False,
+    blockify_sections=[],
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -250,6 +260,7 @@ def _draw_qnode(
 
         _wire_order = wire_order or qnode.device.wires
 
+        qtape = blockify_process_tape(qnode.qtape, blockify_sections=blockify_sections)
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
             res = [
@@ -274,7 +285,7 @@ def _draw_qnode(
             return "\n\n".join(res)
 
         return tape_text(
-            qnode.qtape,
+            qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
@@ -292,6 +303,8 @@ def draw_mpl(
     decimals=None,
     expansion_strategy=None,
     style="black_white",
+    blockify=False,
+    blockify_sections=[],
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -497,6 +510,8 @@ def draw_mpl(
             decimals=decimals,
             expansion_strategy=expansion_strategy,
             style=style,
+            blockify=blockify,
+            blockify_sections=blockify_sections,
             **kwargs,
         )
 
@@ -530,6 +545,8 @@ def _draw_mpl_qnode(
     decimals=None,
     expansion_strategy=None,
     style="black_white",
+    blockify=False,
+    blockify_sections=[],
     **kwargs,
 ):
     @wraps(qnode)
@@ -544,8 +561,10 @@ def _draw_mpl_qnode(
 
         _wire_order = wire_order or qnode.device.wires
 
+        qtape = blockify_process_tape(qnode.qtape, blockify_sections=blockify_sections)
+
         return tape_mpl(
-            qnode.qtape,
+            qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
@@ -554,3 +573,75 @@ def _draw_mpl_qnode(
         )
 
     return wrapper
+
+
+def blockify_process_tape(tape, blockify_sections=None):
+    section_indicies = []
+    operations_lst = tape.operations
+    measurements_lst = tape.measurements
+
+    for index, op in enumerate(operations_lst):
+        if isinstance(op, qml.Barrier):
+            section_indicies.append(index)
+
+    if not section_indicies:  # i.e if its empty (no barriers in the circuit)
+        return tape
+
+    n = len(operations_lst)
+
+    if section_indicies[0] != 0:
+        new_indicies = [0]
+        new_indicies.extend(section_indicies)
+        section_indicies = new_indicies
+
+    section_indicies.extend([n+1])
+    circ_sections = [(section_indicies[i], section_indicies[i + 1]) for i in range(len(section_indicies) - 1)]
+
+    compressed_operations = []
+    for section_num, op_indicies in enumerate(circ_sections):
+        start, end = op_indicies
+        section_ops = (
+            operations_lst[start:end] if (start == 0 and not isinstance(operations_lst[start], qml.Barrier))
+            else operations_lst[start+1:end]
+        )
+
+        if section_num in blockify_sections:
+            compressed_op = _compress(section_ops, label=blockify_sections[section_num])
+            section_ops = [] if compressed_op is None else [compressed_op]
+
+        compressed_operations.extend(section_ops)
+
+    tape = qml.tape.QuantumScript(
+        ops=compressed_operations,
+        measurements=measurements_lst,
+    )
+    return tape
+
+
+def _compress(lst_operations, label):
+    if len(lst_operations) == 0:
+        return None
+
+    all_wires = set().union(*(op.wires.toset() for op in lst_operations))
+
+    non_control_wires = set()
+    control_wires = set()
+    for op in lst_operations:
+        op_ctrl_wires, _ = unwrap_controls(op)
+
+        for w in op_ctrl_wires:
+            control_wires.add(w)
+
+        for w in op.wires:
+            if w not in op_ctrl_wires:
+                non_control_wires.add(w)
+
+    control_only_wires = Wires([w for w in control_wires if w not in non_control_wires])
+    target_only_wires = Wires([w for w in all_wires if w not in control_only_wires])
+
+    return _DrawableOperation(
+        wires=Wires(all_wires),
+        control_wires=control_only_wires,
+        target_wires=target_only_wires,
+        label=label,
+    )

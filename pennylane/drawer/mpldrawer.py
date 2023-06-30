@@ -1006,3 +1006,21 @@ class MPLDrawer:
 
         for line in lines:
             self._ax.add_line(line)
+
+    def compressed_control(self, layer, wires, wires_target=None, options=None):
+        if options is None:
+            options = {}
+
+        self.ctrl(layer, wires, wires_target=wires_target, control_values=[0] * len(wires), options=options)
+
+        new_options = _open_circ_options_process(options)
+        options["zorder"] = new_options["zorder"] + 1
+
+        wires = _to_tuple(wires)
+        for wire in wires:
+            target_dash = plt.Line2D(
+                (layer + self._octrl_rad/1.5, layer - self._octrl_rad/1.5),
+                (wire - self._octrl_rad/1.5, wire + self._octrl_rad/1.5),
+                **options,
+            )
+            self._ax.add_line(target_dash)
