@@ -30,12 +30,12 @@ def cache_results(
         """
         cache_value = cache[tape.hash]
 
-        if cache_value == "pending":
+        if cache_value is None:
             cache[tape.hash] = results[0]
             return results[0]
         return cache_value
 
     if tape.hash in cache:
         return tuple(), include_cached_results
-    cache[tape.hash] = "pending"
+    cache[tape.hash] = None
     return (tape,), include_cached_results

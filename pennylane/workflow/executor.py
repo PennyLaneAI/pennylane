@@ -41,7 +41,7 @@ class Executor(abc.ABC):
 
 class DeviceExecutor(Executor):
     def __repr__(self):
-        return f"DeviceExecutor(\n\t{self._device}\n)"
+        return f"DeviceExecutor({self._device})"
 
     def __init__(self, execution_config, device):
         self._execution_config = execution_config
@@ -75,6 +75,8 @@ class TransformProgramLayer(Executor):
 
     def __call__(self, circuits: Batch) -> ResultBatch:
         new_circuits, post_processing_fn = self._transform_program(circuits)
+        if len(new_circuits) == 0:  # for example with caching
+            return post_processing_fn(tuple())
         new_circuits = tuple(new_circuits)  # transforms might return lists accidentally
         results = self._next_executor(new_circuits)
         return post_processing_fn(results)

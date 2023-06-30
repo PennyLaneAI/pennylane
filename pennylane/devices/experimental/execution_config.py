@@ -53,6 +53,8 @@ class ExecutionConfig:
     True indicates a request to either use the device gradient or fail.
     """
 
+    interface = None
+
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 

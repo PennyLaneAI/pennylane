@@ -38,7 +38,7 @@ class TransformProgram(list):
     def __repr__(self):
         """The string representation of the transform program class."""
         transforms_repr = ", ".join(f"{transform_c.transform.__name__}" for transform_c in self)
-        return f"TransformProgram({transforms_repr})"
+        return f"TransformProgram(...)"
 
     def __hash__(self):
         return object.__hash__(self)

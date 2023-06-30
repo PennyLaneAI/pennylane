@@ -2,7 +2,6 @@ import torch
 
 import torch.utils._pytree as pytree
 
-
 from ..executor import Executor
 from ..gradient_layers import DerivativeExecutor
 
@@ -50,10 +49,9 @@ class TorchBoundary(torch.autograd.Function):
     ):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
         ctx.tapes = tapes
-        ctx.next_executor = next_executor
         ctx.vjp_function = vjp_function
 
-        return ctx.next_executor(ctx.tapes)
+        return next_executor(ctx.tapes)
 
     @staticmethod
     def backward(ctx, *dy):
@@ -79,10 +77,7 @@ class TorchLayer(Executor):
             parameters.extend(tape.get_parameters())
 
         return TorchBoundary.apply(
-            circuits,
-            self._next_executor,
-            self._derivative_executor.execute_and_compute_vjp,
-            *parameters
+            circuits, self._next_executor, self._derivative_executor.compute_vjp, *parameters
         )
 
     @property

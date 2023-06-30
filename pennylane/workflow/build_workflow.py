@@ -18,8 +18,10 @@ def build_workflow(
     ml_interface,
     gradient_method,
     gradient_kwargs: Optional[dict] = None,
+    grad_on_execution=False,
     inner_program: Optional[TransformProgram] = None,
     outer_program: Optional[TransformProgram] = None,
+    max_diff: int = 1,
     cache=False,
 ):
     inner_program = TransformProgram(inner_program) or TransformProgram()
@@ -43,9 +45,16 @@ def build_workflow(
 
     if device_config.use_device_gradient:
         derivatives_executor = DeviceDerivatives(outer_executor, device, device_config)
+        if device_config.grad_on_execution:
+            outer_executor = derivatives_executor
     elif isinstance(gradient_method, qml.gradients.gradient_transform):
         par_shift = TransformContainer(qml.gradients.param_shift, kwargs=gradient_kwargs)
         derivatives_executor = TransformDerivatives(outer_executor, par_shift)
+
+        if max_diff == 2:
+            ml_layer_type = get_interface_boundary(ml_interface)
+            outer_executor = ml_layer_type(outer_executor, derivatives_executor)
+            derivatives_executor = TransformDerivatives(outer_executor, par_shift)
     else:
         raise ValueError(f"do not recognize {gradient_method}")
 

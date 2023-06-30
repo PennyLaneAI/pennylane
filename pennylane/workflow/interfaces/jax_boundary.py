@@ -4,9 +4,21 @@ from ..executor import Executor
 from ..gradient_layers import DerivativeExecutor
 
 
+# Role of grad on execution for jax
+# jvp function is only called when the gradients are actually requested, so
+# we don't need to worry about computing the derivatives when they won't be used.
+# if the jvp method i
+
+
 class JaxLayer(Executor):
-    def __init__(self, next_executor: Executor, derivative_executor: DerivativeExecutor):
+    def __init__(
+        self,
+        next_executor: Executor,
+        derivative_executor: DerivativeExecutor,
+        grad_on_execution=False,
+    ):
         self._next_executor = jax.custom_jvp(next_executor)
+        self._derivative_executor = derivative_executor
 
         def execute_and_jvp_with_append(primals, tangents):
             tangent_variables = tuple(list(t.get_parameters()) for t in tangents[0])
@@ -25,4 +37,4 @@ class JaxLayer(Executor):
 
     @property
     def configuration(self):
-        return (self._next_executor.fun, self._next_executor.jvp.__self__)
+        return (self._derivative_executor, self._next_executor.fun)

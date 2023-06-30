@@ -1,5 +1,6 @@
 import abc
 from typing import Tuple
+from cachetools import LRUCache
 
 from .executor import Executor
 from pennylane.transforms.core import TransformContainer
@@ -63,7 +64,8 @@ class DerivativeExecutor(abc.ABC):
 
 class TransformDerivatives(DerivativeExecutor):
     def __repr__(self):
-        return f"Transform Derivatives({self._gradient_transform},\n{self._next_executor})"
+        next_executor_str = f"{self._next_executor}".replace("\n", "\n\t")
+        return f"Transform Derivatives({self._gradient_transform},\n\t{next_executor_str}\n)"
 
     def __init__(self, next_executor: Executor, gradient_transform: TransformContainer):
         self._next_executor = next_executor
@@ -138,32 +140,71 @@ class DeviceDerivatives(DerivativeExecutor):
         self._next_executor = next_executor
         self._device = device
         self._execution_config = execution_config
+        self._jacobian_cache = LRUCache(maxsize=10)
+        self._results_cache = LRUCache(maxsize=10)
+
+    def __call__(self, tapes):
+        if tapes not in self._jacobian_cache:
+            tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
+            results, jacs = self._device.execute_and_compute_derivatives(
+                tapes, self._execution_config
+            )
+            self._results_cache[tapes] = results
+            self._jacobian_cache[tapes] = jacs
+
+        return self._results_cache[tapes]
 
     def execute_and_compute_jvp(self, tapes, tangent_variables, reduction_method="extend"):
-
-        results, jacs = self._device.execute_and_compute_derivatives(tapes, self._execution_config)
+        tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        jvps = _compute_jvps(jacs, tangent_variables, multi_measurements)
 
-        return results, jvps
+        if tapes not in self._jacobian_cache:
+            results, jacs = self._device.execute_and_compute_derivatives(
+                tapes, self._execution_config
+            )
+            self._jacobian_cache[tapes] = jacs
+            self._results_cache[tapes] = results
+
+        jvps = _compute_jvps(self._jacobian_cache[tapes], tangent_variables, multi_measurements)
+
+        return self._results_cache[tapes], jvps
 
     def compute_jvp(self, tapes, tangent_variables, reduction_method="extend"):
-        jacs = self._device.compute_derivatives(tapes, self._execution_config)
+        tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
+        if tapes not in self._jacobian_cache:
+            jacs = self._device.compute_derivatives(tapes, self._execution_config)
+            self._jacobian_cache[tapes] = jacs
+
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        return _compute_jvps(jacs, tangent_variables, multi_measurements)
+        return _compute_jvps(self._jacobian_cache[tapes], tangent_variables, multi_measurements)
 
     def execute_and_compute_vjp(
         self, tapes, dy, reduction_method="extend"
     ) -> Tuple[ResultBatch, Tuple]:
-        results, jacs = self._device.execute_and_compute_derivatives(tapes, self._execution_config)
+        tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
+        if tapes not in self._jacobian_cache:
+            results, jacs = self._device.execute_and_compute_derivatives(
+                tapes, self._execution_config
+            )
+            self._results_cache[tapes] = results
+            self._jacobian_cache[jacs] = jacs
+
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        vjps = _compute_vjps(dy, jacs, multi_measurements, reduction_method=reduction_method)
+        vjps = _compute_vjps(
+            dy, self._jacobian_cache[tapes], multi_measurements, reduction_method=reduction_method
+        )
         return tuple(results), tuple(vjps)
 
     def compute_vjp(self, tapes, dy, reduction_method="extend"):
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
 
-        unwrapped_tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
-        jacs = self._device.compute_derivatives(unwrapped_tapes, self._execution_config)
-        return _compute_vjps(dy, jacs, multi_measurements, reduction_method=reduction_method)
+        tapes = tuple(convert_to_numpy_parameters(t)[0][0] for t in tapes)
+
+        if tapes not in self._jacobian_cache:
+            jacs = self._device.compute_derivatives(tapes, self._execution_config)
+            self._jacobian_cache[tapes] = jacs
+
+        return _compute_vjps(
+            dy, self._jacobian_cache[tapes], multi_measurements, reduction_method=reduction_method
+        )

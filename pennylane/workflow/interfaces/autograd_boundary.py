@@ -25,9 +25,10 @@ autograd.extend.defvjp(autograd_registered_function, wrapped_vjp, argnums=[0])
 
 
 class AutogradLayer(Executor):
-    def __init__(self, next_executor, derivative_executor):
+    def __init__(self, next_executor, derivative_executor, grad_on_execution=False):
         self._next_executor = next_executor
         self._derivative_executor = derivative_executor
+        self._grad_on_execution = grad_on_execution
 
     def __call__(self, circuits):
         parameters = autograd.builtins.tuple(

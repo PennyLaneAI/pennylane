@@ -210,6 +210,13 @@ class DefaultQubit2(Device):
         results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         return results[0] if is_single_circuit else results
 
+    def execute_and_compute_derivatives(
+        self, circuits: QuantumTape_or_Batch, execution_config: ExecutionConfig = ...
+    ):
+        if self.tracker.active:
+            self.tracker.update(execute_and_compute_derivative_batches=1)
+        return super().execute_and_compute_derivatives(circuits, execution_config)
+
     def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,

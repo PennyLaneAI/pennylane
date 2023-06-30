@@ -185,7 +185,8 @@ class QNode:
             gradient_kwargs=self.gradient_kwargs,
             inner_program=self.inner_transform_program,
             outer_program=self.transform_program,
-            cache=LRUCache(self._cachesize) if self._cache is True else self._cache,
+            cache=self._cache,
+            max_diff=self._max_diff,
         )
 
     def __call__(self, *args, **kwargs):
