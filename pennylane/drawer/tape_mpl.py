@@ -123,7 +123,7 @@ special_cases = {
 
 
 # pylint: disable=too-many-branches
-def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, wire_groups=None, **kwargs):
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
@@ -134,8 +134,25 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)
 
+    ### wire grouping block ###
+    if wire_groups is not None:
+        layers = [set()] + layers
+    ### wire grouping block ends ###
+
     n_layers = len(layers)
     n_wires = len(wire_map)
+
+    ### wire grouping block ###
+    if wire_groups is not None:
+        ## rudimentary check that all wires are accounted for in the grouping
+        all_wires_in_groups = [elem for group in wire_groups.values() for elem in group]
+        assert all([wire in all_wires_in_groups for wire in list(range(n_wires))]), \
+            f"Your wire grouping does not account for all wires."
+        wires_to_keep = [group[0] for key, group in wire_groups.items()]
+        # this is useful for ops with specialfunc, to fix the mapped_wires object
+        wire_groups_map = {elem: ii for ii, (key, group) in enumerate(wire_groups.items()) for elem in group}
+        n_wires = len(wires_to_keep)
+    ### wire grouping block ends ###
 
     drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
 
@@ -145,20 +162,53 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     if fontsize is not None:
         drawer.fontsize = fontsize
 
-    drawer.label(list(wire_map), text_options=label_options)
+    ### wire grouping block ###
+    if wire_groups is not None:
+        drawer.label(wire_groups.keys(), text_options=label_options)
+    elif wire_groups is None:
+        drawer.label(list(wire_map), text_options=label_options)
+    ### wire grouping block ends ###
 
     for layer, layer_ops in enumerate(layers):
+
+        ### wire grouping block ###
+        if wire_groups is not None and layer == 0:
+            ## draw the composite lines where needed
+            composite_wires = [ ii for ii, (key, group) in enumerate(wire_groups.items()) if len(group)>1 ]
+            for wire in composite_wires:
+                drawer._composite(layer, wire)
+        ### wire grouping block ends ###
+
         for op in layer_ops:
             specialfunc = special_cases.get(op.__class__)
             if specialfunc is not None:
-                mapped_wires = (
-                    [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
-                )
+                ### wire grouping block ###
+                if wire_groups is not None:
+                    mapped_wires = (
+                        [wire_groups_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
+                    )
+                elif wire_groups is None:
+                    mapped_wires = (
+                        [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
+                    )
+                ### wire grouping block ends ###
                 # It is assumed that if `len(op.wires) == 0`, `op` acts on all wires
 
                 if isinstance(op, ops.DrawableOp._DrawableOperation) and len(op.cntrl_wires) != 0:
                     mapped_ctrl_wires = [wire_map[w] for w in op.cntrl_wires]
                     mapped_target_wires = [wire_map[w] for w in op.target_wires]
+
+                    if wire_groups is not None:
+                        target_mapped_ctrl_wires = [ii for ii, (key, group) in enumerate(wire_groups.items()) \
+                                                if any(i in group for i in mapped_ctrl_wires)]
+                        if len(target_mapped_ctrl_wires) > 0:
+                            mapped_ctrl_wires = target_mapped_ctrl_wires
+
+                        target_mapped_target_wires = [ii for ii, (key, group) in enumerate(wire_groups.items()) \
+                                                    if any(i in group for i in mapped_target_wires)]
+                        if len(target_mapped_target_wires) > 0:
+                            mapped_target_wires = target_mapped_target_wires
+
                     _add_drawable_op(drawer, layer, mapped_ctrl_wires=mapped_ctrl_wires, mapped_target_wires=mapped_target_wires, op=op)
                 else:
                     specialfunc(drawer, layer, mapped_wires, op)
@@ -184,14 +234,33 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
                 op_control_wires, control_values = unwrap_controls(op)
 
                 control_wires = [wire_map[w] for w in op_control_wires]
+                ### wire grouping block ###
+                if wire_groups is not None:
+                    control_wires = [wire_groups_map[w] for w in control_wires]
+                ### wire grouping block ends ###
                 target_wires = (
                     [wire_map[w] for w in op.wires if w not in op_control_wires]
                     if len(op.wires) != 0
                     else wire_map.values()
                 )
+                ### wire grouping block ###
+                if wire_groups is not None:
+                    # maps the target wires according to the grouping
+                    # works either for op that works on all qubits (target_wires == group)
+                    # or for ops that work on individual qubits (collapses ops onto composite wire)
+                    target_wires_grouped = [ii for ii, (key, group) in enumerate(wire_groups.items()) \
+                                                    if target_wires == group ]
+                    if len(target_wires_grouped) > 0:
+                        target_wires = target_wires_grouped
+                    # target_wires = [ii for ii, (key, group) in enumerate(wire_groups.items()) \
+                    #                                 if target_wires == group \
+                    #                                     or any([target_wires[0] == elem for elem in group]) ]
+                ### wire grouping block ends ###
 
                 if control_values is None:
                     control_values = [True for _ in control_wires]
+                elif isinstance(control_values[0], str):
+                    control_values = [(i == "1") for i in control_values]
 
                 if control_wires:
                     drawer.ctrl(
@@ -224,6 +293,10 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
             break
 
         for wire in m.wires:
+            ### wire groups block ###
+            if wire_groups is not None:
+                wire = wire_groups_map[wire]
+            ### wire groups block ###
             if wire not in measured_wires:
                 drawer.measure(n_layers, wire_map[wire])
                 measured_wires += wire
@@ -232,7 +305,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
 
 def tape_mpl(
-    tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
+    tape, wire_order=None, show_all_wires=False, decimals=None, wire_groups=None, style="black_white", **kwargs
 ):
     """Produces a matplotlib graphic from a tape.
 
@@ -412,7 +485,7 @@ def tape_mpl(
         use_style(style)
     try:
         return _tape_mpl(
-            tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
+            tape, wire_order=wire_order, show_all_wires=show_all_wires, wire_groups=wire_groups, decimals=decimals, **kwargs
         )
     finally:
         if style and has_mpl:

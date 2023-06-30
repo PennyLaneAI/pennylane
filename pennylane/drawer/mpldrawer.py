@@ -634,6 +634,23 @@ class MPLDrawer:
         circ_ctrl = plt.Circle((layer, wires), radius=self._ctrl_rad, **options)
         self._ax.add_patch(circ_ctrl)
 
+    def _composite(self, layer, wire, options=None):
+        """Draw a -/- symbol that indicates the wire is a composite wire.
+        Acceptable keys in options dictionary:
+          * zorder
+          * color
+          * linewidth
+        """
+        if options is None:
+            options = {}
+        if "color" not in options:
+            options["color"] = plt.rcParams["lines.color"]
+        if "zorder" not in options:
+            options["zorder"] = 3
+
+        line = plt.Line2D((layer-0.2, layer+0.2), (wire+0.2, wire-0.2), zorder=1)
+        self._ax.add_line(line)
+
     def _ctrlo_circ(self, layer, wires, options=None):
         """Draw an open circle that indicates control on zero.
 

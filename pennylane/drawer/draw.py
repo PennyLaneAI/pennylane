@@ -38,6 +38,7 @@ def draw(
     expansion_strategy=None,
     blockify=False,
     blockify_sections=[],
+    wire_groups=None,
 ):
     """Create a function that draws the given qnode or quantum function.
 
@@ -212,6 +213,7 @@ def draw(
             expansion_strategy=expansion_strategy,
             blockify=blockify,
             blockify_sections=blockify_sections,
+            wire_groups=wire_groups,
         )
 
     if expansion_strategy is not None:
@@ -232,6 +234,7 @@ def draw(
             decimals=decimals,
             show_matrices=show_matrices,
             max_length=max_length,
+            wire_groups=wire_groups,
         )
 
     return wrapper
@@ -247,6 +250,7 @@ def _draw_qnode(
     expansion_strategy=None,
     blockify=False,
     blockify_sections=[],
+    wire_groups=None,
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -291,6 +295,7 @@ def _draw_qnode(
             decimals=decimals,
             show_matrices=show_matrices,
             max_length=max_length,
+            wire_groups=wire_groups,
         )
 
     return wrapper
@@ -305,6 +310,7 @@ def draw_mpl(
     style="black_white",
     blockify=False,
     blockify_sections=[],
+    wire_groups=None,
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -512,6 +518,7 @@ def draw_mpl(
             style=style,
             blockify=blockify,
             blockify_sections=blockify_sections,
+            wire_groups=wire_groups,
             **kwargs,
         )
 
@@ -531,6 +538,7 @@ def draw_mpl(
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            wire_groups=wire_groups,
             style=style,
             **kwargs,
         )
@@ -547,6 +555,7 @@ def _draw_mpl_qnode(
     style="black_white",
     blockify=False,
     blockify_sections=[],
+    wire_groups=None,
     **kwargs,
 ):
     @wraps(qnode)
@@ -569,6 +578,7 @@ def _draw_mpl_qnode(
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
+            wire_groups=wire_groups,
             **kwargs,
         )
 

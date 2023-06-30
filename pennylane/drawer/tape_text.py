@@ -103,6 +103,7 @@ def tape_text(
     max_length=100,
     show_matrices=True,
     cache=None,
+    wire_groups=None,
 ):
     """Text based diagram for a Quantum Tape.
 
@@ -294,7 +295,14 @@ def tape_text(
     if n_wires == 0:
         return ""
 
-    totals = [f"{wire}: " for wire in wire_map]
+    ## naming the wire groups, if any
+    if wire_groups is not None:
+        totals = [f"{key}: " for key, group in wire_groups.items() for wire in group ]
+        # by default, always keep only the first wire in the group
+        wires_to_keep = [group[0] for key, group in wire_groups.items()]
+    elif wire_groups is None:
+        totals = [f"{wire}: " for wire in wire_map]
+    ## naming wire groups ends
     line_length = max(len(s) for s in totals)
     totals = [s.rjust(line_length, " ") for s in totals]
 
@@ -305,13 +313,29 @@ def tape_text(
         drawable_layers(tape.operations, wire_map=wire_map),
         drawable_layers(tape.measurements, wire_map=wire_map),
     ]
+    ## if wire groups, add another layer -- empty
+    if wire_groups is not None:
+        layers_list = [] + layers_list
+
     add_list = [_add_op, _add_measurement]
     fillers = ["─", " "]
     enders = [True, False]  # add "─┤" after all operations
+    first_layer = True
 
     for layers, add, filler, ender in zip(layers_list, add_list, fillers, enders):
         for layer in layers:
             layer_str = [filler] * n_wires
+
+            if wire_groups is not None and first_layer:
+                composite_wire = [ any([any(wire == val for val in group) and len(wire_groups[key])>1 \
+                                        for key, group in wire_groups.items()]) \
+                                            for wire in list(range(n_wires)) ]
+                for ii, iscomposite in enumerate(composite_wire):
+                    if iscomposite:
+                        layer_str[ii] += f"/─"
+                    elif not iscomposite:
+                        layer_str[ii] += f"──"
+                first_layer = False
 
             for op in layer:
                 if isinstance(op, qml.tape.QuantumScript):
@@ -338,6 +362,17 @@ def tape_text(
         if ender:
             totals = [s + "─┤" for s in totals]
             line_length += 2
+
+    ## wire blocking section
+    if wire_groups is not None:
+        # once you've selected the wire groupings,
+        # drop the remaining wires from totals and finished lines
+        totals = [totals[wire] for wire in wires_to_keep]
+        finished_lines = finished_lines[:len(wires_to_keep)] + \
+                            [finished_lines[len(wires_to_keep)+ii+jj] for jj in \
+                                    range(0, len(finished_lines)-len(wires_to_keep), n_wires) \
+                                                    for ii in wires_to_keep]
+    ## wire blocking section ends
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(finished_lines + totals)
