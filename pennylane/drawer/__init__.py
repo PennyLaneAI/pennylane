@@ -25,3 +25,5 @@ from .tape_text import tape_text
 from .tape_mpl import tape_mpl
 from .mpldrawer import MPLDrawer
 from .style import available_styles, use_style
+from .state_animation import animate
+from .wigner_animation import WignerAnimation
