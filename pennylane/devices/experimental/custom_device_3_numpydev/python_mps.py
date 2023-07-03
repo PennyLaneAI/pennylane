@@ -35,10 +35,11 @@ class NumpyMPSSimulator:
 
     @classmethod
     def execute(cls, qs: QuantumScript, dtype=np.complex128, chi_max=20, eps=1e-10):
-        num_indices = len(qs.wires)
+        num_indices = np.max(qs.wires)+1
         state = cls.init_MPS(num_indices)
         for i,op in enumerate(qs._ops):
             #print(i, op)
+            #print(op, [_.shape for _ in state.Bs])
             state = cls.apply_operation(state, op, chi_max, eps)
 
         #bond_dim = np.max(state.get_chi())
@@ -450,7 +451,7 @@ def contract_MPO_MPS(op, psi, chi_max, eps):
     # I'm not sure this is actually necessary
     # let alone efficiently done here
     for i in range(max_i, min_i-1, -1):
-        # print(Bs[i-1].shape, Bs[i].shape)
+        #print(i, len(Bs), psi.L)
         theta = np.tensordot(Bs[i-1], Bs[i], axes=[[-1],[0]]) # newM | A_from_before (naming might be confusing)
         A, S, B = split_truncate_theta(theta, chi_max, eps)             # >> A S B
         Bs[i] = B
