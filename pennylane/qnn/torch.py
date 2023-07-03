@@ -37,7 +37,7 @@ except ImportError:
 
 
 class TorchLayer(Module):
-    r"""Converts a :func:`~.QNode` to a Torch layer.
+    r"""Converts a :class:`~.QNode` to a Torch layer.
 
     The result can be used within the ``torch.nn``
     `Sequential <https://pytorch.org/docs/stable/nn.html#sequential>`__ or

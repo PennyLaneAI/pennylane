@@ -61,8 +61,8 @@ class DefaultQubit2(Device):
             qscripts.append(qs)
 
     >>> dev = DefaultQubit2()
-    >>> new_batch, post_processing_fn = dev.preprocess(qscripts)
-    >>> results = dev.execute(new_batch)
+    >>> new_batch, post_processing_fn, execution_config = dev.preprocess(qscripts)
+    >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
     [-0.0006888975950537501,
     0.025576307134457577,
@@ -80,11 +80,13 @@ class DefaultQubit2(Device):
 
     .. code-block:: python
 
+        import jax
+
         @jax.jit
         def f(x):
             qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            new_batch, post_processing_fn = dev.preprocess(qs)
-            results = dev.execute(new_batch)
+            new_batch, post_processing_fn, execution_config = dev.preprocess(qs)
+            results = dev.execute(new_batch, execution_config=execution_config)
             return post_processing_fn(results)
 
     >>> f(jax.numpy.array(1.2))
