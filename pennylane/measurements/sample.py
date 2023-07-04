@@ -50,6 +50,14 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
 
+    .. note::
+
+        QNodes that return samples cannot, in general, be differentiated, since the derivative
+        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
+        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
+        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
+        observable ``obs``.
+
     **Example**
 
     .. code-block:: python3
@@ -92,13 +100,6 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
            [1, 1],
            [0, 0]])
 
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")

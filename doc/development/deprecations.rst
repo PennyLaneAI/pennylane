@@ -6,12 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_impriv` has been changed to `ratio_imprimitive` to
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` has been changed to `ratio_imprim` to
   match the call signature of the operation. 
 
-* The `grouping_type` and `grouping_method` arguments of `qchem.molecular_hamiltonian()` are deprecated.
+* The ``grouping_type`` and ``grouping_method`` arguments of ``qchem.molecular_hamiltonian()`` are deprecated.
 
-  - Deprecated in ∂v0.31
+  - Deprecated in v0.31
   - Will be removed in v0.32
 
   Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
@@ -39,8 +39,8 @@ Pending deprecations
   - Deprecated in v0.31
   - Will be removed in v0.32
 
-* ``LieAlgebraOptimizer`` is renamed. Please use ``RiemannianGradientOptimizer`` instead.
-  
+* ``LieAlgebraOptimizer`` has been renamed. Please use ``RiemannianGradientOptimizer`` instead.
+
   - Deprecated in v0.31
   - Will be removed in v0.32
 
@@ -89,7 +89,7 @@ Pending deprecations
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.31
+  - Will be removed in v0.32
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -125,17 +125,17 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+* The ``qml.utils.sparse_hamiltonian`` function has been removed. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-* The ``collections`` module has been deprecated.
+* The ``collections`` module has been removed.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+* ``qml.op_sum`` has been removed. Users should use ``qml.sum`` instead.
 
   - Deprecated in v0.29.
   - Removed in v0.31.
@@ -162,11 +162,11 @@ Completed deprecation cycles
   - The old signature is replaced with the new one in v0.30
 
 
-* The ``grouping`` module is removed. The functionality has been moved and
+* The ``grouping`` module has been removed. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
   - Still accessible in v0.27, v0.28, v0.29, v0.30
-  - Will be removed in v0.31
+  - Removed in v0.31
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
