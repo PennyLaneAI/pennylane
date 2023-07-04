@@ -141,10 +141,10 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
     In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
     optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
 
-    >>> qml.specs(qnode)()["gate_types"]["CNOT"]
+    >>> qml.specs(qnode)()["resources"].gate_types["CNOT"]
     4
 
-    >>> qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+    >>> qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
     3
 
     >>> print(qml.draw(qnode)())

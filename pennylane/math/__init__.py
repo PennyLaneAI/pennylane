@@ -133,6 +133,7 @@ __all__ = [
     "cov_matrix",
     "detach",
     "diag",
+    "dm_from_state_vector",
     "dot",
     "einsum",
     "expand_matrix",

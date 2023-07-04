@@ -462,7 +462,7 @@ class FermiSentence(dict):
                 del self[fw]
 
 
-def string_to_fermi_word(fermi_string):
+def from_string(fermi_string):
     r"""Return a fermionic operator object from its string representation.
 
     The string representation is a compact format that uses the orbital index and ``'+'`` or ``'-'``
@@ -480,17 +480,17 @@ def string_to_fermi_word(fermi_string):
 
     **Example**
 
-    >>> string_to_fermi_word('0+ 1- 0+ 1-')
+    >>> from_string('0+ 1- 0+ 1-')
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> string_to_fermi_word('0+ 1 0+ 1')
+    >>> from_string('0+ 1 0+ 1')
     a⁺(0) a(1) a⁺(0) a(1)
 
-    >>> string_to_fermi_word('0^ 1 0^ 1')
+    >>> from_string('0^ 1 0^ 1')
     a⁺(0) a(1) a⁺(0) a(1)
 
     >>> op1 = FermiC(0) * FermiA(1) * FermiC(2) * FermiA(3)
-    >>> op2 = string_to_fermi_word('0+ 1- 2+ 3-')
+    >>> op2 = from_string('0+ 1- 2+ 3-')
     >>> op1 == op2
     True
     """

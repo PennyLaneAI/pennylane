@@ -171,7 +171,7 @@ class QuantumScript:
     >>> s_vec = [1, 1, 2, 2, 2]
     >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))], shots=s_vec)
     >>> qscript.shots.shot_vector
-    (ShotCopies(shots=1, copies=2), ShotCopies(shots=2, copies=3))
+    (ShotCopies(1 shots x 2), ShotCopies(2 shots x 3))
 
     ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
@@ -1434,6 +1434,10 @@ class SpecsDict(dict):
                 f'Going forward, please use: specs["resources"].{self.old_to_new_key_map[item]}'
             )
         return super().__getitem__(item)
+
+    def copy(self):
+        """Custom copy function to return a SpecsDict instead of a dict."""
+        return SpecsDict(self.items())
 
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
