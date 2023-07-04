@@ -29,13 +29,6 @@ Pending deprecations
   - Deprecated in v0.31
   - Will be removed in v0.32
 
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
-  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
-  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
-
-  - Deprecated in v0.31
-  - Will be removed in v0.32
-
 * ``LieAlgebraOptimizer`` has been renamed. Please use ``RiemannianGradientOptimizer`` instead.
 
   - Deprecated in v0.31
@@ -121,6 +114,13 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
 
 * The ``qml.utils.sparse_hamiltonian`` function has been removed. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 

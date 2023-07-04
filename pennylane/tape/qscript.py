@@ -182,10 +182,6 @@ class QuantumScript:
 
     """
 
-    do_queue = False
-    """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
-    True for its child Quantum Tape."""
-
     def __init__(
         self,
         ops=None,
@@ -1163,15 +1159,7 @@ class QuantumScript:
             ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
         )
 
-        if self.do_queue is not None:
-            do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. "
-                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-            )
-            warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-        if self.do_queue or self.do_queue is None:
-            qml.QueuingManager.append(adj)
+        qml.QueuingManager.append(adj)
         return adj
 
     def unwrap(self):

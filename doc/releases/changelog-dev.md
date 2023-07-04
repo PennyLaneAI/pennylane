@@ -8,6 +8,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

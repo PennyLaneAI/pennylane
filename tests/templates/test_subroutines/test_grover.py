@@ -44,21 +44,6 @@ def test_single_wire_error(bad_wires):
         op = qml.GroverOperator(wires=bad_wires)
 
 
-def test_do_queue():
-    """Assert do_queue=False is not queued"""
-    do_queue_deprecation_warning = (
-        "The do_queue keyword argument is deprecated. "
-        "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-    )
-
-    with qml.queuing.AnnotatedQueue() as q:
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            qml.GroverOperator(wires=(0, 1), do_queue=False)
-
-    tape = qml.tape.QuantumScript.from_queue(q)
-    assert len(tape.operations) == 0
-
-
 def test_id():
     """Assert id keyword works"""
 
