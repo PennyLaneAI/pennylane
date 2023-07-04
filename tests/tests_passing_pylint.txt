@@ -22,6 +22,7 @@ tests/numpy/**
 tests/measurements/**
 tests/ops/functions/test_bind_new_parameters.py
 tests/ops/functions/test_dot.py
+tests/ops/functions/test_equal.py
 tests/ops/functions/test_evolve.py
 tests/ops/op_math/**
 tests/ops/qubit/test_matrix_ops.py
