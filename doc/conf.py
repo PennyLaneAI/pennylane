@@ -80,7 +80,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = "2022, Xanadu Quantum Technologies"
+copyright = "2023, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False
@@ -234,7 +234,7 @@ html_theme_options = {
     "extra_copyrights": [
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
-    "google_analytics_tracking_id": "G-QJ27180VVC",
+    "google_analytics_tracking_id": "G-C480Z9JL0D",
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"

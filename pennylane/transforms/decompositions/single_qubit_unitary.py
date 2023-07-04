@@ -16,6 +16,8 @@ operations into elementary gates.
 """
 import warnings
 
+import numpy
+
 import pennylane as qml
 from pennylane import math
 
@@ -196,12 +198,12 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = zyz_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _zyz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RZ(tensor(-0.2420953, requires_grad=True), wires=[0]),
-    RY(tensor(1.14938178, requires_grad=True), wires=[0]),
-    RZ(tensor(1.73305815, requires_grad=True), wires=[0]),
-    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RZ(12.32427531154459, wires=[0]),
+     RY(1.1493817771511352, wires=[0]),
+     RZ(1.733058145303424, wires=[0]),
+     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Cast to batched format for more consistent code
@@ -230,11 +232,11 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     phis = -angles_U10 - angles_U00
     omegas = angles_U10 - angles_U00
 
-    # Wrap angles to range [-\pi, \pi]
-    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-    omegas = (omegas + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-
     phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
+
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    omegas = omegas % (4 * numpy.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
@@ -267,10 +269,10 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(tensor(-1.72101925, requires_grad=True), wires=[0]),
-    RY(tensor(1.39749741, requires_grad=True), wires=[0]),
-    RX(tensor(0.45246584, requires_grad=True), wires=[0]),
-    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RX(10.845351366405708, wires=[0]),
+     RY(1.3974974118006174, wires=[0]),
+     RX(0.45246583660683803, wires=[0]),
+     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     warnings.warn(
         "The xyx_decomposition function is deprecated and will be removed soon. Use :func:`one_qubit_decomposition` "
@@ -301,12 +303,12 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(array(0.45246584), wires=[0]),
-    RY(array(1.39749741), wires=[0]),
-    RX(array(-1.72101925), wires=[0]),
-    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RX(10.845351366405708, wires=[0]),
+     RY(1.3974974118006174, wires=[0]),
+     RX(0.45246583660683803, wires=[0]),
+     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Small number to add to denominators to avoid division by zero
@@ -323,10 +325,6 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     lams = lams_plus_phis + lams_minus_phis
     phis = lams_plus_phis - lams_minus_phis
 
-    # Wrap angles to range [-\pi, \pi]
-    lams = (lams + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-
     # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
     thetas = math.where(
@@ -336,6 +334,10 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     )
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
+
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    lams = lams % (4 * numpy.pi)
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
@@ -366,11 +368,11 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = zxz_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _zxz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-        [RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
-        RX(tensor(1.14938178, requires_grad=True), wires=[0]),
-        RZ(tensor(-2.97933083, requires_grad=True), wires=[0]),
+        [RZ(10.753478981934784, wires=[0]),
+         RX(1.1493817777940705, wires=[0]),
+         RZ(3.3038544749132295, wires=[0]),
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
@@ -384,21 +386,25 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     # Use top row to solve for \phi and \psi
     phis_plus_psis = math.arctan2(-math.imag(U_det1[:, 0, 0]), math.real(U_det1[:, 0, 0]) + EPS)
     phis_minus_psis = math.arctan2(-math.real(U_det1[:, 0, 1]), -math.imag(U_det1[:, 0, 1]) + EPS)
+
     phis = phis_plus_psis + phis_minus_psis
     psis = phis_plus_psis - phis_minus_psis
-
-    # Wrap angles to range [-\pi, \pi]
-    phis = (phis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
-    psis = (psis + qml.numpy.pi) % (2 * qml.numpy.pi) - qml.numpy.pi
 
     # Conditional to avoid divide by 0 errors
     thetas = math.where(
         math.isclose(math.sin(phis_plus_psis), math.zeros_like(phis_plus_psis)),
-        2 * math.arccos(math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS)),
-        2 * math.arccos(-math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS)),
+        math.real(U_det1[:, 0, 0]) / (math.cos(phis_plus_psis) + EPS),
+        -math.imag(U_det1[:, 0, 0]) / (math.sin(phis_plus_psis) + EPS),
     )
+    # Arcos is only defined between -1 and 1
+    thetas = qml.math.clip(thetas, -1.0, 1.0)
+    thetas = 2 * math.arccos(thetas)
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
+
+    phis = phis % (4 * numpy.pi)
+    thetas = thetas % (4 * numpy.pi)
+    psis = psis % (4 * numpy.pi)
 
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
@@ -411,10 +417,10 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
     r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations. (batched operation)
 
-    Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
+    Any one qubit unitary operation can be implemented up to a global phase by composing RX, RY,
     and RZ gates.
 
-    Currently supported values for `rotations` are "ZYZ", "XYX", and "ZXZ".
+    Currently supported values for ``rotations`` are "ZYZ", "XYX", and "ZXZ".
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
@@ -425,7 +431,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
-        the list is equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
+        the list is equivalent to the unitary :math:`U` up to a global phase. If ``return_global_phase=True``,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -434,9 +440,9 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = one_qubit_decomposition(U, 0, "ZXZ", return_global_phase=True)
     >>> decomp
-        [RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
-        RX(tensor(1.14938178, requires_grad=True), wires=[0]),
-        RZ(tensor(-2.97933083, requires_grad=True), wires=[0]),
+        [RZ(10.753478981934784, wires=[0]),
+         RX(1.1493817777940705, wires=[0]),
+         RZ(3.3038544749132295, wires=[0]),
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     supported_rotations = {

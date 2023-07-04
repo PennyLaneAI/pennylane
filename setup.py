@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Setup file for package installation."""
+
 from setuptools import setup, find_packages
 
 with open("pennylane/_version.py") as f:
@@ -19,16 +21,16 @@ with open("pennylane/_version.py") as f:
 
 requirements = [
     "numpy<1.24",
-    "scipy",
+    "scipy<=1.10",
     "networkx",
     "rustworkx",
-    "autograd",
+    "autograd<=1.5",
     "toml",
     "appdirs",
     "semantic-version>=2.7",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.30",
+    "pennylane-lightning>=0.31",
     "requests",
 ]
 
@@ -37,7 +39,7 @@ info = {
     "version": version,
     "maintainer": "Xanadu Inc.",
     "maintainer_email": "software@xanadu.ai",
-    "url": "https://github.com/XanaduAI/pennylane",
+    "url": "https://github.com/PennyLaneAI/pennylane",
     "license": "Apache License 2.0",
     "packages": find_packages(where="."),
     "entry_points": {

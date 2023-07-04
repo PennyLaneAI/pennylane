@@ -70,6 +70,7 @@ def test_get_spectrum(op, expected):
 def test_get_spectrum_complains_no_generator():
     """Test that an error is raised if the operator has no generator defined."""
 
+    # pylint: disable=too-few-public-methods
     class CustomOp(qml.operation.Operation):
         num_wires = 1
         num_params = 1

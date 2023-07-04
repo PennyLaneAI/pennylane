@@ -126,7 +126,7 @@ class TestInitialization:
         if sum_method.__name__ == sum.__name__:
             assert sum_op.id == id
 
-        assert sum_op.data == [0.23]
+        assert sum_op.data == (0.23,)
         assert sum_op.parameters == [0.23]
         assert sum_op.num_params == 1
 
@@ -142,7 +142,7 @@ class TestInitialization:
         assert sum_op.name == "Sum"
         assert sum_op.id is None
 
-        assert sum_op.data == [0.23, 9.87]
+        assert sum_op.data == (0.23, 9.87)
         assert sum_op.parameters == [0.23, 9.87]
         assert sum_op.num_params == 2
 
@@ -321,7 +321,7 @@ class TestMatrix:
         wires = [0, 1]
         sum_op = Sum(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
-            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+            qml.Projector(state=qnp.array([0, 1]), wires=wires),
         )
         mat = sum_op.matrix()
 
@@ -1067,7 +1067,7 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=None)
         def my_circ():
             qml.PauliX(0)
             return qml.expval(sum_op)
@@ -1079,7 +1079,7 @@ class TestIntegration:
         """Tests that the parameters of a Sum are considered trainable."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=None)
         def circuit():
             return qml.expval(Sum(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 0)))
 
