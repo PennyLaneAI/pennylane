@@ -300,10 +300,20 @@ class QuantumScript:
         """
         Returns the state preparations on the quantum script.
 
-        Return:
+        Returns:
             list[.Operator]: state preparations
         """
         return self._prep
+
+    @property
+    def gates(self) -> List[Operator]:
+        """
+        Returns the operations (excluding state preparations) on the quantum script.
+
+        Returns:
+            list[.Operator]: quantum operations
+        """
+        return self._ops
 
     @property
     def operations(self) -> List[Operator]:

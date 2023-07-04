@@ -97,9 +97,7 @@ def batch_input(
 
     idx = 0
     new_preps, idx = _split_operations(tape.prep, all_parameters, argnum, idx, batch_size)
-
-    ops = [op for op in tape.operations if op not in tape.prep]
-    new_ops, _ = _split_operations(ops, all_parameters, argnum, idx, batch_size)
+    new_ops, _ = _split_operations(tape.gates, all_parameters, argnum, idx, batch_size)
 
     output_tapes = []
     for prep, ops in zip(new_preps, new_ops):

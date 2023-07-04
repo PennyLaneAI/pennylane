@@ -121,7 +121,7 @@ def broadcast_expand(tape):
         raise ValueError("The provided tape is not broadcasted.")
 
     new_preps = _split_operations(tape.prep, num_tapes)
-    new_ops = _split_operations([op for op in tape.operations if op not in tape.prep], num_tapes)
+    new_ops = _split_operations(tape.gates, num_tapes)
 
     output_tapes = []
     for prep, ops in zip(new_preps, new_ops):
