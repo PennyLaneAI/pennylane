@@ -34,7 +34,7 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """Converts a :func:`~.QNode` to a Keras
+    """Converts a :class:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras
@@ -133,19 +133,19 @@ class KerasLayer(Layer):
                 return qlayer(x).shape
 
         >>> print_output_shape([qml.expval(qml.PauliZ(0))])
-        (5,)
+        TensorShape([5])
         >>> print_output_shape([qml.probs(wires=[0, 1])])
-        (5, 4)
+        TensorShape([5, 4])
         >>> print_output_shape([qml.sample(wires=[0, 1])])
-        (5, 100, 2)
+        TensorShape([5, 100, 2])
 
         If the QNode returns multiple measurements, then the measurement results will be flattened
         and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
 
         >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
-        (5, 5)
+        TensorShape([5, 5])
         >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
-        (5, 204)
+        TensorShape([5, 204])
 
         **Initializing weights**
 
@@ -327,6 +327,7 @@ class KerasLayer(Layer):
 
         # no point in delaying the initialization of weights, since we already know their shapes
         self.build(None)
+        self._initialized = True
 
     def _signature_validation(self, qnode, weight_shapes):
         sig = inspect.signature(qnode.func).parameters
@@ -426,6 +427,42 @@ class KerasLayer(Layer):
 
         return res
 
+    def construct(self, args, kwargs):
+        """Constructs the wrapped QNode on input data using the initialized weights.
+
+        This method was added to match the QNode interface. The provided args
+        must contain a single item, which is the input to the layer. The provided
+        kwargs is unused.
+
+        Args:
+            args (tuple): A tuple containing one entry that is the input to this layer
+            kwargs (dict): Unused
+        """
+        # GradientTape required to ensure that the weights show up as trainable on the qtape
+        with tf.GradientTape() as tape:
+            tape.watch(list(self.qnode_weights.values()))
+
+            inputs = args[0]
+            kwargs = {self.input_arg: inputs, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+            self.qnode.construct((), kwargs)
+
+    def __getattr__(self, item):
+        """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
+        if self._initialized and hasattr(self.qnode, item):
+            return getattr(self.qnode, item)
+
+        try:
+            return self.__dict__[item]
+        except KeyError as exc:
+            raise AttributeError(item) from exc
+
+    def __setattr__(self, item, val):
+        """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
+        if self._initialized and hasattr(self.qnode, item):
+            setattr(self.qnode, item, val)
+        else:
+            self.__dict__[item] = val
+
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
         QNode.
@@ -445,6 +482,7 @@ class KerasLayer(Layer):
     __repr__ = __str__
 
     _input_arg = "inputs"
+    _initialized = False
 
     @property
     def input_arg(self):

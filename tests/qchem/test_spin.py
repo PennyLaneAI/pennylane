@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -174,8 +175,18 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     """
     s2 = qchem.spin.spin2(electrons, orbitals)
     s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-
     assert s2.compare(s2_ref)
+
+    enable_new_opmath()
+    s2_pl_op = qchem.spin.spin2(electrons, orbitals)
+    disable_new_opmath()
+
+    wire_order = s2_ref.wires
+    assert not isinstance(s2_pl_op, qml.Hamiltonian)
+    assert np.allclose(
+        qml.matrix(s2_pl_op, wire_order=wire_order),
+        qml.matrix(s2_ref, wire_order=wire_order),
+    )
 
 
 @pytest.mark.parametrize(
@@ -223,8 +234,19 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     """
     sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-
     assert sz.compare(sz_ref)
+
+    enable_new_opmath()
+    sz_pl_op = qchem.spin.spinz(orbitals)
+    disable_new_opmath()
+    sz_ref_pl_op = qml.dot(coeffs_ref, ops_ref)
+
+    wire_order = sz_ref.wires
+    assert not isinstance(sz_pl_op, qml.Hamiltonian)
+    assert np.allclose(
+        qml.matrix(sz_pl_op, wire_order=wire_order),
+        qml.matrix(sz_ref_pl_op, wire_order=wire_order),
+    )
 
 
 @pytest.mark.parametrize(

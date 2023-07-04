@@ -61,9 +61,9 @@ def snapshots(qnode):
     Returns:
         A function that has the same argument signature as ``qnode`` and returns a dictionary.
         When called, the function will execute the QNode on the registered device and retrieve
-        the saved snapshots obtained via the ``qml.Snapshot`` operation. Additionally, the snapshot
-        dictionary always contains the execution results of the QNode, so the use of the tag
-        "execution_results" should be avoided to prevent conflicting key names.
+        the saved snapshots obtained via the :class:`~.pennylane.Snapshot` operation. Additionally,
+        the snapshot dictionary always contains the execution results of the QNode, so the use of
+        the tag "execution_results" should be avoided to prevent conflicting key names.
 
     **Example**
 

@@ -28,56 +28,77 @@ from .apply_operation import apply_operation
 
 
 def state_diagonalizing_gates(
-    measurementprocess: StateMeasurement, state: TensorLike
+    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
     """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
 
     Args:
         measurementprocess (StateMeasurement): measurement to apply to the state
         state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the result of the measurement
     """
     for op in measurementprocess.diagonalizing_gates():
-        state = apply_operation(op, state)
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
 
-    total_indices = len(state.shape)
+    total_indices = len(state.shape) - is_state_batched
     wires = Wires(range(total_indices))
-    return measurementprocess.process_state(math.flatten(state), wires)
+
+    flattened_state = (
+        math.reshape(state, (state.shape[0], -1)) if is_state_batched else math.flatten(state)
+    )
+    return measurementprocess.process_state(flattened_state, wires)
 
 
-def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
+def csr_dot_products(
+    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
     """Measure the expectation value of an observable using dot products between ``scipy.csr_matrix``
     representations.
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the result of the measurement
     """
-    total_wires = len(state.shape)
+    total_wires = len(state.shape) - is_state_batched
     Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
-    state = math.toarray(state).flatten()
 
-    # Find the expectation value using the <\psi|H|\psi> matrix contraction
-    bra = csr_matrix(math.conj(state))
-    ket = csr_matrix(state[..., None])
-    new_ket = csr_matrix.dot(Hmat, ket)
-    res = csr_matrix.dot(bra, new_ket).toarray()[0]
+    if is_state_batched:
+        state = math.toarray(state).reshape(math.shape(state)[0], -1)
+
+        bra = csr_matrix(math.conj(state))
+        ket = csr_matrix(state)
+        new_bra = bra.dot(Hmat)
+        res = new_bra.multiply(ket).sum(axis=1).getA()
+
+    else:
+        state = math.toarray(state).flatten()
+
+        # Find the expectation value using the <\psi|H|\psi> matrix contraction
+        bra = csr_matrix(math.conj(state))
+        ket = csr_matrix(state[..., None])
+        new_ket = csr_matrix.dot(Hmat, ket)
+        res = csr_matrix.dot(bra, new_ket).toarray()[0]
 
     return math.real(math.squeeze(res))
 
 
-def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
+def sum_of_terms_method(
+    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
     """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         TensorLike: the result of the measurement
@@ -85,10 +106,14 @@ def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) ->
     if isinstance(measurementprocess.obs, Sum):
         # Recursively call measure on each term, so that the best measurement method can
         # be used for each term
-        return sum(measure(ExpectationMP(term), state) for term in measurementprocess.obs)
+        return sum(
+            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
+            for term in measurementprocess.obs
+        )
     # else hamiltonian
     return sum(
-        c * measure(ExpectationMP(t), state) for c, t in zip(*measurementprocess.obs.terms())
+        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
+        for c, t in zip(*measurementprocess.obs.terms())
     )
 
 
@@ -100,6 +125,7 @@ def get_measurement_function(
     Args:
         measurementprocess (MeasurementProcess): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         Callable: function that returns the measurement result
@@ -109,17 +135,23 @@ def get_measurement_function(
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
-            if isinstance(measurementprocess.obs, Hamiltonian) or (
-                isinstance(measurementprocess.obs, Sum)
-                and measurementprocess.obs.has_overlapping_wires
-                and len(measurementprocess.obs.wires) > 7
-            ):
-                # Use tensor contraction for `Sum` expectation values with non-commuting summands
-                # and 8 or more wires as it's faster than using eigenvalues.
-
+            backprop_mode = math.get_interface(state) != "numpy"
+            if isinstance(measurementprocess.obs, Hamiltonian):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
-                backprop_mode = math.get_interface(state) != "numpy"
                 return sum_of_terms_method if backprop_mode else csr_dot_products
+
+            if isinstance(measurementprocess.obs, Sum):
+                if backprop_mode:
+                    # always use sum_of_terms_method for Sum observables in backprop mode
+                    return sum_of_terms_method
+                if (
+                    measurementprocess.obs.has_overlapping_wires
+                    and len(measurementprocess.obs.wires) > 7
+                ):
+                    # Use tensor contraction for `Sum` expectation values with non-commuting summands
+                    # and 8 or more wires as it's faster than using eigenvalues.
+
+                    return csr_dot_products
 
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
@@ -127,14 +159,19 @@ def get_measurement_function(
     raise NotImplementedError
 
 
-def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
+def measure(
+    measurementprocess: MeasurementProcess, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
     """Apply a measurement process to a state.
 
     Args:
         measurementprocess (MeasurementProcess): measurement process to apply to the state
         state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
 
     Returns:
         Tensorlike: the result of the measurement
     """
-    return get_measurement_function(measurementprocess, state)(measurementprocess, state)
+    return get_measurement_function(measurementprocess, state)(
+        measurementprocess, state, is_state_batched
+    )

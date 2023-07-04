@@ -49,7 +49,7 @@ class TestMetricTensor:
         # Second parameter subcircuit
         assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RZ)
-        assert tapes[1].operations[0].data == [1]
+        assert tapes[1].operations[0].data == (1,)
         # PauliY decomp
         self.assert_Y_decomp(tapes[1].operations[1:4])
 
@@ -57,8 +57,8 @@ class TestMetricTensor:
         assert len(tapes[2].operations) == 2
         assert isinstance(tapes[2].operations[0], qml.RZ)
         assert isinstance(tapes[2].operations[1], qml.RY)
-        assert tapes[2].operations[0].data == [1]
-        assert tapes[2].operations[1].data == [2]
+        assert tapes[2].operations[0].data == (1,)
+        assert tapes[2].operations[1].data == (2,)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_multirz_decomposition(self, diff_method):

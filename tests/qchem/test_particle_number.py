@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import Identity, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -57,8 +58,18 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     """
     n = qchem.particle_number(orbitals)
     n_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-
     assert n.compare(n_ref)
+
+    enable_new_opmath()
+    n_pl_op = qchem.particle_number(orbitals)
+    disable_new_opmath()
+
+    wire_order = n_ref.wires
+    assert not isinstance(n_pl_op, qml.Hamiltonian)
+    assert np.allclose(
+        qml.matrix(n_pl_op, wire_order=wire_order),
+        qml.matrix(n_ref, wire_order=wire_order),
+    )
 
 
 @pytest.mark.parametrize(

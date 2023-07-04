@@ -468,6 +468,16 @@ class TestInfomationProperties:
         assert specs["num_trainable_params"] == 5
         assert specs["depth"] == 3
 
+    def test_specs_copy(self, make_script):
+        """Test that the copy method of specs retuns a SpecsDict."""
+        qs = make_script
+        copied_specs = qs.specs.copy()
+
+        assert isinstance(copied_specs, qml.tape.qscript.SpecsDict)
+        with pytest.warns(UserWarning, match="key is deprecated and will be removed"):
+            for k, v in qs.specs.items():
+                assert copied_specs[k] == v
+
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
         [
@@ -572,7 +582,6 @@ class TestScriptCopying:
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
         # the data list is copied, but the elements of the list remain th same
-        assert copied_qs.operations[0].data is not qs.operations[0].data
         assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
 
         assert qs.get_parameters() == copied_qs.get_parameters()

@@ -71,7 +71,7 @@ class TestCond:
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
         assert isinstance(ops[2].then_op, qml.RY)
         assert ops[2].then_op.wires == target_wire
-        assert ops[2].then_op.data == [r]
+        assert ops[2].then_op.data == (r,)
 
         assert isinstance(ops[3], qml.transforms.condition.Conditional)
         assert isinstance(ops[3].then_op, qml.PauliZ)
@@ -136,7 +136,7 @@ class TestCond:
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
         assert isinstance(ops[2].then_op, qml.RY)
         assert ops[2].then_op.wires == target_wire
-        assert ops[2].then_op.data == [r]
+        assert ops[2].then_op.data == (r,)
 
         assert isinstance(ops[3], qml.transforms.condition.Conditional)
         assert isinstance(ops[3].then_op, qml.PauliZ)
@@ -231,7 +231,7 @@ class TestOtherTransforms:
 
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
         assert isinstance(ops[2].then_op, qml.RX)
-        assert ops[2].then_op.data == [r]
+        assert ops[2].then_op.data == (r,)
         assert ops[2].then_op.wires == target_wire
 
         assert len(tape.measurements) == 1

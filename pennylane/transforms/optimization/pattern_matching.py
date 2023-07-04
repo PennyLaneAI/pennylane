@@ -68,10 +68,8 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as pattern:
-            qml.S(wires=0)
-            qml.S(wires=0)
-            qml.PauliZ(wires=0)
+        ops = [qml.S(0), qml.S(0), qml.PauliZ(0)]
+        pattern = qml.tape.QuantumTape(ops)
 
     For optimizing the circuit given the following template of CNOTs we apply the ``pattern_matching``
     transform.
@@ -123,12 +121,14 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as pattern:
-            qml.CNOT(wires=[1, 2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[0, 2])
+        ops = [
+            qml.CNOT(wires=[1, 2]),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[1, 2]),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[0, 2]),
+        ]
+        tape = qml.tape.QuantumTape(ops)
 
     For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching`
     transform.
@@ -141,10 +141,10 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
     In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
     optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
 
-    >>> qml.specs(qnode)()["gate_types"]["CNOT"]
+    >>> qml.specs(qnode)()["resources"].gate_types["CNOT"]
     4
 
-    >>> qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+    >>> qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
     3
 
     >>> print(qml.draw(qnode)())

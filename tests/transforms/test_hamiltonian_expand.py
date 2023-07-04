@@ -290,7 +290,6 @@ class TestHamiltonianExpand:
             assert np.isclose(res, output)
 
             g = gtape.gradient(res, var)
-            print(g)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
 
@@ -506,8 +505,8 @@ class TestSumExpand:
             3.50307411e-01,
             -3.41123470e-01,
             0.0,
-            0.0,
-            0.0,
+            -4.36578753e-01,
+            6.41233474e-01,
         ]
 
         with AnnotatedQueue() as q:
@@ -600,8 +599,8 @@ class TestSumExpand:
             3.50307411e-01,
             -3.41123470e-01,
             0.0,
-            0.0,
-            0.0,
+            -4.36578753e-01,
+            6.41233474e-01,
         ]
 
         with AnnotatedQueue() as q:

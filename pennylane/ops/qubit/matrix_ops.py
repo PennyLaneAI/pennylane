@@ -186,7 +186,7 @@ class QubitUnitary(Operation):
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
 
-        See :func:`~.transforms.zyz_decomposition` and :func:`~.transforms.two_qubit_decomposition`
+        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.transforms.two_qubit_decomposition`
         for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
@@ -213,7 +213,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
+            return qml.transforms.decompositions.one_qubit_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -343,8 +343,13 @@ class DiagonalQubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, which has further
-        decompositions for one and two qubit matrices.
+        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, :class:`~.RZ`,
+        :class:`~.IsingZZ`, and/or :class:`~.MultiRZ` depending on the number of wires.
+
+        .. note::
+
+            The parameters of the decomposed operations are cast to the ``complex128`` dtype
+            as real dtypes can lead to ``NaN`` values in the decomposition.
 
         .. seealso:: :meth:`~.DiagonalQubitUnitary.decomposition`.
 
@@ -367,7 +372,11 @@ class DiagonalQubitUnitary(Operation):
 
         """
         n = len(wires)
-        phases = qml.math.real(qml.math.log(D) * (-1j))
+
+        # Cast the diagonal into a complex dtype so that the logarithm works as expected
+        D_casted = qml.math.cast(D, "complex128")
+
+        phases = qml.math.real(qml.math.log(D_casted) * (-1j))
         coeffs = _walsh_hadamard_transform(phases, n).T
         global_phase = qml.math.exp(1j * coeffs[0])
         # For all other gates, there is a prefactor -1/2 to be compensated.
@@ -538,8 +547,8 @@ class BlockEncode(Operation):
         .. seealso:: :meth:`~.BlockEncode.matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
 
         Returns:

@@ -225,7 +225,7 @@ class TestExpandNonunitaryGen:
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op = new_tape.operations[2]
-        assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
+        assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
         assert tape.operations[3:] == new_tape.operations[3:]
 
     def test_expand_nonunitary_generator(self):
@@ -243,8 +243,43 @@ class TestExpandNonunitaryGen:
 
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op = new_tape.operations[2]
-        assert exp_op.name == "RZ" and exp_op.data == [2.1] and exp_op.wires == qml.wires.Wires(1)
+        assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
         assert tape.operations[3:] == new_tape.operations[3:]
+
+    def test_decompose_all_nonunitary_generator(self):
+        """Test that decompositions actually only contain unitarily
+        generated operators (Bug #4055)."""
+
+        # Corrected list of unitarily generated operators
+        unitarily_generated = [
+            "RX",
+            "RY",
+            "RZ",
+            "MultiRZ",
+            "PauliRot",
+            "IsingXX",
+            "IsingYY",
+            "IsingZZ",
+            "SingleExcitationMinus",
+            "SingleExcitationPlus",
+            "DoubleExcitationMinus",
+            "DoubleExcitationPlus",
+        ]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            # All do not have unitary generator, but previously had this
+            # attribute
+            qml.IsingXY(0.35, wires=[0, 1])
+            qml.SingleExcitation(1.61, wires=[1, 0])
+            qml.DoubleExcitation(0.56, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(1.15, wires=[1, 0, 3, 2])
+            qml.FermionicSWAP(0.3, wires=[2, 3])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+
+        for op in new_tape.operations:
+            assert op.name in unitarily_generated or op.num_params == 0
 
 
 class TestExpandInvalidTrainable:

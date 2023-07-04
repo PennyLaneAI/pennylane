@@ -69,7 +69,23 @@ class TestComparison:
         assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
 
-    @pytest.mark.parametrize("state", [[0, 0], [0, 1], [1, 0], [1, 1]])
+    @pytest.mark.parametrize(
+        "state",
+        [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+            [1, 1],
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+            np.array([1, 1, 0, 0]) / np.sqrt(2),
+            np.array([0, 1, 0, 1]) / np.sqrt(2),
+            np.array([1, 1, 1, 0]) / np.sqrt(3),
+            np.array([1, 1, 1, 1]) / 2,
+        ],
+    )
     def test_projector_expectation(self, device, state, tol):
         """Test that arbitrary multi-mode Projector expectation values are correct"""
         n_wires = 2
@@ -88,11 +104,11 @@ class TestComparison:
         theta = 0.432
         phi = 0.123
 
-        def circuit(theta, phi, basis_state):
+        def circuit(theta, phi, state):
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Projector(basis_state, wires=[0, 1]))
+            return qml.expval(qml.Projector(state, wires=[0, 1]))
 
         qnode_def = qml.QNode(circuit, dev_def)
         qnode = qml.QNode(circuit, dev)
