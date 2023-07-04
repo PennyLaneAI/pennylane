@@ -384,7 +384,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     """Create a copy of a tape and of parameters, and set the new tape to the parameters
     rescaled and shifted as indicated by ``indices``, ``multipliers`` and ``shifts``."""
-    all_ops = tape.circuit.copy()
+    all_ops = tape.circuit
 
     for idx, shift, multiplier in zip(indices, shifts, multipliers):
         _, op_idx, p_idx = tape.get_operation(idx)
@@ -395,7 +395,7 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
         )
 
         # Shift copied parameter
-        new_params = list(op.data.copy())
+        new_params = list(op.data)
         new_params[p_idx] = new_params[p_idx] * qml.math.convert_like(multiplier, new_params[p_idx])
         new_params[p_idx] = new_params[p_idx] + qml.math.convert_like(shift, new_params[p_idx])
         if cast:
