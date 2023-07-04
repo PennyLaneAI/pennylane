@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please ensure that you are using the new
+  return system, as the old return system is deprecated along with these switch functions.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 * The ``grouping_type`` and ``grouping_method`` arguments of ``qchem.molecular_hamiltonian()`` are deprecated.
 
   - Deprecated in v0.31

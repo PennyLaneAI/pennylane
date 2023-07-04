@@ -14,6 +14,8 @@
 """
 Unit tests for the new return types.
 """
+import warnings
+
 import numpy as np
 import pytest
 
@@ -1274,3 +1276,25 @@ class TestQubitDeviceNewUnits:
         msg = "Returning the mutual information is not supported when using custom wire labels"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.execute(tapes=[tape], device=dev, gradient_fn=None)
+
+
+class TestDeprecationWarnings:
+    """Tests that all return-system functions raise deprecation warnings."""
+
+    def test_enable_return_raises_warning(self):
+        """Test that enable_return() raises a warning."""
+        with pytest.warns(UserWarning, match="The old return system is deprecated"):
+            qml.enable_return()
+
+    def test_disable_return_raises_warning(self):
+        """Test that disable_return() raises a warning."""
+        with pytest.warns(UserWarning, match="The old return system is deprecated"):
+            qml.disable_return()
+        qml.enable_return()
+
+    def test_active_return_does_not_raise_warning(self):
+        """Test that active_return() does not raise a warning."""
+        with warnings.catch_warnings(record=True) as record:
+            qml.active_return()
+
+        assert len(record) == 0
