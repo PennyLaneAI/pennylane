@@ -132,8 +132,8 @@ class TestSingleShotGradientIntegration:
     expval_cost = catch_warn_ExpvalCost(ansatz0, H, dev)
 
     @qml.qnode(dev)
-    @staticmethod
     def qnode(x):
+        # pylint: disable=no-self-argument
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
