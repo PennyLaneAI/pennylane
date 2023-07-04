@@ -14,11 +14,8 @@
 """Unit tests for the basic functions in qml.math
 """
 import numpy as onp
-import pennylane as qml
-from pennylane import numpy as np
 import pytest
-
-from pennylane import math as fn
+from pennylane import numpy as np, math as fn
 
 pytestmark = pytest.mark.all_interfaces
 
