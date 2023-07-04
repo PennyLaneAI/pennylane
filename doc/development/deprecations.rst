@@ -12,6 +12,12 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The ``mode`` keyword argument in ``QNode.__init__`` is deprecated, as it was only used in the old return
+  system (which is also deprecated).
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 * The ``grouping_type`` and ``grouping_method`` arguments of ``qchem.molecular_hamiltonian()`` are deprecated.
 
   - Deprecated in v0.31

@@ -151,7 +151,7 @@ class QNode:
             Only applies if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        mode (str): Whether the gradients should be computed on the forward
+        mode (str): Deprecated kwarg indicating whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
@@ -386,7 +386,7 @@ class QNode:
         expansion_strategy="gradient",
         max_expansion=10,
         grad_on_execution="best",
-        mode="best",
+        mode=None,
         cache=True,
         cachesize=10000,
         max_diff=1,
@@ -426,6 +426,14 @@ class QNode:
                     f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
                     f"gradient kwargs."
                 )
+
+        if mode is None:
+            mode = "best"
+        else:
+            warnings.warn(
+                "The `mode` keyword argument is deprecated and does nothing with the new return system.",
+                UserWarning,
+            )
 
         # input arguments
         self.func = func
