@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.equal` no longer raises errors when operators of different types are compared.
+  [(#)]()
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -21,4 +24,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Mudit Pandey
 Matthew Silverman
