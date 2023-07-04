@@ -457,14 +457,3 @@ class TestDensityMatrixBroadcasting:
 
         density_matrix = fn.reduce_dm(density_matrix, indices=wires)
         assert np.allclose(density_matrix, expected_density_matrices)
-
-
-def test_deprecation_warning():
-    """Test that a deprecation warning is raised when qml.math.reduced_dm is called"""
-    state = np.array([1, 0])
-    with pytest.warns(UserWarning, match="reduced_dm has been deprecated"):
-        fn.reduced_dm(state, [0])
-
-    dm = np.array([[1, 0], [0, 0]])
-    with pytest.warns(UserWarning, match="reduced_dm has been deprecated"):
-        fn.reduced_dm(dm, [0])
