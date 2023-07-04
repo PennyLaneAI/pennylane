@@ -94,11 +94,11 @@ def equal(
     >>> qml.equal(H1, H2), qml.equal(H1, H3)
     (True, False)
 
-    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
+    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)))
     True
-    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
+    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     False
-    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
+    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
     True
 
     .. details::
@@ -161,7 +161,7 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ):
-    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
+    return False
 
 
 @_equal.register
@@ -183,9 +183,8 @@ def _equal_operators(
         return False
 
     if op1.arithmetic_depth > 0:
-        raise NotImplementedError(
-            "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
-        )
+        # Comparison of operators with an arithmetic depth larger than 0 is not yet implemented.
+        return False
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
@@ -235,12 +234,8 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         op2.arithmetic_depth,
     ]:
         return False
-    try:
-        return qml.equal(op1.base, op2.base, **kwargs)
-    except NotImplementedError as e:
-        raise NotImplementedError(
-            f"Unable to compare base operators {op1.base} and {op2.base}."
-        ) from e
+
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
@@ -291,7 +286,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     if isinstance(op2, Tensor):
         return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
 
-    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
+    return False
 
 
 @_equal.register
