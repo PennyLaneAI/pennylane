@@ -19,9 +19,9 @@ modifies Autograd NumPy arrays so that they have an additional property,
 import numpy as onp
 import pytest
 
+from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qml
 from pennylane import numpy as np
-from autograd.numpy.numpy_boxes import ArrayBox
 from pennylane.numpy.tensor import tensor_to_arraybox
 
 
@@ -415,6 +415,7 @@ class TestNumpyIntegration:
         multiple results."""
 
         class _ufunc:
+            # pylint: disable=unused-argument,too-few-public-methods
             def __init__(self, *args, **kwargs):
                 self.nout = 2
 

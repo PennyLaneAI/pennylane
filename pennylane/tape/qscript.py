@@ -1430,6 +1430,10 @@ class SpecsDict(dict):
             )
         return super().__getitem__(item)
 
+    def copy(self):
+        """Custom copy function to return a SpecsDict instead of a dict."""
+        return SpecsDict(self.items())
+
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
     """Returns a function that generates a qscript from a quantum function without any

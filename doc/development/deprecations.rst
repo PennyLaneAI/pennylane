@@ -132,7 +132,7 @@ Completed deprecation cycles
   - Deprecated in v0.29
   - Removed in v0.31
 
-* ``qml.op_sum``` has been removed. Users should use ``qml.sum`` instead.
+* ``qml.op_sum`` has been removed. Users should use ``qml.sum`` instead.
 
   - Deprecated in v0.29.
   - Removed in v0.31.
