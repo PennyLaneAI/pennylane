@@ -33,6 +33,7 @@ tests/qchem/**
 tests/qinfo/**
 tests/qnn/**
 tests/resource/**
+tests/shadow/**
 tests/tape/**
 tests/templates/test_embeddings/**
 tests/templates/test_layers/**
