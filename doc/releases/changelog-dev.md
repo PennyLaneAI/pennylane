@@ -6,7 +6,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.equal` no longer raises errors when operators of different types are compared.
+* `qml.equal` no longer raises errors when operators or measurements of different types are compared.
+  Instead, it returns `False`.
   [(#4315)](https://github.com/PennyLaneAI/pennylane/pull/4315)
 
 <h3>Breaking changes 💔</h3>
