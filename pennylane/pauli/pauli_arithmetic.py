@@ -74,7 +74,7 @@ def _cached_sparse_data(op):
     return data, indices
 
 
-@lru_cache
+@lru_cache(maxsize=2)
 def _cached_arange(n):
     "Caches `np.arange` output to speed up sparse calculations."
     return np.arange(n)
