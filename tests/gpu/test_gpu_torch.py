@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for PyTorch GPU support.
+"""
+# pylint: disable=protected-access
 import pytest
 import pennylane as qml
-from pennylane import numpy as np
 
 pytestmark = pytest.mark.gpu
 pytestmark = pytest.mark.torch
@@ -67,8 +70,8 @@ class TestTorchDevice:
 
         res.backward()
         assert x.grad.is_cuda
-        # check that this works
-        ygrad = y.grad
+        # check that computing the gradient with respect to y works
+        _ = y.grad
 
     def test_matrix_input(self):
         """Test goes to GPU for matrix valued inputs."""
