@@ -269,6 +269,7 @@ class TestSingleShotGradientIntegration:
 
     dev = qml.device("default.qubit", wires=2, shots=100)
 
+    @staticmethod
     def ansatz(x, **kwargs):
         qml.StronglyEntanglingLayers(x, wires=[0, 1])
 
@@ -280,6 +281,7 @@ class TestSingleShotGradientIntegration:
         """Test that a simple QNode with a single array argument with extra dimensions correctly
         performs an optimization step, and that the single-shot gradients generated have the
         correct shape"""
+        # pylint: disable=protected-access
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_expval = mocker.spy(opt, "_single_shot_expval_gradients")
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")

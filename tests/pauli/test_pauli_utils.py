@@ -1060,6 +1060,7 @@ class TestTapering:
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
+        # pylint: disable=protected-access
         pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
         binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()

@@ -410,8 +410,8 @@ def test_operation_conversion(pl_op, of_op, wire_order):
     assert of_op == converted_pl_op
 
     converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
-    converted_of_op_coeffs, converted_of_op_terms = converted_of_op
-    assert all([isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms])
+    _, converted_of_op_terms = converted_of_op
+    assert all(isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms)
     assert np.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
         qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
@@ -422,8 +422,8 @@ def test_operation_conversion(pl_op, of_op, wire_order):
     converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
     disable_new_opmath()
 
-    converted_of_op_coeffs, converted_of_op_terms = converted_of_op
-    assert all([isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms])
+    _, converted_of_op_terms = converted_of_op
+    assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
 
     assert np.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
@@ -458,10 +458,8 @@ invalid_ops = (
 @pytest.mark.parametrize("op", invalid_ops)
 def test_not_xyz_pennylane_to_openfermion(op):
     r"""Test if the conversion complains about non Pauli matrix observables"""
-    with pytest.raises(
-        ValueError,
-        match=f"Expected a Pennylane operator with a valid Pauli word representation,",
-    ):
+    _match = "Expected a Pennylane operator with a valid Pauli word representation,"
+    with pytest.raises(ValueError, match=_match):
         qml.qchem.convert._pennylane_to_openfermion(
             np.array([0.1 + 0.0j, 0.0]),
             [

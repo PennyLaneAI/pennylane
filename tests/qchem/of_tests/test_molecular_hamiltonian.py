@@ -15,8 +15,6 @@
 Unit tests for molecular Hamiltonians.
 """
 # pylint: disable=too-many-arguments
-import sys
-import warnings
 import pytest
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -31,8 +29,8 @@ from pennylane.operation import enable_new_opmath, disable_new_opmath
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
-symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
-coordinates = np.array(
+test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
+test_coordinates = np.array(
     [
         0.68219113,
         -0.85415621,
@@ -96,7 +94,7 @@ def test_building_hamiltonian(
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
 
-    args = (symbols, coordinates)
+    args = (test_symbols, test_coordinates)
     kwargs = {
         "charge": charge,
         "mult": mult,
@@ -257,8 +255,8 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
         assert np.allclose(np.sort(list(h_args_ps.values())), h_ref_sorted_coeffs)
         assert np.allclose(np.sort(list(h_noargs_ps.values())), h_ref_sorted_coeffs)
 
-        assert all([val.requires_grad is True for val in h_args_ps.values()])
-        assert all([val.requires_grad is False for val in h_noargs_ps.values()])
+        assert all(val.requires_grad is True for val in h_args_ps.values())
+        assert all(val.requires_grad is False for val in h_noargs_ps.values())
 
     else:
         assert np.allclose(np.sort(h_args.coeffs), np.sort(h_ref.coeffs))
@@ -271,8 +269,8 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
             Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
         )
 
-        assert h_args.coeffs.requires_grad == True
-        assert h_noargs.coeffs.requires_grad == False
+        assert h_args.coeffs.requires_grad is True
+        assert h_noargs.coeffs.requires_grad is False
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])

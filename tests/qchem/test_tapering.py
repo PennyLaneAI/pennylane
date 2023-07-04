@@ -23,7 +23,6 @@ import scipy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli import pauli_sentence
-from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.tapering import (
     _kernel,
     _reduced_row_echelon,
@@ -33,7 +32,6 @@ from pennylane.qchem.tapering import (
     taper_operation,
     _split_pauli_sentence,
     _taper_pauli_sentence,
-    _build_generator,
 )
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 
@@ -1073,23 +1071,17 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
         )
 
 
-@pytest.mark.parametrize(
-    ("ps_size", "max_size"),
-    [
-        (190, 49),
-        (40, 13),
-    ],
-)
+@pytest.mark.parametrize(("ps_size", "max_size"), [(190, 49), (40, 13)])
 def test_split_pauli_sentence(ps_size, max_size):
     """Test that _split_pauli_sentence splits the PauliSentence objects into correct chunks."""
 
-    pauli_sentence = qml.pauli.PauliSentence(
+    sentence = qml.pauli.PauliSentence(
         {qml.pauli.PauliWord({i: "X", i + 1: "Y", i + 2: "Z"}): i for i in range(ps_size)}
     )
 
     split_sentence = {}
-    for ps in _split_pauli_sentence(pauli_sentence, max_size=max_size):
+    for ps in _split_pauli_sentence(sentence, max_size=max_size):
         assert len(ps) <= max_size
         split_sentence = {**split_sentence, **ps}
 
-    assert pauli_sentence == qml.pauli.PauliSentence(split_sentence)
+    assert sentence == qml.pauli.PauliSentence(split_sentence)

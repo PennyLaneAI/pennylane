@@ -16,10 +16,10 @@
 import functools
 import pytest
 import numpy as np
-from pennylane.ops.qubit.observables import _BasisStateProjector, _StateVectorProjector
 
 from gate_data import I, X, Y, Z, H
 import pennylane as qml
+from pennylane.ops.qubit.observables import _BasisStateProjector, _StateVectorProjector
 
 
 @pytest.fixture(autouse=True)
@@ -308,6 +308,7 @@ class TestHermitian:
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
+        # pylint: disable=too-many-arguments
 
         # check calling `diagonalizing_gates` when `observable` is not in `_eigs` adds expected entry to `_eigs`
         spy = mocker.spy(np.linalg, "eigh")

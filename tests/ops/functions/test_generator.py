@@ -439,7 +439,7 @@ class TestArithmeticReturn:
         gen = qml.generator(TensorOp, format="arithmetic")(0.5, wires=[0, 1])
         result = qml.s_prod(0.5, qml.PauliX(0) @ qml.PauliY(1))
 
-        assert not isinstance(gen, Hamiltonian)
+        assert not isinstance(gen, qml.Hamiltonian)
         assert np.allclose(
             qml.matrix(gen, wire_order=[0, 1]),
             qml.matrix(result, wire_order=[0, 1]),
@@ -452,7 +452,7 @@ class TestArithmeticReturn:
             qml.PauliX(0) @ qml.Identity(1),
             qml.s_prod(0.5, qml.PauliX(0) @ qml.PauliY(1)),
         )
-        assert not isinstance(gen, Hamiltonian)
+        assert not isinstance(gen, qml.Hamiltonian)
         assert np.allclose(
             qml.matrix(gen, wire_order=[0, 1]),
             qml.matrix(result, wire_order=[0, 1]),
@@ -464,7 +464,7 @@ class TestArithmeticReturn:
         gen = qml.generator(HermitianOp, format="arithmetic")(0.5, wires=0)
         expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True).operation()
 
-        assert not isinstance(gen, Hamiltonian)
+        assert not isinstance(gen, qml.Hamiltonian)
         assert np.allclose(
             qml.matrix(gen),
             qml.matrix(expected),
@@ -478,7 +478,7 @@ class TestArithmeticReturn:
             SparseOp.H.toarray(), hide_identity=True, pauli=True
         ).operation()
 
-        assert not isinstance(gen, Hamiltonian)
+        assert not isinstance(gen, qml.Hamiltonian)
         assert np.allclose(
             qml.matrix(gen),
             qml.matrix(expected),
