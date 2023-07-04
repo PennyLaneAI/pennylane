@@ -160,7 +160,7 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-):
+):  # pylint: disable=unused-argument
     return False
 
 

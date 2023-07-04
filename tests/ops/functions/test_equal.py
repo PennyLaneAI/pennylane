@@ -15,6 +15,7 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
+# pylint: disable=too-many-arguments
 import itertools
 
 import numpy as np
@@ -582,7 +583,7 @@ class TestEqual:
         )
 
     @pytest.mark.all_interfaces
-    def test_equal_op_remaining(self):
+    def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
         """Test optional arguments are working"""
         wire = 0
 
@@ -1055,7 +1056,7 @@ class TestEqual:
             operation1 = op1(jax.numpy.array(x), wires=1)
             operation2 = op1(other_tensor, wires=1)
             if isinstance(other_tensor, tf.Variable):
-                with tf.GradientTape() as tape:
+                with tf.GradientTape() as _:
                     assert qml.equal(
                         operation1, operation2, check_interface=False, check_trainability=True
                     )
@@ -1071,7 +1072,7 @@ class TestEqual:
 
         # TF and Autograd
         # ------------------
-        with tf.GradientTape() as tape:
+        with tf.GradientTape() as _:
             assert qml.equal(
                 op1(tf_tensor, wires=wire),
                 op1(pl_tensor, wires=wire),
@@ -1081,7 +1082,7 @@ class TestEqual:
 
         # TF and Torch
         # ------------------
-        with tf.GradientTape() as tape:
+        with tf.GradientTape() as _:
             assert qml.equal(
                 op1(tf_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -1104,9 +1105,9 @@ class TestEqual:
         op2 = qml.prod(op1, qml.RY(0.25, wires=1))
         assert not qml.equal(op1, op2)
 
-    def test_equal_with_unsupported_nested_operators_raises_error(self):
-        """Test that the equal method with two operators with the same arithmetic depth (>0) raises
-        an error unless there is a singledispatch function specifically comparing that operator type.
+    def test_equal_with_unsupported_nested_operators_returns_false(self):
+        """Test that the equal method with two operators with the same arithmetic depth (>0) returns
+        `False` unless there is a singledispatch function specifically comparing that operator type.
         """
 
         op1 = SymbolicOp(qml.PauliY(0))
@@ -1115,12 +1116,7 @@ class TestEqual:
         assert op1.arithmetic_depth == op2.arithmetic_depth
         assert op1.arithmetic_depth > 0
 
-        with pytest.raises(
-            NotImplementedError,
-            match="Comparison of operators with an arithmetic"
-            + " depth larger than 0 is not yet implemented.",
-        ):
-            qml.equal(op1, op2)
+        assert not qml.equal(op1, op2)
 
     # Measurements test cases
     @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
@@ -1247,29 +1243,27 @@ class TestObservablesComparisons:
         """Tests that comparing a Hamiltonian with an Operator that is not an Observable returns False"""
         op1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
         op2 = qml.RX(1.2, 0)
-        assert qml.equal(op1, op2) == False
-        assert qml.equal(op2, op1) == False
+        assert not qml.equal(op1, op2)
+        assert not qml.equal(op2, op1)
 
     def test_tensor_and_operation_not_equal(self):
         """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.RX(1.2, 0)
-        assert qml.equal(op1, op2) == False
-        assert qml.equal(op2, op1) == False
+        assert not qml.equal(op1, op2)
+        assert not qml.equal(op2, op1)
 
-    def test_tensor_and_unsupported_observable_not_implemented(self):
-        """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian raises a NotImplmenetedError"""
+    def test_tensor_and_unsupported_observable_returns_false(self):
+        """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
 
-        with pytest.raises(NotImplementedError, match="Comparison of"):
-            qml.equal(op1, op2)
+        assert not qml.equal(op1, op2)
 
     def test_unsupported_object_type_not_implemented(self):
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(NotImplementedError, match="Comparison of"):
-            qml.equal(dev, dev)
+        assert not qml.equal(dev, dev)
 
 
 class TestSymbolicOpComparison:
@@ -1298,16 +1292,15 @@ class TestSymbolicOpComparison:
 
         assert op1.arithmetic_depth == 1
         assert op2.arithmetic_depth == 2
-        assert qml.equal(op1, op2) == False
+        assert not qml.equal(op1, op2)
 
-    def test_comparison_of_base_not_implemented_error(self):
-        """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented raises an error"""
+    def test_comparison_of_base_not_implemented_returns_false(self):
+        """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented returns False"""
         base = SymbolicOp(qml.RX(1.2, 0))
         op1 = Controlled(base, control_wires=2)
         op2 = Controlled(base, control_wires=2)
 
-        with pytest.raises(NotImplementedError, match="Unable to compare base operators "):
-            qml.equal(op1, op2)
+        assert not qml.equal(op1, op2)
 
     @pytest.mark.torch
     @pytest.mark.jax
