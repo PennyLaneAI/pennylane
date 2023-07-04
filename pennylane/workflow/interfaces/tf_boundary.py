@@ -11,11 +11,9 @@ class TFLayer(Executor):
         self,
         next_executor: Executor,
         derivative_executor: DerivativeExecutor,
-        grad_on_execution=False,
     ):
         self._next_executor = next_executor
         self._derivative_executor = derivative_executor
-        self._grad_on_execution = grad_on_execution
 
     def __call__(self, circuits):
         parameters = []
@@ -24,10 +22,7 @@ class TFLayer(Executor):
 
         @tf.custom_gradient
         def tf_registered_function(*inner_params):
-            if self._grad_on_execution:
-                results, jacs = self._derivative_executor.execute_and_compute_vjp()
-            else:
-                results = self._next_executor(circuits)
+            results = self._next_executor(circuits)
 
             def grad_fn(*dy, **tfkwargs):
                 vjps = self._derivative_executor.compute_vjp(

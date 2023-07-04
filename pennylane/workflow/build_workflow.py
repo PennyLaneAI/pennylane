@@ -51,10 +51,11 @@ def build_workflow(
         par_shift = TransformContainer(qml.gradients.param_shift, kwargs=gradient_kwargs)
         derivatives_executor = TransformDerivatives(outer_executor, par_shift)
 
-        if max_diff == 2:
+        while max_diff > 1:
             ml_layer_type = get_interface_boundary(ml_interface)
             outer_executor = ml_layer_type(outer_executor, derivatives_executor)
             derivatives_executor = TransformDerivatives(outer_executor, par_shift)
+            max_diff -= 1
     else:
         raise ValueError(f"do not recognize {gradient_method}")
 

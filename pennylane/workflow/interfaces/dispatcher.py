@@ -2,6 +2,8 @@ from ..executor import Executor
 
 
 class NullLayer(Executor):
+    """An transparent layer that can be used when no interface registration is required."""
+
     def __init__(self, next_executor: Executor, *_, **__):
         self._next_executor = next_executor
 

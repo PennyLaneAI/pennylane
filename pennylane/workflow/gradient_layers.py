@@ -192,7 +192,6 @@ class TransformDerivatives(DerivativeExecutor):
 
         results = full_results[:num_result_tapes]
         jvp_results = full_results[num_result_tapes:]
-        print(jvp_results)
         jvps = jvp_processing_fn(jvp_results)
 
         return tuple(results), tuple(jvps)
@@ -202,9 +201,7 @@ class TransformDerivatives(DerivativeExecutor):
         jvp_tapes, jvp_processing_fn = batch_jvp(
             tapes, tangents, self._gradient_transform, reduction=reduction_method
         )
-        print(jvp_tapes)
         jvp_results = self._next_executor(jvp_tapes)
-        print(jvp_results)
 
         return tuple(jvp_processing_fn(jvp_results))
 
@@ -293,7 +290,6 @@ class DeviceDerivatives(Executor, DerivativeExecutor):
             )
             self._results_cache[tapes] = results
             self._jacobian_cache[tapes] = jacs
-        print(self._jacobian_cache)
         return self._results_cache[tapes]
 
     def execute_and_compute_jvp(self, tapes, tangents, reduction_method="extend"):
