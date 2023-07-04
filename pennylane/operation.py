@@ -1546,7 +1546,7 @@ class Operator(abc.ABC):
         hashable_hyperparameters = tuple(
             (key, value) for key, value in self.hyperparameters.items()
         )
-        return tuple(self.data), (self.wires, hashable_hyperparameters)
+        return self.data, (self.wires, hashable_hyperparameters)
 
     @classmethod
     def _unflatten(cls, data, metadata):

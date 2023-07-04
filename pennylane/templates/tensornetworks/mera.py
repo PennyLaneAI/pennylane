@@ -175,13 +175,13 @@ class MERA(Operation):
     def num_params(self):
         return 1
 
-    def _flatten(self):
-        keyword_arguments = tuple((key, value) for key, value in self._inputs.items())
-        return tuple(self.data), (self.wires, keyword_arguments)
-
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(wires=metadata[0], **dict(metadata[1]), template_weights=data[0])
+        new_op = cls.__new__(cls)
+        new_op._wires = metadata[0]
+        new_op._hyperparameters = dict(metadata[1])
+        new_op.data = data
+        return new_op
 
     def __repr__(self):
         block = self.hyperparameters["block"]
@@ -198,13 +198,6 @@ class MERA(Operation):
         do_queue=None,
         id=None,
     ):
-        # Store the unprocessed inputs
-        # these will be used for serialization and un-serialization fo the operator
-        self._inputs = {
-            "n_block_wires": n_block_wires,
-            "block": block,
-            "n_params_block": n_params_block,
-        }
 
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)

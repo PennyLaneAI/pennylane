@@ -157,6 +157,14 @@ class TTN(Operation):
     def num_params(self):
         return 1
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._wires = metadata[0]
+        new_op._hyperparameters = dict(metadata[1])
+        new_op.data = data
+        return new_op
+
     def __init__(
         self,
         wires,

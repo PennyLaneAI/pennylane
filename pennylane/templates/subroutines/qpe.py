@@ -139,6 +139,16 @@ class QuantumPhaseEstimation(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    # pylint: disable=no-member
+    def _flatten(self):
+        data = (self.hyperparameters["unitary"],)
+        metadata = (self.hyperparmaeters["target_wires"], self.hyperparameters["estimation_wires"])
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
+        return cls(data[0], target_wires=metadata[0], estimation_wires=metadata[1])
+
     def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=None, id=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
