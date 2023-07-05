@@ -19,7 +19,7 @@ executed by a device.
 
 import contextlib
 import copy
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import List, Union, Optional, Sequence
 import warnings
 
@@ -40,15 +40,6 @@ from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
-
-
-def _warn_name():
-    warnings.warn(
-        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
-        " removed in the next release. Going forward, please refrain from using them. This also affects"
-        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
-        UserWarning,
-    )
 
 
 OPENQASM_GATES = {
@@ -102,7 +93,6 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): Deprecated way to give a name to the quantum script. Avoid using.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -192,12 +182,8 @@ class QuantumScript:
         measurements=None,
         prep=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
-        name=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self._name = name
-        if name is not None:
-            _warn_name()
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -258,17 +244,6 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
-
-    @property
-    def name(self):
-        """Name of the quantum script. Raises deprecation warning.
-
-        Returns:
-
-            str or None: The name given to the quantum script upon creation (if any).
-        """
-        _warn_name()
-        return self._name
 
     @property
     def interface(self):
@@ -1263,22 +1238,10 @@ class QuantumScript:
 
             self._specs = {
                 "resources": resources,
-                "gate_sizes": defaultdict(int),
-                "gate_types": defaultdict(int),
+                "num_observables": len(self.observables),
+                "num_diagonalizing_gates": len(self.diagonalizing_gates),
+                "num_trainable_params": self.num_params,
             }
-
-            for op in self.operations:
-                # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
-                self._specs["gate_sizes"][len(op.wires)] += 1
-                self._specs["gate_types"][op.name] += 1
-
-            self._specs["num_operations"] = resources.num_gates
-            self._specs["num_observables"] = len(self.observables)
-            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
-            self._specs["num_used_wires"] = self.num_wires
-            self._specs["num_trainable_params"] = self.num_params
-            self._specs["depth"] = resources.depth
-            self._specs = SpecsDict(self._specs)
 
         return self._specs
 
@@ -1411,6 +1374,7 @@ class QuantumScript:
         return cls(*process_queue(queue), shots=shots)
 
 
+<<<<<<< HEAD
 class SpecsDict(dict):
     """A dictionary to track and warn about deprecated keys"""
 
@@ -1435,6 +1399,8 @@ class SpecsDict(dict):
         return SpecsDict(self.items())
 
 
+=======
+>>>>>>> master
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
