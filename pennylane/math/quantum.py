@@ -503,6 +503,8 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     target = "".join(
         [ABC[i + 1] for i in sorted(indices)] + [ABC[num_wires + i + 1] for i in sorted(indices)]
     )
+    print(state.shape)
+    print(f"a{indices1},a{indices2}->a{target}")
     density_matrix = einsum(
         f"a{indices1},a{indices2}->a{target}", state, np.conj(state), optimize="greedy"
     )

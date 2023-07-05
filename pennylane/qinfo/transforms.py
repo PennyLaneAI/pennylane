@@ -66,6 +66,7 @@ def reduced_dm(qnode, wires):
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
+        print(wires)
         density_matrix = dm_func(state_built, indices=wires, c_dtype=qnode.device.C_DTYPE)
         return density_matrix
 

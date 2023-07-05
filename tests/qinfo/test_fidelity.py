@@ -163,6 +163,7 @@ class TestFidelityQnode:
     def test_fidelity_qnodes_rx_pauliz(self, device, param, wire):
         """Test the fidelity between Rx and PauliZ circuits."""
         dev = qml.device(device, wires=[wire])
+        print(dev.wires)
 
         @qml.qnode(dev)
         def circuit0(x):
@@ -174,7 +175,10 @@ class TestFidelityQnode:
             qml.PauliZ(wires=wire)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[wire], wires1=[wire])((param))
+        # todo: Once #4318 is closed, will need to change the wires0, wires1 arguments
+        # to the commented version
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
+        # fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[wire], wires1=[wire])((param))
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid)
 
