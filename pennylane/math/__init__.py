@@ -158,7 +158,6 @@ __all__ = [
     "purity",
     "reduce_dm",
     "reduce_statevector",
-    "reduced_dm",
     "relative_entropy",
     "requires_grad",
     "scatter_element_add",
