@@ -22,10 +22,6 @@ import pytest
 
 from pennylane import qchem
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 
@@ -529,6 +525,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_ref, tol):
     r"""Test the correctness of the decomposed Hamiltonian for the (:math: `H_2, H_2O, LiH`)
     molecules using Jordan-Wigner and Bravyi-Kitaev transformations."""
@@ -544,6 +541,7 @@ def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_r
     assert pauli_strings == pauli_strings_ref
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_not_available_transformation():
     r"""Test that an error is raised if the chosen fermionic-to-qubit transformation
     is neither 'jordan_wigner' nor 'bravyi_kitaev'."""

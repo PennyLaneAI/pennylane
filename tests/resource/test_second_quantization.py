@@ -124,7 +124,7 @@ def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m
     assert np.allclose(est.rank_max, rank_max)
 
 
-@pytest.mark.parametrize(("one", "two", "lamb"), [(one_h2, two_h2, 1.6570514682587973)])
+@pytest.mark.parametrize(("one", "two", "lamb"), [(one_h2, two_h2_ph, 1.6570518796336895)])
 def test_df_lamb(one, two, lamb):
     r"""Test that DoubleFactorization class returns a correct norm."""
     est = qml.resource.DoubleFactorization(one, two)

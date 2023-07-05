@@ -22,10 +22,6 @@ import pytest
 
 from pennylane import qchem
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 t_op_1 = {
@@ -142,9 +138,11 @@ t_op_4 = {
         (None, [0, 1, 2, 3, 4, 5], t_op_4),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_table_one_particle(core, active, t_op_exp):
     r"""Test the correctness of the FermionOperator built by the `'one_particle'` function
     of the `obs` module"""
+    import openfermion
 
     hf = openfermion.MolecularData(filename=os.path.join(ref_dir, "h2o_psi4"))
 
@@ -167,6 +165,7 @@ table_2D = np.array([[1, 2, 3], [4, 5, 6]])
         (table_2D, None, [2, 6], "Indices of active orbitals must be between 0 and"),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_exceptions_one_particle(t_me, core, active, msg_match):
     """Test that the function `'one_particle'` throws an exception
     if the matrix elements array is not a 2D array or if the indices

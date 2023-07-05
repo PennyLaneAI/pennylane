@@ -25,10 +25,6 @@ from pennylane.ops.functions import dot
 from pennylane.pauli import pauli_sentence
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 test_coordinates = np.array(
     [
@@ -78,6 +74,7 @@ test_coordinates = np.array(
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev", "commuting"),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_building_hamiltonian(
     charge,
     mult,
@@ -293,6 +290,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_hamiltonian_pyscf(
     symbols, geometry, method, wiremap, grouping, tmpdir, op_arithmetic
 ):
@@ -451,6 +449,7 @@ def test_hamiltonian_warnings(symbols, geometry):
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic):
     r"""Test that the generated Hamiltonian has real coefficients."""
     if op_arithmetic:
