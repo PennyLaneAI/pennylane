@@ -74,7 +74,6 @@ from .quantum import (
     marginal_prob,
     mutual_info,
     purity,
-    reduced_dm,
     reduce_dm,
     reduce_statevector,
     relative_entropy,
