@@ -121,6 +121,7 @@ def ansatz1(x, **kwargs):
     qml.RY(x[1, 1], wires=0)
     qml.RZ(x[1, 2], wires=0)
 
+
 def ansatz2(x, **kwargs):
     qml.StronglyEntanglingLayers(x, wires=[0, 1])
 
