@@ -1280,23 +1280,6 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["auto", "jax", "jax-python"])
-def test_adjoint_reuse_device_state(mocker, interface):
-    """Tests that the jax interface reuses the device state for adjoint differentiation"""
-
-    @qnode(dev, interface=interface, diff_method="adjoint")
-    def circ(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
-    spy = mocker.spy(dev, "adjoint_jacobian")
-
-    grad = jax.grad(circ)(1.0)
-    assert circ.device.num_executions == 1
-
-    spy.assert_called_with(mocker.ANY, use_device_state=True)
-
-
 @pytest.mark.parametrize("interface,diff_method,grad_on_execution", interface_and_diff_method)
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
@@ -1333,13 +1316,12 @@ class TestTapeExpansion:
             PhaseShift(2 * y, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "batch_execute")
         x = jax.numpy.array(0.5)
         y = jax.numpy.array(0.7)
         circuit(x, y)
 
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
-        res = jax.grad(circuit, argnums=[0])(x, y)
+        jax.grad(circuit, argnums=[0])(x, y)
 
         input_tape = spy.call_args[0][0]
         assert len(input_tape.operations) == 3
@@ -1420,8 +1402,8 @@ class TestTapeExpansion:
     def test_hamiltonian_expansion_finite_shots(
         self, diff_method, grad_on_execution, interface, max_diff, mocker
     ):
-        """Test that the Hamiltonian is expanded if there
-        are non-commuting groups and the number of shots is finite
+        """Test that the Hamiltonian is correctly measured (and not expanded)
+        if there are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
         tol = 0.1
@@ -1461,7 +1443,7 @@ class TestTapeExpansion:
         res = circuit(d, w, c, shots=50000)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
-        spy.assert_called()
+        spy.assert_not_called()
 
         # test gradients
         grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
