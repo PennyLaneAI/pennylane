@@ -260,6 +260,7 @@ class PauliWord(dict):
                 data[current_size : 2 * current_size] = -data[:current_size]
                 indices[current_size : 2 * current_size] = indices[:current_size] + current_size
             current_size *= 2
+        # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
         matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype=np.complex128)
         matrix.data, matrix.indices, matrix.indptr = data, indices, indptr
         return matrix

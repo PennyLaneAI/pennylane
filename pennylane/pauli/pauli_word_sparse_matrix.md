@@ -109,6 +109,7 @@ col: [4 5 6 7 0 1 2 3]
 In general, we take our current $\texttt{val}$ and replicate it multiplying by the Pauli operator's $\texttt{val}_P$, such that $\texttt{val}\leftarrow[\texttt{val}, \texttt{val}]\cdot\texttt{val}_P$ (assuming $\texttt{val}_P$ broadcasts accordingly).
 For the $\texttt{col}$, we replicate it and add the previous matrix dimension $m$ times the operator's $\texttt{col}_P$, such that $\texttt{col}\leftarrow[\texttt{col}, \texttt{col}] + m\times\texttt{col}_P$.
 Knowing the number of terms $n$, we can directly compute the resulting $\texttt{row}$ as $\texttt{row} = [0, 1, \dots, 2^n]$.
+For long Pauli words ($n\gg1$), $\texttt{row}$ can be relatively demanding to generate, so we can cache it for repeated words with the same length.
 Below, we list the explicit effect on the CSR representation of performing the tensor product with each Pauli matrix:
 
 $$\begin{align*}
