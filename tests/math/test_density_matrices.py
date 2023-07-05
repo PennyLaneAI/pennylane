@@ -413,8 +413,8 @@ class TestDensityMatrixBroadcasting:
         state_vector = array_func([sv[0] for sv in state_vectors])
         expected_density_matrices = array_func([sv[1][wires[0]] for sv in state_vectors])
 
-        density_matrices = fn.reduce_statevector(state_vector, indices=wires)
-        assert np.allclose(density_matrices, expected_density_matrices)
+        _density_matrices = fn.reduce_statevector(state_vector, indices=wires)
+        assert np.allclose(_density_matrices, expected_density_matrices)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("wires", multiple_wires_list)
@@ -429,8 +429,8 @@ class TestDensityMatrixBroadcasting:
                 [permute_two_qubit_dm(sv[1][2]) for sv in state_vectors]
             )
 
-        density_matrices = fn.reduce_statevector(state_vector, indices=wires)
-        assert np.allclose(density_matrices, expected_density_matrices)
+        _density_matrices = fn.reduce_statevector(state_vector, indices=wires)
+        assert np.allclose(_density_matrices, expected_density_matrices)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("wires", single_wires_list)

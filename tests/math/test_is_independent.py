@@ -14,6 +14,7 @@
 """
 Unit tests for the :func:`pennylane.math.is_independent` function.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 
 import numpy as np
@@ -41,7 +42,7 @@ dependent_lambdas = [
     lambda x: x if x > 0 else 0.0,  # RELU for x>0 is okay numerically
     lambda x: x if x > 0 else 0.0,  # RELU for x<0 is okay numerically
     lambda x: 1.0 if abs(x) < 1e-5 else 0.0,  # delta for x=0 is okay numerically
-    lambda x: x if abs(x) < 1e-5 else 0.0,  # x*delta for x=0 is okay
+    lambda x: x if abs(x) < 1e-4 else 0.0,  # x*delta for x=0 is okay
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
     lambda x: qml.math.log(1 + qml.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
@@ -93,6 +94,20 @@ args_overlooked_lambdas = [
 ]
 
 
+def const_circuit(x, y):
+    # pylint: disable=unused-argument
+    qml.RX(0.1, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+def dependent_circuit(x, y, z):
+    # pylint: disable=unused-argument
+    qml.RX(0.1, wires=0)
+    qml.RY(y / 2, wires=0)
+    qml.RZ(qml.math.sin(z), wires=0)
+    return qml.expval(qml.PauliX(0))
+
+
 class TestIsIndependentAutograd:
     """Tests for is_independent, which tests a function to be
     independent of its inputs, using Autograd."""
@@ -124,13 +139,8 @@ class TestIsIndependentAutograd:
 
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, interface=interface)
-    def const_circuit(x, y):
-        qml.RX(0.1, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
     constant_functions = [
-        const_circuit,
+        qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
         qml.jacobian(lambda x, y: 4 * x - 2.1 * y, argnum=[0, 1]),
@@ -143,15 +153,8 @@ class TestIsIndependentAutograd:
         (np.ones((3, 8)) * 0.1, -0.2 * np.ones((3, 8))),
     ]
 
-    @qml.qnode(dev, interface=interface)
-    def dependent_circuit(x, y, z):
-        qml.RX(0.1, wires=0)
-        qml.RY(y / 2, wires=0)
-        qml.RZ(qml.math.sin(z), wires=0)
-        return qml.expval(qml.PauliX(0))
-
     dependent_functions = [
-        dependent_circuit,
+        qml.QNode(dependent_circuit, dev, interface=interface),
         np.array,
         lambda x: np.array(x * 0.0),
         lambda x: (1 + qml.math.tanh(100 * x)) / 2,
@@ -252,13 +255,8 @@ class TestIsIndependentJax:
 
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, interface=interface)
-    def const_circuit(x, y):
-        qml.RX(0.1, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
     constant_functions = [
-        const_circuit,
+        qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
         jax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
@@ -271,15 +269,8 @@ class TestIsIndependentJax:
         (jax.numpy.ones((3, 8)) * 0.1, -0.2 * jax.numpy.ones((3, 8))),
     ]
 
-    @qml.qnode(dev, interface=interface)
-    def dependent_circuit(x, y, z):
-        qml.RX(0.1, wires=0)
-        qml.RY(y / 2, wires=0)
-        qml.RZ(qml.math.sin(z), wires=0)
-        return qml.expval(qml.PauliX(0))
-
     dependent_functions = [
-        dependent_circuit,
+        qml.QNode(dependent_circuit, dev, interface=interface),
         jax.numpy.array,
         lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
         *dependent_lambdas,
@@ -339,7 +330,6 @@ class TestIsIndependentTensorflow:
     @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
     def test_get_random_args(self, args, num, bounds):
         """Tests the utility ``_get_random_args`` using a fixed seed."""
-        tf = pytest.importorskip("tensorflow")
         seed = 921
         rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
         assert len(rnd_args) == num
@@ -357,13 +347,8 @@ class TestIsIndependentTensorflow:
 
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, interface=interface)
-    def const_circuit(x, y):
-        qml.RX(0.1, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
     constant_functions = [
-        const_circuit,
+        qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), np.array(-0.1)),
     ]
@@ -374,15 +359,8 @@ class TestIsIndependentTensorflow:
         (np.ones((2, 3)),),
     ]
 
-    @qml.qnode(dev, interface=interface)
-    def dependent_circuit(x, y, z):
-        qml.RX(0.1, wires=0)
-        qml.RY(y / 2, wires=0)
-        qml.RZ(qml.math.sin(z), wires=0)
-        return qml.expval(qml.PauliX(0))
-
     dependent_functions = [
-        dependent_circuit,
+        qml.QNode(dependent_circuit, dev, interface=interface),
         lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
         *dependent_lambdas,
     ]
@@ -400,20 +378,24 @@ class TestIsIndependentTensorflow:
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
-        args = tuple([tf.Variable(_arg) for _arg in args])
+        args = tuple(tf.Variable(_arg) for _arg in args)
         assert is_independent(func, self.interface, args)
 
     @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
-        args = tuple([tf.Variable(_arg) for _arg in args])
+        from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
+        args = tuple(tf.Variable(_arg) for _arg in args)
         # Filter out functions with TF-incompatible output format
         out = func(*args)
         if not isinstance(out, tf.Tensor):
             try:
+                assert not is_independent(func, self.interface, args)
+            except AttributeError:
                 _func = lambda *args: tf.Variable(func(*args))
                 assert not is_independent(_func, self.interface, args)
-            except:
+            except InvalidArgumentError:
                 pytest.skip()
         else:
             assert not is_independent(func, self.interface, args)
@@ -460,7 +442,6 @@ class TestIsIndependentTorch:
     @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
     def test_get_random_args(self, args, num, bounds):
         """Tests the utility ``_get_random_args`` using a fixed seed."""
-        torch = pytest.importorskip("torch")
         seed = 921
         rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
         assert len(rnd_args) == num
@@ -473,13 +454,8 @@ class TestIsIndependentTorch:
 
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, interface=interface)
-    def const_circuit(x, y):
-        qml.RX(0.1, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
     constant_functions = [
-        const_circuit,
+        qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
     ]
@@ -490,15 +466,8 @@ class TestIsIndependentTorch:
         (torch.ones((2, 3)),),
     ]
 
-    @qml.qnode(dev, interface=interface)
-    def dependent_circuit(x, y, z):
-        qml.RX(0.1, wires=0)
-        qml.RY(y / 2, wires=0)
-        qml.RZ(qml.math.sin(z), wires=0)
-        return qml.expval(qml.PauliX(0))
-
     dependent_functions = [
-        dependent_circuit,
+        qml.QNode(dependent_circuit, dev, interface=interface),
         torch.as_tensor,
         lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
         *dependent_lambdas,
