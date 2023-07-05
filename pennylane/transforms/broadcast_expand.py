@@ -116,6 +116,7 @@ def broadcast_expand(tape):
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
     array([0.98006658, 0.82533561, 0.54030231])
     """
+    # pylint: disable=protected-access
     num_tapes = tape.batch_size
     if num_tapes is None:
         raise ValueError("The provided tape is not broadcasted.")

@@ -73,6 +73,7 @@ def batch_input(
     array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
             0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
+    # pylint: disable=protected-access
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
     all_parameters = tape.get_parameters(trainable_only=False)
