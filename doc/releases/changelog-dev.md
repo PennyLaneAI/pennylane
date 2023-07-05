@@ -6,6 +6,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* The experimental device interface is integrated with the `QNode` for Jax.
+
 <h3>Breaking changes 💔</h3>
 
 * The `grouping_type` and `grouping_method` keyword arguments are removed from `qchem.molecular_hamiltonian`.
