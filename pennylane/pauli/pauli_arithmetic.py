@@ -232,7 +232,8 @@ class PauliWord(dict):
         return self._to_sparse_mat(wire_order, coeff)
 
     def _to_sparse_mat(self, wire_order, coeff):
-        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order."""
+        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
+        See pauli_word_sparse_matrix.md for the technical details of the implementation."""
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
