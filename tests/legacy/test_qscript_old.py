@@ -32,17 +32,10 @@ from pennylane.tape import QuantumScript
 class TestInitialization:
     """Test the non-update components of intialization."""
 
-    def test_name(self):
-        """Test the name property."""
-        name = "hello"
-        qs = QuantumScript(name=name)
-        assert qs.name == name
-
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript(_update=False)
-        assert qs.name is None
         assert qs._ops == []
         assert qs._prep == []
         assert qs._measurements == []
@@ -427,23 +420,17 @@ class TestInfomationProperties:
         qs = QuantumScript()
         assert qs._specs is None
 
-        assert qs.specs["gate_sizes"] == defaultdict(int)
-        assert qs.specs["gate_types"] == defaultdict(int)
-
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
         assert qs.specs["resources"] == qml.resource.Resources(
             gate_types=gate_types, gate_sizes=gate_sizes
         )
 
-        assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
         assert qs.specs["num_diagonalizing_gates"] == 0
-        assert qs.specs["num_used_wires"] == 0
         assert qs.specs["num_trainable_params"] == 0
-        assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 9
+        assert len(qs.specs) == 4
 
         assert qs._specs is qs.specs
 
@@ -455,24 +442,18 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 9
+        assert len(specs) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-
-        assert specs["gate_sizes"] == gate_sizes
-        assert specs["gate_types"] == gate_types
 
         assert specs["resources"] == qml.resource.Resources(
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
 
-        assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
-        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
-        assert specs["depth"] == 3
 
 
 class TestScriptCopying:

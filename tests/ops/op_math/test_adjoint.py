@@ -425,16 +425,6 @@ class TestMiscMethods:
 class TestAdjointOperation:
     """Test methods in the AdjointOperation mixin."""
 
-    @pytest.mark.parametrize(
-        "base, adjoint_base_name",
-        ((qml.PauliX(0), "Adjoint(PauliX)"), (qml.RX(1.2, wires=0), "Adjoint(RX)")),
-    )
-    def test_base_name(self, base, adjoint_base_name):
-        """Test the base_name property of AdjointOperation."""
-        op = Adjoint(base)
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert op.base_name == adjoint_base_name
-
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
         base = qml.RX(0.5, 0)
