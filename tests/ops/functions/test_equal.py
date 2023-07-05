@@ -1056,7 +1056,7 @@ class TestEqual:
             operation1 = op1(jax.numpy.array(x), wires=1)
             operation2 = op1(other_tensor, wires=1)
             if isinstance(other_tensor, tf.Variable):
-                with tf.GradientTape() as _:
+                with tf.GradientTape():
                     assert qml.equal(
                         operation1, operation2, check_interface=False, check_trainability=True
                     )
@@ -1072,7 +1072,7 @@ class TestEqual:
 
         # TF and Autograd
         # ------------------
-        with tf.GradientTape() as _:
+        with tf.GradientTape():
             assert qml.equal(
                 op1(tf_tensor, wires=wire),
                 op1(pl_tensor, wires=wire),
@@ -1082,7 +1082,7 @@ class TestEqual:
 
         # TF and Torch
         # ------------------
-        with tf.GradientTape() as _:
+        with tf.GradientTape():
             assert qml.equal(
                 op1(tf_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
