@@ -456,7 +456,7 @@ def empty_like(tensor, dtype=None, shape=None):
     return np.empty_like(tensor, shape=shape)
 
 
-def ones_like(tensor, dtype=None, shape=None):
+def ones_like(tensor, dtype=None):
     """Returns a tensor of all ones with the same shape and dtype
     as the input tensor.
 
@@ -487,9 +487,9 @@ def ones_like(tensor, dtype=None, shape=None):
            [1.+0.j]])>
     """
     if dtype is not None:
-        return cast(np.ones_like(tensor, shape=shape), dtype)
+        return cast(np.ones_like(tensor), dtype)
 
-    return np.ones_like(tensor, shape=shape)
+    return np.ones_like(tensor)
 
 
 def zeros_like(tensor, dtype=None, shape=None):
