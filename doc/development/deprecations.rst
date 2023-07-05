@@ -12,8 +12,8 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The ``mode`` keyword argument in ``QNode.__init__`` is deprecated, as it was only used in the old return
-  system (which is also deprecated).
+* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
+  system (which is also deprecated). Please use ``grad_on_execution`` instead.
 
   - Deprecated in v0.32
   - Will be removed in v0.33

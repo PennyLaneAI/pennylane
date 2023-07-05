@@ -431,7 +431,8 @@ class QNode:
             mode = "best"
         else:
             warnings.warn(
-                "The `mode` keyword argument is deprecated and does nothing with the new return system.",
+                "The `mode` keyword argument is deprecated and does nothing with the new return system. "
+                "Please use `grad_on_execution` instead.",
                 UserWarning,
             )
 
