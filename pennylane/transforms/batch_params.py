@@ -179,8 +179,8 @@ def batch_params(tape, all_operations=False):
             )
 
     idx = 0
-    new_preps, idx = _split_operations(tape.prep, params, indices, idx, batch_dim)
-    new_ops, _ = _split_operations(tape.gates, params, indices, idx, batch_dim)
+    new_preps, idx = _split_operations(tape._prep, params, indices, idx, batch_dim)
+    new_ops, _ = _split_operations(tape._ops, params, indices, idx, batch_dim)
 
     output_tapes = []
     for prep, ops in zip(new_preps, new_ops):
