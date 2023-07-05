@@ -551,13 +551,13 @@ class TestBarrier:
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
+        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
 
         assert gates == 3
 
         optimized_qfunc = qml.compile()(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
         assert optimized_gates == 2
 
@@ -573,7 +573,7 @@ class TestBarrier:
         dev = qml.device("default.qubit", wires=3)
         optimized_qfunc = qml.compile()(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
         assert optimized_gates == 0
 
@@ -589,13 +589,13 @@ class TestBarrier:
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
+        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
 
         assert gates == 4
 
         optimized_qfunc = qml.compile()(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
         assert optimized_gates == 0
 
@@ -609,7 +609,7 @@ class TestBarrier:
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
+        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
 
         assert gates == 4
 
@@ -624,7 +624,7 @@ class TestBarrier:
         dev = qml.device("default.qubit", wires=3)
         optimized_qfunc = qml.compile()(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
         assert optimized_gates == 2
 
