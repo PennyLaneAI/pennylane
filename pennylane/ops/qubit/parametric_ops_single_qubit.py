@@ -637,27 +637,12 @@ class Rot(Operation):
         pm = qml.math.exp(0.5j * (phi - omega))
         if hasattr(one, "reshape"):
             return stack_last(
-                [
-                    qml.math.conj(pp) * c,
-                    -pm * s,
-                    qml.math.conj(pm) * s,
-                    pp * c,
-                ]
+                [qml.math.conj(pp) * c, -pm * s, qml.math.conj(pm) * s, pp * c]
             ).reshape((*c.shape, 2, 2))
         return stack_last(
             [
-                stack_last(
-                    [
-                        qml.math.conj(pp) * c,
-                        qml.math.conj(pm) * s,
-                    ]
-                ),
-                stack_last(
-                    [
-                        -pm * s,
-                        pp * c,
-                    ]
-                ),
+                stack_last([qml.math.conj(pp) * c, qml.math.conj(pm) * s]),
+                stack_last([-pm * s, pp * c]),
             ]
         )
 
