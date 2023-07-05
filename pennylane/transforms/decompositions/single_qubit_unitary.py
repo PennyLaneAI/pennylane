@@ -45,7 +45,7 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
-def _zyz_decomposition_old(U, wire):
+def _rot_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
@@ -362,7 +362,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     supported_rotations = {
-        "rot": _zyz_decomposition_old,
+        "rot": _rot_decomposition,
         "ZYZ": _zyz_decomposition,
         "XYX": _xyx_decomposition,
         "ZXZ": _zxz_decomposition,
