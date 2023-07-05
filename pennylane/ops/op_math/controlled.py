@@ -607,14 +607,6 @@ class ControlledOp(Controlled, operation.Operation):
             self.grad_recipe = [None] * self.num_params
 
     @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return f"C({self.base.base_name})"
-
-    @property
     def name(self):
         return self._name
 

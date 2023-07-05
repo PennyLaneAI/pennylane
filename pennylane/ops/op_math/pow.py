@@ -121,6 +121,34 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
     return pow_op
 
 
+# pylint: disable=no-member
+class PowOperation(Operation):
+    """Operation-specific methods and properties for the ``Pow`` class.
+
+    Dynamically mixed in based on the provided base operator.  If the base operator is an
+    Operation, this class will be mixed in.
+
+    When we no longer rely on certain functionality through `Operation`, we can get rid of this
+    class.
+    """
+
+    # until we add gradient support
+    grad_method = None
+
+    @property
+    def name(self):
+        return self._name
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
+    @property
+    def control_wires(self):
+        return self.base.control_wires
+
+
 class Pow(ScalarSymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
@@ -341,39 +369,3 @@ class Pow(ScalarSymbolicOp):
             return op.simplify()
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
-
-
-# pylint: disable=no-member
-class PowOperation(Pow, Operation):
-    """Operation-specific methods and properties for the ``Pow`` class.
-
-    Dynamically mixed in based on the provided base operator.  If the base operator is an
-    Operation, this class will be mixed in.
-
-    When we no longer rely on certain functionality through `Operation`, we can get rid of this
-    class.
-    """
-
-    # until we add gradient support
-    grad_method = None
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
-
-    @property
-    def name(self):
-        return self._name
-
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
-    @property
-    def control_wires(self):
-        return self.base.control_wires

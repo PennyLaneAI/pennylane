@@ -15,7 +15,6 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from functools import wraps
-import warnings
 
 import pennylane as qml
 from pennylane.math import conj, moveaxis, transpose
@@ -346,14 +345,6 @@ class AdjointOperation(Adjoint, Operation):
     .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin
     class can be removed.
     """
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
 
     @property
     def name(self):
