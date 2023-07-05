@@ -122,6 +122,10 @@ def ansatz1(x, **kwargs):
     qml.RZ(x[1, 2], wires=0)
 
 
+def ansatz2(x, **kwargs):
+    qml.StronglyEntanglingLayers(x, wires=[0, 1])
+
+
 class TestSingleShotGradientIntegration:
     """Integration tests to ensure that the single shot gradient is correctly computed
     for a variety of argument types."""
@@ -132,8 +136,8 @@ class TestSingleShotGradientIntegration:
     expval_cost = catch_warn_ExpvalCost(ansatz0, H, dev)
 
     @qml.qnode(dev)
-    @staticmethod
     def qnode(x):
+        # pylint: disable=no-self-argument
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
@@ -269,11 +273,7 @@ class TestSingleShotGradientIntegration:
 
     dev = qml.device("default.qubit", wires=2, shots=100)
 
-    @staticmethod
-    def ansatz(x, **kwargs):
-        qml.StronglyEntanglingLayers(x, wires=[0, 1])
-
-    expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
+    expval_cost = catch_warn_ExpvalCost(ansatz2, H, dev)
     qnode = expval_cost.qnodes[0]
 
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
