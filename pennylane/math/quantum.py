@@ -31,58 +31,6 @@ from .matrix_manipulation import _permute_dense_matrix
 ABC_ARRAY = np.array(list(ABC))
 
 
-def _state_param_deprecation_warning(func_name):
-    """Raise a warning that passing a state vector as a parameter is deprecated"""
-    warnings.warn(
-        f"Passing a state vector to {func_name} has been deprecated. "
-        "Please call qml.math.dm_from_state_vector first.",
-        UserWarning,
-    )
-
-
-def _interpret_dm_warning(x, func_name):
-    """Raise a warning that x will be interpreted as a density matrix rather
-    than a batched state vector"""
-    warnings.warn(
-        f"Argument passed to {func_name} has shape {qml.math.shape(x)} and will be interpreted "
-        "as a density matrix. If a batched state vector was intended, please "
-        "call qml.math.dm_from_state_vector first, as passing state vectors to "
-        f"{func_name} is deprecated."
-    )
-
-
-def _dispatch_as_state_vector(x, func_name):
-    """
-    Return True if x is dispatched as a state vector, and False if
-    it is dispatched as a density matrix.
-
-    This function is only used in the deprecation cycle for state vector params
-    (between 0.31 and 0.32), after which it should be removed.
-    """
-    shape = np.shape(x)
-
-    if len(shape) == 1:
-        # 1D arrays are always state vectors
-        _state_param_deprecation_warning(func_name)
-        return True
-
-    if len(shape) == 3:
-        # 3D arrays are always batched density matrices
-        return False
-
-    if not len(shape) == 2:
-        raise ValueError("The state is not a state vector or a density matrix.")
-
-    if shape[0] != shape[1]:
-        # 2D arrays with different dims is a batched state vector
-        _state_param_deprecation_warning(func_name)
-        return True
-
-    # 2D arrays with same dims can be either; here we opt for density matrices
-    _interpret_dm_warning(x, func_name)
-    return False
-
-
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
     """Calculate the covariance matrix of a list of commuting observables, given
     the joint probability distribution of the system in the shared eigenbasis.
