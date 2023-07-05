@@ -7,6 +7,7 @@
 <h3>Improvements 🛠</h3>
 
 * The experimental device interface is integrated with the `QNode` for Jax.
+  [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
 <h3>Breaking changes 💔</h3>
 
