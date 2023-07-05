@@ -21,14 +21,11 @@ import pytest
 
 from pennylane import qchem
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 name = "h2"
 symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 @pytest.mark.parametrize(("package", "basis"), [("PySCF", "sto-3g"), ("PySCF", "6-31g")])
 def test_path_to_file(package, basis, tmpdir):
     r"""Test the correctness of the full path to the file containing the meanfield
@@ -43,9 +40,12 @@ def test_path_to_file(package, basis, tmpdir):
     assert res_path == exp_path
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 @pytest.mark.parametrize("package", ["PySCF"])
 def test_hf_calculations(package, tmpdir, tol):
     r"""Test the correctness of the HF calculation"""
+    import openfermion
+
     n_atoms = 2
     n_electrons = 2
     n_orbitals = 2
@@ -84,6 +84,7 @@ def test_hf_calculations(package, tmpdir, tol):
     assert np.allclose(molecule.two_body_integrals, two_body_integrals, **tol)
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_not_available_qc_package(tmpdir):
     r"""Test that an error is raised if the input quantum chemistry package
     is not PySCF"""
@@ -94,6 +95,7 @@ def test_not_available_qc_package(tmpdir):
         )
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_dimension_consistency(tmpdir):
     r"""Test that an error is raised if the size of the 'coordinates' array is
     not equal to ``3*len(symbols)``"""

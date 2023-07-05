@@ -26,7 +26,6 @@ from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 
-# TODO: Bring pytest skip to relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 

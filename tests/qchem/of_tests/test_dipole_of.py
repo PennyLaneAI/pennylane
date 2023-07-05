@@ -20,10 +20,6 @@ import pytest
 
 import pennylane as qml
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 h2 = ["H", "H"]
 x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])
 coeffs_h2 = []
@@ -211,6 +207,7 @@ ops_h2o.append(
         (h2o, x_h2o, 0, range(4), [4, 5], "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
     r"""Tests the correctness of the dipole observable computed by the ``dipole`` function."""
 
@@ -241,6 +238,7 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
         (h3p, x_h3p, 1, np.array([1, 1, 0, 0, 0, 0]), np.array([0.95655073, 0.55522528, 0.0])),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     r"""Tests the correctness of the computed dipole moment."""
 
@@ -251,6 +249,7 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     dip_obs = qml.qchem.dipole_of(symbols, coords, charge=charge, outpath=tmpdir.strpath)
 
     def circuit(params, wires):
+        # pylint: disable=unused-argument
         qml.BasisState(hf_state, wires=wires)
 
     with pytest.warns(UserWarning, match="is deprecated,"):
@@ -266,6 +265,7 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
         (["H", "Ca"], x_h2, 1, "only first- or second-row elements of the periodic table"),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_exceptions_dipole(symbols, coords, mult, msg_match):
     """Test exceptions of the ``dipole`` function."""
 
