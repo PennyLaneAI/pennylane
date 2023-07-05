@@ -27,19 +27,10 @@ from pennylane.tape import QuantumScript
 class TestInitialization:
     """Test the non-update components of intialization."""
 
-    def test_name(self):
-        """Test the name property."""
-        name = "hello"
-        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
-            qs = QuantumScript(name=name)
-            assert qs.name == name
-
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript(_update=False)
-        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
-            assert qs.name is None
         assert len(qs._ops) == 0
         assert len(qs._prep) == 0
         assert len(qs._measurements) == 0
@@ -428,17 +419,12 @@ class TestInfomationProperties:
         assert qs._specs is None
 
         assert qs.specs["resources"] == qml.resource.Resources()
-        assert qs.specs["gate_sizes"] == defaultdict(int)
-        assert qs.specs["gate_types"] == defaultdict(int)
 
-        assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
         assert qs.specs["num_diagonalizing_gates"] == 0
-        assert qs.specs["num_used_wires"] == 0
         assert qs.specs["num_trainable_params"] == 0
-        assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 9
+        assert len(qs.specs) == 4
 
         assert qs._specs is qs.specs
 
@@ -450,7 +436,7 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 9
+        assert len(specs) == 4
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
@@ -458,15 +444,9 @@ class TestInfomationProperties:
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
-
-        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
-        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
-        assert specs["depth"] == 3
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
@@ -483,18 +463,6 @@ class TestInfomationProperties:
         assert isinstance(qs.shots, Shots)
         assert qs.shots.total_shots == total_shots
         assert qs.shots.shot_vector == shot_vector
-
-    def test_specs_warning(self, make_script):
-        """Test that a deprecation warning is displayed when trying to access deprecated
-        fields of the specs dictionary."""
-        deprecated_keys = ("gate_types", "gate_sizes", "num_operations", "num_used_wires", "depth")
-
-        qs = make_script
-        specs = qs.specs
-
-        for old_key in deprecated_keys:
-            with pytest.warns(UserWarning, match=f"The {old_key} key is deprecated"):
-                _ = specs[f"{old_key}"]
 
 
 class TestScriptCopying:

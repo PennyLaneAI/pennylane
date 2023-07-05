@@ -34,7 +34,7 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """Converts a :func:`~.QNode` to a Keras
+    """Converts a :class:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras

@@ -135,14 +135,6 @@ class PowOperation(Operation):
     grad_method = None
 
     @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
-
-    @property
     def name(self):
         return self._name
 

@@ -68,7 +68,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.autograd", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.qubit.autograd"
         assert dev.capabilities()["passthru_interface"] == "autograd"
 
@@ -175,7 +175,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement, tol):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         real data type for a simple circuit"""
         p = 0.543
@@ -201,7 +201,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype_broadcasted(self, r_dtype, measurement, tol):
+    def test_real_dtype_broadcasted(self, r_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         real data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
@@ -222,7 +222,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, measurement, tol):
+    def test_complex_dtype(self, c_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         complex data type for a simple circuit"""
         p = 0.543
@@ -239,7 +239,7 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
     @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
-    def test_complex_dtype_broadcasted(self, c_dtype, tol):
+    def test_complex_dtype_broadcasted(self, c_dtype):
         """Test that the default qubit plugin returns the correct
         complex data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
@@ -641,7 +641,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf", "torch"])
-    def test_error_backprop_wrong_interface(self, interface, tol):
+    def test_error_backprop_wrong_interface(self, interface):
         """Tests that an error is raised if diff_method='backprop' but not using
         the Autograd interface"""
         dev = qml.device("default.qubit.autograd", wires=1)
@@ -709,6 +709,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+# pylint: disable=protected-access
 @pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""
