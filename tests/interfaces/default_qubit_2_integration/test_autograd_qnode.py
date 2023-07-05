@@ -496,7 +496,6 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         spy = mocker.spy(qml, "execute")
@@ -508,20 +507,15 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b)
+        cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
-        # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None)
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
-
-        # original QNode settings are unaffected
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
 @pytest.mark.parametrize("interface,diff_method,grad_on_execution", interface_and_diff_method)
