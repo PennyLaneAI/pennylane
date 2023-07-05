@@ -65,7 +65,6 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
-    zeros_like,
 )
 from .quantum import (
     cov_matrix,
@@ -168,5 +167,4 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
-    "zeros_like",
 ]
