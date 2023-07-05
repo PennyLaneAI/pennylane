@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
+# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg
 
+from itertools import product
 import pytest
 
 import pennylane as qml
@@ -80,7 +82,9 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    def test_changing_trainability(self, diff_method, grad_on_execution, interface, mocker, tol):
+    def test_changing_trainability(
+        self, diff_method, grad_on_execution, interface, mocker, tol
+    ):  # pylint:disable=unused-argument
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -128,16 +132,11 @@ class TestQNode:
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
 
-    def test_classical_processing(self, diff_method, grad_on_execution, interface, tol):
+    def test_classical_processing(self, diff_method, grad_on_execution, interface):
         """Test classical processing within the quantum tape"""
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
         c = jax.numpy.array(0.3)
-
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 2
 
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -160,11 +159,6 @@ class TestQNode:
         with a matrix parameter"""
         U = jax.numpy.array([[0, 1], [1, 0]])
         a = jax.numpy.array(0.1)
-
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -200,11 +194,6 @@ class TestQNode:
                 tape = QuantumScript.from_queue(q_tape)
                 return tape
 
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 2
-
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
 
@@ -235,7 +224,9 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(self, diff_method, grad_on_execution, interface, mocker, tol):
+    def test_jacobian_options(
+        self, diff_method, grad_on_execution, interface, mocker
+    ):  # pylint:disable=unused-argument
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -276,11 +267,6 @@ class TestVectorValuedQNode:
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
-
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -340,11 +326,6 @@ class TestVectorValuedQNode:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
-
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
@@ -363,20 +344,9 @@ class TestVectorValuedQNode:
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
 
         assert isinstance(res[0][0], jax.numpy.ndarray)
-        assert res[0][0].shape == ()
-        assert np.allclose(res[0][0], expected[0][0], atol=tol, rtol=0)
-
-        assert isinstance(res[0][1], jax.numpy.ndarray)
-        assert res[0][1].shape == ()
-        assert np.allclose(res[0][1], expected[0][1], atol=tol, rtol=0)
-
-        assert isinstance(res[1][0], jax.numpy.ndarray)
-        assert res[1][0].shape == ()
-        assert np.allclose(res[1][0], expected[1][0], atol=tol, rtol=0)
-
-        assert isinstance(res[1][1], jax.numpy.ndarray)
-        assert res[1][1].shape == ()
-        assert np.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
+        for i, j in product((0, 1), (0, 1)):
+            assert res[i][j].shape == ()
+            assert np.allclose(res[i][j], expected[i][j], atol=tol, rtol=0)
 
         if diff_method in ("parameter-shift", "finite-diff", "spsa"):
             spy.assert_called()
@@ -392,21 +362,9 @@ class TestVectorValuedQNode:
 
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
 
-        assert isinstance(res[0][0], jax.numpy.ndarray)
-        assert res[0][0].shape == ()
-        assert np.allclose(res[0][0], expected[0][0], atol=tol, rtol=0)
-
-        assert isinstance(res[0][1], jax.numpy.ndarray)
-        assert res[0][1].shape == ()
-        assert np.allclose(res[0][1], expected[0][1], atol=tol, rtol=0)
-
-        assert isinstance(res[1][0], jax.numpy.ndarray)
-        assert res[1][0].shape == ()
-        assert np.allclose(res[1][0], expected[1][0], atol=tol, rtol=0)
-
-        assert isinstance(res[1][1], jax.numpy.ndarray)
-        assert res[1][1].shape == ()
-        assert np.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
+        for i, j in product((0, 1), (0, 1)):
+            assert res[i][j].shape == ()
+            assert np.allclose(res[i][j], expected[i][j], atol=tol, rtol=0)
 
     def test_diff_single_probs(self, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
@@ -416,11 +374,6 @@ class TestVectorValuedQNode:
         elif diff_method == "spsa":
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -464,11 +417,6 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        num_wires = 3
-
-        if diff_method == "hadamard":
-            num_wires = 4
-
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -492,11 +440,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)
+        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)
+        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -544,11 +492,6 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
-
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -567,11 +510,11 @@ class TestVectorValuedQNode:
         assert len(res) == 2
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()
+        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)
+        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -611,11 +554,6 @@ class TestVectorValuedQNode:
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
             tol = TOL_FOR_SPSA
-
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -684,11 +622,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()
+        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)
+        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -737,7 +675,7 @@ class TestShotsIntegration:
 
         assert jax.numpy.allclose(circuit(jax.numpy.array(0.0), shots=10), 1)
 
-    def test_changing_shots(self, interface, mocker, tol):
+    def test_changing_shots(self, interface):
         """Test that changing shots works on execution"""
         a, b = jax.numpy.array([0.543, -0.654])
 
@@ -756,7 +694,7 @@ class TestShotsIntegration:
         res = circuit(a, b, shots=100)
         assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
 
-    def test_gradient_integration(self, interface, tol, mocker):
+    def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
         a, b = jax.numpy.array([0.543, -0.654])
@@ -773,15 +711,13 @@ class TestShotsIntegration:
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
 
-    def test_update_diff_method(self, mocker, interface, tol):
+    def test_update_diff_method(self, interface, mocker):
         """Test that temporarily setting the shots updates the diff method"""
         a, b = jax.numpy.array([0.543, -0.654])
 
         spy = mocker.spy(qml, "execute")
 
-        # We're choosing interface="jax" such that backprop can be used in the
-        # test later
-        @qnode(dev, interface="jax")
+        @qnode(dev, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -822,9 +758,9 @@ class TestQubitIntegration:
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], jax.Array)
-        assert res[0].shape == (10,)
+        assert res[0].shape == (10,)  # pylint:disable=comparison-with-callable
         assert isinstance(res[1], jax.Array)
-        assert res[1].shape == (10,)
+        assert res[1].shape == (10,)  # pylint:disable=comparison-with-callable
 
     def test_counts(self, diff_method, grad_on_execution):
         """Test counts works as expected"""
@@ -851,10 +787,6 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, diff_method, grad_on_execution):
         """Test that the gradient of chained QNodes works without error"""
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def expand(self):
@@ -907,11 +839,6 @@ class TestQubitIntegrationHigherOrder:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 3
-
         @qnode(
             dev,
             diff_method=diff_method,
@@ -955,11 +882,6 @@ class TestQubitIntegrationHigherOrder:
             qml.math.random.seed(42)
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
-
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         @qnode(
             dev,
@@ -1008,11 +930,6 @@ class TestQubitIntegrationHigherOrder:
             qml.math.random.seed(42)
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
-
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         @qnode(
             dev,
@@ -1072,11 +989,6 @@ class TestQubitIntegrationHigherOrder:
             qml.math.random.seed(42)
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
-
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         @qnode(
             dev,
@@ -1140,11 +1052,6 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
-        num_wires = 1
-
-        if diff_method == "hadamard":
-            num_wires = 3
-
         @qnode(
             dev,
             diff_method=diff_method,
@@ -1206,11 +1113,6 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support states")
 
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
-
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -1225,7 +1127,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")
+            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1476,7 +1378,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
 @pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("interface,diff_method,grad_on_execution", interface_and_diff_method)
-class TestReturn:
+class TestReturn:  # pylint:disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
     def test_grad_single_measurement_param(self, diff_method, grad_on_execution, shots, interface):
@@ -1788,11 +1690,6 @@ class TestReturn:
         """The jacobian of multiple measurements with a single params return an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-
-        num_wires = 2
-
-        if diff_method == "hadamard":
-            num_wires = 3
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
