@@ -384,6 +384,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QuantumTape._lock.release()
         self._process_queue()
 
+    def adjoint(self):
+        adjoint_tape = super().adjoint()
+        QueuingManager.append(adjoint_tape)
+        return adjoint_tape
+
     # ========================================================
     # construction methods
     # ========================================================
