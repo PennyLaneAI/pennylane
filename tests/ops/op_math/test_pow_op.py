@@ -873,15 +873,6 @@ class TestDecompositionExpand:
 class TestOperationProperties:
     """Test Operation specific properties."""
 
-    def test_base_name_deprecated(self, power_method):
-        """Tests that the base_name property is deprecated."""
-
-        class DummyOp(qml.operation.Operation):
-            """Dummy op."""
-
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert power_method(DummyOp(2), 2).base_name == "DummyOp**2"
-
     def test_basis(self, power_method):
         """Test that the basis attribute is the same as the base op's basis attribute."""
         base = qml.RX(1.2, wires=0)

@@ -556,21 +556,15 @@ class TestResourceEstimation:
         """Test specs attribute on an empty tape"""
         tape = make_empty_tape
 
-        assert tape.specs["gate_sizes"] == defaultdict(int)
-        assert tape.specs["gate_types"] == defaultdict(int)
-
         gate_types = defaultdict(int)
         expected_resources = qml.resource.Resources(num_wires=2, gate_types=gate_types)
         assert tape.specs["resources"] == expected_resources
 
-        assert tape.specs["num_operations"] == 0
         assert tape.specs["num_observables"] == 1
         assert tape.specs["num_diagonalizing_gates"] == 0
-        assert tape.specs["num_used_wires"] == 2
         assert tape.specs["num_trainable_params"] == 0
-        assert tape.specs["depth"] == 0
 
-        assert len(tape.specs) == 9
+        assert len(tape.specs) == 4
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -578,7 +572,7 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 9
+        assert len(specs) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -586,15 +580,9 @@ class TestResourceEstimation:
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
-
-        assert specs["gate_sizes"] == gate_sizes
-        assert specs["gate_types"] == gate_types
-        assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
-        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
-        assert specs["depth"] == 3
 
     def test_specs_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct specs after adding to them."""
@@ -602,24 +590,19 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 9
+        assert len(specs1) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        assert specs1["gate_sizes"] == gate_sizes
-        assert specs1["gate_types"] == gate_types
 
         expected_resoures = qml.resource.Resources(
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs1["resources"] == expected_resoures
 
-        assert specs1["num_operations"] == 4
         assert specs1["num_observables"] == 0
         assert specs1["num_diagonalizing_gates"] == 0
-        assert specs1["num_used_wires"] == 3
         assert specs1["num_trainable_params"] == 5
-        assert specs1["depth"] == 3
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
@@ -629,24 +612,19 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 9
+        assert len(specs2) == 4
 
         gate_sizes = defaultdict(int, {1: 4, 2: 2})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
-        assert specs2["gate_sizes"] == gate_sizes
-        assert specs2["gate_types"] == gate_types
 
         expected_resoures = qml.resource.Resources(
             num_wires=5, num_gates=6, gate_types=gate_types, gate_sizes=gate_sizes, depth=4
         )
         assert specs2["resources"] == expected_resoures
 
-        assert specs2["num_operations"] == 6
         assert specs2["num_observables"] == 2
         assert specs2["num_diagonalizing_gates"] == 1
-        assert specs2["num_used_wires"] == 5
         assert specs2["num_trainable_params"] == 6
-        assert specs2["depth"] == 4
 
 
 class TestParameters:
@@ -1008,10 +986,10 @@ class TestExpand:
             qml.Rot(3, 4, 5, wires=0)
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(stop_at=lambda obj: obj.name in ["Rot"])
+        new_tape = tape.expand(stop_at=lambda obj: getattr(obj, "name", None) in ["Rot"])
         assert len(new_tape.operations) == 4
         assert "Rot" in [i.name for i in new_tape.operations]
-        assert not "U3" in [i.name for i in new_tape.operations]
+        assert "U3" not in [i.name for i in new_tape.operations]
 
     def test_depth_expansion(self):
         """Test expanding with depth=2"""
@@ -1047,7 +1025,9 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             qml.probs(wires=0), qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in ["PauliX"])
+        new_tape = tape.expand(
+            depth=2, stop_at=lambda obj: getattr(obj, "name", None) in ["PauliX"]
+        )
         assert len(new_tape.operations) == 7
 
     def test_measurement_expansion(self):

@@ -242,7 +242,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): Deprecated way to give a name to the quantum tape. Avoid using.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -369,11 +368,10 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         measurements=None,
         prep=None,
         shots=None,
-        name=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()

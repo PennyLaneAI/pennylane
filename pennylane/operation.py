@@ -1640,15 +1640,6 @@ class Operation(Operator):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    @property
-    def base_name(self):
-        """Holdover from when in-place inversion changed then name. To be removed."""
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self.__class__.__name__
-
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
 
