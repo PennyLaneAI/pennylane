@@ -281,9 +281,10 @@ def _batched_partial_trace(density_matrix, indices):
            [[1.+0.j, 0.+0.j],
             [0.+0.j, 0.+0.j]]])>
     """
-    # Autograd does not support same indices sum in backprop
-    if get_interface(density_matrix) == "autograd":
-        return _batched_partial_trace_autograd(density_matrix, indices)
+    # Autograd does not support same indices sum in backprop, and tensorflow
+    # has a limit of 8 dimensions if same indices are used
+    if get_interface(density_matrix) in ["autograd", "tensorflow"]:
+        return _batched_partial_trace_nonrep_indices(density_matrix, indices)
 
     # Dimension and reshape
     batch_dim, dim = density_matrix.shape[:2]
@@ -313,7 +314,7 @@ def _batched_partial_trace(density_matrix, indices):
     return reduced_density_matrix
 
 
-def _batched_partial_trace_autograd(density_matrix, indices):
+def _batched_partial_trace_nonrep_indices(density_matrix, indices):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
     """
