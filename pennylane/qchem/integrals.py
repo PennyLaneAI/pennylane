@@ -61,7 +61,6 @@ def primitive_norm(l, alpha):
     fac_y = fac2(2 * ly - 1) if ly > 0 else 1
     fac_z = fac2(2 * lz - 1) if lz > 0 else 1
 
-
     n = (
         (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
