@@ -448,16 +448,6 @@ class TestInfomationProperties:
         assert specs["num_diagonalizing_gates"] == 1
         assert specs["num_trainable_params"] == 5
 
-    def test_specs_copy(self, make_script):
-        """Test that the copy method of specs retuns a SpecsDict."""
-        qs = make_script
-        copied_specs = qs.specs.copy()
-
-        assert isinstance(copied_specs, qml.tape.qscript.SpecsDict)
-        with pytest.warns(UserWarning, match="key is deprecated and will be removed"):
-            for k, v in qs.specs.items():
-                assert copied_specs[k] == v
-
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
         [

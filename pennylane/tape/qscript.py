@@ -1374,33 +1374,6 @@ class QuantumScript:
         return cls(*process_queue(queue), shots=shots)
 
 
-<<<<<<< HEAD
-class SpecsDict(dict):
-    """A dictionary to track and warn about deprecated keys"""
-
-    old_to_new_key_map = {
-        "gate_types": "gate_types",
-        "gate_sizes": "gate_sizes",
-        "num_operations": "num_gates",
-        "num_used_wires": "num_wires",
-        "depth": "depth",
-    }
-
-    def __getitem__(self, item):
-        if item in self.old_to_new_key_map:
-            warnings.warn(
-                f"The {item} key is deprecated and will be removed in the next release. "
-                f'Going forward, please use: specs["resources"].{self.old_to_new_key_map[item]}'
-            )
-        return super().__getitem__(item)
-
-    def copy(self):
-        """Custom copy function to return a SpecsDict instead of a dict."""
-        return SpecsDict(self.items())
-
-
-=======
->>>>>>> master
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
