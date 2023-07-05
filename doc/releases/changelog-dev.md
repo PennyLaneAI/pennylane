@@ -32,8 +32,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* `qml.enable_return` and `qml.disable_return` are deprecated. Please ensure that you are using
-  the new return system, as the old return system is deprecated along with these switch functions.
+* `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
+  `disable_return`, as the old return system is deprecated along with these switch functions.
   [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
 
 * The `mode` keyword argument in `QNode` is deprecated, as it was only used in the
