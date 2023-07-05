@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -236,6 +237,16 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     assert np.allclose(sorted(d.coeffs), sorted(d_ref.coeffs))
     assert qml.Hamiltonian(np.ones(len(d.coeffs)), d.ops).compare(
         qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
+    )
+
+    enable_new_opmath()
+    d_op_math = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    disable_new_opmath()
+    d_ref_op_math = qml.dot(coeffs, ops)
+
+    assert np.allclose(
+        qml.matrix(d_op_math, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d_ref_op_math, wire_order=[0, 1, 2, 3]),
     )
 
 

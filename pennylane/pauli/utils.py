@@ -51,8 +51,7 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     return {label: i for i, label in enumerate(wire_labels)}
 
 
-@singledispatch
-def is_pauli_word(observable):  # pylint:disable=unused-argument
+def is_pauli_word(observable):
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
 
@@ -93,36 +92,45 @@ def is_pauli_word(observable):  # pylint:disable=unused-argument
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    return _is_pauli_word(observable)
+
+
+@singledispatch
+def _is_pauli_word(observable):  # pylint:disable=unused-argument
+    """
+    Private implementation of is_pauli_word, to prevent all of the
+    registered functions from appearing in the Sphinx docs.
+    """
     return False
 
 
-@is_pauli_word.register(PauliX)
-@is_pauli_word.register(PauliY)
-@is_pauli_word.register(PauliZ)
-@is_pauli_word.register(Identity)
+@_is_pauli_word.register(PauliX)
+@_is_pauli_word.register(PauliY)
+@_is_pauli_word.register(PauliZ)
+@_is_pauli_word.register(Identity)
 def _is_pw_pauli(
     observable: Union[PauliX, PauliY, PauliZ, Identity]
 ):  # pylint:disable=unused-argument
     return True
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_tensor(observable: Tensor):
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     return set(observable.name).issubset(pauli_word_names)
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_ham(observable: Hamiltonian):
     return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_prod(observable: Prod):
     return all(is_pauli_word(op) for op in observable)
 
 
-@is_pauli_word.register
+@_is_pauli_word.register
 def _is_pw_sprod(observable: SProd):
     return is_pauli_word(observable.base)
 
@@ -1499,6 +1507,47 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
             if op in ["PauliX", "PauliY"]:
                 binary_matrix[idx][wire_map[wire] + num_qubits] = 1
             if op in ["PauliZ", "PauliY"]:
+                binary_matrix[idx][wire_map[wire]] = 1
+
+    return binary_matrix
+
+
+def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):
+    r"""Get a binary matrix representation from a list of PauliWords where each row corresponds to a
+    Pauli term, which is represented by a concatenation of Z and X vectors.
+
+    Args:
+        terms (Iterable[~.PauliWord]): operators defining the Hamiltonian
+        num_qubits (int): number of wires required to define the Hamiltonian
+        wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
+            unique integer labels as their values
+
+    Returns:
+        array[int]: binary matrix representation of the Hamiltonian of shape
+        :math:`len(terms) * 2*num_qubits`
+
+    **Example**
+
+    >>> from pennylane.pauli import PauliWord
+    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
+    >>> terms = [PauliWord({'a': 'Z', 'b': 'X'}),
+    ...          PauliWord({'a': 'Z', 'c': 'Y'}),
+    ...          PauliWord({'a': 'X', 'd': 'Y'})]
+    >>> _binary_matrix_from_pws(terms, 4, wire_map=wire_map)
+    array([[1, 0, 0, 0, 0, 1, 0, 0],
+           [1, 0, 1, 0, 0, 0, 1, 0],
+           [0, 0, 0, 1, 1, 0, 0, 1]])
+    """
+    if wire_map is None:
+        all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
+        wire_map = {i: c for c, i in enumerate(all_wires)}
+
+    binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
+    for idx, pw in enumerate(terms):
+        for wire, pauli_op in pw.items():
+            if pauli_op in ["X", "Y"]:
+                binary_matrix[idx][wire_map[wire] + num_qubits] = 1
+            if pauli_op in ["Z", "Y"]:
                 binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix

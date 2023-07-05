@@ -24,9 +24,7 @@ def expected_entropy_ising_xx(param):
     """
     Return the analytical entropy for the IsingXX.
     """
-    eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    eigs = [eig_1, eig_2]
+    eigs = [np.cos(param / 2) ** 2, np.sin(param / 2) ** 2]
     eigs = [eig for eig in eigs if eig > 0]
 
     expected_entropy = eigs * np.log(eigs)
@@ -765,3 +763,58 @@ class TestRelativeEntropy:
         ) + (np.sin(x / 2) ** 2 * (np.log(np.sin(x / 2) ** 2) - np.log(np.sin(y / 2) ** 2)))
 
         assert np.allclose(actual, expected)
+
+
+@pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+class TestBroadcasting:
+    """Test that the entropy transforms support broadcasting"""
+
+    def test_vn_entropy_broadcast(self, device):
+        """Test that the vn_entropy transform supports broadcasting"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        x = np.array([0.4, 0.6, 0.8])
+        entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0])(x)
+
+        expected = [expected_entropy_ising_xx(_x) for _x in x]
+        assert qml.math.allclose(entropy, expected)
+
+    def test_mutual_info_broadcast(self, device):
+        """Test that the mutual_info transform supports broadcasting"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        x = np.array([0.4, 0.6, 0.8])
+        minfo = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(x)
+
+        expected = [2 * expected_entropy_ising_xx(_x) for _x in x]
+        assert qml.math.allclose(minfo, expected)
+
+    def test_relative_entropy_broadcast(self, device):
+        """Test that the relative_entropy transform supports broadcasting"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        x = np.array([0.4, 0.6, 0.8])
+        y = np.array([0.6, 0.8, 1.0])
+        entropy = qml.qinfo.relative_entropy(circuit_state, circuit_state, wires0=[0], wires1=[1])(
+            x, y
+        )
+
+        eigs0 = np.stack([np.cos(x / 2) ** 2, np.sin(x / 2) ** 2])
+        eigs1 = np.stack([np.cos(y / 2) ** 2, np.sin(y / 2) ** 2])
+        expected = np.sum(eigs0 * np.log(eigs0), axis=0) - np.sum(eigs0 * np.log(eigs1), axis=0)
+        assert qml.math.allclose(entropy, expected)

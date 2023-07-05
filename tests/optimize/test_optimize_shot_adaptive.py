@@ -122,6 +122,10 @@ def ansatz1(x, **kwargs):
     qml.RZ(x[1, 2], wires=0)
 
 
+def ansatz2(x, **kwargs):
+    qml.StronglyEntanglingLayers(x, wires=[0, 1])
+
+
 class TestSingleShotGradientIntegration:
     """Integration tests to ensure that the single shot gradient is correctly computed
     for a variety of argument types."""
@@ -132,8 +136,8 @@ class TestSingleShotGradientIntegration:
     expval_cost = catch_warn_ExpvalCost(ansatz0, H, dev)
 
     @qml.qnode(dev)
-    @staticmethod
     def qnode(x):
+        # pylint: disable=no-self-argument
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
@@ -266,6 +270,90 @@ class TestSingleShotGradientIntegration:
         # check other elements
         assert np.allclose(grad[0][0, 1], np.mean(single_shot_grads[0][:5, 0, 1]))
         assert np.allclose(grad_variance[0][0, 1], np.var(single_shot_grads[0][:5, 0, 1], ddof=1))
+
+    dev = qml.device("default.qubit", wires=2, shots=100)
+
+    expval_cost = catch_warn_ExpvalCost(ansatz2, H, dev)
+    qnode = expval_cost.qnodes[0]
+
+    @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
+    def test_padded_single_array_argument_step(self, cost_fn, mocker, monkeypatch):
+        """Test that a simple QNode with a single array argument with extra dimensions correctly
+        performs an optimization step, and that the single-shot gradients generated have the
+        correct shape"""
+        # pylint: disable=protected-access
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        spy_single_shot_expval = mocker.spy(opt, "_single_shot_expval_gradients")
+        spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
+        spy_grad = mocker.spy(opt, "compute_grad")
+
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
+        x_init = np.ones(shape) * 0.5
+        new_x = opt.step(cost_fn, x_init)
+
+        assert isinstance(new_x, np.ndarray)
+        assert not np.allclose(new_x, x_init)
+
+        if isinstance(cost_fn, qml.ExpvalCost):
+            spy_single_shot_expval.assert_called_once()
+            single_shot_grads = opt._single_shot_expval_gradients(cost_fn, [x_init], {})
+        else:
+            spy_single_shot_qnodes.assert_called_once()
+            single_shot_grads = opt._single_shot_qnode_gradients(cost_fn, [x_init], {})
+
+        spy_grad.assert_called_once()
+
+        # assert single shot gradients are computed correctly
+        assert len(single_shot_grads) == 1
+        assert single_shot_grads[0].shape == (10,) + shape
+
+        # monkeypatch the optimizer to use the same single shot gradients
+        # as previously
+        monkeypatch.setattr(
+            opt, "_single_shot_qnode_gradients", lambda *args, **kwargs: single_shot_grads
+        )
+        monkeypatch.setattr(
+            opt, "_single_shot_expval_gradients", lambda *args, **kwargs: single_shot_grads
+        )
+
+        # reset the shot budget
+        opt.s = [10 * np.ones(shape, dtype=np.int64)]
+
+        # check that the gradient and variance are computed correctly
+        grad, grad_variance = opt.compute_grad(cost_fn, [x_init], {})
+        assert len(grad) == 1
+        assert len(grad_variance) == 1
+        assert grad[0].shape == x_init.shape
+        assert grad_variance[0].shape == x_init.shape
+
+        assert np.allclose(grad, np.mean(single_shot_grads, axis=1))
+        assert np.allclose(grad_variance, np.var(single_shot_grads, ddof=1, axis=1))
+
+        # check that the gradient and variance are computed correctly
+        # with a different shot budget
+        opt.s[0] = opt.s[0] // 2  # all array elements have a shot budget of 5
+        opt.s[0][0, 0, 0] = 8  # set the shot budget of the zeroth element to 8
+
+        grad, grad_variance = opt.compute_grad(cost_fn, [x_init], {})
+        assert len(grad) == 1
+        assert len(grad_variance) == 1
+
+        # check zeroth element
+        assert np.allclose(grad[0][0, 0, 0], np.mean(single_shot_grads[0][:8, 0, 0, 0]))
+        assert np.allclose(
+            grad_variance[0][0, 0, 0], np.var(single_shot_grads[0][:8, 0, 0, 0], ddof=1)
+        )
+
+        # check other elements
+        assert np.allclose(grad[0][0, 0, 1], np.mean(single_shot_grads[0][:5, 0, 0, 1]))
+        assert np.allclose(
+            grad_variance[0][0, 0, 1], np.var(single_shot_grads[0][:5, 0, 0, 1], ddof=1)
+        )
+
+        # Step twice to ensure that `opt.s` does not get reshaped.
+        # If it was reshaped, its shape would not match `new_x`
+        # and an error would get raised.
+        _ = opt.step(cost_fn, new_x)
 
     def test_multiple_argument_step(self, mocker, monkeypatch):
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,

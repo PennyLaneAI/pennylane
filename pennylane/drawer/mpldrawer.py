@@ -15,6 +15,7 @@
 This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
 """
 from collections.abc import Iterable
+import warnings
 
 has_mpl = True
 try:
@@ -245,6 +246,9 @@ class MPLDrawer:
     _notch_style = "round, pad=0.05"
     """Box style for active wire notches."""
 
+    _cond_shift = 0.03
+    """The shift value from the centre axis for classical double-lines."""
+
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
@@ -276,8 +280,11 @@ class MPLDrawer:
             wire_options = {}
 
         # adding wire lines
-        for wire in range(self.n_wires):
-            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
+        self._wire_lines = [
+            plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
+            for wire in range(self.n_wires)
+        ]
+        for line in self._wire_lines:
             self._ax.add_line(line)
 
     @property
@@ -585,6 +592,15 @@ class MPLDrawer:
         min_wire = min(wires_all)
         max_wire = max(wires_all)
 
+        if len(wires_target) > 1:
+            min_target, max_target = min(wires_target), max(wires_target)
+            if any(min_target < w < max_target for w in wires_ctrl):
+                warnings.warn(
+                    "Some control indicators are hidden behind an operator. Consider re-ordering "
+                    "your circuit wires to ensure all control indicators are visible.",
+                    UserWarning,
+                )
+
         line = plt.Line2D((layer, layer), (min_wire, max_wire), **options)
         self._ax.add_line(line)
 
@@ -842,3 +858,151 @@ class MPLDrawer:
             head_width=self._box_length / 8.0,
             **lines_options,
         )
+
+    def cond(self, layer, measured_layer, wires, wires_target, options=None):
+        """Add classical communication double-lines for conditional operations
+
+        Args:
+            layer (int): the layer to draw vertical lines in, containing the target operation
+            measured_layer (int): the layer where the mid-circuit measurements are
+            wires (Union[int, Iterable[int]]): set of wires to control on
+            wires_target (Union[int, Iterable[int]]): target wires. Used to determine where to
+                terminate the vertical double-line
+
+        Keyword Args:
+            options=None (dict): Matplotlib keywords passed to ``plt.Line2D``
+
+        **Example**
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_wires=3, n_layers=4)
+
+            drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
+
+            options = {'color': "indigo", 'linewidth': 1.5}
+            drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
+
+        .. figure:: ../../_static/drawer/cond.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+        """
+        if options is None:
+            options = {}
+
+        wires_ctrl = _to_tuple(sorted(wires))
+        wires_target = _to_tuple(sorted(wires_target))
+        start_x = measured_layer + self._box_length / 2.0
+        lines = []
+
+        if wires_ctrl[-1] < wires_target[0]:
+            lines.extend(
+                (
+                    # draw from top-most measurement to double-elbow
+                    plt.Line2D(
+                        (start_x, layer + self._cond_shift),
+                        (wires_ctrl[0] - self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (start_x, layer - self._cond_shift),
+                        (wires_ctrl[0] + self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    # draw vertical lines that reach the target operation
+                    plt.Line2D(
+                        (layer + self._cond_shift,) * 2,
+                        (wires_ctrl[0] - self._cond_shift, wires_target[0]),
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (layer - self._cond_shift,) * 2,
+                        (wires_ctrl[-1] + self._cond_shift, wires_target[0]),
+                        **options,
+                    ),
+                )
+            )
+            for prev_idx, next_wire in enumerate(wires_ctrl[1:]):
+                # draw ⅃ for every wire but the first one
+                #      ‾
+                lines.extend(
+                    (
+                        plt.Line2D(
+                            (layer - self._cond_shift,) * 2,
+                            (wires_ctrl[prev_idx] + self._cond_shift, next_wire - self._cond_shift),
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (next_wire - self._cond_shift,) * 2,
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (next_wire + self._cond_shift,) * 2,
+                            **options,
+                        ),
+                    )
+                )
+        elif wires_target[-1] < wires_ctrl[0]:
+            lines.extend(
+                (
+                    # draw from bottom-most measurement to double-elbow
+                    plt.Line2D(
+                        (start_x, layer + self._cond_shift),
+                        (wires_ctrl[-1] + self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (start_x, layer - self._cond_shift),
+                        (wires_ctrl[-1] - self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    # draw vertical lines that reach the target operation
+                    plt.Line2D(
+                        (layer + self._cond_shift,) * 2,
+                        (wires_ctrl[-1] + self._cond_shift, wires_target[-1]),
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (layer - self._cond_shift,) * 2,
+                        (wires_ctrl[0] - self._cond_shift, wires_target[-1]),
+                        **options,
+                    ),
+                )
+            )
+            for wire_idx, ctrl_wire in enumerate(wires_ctrl[:-1]):
+                # draw _  for every wire but the first one
+                #      ‾|
+                lines.extend(
+                    (
+                        plt.Line2D(
+                            (layer - self._cond_shift,) * 2,
+                            (
+                                ctrl_wire + self._cond_shift,
+                                wires_ctrl[wire_idx + 1] - self._cond_shift,
+                            ),
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (ctrl_wire - self._cond_shift,) * 2,
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (ctrl_wire + self._cond_shift,) * 2,
+                            **options,
+                        ),
+                    )
+                )
+        else:
+            raise ValueError(
+                "Cannot draw interspersed mid-circuit measurements and conditional operations. "
+                "Consider providing a wire order such that all measurement wires precede all "
+                "wires for the operator being controlled, or vice versa."
+            )
+
+        for line in lines:
+            self._ax.add_line(line)

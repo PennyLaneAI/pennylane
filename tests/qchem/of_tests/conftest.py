@@ -45,3 +45,25 @@ def tol():
 def custom_wires(request):
     """Custom wire mapping for Pennylane<->OpenFermion conversion"""
     return request.param
+
+
+@pytest.fixture(scope="session", name="openfermion_support")
+def fixture_openfermion_support():
+    """Fixture to determine whether openfermion and openfermionpyscf are installed."""
+    # pylint: disable=unused-import
+    try:
+        import openfermion
+        import openfermionpyscf
+
+        openfermion_support = True
+    except ModuleNotFoundError:
+        openfermion_support = False
+
+    return openfermion_support
+
+
+@pytest.fixture()
+def skip_if_no_openfermion_support(openfermion_support):
+    """Fixture to skip a test if openfermion or openfermionpyscf are not installed."""
+    if not openfermion_support:
+        pytest.skip("Skipped, no openfermion(pyscf) support")

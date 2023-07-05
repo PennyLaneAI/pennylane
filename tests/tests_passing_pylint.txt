@@ -4,10 +4,10 @@ tests/devices/experimental/**
 tests/devices/qubit/**
 tests/devices/**
 tests/docs/**
-tests/drawer/test_draw_mpl.py
-tests/drawer/test_drawer_utils.py
-tests/drawer/test_tape_mpl.py
+tests/drawer/**
+tests/fermi/test_fermi_mapping.py
 tests/fermi/test_fermionic.py
+tests/fermi/test_fermionic_operators.py
 tests/fourier/**
 tests/gpu/**
 tests/gradients/core/**
@@ -34,6 +34,7 @@ tests/qchem/**
 tests/qinfo/**
 tests/qnn/**
 tests/resource/**
+tests/shadow/**
 tests/tape/**
 tests/templates/test_embeddings/**
 tests/templates/test_layers/**
@@ -42,6 +43,7 @@ tests/templates/test_subroutines/**
 tests/templates/test_swapnetworks/**
 tests/templates/test_tensornetworks/**
 tests/templates/**
+tests/transforms/test_experimental/**
 tests/transforms/**
 tests/conftest.py
 tests/gate_data.py

@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .hardware_hamiltonian import HardwareHamiltonian
 
 has_jax = True
 try:
@@ -106,6 +107,8 @@ class ParametrizedEvolution(Operation):
 
     To create a :class:`~.ParametrizedEvolution`, we first define a :class:`~.ParametrizedHamiltonian`
     describing the system, and then pass it to :func:`~pennylane.evolve`:
+
+
 
     .. code-block:: python
 
@@ -375,7 +378,7 @@ class ParametrizedEvolution(Operation):
         dense: bool = None,
         do_queue=None,
         id=None,
-        **odeint_kwargs
+        **odeint_kwargs,
     ):
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
@@ -395,14 +398,24 @@ class ParametrizedEvolution(Operation):
                 "The keyword argument complementary does not have any effect if "
                 "return_intermediate is set to False."
             )
-        params = [] if params is None else params
+        if params is None:
+            params = []
+        else:
+            if not isinstance(H, HardwareHamiltonian) and len(params) != len(H.coeffs_parametrized):
+                raise ValueError(
+                    "The length of the params argument and the number of scalar-valued functions "
+                    f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
+                    f"expected {len(H.coeffs_parametrized)} parameters."
+                )
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
         self.dense = len(self.wires) < 3 if dense is None else dense
 
-    def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
+    def __call__(
+        self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
+    ):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
@@ -416,6 +429,8 @@ class ParametrizedEvolution(Operation):
             return_intermediate = self.hyperparameters["return_intermediate"]
         if complementary is None:
             complementary = self.hyperparameters["complementary"]
+        if dense is None:
+            dense = self.dense
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
@@ -426,9 +441,10 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
+            dense=dense,
             do_queue=None,
             id=self.id,
-            **odeint_kwargs
+            **odeint_kwargs,
         )
 
     def _check_time_batching(self):

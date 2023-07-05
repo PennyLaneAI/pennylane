@@ -22,10 +22,6 @@ import pytest
 
 from pennylane import qchem
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 v_op_1 = {
@@ -255,8 +251,10 @@ v_op_4 = {
         ("h2o_psi4", [0, 1, 2], [3, 4, 6], v_op_4),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_table_two_particle(name, core, active, v_op_exp):
     r"""Test the FermionOperator built by the function `two_particle` of the `obs` module"""
+    import openfermion
 
     hf_data = openfermion.MolecularData(filename=os.path.join(ref_dir, name))
 
@@ -279,6 +277,7 @@ v_me_4D = np.full((2, 2, 2, 2), 0.5)
         (v_me_4D, None, [2, 6], "Indices of active orbitals must be between 0 and"),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_exceptions_two_particle(v_me, core, active, msg_match):
     """Test that the function `'two_particle'` throws an exception
     if the dimension of the matrix elements array is not a 4D array or

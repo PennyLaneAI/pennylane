@@ -985,75 +985,82 @@ class TestObservableHF:
 
 
 class TestTapering:
-    @pytest.mark.parametrize(
-        ("terms", "num_qubits", "result"),
-        [
-            (
+    terms_bin_mat_data = [
+        (
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+            4,
+            np.array(
                 [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-                4,
-                np.array(
-                    [
-                        [0, 0, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 1, 0, 0, 0, 0],
-                        [1, 1, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 1, 1, 1, 1],
-                        [1, 1, 0, 0, 1, 1, 1, 1],
-                        [0, 0, 1, 1, 1, 1, 1, 1],
-                        [0, 1, 1, 0, 1, 1, 1, 1],
-                        [1, 0, 1, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 0, 0, 0, 0],
-                        [0, 1, 1, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 1, 1, 0, 0, 0, 0],
-                    ]
-                ),
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [1, 1, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 1, 1, 1, 1],
+                    [1, 1, 0, 0, 1, 1, 1, 1],
+                    [0, 0, 1, 1, 1, 1, 1, 1],
+                    [0, 1, 1, 0, 1, 1, 1, 1],
+                    [1, 0, 1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 0, 0, 0, 0],
+                ]
             ),
-            (
-                [
-                    qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
-                    qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
-                    qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
-                ],
-                4,
-                np.array(
-                    [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
-                ),
+        ),
+        (
+            [
+                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
+                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
+                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
+            ],
+            4,
+            np.array(
+                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
             ),
-        ],
-    )
+        ),
+    ]
+
+    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix(self, terms, num_qubits, result):
         r"""Test that _binary_matrix returns the correct result."""
         # pylint: disable=protected-access
         binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
+        assert (binary_matrix == result).all()
+
+    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
+    def test_binary_matrix_from_pws(self, terms, num_qubits, result):
+        r"""Test that _binary_matrix_from_pws returns the correct result."""
+        # pylint: disable=protected-access
+        pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
+        binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()

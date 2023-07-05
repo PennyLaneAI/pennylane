@@ -170,6 +170,80 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
 
+class TestBroadcasting:
+    """Test that simulate works with broadcasted parameters"""
+
+    def test_broadcasted_prep_state(self):
+        """Test that simulate works for state measurements
+        when the state prep has broadcasted parameters"""
+        x = np.array(1.2)
+
+        ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
+        measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
+        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+
+        qs = qml.tape.QuantumScript(ops, measurements, prep)
+        res = simulate(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
+        assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
+
+    def test_broadcasted_op_state(self):
+        """Test that simulate works for state measurements
+        when an operation has broadcasted parameters"""
+        x = np.array([0.8, 1.0, 1.2, 1.4])
+
+        ops = [qml.PauliX(wires=1), qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
+        measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        qs = qml.tape.QuantumScript(ops, measurements)
+        res = simulate(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x))
+        assert np.allclose(res[1], -np.cos(x))
+
+    def test_broadcasted_prep_sample(self):
+        """Test that simulate works for sample measurements
+        when the state prep has broadcasted parameters"""
+        x = np.array(1.2)
+
+        ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
+        measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
+        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+
+        qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
+        res = simulate(qs, rng=123)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(
+            res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]), atol=0.05
+        )
+        assert np.allclose(
+            res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
+        )
+
+    def test_broadcasted_op_sample(self):
+        """Test that simulate works for sample measurements
+        when an operation has broadcasted parameters"""
+        x = np.array([0.8, 1.0, 1.2, 1.4])
+
+        ops = [qml.PauliX(wires=1), qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
+        measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(10000))
+        res = simulate(qs, rng=123)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x), atol=0.05)
+        assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+
 class TestDebugger:
     """Tests that the debugger works for a simple circuit"""
 
@@ -303,7 +377,7 @@ class TestSampleMeasurements:
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
         result = simulate(qs)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, np.float64)
         assert result.shape == ()
         assert np.allclose(result, np.cos(x), atol=0.1)
 
@@ -341,10 +415,10 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
+        assert isinstance(result[0], np.float64)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
-        assert all(isinstance(res, np.ndarray) for res in result)
-
-        assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
 
         assert result[1].shape == (4,)
@@ -380,7 +454,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, np.float64) for res in result)
         assert all(res.shape == () for res in result)
         assert all(np.allclose(res, np.cos(x), atol=0.1) for res in result)
 
@@ -440,9 +514,10 @@ class TestSampleMeasurements:
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
-            assert all(isinstance(meas_res, np.ndarray) for meas_res in shot_res)
+            assert isinstance(shot_res[0], np.float64)
+            assert isinstance(shot_res[1], np.ndarray)
+            assert isinstance(shot_res[2], np.ndarray)
 
-            assert shot_res[0].shape == ()
             assert np.allclose(shot_res[0], np.cos(x), atol=0.1)
 
             assert shot_res[1].shape == (4,)
@@ -475,10 +550,10 @@ class TestSampleMeasurements:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
+        assert isinstance(result[0], np.float64)
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
 
-        assert all(isinstance(res, np.ndarray) for res in result)
-
-        assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
 
         assert result[1].shape == (4,)

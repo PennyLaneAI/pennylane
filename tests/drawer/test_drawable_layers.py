@@ -18,6 +18,8 @@ Unit tests for the pennylane.drawer.drawable_layers` module.
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import MidMeasureMP
+from pennylane.queuing import AnnotatedQueue
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     drawable_layers,
@@ -135,3 +137,59 @@ class TestDrawableLayers:
         layers = drawable_layers(ops)
 
         assert layers == [[ops[0]], [ops[1]], [ops[2]]]
+
+
+class TestMidMeasure:
+    """Tests the various changes from mid-circuit measurements."""
+
+    def test_basic_mid_measure(self):
+        """Tests a simple case with mid-circuit measurement."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(1)
+
+        assert drawable_layers(q.queue) == [[q.queue[0]], [q.queue[1]]]
+
+    def test_mid_measure_promoted_if_needed(self):
+        """Tests promotion of MidMeasureMPs if used for the same conditional."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            qml.cond(m0 + m1, qml.PauliZ)(2)
+
+        ops = q.queue
+        assert drawable_layers(ops) == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
+
+    def test_empty_layers_are_pruned(self):
+        """Tests that no empty layers are returned after MidMeasure promotion."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(1)
+            qml.CNOT([0, 2])
+            m1 = qml.measure(0)
+            qml.cond(m0 + m1, qml.PauliZ)(2)
+
+        ops = q.queue
+        layers = drawable_layers(ops, wire_map={i: i for i in range(3)})
+        assert layers == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
+
+    def test_cannot_reuse_wire_after_conditional(self):
+        """Tests that a wire cannot be re-used after using a mid-circuit measurement."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(1)
+            qml.Hadamard(0)
+
+        with pytest.raises(ValueError, match="some wires have been measured already"):
+            drawable_layers(q.queue)
+
+    def test_cannot_draw_multi_wire_MidMeasureMP(self):
+        """Tests that MidMeasureMP is only supported with one wire."""
+        with pytest.raises(ValueError, match="mid-circuit measurements with more than one wire."):
+            drawable_layers([MidMeasureMP([0, 1])])
+
+    def test_cannot_use_measured_wire(self):
+        """Tests error is raised when trying to use a measured wire."""
+        ops = [MidMeasureMP([0]), qml.PauliX(0)]
+        with pytest.raises(ValueError, match="some wires have been measured already"):
+            drawable_layers(ops)

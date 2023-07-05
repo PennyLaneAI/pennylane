@@ -22,7 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import qchem
 
-# TODO: Bring pytest skip to relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
