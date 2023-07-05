@@ -1155,12 +1155,9 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(
+        return self.__class__(
             ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
         )
-
-        qml.QueuingManager.append(adj)
-        return adj
 
     def unwrap(self):
         """A context manager that unwraps a quantum script with tensor-like parameters
