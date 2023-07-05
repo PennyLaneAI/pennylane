@@ -421,7 +421,42 @@ def get_trainable_indices(values, like=None):
     return trainable_params
 
 
-def ones_like(tensor, dtype=None):
+def empty_like(tensor, dtype=None, shape=None):
+    """Returns an empty tensor with the same shape and dtype
+    as the input tensor.
+
+    Args:
+        tensor (tensor_like): input tensor
+        dtype (str, np.dtype, None): The desired output datatype of the array. If not provided, the dtype of
+            ``tensor`` is used. This argument can be any supported NumPy dtype representation, including
+            a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
+            a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
+            **equivalent** dtype in the dispatched framework is used.
+        shape (int or sequence of ints): Overrides the shape of the result. If order='K' and the number of
+            dimensions is unchanged, will try to keep order, otherwise,
+            order='C' is implied.
+    Returns:
+        tensor_like: an all-ones tensor with the same shape and
+        size as ``tensor``
+
+    **Example**
+
+    >>> x = torch.tensor([1., 2.])
+    >>> empty_like(x)
+    tensor([1, 1])
+    >>> y = tf.Variable([[0], [5]])
+    >>> empty_like(y, dtype=np.complex128)
+    <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
+    array([[0.+0.j],
+           [0.+0.j]])>
+    """
+    if dtype is not None:
+        return cast(np.empty_like(tensor, shape=shape), dtype)
+
+    return np.empty_like(tensor, shape=shape)
+
+
+def ones_like(tensor, dtype=None, shape=None):
     """Returns a tensor of all ones with the same shape and dtype
     as the input tensor.
 
@@ -432,6 +467,9 @@ def ones_like(tensor, dtype=None):
             a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
             a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
             **equivalent** dtype in the dispatched framework is used.
+        shape (int or sequence of ints): Overrides the shape of the result. If order='K' and the number of
+            dimensions is unchanged, will try to keep order, otherwise,
+            order='C' is implied.
 
     Returns:
         tensor_like: an all-ones tensor with the same shape and
@@ -449,9 +487,45 @@ def ones_like(tensor, dtype=None):
            [1.+0.j]])>
     """
     if dtype is not None:
-        return cast(np.ones_like(tensor), dtype)
+        return cast(np.ones_like(tensor, shape=shape), dtype)
 
-    return np.ones_like(tensor)
+    return np.ones_like(tensor, shape=shape)
+
+
+def zeros_like(tensor, dtype=None, shape=None):
+    """Returns a tensor of all ones with the same shape and dtype
+    as the input tensor.
+
+    Args:
+        tensor (tensor_like): input tensor
+        dtype (str, np.dtype, None): The desired output datatype of the array. If not provided, the dtype of
+            ``tensor`` is used. This argument can be any supported NumPy dtype representation, including
+            a string (``"float64"``), a ``np.dtype`` object (``np.dtype("float64")``), or
+            a dtype class (``np.float64``). If ``tensor`` is not a NumPy array, the
+            **equivalent** dtype in the dispatched framework is used.
+        shape (int or sequence of ints): Overrides the shape of the result. If order='K' and the number of
+            dimensions is unchanged, will try to keep order, otherwise,
+            order='C' is implied.
+
+    Returns:
+        tensor_like: an all-ones tensor with the same shape and
+        size as ``tensor``
+
+    **Example**
+
+    >>> x = torch.tensor([1., 2.])
+    >>> zeros_like(x)
+    tensor([1, 1])
+    >>> y = tf.Variable([[0], [5]])
+    >>> zeros_like(y, dtype=np.complex128)
+    <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
+    array([[0.+0.j],
+           [0.+0.j]])>
+    """
+    if dtype is not None:
+        return cast(np.zeros_like(tensor, shape=shape), dtype)
+
+    return np.zeros_like(tensor, shape=shape)
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
@@ -964,3 +1038,24 @@ def set_index(array, idx, val, like=None):
 
     array[idx] = val
     return array
+
+
+def conj(tensor):
+    """Return the complex conjugate, element-wise.
+
+    The complex conjugate of a complex number is obtained by changing the sign of its imaginary part.
+
+    Args:
+        tensor (tensor_like): input tensor
+
+    Returns:
+        tensor_like: The complex conjugate of x, with same dtype as y. This is a scalar if x is a scalar.
+
+    **Example**
+
+    >>> x = np.eye(2) + 1j * np.eye(2)
+    >>> np.conj(x)
+    array([[ 1.-1.j,  0.-0.j],
+        [ 0.-0.j,  1.-1.j]])
+    """
+    return np.conj(tensor)

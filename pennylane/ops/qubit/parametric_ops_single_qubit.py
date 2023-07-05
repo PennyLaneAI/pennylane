@@ -633,18 +633,14 @@ class Rot(Operation):
         c = c * one
         s = s * one
 
-        mat = [
-            [
-                qml.math.exp(-0.5j * (phi + omega)) * c,
-                -qml.math.exp(0.5j * (phi - omega)) * s,
-            ],
-            [
-                qml.math.exp(-0.5j * (phi - omega)) * s,
-                qml.math.exp(0.5j * (phi + omega)) * c,
-            ],
-        ]
-
-        return qml.math.stack([stack_last(row) for row in mat], axis=-2)
+        pp = qml.math.exp(0.5j * (phi + omega))
+        pm = qml.math.exp(0.5j * (phi - omega))
+        mat = qml.math.empty_like(pp, shape=(*c.shape, 2, 2))
+        mat[..., 0, 0] = qml.math.conj(pp) * c
+        mat[..., 0, 1] = -pm * s
+        mat[..., 1, 0] = qml.math.conj(pm) * s
+        mat[..., 1, 1] = pp * c
+        return mat
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):

@@ -1052,6 +1052,7 @@ class Operator(abc.ABC):
         if len(params) == 0:
             return
 
+        # discriminate between numpy_like `params` to accelerate two lines below
         numpy_like = all(hasattr(p, "ndim") and hasattr(p, "shape") for p in params)
 
         try:
