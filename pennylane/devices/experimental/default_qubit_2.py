@@ -18,12 +18,10 @@ This module contains the next generation successor to default qubit
 from functools import partial
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
-import multiprocessing
-import cloudpickle
+import numpy as np
 
-import pennylane.numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.typing import Result, ResultBatch, ArrayBox
+from pennylane.typing import Result, ResultBatch
 
 
 from . import Device
@@ -32,9 +30,6 @@ from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
 
-
-cloudpickle.Pickler.dumps, cloudpickle.Pickler.loads = cloudpickle.dumps, cloudpickle.loads
-multiprocessing.reducer.ForkingPickler = cloudpickle.Pickler
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -215,22 +210,22 @@ class DefaultQubit2(Device):
         if max_workers is None:
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
+            import cloudpickle  # pylint: disable=import-outside-toplevel
+            import multiprocessing  # pylint: disable=import-outside-toplevel
+
+            cloudpickle.Pickler.dumps, cloudpickle.Pickler.loads = (
+                cloudpickle.dumps,
+                cloudpickle.loads,
+            )
+            multiprocessing.reducer.ForkingPickler = cloudpickle.Pickler
+
             _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, circuits)
                 results = tuple(circuit for circuit in exec_map)
 
-            def convert_to_tensorlike(results):
-                if isinstance(results, (list, tuple)):
-                    return tuple(convert_to_tensorlike(r) for r in results)
-                if isinstance(results, dict):
-                    return results
-                return results if isinstance(results, (np.ndarray, ArrayBox)) else np.array(results)
-
-            results = convert_to_tensorlike(results)
-
-        # reset _rng to mimic serial behavior
-        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return results[0] if is_single_circuit else results
 

@@ -283,7 +283,7 @@ class TestBasicCircuit:
 
         phi = jax.numpy.array(0.678)
 
-        dev = qubit_device
+        dev = DefaultQubit2()
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -363,7 +363,7 @@ class TestSampleMeasurements:
         dev = qubit_device
         result = dev.execute(qs)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, (float, np.ndarray))
         assert result.shape == ()
         assert np.allclose(result, np.cos(x), atol=0.1)
 
@@ -375,7 +375,7 @@ class TestSampleMeasurements:
         dev = qubit_device
         result = dev.execute(qs)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, (float, np.ndarray))
         assert result.shape == (2,)
         assert np.allclose(result, [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2], atol=0.1)
 
@@ -387,7 +387,7 @@ class TestSampleMeasurements:
         dev = qubit_device
         result = dev.execute(qs)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, (float, np.ndarray))
         assert result.shape == (10000, 2)
         assert np.allclose(
             np.sum(result, axis=0).astype(np.float32) / 10000, [np.sin(x / 2) ** 2, 0], atol=0.1
@@ -408,7 +408,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, (float, np.ndarray)) for res in result)
 
         assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x) / np.sqrt(2), atol=0.1)
@@ -448,7 +448,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, (float, np.ndarray)) for res in result)
         assert all(res.shape == () for res in result)
         assert all(np.allclose(res, np.cos(x), atol=0.1) for res in result)
 
@@ -465,7 +465,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, (float, np.ndarray)) for res in result)
         assert all(res.shape == (2,) for res in result)
         assert all(
             np.allclose(res, [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2], atol=0.1) for res in result
@@ -484,7 +484,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, (float, np.ndarray)) for res in result)
         assert all(res.shape == (s, 2) for res, s in zip(result, shots))
         assert all(
             np.allclose(
@@ -514,7 +514,7 @@ class TestSampleMeasurements:
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
-            assert all(isinstance(meas_res, np.ndarray) for meas_res in shot_res)
+            assert all(isinstance(meas_res, (float, np.ndarray)) for meas_res in shot_res)
 
             assert shot_res[0].shape == ()
             assert np.allclose(shot_res[0], np.cos(x) / np.sqrt(2), atol=0.1)
@@ -552,7 +552,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert all(isinstance(res, np.ndarray) for res in result)
+        assert all(isinstance(res, (float, np.ndarray)) for res in result)
 
         assert result[0].shape == ()
         assert np.allclose(result[0], np.cos(x), atol=0.1)
@@ -582,7 +582,7 @@ class TestSampleMeasurements:
 
         assert isinstance(results, tuple)
         assert len(results) == 2
-        assert all(isinstance(res, np.ndarray) for res in results)
+        assert all(isinstance(res, (float, np.ndarray)) for res in results)
         assert results[0].shape == (100, 2)
         assert results[1].shape == (50,)
 
@@ -649,6 +649,27 @@ class TestExecutingBatches:
         return dev.execute((qs1, qs2))
 
     @staticmethod
+    def f_hashable(phi):
+        """A function that executes a batch of scripts on DefaultQubit2 without preprocessing."""
+        ops = [
+            qml.PauliX("a"),
+            qml.PauliX("b"),
+            qml.ctrl(qml.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+        ]
+
+        qs1 = qml.tape.QuantumScript(
+            ops,
+            [
+                qml.expval(qml.sum(qml.PauliY("target"), qml.PauliZ("b"))),
+                qml.expval(qml.s_prod(3, qml.PauliZ("target"))),
+            ],
+        )
+
+        ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
+        return DefaultQubit2().execute((qs1, qs2))
+
+    @staticmethod
     def expected(phi):
         """expected output of f."""
         out1 = (-qml.math.sin(phi) - 1, 3 * qml.math.cos(phi))
@@ -698,16 +719,16 @@ class TestExecutingBatches:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax(self, use_jit, qubit_device):
+    def test_jax(self, use_jit):
         """Test batches can be executed and have backprop derivatives in jax."""
         import jax
 
-        dev = qubit_device
+        dev = DefaultQubit2()
 
         phi = jax.numpy.array(0.123)
 
-        f = jax.jit(self.f) if use_jit else self.f
-        results = f(dev, phi)
+        f = jax.jit(self.f_hashable) if use_jit else self.f_hashable
+        results = f(phi)
         expected = self.expected(phi)
 
         self.nested_compare(results, expected)
@@ -783,6 +804,19 @@ class TestSumOfTermsDifferentiability:
         return dev.execute(qs)
 
     @staticmethod
+    def f_hashable(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+        """Execute a quantum script with a large Hamiltonian."""
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+        if convert_to_hamiltonian:
+            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        return DefaultQubit2().execute(qs)
+
+    @staticmethod
     def expected(scale, n_wires=10, offset=0.1, like="numpy"):
         """expected output of f."""
         phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
@@ -807,21 +841,21 @@ class TestSumOfTermsDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_jax_backprop(self, qubit_device, convert_to_hamiltonian, use_jit):
+    def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)  # otherwise output is too noisy
-        dev = qubit_device
+        dev = DefaultQubit2()
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
+        f = jax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
 
-        out = f(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x)
         assert qml.math.allclose(out, expected_out, atol=1e-6)
 
-        g = jax.grad(f)(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
+        g = jax.grad(f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_g = jax.grad(self.expected)(x)
         assert qml.math.allclose(g, expected_g)
 
