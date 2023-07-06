@@ -3,11 +3,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math
 
-try:
-    import torch
-except Exception as e:
-    pass
-
 # ========================================================
 #  fixed gates
 # ========================================================

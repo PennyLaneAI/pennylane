@@ -21,7 +21,7 @@ from pennylane import numpy as np
 from pennylane.optimize import GradientDescentOptimizer
 
 univariate = [
-    (np.sin, lambda x: np.cos(x)),
+    (np.sin, np.cos),
     (lambda x: np.exp(x / 10.0), lambda x: np.exp(x / 10.0) / 10.0),
     (lambda x: x**2, lambda x: 2 * x),
 ]

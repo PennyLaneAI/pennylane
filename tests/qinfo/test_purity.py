@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for purities."""
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -232,6 +232,8 @@ class TestPurity:
 
         import jax
         import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
 
         dev = qml.device(device, wires=2)
 

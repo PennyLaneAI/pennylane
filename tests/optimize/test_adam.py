@@ -154,9 +154,9 @@ class TestAdamOptimizer:
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
         # check if None is returned when accumulation is empty
-        assert adam_opt.fm == None
-        assert adam_opt.sm == None
-        assert adam_opt.t == None
+        assert adam_opt.fm is None
+        assert adam_opt.sm is None
+        assert adam_opt.t is None
 
         # Do some calculations to fill accumulation
         adam_opt.step(np.sin, np.random.rand(1))
