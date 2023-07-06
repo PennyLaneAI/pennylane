@@ -15,14 +15,12 @@
 
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
-from functools import lru_cache
 
 import autoray as ar
 import numpy as np
 import semantic_version
 
 
-@lru_cache
 def _i(name):
     """Convenience function to import PennyLane
     interfaces via a string pattern"""
@@ -110,8 +108,8 @@ ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 # qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
-ar.register_function("autograd", "ndim", _i("autograd").numpy.ndim)
-ar.register_function("autograd", "shape", _i("autograd").numpy.shape)
+ar.register_function("autograd", "ndim", lambda x: _i("autograd").numpy.ndim(x))
+ar.register_function("autograd", "shape", lambda x: _i("autograd").numpy.shape(x))
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
