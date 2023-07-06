@@ -308,7 +308,7 @@ class TestQNode:
         @qnode(
             dev,
             interface=interface,
-            diff_method="parameter-shift",
+            diff_method=diff_method,
             grad_on_execution=grad_on_execution,
         )
         def circuit(a, b):
@@ -630,6 +630,7 @@ class TestShotsIntegration:
 
         # since we are using finite shots, parameter-shift will
         # be chosen
+        circuit(weights)
         assert circuit.gradient_fn is qml.gradients.param_shift
 
         circuit(weights)

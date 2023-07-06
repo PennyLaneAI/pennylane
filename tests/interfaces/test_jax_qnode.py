@@ -102,7 +102,7 @@ class TestQNode:
         @qnode(
             dev,
             interface=interface,
-            diff_method="parameter-shift",
+            diff_method=diff_method,
             grad_on_execution=grad_on_execution,
         )
         def circuit(a, b):

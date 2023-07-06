@@ -872,16 +872,16 @@ class TestVectorValued:
         assert isinstance(res, list)
         assert len(res) == 2
 
-        for r in res:
+        for r, exp_shape in zip(res, [(), (2,)]):
             assert isinstance(r, tuple)
             assert len(r) == 2
             assert len(r[0]) == 2
             assert isinstance(r[0][0], jax.numpy.ndarray)
-            assert r[0][0].shape == ()
+            assert r[0][0].shape == exp_shape
             assert isinstance(r[0][1], jax.numpy.ndarray)
-            assert r[0][1].shape == ()
+            assert r[0][1].shape == exp_shape
             assert len(r[1]) == 2
             assert isinstance(r[1][0], jax.numpy.ndarray)
-            assert r[1][0].shape == ()
+            assert r[1][0].shape == exp_shape
             assert isinstance(r[1][1], jax.numpy.ndarray)
-            assert r[1][1].shape == ()
+            assert r[1][1].shape == exp_shape

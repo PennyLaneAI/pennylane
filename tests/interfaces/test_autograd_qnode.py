@@ -74,7 +74,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x, y):
             qml.RX(x[0], wires=0)
             qml.Rot(*x[1:], wires=0)
@@ -128,7 +128,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=num_wires)
 
-        @qnode(dev, interface=None)
+        @qnode(dev, interface=None, diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -294,7 +294,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface=interface, h=1e-8, order=2)
+        @qnode(dev, interface=interface, h=1e-8, order=2, diff_method=diff_method)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -319,7 +319,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -1351,16 +1351,13 @@ class TestQubitIntegration:
 
         a, b = x
 
-        expected_res = [
-            np.cos(a) * np.cos(b),
-            0.5 + 0.5 * np.cos(a) * np.cos(b),
-            0.5 - 0.5 * np.cos(a) * np.cos(b),
-        ]
+        cos_prod = np.cos(a) * np.cos(b)
+        expected_res = (cos_prod, [0.5 + 0.5 * cos_prod, 0.5 - 0.5 * cos_prod])
+        res = circuit(x)
+        assert all(qml.math.allclose(r, e) for r, e in zip(res, expected_res))
 
         def cost_fn(x):
             return autograd.numpy.hstack(circuit(x))
-
-        assert qml.math.allclose(circuit(x), expected_res)
 
         jac_fn = qml.jacobian(cost_fn)
 
