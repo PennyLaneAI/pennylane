@@ -508,7 +508,7 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(dev)
+        @qnode(DefaultQubit2())
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
