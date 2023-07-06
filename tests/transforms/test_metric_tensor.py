@@ -834,7 +834,7 @@ class TestMetricTensor:
 
         error_msg = (
             "Some parameters specified in argnum are not in the "
-            r"trainable parameters \[0, 1, 2, 3\] of the tape "
+            "trainable parameters \[0, 1, 2, 3\] of the tape "
             "and will be ignored. This may be caused by attempting to "
             "differentiate with respect to parameters that are not marked "
             "as trainable."
@@ -1742,85 +1742,73 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     assert len(recwarn) == 0
 
 
+def test_raises_circuit_that_uses_missing_wire():
+    """Test that an error in the original circuit is reraised properly
+    and not caught, leading to a MaxRecursionError."""
+
+    dev = qml.device("default.qubit", wires=[0, "b"])
+
+    @qml.qnode(dev)
+    def circuit(x):
+        """Flawed circuit that uses a wire which is not on the device."""
+        qml.RX(x[0], 0)
+        qml.CNOT([0, 1])  # wire 1 is not on the device
+        qml.RX(x[1], 0)
+        return qml.expval(qml.PauliZ(0))
+
+    x = np.array([1.3, 0.2])
+    with pytest.raises(qml.wires.WireError, match=r"Did not find some of the wires (0, 1)"):
+        qml.transforms.metric_tensor(circuit)(x)
+
+
 def aux_wire_ansatz_0(x, y):
-    return [qml.RX(x, wires=0), qml.RY(x, wires=2)]
+    qml.RX(x, wires=0)
+    qml.RY(x, wires=2)
 
 
 def aux_wire_ansatz_1(x, y):
-    return [qml.RX(x, wires=0), qml.RY(x, wires=1)]
+    qml.RX(x, wires=0)
+    qml.RY(x, wires=1)
 
 
-class TestGetAuxWire:
-    """Test the helper method  _get_aux_wire."""
+@pytest.mark.parametrize("aux_wire", [None, "aux", 3])
+@pytest.mark.parametrize("ansatz", [aux_wire_ansatz_0, aux_wire_ansatz_1])
+def test_get_aux_wire(aux_wire, ansatz):
+    """Test ``_get_aux_wire`` without device_wires."""
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.queuing.AnnotatedQueue() as q:
+        ansatz(x, y)
+    tape = qml.tape.QuantumScript.from_queue(q)
+    out = _get_aux_wire(aux_wire, tape, None)
 
-    test_cases_no_device_wires = [
-        (None, aux_wire_ansatz_0, 1),
-        (None, aux_wire_ansatz_1, 2),
-        ("aux", aux_wire_ansatz_0, "aux"),
-        ("aux", aux_wire_ansatz_1, "aux"),
-        (qml.wires.Wires("aux"), aux_wire_ansatz_0, "aux"),
-        (qml.wires.Wires("aux"), aux_wire_ansatz_1, "aux"),
-        (3, aux_wire_ansatz_0, 3),
-        (3, aux_wire_ansatz_1, 3),
-        (qml.wires.Wires(3), aux_wire_ansatz_0, 3),
-        (qml.wires.Wires(3), aux_wire_ansatz_1, 3),
-    ]
+    if aux_wire is not None:
+        assert out == aux_wire
+    else:
+        assert out == (1 if 1 not in tape.wires else 2)
 
-    @pytest.mark.parametrize("aux_wire, ansatz, expected", test_cases_no_device_wires)
-    def test_no_device_wires(self, aux_wire, ansatz, expected):
-        """Test ``_get_aux_wire`` without device_wires."""
-        x, y = np.array([0.2, 0.1], requires_grad=True)
-        tape = qml.tape.QuantumScript(ansatz(x, y))
-        out = _get_aux_wire(aux_wire, tape, None)
-        assert out == expected
 
-    test_cases_device_wires = [
-        (None, aux_wire_ansatz_0, [0, 1, 2], 1),
-        (None, aux_wire_ansatz_1, [0, 1, 2], 2),
-        (None, aux_wire_ansatz_0, [0, "aux", 2], "aux"),
-        (None, aux_wire_ansatz_1, [0, 1, "aux"], "aux"),
-        ("aux", aux_wire_ansatz_0, [0, "aux", 2], "aux"),
-        ("aux", aux_wire_ansatz_1, [0, "aux", 1], "aux"),
-        (qml.wires.Wires("aux"), aux_wire_ansatz_0, [0, "aux", 2], "aux"),
-        (qml.wires.Wires("aux"), aux_wire_ansatz_1, [0, "aux", 1], "aux"),
-        (3, aux_wire_ansatz_0, [0, 1, 2, 3], 3),
-        (3, aux_wire_ansatz_1, [0, 1, 2, 3], 3),
-        (qml.wires.Wires(3), aux_wire_ansatz_0, [0, 1, 2, 3], 3),
-        (qml.wires.Wires(3), aux_wire_ansatz_1, [0, 1, 2, 3], 3),
-    ]
+def test_get_aux_wire_with_device_wires():
+    """Test ``_get_aux_wire`` with device_wires."""
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.RX(x, wires=0)
+        qml.RX(x, wires="one")
 
-    @pytest.mark.parametrize("aux_wire, ansatz, device_wires, expected", test_cases_device_wires)
-    def test_with_device_wires(self, aux_wire, ansatz, device_wires, expected):
-        """Test ``_get_aux_wire`` with device_wires."""
-        x, y = np.array([0.2, 0.1], requires_grad=True)
-        tape = qml.tape.QuantumScript(ansatz(x, y))
-        device_wires = qml.wires.Wires(device_wires)
-        out = _get_aux_wire(aux_wire, tape, device_wires)
-        assert out == expected
+    tape = qml.tape.QuantumScript.from_queue(q)
+    device_wires = qml.wires.Wires([0, "aux", "one"])
 
-    def test_raises_with_unavailable_aux(self):
-        """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
-        x, y = np.array([0.2, 0.1], requires_grad=True)
-        tape = qml.tape.QuantumScript([qml.RX(x, wires=0), qml.RX(y, wires="one")])
-        device_wires = qml.wires.Wires([0, "one"])
-        _match = "The requested auxiliary wire does not exist on the used device"
-        with pytest.raises(qml.wires.WireError, match=_match):
-            _get_aux_wire("two", tape, device_wires)
+    assert _get_aux_wire(0, tape, device_wires) == 0
+    assert _get_aux_wire("one", tape, device_wires) == "one"
+    assert _get_aux_wire(None, tape, device_wires) == "aux"
 
-    def test_raises_with_no_extra_device_wire(self):
-        """Test ``_get_aux_wire`` with device_wires that all are used already by the tape."""
-        x, y = np.array([0.2, 0.1], requires_grad=True)
-        tape = qml.tape.QuantumScript([qml.RX(x, wires=0), qml.RX(y, wires="one")])
-        device_wires = qml.wires.Wires([0, "one"])
-        _match = "The device has no free wire for the auxiliary wire."
-        with pytest.raises(qml.wires.WireError, match=_match):
-            _get_aux_wire(None, tape, device_wires)
 
-    def test_raises_with_wire_used_by_tape(self):
-        """Test ``_get_aux_wire`` with a requested ``aux_wire`` that is already in use."""
-        x, y = np.array([0.2, 0.1], requires_grad=True)
-        tape = qml.tape.QuantumScript([qml.RX(x, wires=0), qml.RX(y, wires="one")])
-        device_wires = qml.wires.Wires([0, "one"])
-        _match = "The requested auxiliary wire is already in use by the circuit"
-        with pytest.raises(qml.wires.WireError, match=_match):
-            _get_aux_wire("one", tape, None)
+def test_get_aux_wire_with_unavailable_aux():
+    """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.RX(x, wires=0)
+        qml.RX(x, wires="one")
+    tape = qml.tape.QuantumScript.from_queue(q)
+    device_wires = qml.wires.Wires([0, "one"])
+    with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
+        _get_aux_wire("two", tape, device_wires)

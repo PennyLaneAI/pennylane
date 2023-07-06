@@ -424,22 +424,29 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
+            revert_text = (
+                "\n\nReverting to the block-diagonal approximation. It will often be "
+                "much more efficient to request the block-diagonal approximation directly!"
+            )
+            other_mt_errors = [
+                "The requested auxiliary wire is already in use by the circuit.",
+                "The requested auxiliary wire does not exist on the used device.",
+            ]
+
             if str(e) == "The device has no free wire for the auxiliary wire.":
                 warnings.warn(
-                    "The device does not have a wire that is not used by the circuit."
-                    "\n\nReverting to the block-diagonal approximation. It will often be "
-                    "much more efficient to request the block-diagonal approximation directly!"
+                    "The device does not have a wire that is not used by the circuit." + revert_text
                 )
-            else:
+            elif str(e) in other_mt_errors:
                 warnings.warn(
                     "An auxiliary wire is not available."
                     "\n\nThis can occur when computing the full metric tensor via the "
                     "Hadamard test, and the device does not provide an "
                     "additional wire or the requested auxiliary wire does not exist "
-                    "on the device."
-                    "\n\nReverting to the block-diagonal approximation. It will often be "
-                    "much more efficient to request the block-diagonal approximation directly!"
+                    "on the device." + revert_text
                 )
+            else:
+                raise e
             tkwargs["approx"] = "block-diag"
             return self(qnode, *targs, **tkwargs)(*args, **kwargs)
 
