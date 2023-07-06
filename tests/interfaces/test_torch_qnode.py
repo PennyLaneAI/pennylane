@@ -16,15 +16,14 @@
 import numpy as np
 import pytest
 
-from torch.autograd.functional import jacobian
-from torch.autograd.functional import hessian
-
 import pennylane as qml
 from pennylane import qnode
 
 pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch", minversion="1.3")
+jacobian = torch.autograd.functional.jacobian
+hessian = torch.autograd.functional.hessian
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", False],
