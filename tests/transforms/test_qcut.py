@@ -329,7 +329,11 @@ class TestTapeToGraph:
             ((ops[2], id(ops[2])), (ops[3], id(ops[3])), 1),
             ((ops[3], id(ops[3])), (ops[4], id(ops[4])), 0),
             ((ops[3], id(ops[3])), (ops[5], id(ops[5])), 0),
-            ((ops[4], id(ops[4])), (no_cut_tape.measurements[0], id(no_cut_tape.measurements[0])), 0),
+            (
+                (ops[4], id(ops[4])),
+                (no_cut_tape.measurements[0], id(no_cut_tape.measurements[0])),
+                0,
+            ),
         ]
 
         for edge, expected_edge in zip(edges, expected_edge_connections):

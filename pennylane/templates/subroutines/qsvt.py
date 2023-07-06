@@ -263,7 +263,7 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, UA, projectors, do_queue=None, id=None):
+    def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
 
@@ -276,7 +276,7 @@ class QSVT(Operation):
         proj_wires = set.union(*(proj.wires.toset() for proj in projectors))
 
         total_wires = ua_wires.union(proj_wires)
-        super().__init__(wires=total_wires, do_queue=do_queue, id=id)
+        super().__init__(wires=total_wires, id=id)
 
     @staticmethod
     def compute_decomposition(

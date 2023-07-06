@@ -239,7 +239,6 @@ class TestSPSAOptimizer:
                 multiplier = ck * delta
                 thetaplus[index] = arg + multiplier
                 thetaminus[index] = arg - multiplier
-            print(thetaplus)
             yplus = np.array([quant_fun_mdarr(p) for p in thetaplus])
             yminus = np.array([quant_fun_mdarr(p) for p in thetaminus])
             y_pm.append(yplus - yminus)

@@ -497,7 +497,7 @@ class FermionicDoubleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, weight, wires1=None, wires2=None, do_queue=None, id=None):
+    def __init__(self, weight, wires1=None, wires2=None, id=None):
         if len(wires1) < 2:
             raise ValueError(
                 f"expected at least two wires representing the occupied orbitals; "
@@ -522,7 +522,7 @@ class FermionicDoubleExcitation(Operation):
         }
 
         wires = wires1 + wires2
-        super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weight, wires=wires, id=id)
 
     @property
     def num_params(self):
