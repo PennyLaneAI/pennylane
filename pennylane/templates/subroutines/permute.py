@@ -141,7 +141,7 @@ class Permute(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, permutation, wires, do_queue=None, id=None):
+    def __init__(self, permutation, wires, id=None):
         if len(permutation) <= 1 or len(wires) <= 1:
             raise ValueError("Permutations must involve at least 2 qubits.")
 
@@ -159,7 +159,7 @@ class Permute(Operation):
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
         self._hyperparameters = {"permutation": permutation}
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):

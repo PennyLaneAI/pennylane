@@ -296,6 +296,7 @@ class TestMaxEntropy:
     def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `max_entropy` differentiability with jax."""
         jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
 
         params = jnp.array(params)
 

@@ -148,8 +148,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         # we request parameter-shift (or "analytic") differentiation.
         grad_method = "A"
 
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                           do_queue=None, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
 
             # checking the inputs --------------
 
@@ -177,11 +176,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # The parent class expects all trainable parameters to be fed as positional
             # arguments, and all wires acted on fed as a keyword argument.
             # The id keyword argument allows users to give their instance a custom name.
-            # The do_queue keyword argument specifies whether or not
-            # the operator is queued when created in a tape context.
-            # Note that do_queue is deprecated. In the future, please use
-            # qml.QueuingManager.stop_recording().
-            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+            super().__init__(angle, wires=all_wires, id=id)
 
         @property
         def num_params(self):

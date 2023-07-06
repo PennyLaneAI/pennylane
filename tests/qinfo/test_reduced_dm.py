@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the (reduced) density matrix transform."""
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -37,18 +37,16 @@ interfaces = [
     "jax",
 ]
 wires_list = [[0], [1], [0, 1], [1, 0]]
-check_state = [False, True]
 
 
 class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
 
-    @pytest.mark.parametrize("check", check_state)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("angle", angle_values)
     @pytest.mark.parametrize("wires", wires_list)
-    def test_density_matrix_from_qnode(self, device, wires, angle, interface, check, tol):
+    def test_density_matrix_from_qnode(self, device, wires, angle, interface, tol):
         """Test the density matrix from matrix for single wires."""
         dev = qml.device(device, wires=2)
 
@@ -65,20 +63,21 @@ class TestDensityMatrixQNode:
                 return [[np.sin(x / 2) ** 2, 0], [0, np.cos(x / 2) ** 2]]
             if wires == [1]:
                 return [[np.cos(x / 2) ** 2, 0], [0, np.sin(x / 2) ** 2]]
-            elif wires == [0, 1]:
+            if wires == [0, 1]:
                 return [
                     [0, 0, 0, 0],
                     [0, np.sin(x / 2) ** 2, 0.0 - np.cos(x / 2) * np.sin(x / 2) * 1j, 0],
                     [0, 0.0 + np.cos(x / 2) * np.sin(x / 2) * 1j, np.cos(x / 2) ** 2, 0],
                     [0, 0, 0, 0],
                 ]
-            elif wires == [1, 0]:
+            if wires == [1, 0]:
                 return [
                     [0, 0, 0, 0],
                     [0, np.cos(x / 2) ** 2, 0.0 + np.cos(x / 2) * np.sin(x / 2) * 1j, 0],
                     [0, 0.0 - np.cos(x / 2) * np.sin(x / 2) * 1j, np.sin(x / 2) ** 2, 0],
                     [0, 0, 0, 0],
                 ]
+            return None
 
         assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
 
@@ -115,8 +114,6 @@ class TestDensityMatrixQNode:
 
     def test_density_matrix_qnode_tf_jit(self):
         """Test jitting the density matrix from state vector function with Tf."""
-        import tensorflow as tf
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -135,9 +132,8 @@ class TestDensityMatrixQNode:
     c_dtypes = [np.complex64, np.complex128]
 
     @pytest.mark.parametrize("c_dtype", c_dtypes)
-    @pytest.mark.parametrize("check", check_state)
     @pytest.mark.parametrize("wires", wires_list)
-    def test_density_matrix_c_dtype(self, wires, check, tol, c_dtype):
+    def test_density_matrix_c_dtype(self, wires, c_dtype):
         """Test different complex dtype."""
 
         dev = qml.device("default.qubit", wires=2, c_dtype=c_dtype)
