@@ -206,14 +206,14 @@ class TestTransformObservable:
     def test_incorrect_heisenberg_size(self, monkeypatch):
         """The number of dimensions of a CV observable Heisenberg representation does
         not match the ev_order attribute."""
-        monkeypatch.setattr(qml.P, "ev_order", 2)
+        monkeypatch.setattr(qml.QuadP, "ev_order", 2)
 
         with pytest.raises(ValueError, match="Mismatch between the polynomial order"):
             _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
 
     def test_higher_order_observable(self, monkeypatch):
         """An exception should be raised if the observable is higher than 2nd order."""
-        monkeypatch.setattr(qml.P, "ev_order", 3)
+        monkeypatch.setattr(qml.QuadP, "ev_order", 3)
 
         with pytest.raises(NotImplementedError, match="order > 2 not implemented"):
             _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
