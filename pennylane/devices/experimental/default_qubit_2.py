@@ -15,18 +15,25 @@
 This module contains the next generation successor to default qubit
 """
 
-import concurrent.futures
+from functools import partial
 from typing import Union, Callable, Tuple, Optional, Sequence
+import concurrent.futures
+import multiprocessing
+import cloudpickle
 
 import pennylane.numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch, ArrayBox
+
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
+
+cloudpickle.Pickler.dumps, cloudpickle.Pickler.loads = cloudpickle.dumps, cloudpickle.loads
+multiprocessing.reducer.ForkingPickler = cloudpickle.Pickler
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -183,10 +190,6 @@ class DefaultQubit2(Device):
 
         return batch, post_processing_fn, config
 
-    def _wrap_simulate(self, x):
-        """Wraps for passing to a ProcessPoolExecutor object."""
-        return simulate(x, rng=self._rng, debugger=self._debugger)
-
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
@@ -208,8 +211,10 @@ class DefaultQubit2(Device):
         else:
             max_workers = execution_config.max_workers
 
+        _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            results = tuple(circuit for circuit in executor.map(self._wrap_simulate, circuits))
+            exec_map = executor.map(_wrap_simulate, circuits)
+            results = tuple(circuit for circuit in exec_map)
 
         def convert_to_tensorlike(results):
             if isinstance(results, (list, tuple)):
