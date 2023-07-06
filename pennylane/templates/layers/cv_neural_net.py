@@ -98,7 +98,6 @@ class CVNeuralNetLayers(Operation):
         phi_a,
         k,
         wires,
-        do_queue=None,
         id=None,
     ):
         n_wires = len(wires)
@@ -135,7 +134,6 @@ class CVNeuralNetLayers(Operation):
             phi_a,
             k,
             wires=wires,
-            do_queue=do_queue,
             id=id,
         )
 
