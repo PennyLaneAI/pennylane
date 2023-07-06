@@ -39,6 +39,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
+  List input to define the fermionic operator is also deprecated; the fermionic 
+  operators ``qml.fermi`` module should be used instead.
+  [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -50,6 +55,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Lillian M. A. Frederiksen,
 Christina Lee,
 Borja Requena,
 Matthew Silverman
