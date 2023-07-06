@@ -43,6 +43,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
+  as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
+  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
+  
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
@@ -52,4 +56,5 @@ This release contains contributions from (in alphabetical order):
 
 Christina Lee,
 Borja Requena,
-Matthew Silverman
+Matthew Silverman,
+David Wierichs,
