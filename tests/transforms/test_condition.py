@@ -104,7 +104,7 @@ class TestCond:
         tape = qml.tape.QuantumScript.from_queue(q)
         return tape
 
-    @pytest.mark.parametrize("tape", [tape_with_else, tape_uses_cond_twice])
+    @pytest.mark.parametrize("tape", ["tape_with_else", "tape_uses_cond_twice"])
     def test_cond_operationss_with_else(self, tape, terminal_measurement):
         """Test that qml.cond operationss Conditional operations as expected in two cases:
         1. When an else qfunc is provided;
@@ -121,7 +121,7 @@ class TestCond:
             # pylint: disable=unused-argument
             qml.PauliY(1)
 
-        tape = tape(f, g, r, terminal_measurement)
+        tape = getattr(self, tape)(f, g, r, terminal_measurement)
         ops = tape.operations
         target_wire = qml.wires.Wires(1)
 

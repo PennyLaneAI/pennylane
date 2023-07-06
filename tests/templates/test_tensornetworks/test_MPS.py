@@ -224,6 +224,8 @@ class TestAttributes:
 
 
 class TestTemplateOutputs:
+    """Test the output of the MPS template."""
+
     @staticmethod
     def circuit1_block(weights, wires):
         qml.RZ(weights[0], wires=wires[0])
@@ -277,14 +279,14 @@ class TestTemplateOutputs:
         ),
         [
             (
-                circuit1_block,
+                "circuit1_block",
                 2,
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                circuit1_MPS,
+                "circuit1_MPS",
             ),
-            (circuit2_block, 3, [1, 2, 3], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]], circuit2_MPS),
+            ("circuit2_block", 3, [1, 2, 3], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]], "circuit2_MPS"),
         ],
     )
     def test_output(
@@ -292,6 +294,8 @@ class TestTemplateOutputs:
     ):
         """Verifies that the output of the circuits is correct."""
         dev = qml.device("default.qubit", wires=wires)
+        block = getattr(self, block)
+        expected_circuit = getattr(self, expected_circuit)
 
         @qml.qnode(dev)
         def circuit_template():
