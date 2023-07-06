@@ -14,6 +14,7 @@
 """
 Unittests for is_commuting
 """
+# pylint: disable=too-many-public-methods
 import pytest
 import pennylane.numpy as np
 import pennylane as qml
@@ -847,4 +848,4 @@ class TestCommutingFunction:
         """Test the function with an operator from the non-commuting list."""
 
         res = qml.is_commuting(qml.PauliX(wires=0), qml.QFT(wires=[1, 0]))
-        assert res == False
+        assert res is False

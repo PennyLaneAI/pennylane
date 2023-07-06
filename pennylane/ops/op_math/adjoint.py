@@ -209,7 +209,7 @@ class Adjoint(SymbolicOp):
     _observable_type = None  # type if base inherits from observable and not operation
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, do_queue=None, id=None):
+    def __new__(cls, base=None, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Adjoint", their *identity* and location in memory will
@@ -252,9 +252,9 @@ class Adjoint(SymbolicOp):
 
         return object.__new__(Adjoint)
 
-    def __init__(self, base=None, do_queue=None, id=None):
+    def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, id=id)
 
     def __repr__(self):
         return f"Adjoint({self.base})"
