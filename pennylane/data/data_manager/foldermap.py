@@ -41,24 +41,21 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     For example:
 
         {
-            "__name": "data_name",
+            "__params": {
+                "qchem": ["molname", "basis", "bondlength"]
+            },
             "qchem": {
-                "__name": "molname",
                 "O2": {
-                    "__name": "basis",
                     "__default": "STO-3G",
                     "STO-3G": {
-                        "__name": "bondlength",
                         "__default": "0.5",
                         "0.5": "qchem/O2/STO-3G/0.5.h5",
                         "0.6": "qchem/O2/STO-3G/0.6.h5"
                     }
                 },
                 "H2": {
-                    "__name": "molname",
                     "__default": "STO-3G",
                     "STO-3G": {
-                        "__name": "bondlength",
                         "__default": "0.7",
                         "0.7": "qchem/H2/STO-3G/0.7.h5"
                     }
@@ -77,11 +74,6 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         """
         self.__curr_level = __curr_level
 
-    @property
-    def name(self) -> str:
-        """Returns the the name of the current parameter, e.g 'data_name', 'molname'."""
-        return self.__curr_level["__name"]
-
     def get_default_key(self) -> str:
         """Get the default key for this level of the foldermap.
         Raises a ValueError if it does not have a default.
@@ -99,13 +91,12 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     ) -> List[Tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
-        if self.name != "data_name":
-            raise RuntimeError("Can only call 'find()' from top level.")
-
         try:
             data_name_map = self[data_name]
         except KeyError as exc:
             raise ValueError(f"No such data_name: '{data_name}'") from exc
+
+        param_names = list(reversed(self.__curr_level["__params"]["data_name"]))
 
         todo: List[
             Tuple[Union[FolderMapView, DataPath], Tuple[Tuple[ParamName, ParamVal], ...]]
@@ -115,14 +106,15 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         todo.append((data_name_map, tuple()))
 
         while todo:
+            curr_param = param_names.pop()
             curr_level, params_acc = todo.pop()
             if isinstance(curr_level, DataPath):
                 done.append((Description(params_acc), curr_level))
                 continue
 
-            param_arg = params.get(curr_level.name, missing_default)
+            param_arg = params.get(curr_param, missing_default)
             if param_arg is None:
-                raise ValueError(f"Missing argument for parameter '{curr_level.name}'")
+                raise ValueError(f"Missing argument for parameter '{curr_param}'")
 
             if param_arg == ParamArg.FULL:
                 next_params = curr_level
@@ -134,7 +126,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
                 next_params = param_arg
 
             todo.extend(
-                (curr_level[next_param], (*params_acc, (curr_level.name, next_param)))
+                (curr_level[next_param], (*params_acc, (curr_param, next_param)))
                 for next_param in next_params
             )
 
