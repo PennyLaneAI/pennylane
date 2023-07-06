@@ -293,7 +293,7 @@ def pytest_runtest_setup(item):
                 )
 
 
-# General qubit_device fixture, for any number of workers
+# General DefaultQubit2 fixture, for any number of workers
 @pytest.fixture(scope="module", params=[None, 1, 2])
-def qubit_device(request):
+def qubit_device_2(request):
     return DefaultQubit2(max_workers=request.param)
