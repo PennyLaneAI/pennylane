@@ -32,6 +32,7 @@ from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
 
+
 cloudpickle.Pickler.dumps, cloudpickle.Pickler.loads = cloudpickle.dumps, cloudpickle.loads
 multiprocessing.reducer.ForkingPickler = cloudpickle.Pickler
 
@@ -109,7 +110,7 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, seed=None, max_workers=1) -> None:
+    def __init__(self, seed=None, max_workers=None) -> None:
         super().__init__()
 
         self._max_workers = max_workers
@@ -211,19 +212,22 @@ class DefaultQubit2(Device):
         else:
             max_workers = execution_config.max_workers
 
-        _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            exec_map = executor.map(_wrap_simulate, circuits)
-            results = tuple(circuit for circuit in exec_map)
+        if max_workers is None:
+            results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+        else:
+            _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                exec_map = executor.map(_wrap_simulate, circuits)
+                results = tuple(circuit for circuit in exec_map)
 
-        def convert_to_tensorlike(results):
-            if isinstance(results, (list, tuple)):
-                return tuple(convert_to_tensorlike(r) for r in results)
-            if isinstance(results, dict):
-                return results
-            return results if isinstance(results, (np.ndarray, ArrayBox)) else np.array(results)
+            def convert_to_tensorlike(results):
+                if isinstance(results, (list, tuple)):
+                    return tuple(convert_to_tensorlike(r) for r in results)
+                if isinstance(results, dict):
+                    return results
+                return results if isinstance(results, (np.ndarray, ArrayBox)) else np.array(results)
 
-        results = convert_to_tensorlike(results)
+            results = convert_to_tensorlike(results)
 
         # reset _rng to mimic serial behavior
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
