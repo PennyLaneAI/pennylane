@@ -167,10 +167,7 @@ def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-br
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
     warnings.warn(
-        "Use of qml.qchem.jordan_wigner is deprecated; please use qml.jordan_wigner instead. "
-        "List input is also deprecated; the input format for qml.jordan_wigner should use "
-        "the fermionic operators format. For details, please see the Fermionic Operators tutorial: "
-        "https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+        "Use of qml.qchem.jordan_wigner is deprecated; please use qml.jordan_wigner instead."
     )
 
     return qml.fermi.jordan_wigner(op, notation=notation)
