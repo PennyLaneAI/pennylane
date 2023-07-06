@@ -424,9 +424,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
-            if str(e) == "No device wires are unused by the tape.":
+            if str(e) == "The device has no free wire for the auxiliary wire.":
                 warnings.warn(
-                    "The device does not have a wire that is not used by the tape."
+                    "The device does not have a wire that is not used by the circuit."
                     "\n\nReverting to the block-diagonal approximation. It will often be "
                     "much more efficient to request the block-diagonal approximation directly!"
                 )
@@ -863,15 +863,20 @@ def _get_aux_wire(aux_wire, tape, device_wires):
         object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None`` ,
         and an often reasonable choice else.
     """
+    print(aux_wire, device_wires)
     if aux_wire is not None:
+        aux_wire = qml.wires.Wires(aux_wire)[0]
+        if aux_wire in tape.wires:
+            msg = "The requested auxiliary wire is already in use by the circuit."
+            raise qml.wires.WireError(msg)
         if device_wires is None or aux_wire in device_wires:
             return aux_wire
-        raise qml.wires.WireError("The requested aux_wire does not exist on the used device.")
+        raise qml.wires.WireError("The requested auxiliary wire does not exist on the used device.")
 
     if device_wires is not None:
+        if len(device_wires) == len(tape.wires):
+            raise qml.wires.WireError("The device has no free wire for the auxiliary wire.")
         unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))
-        if not unused_wires:
-            raise qml.wires.WireError("No device wires are unused by the tape.")
         return unused_wires[0]
 
     _wires = tape.wires
