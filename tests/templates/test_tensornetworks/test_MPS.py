@@ -286,7 +286,14 @@ class TestTemplateOutputs:
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
                 "circuit1_MPS",
             ),
-            ("circuit2_block", 3, [1, 2, 3], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]], "circuit2_MPS"),
+            (
+                "circuit2_block",
+                3,
+                [1, 2, 3],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
+                "circuit2_MPS",
+            ),
         ],
     )
     def test_output(
