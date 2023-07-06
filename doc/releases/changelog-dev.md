@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `DefaultQubit2` devices have a `_max_workers` attribute which controls the process pool size for batch execution.
+  [#4319](https://github.com/PennyLaneAI/pennylane/pull/4319)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
@@ -51,5 +54,6 @@
 This release contains contributions from (in alphabetical order):
 
 Christina Lee,
+Vincent Michaud-Rioux,
 Borja Requena,
 Matthew Silverman
