@@ -132,7 +132,7 @@ class StronglyEntanglingLayers(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=None, id=None):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
         shape = qml.math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
@@ -162,7 +162,7 @@ class StronglyEntanglingLayers(Operation):
 
         self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or qml.CNOT}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
