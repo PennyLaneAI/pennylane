@@ -15,6 +15,7 @@
 This module contains the next generation successor to default qubit
 """
 
+import concurrent.futures
 from typing import Union, Callable, Tuple, Optional, Sequence
 
 import pennylane.numpy as np
@@ -101,9 +102,10 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, seed=None) -> None:
+    def __init__(self, seed=None, max_workers=1) -> None:
         super().__init__()
 
+        self._max_workers = max_workers
         self._rng = np.random.default_rng(seed)
         self._debugger = None
 
@@ -181,6 +183,10 @@ class DefaultQubit2(Device):
 
         return batch, post_processing_fn, config
 
+    def _wrap_simulate(self, x):
+        """Wraps for passing to a ProcessPoolExecutor object."""
+        return simulate(x, rng=self._rng, debugger=self._debugger)
+
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
@@ -197,7 +203,16 @@ class DefaultQubit2(Device):
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
-        results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+        if execution_config.max_workers is None:
+            max_workers = self._max_workers
+        else:
+            max_workers = execution_config.max_workers
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            results = tuple(circuit for circuit in executor.map(self._wrap_simulate, circuits))
+        # reset _rng to mimic serial behavior
+        self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
         return results[0] if is_single_circuit else results
 
     def compute_derivatives(

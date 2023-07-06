@@ -179,6 +179,17 @@ class TestPreprocessing:
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
 
+    @pytest.mark.parametrize("max_workers", [1, 2, 3])
+    def test_config_choices_for_threading(self, max_workers):
+        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
+        dev = DefaultQubit2()
+
+        config = ExecutionConfig(max_workers=max_workers)
+        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        _, _, new_config = dev.preprocess(circuit, config)
+
+        assert new_config.max_workers == max_workers
+
 
 class TestSupportsDerivatives:
     """Test that DefaultQubit2 states what kind of derivatives it supports."""
