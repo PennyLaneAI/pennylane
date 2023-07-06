@@ -15,6 +15,8 @@
 This module contains the functions needed for creating fermionic and qubit observables.
 """
 # pylint: disable= too-many-branches,
+import warnings
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.utils import simplify
@@ -164,4 +166,11 @@ def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-br
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
+    warnings.warn(
+        "Use of qml.qchem.jordan_wigner is deprecated; please use qml.jordan_wigner instead. "
+        "List input is also deprecated; the input format for qml.jordan_wigner should use "
+        "the fermionic operators format. For details, please see the Fermionic Operators tutorial: "
+        "https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+    )
+
     return qml.fermi.jordan_wigner(op, notation=notation)

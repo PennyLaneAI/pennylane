@@ -444,6 +444,12 @@ def test_jordan_wigner(f_obs, q_obs, notation):
     assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
 
 
+def test_jordan_wigner_raises_warning():
+    r"""Test that jordan_wigner raisese the expected deprecation warning"""
+    with pytest.warns(UserWarning, match="Use of qml.qchem.jordan_wigner is deprecated"):
+        _ = qchem.jordan_wigner([3, 3, 3, 1], notation="chemist")
+
+
 @pytest.mark.parametrize(
     ("f_obs", "notation"),
     [
