@@ -208,14 +208,14 @@ class TestTransformObservable:
     def test_incorrect_heisenberg_size(self, monkeypatch):
         """The number of dimensions of a CV observable Heisenberg representation does
         not match the ev_order attribute."""
-        monkeypatch.setattr(qml.P, "ev_order", 2)
+        monkeypatch.setattr(qml.QuadP, "ev_order", 2)
 
         with pytest.raises(ValueError, match="Mismatch between the polynomial order"):
             _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
 
     def test_higher_order_observable(self, monkeypatch):
         """An exception should be raised if the observable is higher than 2nd order."""
-        monkeypatch.setattr(qml.P, "ev_order", 3)
+        monkeypatch.setattr(qml.QuadP, "ev_order", 3)
 
         with pytest.raises(NotImplementedError, match="order > 2 not implemented"):
             _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
@@ -782,7 +782,7 @@ class TestExpectationQuantumGradients:
         ):
             param_shift_cv(tape, dev)
 
-    @pytest.mark.parametrize("obs", [qml.P, qml.Identity])
+    @pytest.mark.parametrize("obs", [qml.QuadP, qml.Identity])
     @pytest.mark.parametrize(
         "op", [qml.Displacement(0.1, 0.2, wires=0), qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
     )
@@ -1038,7 +1038,7 @@ class TestVarianceQuantumGradients:
         ):
             param_shift_cv(tape, dev, force_order2=True)
 
-    @pytest.mark.parametrize("obs", [qml.X, qml.NumberOperator])
+    @pytest.mark.parametrize("obs", [qml.QuadX, qml.NumberOperator])
     @pytest.mark.parametrize(
         "op", [qml.Squeezing(0.1, 0.2, wires=0), qml.Beamsplitter(0.1, 0.2, wires=[0, 1])]
     )
