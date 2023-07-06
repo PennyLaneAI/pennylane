@@ -38,6 +38,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The `qml.pulse.transmon_drive` documentation has been updated.
+  [#4327](https://github.com/PennyLaneAI/pennylane/pull/4327)
+
 <h3>Bug fixes 🐛</h3>
 
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
@@ -48,4 +51,5 @@
 This release contains contributions from (in alphabetical order):
 
 Christina Lee,
+Borja Requena,
 Matthew Silverman
