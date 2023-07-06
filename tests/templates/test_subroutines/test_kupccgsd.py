@@ -344,6 +344,32 @@ class TestDecomposition:
         assert gen_doubles_wires == generalized_pair_doubles_wires
 
 
+def test_flatten_unflatten():
+    """Tests the flatten and unflatten methods."""
+    weights = qml.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]])
+    wires = qml.wires.Wires((0, 1, 2, 3))
+    init_state = qml.math.array([1, 1, 0, 0])
+    op = qml.kUpCCGSD(
+        weights,
+        wires=wires,
+        k=1,
+        delta_sz=0,
+        init_state=init_state,
+    )
+    data, metadata = op._flatten()
+    assert op.data == (weights,)
+    assert len(metadata) == 2
+    assert metadata[0] == wires
+    assert metadata[1] == (("k", 1), ("delta_sz", 0), ("init_state", init_state))
+
+    # make sure metadata hashable
+    {metadata}
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
 

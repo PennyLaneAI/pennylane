@@ -19,6 +19,30 @@ from pennylane import numpy as np
 import pennylane as qml
 
 
+def test_repr():
+    """Test the repr for a flip sign operator."""
+    op = qml.FlipSign([0, 1], wires=("a", "b"))
+    expected = "FlipSign([0, 1], wires=['a', 'b'])"
+    assert repr(op) == expected
+
+
+def test_flatten_unflatten():
+    """Test the flatten and unflatten methods."""
+    op = qml.FlipSign([0, 1], wires=2)
+    data, metadata = op._flatten()
+
+    assert data == tuple()
+    hyperparameters = (("n", (0, 1)),)
+    assert metadata == (op.wires, hyperparameters)
+
+    # make sure metadata hasable
+    {metadata}
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 

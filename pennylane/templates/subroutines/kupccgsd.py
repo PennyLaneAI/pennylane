@@ -203,13 +203,13 @@ class kUpCCGSD(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        new_op = cls.__new__(cls)
-        new_op._wires = metadata[0]
-        new_op._hyperparameters = dict(metadata[1])
-        new_op.data = data
-        return new_op
+    def _flatten(self):
+        hyperparameters = (
+            ("k", self.hyperparameters["k"]),
+            ("delta_sz", self.hyperparameters["delta_sz"]),
+            ("init_state", self.hyperparameters["init_state"]),
+        )
+        return self.data, (self.wires, hyperparameters)
 
     def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, do_queue=None, id=None):
         if len(wires) < 4:
@@ -244,6 +244,7 @@ class kUpCCGSD(Operation):
             "s_wires": s_wires,
             "d_wires": d_wires,
             "k": k,
+            "delta_sz": delta_sz,
         }
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -253,8 +254,14 @@ class kUpCCGSD(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, s_wires, d_wires, k, init_state
-    ):  # pylint: disable=arguments-differ
+        weights,
+        wires,
+        s_wires,
+        d_wires,
+        k,
+        init_state,
+        delta_sz=None,
+    ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

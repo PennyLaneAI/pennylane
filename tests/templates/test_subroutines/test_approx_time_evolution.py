@@ -21,6 +21,23 @@ import pennylane as qml
 from pennylane.gradients.finite_difference import finite_diff
 
 
+def test_flatten_unflatten(self):
+    H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
+    t = 0.1
+    op = qml.ApproxTimeEvolution(H, t, n=20)
+    data, metadata = op._flatten()
+    assert data[0] is H
+    assert data[1] == t
+    assert metadata == (20,)
+
+    # check metadata hashable
+    _ = {metadata: 0}
+
+    new_op = type(op)._unflatten(*op.flatten())
+    assert qml.equal(op, new_op)
+    assert new_op is not op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

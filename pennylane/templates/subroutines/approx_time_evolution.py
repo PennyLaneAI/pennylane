@@ -104,7 +104,7 @@ class ApproxTimeEvolution(Operation):
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
         data = (h, self.data[-1])
-        return data, (self.hyperparameters["n"])
+        return data, (self.hyperparameters["n"],)
 
     @classmethod
     def _unflatten(cls, data, metadata):

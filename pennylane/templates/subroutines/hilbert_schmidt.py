@@ -96,7 +96,17 @@ class HilbertSchmidt(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    # will have to think about this.  We can't currently flatten and unflatten a tape.
+    def _flatten(self):
+        metadata = (
+            ("v_function", self.hyperparameters["v_function"]),
+            ("v_wires", self.hyperparameters["v_wires"]),
+            ("u_tape", self.hyperparameters["u_tape"]),
+        )
+        return self.data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
 
     def __init__(self, *params, v_function, v_wires, u_tape, do_queue=None, id=None):
         self._num_params = len(params)
@@ -116,7 +126,7 @@ class HilbertSchmidt(Operation):
 
         v_tape = qml.tape.make_qscript(v_function)(*params)
         self.hyperparameters["v_tape"] = v_tape
-        self.hyperparameters["v_wires"] = v_tape.wires
+        self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
             raise qml.QuantumFunctionError("U and V must have the same number of wires.")

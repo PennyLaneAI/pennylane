@@ -84,7 +84,7 @@ class AngleEmbedding(Operation):
         return self.data, (self.wires, hyperparameters)
 
     def __repr__(self):
-        return f"AngleEmbedding({self.data}, wires={self.wires}, rotation={self._rotation})"
+        return f"AngleEmbedding({self.data[0]}, wires={self.wires.tolist()}, rotation={self._rotation})"
 
     def __init__(self, features, wires, rotation="X", do_queue=None, id=None):
         if rotation not in ROT:

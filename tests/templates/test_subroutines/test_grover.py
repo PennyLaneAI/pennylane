@@ -22,6 +22,31 @@ import functools
 import itertools
 
 
+def test_repr():
+    """Tests the repr method for GroverOperator."""
+    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+    expected = "GroverOperator(wires=[0, 1, 2], work_wires=[3, 4])"
+    assert repr(op) == expected
+
+
+def test_flatten_unflatten():
+    """Tests the flatten and unflatten methods for GroverOperator."""
+    work_wires = qml.wires.Wires((3, 4))
+    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
+    data, metadata = op._flatten()
+    assert data == tuple()
+    assert len(metadata) == 2
+    assert metadata[0] == op.wires
+    assert metadata[1] == (("work_wires", work_wires),)
+
+    # make sure metadata hashable
+    {metadata}
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert new_op is not op
+
+
 def test_work_wires():
     """Assert work wires get passed to MultiControlledX"""
     wires = ("a", "b")
