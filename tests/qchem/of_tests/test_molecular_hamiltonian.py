@@ -1,6 +1,20 @@
-import sys
-import warnings
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for molecular Hamiltonians.
+"""
+# pylint: disable=too-many-arguments
 import pytest
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -11,12 +25,8 @@ from pennylane.ops.functions import dot
 from pennylane.pauli import pauli_sentence
 from pennylane.operation import enable_new_opmath, disable_new_opmath
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
-symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
-coordinates = np.array(
+test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
+test_coordinates = np.array(
     [
         0.68219113,
         -0.85415621,
@@ -63,6 +73,7 @@ coordinates = np.array(
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_building_hamiltonian(
     charge,
     mult,
@@ -78,7 +89,7 @@ def test_building_hamiltonian(
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
 
-    args = (symbols, coordinates)
+    args = (test_symbols, test_coordinates)
     kwargs = {
         "charge": charge,
         "mult": mult,
@@ -232,8 +243,8 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
         assert np.allclose(np.sort(list(h_args_ps.values())), h_ref_sorted_coeffs)
         assert np.allclose(np.sort(list(h_noargs_ps.values())), h_ref_sorted_coeffs)
 
-        assert all([val.requires_grad is True for val in h_args_ps.values()])
-        assert all([val.requires_grad is False for val in h_noargs_ps.values()])
+        assert all(val.requires_grad is True for val in h_args_ps.values())
+        assert all(val.requires_grad is False for val in h_noargs_ps.values())
 
     else:
         assert np.allclose(np.sort(h_args.coeffs), np.sort(h_ref.coeffs))
@@ -246,8 +257,8 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
             Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
         )
 
-        assert h_args.coeffs.requires_grad == True
-        assert h_noargs.coeffs.requires_grad == False
+        assert h_args.coeffs.requires_grad is True
+        assert h_noargs.coeffs.requires_grad is False
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
@@ -268,6 +279,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_hamiltonian_pyscf(
     symbols, geometry, method, wiremap, tmpdir, op_arithmetic
 ):
@@ -275,7 +287,7 @@ def test_custom_wiremap_hamiltonian_pyscf(
     if op_arithmetic:
         enable_new_opmath()
 
-    hamiltonian, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         method=method,
@@ -312,7 +324,7 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
     if op_arithmetic:
         enable_new_opmath()
 
-    hamiltonian, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         wires=wiremap,
@@ -362,13 +374,13 @@ def test_diff_hamiltonian_error(symbols, geometry):
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
     with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")[0]
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")
 
     with pytest.raises(ValueError, match="Only 'dhf' and 'pyscf' backends are supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, method="psi4")[0]
+        qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
-        qchem.molecular_hamiltonian(symbols, geometry, mult=3)[0]
+        qchem.molecular_hamiltonian(symbols, geometry, mult=3)
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
@@ -395,12 +407,13 @@ def test_diff_hamiltonian_error(symbols, geometry):
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_hamiltonian(symbols, geometry, method, args, tmpdir, op_arithmetic):
     r"""Test that the generated Hamiltonian has real coefficients."""
     if op_arithmetic:
         enable_new_opmath()
 
-    hamiltonian, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         method=method,
