@@ -71,7 +71,7 @@ class TestFidelityMath:
     @pytest.mark.parametrize("states_fid", density_mats)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
-    def test_state_vector_fidelity(self, states_fid, check_state, func):
+    def test_density_mat_fidelity(self, states_fid, check_state, func):
         """Test fidelity between different quantum states."""
         state0, state1, fid = states_fid
         state0 = func(state0)

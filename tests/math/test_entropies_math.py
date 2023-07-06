@@ -75,7 +75,7 @@ class TestPurity:
         assert qml.math.allclose(purity, full_purity)
 
 
-class TestVonNeumannEntropy:
+class TestVonNeumannEntropy:  # pylint: disable=too-few-public-methods
     """Tests for creating a density matrix from state vectors."""
 
     single_wires_list = [
