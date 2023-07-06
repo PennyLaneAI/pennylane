@@ -538,7 +538,7 @@ class TestDefaultGaussianDevice:
         # test correct mean for Homodyne P measurement
         alpha = 0.324 - 0.59j
         dev.apply("CoherentState", wires=Wires([0]), par=[alpha])
-        mean = dev.expval("P", Wires([0]), [])
+        mean = dev.expval("QuadP", Wires([0]), [])
         assert mean == pytest.approx(alpha.imag * np.sqrt(2 * hbar), abs=tol)
 
         # test correct mean for Homodyne measurement
@@ -583,7 +583,7 @@ class TestDefaultGaussianDevice:
 
         alpha = 0.324 - 0.59j
         dev.apply("CoherentState", wires=Wires([0]), par=[alpha])
-        var = dev.var("P", Wires([0]), [])
+        var = dev.var("QuadP", Wires([0]), [])
         assert var == pytest.approx(hbar / 2, abs=tol)
 
         # test correct mean and variance for Homodyne measurement
@@ -659,7 +659,7 @@ class TestSample:
 
         with monkeypatch.context() as m:
             m.setattr(numpy.random, "normal", input_logger)
-            gaussian_device_1_wire.sample("P", Wires([0]), [])
+            gaussian_device_1_wire.sample("QuadP", Wires([0]), [])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
             assert input_logger.args[2] == gaussian_device_1_wire.shots
@@ -694,12 +694,14 @@ class TestSample:
 
         with monkeypatch.context() as m:
             m.setattr(numpy.random, "normal", input_logger)
-            gaussian_device_1_wire.sample("P", Wires([0]), [])
+            gaussian_device_1_wire.sample("QuadP", Wires([0]), [])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
             assert input_logger.args[2] == gaussian_device_1_wire.shots
 
-    @pytest.mark.parametrize("observable,n_sample", [("P", 10), ("P", 25), ("X", 1), ("X", 16)])
+    @pytest.mark.parametrize(
+        "observable,n_sample", [("QuadP", 10), ("QuadP", 25), ("QuadX", 1), ("QuadX", 16)]
+    )
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
@@ -713,10 +715,11 @@ class TestSample:
         """Test that the sample function raises an error if multiple wires are given"""
 
         with pytest.raises(ValueError, match="Only one mode can be measured in homodyne"):
-            gaussian_device_2_wires.sample("P", [0, 1], [])
+            gaussian_device_2_wires.sample("QuadP", [0, 1], [])
 
     @pytest.mark.parametrize(
-        "observable", sorted(set(qml.ops.cv.obs) - set(["P", "X", "QuadOperator"]))
+        "observable",
+        sorted(set(qml.ops.cv.obs) - set(["QuadP", "QuadX", "QuadOperator", "X", "P"])),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
@@ -770,6 +773,21 @@ class TestDefaultGaussianIntegration:
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
             return qml.expval(qml.QuadX(0))
+
+        assert circuit(p) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol)
+
+    def test_gaussian_circuit_deprecated_x(self, tol):
+        """Test that the default gaussian plugin still provides correct result for simple circuit with
+        the deprecated observable X"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        p = 0.543
+
+        @qml.qnode(dev)
+        def circuit(x):
+            """Test quantum function"""
+            qml.Displacement(x, 0, wires=0)
+            return qml.expval(qml.X(0))
 
         assert circuit(p) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol)
 
