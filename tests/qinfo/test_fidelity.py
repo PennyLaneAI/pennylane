@@ -205,6 +205,28 @@ class TestFidelityQnode:
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_wire_labels(self, device, tol):
+        """Test that fidelity is correct with custom wire labels"""
+        param = np.array([0.678, 1.234])
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        fid_circuit = qml.qinfo.fidelity(circuit, circuit, [wires[0]], [wires[1]])
+        actual = fid_circuit((param[0],), (param[1],))
+
+        expected = (
+            np.sin(param[0] / 2) * np.cos(param[1] / 2)
+            + np.sin(param[1] / 2) * np.cos(param[0] / 2)
+        ) ** 2
+        assert np.allclose(actual, expected)
+
     interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd

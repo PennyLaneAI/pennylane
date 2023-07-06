@@ -363,6 +363,30 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(entropy, expected_entropy)
 
+    @pytest.mark.parametrize("device", devices)
+    def test_entropy_wire_labels(self, device, tol):
+        """Test that vn_entropy is correct with custom wire labels"""
+        param = np.array(1.234)
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        entropy0 = qml.qinfo.vn_entropy(circuit, wires=[wires[0]])(param)
+        eigs0 = [np.sin(param / 2) ** 2, np.cos(param / 2) ** 2]
+        exp0 = -np.sum(eigs0 * np.log(eigs0))
+
+        entropy1 = qml.qinfo.vn_entropy(circuit, wires=[wires[1]])(param)
+        eigs1 = [np.cos(param / 2) ** 2, np.sin(param / 2) ** 2]
+        exp1 = -np.sum(eigs1 * np.log(eigs1))
+
+        assert np.allclose(exp0, entropy0, atol=tol)
+        assert np.allclose(exp1, entropy1, atol=tol)
+
 
 class TestRelativeEntropy:
     """Tests for the mutual information functions"""
@@ -761,6 +785,33 @@ class TestRelativeEntropy:
         expected = (
             np.cos(x / 2) ** 2 * (np.log(np.cos(x / 2) ** 2) - np.log(np.cos(y / 2) ** 2))
         ) + (np.sin(x / 2) ** 2 * (np.log(np.sin(x / 2) ** 2) - np.log(np.sin(y / 2) ** 2)))
+
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_entropy_wire_labels(self, device, tol):
+        """Test that relative_entropy is correct with custom wire labels"""
+        param = np.array([0.678, 1.234])
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=wires[0])
+            qml.CNOT(wires=wires)
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit, circuit, [wires[0]], [wires[1]])
+        actual = rel_ent_circuit((param[0],), (param[1],))
+
+        # compare transform results with analytic results
+        first_term = np.cos(param[0] / 2) ** 2 * (
+            np.log(np.cos(param[0] / 2) ** 2) - np.log(np.cos(param[1] / 2) ** 2)
+        )
+        second_term = np.sin(param[0] / 2) ** 2 * (
+            np.log(np.sin(param[0] / 2) ** 2) - np.log(np.sin(param[1] / 2) ** 2)
+        )
+        expected = first_term + second_term
 
         assert np.allclose(actual, expected)
 
