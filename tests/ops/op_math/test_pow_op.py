@@ -492,6 +492,24 @@ class TestMiscMethods:
         op = Pow(base, 2.5)
         assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
 
+    def test_flatten_unflatten(self):
+        """Test the _flatten and _unflatten methods."""
+
+        target = qml.S(0)
+        z = -0.5
+        op = Pow(target, z)
+        data, metadata = op._flatten()
+
+        assert len(data) == 2
+        assert data[0] is target
+        assert data[1] == z
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert new_op is not op
+        assert qml.equal(new_op, op)
+
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
         independently of the original operator."""

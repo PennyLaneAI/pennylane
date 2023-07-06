@@ -143,7 +143,7 @@ class SProd(ScalarSymbolicOp):
         return (self.scalar, self.base), tuple()
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=None, id=None):

@@ -17,6 +17,7 @@ This submodule defines the symbolic operation that indicates the control of an o
 import warnings
 from copy import copy
 from functools import wraps
+from inspect import signature
 from typing import List
 
 import numpy as np
@@ -99,8 +100,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
         qml.QueuingManager.remove(op)
         return custom_controlled_ops[type(op)](control + op.wires)
     if isinstance(op, Operator):
-        t = ControlledOp if isinstance(op, qml.operation.Operation) else Controlled
-        return t(op, control_wires=control, control_values=control_values, work_wires=work_wires)
+        return Controlled(
+            op, control_wires=control, control_values=control_values, work_wires=work_wires
+        )
     if not callable(op):
         raise ValueError(
             f"The object {op} of type {type(op)} is not an Operator or callable. "
@@ -119,7 +121,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
-            (ControlledOp if isinstance(op, qml.operation.Operation) else Controlled)(
+            Controlled(
                 op, control_wires=control, control_values=op_control_values, work_wires=work_wires
             )
             for op in qscript.operations
@@ -233,6 +235,27 @@ class Controlled(SymbolicOp):
         return cls(
             data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
+
+    # pylint: disable=no-self-argument
+    @operation.classproperty
+    def __signature__(cls):  # pragma: no cover
+        # this method is defined so inspect.signature returns __init__ signature
+        # instead of __new__ signature
+        # See PEP 362
+
+        # use __init__ signature instead of __new__ signature
+        sig = signature(cls.__init__)
+        # get rid of self from signature
+        new_parameters = tuple(sig.parameters.values())[1:]
+        new_sig = sig.replace(parameters=new_parameters)
+        return new_sig
+
+    # pylint: disable=unused-argument
+    def __new__(cls, base, *_, **__):
+        """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
+        if isinstance(base, operation.Operation):
+            return object.__new__(ControlledOp)
+        return object.__new__(Controlled)
 
     # pylint: disable=too-many-function-args
     def __init__(
@@ -595,6 +618,10 @@ class ControlledOp(Controlled, operation.Operation):
 
     .. seealso:: :class:`~.Controlled`
     """
+
+    def __new__(cls, *_, **__):
+        # overrides dispatch behavior of ``Controlled``
+        return object.__new__(cls)
 
     # pylint: disable=too-many-function-args
     def __init__(

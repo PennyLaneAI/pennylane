@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane.operation import (
     DecompositionUndefinedError,
+    Observable,
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
@@ -31,7 +32,7 @@ from pennylane.operation import (
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 
-from .symbolicop import ScalarSymbolicOp
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -92,13 +93,11 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
 
     """
     if lazy:
-        t = PowOperation if isinstance(base, Operation) else Pow
-        return t(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, do_queue=do_queue, id=id)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        t = PowOperation if isinstance(base, Operation) else Pow
-        return t(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, do_queue=do_queue, id=id)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
@@ -177,7 +176,7 @@ class Pow(ScalarSymbolicOp):
         return (self.base, self.z), tuple()
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, data, _):
         return cls(data[0], z=data[1])
 
     _operation_type = None  # type if base inherits from operation and not observable
@@ -204,6 +203,27 @@ class Pow(ScalarSymbolicOp):
         True
 
         """
+
+        if isinstance(base, Operation):
+            if isinstance(base, Observable):
+                if cls._operation_observable_type is None:
+                    base_classes = (PowOperation, Pow, SymbolicOp, Observable, Operation)
+                    cls._operation_observable_type = type("Pow", base_classes, dict(cls.__dict__))
+                return object.__new__(cls._operation_observable_type)
+
+            # not an observable
+            if cls._operation_type is None:
+                base_classes = (PowOperation, Pow, SymbolicOp, Operation)
+                cls._operation_type = type("Pow", base_classes, dict(cls.__dict__))
+            return object.__new__(cls._operation_type)
+
+        if isinstance(base, Observable):
+            if cls._observable_type is None:
+                base_classes = (Pow, SymbolicOp, Observable)
+                cls._observable_type = type("Pow", base_classes, dict(cls.__dict__))
+            return object.__new__(cls._observable_type)
+
+        return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=None, id=None):
         self.hyperparameters["z"] = z

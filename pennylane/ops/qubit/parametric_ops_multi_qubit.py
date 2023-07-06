@@ -589,7 +589,7 @@ class PCPhase(Operation):
         return qml.Hermitian(mat, wires=self.wires)
 
     def _flatten(self):
-        return tuple(self.data), (self.wires, self.hyperparameters["dimension"])
+        return tuple(self.data), (self.wires, self.hyperparameters["dimension"][0])
 
     @classmethod
     def _unflatten(cls, data, metadata):

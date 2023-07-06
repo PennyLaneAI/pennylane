@@ -23,6 +23,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
 
 # Make test data in different interfaces, if installed
@@ -663,6 +664,19 @@ class TestHamiltonian:
 
         with pytest.raises(ValueError, match="observables are not valid"):
             qml.Hamiltonian(coeffs, obs)
+
+    @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
+    def test_flatten_unflatten(self, coeffs, ops):
+        """Test the flatten and unflatten methods for hamiltonians"""
+        H = Hamiltonian(coeffs, ops)
+        data, metadata = H._flatten()
+        assert metadata == tuple()
+        assert len(data) == 2
+        assert data[0] is H.data
+        assert data[1] is H._ops
+
+        new_H = Hamiltonian._unflatten(*H._flatten())
+        assert qml.equal(H, new_H)
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
     def test_hamiltonian_wires(self, coeffs, ops):

@@ -371,6 +371,27 @@ class TestMiscMethods:
             == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2, 3], work_wires=[4], control_values=[True, False])"
         )
 
+    def test_flatten_unflatten(self):
+        """Tests the _flatten and _unflatten methods."""
+        target = qml.S(0)
+        control_wires = qml.wires.Wires((0, 1))
+        control_values = (0, 0)
+        work_wires = qml.wires.Wires(3)
+
+        op = Controlled(target, control_wires, control_values=control_values, work_wires=work_wires)
+
+        data, metadata = op._flatten()
+        assert data[0] is target
+        assert len(data) == 1
+
+        assert metadata == (control_wires, control_values, work_wires)
+
+        # make sure metadata is hashable
+        _ = {metadata: "val"}
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(new_op)
+        assert new_op._name == "C(S)"  # make sure initialization was called
+
     def test_copy(self):
         """Test that a copy of a controlled oeprator can have its parameters updated
         independently of the original operator."""

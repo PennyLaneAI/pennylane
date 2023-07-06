@@ -246,6 +246,32 @@ class TestQubitSum:
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
+    def test_flatten_unflatten(self):
+        """Tests the flatten and unflatten methods"""
+        wires = qml.wires.Wires((0, 1, 2, 3))
+        work_wires = qml.wires.Wires(4)
+        op = qml.IntegerComparator(
+            2,
+            geq=False,
+            wires=(0, 1, 2, 3),
+            work_wires=(4),
+        )
+
+        data, metadata = op._flatten()
+        assert data == tuple()
+        assert len(metadata) == 4
+        assert metadata[0] == ("wires", wires)
+        assert metadata[1] == ("work_wires", work_wires)
+        assert metadata[2] == ("value", 2)
+        assert metadata[3] == ("geq", False)
+
+        # check hashable
+        _ = {metadata: "val"}
+
+        new_op = type(op)._unflatten(*op.flatten())
+        assert qml.equal(new_op, op)
+        assert new_op is not op
+
     @pytest.mark.parametrize(
         "value,geq,wires,work_wires,expected_error_message",
         [
