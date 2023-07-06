@@ -1007,7 +1007,7 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=3)
+        new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 11
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
