@@ -275,7 +275,7 @@ class TestInterferometer:
         @qml.qnode(dev)
         def circuit(theta, phi, varphi):
             qml.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
         phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])

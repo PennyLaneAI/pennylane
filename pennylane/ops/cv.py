@@ -37,6 +37,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
 import math
+import warnings
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -1131,7 +1132,7 @@ class TensorN(CVObservable):
         return "⊗".join("n" for _ in self.wires)
 
 
-class X(CVObservable):
+class QuadX(CVObservable):
     r"""
     The position quadrature observable :math:`\hat{x}`.
 
@@ -1164,7 +1165,40 @@ class X(CVObservable):
         return np.array([0, 1, 0])
 
 
-class P(CVObservable):
+class X(QuadX):
+    r"""
+    This class is deprecated and will be removed in a future version of PennyLane.
+    Please use qml.QuadX instead.
+
+    The position quadrature observable :math:`\hat{x}`.
+
+    When used with the :func:`~pennylane.expval` function, the position expectation
+    value :math:`\braket{\hat{x}}` is returned. This corresponds to
+    the mean displacement in the phase space along the :math:`x` axis.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Observable order: 1st order in the quadrature operators
+    * Heisenberg representation:
+
+      .. math:: d = [0, 1, 0]
+
+    Args:
+        wires (Sequence[Any] or Any): the wire the operation acts on
+    """
+
+    def __init__(self, wires):
+        warnings.warn(
+            "Use of qml.X is deprecated and will be removed in a future version of PennyLane. "
+            "Please use qml.QuadX instead."
+        )
+
+        super().__init__(wires=wires)
+
+
+class QuadP(CVObservable):
     r"""
     The momentum quadrature observable :math:`\hat{p}`.
 
@@ -1195,6 +1229,39 @@ class P(CVObservable):
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 0, 1])
+
+
+class P(QuadP):
+    r"""
+    This class is deprecated and will be removed in a future version of PennyLane.
+    Please use qml.QuadP instead.
+
+    The momentum quadrature observable :math:`\hat{p}`.
+
+    When used with the :func:`~pennylane.expval` function, the momentum expectation
+    value :math:`\braket{\hat{p}}` is returned. This corresponds to
+    the mean displacement in the phase space along the :math:`p` axis.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Observable order: 1st order in the quadrature operators
+    * Heisenberg representation:
+
+      .. math:: d = [0, 0, 1]
+
+    Args:
+        wires (Sequence[Any] or Any): the wire the operation acts on
+    """
+
+    def __init__(self, wires):
+        warnings.warn(
+            "Use of qml.P is deprecated and will be removed in a future version of PennyLane. "
+            "Please use qml.QuadP instead."
+        )
+
+        super().__init__(wires=wires)
 
 
 class QuadOperator(CVObservable):
@@ -1419,7 +1486,17 @@ ops = {
 }
 
 
-obs = {"QuadOperator", "NumberOperator", "TensorN", "P", "X", "PolyXP", "FockStateProjector"}
+obs = {
+    "QuadOperator",
+    "NumberOperator",
+    "TensorN",
+    "P",
+    "QuadP",
+    "X",
+    "QuadX",
+    "PolyXP",
+    "FockStateProjector",
+}
 
 
 __all__ = list(ops | obs)

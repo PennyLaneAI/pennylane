@@ -769,7 +769,7 @@ class TestDefaultGaussianIntegration:
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         assert circuit(p) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol)
 
@@ -831,7 +831,7 @@ class TestDefaultGaussianIntegration:
         def circuit(x):
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         runs = []
         for _ in range(100):
@@ -849,7 +849,7 @@ class TestDefaultGaussianIntegration:
         @qml.qnode(dev)
         def circuit():
             """Test quantum function"""
-            return qml.sample(qml.X(0))
+            return qml.sample(qml.QuadX(0))
 
         with pytest.warns(
             UserWarning,
@@ -865,7 +865,7 @@ class TestDefaultGaussianIntegration:
         @qml.qnode(dev)
         def circuit():
             """Test quantum function"""
-            return qml.sample(qml.X(0)), qml.expval(qml.X(1))
+            return qml.sample(qml.QuadX(0)), qml.expval(qml.QuadX(1))
 
         with pytest.raises(
             qml.QuantumFunctionError,
