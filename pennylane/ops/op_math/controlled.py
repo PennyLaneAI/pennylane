@@ -151,10 +151,6 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        do_queue(bool):  indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -249,9 +245,7 @@ class Controlled(SymbolicOp):
         return object.__new__(Controlled)
 
     # pylint: disable=too-many-function-args
-    def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
-    ):
+    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -289,7 +283,7 @@ class Controlled(SymbolicOp):
 
         self._name = f"C({base.name})"
 
-        super().__init__(base, do_queue, id)
+        super().__init__(base, id)
 
     @property
     def hash(self):
@@ -615,22 +609,12 @@ class ControlledOp(Controlled, operation.Operation):
         return object.__new__(cls)
 
     # pylint: disable=too-many-function-args
-    def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=None, id=None
-    ):
-        super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
+    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+        super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return f"C({self.base.base_name})"
 
     @property
     def name(self):
