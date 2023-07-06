@@ -619,7 +619,8 @@ def enable_return():
 
     warnings.warn(
         "The old return system is deprecated, and will be removed along with "
-        "`qml.enable_return()` in v0.33.",
+        "`qml.enable_return()` in v0.33. Please consult the QNode returns page for guidance on "
+        "switching to the new return system: https://docs.pennylane.ai/en/stable/introduction/returns.html",
         UserWarning,
     )
 
@@ -657,7 +658,8 @@ def disable_return():
 
     warnings.warn(
         "The old return system is deprecated, and will be removed along with "
-        "`qml.disable_return()` in v0.33.",
+        "`qml.disable_return()` in v0.33. Please consult the QNode returns page for guidance on "
+        "switching to the new return system: https://docs.pennylane.ai/en/stable/introduction/returns.html",
         UserWarning,
     )
 
