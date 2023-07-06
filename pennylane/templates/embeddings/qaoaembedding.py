@@ -159,7 +159,7 @@ class QAOAEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, weights, wires, local_field="Y", do_queue=None, id=None):
+    def __init__(self, features, weights, wires, local_field="Y", id=None):
         if local_field == "Z":
             local_field = qml.RZ
         elif local_field == "X":
@@ -203,7 +203,7 @@ class QAOAEmbedding(Operation):
             raise ValueError(f"Weights tensor must be of shape {exp_shape}; got {shape}")
 
         self._hyperparameters = {"local_field": local_field}
-        super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, weights, wires=wires, id=id)
 
     @property
     def num_params(self):

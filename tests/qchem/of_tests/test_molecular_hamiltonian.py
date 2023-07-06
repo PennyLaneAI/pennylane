@@ -65,13 +65,12 @@ test_coordinates = np.array(
         "nact_els",
         "nact_orbs",
         "mapping",
-        "grouping_type",
     ),
     [
-        (0, 1, "pyscf", 2, 2, "jordan_WIGNER", None),
-        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev", None),
-        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER", "qwc"),
-        (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev", "commuting"),
+        (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
+        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
+        (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -82,7 +81,6 @@ def test_building_hamiltonian(
     nact_els,
     nact_orbs,
     mapping,
-    grouping_type,
     tmpdir,
     op_arithmetic,
 ):
@@ -99,19 +97,12 @@ def test_building_hamiltonian(
         "active_electrons": nact_els,
         "active_orbitals": nact_orbs,
         "mapping": mapping,
-        "grouping_type": grouping_type,
         "outpath": tmpdir.strpath,
     }
     if op_arithmetic:
         enable_new_opmath()
 
-    if grouping_type is not None:
-        with pytest.warns(
-            UserWarning, match="The grouping functionality in molecular_hamiltonian is deprecated."
-        ):
-            built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
-    else:
-        built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
 
     if op_arithmetic:
         disable_new_opmath()
@@ -232,7 +223,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
     h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
 
     geometry.requires_grad = False
-    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", grouping_type="qwc")[0]
+    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
 
     h_ref = (
         dot(h_ref_data[0], h_ref_data[1], pauli=True)
@@ -272,27 +263,25 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data, op_arithmetic
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "method", "wiremap", "grouping"),
+    ("symbols", "geometry", "method", "wiremap"),
     [
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "pyscf",
             ["a", "b", "c", "d"],
-            None,
         ),
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             "pyscf",
             [0, "z", 3, "ancilla"],
-            "qwc",
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_custom_wiremap_hamiltonian_pyscf(
-    symbols, geometry, method, wiremap, grouping, tmpdir, op_arithmetic
+    symbols, geometry, method, wiremap, tmpdir, op_arithmetic
 ):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
     if op_arithmetic:
@@ -303,7 +292,6 @@ def test_custom_wiremap_hamiltonian_pyscf(
         coordinates=geometry,
         method=method,
         wires=wiremap,
-        grouping_type=grouping,
         outpath=tmpdir.strpath,
     )
 
@@ -315,13 +303,12 @@ def test_custom_wiremap_hamiltonian_pyscf(
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "wiremap", "args", "grouping"),
+    ("symbols", "geometry", "wiremap", "args"),
     [
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             [0, "z", 3, "ancilla"],
-            None,
             None,
         ),
         (
@@ -329,13 +316,10 @@ def test_custom_wiremap_hamiltonian_pyscf(
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             [0, "z", 3, "ancilla"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
-            "qwc",
         ),
     ],
 )
-def test_custom_wiremap_hamiltonian_dhf(
-    symbols, geometry, wiremap, args, grouping, tmpdir, op_arithmetic
-):
+def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir, op_arithmetic):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
     if op_arithmetic:
         enable_new_opmath()
@@ -345,7 +329,6 @@ def test_custom_wiremap_hamiltonian_dhf(
         coordinates=geometry,
         wires=wiremap,
         args=args,
-        grouping_type=grouping,
         outpath=tmpdir.strpath,
     )
 
@@ -398,31 +381,6 @@ def test_diff_hamiltonian_error(symbols, geometry):
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)
-
-
-@pytest.mark.parametrize(
-    ("symbols", "geometry"),
-    [
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-        ),
-    ],
-)
-def test_hamiltonian_warnings(symbols, geometry):
-    r"""Test that molecular_hamiltonian raises a warning when using grouping."""
-
-    with pytest.warns(
-        UserWarning, match="The grouping functionality in molecular_hamiltonian is deprecated. "
-    ):
-        qchem.molecular_hamiltonian(symbols, geometry, grouping_type="qwc")
-
-    with pytest.warns(
-        UserWarning, match="The 'grouping_type' and 'grouping_method' arguments are ignored when "
-    ):
-        enable_new_opmath()
-        qchem.molecular_hamiltonian(symbols, geometry, grouping_type="qwc")
-        disable_new_opmath()
 
 
 @pytest.mark.parametrize("op_arithmetic", [False, True])
