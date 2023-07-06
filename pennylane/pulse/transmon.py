@@ -72,7 +72,7 @@ def transmon_interaction(
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
     `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_, or `arXiv:2210.15812 <https://arxiv.org/abs/2210.15812>`_.
 
-    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future.
+    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
     .. seealso::
 
@@ -272,7 +272,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     (see :func:`~.transmon_interaction`).
     The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
-    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2`` we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
     .. note:: Due to convention in the respective fields, we omit the factor :math:`\frac{1}{2}` present in the related constructor :func:`~.rydberg_drive`
 
@@ -299,22 +299,24 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
     via :math:`\Omega(t)/(2 \pi) = A \times \sin^2(\pi t)` and :math:`\phi(t) = \phi_0 (t - \frac{1}{2})`. The squared
-    sine ensures that the amplitude will be strictly positive (a requirement for some hardware).
+    sine ensures that the amplitude will be strictly positive (a requirement for some hardware). For simplicity, we
+    set the drive frequency to zero :math:`\nu=0`.
 
     .. code-block:: python3
 
         def amp(A, t): return A * jnp.sin(jnp.pi*t) ** 2
         def phase(phi0, t): return phi0 * (t - 0.5)
+        freq = 0
 
-        H = qml.pulse.transmon_drive(amp, phase, 0, 0)
+        H = qml.pulse.transmon_drive(amp, phase, freq, 0)
 
         t = 0.5
         A = 0.1
         phi = 0.001
         params = [A, phi]
 
-    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi = 10^{-3}` we obtain
-    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
+    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi_0 = 10^{-3}` we obtain
+    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x - i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
 
     >>> H(params, t)
     (0.6283185307179586*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
@@ -338,7 +340,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
         def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
-        def freq(fr, t): return fr
+        def freq(fr, t): return fr  # Enables frequency trainability
         phase = 0.
         t=2
 
@@ -503,7 +505,7 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
     callable phase and/or callable amplitude and/or callable freq.
 
-    Consolidates amplitude, phase and freq parameters in they are callable,
+    Consolidates amplitude, phase and freq parameters if they are callable,
     and duplicates parameters since they will be passed to two operators in the Hamiltonian"""
 
     reordered_params = []
