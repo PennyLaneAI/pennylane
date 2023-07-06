@@ -292,16 +292,21 @@ class TestQNode:
     ):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
+        if diff_method in ["backprop", "adjoint", "spsa"]:
+            pytest.skip("Test does not support backprop, adjoint or spsa method")
 
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
         num_wires = 2
+        exp_num_calls = 4  # typically two shifted circuits per parameter
 
+        diff_kwargs = {}
         if diff_method == "hadamard":
             num_wires = 3
+            exp_num_calls = 2  # only one circuit per parameter
+        elif diff_method == "finite-diff":
+            diff_kwargs = {"approx_order": 2, "strategy": "center"}
 
         dev = qml.device(dev_name, wires=num_wires)
 
@@ -310,6 +315,7 @@ class TestQNode:
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
+            **diff_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -327,7 +333,7 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
+        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
 
         jac = tape.jacobian(res, [a, b])
         expected = [
@@ -337,7 +343,7 @@ class TestQNode:
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
         # The parameter-shift rule has been called for each argument
-        assert len(spy.spy_return[0]) == 4
+        assert len(spy.spy_return[0]) == exp_num_calls
 
         # make the second QNode argument a constant
         a = tf.Variable(0.54, dtype=tf.float64)
@@ -1467,7 +1473,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = tf.reshape(weights, [1, -1])
