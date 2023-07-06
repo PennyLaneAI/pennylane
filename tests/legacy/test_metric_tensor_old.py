@@ -1760,7 +1760,7 @@ def test_get_aux_wire_with_device_wires():
 
     assert _get_aux_wire(None, tape, device_wires) == "aux"
     assert _get_aux_wire("aux", tape, device_wires) == "aux"
-    _match = "The requested auxiliary wire is already in use by the circuit." 
+    _match = "The requested auxiliary wire is already in use by the circuit."
     with pytest.raises(qml.wires.WireError, match=_match):
         _get_aux_wire("one", tape, device_wires)
     with pytest.raises(qml.wires.WireError, match=_match):
