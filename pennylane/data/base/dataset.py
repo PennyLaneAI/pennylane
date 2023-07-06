@@ -296,14 +296,14 @@ class Dataset(MapperMixin, _DatasetTransform):
                 dataset.
         """
         attributes = attributes if attributes is not None else ()
-        if_exists = "overwrite" if overwrite_attrs else "raise"
+        on_conflict = "overwrite" if overwrite_attrs else "ignore"
 
         if not isinstance(dest, Dataset):
             dest = Path(dest).expanduser()
             dest = Dataset.open(dest, mode=mode)
             dest.info.update(self.info)
 
-        hdf5.copy_all(self.bind, dest.bind, *attributes, if_exists=if_exists)
+        hdf5.copy_all(self.bind, dest.bind, *attributes, on_conflict=on_conflict)
 
     def _validate_attrs(self) -> None:
         """Validates that ``attrs`` matched the delcared fields of this

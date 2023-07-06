@@ -53,7 +53,7 @@ def copy(
     source: HDF5Any,
     dest: HDF5Group,
     key: str,
-    if_exists: Literal["raise", "overwrite"] = "raise",
+    on_conflict: Literal["raise", "overwrite", "ignore"] = "raise",
 ) -> None:
     """Copy HDF5 array or group ``source`` into group ``dest``.
 
@@ -61,12 +61,16 @@ def copy(
         source: HDF5 group or array to copy
         dest: Target HDF5 group
         keys: Name to save source into, under dest
-        if_exists: How to handle conflicts if ``key`` already exists in
+        on_conflict: How to handle conflicts if ``key`` already exists in
             ``dest``. ``"raise"`` will raise an exception, ``overwrite``
-            will overwrite the existing object in ``dest``.
+            will overwrite the existing object in ``dest``, ``"ignore"`` will
+            do nothing
     """
-    if if_exists == "raise" and key in dest:
-        raise ValueError(f"Key {key} already exists in in {source.name}")
+    if key in dest:
+        if on_conflict == "raise":
+            raise ValueError(f"Key {key} already exists in {source.name}")
+        if on_conflict == "ignore":
+            return
 
     dest.copy(source, dest, name=key)
 
@@ -75,7 +79,7 @@ def copy_all(
     source: HDF5Group,
     dest: HDF5Group,
     *keys: str,
-    if_exists: Literal["raise", "overwrite"] = "raise",
+    on_conflict: Literal["raise", "overwrite", "ignore"] = "ignore",
     without_attrs: bool = False,
 ) -> None:
     """Copies all the elements of ``source`` named ``keys`` into ``dest``. If no keys
@@ -84,7 +88,7 @@ def copy_all(
         keys = source
 
     for key in keys:
-        copy(source[key], dest, key=key, if_exists=if_exists)
+        copy(source[key], dest, key=key, on_conflict=on_conflict)
 
     if not without_attrs:
         dest.attrs.update(source.attrs)
