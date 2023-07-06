@@ -37,23 +37,35 @@ def _nested_stack(res):
     return tuple(stacked_results)
 
 
-def _split_operations(ops, params, indices, start_index, num_tapes):
+def _split_operations(ops, params, split_indices, first_op_index, num_tapes):
     """
-    Given a list of operators, return a list containing lists
-    of new operators with length num_tapes, with the parameters
-    at the given indices split.
+    Given a list of operators, return a list (with length ``num_tapes``) containing lists
+    of new operators with the parameters at the given indices unbatched.
+
+    Args:
+        ops (Sequence[.Operator]): list of operators to split
+        params (Sequence[TensorLike]): list of parameters which may have a batch dimension.
+            The size of this list must be the total number of parameters in the ``ops`` list.
+        split_indices (Sequence[int]): the parameter indices that need to be unbatched. The
+            index of a parameter, say ``p``, is defined to be its index in the list
+            ``[p for op in ops for p in op.data]``. If any parameter of an operator has an index
+            contained in ``split_indices``, then a new operator is created using the corresponding
+            entry of ``params``. Otherwise, the original operator is used.
+        first_op_idx (int): the parameter index corresponding to the first parameter of the first
+            operator in ``ops``.
+        num_tapes (int): the number of new tapes to create, which is also equal to the batch size.
     """
     # for some reason pylint thinks "qml.ops" is a set
     # pylint: disable=no-member
     new_ops = [[] for _ in range(num_tapes)]
-    idx = start_index
+    idx = first_op_index
 
     for op in ops:
         # determine if any parameters of the operator are batched
-        if any(i in indices for i in range(idx, idx + len(op.data))):
+        if any(i in split_indices for i in range(idx, idx + len(op.data))):
             for b in range(num_tapes):
                 new_params = tuple(
-                    params[i][b] if i in indices else params[i]
+                    params[i][b] if i in split_indices else params[i]
                     for i in range(idx, idx + len(op.data))
                 )
                 new_op = qml.ops.functions.bind_new_parameters(op, new_params)
