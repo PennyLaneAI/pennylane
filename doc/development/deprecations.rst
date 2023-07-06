@@ -55,6 +55,12 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
+  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 Completed deprecation cycles
 ----------------------------
