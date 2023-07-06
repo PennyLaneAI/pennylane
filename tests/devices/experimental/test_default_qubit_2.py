@@ -248,6 +248,23 @@ class TestBasicCircuit:
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
+    def test_basic_circuit_numpy_with_config(self, qubit_device):
+        """Test execution with a basic circuit."""
+        phi = np.array(0.397)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+        )
+
+        dev = qubit_device
+        config = ExecutionConfig(max_workers=dev._max_workers)
+        result = dev.execute(qs, execution_config=config)
+
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+        assert np.allclose(result[0], -np.sin(phi))
+        assert np.allclose(result[1], np.cos(phi))
+
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self, qubit_device):
         """Tests execution and gradients with autograd"""

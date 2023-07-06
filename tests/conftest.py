@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
+from pennylane.devices.experimental import DefaultQubit2
 
 # defaults
 TOL = 1e-3
