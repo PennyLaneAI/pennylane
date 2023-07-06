@@ -776,10 +776,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 
-    # Get dimension of the quantum system and reshape
-    num_indices0 = int(np.log2(qml.math.shape(state0)[-1]))
-    num_indices1 = int(np.log2(qml.math.shape(state1)[-1]))
-    if num_indices0 != num_indices1:
+    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
     # Two mixed states
@@ -838,10 +835,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
         _check_state_vector(state0)
         _check_state_vector(state1)
 
-    # Get dimension of the quantum system and reshape
-    num_indices0 = int(np.log2(qml.math.shape(state0)[-1]))
-    num_indices1 = int(np.log2(qml.math.shape(state1)[-1]))
-    if num_indices0 != num_indices1:
+    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
     batched0 = len(qml.math.shape(state0)) > 1
@@ -1025,9 +1019,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
         _check_density_matrix(state1)
 
     # Compare the number of wires on both subsystems
-    num_indices0 = int(np.log2(qml.math.shape(state0)[-1]))
-    num_indices1 = int(np.log2(qml.math.shape(state1)[-1]))
-    if num_indices0 != num_indices1:
+    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
     return _compute_relative_entropy(state0, state1, base=base)
