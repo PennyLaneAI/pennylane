@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
+  [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
+
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
@@ -51,4 +54,5 @@
 This release contains contributions from (in alphabetical order):
 
 Christina Lee,
+Borja Requena,
 Matthew Silverman
