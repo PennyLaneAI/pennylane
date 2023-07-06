@@ -290,3 +290,9 @@ def pytest_runtest_setup(item):
                 pytest.skip(
                     f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                 )
+
+
+# General qubit_device fixture, for any number of workers
+@pytest.fixture(scope="module", params=[None, 1, 2])
+def qubit_device(request):
+    return DefaultQubit2(max_workers=request.param)

@@ -24,12 +24,6 @@ from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
-# General qubit_device fixture, for any number of workers
-@pytest.fixture(scope="module", params=[None, 1, 2])
-def qubit_device(request):
-    return DefaultQubit2(max_workers=request.param)
-
-
 def test_name():
     """Tests the name of DefaultQubit2."""
     assert DefaultQubit2().name == "default.qubit.2"
@@ -723,8 +717,6 @@ class TestExecutingBatches:
         """Test batches can be executed and have backprop derivatives in jax."""
         import jax
 
-        dev = DefaultQubit2()
-
         phi = jax.numpy.array(0.123)
 
         f = jax.jit(self.f_hashable) if use_jit else self.f_hashable
@@ -847,7 +839,6 @@ class TestSumOfTermsDifferentiability:
         from jax.config import config
 
         config.update("jax_enable_x64", True)  # otherwise output is too noisy
-        dev = DefaultQubit2()
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         f = jax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
 
@@ -985,6 +976,7 @@ class TestPreprocessingIntegration:
 
             num_wires = 2
 
+            # pylint: disable=missing-function-docstring
             def decomposition(self):
                 return [
                     qml.RX(self.data[0], self.wires[0]),
@@ -1031,6 +1023,7 @@ class TestPreprocessingIntegration:
 
             num_wires = 2
 
+            # pylint: disable=missing-function-docstring
             def decomposition(self):
                 return [qml.IsingXX(self.data[0], self.wires)]
 
