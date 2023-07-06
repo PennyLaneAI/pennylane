@@ -863,7 +863,6 @@ def _get_aux_wire(aux_wire, tape, device_wires):
         object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None`` ,
         and an often reasonable choice else.
     """
-    print(aux_wire, device_wires)
     if aux_wire is not None:
         aux_wire = qml.wires.Wires(aux_wire)[0]
         if aux_wire in tape.wires:
