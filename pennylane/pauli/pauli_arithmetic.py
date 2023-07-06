@@ -13,7 +13,7 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 from copy import copy
-from functools import reduce
+from functools import reduce, lru_cache
 from typing import Iterable
 
 import numpy as np
@@ -55,17 +55,30 @@ mat_map = {
     Z: matZ,
 }
 
-sparse_matI = sparse.eye(2, format="csr")
-sparse_matX = sparse.csr_matrix([[0, 1], [1, 0]])
-sparse_matY = sparse.csr_matrix([[0, -1j], [1j, 0]])
-sparse_matZ = sparse.csr_matrix([[1, 0], [0, -1]])
 
-sparse_mat_map = {
-    I: sparse_matI,
-    X: sparse_matX,
-    Y: sparse_matY,
-    Z: sparse_matZ,
-}
+@lru_cache
+def _cached_sparse_data(op):
+    """Returns the sparse data and indices of a Pauli operator."""
+    if op == "I":
+        data = np.array([1.0, 1.0], dtype=np.complex128)
+        indices = np.array([0, 1], dtype=np.int64)
+    elif op == "X":
+        data = np.array([1.0, 1.0], dtype=np.complex128)
+        indices = np.array([1, 0], dtype=np.int64)
+    elif op == "Y":
+        data = np.array([-1.0j, 1.0j], dtype=np.complex128)
+        indices = np.array([1, 0], dtype=np.int64)
+    elif op == "Z":
+        data = np.array([1.0, -1.0], dtype=np.complex128)
+        indices = np.array([0, 1], dtype=np.int64)
+    return data, indices
+
+
+@lru_cache(maxsize=2)
+def _cached_arange(n):
+    "Caches `np.arange` output to speed up sparse calculations."
+    return np.arange(n)
+
 
 _map_I = {
     I: (1, I),
@@ -189,16 +202,17 @@ class PauliWord(dict):
         """Track wires in a PauliWord."""
         return set(self)
 
-    def to_mat(self, wire_order, format="dense"):
+    def to_mat(self, wire_order, format="dense", coeff=1.0):
         """Returns the matrix representation.
 
         Keyword Args:
             wire_order (iterable or None): The order of qubits in the tensor product.
             format (str): The format of the matrix ("dense" by default), if not a dense
                 matrix, then the format for the sparse representation of the matrix.
+            coeff (float): Coefficient multiplying the resulting sparse matrix.
 
         Returns:
-            (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauliword
+            (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauliword.
 
         Raises:
             ValueError: Can't get the matrix of an empty PauliWord.
@@ -207,15 +221,49 @@ class PauliWord(dict):
             if wire_order is None or wire_order == wires.Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliWord.")
             return (
-                np.eye(2 ** len(wire_order))
+                np.diag([coeff] * 2 ** len(wire_order))
                 if format == "dense"
-                else sparse.eye(2 ** len(wire_order), format=format)
+                else coeff * sparse.eye(2 ** len(wire_order), format=format)
             )
 
-        matrix_map = sparse_mat_map if format != "dense" else mat_map
-        kron = sparse.kron if format != "dense" else math.kron
+        if format == "dense":
+            return coeff * reduce(math.kron, (mat_map[self[w]] for w in wire_order))
 
-        return reduce(kron, (matrix_map[self[w]] for w in wire_order))
+        return self._to_sparse_mat(wire_order, coeff)
+
+    def _to_sparse_mat(self, wire_order, coeff):
+        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
+        See pauli_word_sparse_matrix.md for the technical details of the implementation."""
+        full_word = [self[wire] for wire in wire_order]
+        matrix_size = 2 ** len(wire_order)
+        data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
+        indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
+        indptr = _cached_arange(matrix_size + 1)  # Non-zero entries by row (starting from 0)
+
+        current_size = 2
+        data[:current_size], indices[:current_size] = _cached_sparse_data(full_word[-1])
+        data[:current_size] *= coeff  # Multiply initial term better than the full matrix
+        for s in full_word[-2::-1]:
+            if s == "I":
+                data[current_size : 2 * current_size] = data[:current_size]
+                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
+            elif s == "X":
+                data[current_size : 2 * current_size] = data[:current_size]
+                indices[current_size : 2 * current_size] = indices[:current_size]
+                indices[:current_size] += current_size
+            elif s == "Y":
+                data[current_size : 2 * current_size] = 1j * data[:current_size]
+                data[:current_size] *= -1j
+                indices[current_size : 2 * current_size] = indices[:current_size]
+                indices[:current_size] += current_size
+            elif s == "Z":
+                data[current_size : 2 * current_size] = -data[:current_size]
+                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
+            current_size *= 2
+        # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
+        matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype=np.complex128)
+        matrix.data, matrix.indices, matrix.indptr = data, indices, indptr
+        return matrix
 
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""

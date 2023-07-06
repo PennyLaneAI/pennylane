@@ -59,31 +59,15 @@ class TestOperatorConstruction:
     """Test custom operators construction."""
 
     def test_operation_outside_context(self):
-        """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
-            assert isinstance(op, qml.operation.Operation)
+        """Test that an operation can be instantiated outside a QNode context"""
+        op = qml.ops.CNOT(wires=[0, 1])
+        assert isinstance(op, qml.operation.Operation)
 
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            op = qml.ops.RX(0.5, wires=0, do_queue=True)
-            assert isinstance(op, qml.operation.Operation)
+        op = qml.ops.RX(0.5, wires=0)
+        assert isinstance(op, qml.operation.Operation)
 
         op = qml.ops.Hadamard(wires=0)
         assert isinstance(op, qml.operation.Operation)
-
-    @pytest.mark.parametrize("do_queue", [True, False])
-    def test_do_queue_deprecation(self, do_queue):
-        """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            Operator(wires=0, do_queue=do_queue)
 
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
@@ -2526,14 +2510,14 @@ def test_docstring_example_of_operator_class(tol):
         grad_method = "A"
 
         # pylint: disable=too-many-arguments
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=None, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 
             self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
-            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+            super().__init__(angle, wires=all_wires, id=id)
 
         @property
         def num_params(self):
