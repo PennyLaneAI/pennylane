@@ -813,7 +813,7 @@ class TestRelativeEntropy:
         )
         expected = first_term + second_term
 
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
 
 @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])

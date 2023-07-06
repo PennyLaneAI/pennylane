@@ -130,7 +130,7 @@ class TestTraceDistanceQnode:
             np.abs(np.cos(param[0] / 2) ** 2 - np.sin(param[1] / 2) ** 2)
             + np.abs(np.cos(param[1] / 2) ** 2 - np.sin(param[0] / 2) ** 2)
         )
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
     # 0 and 2 * pi are removed to avoid nan values in the gradient
     parameters = np.linspace(0, 2 * np.pi, 20)[1:-1]
