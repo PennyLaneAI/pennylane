@@ -273,7 +273,7 @@ class DefaultMixed(QubitDevice):
         wires = self.map_wires(wires)
         return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
-    def purity(self, mp, **kwargs):
+    def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
         """Returns the purity of the final state"""
         state = getattr(self, "state", None)
         wires = self.map_wires(mp.wires)

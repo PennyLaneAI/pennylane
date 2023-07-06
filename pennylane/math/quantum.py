@@ -15,7 +15,6 @@
 # pylint: disable=import-outside-toplevel
 import itertools
 import functools
-import warnings
 
 from string import ascii_letters as ABC
 from autoray import numpy as np
@@ -533,11 +532,8 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
 
     .. seealso:: :func:`pennylane.qinfo.transforms.purity`
     """
-
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
-    len_state = state.shape[-1]
-    num_wires = int(np.log2(len_state))
 
     density_matrix = reduce_dm(state, indices, check_state)
     return _compute_purity(density_matrix)
@@ -785,9 +781,6 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     num_indices1 = int(np.log2(qml.math.shape(state1)[-1]))
     if num_indices0 != num_indices1:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
-
-    batched0 = len(qml.math.shape(state0)) > 2
-    batched1 = len(qml.math.shape(state1)) > 2
 
     # Two mixed states
     fid = _compute_fidelity(state0, state1)
