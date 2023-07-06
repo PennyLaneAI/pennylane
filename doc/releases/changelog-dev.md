@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
+  as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
+  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
@@ -42,11 +46,11 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
-
-* Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
-  as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
-  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
   
+* Stop `metric_tensor` from accidentally catching errors that stem from
+  flawed wires assignments in the original circuit, leading to recursion errors
+  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
+
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
