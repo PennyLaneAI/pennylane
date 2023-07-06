@@ -46,10 +46,10 @@ class AttributeTypeMapper(MutableMapping):
         if key in self._cache:
             return self._cache[key]
 
-        zobj = self.bind[key]
+        h5_obj = self.bind[key]
 
-        attr_type = get_attribute_type(zobj)
-        attr = attr_type(bind=zobj)
+        attr_type = get_attribute_type(h5_obj)
+        attr = attr_type(bind=h5_obj)
         self._cache[key] = attr
 
         return attr

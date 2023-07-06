@@ -81,7 +81,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         try:
             return self.__curr_level["__default"]
         except KeyError as exc:
-            raise ValueError(f"No default available for parameter '{self.name}'") from exc
+            raise ValueError("No default available for parameter") from exc
 
     def find(
         self,

@@ -417,7 +417,7 @@ def attribute(
 def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:
     """
     Returns the ``DatasetAttribute`` of the dataset attribute contained
-    in ``zobj``.
+    in ``h5_obj``.
     """
     type_id = h5_obj.attrs[AttributeInfo.bind_key("type_id")]
 
