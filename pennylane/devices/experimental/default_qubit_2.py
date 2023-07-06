@@ -213,10 +213,8 @@ class DefaultQubit2(Device):
             import cloudpickle  # pylint: disable=import-outside-toplevel
             import multiprocessing  # pylint: disable=import-outside-toplevel
 
-            cloudpickle.Pickler.dumps, cloudpickle.Pickler.loads = (
-                cloudpickle.dumps,
-                cloudpickle.loads,
-            )
+            cloudpickle.Pickler.dumps = cloudpickle.dumps
+            cloudpickle.Pickler.loads = cloudpickle.loads
             multiprocessing.reducer.ForkingPickler = cloudpickle.Pickler
 
             _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
