@@ -31,6 +31,7 @@ SUPPORTED_GRADIENT_METHODS = [
 ]
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class ExecutionConfig:
     """
