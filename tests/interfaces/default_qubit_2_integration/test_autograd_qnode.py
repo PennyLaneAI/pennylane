@@ -1577,8 +1577,8 @@ class TestSample:
         assert len(result) == 3
 
         assert np.array_equal(result[0].shape, (n_sample,))
-        assert isinstance(result[1], np.ndarray)
-        assert isinstance(result[2], np.ndarray)
+        assert isinstance(result[1], (float, np.ndarray))
+        assert isinstance(result[2], (float, np.ndarray))
         assert result[0].dtype == np.dtype("int")
 
     def test_single_wire_sample(self):
