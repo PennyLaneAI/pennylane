@@ -182,7 +182,7 @@ class TestQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        class U3(qml.U3):
+        class U3(qml.U3):  # pylint:disable=too-few-public-methods
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -787,6 +787,7 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, diff_method, grad_on_execution):
         """Test that the gradient of chained QNodes works without error"""
+        # pylint:disable=too-few-public-methods
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def expand(self):
@@ -1196,7 +1197,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):
+        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
 
             def expand(self):
