@@ -20,7 +20,7 @@ from typing import Union, Callable, Tuple, Optional, Sequence
 
 import pennylane.numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch, ArrayBox
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -210,6 +210,16 @@ class DefaultQubit2(Device):
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             results = tuple(circuit for circuit in executor.map(self._wrap_simulate, circuits))
+
+        def convert_to_tensorlike(results):
+            if isinstance(results, (list, tuple)):
+                return tuple(convert_to_tensorlike(r) for r in results)
+            if isinstance(results, dict):
+                return results
+            return results if isinstance(results, (np.ndarray, ArrayBox)) else np.array(results)
+
+        results = convert_to_tensorlike(results)
+
         # reset _rng to mimic serial behavior
         self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
