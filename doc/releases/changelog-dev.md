@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
+  [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -56,4 +59,5 @@
 This release contains contributions from (in alphabetical order):
 
 Christina Lee,
+Borja Requena,
 Matthew Silverman
