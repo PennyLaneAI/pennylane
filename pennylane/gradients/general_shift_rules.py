@@ -20,6 +20,7 @@ import warnings
 
 import numpy as np
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 
@@ -386,7 +387,12 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     all_ops = tape.circuit
 
     for idx, shift, multiplier in zip(indices, shifts, multipliers):
-        op, op_idx, p_idx = tape.get_operation(idx)
+        _, op_idx, p_idx = tape.get_operation(idx)
+        op = (
+            all_ops[op_idx].obs
+            if isinstance(all_ops[op_idx], MeasurementProcess)
+            else all_ops[op_idx]
+        )
 
         # Shift copied parameter
         new_params = list(op.data)
