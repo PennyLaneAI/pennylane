@@ -32,6 +32,7 @@ The following frameworks are currently supported:
 * JAX
 """
 import autoray as ar
+import autograd
 
 from .is_independent import is_independent
 from .matrix_manipulation import expand_matrix, reduce_matrices
@@ -111,6 +112,8 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 def ndim(a):
     '''Custom implementation of autoray.ndim to avoid overheads when calling this
     method many times in the parameter shift rule.'''
+    if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
+        return autograd.numpy.ndim(a)
 
     try:
         return a.ndim
@@ -120,6 +123,8 @@ def ndim(a):
 def shape(a):
     '''Custom implementation of autoray.shape to avoid overheads when calling this
     method many times in the parameter shift rule.'''
+    if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
+        return autograd.numpy.shape(a)
 
     try:
         return a.shape
