@@ -20,7 +20,6 @@ import warnings
 
 import numpy as np
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess
 from pennylane.ops.functions import bind_new_parameters
 from pennylane.tape import QuantumScript
 
