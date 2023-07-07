@@ -6,7 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
-* `DefaultQubit2` devices have a `_max_workers` attribute which controls the process pool size for batch execution.
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+  A ``ProcessPoolExecutor`` executes tapes asynchronously
+  using a pool of at most max_workers processes. If `max_workers` is `None`
+  or not given, only the current process executes tapes. If you experience any
+  issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
 
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.

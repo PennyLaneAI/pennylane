@@ -46,6 +46,11 @@ class DefaultQubit2(Device):
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
 
+        max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
+            using a pool of at most max_workers processes. If ``max_workers`` is ``None``
+            or not given, only the current process executes tapes. If you experience any
+            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+
     **Example:**
 
     .. code-block:: python
@@ -73,6 +78,17 @@ class DefaultQubit2(Device):
     -0.0038567269892757494,
     0.1339705146860149,
     -0.03780669772690448]
+
+    Suppose one has a processor with 5 cores or more, these scripts can be executed in
+    parallel as follows
+
+    >>> dev = DefaultQubit2(max_workers=5)
+    >>> new_batch, post_processing_fn, execution_config = dev.preprocess(qscripts)
+    >>> results = dev.execute(new_batch, execution_config=execution_config)
+    >>> post_processing_fn(results)
+
+    If you monitor your CPU usage, you should see 5 new Python processes pop up to
+    crunch through those ``QuantumScript``s.
 
     This device currently supports backpropagation derivatives:
 
