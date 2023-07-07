@@ -19,9 +19,11 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.utils import simplify
 from pennylane.operation import active_new_opmath
+from pennylane.fermi import FermiWord, FermiSentence
+import warnings
 
 
-def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
+def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False):
     r"""Create a fermionic observable from molecular orbital integrals.
 
     Args:
@@ -29,6 +31,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         one (array[float]): the one-particle molecular orbital integrals
         two (array[float]): the two-particle molecular orbital integrals
         cutoff (float): cutoff value for discarding the negligible integrals
+        fs (bool): if True, a fermi sentence will be returned
 
     Returns:
         tuple(array[float], list[int]): fermionic coefficients and operators
@@ -76,6 +79,25 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     if indices_sort:
         indices_sort = qml.math.array(indices_sort)
 
+    if fs:
+        sentence = FermiSentence({FermiWord({}): constant[0]})
+        for c, o in zip(coeffs[indices_sort], sorted(operators)):
+            if len(o) == 2:
+                sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
+            if len(o) == 4:
+                sentence.update(
+                    {FermiWord({(0, o[0]): "+", (1, o[1]): "+", (2, o[2]): "-", (3, o[3]): "-"}): c}
+                )
+        sentence.simplify()
+
+        return sentence
+
+    warnings.warn(
+        "This function will return a fermionic operator by default in the next release. For details,"
+        " see the Fermionic Operators tutorial:"
+        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+    )
+
     return coeffs[indices_sort], sorted(operators)
 
 
@@ -111,6 +133,25 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> print(qubit_observable(f))
     Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
     """
+    if isinstance(o_ferm, FermiSentence):
+        h = qml.jordan_wigner(o_ferm, ps=True)
+        h.simplify()
+
+        if active_new_opmath():
+            return h.operation()
+
+        h = h.hamiltonian()
+
+        return qml.Hamiltonian(
+            qml.math.real(h.coeffs), [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+        )
+
+    warnings.warn(
+        "Tuple input for the qubit_observable function is deprecated; please use the fermionic"
+        " operators format. For details, see the Fermionic Operators tutorial:"
+        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+    )
+
     ops = []
     coeffs = qml.math.array([])
 
@@ -164,4 +205,5 @@ def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-br
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
+
     return qml.fermi.jordan_wigner(op, notation=notation)
