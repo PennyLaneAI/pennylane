@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli import simplify, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
-from pennylane.qchem.observable_hf import jordan_wigner
+from pennylane.fermi import jordan_wigner
 from pennylane.wires import Wires
 from pennylane.operation import active_new_opmath
 
@@ -484,14 +484,13 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     fermop_terms = []
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_terms = jordan_wigner([idx])
-            op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
+            ps_term = jordan_wigner(qml.FermiC(idx), ps=True)
         else:
             op_term = qml.Hamiltonian([1.0], [qml.Identity(idx)])
-        fermop_terms.append(op_term)
+            ps_term = pauli_sentence(op_term)
+        fermop_terms.append(ps_term)
 
-    fermop_terms_as_ps = [pauli_sentence(term) for term in fermop_terms]
-    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
+    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms)
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
