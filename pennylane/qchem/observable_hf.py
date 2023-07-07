@@ -35,7 +35,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False)
         fs (bool): if True, a fermi sentence will be returned
 
     Returns:
-        tuple(array[float], list[int]): fermionic coefficients and operators
+        Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
 
     **Example**
 
@@ -110,7 +110,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
 
     Args:
-        o_ferm tuple(array[float], list[int]): fermionic operator
+        o_ferm Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:

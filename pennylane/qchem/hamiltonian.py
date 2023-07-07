@@ -152,7 +152,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
         cutoff (float): cutoff value for discarding the negligible electronic integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
-        fs (bool): is True, a fermi sentence will be returned
+        fs (bool): if True, a fermi sentence will be returned
 
     Returns:
         function: function that computes the fermionic hamiltonian
@@ -175,7 +175,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
             *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
+            Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
         """
 
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
