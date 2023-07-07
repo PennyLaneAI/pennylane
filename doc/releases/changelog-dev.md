@@ -10,7 +10,7 @@
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
 
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
-  [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
 <h3>Breaking changes 💔</h3>
 
