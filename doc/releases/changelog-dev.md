@@ -49,6 +49,9 @@
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
+* `qml.qinfo.purity` now produces correct results with custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
