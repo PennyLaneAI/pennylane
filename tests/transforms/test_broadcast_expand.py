@@ -142,7 +142,7 @@ class TestBroadcastExpand:
         meas = [qml.expval(qml.PauliZ(0))]
         tape = qml.tape.QuantumScript(ops, meas)
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes = qml.transforms.broadcast_expand(tape)[0]
         assert len(tapes) == 3
         assert all(t.batch_size is None for t in tapes)
 

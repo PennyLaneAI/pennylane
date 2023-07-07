@@ -858,7 +858,7 @@ def test_unbatched_not_copied():
     tape = qml.tape.QuantumScript(ops, meas)
     tape.trainable_params = [0, 2]
 
-    new_tapes, fn = qml.batch_input(argnum=1)(tape)
+    new_tapes = qml.batch_input(argnum=1)(tape)[0]
     assert len(new_tapes) == batch_size
 
     for new_tape in new_tapes:
