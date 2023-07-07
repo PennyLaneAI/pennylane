@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the ``broadcast_expand`` transform.
+"""
+# pylint: disable=too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml

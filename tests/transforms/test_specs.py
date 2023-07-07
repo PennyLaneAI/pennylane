@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the specs transform"""
-import pytest
 from collections import defaultdict
 from contextlib import nullcontext
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
