@@ -14,15 +14,14 @@
 """
 Unit tests for the available non-parametric qutrit operations
 """
-import pytest
 import copy
+import pytest
 import numpy as np
-from scipy.stats import unitary_group
 
+from gate_data import TSHIFT, TCLOCK, TADD, TSWAP, TH
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import OMEGA, TSHIFT, TCLOCK, TADD, TSWAP, TH
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.TShift, TSHIFT, None),
@@ -37,8 +36,8 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 
 class TestOperations:
-    @pytest.mark.parametrize("op_cls, mat, subspace", NON_PARAMETRIZED_OPERATIONS)
-    def test_nonparametrized_op_copy(self, op_cls, mat, subspace, tol):
+    @pytest.mark.parametrize("op_cls, _, subspace", NON_PARAMETRIZED_OPERATIONS)
+    def test_nonparametrized_op_copy(self, op_cls, _, subspace, tol):
         """Tests that copied nonparametrized ops function as expected"""
         op = (
             op_cls(wires=range(op_cls.num_wires))
@@ -144,7 +143,7 @@ class TestPowMethod:
 
         # When raising to power == 2 mod 3
         with pytest.raises(qml.operation.PowUndefinedError):
-            op_pow_2 = op.pow(2 + offset)
+            op.pow(2 + offset)
 
     @pytest.mark.parametrize("op", period_three_ops + period_two_ops)
     def test_period_two_three_noninteger_power(self, op):
@@ -224,7 +223,7 @@ involution_ops = [  # ops that are their own inverses
 
 
 @pytest.mark.parametrize("op", no_adjoint_ops)
-def test_adjoint_method(op, tol):
+def test_adjoint_method(op):
     """Assert that ops that are not their own inverses do not have a defined adjoint."""
     assert not op.has_adjoint
 
@@ -233,7 +232,7 @@ def test_adjoint_method(op, tol):
 
 
 @pytest.mark.parametrize("op", involution_ops)
-def test_adjoint_method_involution(op, tol):
+def test_adjoint_method_involution(op):
     """Assert that involution ops are their own adjoint."""
     assert op.has_adjoint
 

@@ -16,12 +16,11 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 
-from scipy.linalg import block_diag
 import pytest
 
+import numpy.testing as np_testing
 from pennylane import numpy as np
 from pennylane.operation import AnyWires
-import numpy.testing as np_testing
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
@@ -83,7 +82,7 @@ class TestCV:
             cv.Kerr(2.568, wires=2),
         ],
     )
-    def test_adjoint_no_heisenberg_rep_defined(self, op, tol):
+    def test_adjoint_no_heisenberg_rep_defined(self, op):
         op_d = op.adjoint()
         assert op.parameters[0] == -op_d.parameters[0]
 
