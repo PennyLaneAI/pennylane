@@ -12,4 +12,3 @@ dask[delayed]
 autoray
 matplotlib
 requests
-cloudpickle

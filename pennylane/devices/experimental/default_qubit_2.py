@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
-
+from pennylane.transforms import convert_to_numpy_parameters
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -226,16 +226,10 @@ class DefaultQubit2(Device):
         if max_workers is None:
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
-            import cloudpickle  # pylint: disable=import-outside-toplevel
-            import multiprocessing  # pylint: disable=import-outside-toplevel
-
-            cloudpickle.Pickler.dumps = cloudpickle.dumps
-            cloudpickle.Pickler.loads = cloudpickle.loads
-            multiprocessing.reducer.ForkingPickler = cloudpickle.Pickler
-
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(_wrap_simulate, circuits)
+                exec_map = executor.map(_wrap_simulate, vanilla_circuits)
                 results = tuple(circuit for circuit in exec_map)
 
             # reset _rng to mimic serial behavior

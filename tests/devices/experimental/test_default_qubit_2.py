@@ -266,11 +266,12 @@ class TestBasicCircuit:
         assert np.allclose(result[1], np.cos(phi))
 
     @pytest.mark.autograd
-    def test_autograd_results_and_backprop(self, qubit_device_2):
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
+    def test_autograd_results_and_backprop(self, qubit_device_2, use_dq2_fixture):
         """Tests execution and gradients with autograd"""
         phi = qml.numpy.array(-0.52)
 
-        dev = qubit_device_2
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -282,19 +283,23 @@ class TestBasicCircuit:
         expected = np.array([-np.sin(phi), np.cos(phi)])
         assert qml.math.allclose(result, expected)
 
+        if use_dq2_fixture:
+            return
+
         g = qml.jacobian(f)(phi)
         expected = np.array([-np.cos(phi), -np.sin(phi)])
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax_results_and_backprop(self, use_jit):
+    def test_jax_results_and_backprop(self, use_jit, qubit_device_2, use_dq2_fixture):
         """Tests execution and gradients with jax."""
         import jax
 
         phi = jax.numpy.array(0.678)
 
-        dev = DefaultQubit2()
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -303,25 +308,31 @@ class TestBasicCircuit:
             return dev.execute(qs)
 
         if use_jit:
+            if use_dq2_fixture:
+                return
             f = jax.jit(f)
 
         result = f(phi)
         assert qml.math.allclose(result[0], -np.sin(phi))
         assert qml.math.allclose(result[1], np.cos(phi))
 
+        if use_dq2_fixture:
+            return
+
         g = jax.jacobian(f)(phi)
         assert qml.math.allclose(g[0], -np.cos(phi))
         assert qml.math.allclose(g[1], -np.sin(phi))
 
     @pytest.mark.torch
-    def test_torch_results_and_backprop(self):
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
+    def test_torch_results_and_backprop(self, qubit_device_2, use_dq2_fixture):
         """Tests execution and gradients of a simple circuit with torch."""
 
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
 
-        dev = DefaultQubit2()
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -333,19 +344,23 @@ class TestBasicCircuit:
         assert qml.math.allclose(result[0], -torch.sin(phi))
         assert qml.math.allclose(result[1], torch.cos(phi))
 
+        if use_dq2_fixture:
+            return
+
         g = torch.autograd.functional.jacobian(f, phi + 0j)
         assert qml.math.allclose(g[0], -torch.cos(phi))
         assert qml.math.allclose(g[1], -torch.sin(phi))
 
     # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
-    def test_tf_results_and_backprop(self):
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
+    def test_tf_results_and_backprop(self, qubit_device_2, use_dq2_fixture):
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
         phi = tf.Variable(4.873)
 
-        dev = DefaultQubit2()
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         with tf.GradientTape(persistent=True) as grad_tape:
             qs = qml.tape.QuantumScript(
@@ -355,6 +370,9 @@ class TestBasicCircuit:
 
         assert qml.math.allclose(result[0], -tf.sin(phi))
         assert qml.math.allclose(result[1], tf.cos(phi))
+
+        if use_dq2_fixture:
+            return
 
         grad0 = grad_tape.jacobian(result[0], [phi])
         grad1 = grad_tape.jacobian(result[1], [phi])
@@ -710,15 +728,19 @@ class TestExecutingBatches:
         self.nested_compare(results, expected)
 
     @pytest.mark.autograd
-    def test_autograd(self, qubit_device_2):
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
+    def test_autograd(self, qubit_device_2, use_dq2_fixture):
         """Test batches can be executed and have backprop derivatives in autograd."""
-        dev = qubit_device_2
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         phi = qml.numpy.array(-0.629)
         results = self.f(dev, phi)
         expected = self.expected(phi)
 
         self.nested_compare(results, expected)
+
+        if use_dq2_fixture:
+            return
 
         g0 = qml.jacobian(lambda x: qml.numpy.array(self.f(dev, x)[0]))(phi)
         g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
@@ -748,11 +770,12 @@ class TestExecutingBatches:
         self.nested_compare(g, g_expected)
 
     @pytest.mark.torch
-    def test_torch(self):
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
+    def test_torch(self, qubit_device_2, use_dq2_fixture):
         """Test batches can be executed and have backprop derivatives in torch."""
         import torch
 
-        dev = DefaultQubit2()
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         x = torch.tensor(9.6243)
 
@@ -760,6 +783,9 @@ class TestExecutingBatches:
         expected = self.expected(x)
 
         self.nested_compare(results, expected)
+
+        if use_dq2_fixture:
+            return
 
         g1 = torch.autograd.functional.jacobian(lambda y: self.f(dev, y)[0], x)
         assert qml.math.allclose(g1[0], -qml.math.cos(x))
@@ -771,12 +797,13 @@ class TestExecutingBatches:
         assert qml.math.allclose(g1, g3)
 
     @pytest.mark.tf
-    def test_tf(self):
+    @pytest.mark.parametrize("use_dq2_fixture", (True, False))
+    def test_tf(self, qubit_device_2, use_dq2_fixture):
         """Test batches can be executed and have backprop derivatives in tf."""
 
         import tensorflow as tf
 
-        dev = DefaultQubit2()
+        dev = qubit_device_2 if use_dq2_fixture else DefaultQubit2()
 
         x = tf.Variable(5.2281)
         with tf.GradientTape(persistent=True) as tape:
@@ -784,6 +811,9 @@ class TestExecutingBatches:
 
         expected = self.expected(x)
         self.nested_compare(results, expected)
+
+        if use_dq2_fixture:
+            return
 
         g00 = tape.gradient(results[0][0], x)
         assert qml.math.allclose(g00, -qml.math.cos(x))
@@ -835,9 +865,9 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_autograd_backprop(self, qubit_device_2, convert_to_hamiltonian):
+    def test_autograd_backprop(self, convert_to_hamiltonian):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
-        dev = qubit_device_2
+        dev = DefaultQubit2()
         x = qml.numpy.array(0.52)
         out = self.f(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x)
