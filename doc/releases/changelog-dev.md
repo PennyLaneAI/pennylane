@@ -9,6 +9,9 @@
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
+* The `qchem` module is upgraded to use the fermionic operators of the `fermi` module.
+  [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
