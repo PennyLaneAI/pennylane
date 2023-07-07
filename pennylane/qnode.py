@@ -429,10 +429,16 @@ class QNode:
 
         if mode is None:
             mode = "best"
-        else:
+        elif qml.active_return():
             warnings.warn(
                 "The `mode` keyword argument is deprecated and does nothing with the new return system. "
                 "Please use `grad_on_execution` instead.",
+                UserWarning,
+            )
+        else:
+            warnings.warn(
+                "The `mode` keyword argument is deprecated, along with the old return system. In "
+                "the new return system, you should set the `grad_on_execution` boolean instead.",
                 UserWarning,
             )
 
