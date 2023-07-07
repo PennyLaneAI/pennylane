@@ -155,7 +155,8 @@ class QNode:
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
-            pass.
+            pass. This argument does nothing with the new return system, and users should
+            instead set ``grad_on_execution`` to indicate their desired behaviour.
         cache (bool or dict or Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
             If ``True``, a cache with corresponding ``cachesize`` is created for each batch
