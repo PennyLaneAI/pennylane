@@ -10,6 +10,7 @@
   [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
+  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
 <h3>Breaking changes 💔</h3>
 
