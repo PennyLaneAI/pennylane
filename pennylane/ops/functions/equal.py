@@ -161,7 +161,7 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ):  # pylint: disable=unused-argument
-    return False
+    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
 @_equal.register
@@ -183,7 +183,9 @@ def _equal_operators(
         return False
 
     if op1.arithmetic_depth > 0:
-        # Comparison of operators with an arithmetic depth larger than 0 is not yet implemented.
+        # Other dispatches cover cases of operations with arithmetic depth > 0.
+        # If any new operations are added with arithmetic depth > 0, a new dispatch
+        # should be created for them.
         return False
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
