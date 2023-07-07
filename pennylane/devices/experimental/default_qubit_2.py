@@ -47,8 +47,8 @@ class DefaultQubit2(Device):
             If no value is provided, a default RNG will be used.
 
         max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
-            using a pool of at most max_workers processes. If ``max_workers`` is ``None``
-            or not given, only the current process executes tapes. If you experience any
+            using a pool of at most max_workers processes. If ``max_workers`` is ``None``,
+            only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
 
     **Example:**
