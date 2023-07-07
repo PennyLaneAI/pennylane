@@ -1,4 +1,9 @@
 repos:
+-   repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+    - id: black
+      exclude: ^doc/
 - repo: local
   hooks:
     - id: pylint
@@ -25,8 +30,3 @@ repos:
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
       files: ^tests/
--   repo: https://github.com/psf/black
-    rev: 22.3.0
-    hooks:
-    - id: black
-      exclude: ^doc/
