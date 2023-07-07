@@ -14,10 +14,11 @@
 """
 Tests for the TTN template.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.tensornetworks.ttn import *
+from pennylane.templates.tensornetworks.ttn import compute_indices, TTN
 
 
 def circuit0_block(wires):
@@ -369,16 +370,16 @@ class TestTemplateOutputs:
         dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_template():
             qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliX(wires=wires[-1]))
 
-        template_result = circuit()
+        template_result = circuit_template()
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_manual():
             expected_circuit(template_weights, wires)
             return qml.expval(qml.PauliX(wires=wires[-1]))
 
-        manual_result = circuit()
+        manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)

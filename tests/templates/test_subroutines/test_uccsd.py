@@ -14,6 +14,7 @@
 """
 Tests for the UCCSD template.
 """
+# pylint: disable=protected-access,too-many-arguments
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
