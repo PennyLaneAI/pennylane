@@ -1167,7 +1167,7 @@ class QuadX(CVObservable):
 
 class X(QuadX):
     r"""
-    This class is deprecated and will be removed in a future version of PennyLane.
+    This class is deprecated and will be removed in PennyLane v0.33.
     Please use qml.QuadX instead.
 
     The position quadrature observable :math:`\hat{x}`.
@@ -1233,7 +1233,7 @@ class QuadP(CVObservable):
 
 class P(QuadP):
     r"""
-    This class is deprecated and will be removed in a future version of PennyLane.
+    This class is deprecated and will be removed in PennyLane v0.33.
     Please use qml.QuadP instead.
 
     The momentum quadrature observable :math:`\hat{p}`.
