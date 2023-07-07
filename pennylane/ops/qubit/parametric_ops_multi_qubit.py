@@ -255,23 +255,47 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
+    def _check_word_batching(self, pauli_word):
+        invalid_word_msg = (
+            f"The given Pauli word '{pauli_word}' contains characters that are not "
+            "allowed. Allowed characters are I, X, Y and Z"
+        )
+        invalid_len_msg = (
+        )
+        num_wires = len(self.wires)
+        if isinstance(pauli_word, str):
+            if not PauliRot._check_pauli_word(pauli_word):
+                raise ValueError(
+                    f"The given Pauli word '{pauli_word}' contains characters that are not "
+                    "allowed. Allowed characters are I, X, Y and Z"
+                )
+            if not (_len:=len(pauli_word)) == num_wires:
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
+            return
+        if self._batch_size:
+            raise ValueError("Cannot batch both") #TODO
+        if not PauliRot._check_pauli_word("".join(pauli_word)):
+            raise ValueError(
+                f"The given Pauli word '{pauli_word}' contains characters that are not "
+                "allowed. Allowed characters are I, X, Y and Z"
+            )
+        if not all((_len:=len(w)) == num_wires for w in pauli_word):
+            raise ValueError(
+                f"The given Pauli word has length {_len}, length "
+                f"{num_wires} was expected for wires {self.wires}"
+            )
+
+        self._batch_size = len(pauli_word)
+
+
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
         self.hyperparameters["pauli_word"] = pauli_word
 
-        if not PauliRot._check_pauli_word(pauli_word):
-            raise ValueError(
-                f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
-                "Allowed characters are I, X, Y and Z"
-            )
-
-        num_wires = 1 if isinstance(wires, int) else len(wires)
-
-        if not len(pauli_word) == num_wires:
-            raise ValueError(
-                f"The given Pauli word has length {len(pauli_word)}, length "
-                f"{num_wires} was expected for wires {wires}"
-            )
+        self._check_word_batching(pauli_word)
 
     def __repr__(self):
         return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
@@ -345,6 +369,11 @@ class PauliRot(Operation):
         [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
          [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
         """
+        if not isinstance(pauli_word, str):
+            if qml.math.ndim(theta) != 0:
+                raise ValueError("Could support simultaneous batching but we don't")
+            return qml.math.stack([PauliRot.compute_matrix(theta, word) for word in pauli_word])
+
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
