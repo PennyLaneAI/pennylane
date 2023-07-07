@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Unit tests for the classical shadows transforms"""
-
+# pylint: disable=too-few-public-methods
 import builtins
 
 import pytest
@@ -218,6 +217,7 @@ class TestStateBackward:
     @pytest.mark.autograd
     def test_backward_autograd(self):
         """Test the gradient of the state for the autograd interface"""
+        # pylint: disable=cell-var-from-loop
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
 
         sub_wires = [[0, 1], [1, 2]]
@@ -238,6 +238,7 @@ class TestStateBackward:
     @pytest.mark.jax
     def test_backward_jax(self):
         """Test the gradient of the state for the JAX interface"""
+        # pylint: disable=cell-var-from-loop
         import jax
         from jax import numpy as jnp
 
