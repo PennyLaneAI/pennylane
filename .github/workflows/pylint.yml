@@ -40,6 +40,23 @@ jobs:
           extra-mypy-options: ""
           extra-isort-options: ""
 
+      - name: Run pylint (tests)
+        uses: ricardochaves/python-lint@v1.4.0
+        with:
+          python-root-list: "tests"
+          use-pylint: True
+          use-pycodestyle: false
+          use-flake8: false
+          use-black: false
+          use-mypy: false
+          use-isort: false
+          extra-pylint-options: "--rcfile tests/.pylintrc"
+          extra-pycodestyle-options: ""
+          extra-flake8-options: ""
+          extra-black-options: ""
+          extra-mypy-options: ""
+          extra-isort-options: ""
+
       - name: Check for new test files that need whitelisting
         uses: dorny/paths-filter@v2
         id: test_files_added

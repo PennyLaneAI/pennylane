@@ -13,6 +13,18 @@ repos:
           "--rcfile=.pylintrc", # Link to your config file
         ]
       exclude: ^(doc/|tests/)
+    - id: pylint-test
+      name: pylint-test
+      entry: pylint
+      language: system
+      types: [python]
+      args:
+        [
+          "-rn", # Only display messages
+          "-sn", # Don't display the score
+          "--rcfile=tests/.pylintrc", # Link to your config file
+        ]
+      files: ^tests/
 -   repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
