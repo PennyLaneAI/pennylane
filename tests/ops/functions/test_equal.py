@@ -585,6 +585,7 @@ class TestEqual:
     @pytest.mark.all_interfaces
     def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
         """Test optional arguments are working"""
+        # pylint: disable=too-many-statements
         wire = 0
 
         import jax
@@ -1243,15 +1244,15 @@ class TestObservablesComparisons:
         """Tests that comparing a Hamiltonian with an Operator that is not an Observable returns False"""
         op1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
         op2 = qml.RX(1.2, 0)
-        assert not qml.equal(op1, op2)
-        assert not qml.equal(op2, op1)
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
 
     def test_tensor_and_operation_not_equal(self):
         """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.RX(1.2, 0)
-        assert not qml.equal(op1, op2)
-        assert not qml.equal(op2, op1)
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
 
     def test_tensor_and_unsupported_observable_returns_false(self):
         """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
@@ -1292,7 +1293,7 @@ class TestSymbolicOpComparison:
 
         assert op1.arithmetic_depth == 1
         assert op2.arithmetic_depth == 2
-        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2) is False
 
     def test_comparison_of_base_not_implemented_returns_false(self):
         """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented returns False"""
@@ -1372,26 +1373,32 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2)
         assert not qml.equal(op1, op3)
 
-    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
-    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
-    def test_pow_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+    @pytest.mark.parametrize("bases_bases_match", BASES)
+    @pytest.mark.parametrize("params_params_match", PARAMS)
+    def test_pow_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the Pow class"""
+        base1, base2, bases_match = bases_bases_match
+        param1, param2, params_match = params_params_match
         op1 = qml.pow(base1, param1)
         op2 = qml.pow(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
-    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
-    def test_exp_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+    @pytest.mark.parametrize("bases_bases_match", BASES)
+    @pytest.mark.parametrize("params_params_match", PARAMS)
+    def test_exp_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the Exp class"""
+        base1, base2, bases_match = bases_bases_match
+        param1, param2, params_match = params_params_match
         op1 = qml.exp(base1, param1)
         op2 = qml.exp(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
-    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
-    def test_s_prod_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+    @pytest.mark.parametrize("bases_bases_match", BASES)
+    @pytest.mark.parametrize("params_params_match", PARAMS)
+    def test_s_prod_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the SProd class"""
+        base1, base2, bases_match = bases_bases_match
+        param1, param2, params_match = params_params_match
         op1 = qml.s_prod(param1, base1)
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)

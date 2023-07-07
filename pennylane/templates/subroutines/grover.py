@@ -101,13 +101,13 @@ class GroverOperator(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires=None, work_wires=None, do_queue=None, id=None):
+    def __init__(self, wires=None, work_wires=None, id=None):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
         self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):

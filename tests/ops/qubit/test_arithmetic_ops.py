@@ -14,6 +14,7 @@
 """
 Unit tests for the the arithmetic qubit operations
 """
+# pylint: disable=too-many-arguments
 import copy
 import itertools
 
@@ -85,8 +86,8 @@ class TestQubitCarry:
         spy = mocker.spy(qml.QubitCarry, "decomposition")
 
         with qml.queuing.AnnotatedQueue() as q:
-            for i in range(len(input_string)):
-                if input_string[i] == "1":
+            for i, letter in enumerate(input_string):
+                if letter == "1":
                     qml.PauliX(i)
             qml.QubitCarry(wires=wires)
             qml.probs(wires=[0, 1, 2, 3])

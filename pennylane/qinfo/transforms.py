@@ -49,7 +49,7 @@ def reduced_dm(qnode, wires):
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
-    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduced_dm`
+    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
 
     def wrapper(*args, **kwargs):

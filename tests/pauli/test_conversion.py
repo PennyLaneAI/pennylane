@@ -52,7 +52,7 @@ class TestDecomposition:
         """Tests that there are no Identity observables in the tensor products
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
-        coeff, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
+        _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
         tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
 
         for tensor in tensors:
@@ -63,7 +63,7 @@ class TestDecomposition:
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
-        coeff, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
+        _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
         tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
 
         for tensor in tensors:
@@ -76,14 +76,14 @@ class TestDecomposition:
         the identity matrix, and Pauli matrices."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
-        assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
+        _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
+        assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
         """Tests that tensors are composed of a number of terms equal to the number
         of qubits."""
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
+        _, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
         n = int(np.log2(len(hamiltonian)))
 
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
@@ -130,12 +130,12 @@ class TestDecomposition:
         with pytest.raises(
             ValueError, match="number of wires 1 is not compatible with number of qubits 2"
         ):
-            h = qml.pauli_decompose(hamiltonian, wire_order=wire_order)
+            qml.pauli_decompose(hamiltonian, wire_order=wire_order)
 
         with pytest.raises(
             ValueError, match="number of wires 1 is not compatible with number of qubits 2"
         ):
-            ps = qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
+            qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
 
 
 class TestPauliSentence:

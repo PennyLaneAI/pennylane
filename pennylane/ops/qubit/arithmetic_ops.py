@@ -360,14 +360,7 @@ class IntegerComparator(Operation):
     grad_method = None
 
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        value,
-        geq=True,
-        wires=None,
-        work_wires=None,
-        do_queue=None,
-    ):
+    def __init__(self, value, geq=True, wires=None, work_wires=None):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
         if wires is None:
@@ -395,7 +388,7 @@ class IntegerComparator(Operation):
         self.geq = geq
         self.value = value
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=total_wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"

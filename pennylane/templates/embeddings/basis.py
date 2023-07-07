@@ -71,7 +71,7 @@ class BasisEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, do_queue=None, id=None):
+    def __init__(self, features, wires, id=None):
         if isinstance(features, list):
             features = qml.math.stack(features)
 
@@ -104,7 +104,7 @@ class BasisEmbedding(Operation):
 
         self._hyperparameters = {"basis_state": features}
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):
