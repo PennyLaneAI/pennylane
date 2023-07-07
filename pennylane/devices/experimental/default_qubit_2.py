@@ -88,7 +88,7 @@ class DefaultQubit2(Device):
     >>> post_processing_fn(results)
 
     If you monitor your CPU usage, you should see 5 new Python processes pop up to
-    crunch through those ``QuantumScript``s.
+    crunch through those ``QuantumScript``\s.
 
     This device currently supports backpropagation derivatives:
 
