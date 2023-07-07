@@ -1639,6 +1639,46 @@ class TestCtrlCustomOperator:
         assert not isinstance(ctrl_op, custom_op_cls)
         assert qml.equal(ctrl_op, expected)
 
+    def test_ctrl_PauliX_one_wire(self):
+        """Tests the type of Operator created when calling ctrl(PauliX)"""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(qml.PauliX(1), 0)
+
+        expected = qml.CNOT([0, 1])
+        assert len(q) == 1
+        assert qml.equal(op, expected)
+        assert qml.equal(q.queue[0], expected)
+
+    @pytest.mark.parametrize("control_values", [None, (True, True)])
+    def test_ctrl_PauliX_two_wires(self, control_values):
+        """Tests that ctrl(PauliX) with 2 wires, value-1 control creates a Toffoli gate"""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(qml.PauliX(2), [0, 1], control_values=control_values)
+
+        expected = qml.Toffoli([0, 1, 2])
+        assert len(q) == 1
+        assert qml.equal(op, expected)
+        assert qml.equal(q.queue[0], expected)
+
+    @pytest.mark.parametrize(
+        "control_wires,control_values, expected_values",
+        [
+            ([1], (False), "0"),
+            ([1, 2], (0, 1), "01"),
+            ([1, 2, 3], (True, True, True), "111"),
+            ([1, 2, 3], (True, True, False), "110"),
+        ],
+    )
+    def test_ctrl_PauliX_three_wires(self, control_wires, control_values, expected_values):
+        """Tests that ctrl(PauliX) with many control wires that are non-Toffoli make a MCX"""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(qml.PauliX(0), control_wires, control_values=control_values)
+
+        expected = qml.MultiControlledX(wires=control_wires + [0], control_values=expected_values)
+        assert len(q) == 1
+        assert qml.equal(op, expected)
+        assert qml.equal(q.queue[0], expected)
+
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
 class TestCtrlTransformDifferentiation:

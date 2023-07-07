@@ -88,6 +88,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     custom_controlled_ops = {
         qml.PauliZ: qml.CZ,
         qml.PauliY: qml.CY,
+        qml.PauliX: qml.CNOT,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
@@ -99,6 +100,14 @@ def ctrl(op, control, control_values=None, work_wires=None):
     ):
         qml.QueuingManager.remove(op)
         return custom_controlled_ops[type(op)](control + op.wires)
+    if isinstance(op, qml.PauliX):
+        qml.QueuingManager.remove(op)
+        if len(control) == 2 and (control_values is None or all(control_values)):
+            return qml.Toffoli(control + op.wires)
+        control_string = "".join([str(int(v)) for v in control_values])
+        return qml.MultiControlledX(
+            wires=control + op.wires, control_values=control_string, work_wires=work_wires
+        )
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
