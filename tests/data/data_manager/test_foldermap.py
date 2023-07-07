@@ -16,28 +16,30 @@ Tests for the :class:`pennylane.data.data_manger.FolderMapView` class.
 """
 
 from pennylane.data.data_manager.foldermap import FolderMapView, Description
-from pennylane.data.data_manager import DEFAULT, DataPath
+from pennylane.data.data_manager import DEFAULT, DataPath, FULL
 import pytest
 
 
 FOLDERMAP = {
-    "__name": "data_name",
+    "__params": {
+        "qchem": ["molname", "basis", "bondlength"],
+    },
     "qchem": {
-        "__name": "molname",
         "O2": {
-            "__name": "basis",
             "__default": "STO-3G",
             "STO-3G": {
-                "__name": "bondlength",
                 "__default": "0.5",
                 "0.5": "qchem/O2/STO-3G/0.5.h5",
                 "0.6": "qchem/O2/STO-3G/0.6.h5",
             },
+            "6-31G": {
+                "__default": "0.5",
+                "0.5": "qchem/O2/6-31G/0.5.h5",
+            },
         },
         "H2": {
-            "__name": "molname",
             "__default": "STO-3G",
-            "STO-3G": {"__name": "bondlength", "__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
+            "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
         },
     },
 }
@@ -55,6 +57,20 @@ class TestFolderMapView:
         "kwds, expect",
         [
             (
+                {
+                    "missing_default": DEFAULT,
+                    "molname": "O2",
+                    "basis": "STO-3G",
+                    "bondlength": "0.5",
+                },
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.5"},
+                        "qchem/O2/STO-3G/0.5.h5",
+                    )
+                ],
+            ),
+            (
                 {"missing_default": DEFAULT, "molname": "O2"},
                 [
                     (
@@ -62,7 +78,37 @@ class TestFolderMapView:
                         "qchem/O2/STO-3G/0.5.h5",
                     )
                 ],
-            )
+            ),
+            (
+                {"missing_default": FULL, "molname": "O2"},
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.5"},
+                        "qchem/O2/STO-3G/0.5.h5",
+                    ),
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.6"},
+                        "qchem/O2/STO-3G/0.6.h5",
+                    ),
+                    (
+                        {"molname": "O2", "basis": "6-31G", "bondlength": "0.5"},
+                        "qchem/O2/6-31G/0.5.h5",
+                    ),
+                ],
+            ),
+            (
+                {"missing_default": FULL, "molname": "O2", "basis": "STO-3G"},
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.5"},
+                        "qchem/O2/STO-3G/0.5.h5",
+                    ),
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.6"},
+                        "qchem/O2/STO-3G/0.6.h5",
+                    ),
+                ],
+            ),
         ],
     )
     def test_find(self, foldermap, kwds, expect):
@@ -89,21 +135,7 @@ class TestFolderMapView:
         for default values and nested foldermaps."""
         assert FolderMapView(init)[key] == expect
 
-    @pytest.mark.parametrize(
-        "init, expect",
-        [
-            (FOLDERMAP, "data_name"),
-            (FOLDERMAP["qchem"], "molname"),
-            (FOLDERMAP["qchem"]["O2"], "basis"),
-            (FOLDERMAP["qchem"]["O2"]["STO-3G"], "bondlength"),
-        ],
-    )
-    def test_name(self, init, expect):
-        """Test that the ``name()`` property returns the expected value for each level."""
-
-        assert FolderMapView(init).name == expect
-
-    @pytest.mark.parametrize("key", ["__default", "__name"])
+    @pytest.mark.parametrize("key", ["__default"])
     @pytest.mark.parametrize(
         "init",
         [
@@ -138,7 +170,7 @@ class TestFolderMapView:
         [
             (FOLDERMAP, {"qchem"}),
             (FOLDERMAP["qchem"], {"O2", "H2"}),
-            (FOLDERMAP["qchem"]["O2"], {"STO-3G"}),
+            (FOLDERMAP["qchem"]["O2"], {"STO-3G", "6-31G"}),
             (FOLDERMAP["qchem"]["O2"]["STO-3G"], {"0.5", "0.6"}),
         ],
     )
@@ -152,7 +184,7 @@ class TestFolderMapView:
         [
             (FOLDERMAP, 1),
             (FOLDERMAP["qchem"], 2),
-            (FOLDERMAP["qchem"]["O2"], 1),
+            (FOLDERMAP["qchem"]["O2"], 2),
             (FOLDERMAP["qchem"]["O2"]["STO-3G"], 2),
         ],
     )

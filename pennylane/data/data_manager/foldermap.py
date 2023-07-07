@@ -22,7 +22,7 @@ from collections.abc import Mapping
 from pathlib import PurePosixPath
 from typing import Any, List, Literal, Optional, Tuple, Union
 
-from .params import Description, ParamArg, ParamName, ParamVal
+from .params import Description, ParamArg, ParamVal
 
 # Type for a dataset path, relative to the foldermap.json file
 DataPath = PurePosixPath
@@ -64,7 +64,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         }
     """
 
-    __PRIVATE_KEYS = {"__default", "__name"}
+    __PRIVATE_KEYS = {"__default", "__params"}
 
     def __init__(self, __curr_level: typing.Mapping[str, Any]) -> None:
         """Initialize the mapping.
@@ -91,44 +91,54 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     ) -> List[Tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
+
         try:
-            data_name_map = self[data_name]
+            data_names_to_params = self.__curr_level["__params"]
         except KeyError as exc:
-            raise ValueError(f"No such data_name: '{data_name}'") from exc
+            raise RuntimeError("Can only call find() from top level of foldermap") from exc
 
-        param_names = list(reversed(self.__curr_level["__params"]["data_name"]))
+        try:
+            param_names: List[str] = data_names_to_params[data_name]
+        except KeyError as exc:
+            raise ValueError(f"No datasets with data name: '{data_name}'") from exc
 
-        todo: List[
-            Tuple[Union[FolderMapView, DataPath], Tuple[Tuple[ParamName, ParamVal], ...]]
-        ] = []
+        curr: List[Tuple[Description, Union[FolderMapView, DataPath]]] = [
+            (Description(()), self[data_name])
+        ]
+        todo: List[Tuple[Description, Union[FolderMapView, DataPath]]] = []
         done: List[Tuple[Description, DataPath]] = []
 
-        todo.append((data_name_map, tuple()))
-
-        while todo:
-            curr_param = param_names.pop()
-            curr_level, params_acc = todo.pop()
-            if isinstance(curr_level, DataPath):
-                done.append((Description(params_acc), curr_level))
-                continue
-
-            param_arg = params.get(curr_param, missing_default)
+        for param_name in param_names:
+            param_arg = params.get(param_name, missing_default)
             if param_arg is None:
-                raise ValueError(f"Missing argument for parameter '{curr_param}'")
+                raise ValueError(f"Missing argument for parameter '{param_name}'")
 
-            if param_arg == ParamArg.FULL:
-                next_params = curr_level
-            elif param_arg == ParamArg.DEFAULT:
-                next_params = (curr_level.get_default_key(),)
-            elif isinstance(param_arg, str):
-                next_params = (param_arg,)
-            else:
-                next_params = param_arg
+            while curr:
+                curr_description, curr_level = curr.pop()
+                if isinstance(curr_level, DataPath):
+                    done.append((curr_description, curr_level))
+                    continue
 
-            todo.extend(
-                (curr_level[next_param], (*params_acc, (curr_param, next_param)))
-                for next_param in next_params
-            )
+                if param_arg == ParamArg.FULL:
+                    next_params = curr_level
+                elif param_arg == ParamArg.DEFAULT:
+                    next_params = (curr_level.get_default_key(),)
+                elif isinstance(param_arg, str):
+                    next_params = (param_arg,)
+                else:
+                    next_params = param_arg
+
+                todo.extend(
+                    (
+                        Description((*curr_description.items(), (param_name, next_param))),
+                        curr_level[next_param],
+                    )
+                    for next_param in next_params
+                )
+
+            curr, todo = todo, curr
+
+        done.extend(curr)
 
         return done
 
