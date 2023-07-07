@@ -38,7 +38,7 @@ def test_unwrap_tensorflow():
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        with tape.unwrap() as unwrapped_tape:
+        with tape.unwrap():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)
@@ -73,7 +73,7 @@ def test_unwrap_torch():
     params = tape.get_parameters(trainable_only=False)
     tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    with tape.unwrap() as unwrapped_tape:
+    with tape.unwrap():
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
         params = tape.get_parameters(trainable_only=False)
@@ -105,7 +105,7 @@ def test_unwrap_autograd():
         qml.RZ(p[3], wires=0)
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    with tape.unwrap() as unwrapped_tape:
+    with tape.unwrap():
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
         params = tape.get_parameters(trainable_only=False)
@@ -138,7 +138,7 @@ def test_unwrap_autograd_backward():
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        with tape.unwrap() as unwrapped_tape:
+        with tape.unwrap():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)
@@ -160,7 +160,6 @@ def test_unwrap_autograd_backward():
 def test_unwrap_jax():
     """Test that unwrapping a tape with JAX parameters
     works as expected"""
-    import jax
     from jax import numpy as jnp
 
     p = [
@@ -180,7 +179,7 @@ def test_unwrap_jax():
     params = tape.get_parameters(trainable_only=False)
     tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    with tape.unwrap() as unwrapped_tape:
+    with tape.unwrap():
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
         params = tape.get_parameters(trainable_only=False)
@@ -217,7 +216,7 @@ def test_unwrap_jax_backward():
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        with tape.unwrap() as unwrapped_tape:
+        with tape.unwrap():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)

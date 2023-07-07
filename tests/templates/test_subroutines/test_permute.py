@@ -14,6 +14,7 @@
 """
 Tests for the Permute template.
 """
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 import pennylane as qml
@@ -345,7 +346,7 @@ class TestInputs:
             with pytest.raises(ValueError, match=expected_error_message):
                 qml.Permute(permutation_order, wires=wire_labels)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        qml.tape.QuantumScript.from_queue(q)
 
     def test_id(self):
         """Tests that the id attribute can be set."""
