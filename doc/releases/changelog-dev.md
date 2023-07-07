@@ -55,6 +55,6 @@
 This release contains contributions from (in alphabetical order):
 
 Christina Lee,
-Borja Requena,
 Mudit Pandey,
+Borja Requena,
 Matthew Silverman

@@ -387,12 +387,7 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     all_ops = tape.circuit
 
     for idx, shift, multiplier in zip(indices, shifts, multipliers):
-        _, op_idx, p_idx = tape.get_operation(idx)
-        op = (
-            all_ops[op_idx].obs
-            if isinstance(all_ops[op_idx], MeasurementProcess)
-            else all_ops[op_idx]
-        )
+        op, op_idx, p_idx = tape.get_operation(idx)
 
         # Shift copied parameter
         new_params = list(op.data)
