@@ -14,6 +14,7 @@ tests/gradients/core/**
 tests/gradients/finite_diff/**
 tests/gradients/parameter_shift/**
 tests/interfaces/default_qubit_2_integration/**
+tests/interfaces/**
 tests/kernels/**
 tests/legacy/test_measurements_old.py
 tests/legacy/test_pulse_gradient_old.py
