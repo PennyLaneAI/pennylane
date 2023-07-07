@@ -19,7 +19,6 @@ This module contains the functions needed for computing the molecular Hamiltonia
 import warnings
 
 import pennylane as qml
-from pennylane.operation import active_new_opmath
 
 from .hartree_fock import nuclear_energy, scf
 from .observable_hf import fermionic_observable, qubit_observable
@@ -178,12 +177,15 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
         Returns:
             tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
         """
-        warnings.warn(
-            "This function will return a FermiSentence by default in the next release.",
-            UserWarning,
-        )
+
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
+        if not fs:
+            warnings.warn(
+                "This function will return a fermionic operator by default in the next release. For"
+                " details, see the Fermionic Operators tutorial:"
+                " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+            )
         return fermionic_observable(core_constant, one, two, cutoff, fs)
 
     return _fermionic_hamiltonian

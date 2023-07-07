@@ -14,13 +14,14 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
+import warnings
+
 # pylint: disable= too-many-branches,
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli.utils import simplify
+from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
-from pennylane.fermi import FermiWord, FermiSentence
-import warnings
+from pennylane.pauli.utils import simplify
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False):
