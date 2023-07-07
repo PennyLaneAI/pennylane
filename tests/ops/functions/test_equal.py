@@ -1264,7 +1264,8 @@ class TestObservablesComparisons:
     def test_unsupported_object_type_not_implemented(self):
         dev = qml.device("default.qubit", wires=1)
 
-        assert not qml.equal(dev, dev)
+        with pytest.raises(NotImplementedError, match="Comparison of"):
+            qml.equal(dev, dev)
 
 
 class TestSymbolicOpComparison:
