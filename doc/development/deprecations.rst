@@ -64,6 +64,7 @@ Pending deprecations
   tutorial for more details.
 
   - Deprecated in v0.32
+  - Will be removed in v0.33
 
 
 Completed deprecation cycles
