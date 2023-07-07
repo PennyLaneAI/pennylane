@@ -104,7 +104,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
         qml.QueuingManager.remove(op)
         if len(control) == 2 and (control_values is None or all(control_values)):
             return qml.Toffoli(control + op.wires)
-        control_string = "".join([str(int(v)) for v in control_values])
+        control_string = (
+            None if control_values is None else "".join([str(int(v)) for v in control_values])
+        )
         return qml.MultiControlledX(
             wires=control + op.wires, control_values=control_string, work_wires=work_wires
         )

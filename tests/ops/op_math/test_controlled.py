@@ -1667,6 +1667,7 @@ class TestCtrlCustomOperator:
             ([1, 2], (0, 1), "01"),
             ([1, 2, 3], (True, True, True), "111"),
             ([1, 2, 3], (True, True, False), "110"),
+            ([1, 2, 3], None, None),
         ],
     )
     def test_ctrl_PauliX_three_wires(self, control_wires, control_values, expected_values):
