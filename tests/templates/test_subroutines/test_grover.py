@@ -14,12 +14,12 @@
 """
 Tests for the Grover Diffusion Operator template
 """
+import functools
+import itertools
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
-import functools
-import itertools
 
 
 def test_work_wires():
@@ -41,7 +41,7 @@ def test_single_wire_error(bad_wires):
     """Assert error raised when called with only a single wire"""
 
     with pytest.raises(ValueError, match="GroverOperator must have at least"):
-        op = qml.GroverOperator(wires=bad_wires)
+        qml.GroverOperator(wires=bad_wires)
 
 
 def test_id():
