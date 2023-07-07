@@ -205,6 +205,9 @@ class TestSupportsDerivatives:
         qs = qml.tape.QuantumScript([], [qml.state()])
         assert dev.supports_derivatives(config, qs)
 
+        config = ExecutionConfig(gradient_method="backprop", max_workers=1)
+        assert dev.supports_derivatives(config) is False
+
     def test_supports_adjoint(self):
         """Test that DefaultQubit2 says that it supports adjoint differentiation."""
         dev = DefaultQubit2()

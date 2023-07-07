@@ -151,7 +151,10 @@ class DefaultQubit2(Device):
         # backpropagation currently supported for all supported circuits
         # will later need to add logic if backprop requested with finite shots
         # do once device accepts finite shots
-        if execution_config.gradient_method == "backprop":
+        if (
+            execution_config.gradient_method == "backprop"
+            and self._get_max_workers(execution_config) is None
+        ):
             return True
 
         if execution_config.gradient_method == "adjoint":
@@ -218,11 +221,7 @@ class DefaultQubit2(Device):
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
-        if execution_config.max_workers is None:
-            max_workers = self._max_workers
-        else:
-            max_workers = execution_config.max_workers
-
+        max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
@@ -252,9 +251,28 @@ class DefaultQubit2(Device):
             self.tracker.record()
 
         if execution_config.gradient_method == "adjoint":
-            res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
+            max_workers = self._get_max_workers(execution_config)
+            if max_workers is None:
+                res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
+            else:
+                vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+                with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                    exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
+                    res = tuple(circuit for circuit in exec_map)
+
+                # reset _rng to mimic serial behavior
+                self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
             return res[0] if is_single_circuit else res
 
         raise NotImplementedError(
             f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
         )
+
+    # pylint: disable=missing-function-docstring
+    def _get_max_workers(self, execution_config=None):
+        if execution_config is None:
+            return self._max_workers
+        if execution_config.max_workers is None:
+            return self._max_workers
+        return execution_config.max_workers
