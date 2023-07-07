@@ -1743,8 +1743,9 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
 
 
 def test_raises_circuit_that_uses_missing_wire():
-    """Test that an error in the original circuit is reraised properly
-    and not caught, leading to a MaxRecursionError."""
+    """Test that an error in the original circuit is reraised properly and not caught. This avoids
+    accidentally catching relevant errors, which can lead to a recursion error."""
+
 
     dev = qml.device("default.qubit", wires=[0, "b"])
 
