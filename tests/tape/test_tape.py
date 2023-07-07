@@ -478,9 +478,8 @@ class TestIteration:
         # Check that the underlying circuit is as expected
         assert tape.circuit == circuit
 
-        # Iterate over the tape
-        for op_ in tape:
-            op_  # pylint: disable=pointless-statement
+        # Iterate over the tape by turning it into a list
+        _ = list(tape)
 
         # Check that the underlying circuit is still as expected
         assert tape.circuit == circuit
@@ -992,7 +991,7 @@ class TestExpand:
         assert "U3" not in [i.name for i in new_tape.operations]
 
     def test_depth_expansion(self):
-        """Test expanding with depth=2"""
+        """Test expanding with depth=3"""
         with QuantumTape() as tape:
             # Will be decomposed into PauliX(0), PauliX(0)
             # Each PauliX will then be decomposed into PhaseShift, RX, PhaseShift.
@@ -1007,7 +1006,7 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
