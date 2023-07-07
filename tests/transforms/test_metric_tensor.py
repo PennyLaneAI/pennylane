@@ -1746,7 +1746,6 @@ def test_raises_circuit_that_uses_missing_wire():
     """Test that an error in the original circuit is reraised properly and not caught. This avoids
     accidentally catching relevant errors, which can lead to a recursion error."""
 
-
     dev = qml.device("default.qubit", wires=[0, "b"])
 
     @qml.qnode(dev)
@@ -1758,7 +1757,7 @@ def test_raises_circuit_that_uses_missing_wire():
         return qml.expval(qml.PauliZ(0))
 
     x = np.array([1.3, 0.2])
-    with pytest.raises(qml.wires.WireError, match=r"Did not find some of the wires (0, 1)"):
+    with pytest.raises(qml.wires.WireError, match=r"Did not find some of the wires \(0, 1\)"):
         qml.transforms.metric_tensor(circuit)(x)
 
 
@@ -1798,9 +1797,13 @@ def test_get_aux_wire_with_device_wires():
     tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "aux", "one"])
 
-    assert _get_aux_wire(0, tape, device_wires) == 0
-    assert _get_aux_wire("one", tape, device_wires) == "one"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
+    assert _get_aux_wire("aux", tape, device_wires) == "aux"
+    _match = "The requested auxiliary wire is already in use by the circuit."
+    with pytest.raises(qml.wires.WireError, match=_match):
+        _get_aux_wire("one", tape, device_wires)
+    with pytest.raises(qml.wires.WireError, match=_match):
+        _get_aux_wire(0, tape, device_wires)
 
 
 def test_get_aux_wire_with_unavailable_aux():
@@ -1811,5 +1814,5 @@ def test_get_aux_wire_with_unavailable_aux():
         qml.RX(x, wires="one")
     tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "one"])
-    with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
+    with pytest.raises(qml.wires.WireError, match="The requested auxiliary wire does not exist"):
         _get_aux_wire("two", tape, device_wires)
