@@ -41,7 +41,7 @@
 
 * ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
   List input to define the fermionic operator is also deprecated; the fermionic 
-  operators ``qml.fermi`` module should be used instead.
+  operators in the ``qml.fermi`` module should be used instead.
   [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
 
 <h3>Documentation 📝</h3>
