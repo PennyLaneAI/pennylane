@@ -15,7 +15,7 @@
 Unit tests for the :func:`pennylane.template.layer` function.
 Integration tests should be placed into ``test_templates.py``.
 """
-# pylint: disable=protected-access,cell-var-from-loop
+# pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import pytest
 import pennylane as qml
 from pennylane import layer
@@ -32,7 +32,7 @@ def StaticCircuit(wires, var):
     qml.Hadamard(wires=wires[1])
     qml.PauliY(wires=wires[2])
 
-    if var == True:
+    if var is True:
         qml.Hadamard(wires=wires[0])
 
 
@@ -41,7 +41,7 @@ def KwargCircuit(wires, **kwargs):
     qml.Hadamard(wires=wires[1])
     qml.PauliY(wires=wires[2])
 
-    if kwargs["var"] == True:
+    if kwargs["var"] is True:
         qml.Hadamard(wires=wires[0])
 
 
@@ -53,11 +53,11 @@ def DynamicCircuit(parameters):
 
 
 def MultiCircuit(parameters1, parameters2, var1, wires, var2):
-    if var2 == True:
+    if var2 is True:
         for i, w in enumerate(wires):
             qml.RY(parameters1[i], wires=w)
 
-    if var1 == True:
+    if var1 is True:
         qml.templates.BasicEntanglerLayers([parameters2], wires=wires)
 
 

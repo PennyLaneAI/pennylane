@@ -265,13 +265,10 @@ class TestQuantumMonteCarlo:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=2)
 
-        for op in tape.operations:
-            unexpanded = (
-                isinstance(op, qml.MultiControlledX)
-                or isinstance(op, qml.templates.QFT)
-                or isinstance(op, qml.tape.QuantumScript)
-            )
-            assert not unexpanded
+        assert all(
+            not isinstance(op, (qml.MultiControlledX, qml.templates.QFT, qml.tape.QuantumScript))
+            for op in tape.operations
+        )
 
         dev = qml.device("default.qubit", wires=wires + estimation_wires)
         res = dev.execute(tape)

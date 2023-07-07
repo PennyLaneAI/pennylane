@@ -14,7 +14,7 @@
 """
 Tests for the TwoLocalSwapNetwork template.
 """
-
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 from pennylane import numpy as np
 import pennylane as qml
@@ -224,11 +224,9 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.templates.TwoLocalSwapNetwork(
-                dev.wires, acquaintances, weights, fermionic=True, shift=False
+                dev.wires, acquaintances, weights, fermionic=fermionic, shift=shift
             )
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
