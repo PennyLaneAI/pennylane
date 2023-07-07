@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the batch inputs transform.
+Unit tests for the ``batch_inputs`` transform.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -111,7 +112,7 @@ def test_value_error():
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     with pytest.raises(ValueError, match="Batch dimension for all gate arguments"):
-        res = circuit(input1, input2, weights)
+        circuit(input1, input2, weights)
 
 
 def test_batch_input_with_trainable_parameters_raises_error():
