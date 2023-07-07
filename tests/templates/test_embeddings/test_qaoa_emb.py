@@ -14,6 +14,7 @@
 """
 Tests for the QAOAEmbedding template.
 """
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 import pennylane as qml

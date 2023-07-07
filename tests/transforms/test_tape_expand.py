@@ -14,6 +14,7 @@
 """
 Unit tests for tape expansion stopping criteria and expansion functions.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -58,7 +59,7 @@ class TestCreateExpandFn:
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
 
-    def test_device_and_stopping_expansion(self, mocker):
+    def test_device_and_stopping_expansion(self):
         """Test that passing a device alongside a stopping condition ensures
         that all operations are expanded to match the devices default gate
         set"""
@@ -75,7 +76,7 @@ class TestCreateExpandFn:
         assert new_tape.operations[0].name == "U1"
         assert [op.name for op in new_tape.operations[1:]] == ["RZ", "RY", "RZ"]
 
-    def test_device_only_expansion(self, mocker):
+    def test_device_only_expansion(self):
         """Test that passing a device ensures that all operations are expanded
         to match the devices default gate set"""
         dev = qml.device("default.qubit", wires=1)
@@ -94,8 +95,6 @@ class TestCreateExpandFn:
 
     def test_depth_only_expansion(self):
         """Test that passing a depth simply expands to that depth"""
-        dev = qml.device("default.qubit", wires=0)
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
@@ -123,7 +122,6 @@ class TestExpandMultipar:
     def test_expand_multipar(self):
         """Test that a multi-parameter gate is decomposed correctly.
         And that single-parameter gates are not decomposed."""
-        dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
             name = "_CRX"
@@ -146,7 +144,6 @@ class TestExpandMultipar:
     def test_no_generator_expansion(self):
         """Test that a gate is decomposed correctly if it has
         generator[0]==None."""
-        dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
             @property
@@ -329,10 +326,10 @@ class TestExpandInvalidTrainable:
         assert new_tape is not tape
         spy.assert_called()
 
-        new_tape.operations[0].name == "RZ"
-        new_tape.operations[0].grad_method == "A"
-        new_tape.operations[1].name == "RY"
-        new_tape.operations[2].name == "CNOT"
+        assert new_tape.operations[0].name == "RZ"
+        assert new_tape.operations[0].grad_method == "A"
+        assert new_tape.operations[1].name == "RY"
+        assert new_tape.operations[2].name == "CNOT"
 
     def test_nontrainable_nondiff(self, mocker):
         """Test that a circuit with non-differentiable
@@ -414,6 +411,7 @@ def custom_rot(phi, theta, omega, wires):
 
 # Decompose a template into another template
 def custom_basic_entangler_layers(weights, wires, **kwargs):
+    # pylint: disable=unused-argument
     cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
     return [
         qml.AngleEmbedding(weights[0], wires=wires),
@@ -546,9 +544,7 @@ class TestCreateCustomDecompExpandFn:
         assert np.allclose(original_grad, decomp_grad)
 
         expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
-        assert all(
-            [op.name == name for op, name in zip(decomp_qnode.qtape.operations, expected_ops)]
-        )
+        assert all(op.name == name for op, name in zip(decomp_qnode.qtape.operations, expected_ops))
 
     def test_nested_custom_decomp(self):
         """Test that specifying two custom decompositions that have interdependence
@@ -790,7 +786,7 @@ class TestCreateCustomDecompExpandFn:
         """Test that creating a custom decomposition includes overwriting the
         correct method under the hood and produces expected results."""
         res = []
-        for i in range(2):
+        for _ in range(2):
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 

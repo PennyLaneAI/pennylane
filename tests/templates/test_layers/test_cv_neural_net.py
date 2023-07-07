@@ -14,6 +14,7 @@
 """
 Unit tests for the CVNeuralNetLayers template.
 """
+# pylint: disable=too-few-public-methods,protected-access
 import pytest
 import numpy as np
 import pennylane as qml
