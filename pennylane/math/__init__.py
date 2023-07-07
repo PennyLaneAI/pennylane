@@ -33,7 +33,6 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
-from .single_dispatch import _i
 from .is_independent import is_independent
 from .matrix_manipulation import expand_matrix, reduce_matrices
 from .multi_dispatch import (
@@ -112,8 +111,6 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 def ndim(a):
     '''Custom implementation of autoray.ndim to avoid overheads when calling this
     method many times in the parameter shift rule.'''
-    if "autograd.numpy.numpy_boxes.ArrayBox" in str(type(a)):
-        return _i("autograd").numpy.ndim(a)
 
     try:
         return a.ndim
@@ -123,8 +120,6 @@ def ndim(a):
 def shape(a):
     '''Custom implementation of autoray.shape to avoid overheads when calling this
     method many times in the parameter shift rule.'''
-    if "autograd.numpy.numpy_boxes.ArrayBox" in str(type(a)):
-        return _i("autograd").numpy.shape(a)
 
     try:
         return a.shape
