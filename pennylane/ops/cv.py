@@ -1167,14 +1167,14 @@ class QuadX(CVObservable):
 
 class X(QuadX):
     r"""
-    This class is deprecated and will be removed in PennyLane v0.33.
-    Please use qml.QuadX instead.
-
     The position quadrature observable :math:`\hat{x}`.
 
     When used with the :func:`~pennylane.expval` function, the position expectation
     value :math:`\braket{\hat{x}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`x` axis.
+
+    This class is deprecated and will be removed in PennyLane v0.33.
+    Please use :func:`~.QuadX` instead.
 
     **Details:**
 
@@ -1233,14 +1233,14 @@ class QuadP(CVObservable):
 
 class P(QuadP):
     r"""
-    This class is deprecated and will be removed in PennyLane v0.33.
-    Please use qml.QuadP instead.
-
     The momentum quadrature observable :math:`\hat{p}`.
 
     When used with the :func:`~pennylane.expval` function, the momentum expectation
     value :math:`\braket{\hat{p}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`p` axis.
+
+    This class is deprecated and will be removed in PennyLane v0.33.
+    Please use :func:`~.QuadP` instead.
 
     **Details:**
 
