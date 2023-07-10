@@ -544,11 +544,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)
+        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)
+        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
@@ -1354,7 +1354,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")
+            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1965,7 +1965,7 @@ class TestJIT:
 
         def cost(x, y, idx):
             res = circuit(x, y)
-            return res[idx]
+            return res[idx]  # pylint:disable=unsubscriptable-object
 
         x = jax.numpy.array(1.0)
         y = jax.numpy.array(2.0)
@@ -2844,7 +2844,7 @@ class TestReturnHessian:
 
 
 @pytest.mark.parametrize("hessian", hessian_fn)
-@pytest.mark.parametrize("diff_method", ["param-shift", "hadamard"])
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "hadamard"])
 def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
     num_wires = 1
@@ -2855,7 +2855,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     dev = qml.device("default.qubit.jax", wires=num_wires, shots=10000)
 
     @jax.jit
-    @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    @qml.qnode(dev, diff_method=diff_method, max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)
