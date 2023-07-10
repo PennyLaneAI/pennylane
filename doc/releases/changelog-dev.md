@@ -12,6 +12,9 @@
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
 
+* Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
+  [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -40,6 +43,11 @@
   - ``gate_sizes`` is no longer supported, use ``specs_dict["resources"].gate_sizes``
   - ``depth`` is no longer supported, use ``specs_dict["resources"].depth``
 
+* `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
+  input.
+  [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -53,6 +61,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Edward Jiang,
 Christina Lee,
 Borja Requena,
 Matthew Silverman
