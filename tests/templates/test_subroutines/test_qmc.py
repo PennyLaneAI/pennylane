@@ -253,6 +253,22 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
+    def test_flatten_unflatten(self):
+        """Test the flatten and unflatten methods."""
+        p = np.ones(4) / 4
+        target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
+
+        op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+
+        data, metadata = op._flatten()
+        assert data is op.data
+        assert metadata[0] == op.wires
+        assert dict(metadata[1]) == op.hyperparameters
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert op is not new_op
+
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""
         p = np.ones((4, 1)) / 4

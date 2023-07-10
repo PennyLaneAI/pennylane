@@ -142,7 +142,7 @@ class QuantumPhaseEstimation(Operation):
     # pylint: disable=no-member
     def _flatten(self):
         data = (self.hyperparameters["unitary"],)
-        metadata = (self.hyperparmaeters["target_wires"], self.hyperparameters["estimation_wires"])
+        metadata = (self.hyperparameters["target_wires"], self.hyperparameters["estimation_wires"])
         return data, metadata
 
     @classmethod

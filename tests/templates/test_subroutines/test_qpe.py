@@ -17,6 +17,24 @@ import numpy as np
 from scipy.stats import unitary_group
 
 
+def test_flatten_unflatten():
+    """Tests the flatten and unflatten methods."""
+    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3])
+    data, metadata = op._flatten()
+    expected_data = qml.QubitUnitary(np.eye(4), (0, 1))
+    assert qml.equal(data[0], expected_data)
+
+    assert metadata[0] == qml.wires.Wires((0, 1))
+    assert metadata[1] == qml.wires.Wires((2, 3))
+
+    # make sure metadata is hashable
+    {metadata}
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
