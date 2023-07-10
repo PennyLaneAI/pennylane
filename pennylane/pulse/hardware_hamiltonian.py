@@ -26,10 +26,6 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
-# from .transmon import TransmonSettings
-# from .rydberg import RydbergSettings
-
-
 def drive(amplitude, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
     field with a set of qubits.
@@ -370,6 +366,15 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
+
+        if isinstance(other, (int, float)):
+            new_coeffs = coeffs + [other]
+            with qml.queuing.QueuingManager.stop_recording():
+                new_ops = ops + [qml.Identity(self.wires[0])]
+            
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )

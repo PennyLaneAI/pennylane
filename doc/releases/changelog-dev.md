@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+  [(#4zzz)](https://github.com/PennyLaneAI/pennylane/pull/4zzz)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
@@ -64,4 +67,5 @@ This release contains contributions from (in alphabetical order):
 Edward Jiang,
 Christina Lee,
 Borja Requena,
-Matthew Silverman
+Matthew Silverman,
+David Wierichs,
