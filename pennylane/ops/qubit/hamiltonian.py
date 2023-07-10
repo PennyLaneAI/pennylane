@@ -379,6 +379,7 @@ class Hamiltonian(Observable):
                 indices[j, w] = map["".join(obs.name)]
         return indices
 
+    @profile
     def sparse_matrix(self, wire_order=None):
         r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
 
@@ -419,6 +420,7 @@ class Hamiltonian(Observable):
         buffsize = 2 ** max(
             0, 29 - n - 5
         )  # Value of 2**29 arrived at empirically to balance time savings vs memory use.
+        buffsize = 150
 
         extended_wires = Wires(set(self.wires + wires))
         pauli_indices = self._get_ops_indices(extended_wires)
@@ -435,20 +437,41 @@ class Hamiltonian(Observable):
         # counts, bins = np.histogram(unique_invs, bins=np.unique(unique_invs))
 
         matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+        matrix2 = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+
         indices = unique_inds[unique_invs]
         temp_mats = []
+        temp_vals = np.empty((2**n, buffsize), dtype="complex128")
+        temp_inds = np.empty((2**n, buffsize), dtype="int64")
+        count = 0
+        cumcount = 0
         for u in np.unique(indices):
             mask = indices == u
             # is_pauli = True if np.all(pauli_indices[mask, :] <= 3) else False
             tmp = sum_sparse_matrix_core(
                 wires, coeffs, self.ops, mask, is_pauli=is_pauli, pauli_indices=pauli_indices
             )
+            # print(np.sum(np.abs(tmp.data) > 1e-16) / tmp.data.size)
             temp_mats.append(tmp)
+            temp_vals[:, count] = tmp.data
+            temp_inds[:, count] = tmp.indices
+            count += 1
+            cumcount += 1
             del tmp
             if (len(temp_mats) % buffsize) == 0:
                 matrix += sum(temp_mats)
+                matrix2 += special_tocsr(temp_inds, temp_vals)
                 temp_mats = []
+                count = 0
+            if cumcount == 300:
+                break
         matrix += sum(temp_mats)
+        matrix2 += special_tocsr(temp_inds[:, :count], temp_vals[:, :count])
+        err = matrix2 - matrix
+        if err.nnz > 0:
+            print(f"Error = {np.max(np.abs(err.data))}")
+        else:
+            print("Error = 0.0")
         return matrix
 
     def simplify(self):
@@ -783,6 +806,29 @@ class Hamiltonian(Observable):
         return new_op
 
 
+@profile
+def special_tocsr(temp_inds, temp_vals):
+    tol = 1e-16
+    n = temp_vals.shape[0]
+    perm = np.argsort(temp_inds, axis=1)
+    temp_inds = np.take_along_axis(temp_inds, perm, axis=1)
+    temp_vals = np.take_along_axis(temp_vals, perm, axis=1)
+    temp_ptrs = cached_arange(n + 1) * temp_vals.shape[1]
+    # mask = np.abs(temp_vals) > tol
+    # temp_ptrs = np.empty(n + 1, dtype=np.int64)
+    # temp_ptrs[0] = 0
+    # temp_ptrs[1:] = np.cumsum(np.sum(mask, axis=1))
+    # temp_inds = temp_inds.ravel()
+    # temp_vals = temp_vals.ravel()
+    # mask = mask.ravel()
+    # temp_inds = temp_inds[mask]
+    # temp_vals = temp_vals[mask]
+    matrix = scipy.sparse.csr_matrix((n, n), dtype="complex128")
+    matrix.data, matrix.indices, matrix.indptr = temp_vals.ravel(), temp_inds.ravel(), temp_ptrs
+    matrix.eliminate_zeros()
+    return matrix
+
+
 def update_op_dict(map: dict, key: str, count: int):
     """Iterate count and add key in map if key is not already in map."""
     if isinstance(key, list):
@@ -793,6 +839,7 @@ def update_op_dict(map: dict, key: str, count: int):
     map.update({key: count})
 
 
+@profile
 def sum_sparse_matrix_core(wires, coeffs, ops, mask, is_pauli=False, pauli_indices=None):
     """Returns the sum of all Hamiltonian terms with trace indexed u."""
     tmp_init = False
@@ -846,6 +893,7 @@ def sum_sparse_matrix_core(wires, coeffs, ops, mask, is_pauli=False, pauli_indic
         else:
             tmp = red_mat.tocsr().astype(dtype="complex128")
             tmp_init = True
+    # tmp.eliminate_zeros()
     return tmp
 
 
