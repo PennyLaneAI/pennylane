@@ -211,7 +211,7 @@ class kUpCCGSD(Operation):
         )
         return self.data, (self.wires, hyperparameters)
 
-    def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, do_queue=None, id=None):
+    def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, id=None):
         if len(wires) < 4:
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
         if len(wires) % 2:
@@ -246,7 +246,7 @@ class kUpCCGSD(Operation):
             "k": k,
             "delta_sz": delta_sz,
         }
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``merge_amplitude_embedding``.
+"""
 import pytest
 from pennylane import numpy as np
 
@@ -134,7 +136,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         from jax import numpy as jnp
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):

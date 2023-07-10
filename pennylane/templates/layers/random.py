@@ -178,7 +178,6 @@ class RandomLayers(Operation):
         imprimitive=None,
         rotations=None,
         seed=42,
-        do_queue=None,
         id=None,
     ):
         shape = qml.math.shape(weights)
@@ -192,7 +191,7 @@ class RandomLayers(Operation):
             "seed": seed,
         }
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

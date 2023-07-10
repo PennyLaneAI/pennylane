@@ -243,12 +243,12 @@ class TestInputs:
 
 # test data for gradient tests
 
-hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
+ham = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
 n = 2
 
 
 def circuit_template(time):
-    qml.ApproxTimeEvolution(hamiltonian, time, n)
+    qml.ApproxTimeEvolution(ham, time, n)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -415,7 +415,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
 
-    res = cost(coeffs, t)
+    cost(coeffs, t)
     grad = qml.grad(cost)(coeffs, t)
 
     assert len(grad) == 2

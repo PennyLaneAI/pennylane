@@ -14,12 +14,13 @@
 """
 Unit tests for the ``QNSPSAOptimizer``
 """
+# pylint: disable=protected-access
+from copy import deepcopy
 import pytest
 
+from scipy.linalg import sqrtm
 import pennylane as qml
 from pennylane import numpy as np
-from copy import deepcopy
-from scipy.linalg import sqrtm
 
 
 def get_single_input_qnode():

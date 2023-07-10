@@ -40,7 +40,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=None, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -69,9 +69,6 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
@@ -376,7 +373,6 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        do_queue=None,
         id=None,
         **odeint_kwargs,
     ):
@@ -407,7 +403,7 @@ class ParametrizedEvolution(Operation):
                     f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
                     f"expected {len(H.coeffs_parametrized)} parameters."
                 )
-        super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=H.wires, id=id)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
@@ -442,7 +438,6 @@ class ParametrizedEvolution(Operation):
             return_intermediate=return_intermediate,
             complementary=complementary,
             dense=dense,
-            do_queue=None,
             id=self.id,
             **odeint_kwargs,
         )

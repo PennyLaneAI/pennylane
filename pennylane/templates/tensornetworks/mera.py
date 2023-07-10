@@ -195,7 +195,6 @@ class MERA(Operation):
         block: Callable,
         n_params_block,
         template_weights=None,
-        do_queue=None,
         id=None,
     ):
 
@@ -219,7 +218,7 @@ class MERA(Operation):
 
         self._hyperparameters = {"ind_gates": ind_gates, "block": block}
 
-        super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(

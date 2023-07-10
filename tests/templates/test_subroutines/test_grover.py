@@ -14,12 +14,12 @@
 """
 Tests for the Grover Diffusion Operator template
 """
+import functools
+import itertools
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
-import functools
-import itertools
 
 
 def test_repr():
@@ -66,22 +66,7 @@ def test_single_wire_error(bad_wires):
     """Assert error raised when called with only a single wire"""
 
     with pytest.raises(ValueError, match="GroverOperator must have at least"):
-        op = qml.GroverOperator(wires=bad_wires)
-
-
-def test_do_queue():
-    """Assert do_queue=False is not queued"""
-    do_queue_deprecation_warning = (
-        "The do_queue keyword argument is deprecated. "
-        "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-    )
-
-    with qml.queuing.AnnotatedQueue() as q:
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            qml.GroverOperator(wires=(0, 1), do_queue=False)
-
-    tape = qml.tape.QuantumScript.from_queue(q)
-    assert len(tape.operations) == 0
+        qml.GroverOperator(wires=bad_wires)
 
 
 def test_id():

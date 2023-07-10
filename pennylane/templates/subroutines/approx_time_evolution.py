@@ -110,7 +110,7 @@ class ApproxTimeEvolution(Operation):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
 
-    def __init__(self, hamiltonian, time, n, do_queue=None, id=None):
+    def __init__(self, hamiltonian, time, n, id=None):
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
                 f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
@@ -123,7 +123,7 @@ class ApproxTimeEvolution(Operation):
         self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
         # trainable parameters are passed to the base init method
-        super().__init__(*hamiltonian.data, time, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*hamiltonian.data, time, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(

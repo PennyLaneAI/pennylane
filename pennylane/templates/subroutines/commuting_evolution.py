@@ -115,7 +115,7 @@ class CommutingEvolution(Operation):
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[0], data[1], frequencies=metadata[0], shifts=metadata[1])
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=None, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import (
             generate_shift_rule,
@@ -138,9 +138,7 @@ class CommutingEvolution(Operation):
             "shifts": shifts,
         }
 
-        super().__init__(
-            time, *hamiltonian.parameters, wires=hamiltonian.wires, do_queue=do_queue, id=id
-        )
+        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
 
     @staticmethod
     def compute_decomposition(

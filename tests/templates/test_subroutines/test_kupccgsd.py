@@ -14,7 +14,7 @@
 """
 Tests for the k-UpCCGSD template.
 """
-from os import killpg
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -450,8 +450,6 @@ class TestInputs:
                 init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()

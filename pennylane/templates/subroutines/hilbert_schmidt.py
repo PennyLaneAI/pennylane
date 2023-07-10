@@ -108,7 +108,7 @@ class HilbertSchmidt(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(self, *params, v_function, v_wires, u_tape, do_queue=None, id=None):
+    def __init__(self, *params, v_function, v_wires, u_tape, id=None):
         self._num_params = len(params)
 
         if not isinstance(u_tape, qml.tape.QuantumScript):
@@ -140,7 +140,7 @@ class HilbertSchmidt(Operation):
 
         wires = qml.wires.Wires(u_wires + v_wires)
 
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
     @property
     def num_params(self):
