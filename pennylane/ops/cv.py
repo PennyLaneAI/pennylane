@@ -1174,7 +1174,7 @@ class X(QuadX):
     the mean displacement in the phase space along the :math:`x` axis.
 
     This class is deprecated and will be removed in PennyLane v0.33.
-    Please use :func:`~.QuadX` instead.
+    Please use :class:`~.QuadX` instead.
 
     **Details:**
 
@@ -1240,7 +1240,7 @@ class P(QuadP):
     the mean displacement in the phase space along the :math:`p` axis.
 
     This class is deprecated and will be removed in PennyLane v0.33.
-    Please use :func:`~.QuadP` instead.
+    Please use :class:`~.QuadP` instead.
 
     **Details:**
 
