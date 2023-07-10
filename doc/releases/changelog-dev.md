@@ -18,6 +18,9 @@
 * The `qchem` module is upgraded to use the fermionic operators of the `fermi` module.
   [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
 
+* QNode transforms in `qml.qinfo` now support custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -53,6 +56,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+  and ``qml.QuadP`` instead.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -60,10 +66,14 @@
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
+* `qml.qinfo.purity` now produces correct results with custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Borja Requena,
