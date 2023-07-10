@@ -54,6 +54,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+  and ``qml.QuadP`` instead.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
