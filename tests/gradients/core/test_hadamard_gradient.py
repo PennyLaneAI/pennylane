@@ -626,7 +626,7 @@ class TestHadamardGradEdgeCases:
 
     def test_device_wire_does_not_exist(self):
         """Test that an error is raised when the device cannot accept an auxiliary wire
-        because it is full."""
+        because it does not exist on the device."""
         aux_wire = qml.wires.Wires("aux")
         dev = qml.device("default.qubit", wires=2)
         m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))

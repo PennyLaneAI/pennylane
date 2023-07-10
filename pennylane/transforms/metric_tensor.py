@@ -86,9 +86,10 @@ def metric_tensor(
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
-        aux_wire (int or str or pennylane.wires.Wires): Auxiliary wire to be used for
-            Hadamard tests. If ``None`` (the default), a suitable wire is inferred
-            from the (number of) used wires in the original circuit and ``device_wires``.
+        aux_wire (None or int or str or Sequence or pennylane.wires.Wires): Auxiliary wire to
+            be used for Hadamard tests. If ``None`` (the default), a suitable wire is inferred
+            from the (number of) used wires in the original circuit and ``device_wires``,
+            if the latter are given.
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None``.
@@ -860,14 +861,21 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
-        aux_wire (object): Input auxiliary wire. Returned unmodified if not ``None``
+        aux_wire (object): Input auxiliary wire. May be one of a variety of input formats:
+            If ``None``, try to infer a reasonable choice based on the number of wires used
+            in the ``tape``, and based on ``device_wires``, if they are not ``None``.
+            If an ``int``, a ``str`` or a ``Sequence``, convert the input to a ``Wires``
+            object and take the first entry of the result. This leads to consistent behaviour
+            between ``_get_aux_wire`` and the ``Wires`` class.
+            If a ``Wires`` instance already, the conversion to such an instance is performed
+            trivially as well (also see the source code of ``~.Wires``).
         tape (pennylane.tape.QuantumTape): Tape to infer the wire for
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None`` .
 
     Returns:
-        object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None`` ,
+        object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None``\ ,
         and an often reasonable choice else.
     """
     if aux_wire is not None:
