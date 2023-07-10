@@ -950,7 +950,10 @@ class QNode:
             # pylint: disable=unexpected-keyword-arg
 
             if self.transform_program:
-                res = pennylane.workflow.execution.execute(tapes=[self.tape], device=self.device, transform_program=self.transform_program)
+                res = pennylane.workflow.execution.execute(tapes=[self.tape],
+                                                           device=self.device,
+                                                           transform_program=self.transform_program)
+                res = res[0]
             else:
                 res = qml.execute(
                     [self.tape],

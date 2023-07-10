@@ -137,7 +137,7 @@ class TransformProgram:
             # Merge the processing function into in a single one
             def processing_fn(res):
                 s = len(new_tapes)
-                final_results = [fns[idx](res[idx*s: (idx+1)*s]) for idx in len(tapes)]
+                final_results = [fns[idx](res[idx*s: (idx+1)*s]) for idx in range(len(tapes))]
                 return final_results
 
             tapes = execution_tapes
