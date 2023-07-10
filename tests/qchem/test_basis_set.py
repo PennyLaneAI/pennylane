@@ -14,9 +14,8 @@
 """
 Unit tests for generating basis set default parameters.
 """
+# pylint: disable=too-many-arguments
 import sys
-
-# pylint: disable=no-self-use
 import pytest
 
 from pennylane import numpy as np
@@ -27,7 +26,7 @@ class TestBasis:
     """Tests for generating basis set default parameters"""
 
     @pytest.mark.parametrize(
-        ("basis_name", "atom_name", "l", "alpha", "coeff", "r"),
+        ("_", "__", "l", "alpha", "coeff", "r"),
         [
             (
                 "sto-3g",
@@ -40,7 +39,7 @@ class TestBasis:
             ),
         ],
     )
-    def test_basisfunction(self, basis_name, atom_name, l, alpha, coeff, r):
+    def test_basisfunction(self, _, __, l, alpha, coeff, r):
         """Test that BasisFunction class creates basis function objects correctly."""
 
         basis_function = qchem.BasisFunction(l, alpha, coeff, r)

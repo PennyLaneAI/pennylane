@@ -14,6 +14,7 @@
 """
 Unit tests for the ArbitraryStatePreparation template.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -374,7 +375,6 @@ class TestCasting:
     @pytest.mark.jax
     def test_jax(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the JAX interface."""
-        import jax
         from jax import numpy as jnp
 
         inputs = jnp.array(inputs)
