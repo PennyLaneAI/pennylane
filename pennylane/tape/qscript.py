@@ -923,7 +923,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
@@ -1006,7 +1005,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.numeric_type
