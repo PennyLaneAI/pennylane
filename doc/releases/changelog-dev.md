@@ -9,6 +9,9 @@
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
+* Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
+  [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
@@ -39,6 +42,11 @@
   - ``gate_types`` is no longer supported, use ``specs_dict["resources"].gate_types``
   - ``gate_sizes`` is no longer supported, use ``specs_dict["resources"].gate_sizes``
   - ``depth`` is no longer supported, use ``specs_dict["resources"].depth``
+
+* `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
+  input.
+  [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
 <h3>Deprecations 👋</h3>
 
