@@ -15,6 +15,7 @@
 This module contains the transform program class.
 """
 from .transform_dispatcher import TransformContainer, TransformError
+from pennylane.transforms import map_batch_transform
 
 
 class TransformProgram:
@@ -121,11 +122,32 @@ class TransformProgram:
     def __call__(self, tapes):
         processing_fns_list = []
         classical_cotransforms_list = []
+
         for transform_container in self:
             transform, args, kwargs, cotransform, _ = transform_container
-            classical_cotransforms_list.append(transform_container.classical_cotransform)
 
-            tapes, processing_fn = transform(tapes, *args, **kwargs)
+            execution_tapes = []
+            fns = []
+
+            for tape in tapes:
+                new_tapes, fn = transform(tape, *args, **kwargs)
+                execution_tapes.extend(new_tapes)
+                fns.append(fn)
+
+            # Merge the processing function into in a single one
+            def processing_fn(res):
+                s = len(new_tapes)
+                final_results = [fns[idx](res[idx*s: (idx+1)*s]) for idx in len(tapes)]
+                return final_results
+
+            tapes = execution_tapes
             processing_fns_list.append(processing_fn)
+
+            # Merge the cotransform functions into in a single one
+            if transform_container.classical_cotransform is None:
+                classical_cotransforms_list.append(None)
+            else:
+                # TODO: temporary, to be replaced
+                classical_cotransforms_list.append(cotransform)
 
         return tapes, processing_fns_list[::-1], classical_cotransforms_list[::-1]

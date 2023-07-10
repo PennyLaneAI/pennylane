@@ -27,7 +27,6 @@ from typing import Callable, Sequence, Optional, Union, Tuple
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
-from pennylane.transforms.core import TransformProgram
 
 device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
@@ -58,13 +57,13 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
-    transform_program: TransformProgram,
+    transform_program,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device with a transform program.
     """
     # Apply all transforms (device pre-processing, compilation)
     if not transform_program.is_empty():
-        tapes, processing_fns, classical_cotransforms = transform_program()
+        tapes, processing_fns, classical_cotransforms = transform_program(tapes)
 
     # The resulting batch of tapes is executed by the device
     # Execution tapes
