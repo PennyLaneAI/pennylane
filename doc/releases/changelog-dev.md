@@ -11,7 +11,10 @@
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
-  [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+
+* Enable linting of all tests in CI and the pre-commit hook.
+  [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
 
 * Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
