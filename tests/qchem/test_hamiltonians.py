@@ -364,7 +364,7 @@ class TestJax:
                 qml.PauliX(0)
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                h_qubit = qchem.diff_hamiltonian(mol)(*args)
+                h_qubit = qchem.diff_hamiltonian(mol, fs=False)(*args)
                 return qml.expval(h_qubit)
 
             return circuit
