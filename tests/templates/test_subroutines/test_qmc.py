@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for the QuantumMonteCarlo subroutine template.
+"""
 import numpy as np
 import pytest
 from scipy.stats import norm
@@ -80,10 +83,9 @@ class TestFuncToUnitary:
     def test_not_bounded_func(self):
         """Test if a ValueError is raised if a function that evaluates outside of the [0, 1]
         interval is provided"""
-        func = lambda i: np.sin(i)
 
         with pytest.raises(ValueError, match="func must be bounded within the interval"):
-            func_to_unitary(func, 8)
+            func_to_unitary(np.sin, 8)
 
     def test_example(self):
         """Test for a fixed example if the returned unitary maps input states to the
@@ -322,6 +324,7 @@ class TestQuantumMonteCarlo:
     def test_expected_value(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details"""
+        # pylint: disable=cell-var-from-loop
         m = 5
         M = 2**m
 
@@ -368,6 +371,7 @@ class TestQuantumMonteCarlo:
     def test_expected_value_jax_jit(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details using JAX-JIT"""
+        # pylint: disable=cell-var-from-loop
         import jax
         from jax import numpy as jnp
 

@@ -143,9 +143,7 @@ def circuit_template(features):
 def circuit_decomposed(features):
     # convert tensor to list
     feats = list(qml.math.toarray(features))
-    for i in range(len(feats)):
-        if feats[i] == 1:
-            qml.PauliX(wires=i)
+    _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
 
@@ -195,7 +193,6 @@ class TestInterfaces:
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax
         import jax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
