@@ -7,7 +7,16 @@
 <h3>Improvements 🛠</h3>
 
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
-  [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+
+* Enable linting of all tests in CI and the pre-commit hook.
+  [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
+
+* Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
+  [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
+* QNode transforms in `qml.qinfo` now support custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
@@ -40,7 +49,15 @@
   - ``gate_sizes`` is no longer supported, use ``specs_dict["resources"].gate_sizes``
   - ``depth`` is no longer supported, use ``specs_dict["resources"].depth``
 
+* `qml.math.purity`, `qml.math.vn_entropy`, `qml.math.mutual_info`, `qml.math.fidelity`,
+  `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
+  input.
+  [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
 <h3>Deprecations 👋</h3>
+
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+  and ``qml.QuadP`` instead.
 
 <h3>Documentation 📝</h3>
 
@@ -49,10 +66,14 @@
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
+* `qml.qinfo.purity` now produces correct results with custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Edward Jiang,
 Christina Lee,
 Borja Requena,
 Matthew Silverman
