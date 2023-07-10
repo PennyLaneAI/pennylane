@@ -109,3 +109,23 @@ class TransformProgram:
             bool: Boolean, True if empty, False otherwise.
         """
         return len(self) == 0
+
+    def is_informative(self):
+        """Check if the transform program is informative or not.
+
+        Returns:
+            bool: Boolean, True if empty, False otherwise.
+        """
+        return self.get_last().is_informative
+
+    def __call__(self, tapes):
+        processing_fns_list = []
+        classical_cotransforms_list = []
+        for transform_container in self:
+            transform, args, kwargs, cotransform, _ = transform_container
+            classical_cotransforms_list.append(transform_container.classical_cotransform)
+
+            tapes, processing_fn = transform(tapes, *args, **kwargs)
+            processing_fns_list.append(processing_fn)
+
+        return tapes, processing_fns_list[::-1], classical_cotransforms_list[::-1]

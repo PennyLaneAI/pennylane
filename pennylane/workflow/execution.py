@@ -60,14 +60,21 @@ def execute(
     device: device_type,
     transform_program: TransformProgram,
 ) -> ResultBatch:
-    """New function to execute a batch of tapes on a device with a transform program in an
-    autodifferentiable-compatible manner.
+    """New function to execute a batch of tapes on a device with a transform program.
     """
     # Apply all transforms (device pre-processing, compilation)
-    for transform in transform_program:
-        transform(tapes)
+    if not transform_program.is_empty():
+        tapes, processing_fns, classical_cotransforms = transform_program()
 
     # The resulting batch of tapes is executed by the device
-    res = device.batch_execute(tapes)
+    # Execution tapes
+    if not transform_program.is_informative():
+        with qml.tape.Unwrap(*tapes):
+            res = device.batch_execute(tapes)
 
-    # Apply post processing fns and classical co-tranforms
+    # Apply postprocessing (apply classical cotransform and processing function)
+    for p_fn, cotransform in zip(processing_fns, classical_cotransforms):
+        if cotransform:
+            res = cotransform(res)
+        res = p_fn(res)
+    return res
