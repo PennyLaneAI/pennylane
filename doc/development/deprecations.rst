@@ -9,10 +9,6 @@ Pending deprecations
 * The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` has been changed to `ratio_imprim` to
   match the call signature of the operation. 
 
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
-  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
-  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
-
 * ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
   ``disable_return``, as the old return system is deprecated along with these switch functions.
 
