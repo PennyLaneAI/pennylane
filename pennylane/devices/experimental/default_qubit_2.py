@@ -295,10 +295,10 @@ class DefaultQubit2(Device):
         num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
         if num_threads > num_cpu:
             warnings.warn(
-                f"""The device requested {num_threads} threads ({max_workers} processes 
-                times {threads_per_proc} threads per process), but the processor only has 
+                f"""The device requested {num_threads} threads ({max_workers} processes
+                times {threads_per_proc} threads per process), but the processor only has
                 {num_cpu} logical cores. The processor is likely oversubscribed, which may
-                lead to performance deterioration. Consider decreasing the number of processes, 
+                lead to performance deterioration. Consider decreasing the number of processes,
                 setting the device or execution config argument `max_workers={num_workers_suggest}`
                 for example, or decreasing the number of threads per process, setting the
                 environment variable `{varname}={num_threads_suggest}` for example.""",
