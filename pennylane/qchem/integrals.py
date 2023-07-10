@@ -57,14 +57,10 @@ def primitive_norm(l, alpha):
     """
     lx, ly, lz = l
 
-    fac_x = fac2(2 * lx - 1) if lx > 0 else 1
-    fac_y = fac2(2 * ly - 1) if ly > 0 else 1
-    fac_z = fac2(2 * lz - 1) if lz > 0 else 1
-
     n = (
         (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
-        / qml.math.sqrt(fac_x * fac_y * fac_z)
+        / qml.math.sqrt(_fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1))
     )
     return n
 
@@ -108,16 +104,27 @@ def contracted_norm(l, alpha, a):
     """
     lx, ly, lz = l
 
-    fac_x = fac2(2 * lx - 1) if lx > 0 else 1
-    fac_y = fac2(2 * ly - 1) if ly > 0 else 1
-    fac_z = fac2(2 * lz - 1) if lz > 0 else 1
-
-    c = np.pi**1.5 / 2 ** sum(l) * fac_x * fac_y * fac_z
+    c = np.pi**1.5 / 2 ** sum(l) * _fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
     n = 1 / qml.math.sqrt(c * s)
     return n
+
+
+def _fac2(n):
+    """Compute the double factorial of an integer.
+
+    The function uses the definition :math:`(-1)!! = 1`.
+
+    Args:
+        n (int): number for which the double factorial is computed
+
+    Returns:
+        int: the computed double factorial
+
+    """
+    return int(fac2(n) if n != -1 else 1)
 
 
 def _generate_params(params, args):
