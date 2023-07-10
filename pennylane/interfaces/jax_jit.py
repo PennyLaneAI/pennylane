@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms import convert_to_numpy_parameters
 
 from .jax import set_parameters_on_copy_and_unwrap
 

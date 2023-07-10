@@ -1430,6 +1430,8 @@ def bind_new_parameters_tape(
     Returns:
         .tape.QuantumScript: New tape with updated parameters
     """
+    # pylint: disable=no-member
+
     new_ops = []
     idx = 0
     p_idx = 0
@@ -1445,12 +1447,12 @@ def bind_new_parameters_tape(
         # determine if any parameters of the operator need to be rebinded
         if any(i + idx in indices for i in range(len(data))):
             new_params = []
-            for i in range(len(data)):
+            for i, d in enumerate(data):
                 if i + idx in indices:
                     new_params.append(params[p_idx])
                     p_idx += 1
                 else:
-                    new_params.append(data[i])
+                    new_params.append(d)
 
             if isinstance(op, Operator):
                 new_op = qml.ops.functions.bind_new_parameters(op, new_params)

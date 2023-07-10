@@ -23,7 +23,6 @@ import tensorflow as tf
 
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
-from pennylane.transforms import convert_to_numpy_parameters
 
 from .tensorflow import (
     _compute_vjp,

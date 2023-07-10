@@ -507,7 +507,7 @@ class ParametrizedEvolution(Operation):
 
 
 @functions.bind_new_parameters.register
-def bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Sequence[TensorLike]):
+def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Sequence[TensorLike]):
     return ParametrizedEvolution(
         op.H,
         params=params,
