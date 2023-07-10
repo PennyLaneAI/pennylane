@@ -106,11 +106,11 @@ class TestUnwrapControls:
         [
             (qml.PauliX(wires="a"), Wires([]), None),
             (qml.CNOT(wires=["a", "b"]), Wires("a"), None),
-            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), [True]),
+            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), None),
             (
                 qml.ctrl(qml.PauliX(wires="b"), control=["a", "c", "d"]),
                 Wires(["a", "c", "d"]),
-                [True, True, True],
+                "111",
             ),
             (
                 qml.ctrl(qml.PauliZ(wires="c"), control=["a", "d"], control_values=[True, False]),
