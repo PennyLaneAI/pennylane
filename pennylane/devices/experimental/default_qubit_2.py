@@ -282,6 +282,7 @@ class DefaultQubit2(Device):
         if max_workers is None:
             return
         threads_per_proc = os.cpu_count()  # all threads by default
+        varname = "OMP_NUM_THREADS"
         varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
         for var in varnames:
             if os.getenv(var):
