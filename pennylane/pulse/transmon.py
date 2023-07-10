@@ -312,8 +312,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         t = 0.5
         A = 0.1
-        phi = 0.001
-        params = [A, phi]
+        phi_0 = 0.001
+        params = [A, phi_0]
 
     Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi_0 = 10^{-3}` we obtain
     :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x - i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
@@ -340,7 +340,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
         def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
-        def freq(fr, t): return fr  # Enables frequency trainability
+        def freq(fr, t): return fr  # Enables frequency trainability (see below)
         phase = 0.
         t=2
 
