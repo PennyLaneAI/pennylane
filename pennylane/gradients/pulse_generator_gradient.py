@@ -226,7 +226,9 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
     all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
     if use_broadcasting:
-        pauli_rots = [qml.PauliRot(angle, pauli_words, wires=op.wires) for angle in [np.pi / 2, -np.pi / 2]]
+        angles = np.tile([np.pi/2, -np.pi/2], len(pauli_words))
+        pauli_words = [w for w in pauli_words for _ in (0, 1)]
+        pauli_rots = [qml.PauliRot(angles, pauli_words, wires=op.wires)]
     else:
         pauli_rots = [
             qml.PauliRot(angle, word, wires=op.wires)
@@ -266,7 +268,7 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, u
         def _parshift_and_contract_single(res_list, coeffs):
             """Execute the standard parameter-shift rule on a list of results
             and contract with Pauli basis coefficients."""
-            psr_deriv = (res_list[0] - res_list[1]) / 2
+            psr_deriv = ((res := res_list[0])[::2] - res[1::2]) / 2
             return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
     else:
         def _parshift_and_contract_single(res_list, coeffs):

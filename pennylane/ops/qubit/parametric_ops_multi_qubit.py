@@ -275,7 +275,7 @@ class PauliRot(Operation):
                     f"{num_wires} was expected for wires {self.wires}"
                 )
             return
-        if self._batch_size:
+        if self._batch_size and self._batch_size != len(pauli_word):
             raise ValueError("Cannot batch both") #TODO
         if not PauliRot._check_pauli_word("".join(pauli_word)):
             raise ValueError(
@@ -371,7 +371,8 @@ class PauliRot(Operation):
         """
         if not isinstance(pauli_word, str):
             if qml.math.ndim(theta) != 0:
-                raise ValueError("Could support simultaneous batching but we don't")
+                assert len(theta) == len(pauli_word)
+                return qml.math.stack([PauliRot.compute_matrix(t, word) for t, word in zip(theta, pauli_word)])
             return qml.math.stack([PauliRot.compute_matrix(theta, word) for word in pauli_word])
 
         if not PauliRot._check_pauli_word(pauli_word):
