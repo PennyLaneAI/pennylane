@@ -14,11 +14,11 @@
 """
 Tests for the CommutingEvolution template.
 """
+# pylint: disable=too-few-public-methods
 import pytest
-from pennylane import numpy as np
-import pennylane as qml
-
 from scipy.linalg import expm
+import pennylane as qml
+from pennylane import numpy as np
 
 
 def test_adjoint():
