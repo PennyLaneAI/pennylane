@@ -19,6 +19,8 @@ from functools import partial
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
 import numpy as np
+import os
+import warnings
 
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
@@ -29,7 +31,6 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
-
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -123,7 +124,6 @@ class DefaultQubit2(Device):
 
     def __init__(self, seed=None, max_workers=None) -> None:
         super().__init__()
-
         self._max_workers = max_workers
         self._rng = np.random.default_rng(seed)
         self._debugger = None
@@ -271,8 +271,35 @@ class DefaultQubit2(Device):
 
     # pylint: disable=missing-function-docstring
     def _get_max_workers(self, execution_config=None):
-        if execution_config is None:
-            return self._max_workers
-        if execution_config.max_workers is None:
-            return self._max_workers
-        return execution_config.max_workers
+        if execution_config is None or execution_config.max_workers is None:
+            max_workers = self._max_workers
+        else:
+            max_workers = execution_config.max_workers
+        if max_workers is None:
+            return
+        self._validate_multiprocessing(max_workers)
+        return max_workers
+
+    def _validate_multiprocessing(self, max_workers):
+        threads_per_proc = os.cpu_count()  # all threads by default
+        varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+        for var in varnames:
+            if os.getenv(var):
+                varname = var
+                threads_per_proc = int(os.getenv(var))
+                break
+        num_threads = threads_per_proc * max_workers
+        num_cpu = os.cpu_count()
+        num_threads_suggest = max(1, os.cpu_count() // max_workers)
+        num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+        if num_threads > num_cpu:
+            warnings.warn(
+                f"""The device requested {num_threads} threads ({max_workers} processes 
+                times {threads_per_proc} threads per process), but the processor only has 
+                {num_cpu} logical cores. The processor is likely oversubscribed, which may
+                lead to performance deterioration. Consider decreasing the number of processes, 
+                setting the device or execution config argument `max_workers={num_workers_suggest}`
+                for example, or decreasing the number of threads per process, setting the
+                environment variable `{varname}={num_threads_suggest}` for example.""",
+                UserWarning,
+            )
