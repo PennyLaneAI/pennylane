@@ -263,8 +263,6 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
 
         import jax
 
-        qml.enable_return()
-
         x = jax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 
@@ -368,7 +366,6 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
     .. code-block:: python
 
         import jax
-        qml.enable_return()
         x = jax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 
