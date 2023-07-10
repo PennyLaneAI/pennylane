@@ -31,19 +31,8 @@ from .tensorflow import (
     _jac_restructured,
     _res_restructured,
     _to_tensors,
+    set_parameters_on_copy_and_unwrap,
 )
-
-
-def _set_copy_and_unwrap_tape(t, a):
-    """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a, trainable_only=False)
-    return convert_to_numpy_parameters(tc)
-
-
-def set_parameters_on_copy_and_unwrap(tapes, params):
-    """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a) for t, a in zip(tapes, params))
 
 
 def _flatten_nested_list(x):
