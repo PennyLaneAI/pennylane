@@ -48,6 +48,30 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
+  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` class are deprecated, and
+  usage will now raise a warning.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
+
+  .. code-block:: python
+
+    from pennylane.transforms import convert_to_numpy_parameters
+
+    qscript = qml.tape.QuantumScript([qml.RX(torch.tensor(0.1234), 0)],
+                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    unwrapped_qscript = convert_to_numpy_parameters(circuit)
+
+    torch_params = qscript.get_parameters()
+    numpy_params = unwrapped_qscript.get_parameters()
 
 Completed deprecation cycles
 ----------------------------

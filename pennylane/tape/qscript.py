@@ -19,6 +19,7 @@ executed by a device.
 
 import contextlib
 import copy
+import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
 
@@ -1156,6 +1157,12 @@ class QuantumScript:
         <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
         <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
         """
+
+        warnings.warn(
+            "The tape.unwrap() method is deprecated and will be removed in PennyLane v0.33. "
+            "Please use convert_to_numpy_parameters instead."
+        )
+
         return qml.tape.UnwrapTape(self)
 
     # ========================================================

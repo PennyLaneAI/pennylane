@@ -47,6 +47,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+  and ``qml.QuadP`` instead.
+
+* The method ``tape.unwrap()`` and corresponding ``Unwrap.Tape`` class are deprecated. Use
+  ``convert_to_numpy_parameters`` instead.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>

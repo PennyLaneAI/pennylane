@@ -15,6 +15,7 @@
 This module contains a context manager for unwrapping tapes
 """
 import contextlib
+import warnings
 import pennylane as qml
 
 
@@ -119,6 +120,12 @@ class UnwrapTape:
     """
 
     def __init__(self, tape, params=None):
+
+        warnings.warn(
+            "The UnwrapTape class is deprecated and will be removed in PennyLane v0.33. "
+            "Please use convert_to_numpy_parameters instead."
+        )
+
         self.tape = tape
         self._original_params = None
         self._unwrapped_params = params or None
