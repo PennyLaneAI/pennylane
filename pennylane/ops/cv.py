@@ -1173,8 +1173,10 @@ class X(QuadX):
     value :math:`\braket{\hat{x}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`x` axis.
 
-    This class is deprecated and will be removed in PennyLane v0.33.
-    Please use :class:`~.QuadX` instead.
+    .. warning::
+
+        This class is deprecated and will be removed in PennyLane v0.33.
+        Please use :class:`~.QuadX` instead.
 
     **Details:**
 
@@ -1239,8 +1241,10 @@ class P(QuadP):
     value :math:`\braket{\hat{p}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`p` axis.
 
-    This class is deprecated and will be removed in PennyLane v0.33.
-    Please use :class:`~.QuadP` instead.
+    .. warning::
+
+        This class is deprecated and will be removed in PennyLane v0.33.
+        Please use :class:`~.QuadP` instead.
 
     **Details:**
 
