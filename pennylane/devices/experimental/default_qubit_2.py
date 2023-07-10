@@ -18,9 +18,9 @@ This module contains the next generation successor to default qubit
 from functools import partial
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
-import numpy as np
 import os
 import warnings
+import numpy as np
 
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
@@ -275,12 +275,12 @@ class DefaultQubit2(Device):
             max_workers = self._max_workers
         else:
             max_workers = execution_config.max_workers
-        if max_workers is None:
-            return
         self._validate_multiprocessing(max_workers)
         return max_workers
 
     def _validate_multiprocessing(self, max_workers):
+        if max_workers is None:
+            return
         threads_per_proc = os.cpu_count()  # all threads by default
         varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
         for var in varnames:
