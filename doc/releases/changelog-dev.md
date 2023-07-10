@@ -19,7 +19,7 @@
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * The `qchem` functions `primitive_norm` and `contracted_norm` are modified to be compatible with
-  higher versions of scipy.
+  higher versions of scipy. The private function `_fac2` for computing double factorials is added. 
   [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
 
 <h3>Breaking changes 💔</h3>
@@ -74,6 +74,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Borja Requena,
