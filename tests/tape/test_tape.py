@@ -354,7 +354,9 @@ class TestConstruction:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size is None
 
-        tape.set_parameters([x] + rot)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters([x] + rot)
+
         assert tape.batch_size == exp_batch_size
 
     @pytest.mark.parametrize(
@@ -387,7 +389,8 @@ class TestConstruction:
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            tape.set_parameters([x] + rot + [y])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.set_parameters([x] + rot + [y])
 
 
 class TestIteration:
@@ -730,7 +733,8 @@ class TestParameters:
         tape, _ = make_tape
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -751,7 +755,8 @@ class TestParameters:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         count = 0
         for idx, pinfo in enumerate(tape._par_info):
@@ -776,7 +781,8 @@ class TestParameters:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [3, 1]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         assert tape.get_parameters(trainable_only=True) == new_params
         assert tape.get_parameters(trainable_only=False) == [
@@ -793,7 +799,8 @@ class TestParameters:
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params, trainable_only=False)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params, trainable_only=False)
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -806,11 +813,13 @@ class TestParameters:
         tape, _ = make_tape
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.set_parameters([0.54])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.set_parameters([0.54])
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.trainable_params = [2, 3]
-            tape.set_parameters([0.54, 0.54, 0.123])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.trainable_params = [2, 3]
+                tape.set_parameters([0.54, 0.54, 0.123])
 
     def test_array_parameter(self):
         """Test that array parameters integrate properly"""
@@ -826,7 +835,9 @@ class TestParameters:
 
         b = np.array([0, 1, 0, 0])
         new_params = [b, 0.543, 0.654, 0.123]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
+
         assert tape.get_parameters() == new_params
 
         assert np.all(op_.data[0] == b)
@@ -846,7 +857,9 @@ class TestParameters:
 
         H2 = np.array([[0, 1], [1, 1]])
         new_params = [0.543, 0.654, 0.123, H2]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
+
         assert tape.get_parameters() == new_params
 
         assert np.all(obs.data[0] == H2)
@@ -900,7 +913,8 @@ class TestExpand:
         # check that modifying the new tape does not affect the old tape
 
         new_tape.trainable_params = [0]
-        new_tape.set_parameters([10])
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            new_tape.set_parameters([10])
 
         assert tape.get_parameters() == [0.1, 0.2, 0.3]
         assert tape.trainable_params == [0, 1, 2]
@@ -1237,7 +1251,9 @@ class TestExecution:
         assert tape.get_parameters() == params
 
         # test setting parameters
-        tape.set_parameters(params=[0.5, 0.6])
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(params=[0.5, 0.6])
+
         res3 = dev.execute(tape)
         assert not np.allclose(res1, res3, atol=tol, rtol=0)
         assert tape.get_parameters() == [0.5, 0.6]
@@ -1480,7 +1496,8 @@ class TestTapeCopying:
         # since the copy is shallow, mutating the parameters
         # on one tape will affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         # check that they are the same objects in memory
         for i, j in zip(tape.get_parameters(), new_params):
@@ -1524,7 +1541,8 @@ class TestTapeCopying:
         # Since they have unique operations, mutating the parameters
         # on one tape will *not* affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         for i, j in zip(tape.get_parameters(), new_params):
             assert i is j

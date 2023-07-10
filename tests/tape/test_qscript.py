@@ -505,7 +505,8 @@ class TestScriptCopying:
         # since the copy is shallow, mutating the parameters
         # on one tape will affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            qs.set_parameters(new_params)
 
         # check that they are the same objects in memory
         for i, j in zip(qs.get_parameters(), new_params):
@@ -553,7 +554,8 @@ class TestScriptCopying:
         # Since they have unique operations, mutating the parameters
         # on one script will *not* affect the parameters on another script
         new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            qs.set_parameters(new_params)
 
         for i, j in zip(qs.get_parameters(), new_params):
             assert i is j

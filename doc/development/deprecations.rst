@@ -66,6 +66,14 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The ``QuantumScript.set_parameters`` method has been deprecated. To achieve the
+  same functionality, please call ``qml.ops.functions.bind_new_parameters`` on all
+  operations in the quantum script, then instantiate a new ``QuantumScript`` with
+  the new operations.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 Completed deprecation cycles
 ----------------------------

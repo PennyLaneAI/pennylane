@@ -19,6 +19,7 @@ executed by a device.
 
 import contextlib
 import copy
+import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
 
@@ -689,6 +690,12 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [4, 1, 6]
         """
+        warnings.warn(
+            "The method tape.set_parameters is deprecated and will be removed in v0.33. "
+            "Please use bind_new_parameters on the operations and create a new tape.",
+            UserWarning,
+        )
+
         if trainable_only:
             iterator = zip(self.trainable_params, params)
             required_length = self.num_params
