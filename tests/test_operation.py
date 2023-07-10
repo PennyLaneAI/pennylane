@@ -2261,8 +2261,7 @@ class TestStatePrep:
     class DefaultPrep(StatePrep):
         """A dummy class that assumes it was given a state vector."""
 
-        # pylint-disable=unused-argument,too-few-public-methods
-
+        # pylint:disable=unused-argument,too-few-public-methods
         def state_vector(self, wire_order=None):
             return self.parameters[0]
 
