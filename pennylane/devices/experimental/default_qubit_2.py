@@ -275,32 +275,33 @@ class DefaultQubit2(Device):
             max_workers = self._max_workers
         else:
             max_workers = execution_config.max_workers
-        self._validate_multiprocessing(max_workers)
+        _validate_multiprocessing(max_workers)
         return max_workers
 
-    def _validate_multiprocessing(self, max_workers):
-        if max_workers is None:
-            return
-        threads_per_proc = os.cpu_count()  # all threads by default
-        varname = "OMP_NUM_THREADS"
-        varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
-        for var in varnames:
-            if os.getenv(var):
-                varname = var
-                threads_per_proc = int(os.getenv(var))
-                break
-        num_threads = threads_per_proc * max_workers
-        num_cpu = os.cpu_count()
-        num_threads_suggest = max(1, os.cpu_count() // max_workers)
-        num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
-        if num_threads > num_cpu:
-            warnings.warn(
-                f"""The device requested {num_threads} threads ({max_workers} processes
-                times {threads_per_proc} threads per process), but the processor only has
-                {num_cpu} logical cores. The processor is likely oversubscribed, which may
-                lead to performance deterioration. Consider decreasing the number of processes,
-                setting the device or execution config argument `max_workers={num_workers_suggest}`
-                for example, or decreasing the number of threads per process, setting the
-                environment variable `{varname}={num_threads_suggest}` for example.""",
-                UserWarning,
-            )
+
+def _validate_multiprocessing(max_workers):
+    if max_workers is None:
+        return
+    threads_per_proc = os.cpu_count()  # all threads by default
+    varname = "OMP_NUM_THREADS"
+    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+    for var in varnames:
+        if os.getenv(var):
+            varname = var
+            threads_per_proc = int(os.getenv(var))
+            break
+    num_threads = threads_per_proc * max_workers
+    num_cpu = os.cpu_count()
+    num_threads_suggest = max(1, os.cpu_count() // max_workers)
+    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+    if num_threads > num_cpu:
+        warnings.warn(
+            f"""The device requested {num_threads} threads ({max_workers} processes
+            times {threads_per_proc} threads per process), but the processor only has
+            {num_cpu} logical cores. The processor is likely oversubscribed, which may
+            lead to performance deterioration. Consider decreasing the number of processes,
+            setting the device or execution config argument `max_workers={num_workers_suggest}`
+            for example, or decreasing the number of threads per process, setting the
+            environment variable `{varname}={num_threads_suggest}` for example.""",
+            UserWarning,
+        )
