@@ -9,19 +9,17 @@ Pending deprecations
 * The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` has been changed to `ratio_imprim` to
   match the call signature of the operation. 
 
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
-  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
-  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
+  ``disable_return``, as the old return system is deprecated along with these switch functions.
 
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+  - Deprecated in v0.32
+  - Will be removed in v0.33
 
-* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
-  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
-  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
+  system (which is also deprecated). Please use ``grad_on_execution`` instead.
 
-  - Still accepted in v0.31
-  - Removed in v0.32
+  - Deprecated in v0.32
+  - Will be removed in v0.33
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
@@ -65,9 +63,29 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
+  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
+  - Removed in v0.32
+
+* The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
 
 * The ``qml.specs`` dictionary longer supports direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under

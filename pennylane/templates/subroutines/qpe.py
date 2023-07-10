@@ -149,7 +149,7 @@ class QuantumPhaseEstimation(Operation):
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
         return cls(data[0], target_wires=metadata[0], estimation_wires=metadata[1])
 
-    def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=None, id=None):
+    def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
@@ -187,7 +187,7 @@ class QuantumPhaseEstimation(Operation):
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def target_wires(self):

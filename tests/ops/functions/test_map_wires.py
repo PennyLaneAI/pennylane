@@ -14,12 +14,13 @@
 """
 Unit tests for the qml.map_wires function
 """
+# pylint: disable=too-few-public-methods
 from functools import partial
 
 import pytest
 
 import pennylane as qml
-from pennylane.ops import Prod, Sum
+from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -210,7 +211,7 @@ class TestMapWiresCallables:
         @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
-            qml.PauliX(0) ** 2
+            _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
         x = jax.numpy.array(4 * jax.numpy.pi + 0.1)

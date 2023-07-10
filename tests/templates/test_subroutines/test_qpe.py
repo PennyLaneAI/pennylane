@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for the quantum phase estimation subroutine.
+"""
 import pytest
-import pennylane as qml
 import numpy as np
 from scipy.stats import unitary_group
+import pennylane as qml
 
 
 def test_flatten_unflatten():
@@ -76,6 +79,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
     def test_phase_estimated(self, phase):
         """Tests that the QPE circuit can correctly estimate the phase of a simple RX rotation."""
+        # pylint: disable=cell-var-from-loop
         estimates = []
         wire_range = range(2, 10)
 
@@ -118,6 +122,7 @@ class TestDecomposition:
     def test_phase_estimated_two_qubit(self):
         """Tests that the QPE circuit can correctly estimate the phase of a random two-qubit
         unitary."""
+        # pylint: disable=cell-var-from-loop
 
         unitary = unitary_group.rvs(4, random_state=1967)
         eigvals, eigvecs = np.linalg.eig(unitary)
@@ -167,6 +172,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_single_ops(self, param):
         """Tests that the QPE works correctly for a single operator"""
+        # pylint: disable=cell-var-from-loop
 
         unitary = qml.RX(param, wires=[0])
 
@@ -207,6 +213,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_ops(self, param):
         """Tests that the QPE works correctly for compound operators"""
+        # pylint: disable=cell-var-from-loop
 
         unitary = qml.RX(param, wires=[0]) @ qml.CNOT(wires=[0, 1])
 
@@ -272,6 +279,7 @@ class TestDecomposition:
 
     def test_map_wires(self):
         """Tests that QPE behaves correctly in a wire map"""
+        # pylint: disable=protected-access
 
         unitary = qml.RX(np.pi / 4, wires=[0]) @ qml.CNOT(wires=[0, 1])
         qpe = qml.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])

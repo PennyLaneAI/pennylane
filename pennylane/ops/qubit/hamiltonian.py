@@ -182,7 +182,6 @@ class Hamiltonian(Observable):
         grouping_type=None,
         method="rlf",
         id=None,
-        do_queue=None,
     ):
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -224,7 +223,7 @@ class Hamiltonian(Observable):
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
-        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+        super().__init__(*coeffs_flat, wires=self._wires, id=id)
 
     def _check_batching(self, params):
         """Override for Hamiltonian, batching is not yet supported."""

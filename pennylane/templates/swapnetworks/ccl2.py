@@ -103,7 +103,6 @@ class TwoLocalSwapNetwork(Operation):
         weights=None,
         fermionic=True,
         shift=False,
-        do_queue=None,
         id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
@@ -137,9 +136,9 @@ class TwoLocalSwapNetwork(Operation):
         }
 
         if acquaintances is not None and self._weights is not None:
-            super().__init__(self._weights, wires=wires, do_queue=do_queue, id=id)
+            super().__init__(self._weights, wires=wires, id=id)
         else:
-            super().__init__(wires=wires, do_queue=do_queue, id=id)
+            super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):

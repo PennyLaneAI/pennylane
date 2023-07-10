@@ -348,7 +348,7 @@ class QuantumMonteCarlo(Operation):
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
-    def __init__(self, probs, func, target_wires, estimation_wires, do_queue=None, id=None):
+    def __init__(self, probs, func, target_wires, estimation_wires, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
             raise ValueError("The probability distribution must be specified as a flat array")
 
@@ -376,7 +376,7 @@ class QuantumMonteCarlo(Operation):
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
-        super().__init__(A, R, Q, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, R, Q, wires=wires, id=id)
 
     @property
     def num_params(self):

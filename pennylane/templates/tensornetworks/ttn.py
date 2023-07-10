@@ -172,7 +172,6 @@ class TTN(Operation):
         block,
         n_params_block,
         template_weights=None,
-        do_queue=None,
         id=None,
     ):
         ind_gates = compute_indices(wires, n_block_wires)
@@ -195,7 +194,7 @@ class TTN(Operation):
 
         self._hyperparameters = {"ind_gates": ind_gates, "block": block}
 
-        super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(

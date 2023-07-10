@@ -14,6 +14,7 @@
 """
 Unit tests for the adjoint_metric_tensor function.
 """
+# pylint: disable=protected-access
 import pytest
 from pennylane import numpy as np
 import pennylane as qml
@@ -235,7 +236,7 @@ def fubini_ansatz1(params, wires=None):
 def fubini_ansatz2(params, wires=None):
     params0 = params[0]
     params1 = params[1]
-    qml.RX(fixed_pars[1], wires=0)
+    qml.RX(fixed_pars[1], wires=wires[0])
     qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.RY(params0, wires=0)
@@ -249,7 +250,7 @@ def fubini_ansatz3(params, wires=None):
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
-    qml.RX(fixed_pars[1], wires=0)
+    qml.RX(fixed_pars[1], wires=wires[0])
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -270,7 +271,7 @@ def fubini_ansatz4(params00, params_rest, wires=None):
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
-    qml.RY(fixed_pars[3], wires=0)
+    qml.RY(fixed_pars[3], wires=wires[0])
     qml.RY(fixed_pars[2], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -296,14 +297,14 @@ def fubini_ansatz7(params0, params1, wires=None):
 
 
 def fubini_ansatz8(x, wires=None):
-    qml.RX(fixed_pars[0], wires=0)
+    qml.RX(fixed_pars[0], wires=wires[0])
     qml.RX(x, wires=0)
 
 
 def fubini_ansatz9(params, wires=None):
     params0 = params[0]
     params1 = params[1]
-    qml.RX(fixed_pars[1], wires=[0])
+    qml.RX(fixed_pars[1], wires=[wires[0]])
     qml.RY(fixed_pars[3], wires=[0])
     qml.RZ(fixed_pars[2], wires=[0])
     qml.RX(fixed_pars[2], wires=[1])
@@ -328,6 +329,7 @@ def fubini_ansatz9(params, wires=None):
 
 
 def fubini_ansatz10(weights, wires=None):
+    # pylint: disable=unused-argument
     qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
 
 
@@ -536,14 +538,14 @@ class TestAdjointMetricTensorTape:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             circuit(*t_params)
             mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
 
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
@@ -656,7 +658,7 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
@@ -850,9 +852,9 @@ class TestErrors:
         H = qml.Hamiltonian([0.2, 0.9], [qml.PauliZ(0), qml.PauliY(0)])
 
         def ansatz(x, wires):
-            qml.RX(x, wires=0)
+            qml.RX(x, wires=wires[0])
 
         with pytest.warns(UserWarning, match="is deprecated,"):
             cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated"):
-            mt = qml.adjoint_metric_tensor(cost)
+            qml.adjoint_metric_tensor(cost)
