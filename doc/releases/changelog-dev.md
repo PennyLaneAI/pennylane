@@ -9,7 +9,7 @@
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [#4272](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
-* The default label for a `StatePrep` operator is now a ket with psi in it.
+* The default label for a `StatePrep` operator is now $|\psi \rangle$.
 
 <h3>Breaking changes 💔</h3>
 
