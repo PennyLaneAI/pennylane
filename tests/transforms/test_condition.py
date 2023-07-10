@@ -25,8 +25,6 @@ files.
 
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
 from pennylane.transforms.condition import ConditionalTransformError
 
@@ -82,6 +80,7 @@ class TestCond:
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
 
+    @staticmethod
     def tape_with_else(f, g, r, meas):
         """Tape that uses cond by passing both a true and false func."""
         with qml.queuing.AnnotatedQueue() as q:
@@ -92,6 +91,7 @@ class TestCond:
         tape = qml.tape.QuantumScript.from_queue(q)
         return tape
 
+    @staticmethod
     def tape_uses_cond_twice(f, g, r, meas):
         """Tape that uses cond twice such that it's equivalent to using cond
         with two functions being passed (tape_with_else)."""
@@ -104,7 +104,7 @@ class TestCond:
         tape = qml.tape.QuantumScript.from_queue(q)
         return tape
 
-    @pytest.mark.parametrize("tape", [tape_with_else, tape_uses_cond_twice])
+    @pytest.mark.parametrize("tape", ["tape_with_else", "tape_uses_cond_twice"])
     def test_cond_operationss_with_else(self, tape, terminal_measurement):
         """Test that qml.cond operationss Conditional operations as expected in two cases:
         1. When an else qfunc is provided;
@@ -118,9 +118,10 @@ class TestCond:
             qml.PauliZ(1)
 
         def g(x):
+            # pylint: disable=unused-argument
             qml.PauliY(1)
 
-        tape = tape(f, g, r, terminal_measurement)
+        tape = getattr(self, tape)(f, g, r, terminal_measurement)
         ops = tape.operations
         target_wire = qml.wires.Wires(1)
 
@@ -157,7 +158,6 @@ class TestCond:
 
     def test_cond_error(self, terminal_measurement):
         """Test that an error is raised when the qfunc has a measurement."""
-        dev = qml.device("default.qubit", wires=3)
 
         def f():
             return qml.apply(terminal_measurement)
@@ -171,7 +171,6 @@ class TestCond:
     def test_cond_error_else(self, terminal_measurement):
         """Test that an error is raised when one of the qfuncs has a
         measurement."""
-        dev = qml.device("default.qubit", wires=3)
 
         def f():
             qml.PauliX(0)
@@ -194,7 +193,7 @@ class TestCond:
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
     def test_cond_error_unrecognized_input(self, inp, terminal_measurement):
         """Test that an error is raised when the input is not recognized."""
-        dev = qml.device("default.qubit", wires=3)
+        # pylint: disable=unused-argument
 
         with pytest.raises(
             ConditionalTransformError,
@@ -250,7 +249,6 @@ class TestOtherTransforms:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         ops = tape.operations
-        target_wire = qml.wires.Wires(2)
 
         assert len(ops) == 3
         assert ops[0].return_type == qml.measurements.MidMeasure
@@ -278,7 +276,6 @@ class TestOtherTransforms:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         ops = tape.operations
-        target_wire = qml.wires.Wires(2)
 
         assert len(ops) == 3
         assert ops[0].return_type == qml.measurements.MidMeasure

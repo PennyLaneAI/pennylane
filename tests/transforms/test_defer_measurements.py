@@ -14,14 +14,12 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
-import pytest
+# pylint: disable=too-few-public-methods
 import math
+import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MeasurementValue
-
-from pennylane.measurements.mid_measure import MeasurementValue
 
 
 class TestQNode:
@@ -40,7 +38,7 @@ class TestQNode:
         @qml.qnode(dev)
         @qml.defer_measurements
         def qnode2():
-            m = qml.measure(1)
+            qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
         res1 = qnode1()
@@ -54,12 +52,12 @@ class TestQNode:
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
     def test_measure_between_ops(self):
@@ -94,12 +92,12 @@ class TestQNode:
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
     @pytest.mark.parametrize(
@@ -108,8 +106,7 @@ class TestQNode:
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
         """Test that the defer_measurements transform works well even with
         tensor observables in the tape."""
-        dev = qml.device("default.qubit", wires=[mid_measure_wire] + tp_wires)
-
+        # pylint: disable=protected-access
         with qml.queuing.AnnotatedQueue() as q:
             qml.measure(mid_measure_wire)
             qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
@@ -205,8 +202,6 @@ class TestConditionalOperations:
     )
     def test_correct_ops_in_tape(self, terminal_measurement):
         """Test that the underlying tape contains the correct operations."""
-        dev = qml.device("default.qubit", wires=5)
-
         first_par = 0.1
         sec_par = 0.3
 
@@ -215,7 +210,7 @@ class TestConditionalOperations:
             qml.cond(m_0, qml.RY)(first_par, wires=1)
 
             m_1 = qml.measure(3)
-            qml.cond(m_0, qml.RZ)(sec_par, wires=1)
+            qml.cond(m_1, qml.RZ)(sec_par, wires=1)
             qml.apply(terminal_measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -238,11 +233,7 @@ class TestConditionalOperations:
     def test_correct_ops_in_tape_inversion(self):
         """Test that the underlying tape contains the correct operations if a
         measurement value was inverted."""
-        dev = qml.device("default.qubit", wires=3)
-
         first_par = 0.1
-        sec_par = 0.3
-
         terminal_measurement = qml.expval(qml.PauliZ(1))
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -270,11 +261,7 @@ class TestConditionalOperations:
 
         Note: this case is the same as inverting right after obtaining a
         measurement value."""
-        dev = qml.device("default.qubit", wires=3)
-
         first_par = 0.1
-        sec_par = 0.3
-
         with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0 == 0, qml.RY)(first_par, wires=1)
@@ -293,10 +280,8 @@ class TestConditionalOperations:
         assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
 
     @pytest.mark.parametrize("rads", np.linspace(0.0, np.pi, 3))
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    def test_quantum_teleportation(self, device, rads):
+    def test_quantum_teleportation(self, rads):
         """Test quantum teleportation."""
-        dev = qml.device(device, wires=3)
 
         terminal_measurement = qml.probs(wires=2)
 
@@ -522,14 +507,14 @@ class TestConditionalOperations:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def qnode1(parameters):
+        def qnode1(par):
             qml.Hadamard(0)
             qml.ctrl(op, control=0)(phi=par, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(dev)
         @qml.defer_measurements
-        def qnode2(parameters):
+        def qnode2(par):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
             qml.cond(m_0, op)(phi=par, wires=1)
@@ -576,7 +561,7 @@ class TestConditionalOperations:
 
         @qml.qnode(dev)
         @qml.defer_measurements
-        def quantum_control_circuit(rads):
+        def quantum_control_circuit(r):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
@@ -738,7 +723,7 @@ class TestExpressionConditionals:
             m_2 = qml.measure(2)
 
             expression = 4 * m_0 + 2 * m_1 + m_2
-            qml.cond((3 <= expression) & (expression <= 6), qml.RX)(rads, wires=3)
+            qml.cond((expression >= 3) & (expression <= 6), qml.RX)(rads, wires=3)
             return qml.probs(wires=3)
 
         normal_probs = normal_circuit(1.0)
@@ -828,12 +813,12 @@ class TestTemplates:
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
     def test_angle_embedding(self):
@@ -869,12 +854,12 @@ class TestTemplates:
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
@@ -908,12 +893,12 @@ class TestTemplates:
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert type(op1) == type(op2)
+            assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
 
