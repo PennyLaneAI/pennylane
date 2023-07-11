@@ -15,10 +15,10 @@
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg
 
 from itertools import product
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.tape import QuantumScript
 from pennylane.devices.experimental import DefaultQubit2
@@ -69,17 +69,19 @@ class TestQNode:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = np.array(0.1, requires_grad=True)
+        a = jax.numpy.array(0.1)
         circuit(a)
 
         assert circuit.interface == interface
 
-        # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
+        # jax doesn't set trainable parameters on regular execution
+        assert circuit.qtape.trainable_params == []
 
         # gradients should work
         grad = jax.grad(circuit)(a)
         assert isinstance(grad, jax.Array)
+        # the tape is able to deduce trainable parameters
+        assert circuit.qtape.trainable_params == [0]
         assert grad.shape == ()
 
     def test_changing_trainability(
@@ -125,12 +127,6 @@ class TestQNode:
 
         # The parameter-shift rule has been called only once
         assert len(spy.spy_return[0]) == 2
-
-        # trainability also updates on evaluation
-        a = np.array(0.54, requires_grad=False)
-        b = np.array(0.8, requires_grad=True)
-        circuit(a, b)
-        assert circuit.qtape.trainable_params == [1]
 
     def test_classical_processing(self, dev, diff_method, grad_on_execution, interface):
         """Test classical processing within the quantum tape"""
@@ -233,7 +229,7 @@ class TestQNode:
 
         spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
 
-        a = np.array([0.1, 0.2], requires_grad=True)
+        a = jax.numpy.array([0.1, 0.2])
 
         @qnode(dev, interface=interface, diff_method="finite-diff", h=1e-8, approx_order=2)
         def circuit(a):
@@ -267,8 +263,8 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
 
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -281,7 +277,7 @@ class TestVectorValuedQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == [0, 1]
+        assert circuit.qtape.trainable_params == []
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -291,6 +287,7 @@ class TestVectorValuedQNode:
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
+        assert circuit.qtape.trainable_params == [0, 1]
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -1748,8 +1745,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
