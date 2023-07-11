@@ -26,6 +26,9 @@
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
+* The experimental device interface is integrated with the `QNode` for Jax jit.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
