@@ -322,7 +322,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     def __repr__(self):
         return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
-    def __add__(self, other):
+    def __add__(self, other):  # pylint: disable=too-many-return-statements
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
@@ -375,7 +375,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             )
 
         if isinstance(other, (int, float)):
-            if other == 0 or other == 0.0:
+            if other in (0, 0.0):
                 return HardwareHamiltonian(
                     coeffs, ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
                 )
