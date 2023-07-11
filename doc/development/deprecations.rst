@@ -6,6 +6,18 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
+  ``disable_return``, as the old return system is deprecated along with these switch functions.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
+  system (which is also deprecated). Please use ``grad_on_execution`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
@@ -47,6 +59,12 @@ Pending deprecations
   `discussion forum <https://discuss.pennylane.ai/>`_.
 
   - Deprecated in v0.31
+
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
+  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
 
 
 Completed deprecation cycles
