@@ -15,6 +15,9 @@
 * Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
+* QNode transforms in `qml.qinfo` now support custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -50,12 +53,27 @@
 
 <h3>Deprecations 👋</h3>
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+  and ``qml.QuadP`` instead.
+  [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
+
+* `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
+  `disable_return`, as the old return system is deprecated along with these switch functions.
+  [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
+
+* The `mode` keyword argument in `QNode` is deprecated, as it was only used in the
+  old return system (which is also deprecated). Please use `grad_on_execution` instead.
+  [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
 
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
+
+* `qml.qinfo.purity` now produces correct results with custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 <h3>Contributors ✍️</h3>
 
