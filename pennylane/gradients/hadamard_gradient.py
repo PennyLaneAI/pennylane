@@ -92,7 +92,6 @@ def _hadamard_grad(
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
-    >>> qml.enable_return()
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
@@ -146,7 +145,6 @@ def _hadamard_grad(
 
     If you use custom wires on your device, you need to pass an auxiliary wire.
 
-    >>> qml.enable_return()
     >>> dev_wires = ("a", "c")
     >>> dev = qml.device("default.qubit", wires=dev_wires)
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)

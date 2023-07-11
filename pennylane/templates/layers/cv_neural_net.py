@@ -77,7 +77,7 @@ class CVNeuralNetLayers(Operation):
 
             def circuit():
               CVNeuralNetLayers(*weights, wires=[0, 1])
-              return qml.expval(qml.X(0))
+              return qml.expval(qml.QuadX(0))
 
     """
 
