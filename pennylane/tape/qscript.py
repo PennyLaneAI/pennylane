@@ -37,6 +37,7 @@ from pennylane.measurements import (
     Shots,
 )
 from pennylane.operation import Observable, Operator, Operation
+from pennylane.typing import TensorLike
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
@@ -1417,3 +1418,70 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
         return qscript
 
     return wrapper
+
+
+def bind_new_parameters_tape(
+    tape: QuantumScript, params: Sequence[TensorLike], indices: Sequence[int]
+):
+    """Create a new operator with updated parameters.
+    This function takes a :class:`~.tape.QuantumScript` and new parameters as
+    input, and returns a new ``QuantumScript`` containing the new parameters.
+    This function does not mutate the original ``QuantumScript``.
+    Args:
+        tape (.tape.QuantumScript): Tape to update
+        params (Sequence[TensorLike]): New parameters to create tape with. This
+            must have the same shape as ``tape.get_parameters``.
+    Returns:
+        .tape.QuantumScript: New tape with updated parameters
+    """
+    # pylint: disable=no-member
+
+    new_ops = []
+    idx = 0
+    p_idx = 0
+
+    for op in tape.circuit:
+        if isinstance(op, Operator):
+            data = op.data
+        elif op.obs is not None:
+            data = op.obs.data
+        else:
+            data = ()
+
+        # determine if any parameters of the operator need to be rebinded
+        if any(i + idx in indices for i in range(len(data))):
+            new_params = []
+            for i, d in enumerate(data):
+                if i + idx in indices:
+                    new_params.append(params[p_idx])
+                    p_idx += 1
+                else:
+                    new_params.append(d)
+
+            if isinstance(op, Operator):
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_op._check_batching(new_op.data)
+            else:
+                new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
+                new_obs._check_batching(new_obs.data)
+                new_op = op.__class__(obs=new_obs)
+
+            new_ops.append(new_op)
+        else:
+            # no need to change the operator
+            new_ops.append(op)
+
+        idx += len(data)
+
+    new_prep = new_ops[: len(tape._prep)]
+    new_operations = new_ops[len(tape._prep) : len(tape.operations)]
+    new_measurements = new_ops[len(tape.operations) :]
+
+    new_tape = qml.tape.QuantumScript(new_operations, new_measurements, new_prep, shots=tape.shots)
+    new_tape.trainable_params = tape.trainable_params
+    new_tape._qfunc_output = tape._qfunc_output
+
+    return new_tape
+
+
+QuantumScript.bind_new_parameters = bind_new_parameters_tape

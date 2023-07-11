@@ -73,7 +73,7 @@
   same functionality, please call ``qml.ops.functions.bind_new_parameters`` on all
   operations in the quantum script, then instantiate a new ``QuantumScript`` with
   the new operations.
-  []()
+  [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
 <h3>Documentation 📝</h3>
 

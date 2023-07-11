@@ -502,19 +502,6 @@ class TestScriptCopying:
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
 
-        # since the copy is shallow, mutating the parameters
-        # on one tape will affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            qs.set_parameters(new_params)
-
-        # check that they are the same objects in memory
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert i is j
-
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
@@ -550,19 +537,6 @@ class TestScriptCopying:
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
-
-        # Since they have unique operations, mutating the parameters
-        # on one script will *not* affect the parameters on another script
-        new_params = [np.array([0, 0]), 0.2]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            qs.set_parameters(new_params)
-
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert not np.all(i == j)
-            assert i is not j
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
