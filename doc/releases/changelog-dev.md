@@ -10,6 +10,10 @@
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
+* The `qml.gradients` module no longer mutates operators in-place for any gradient transforms.
+  Instead, operators that need to be mutated are copied with new parameters.
+  [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
@@ -85,6 +89,7 @@ This release contains contributions from (in alphabetical order):
 
 Edward Jiang,
 Christina Lee,
+Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 David Wierichs,
