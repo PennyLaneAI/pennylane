@@ -340,7 +340,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
         def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
-        def freq(fr, t): return fr  # Enables frequency trainability (see below)
+        freq = qml.pulse.constant  # Enables frequency trainability (see below)
         phase = 0.
         t=2
 
@@ -360,7 +360,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
     :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
-    trainable parameters by providing a constant callable above instead of fixed values.
+    trainable parameters by providing a constant callable through :func:`~.pulse.constant` instead of fixed values (like the phase).
     This allows us to differentiate with respect to the frequencies and to optimize them.
 
     >>> max_amp0, max_amp1, max_amp2 = [0.5, 0.3, 0.6]
