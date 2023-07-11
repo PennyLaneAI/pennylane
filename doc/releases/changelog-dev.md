@@ -58,6 +58,15 @@
 
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
+  [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
+
+* `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
+  `disable_return`, as the old return system is deprecated along with these switch functions.
+  [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
+
+* The `mode` keyword argument in `QNode` is deprecated, as it was only used in the
+  old return system (which is also deprecated). Please use `grad_on_execution` instead.
+  [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
 
 <h3>Documentation 📝</h3>
 
