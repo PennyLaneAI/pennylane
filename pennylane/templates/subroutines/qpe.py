@@ -41,9 +41,12 @@ class QuantumPhaseEstimation(Operation):
        of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
        :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
        be prepared more generally.
+
     #. Apply the ``QuantumPhaseEstimation`` circuit.
+
     #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
        measurement outcomes in the computational basis.
+
     #. Find the index of the largest value in the probability distribution and divide that number by
        :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
        exponentially with the number of qubits :math:`n`.
