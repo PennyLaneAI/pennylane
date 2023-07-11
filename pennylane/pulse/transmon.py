@@ -329,7 +329,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     We use values around :math:`\omega = 5 \times 2\pi \text{GHz}` for resonant frequencies, and coupling strenghts
     on the order of around :math:`g = 0.01 \times 2\pi \text{GHz}`.
 
-    We parametrize the drive Hamiltonian of the qubits with amplitudes as squared sinusodials of
+    We parametrize the drive Hamiltonians for the qubits with amplitudes as squared sinusodials of
     maximum amplitude :math:`A`, and constant drive frequencies of value :math:`\nu`. We set the
     phase to zero :math:`\phi=0`, and we make the parameters :math:`A` and :math:`\nu` trainable
     for every qubit. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
