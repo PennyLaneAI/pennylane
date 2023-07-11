@@ -209,10 +209,13 @@ class DefaultQutrit(QutritDevice):
             return state
         wires = operation.wires
 
-        if operation.name in self._apply_ops:
+        if operation.name in self._apply_ops:  # pylint: disable=no-else-return
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.name](state, axes)
-        elif isinstance(operation, qml.ops.Adjoint) and operation.base.name in self._apply_ops:
+        elif (
+            isinstance(operation, qml.ops.Adjoint)  # pylint: disable=no-member
+            and operation.base.name in self._apply_ops
+        ):
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base.name](state, axes, inverse=True)
 
