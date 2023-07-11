@@ -312,8 +312,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         t = 0.5
         A = 0.1
-        phi_0 = 0.001
-        params = [A, phi_0]
+        phi0 = 0.001
+        params = [A, phi0]
 
     Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi_0 = 10^{-3}` we obtain
     :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x - i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
@@ -329,8 +329,10 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     We use values around :math:`\omega = 5 \times 2\pi \text{GHz}` for resonant frequencies, and coupling strenghts
     on the order of around :math:`g = 0.01 \times 2\pi \text{GHz}`.
 
-    We parametrize the amplitude as a squared sinusodial and make the maximum amplitude as well as the drive frequency
-    trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
+    We parametrize the drive Hamiltonian of the qubits with amplitudes as squared sinusodials of
+    maximum amplitude :math:`A`, and constant drive frequencies of value :math:`\nu`. We set the
+    phase to zero :math:`\phi=0`, and we make the parameters :math:`A` and :math:`\nu` trainable
+    for every qubit. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
     .. code-block:: python3
 
@@ -340,28 +342,27 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
         def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
-        freq = qml.pulse.constant  # Enables frequency trainability (see below)
-        phase = 0.
-        t=2
+        freq = qml.pulse.constant  # Parametrized constant frequency
+        phase = 0.0
+        time = 5
 
-        H += qml.pulse.transmon_drive(amp, phase, freq, 0)
-        H += qml.pulse.transmon_drive(amp, phase, freq, 1)
-        H += qml.pulse.transmon_drive(amp, phase, freq, 2)
+        for q in range(3):
+            H += qml.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
 
         dev = qml.device("default.qubit.jax", wires=range(3))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H)(params, t=5.)
+            qml.evolve(H)(params, time)
             return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
     :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
-    trainable parameters by providing a constant callable through :func:`~.pulse.constant` instead of fixed values (like the phase).
-    This allows us to differentiate with respect to the frequencies and to optimize them.
+    trainable parameters by providing constant callables through :func:`~.pulse.constant` instead of fixed values (like the phase).
+    This allows us to differentiate with respect to both the maximum amplitudes and the frequencies and optimize them.
 
     >>> max_amp0, max_amp1, max_amp2 = [0.5, 0.3, 0.6]
     >>> fr0, fr1, fr2 = qubit_freqs
