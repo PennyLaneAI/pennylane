@@ -80,7 +80,7 @@
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
-[(#)]()
+[(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
 
 <h3>Contributors ✍️</h3>
 
