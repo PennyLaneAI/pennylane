@@ -375,6 +375,10 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             )
 
         if isinstance(other, (int, float)):
+            if other == 0 or other == 0.0:
+                return HardwareHamiltonian(
+                    coeffs, ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+                )
             new_coeffs = coeffs + [other]
             with qml.queuing.QueuingManager.stop_recording():
                 new_ops = ops + [qml.Identity(self.wires[0])]

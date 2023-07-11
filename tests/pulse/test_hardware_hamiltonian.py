@@ -194,6 +194,27 @@ class TestHardwareHamiltonian:
         assert qml.equal(H.ops[-1], qml.Identity(2))
         assert qml.math.allclose(qml.matrix(H([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
 
+    def test_add_zero(self):
+        """Test that adding an int or a float that is zero to a `HardwareHamiltonian`
+        returns an unchanged copy."""
+        coeffs = [2, 3]
+        ops = [qml.PauliZ(2), qml.PauliX(0)]
+
+        H = HardwareHamiltonian(
+            coeffs=coeffs,
+            observables=ops,
+            pulses=[HardwarePulse(qml.pulse.constant, 6, 7, 8)],
+        )
+        orig_matrix = qml.matrix(H([0.3], 0.1))
+        H1 = H + 0
+        assert len(H1.ops) == len(H1.coeffs) == 2
+        assert qml.math.allclose(qml.matrix(H1([0.3], 0.1)), orig_matrix)
+        assert H1 is not H
+        H2 = 0.0 + H
+        assert len(H2.ops) == len(H2.coeffs) == 2
+        assert qml.math.allclose(qml.matrix(H2([0.3], 0.1)), orig_matrix)
+        assert H2 is not H
+
     @pytest.mark.xfail
     def test_add_raises_warning(self):
         """Test that an error is raised when adding two HardwareHamiltonians where one Hamiltonian
