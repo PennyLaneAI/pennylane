@@ -19,21 +19,38 @@ import numpy as np
 import pytest
 
 from pennylane.data.attributes import DatasetArray
+from pennylane import numpy as qml_numpy
 
 
 class TestDatasetArray:
-    @pytest.mark.parametrize("value", [[1, 2, 3], [[1], [2]]])
-    def test_value_init(self, value):
+    @pytest.mark.parametrize(
+        "value, py_type, interface",
+        [
+            (np.array([1, 2, 3]), "numpy.ndarray", "numpy"),
+            (qml_numpy.tensor([1, 2, 3]), "pennylane.numpy.tensor.tensor", "autograd"),
+        ],
+    )
+    def test_value_init(self, value, interface, py_type):
         """Test that a DatasetArray is correctly value-initialized."""
-        value = np.array(value)
+        arr = DatasetArray(value)
+
+        assert isinstance(arr.get_value(), type(value))
+        assert (arr.get_value() == value).all()
+        assert arr.bind.dtype == value.dtype
+        assert arr.info.py_type == py_type
+        assert arr.info.type_id == "array"
+        assert arr.info["array_interface"] == interface
+
+    @pytest.mark.parametrize("array_class", [qml_numpy.tensor])
+    @pytest.mark.parametrize("requires_grad", [True, False])
+    def test_value_init_requires_grad(self, array_class, requires_grad):
+        """Test that a DatasetArray preserves the ``requires_grad`` attribute
+        of array interfaces."""
+        value = array_class([1, 2, 3, 4], requires_grad=requires_grad)
 
         arr = DatasetArray(value)
 
-        assert (arr == value).all()
-        assert (np.array(arr.bind) == value).all()
-        assert arr.bind.dtype == value.dtype
-        assert arr.info.py_type == "numpy.ndarray"
-        assert arr.info.type_id == "array"
+        assert arr.get_value().requires_grad == requires_grad
 
     @pytest.mark.parametrize("value", [[1, 2, 3], [[1], [2]]])
     def test_bind_init(self, value):
