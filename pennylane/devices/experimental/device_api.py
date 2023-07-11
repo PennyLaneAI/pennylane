@@ -42,7 +42,7 @@ class Device(abc.ABC):
         This interface is **experimental** and not yet integrated with the rest of PennyLane.
 
     Device drivers should be configured to run under :func:`~.enable_return`, the newer
-    return shape specification.
+    return shape specification, as the old return shape specification is deprecated.
 
     Only the ``execute`` method must be defined to construct a device driver.
 
