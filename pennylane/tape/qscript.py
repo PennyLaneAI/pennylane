@@ -1434,6 +1434,9 @@ def bind_new_parameters_tape(
     """
     # pylint: disable=no-member
 
+    if len(params) != len(indices):
+        raise ValueError("Number of provided parameters does not match number of indices")
+
     new_ops = []
     idx = 0
     p_idx = 0
@@ -1478,3 +1481,6 @@ def bind_new_parameters_tape(
     new_tape._qfunc_output = tape._qfunc_output
 
     return new_tape
+
+
+QuantumScript.bind_new_parameters = bind_new_parameters_tape

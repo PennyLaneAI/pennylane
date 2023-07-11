@@ -332,7 +332,7 @@ class TestConstruction:
     )
     def test_update_batch_size(self, x, rot, exp_batch_size):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size, when creating and when using `bind_new_parameters`."""
 
         # Test with tape construction
         with qml.queuing.AnnotatedQueue() as q:
@@ -344,7 +344,7 @@ class TestConstruction:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size == exp_batch_size
 
-        # Test with set_parameters
+        # Test with bind_new_parameters
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Rot(1.0, 0.2, -0.3, wires=1)
@@ -354,7 +354,7 @@ class TestConstruction:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size is None
 
-        tape.set_parameters([x] + rot)
+        tape = tape.bind_new_parameters([x] + rot, [0, 1, 2, 3])
         assert tape.batch_size == exp_batch_size
 
     @pytest.mark.parametrize(
@@ -366,7 +366,7 @@ class TestConstruction:
     )
     def test_error_inconsistent_batch_sizes(self, x, rot, y):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size, when creating and when using `bind_new_parameters`."""
 
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
@@ -387,7 +387,7 @@ class TestConstruction:
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            tape.set_parameters([x] + rot + [y])
+            tape.bind_new_parameters([x] + rot + [y], [0, 1, 2, 3, 4])
 
 
 class TestIteration:
@@ -727,15 +727,16 @@ class TestParameters:
 
     def test_setting_parameters(self, make_tape):
         """Test that parameters are correctly modified after construction"""
-        tape, _ = make_tape
+        tape, params = make_tape
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
-        tape.set_parameters(new_params)
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
-        assert tape.get_parameters() == new_params
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
 
         new_params = (0.1, -0.2, 1, 5, 0)
         tape.data = new_params
@@ -751,23 +752,24 @@ class TestParameters:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params)
+        new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
 
         count = 0
-        for idx, pinfo in enumerate(tape._par_info):
+        for idx, pinfo in enumerate(new_tape._par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
             else:
                 assert pinfo["op"].data[pinfo["p_idx"]] == params[idx]
 
-        assert tape.get_parameters(trainable_only=False) == [
+        assert new_tape.get_parameters(trainable_only=False) == [
             params[0],
             new_params[0],
             params[2],
             new_params[1],
             params[4],
         ]
+        assert tape.get_parameters(trainable_only=False) == params
 
     def test_setting_parameters_unordered(self, make_tape):
         """Test that an 'unordered' trainable_params set does not affect
@@ -776,29 +778,31 @@ class TestParameters:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [3, 1]
-        tape.set_parameters(new_params)
+        new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
 
-        assert tape.get_parameters(trainable_only=True) == new_params
-        assert tape.get_parameters(trainable_only=False) == [
+        assert new_tape.get_parameters(trainable_only=True) == new_params
+        assert new_tape.get_parameters(trainable_only=False) == [
             params[0],
             new_params[0],
             params[2],
             new_params[1],
             params[4],
         ]
+        assert tape.get_parameters(trainable_only=False) == params
 
     def test_setting_all_parameters(self, make_tape):
         """Test that all parameters are correctly modified after construction"""
-        tape, _ = make_tape
+        tape, params = make_tape
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params, trainable_only=False)
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
-        assert tape.get_parameters(trainable_only=False) == new_params
+        assert new_tape.get_parameters(trainable_only=False) == new_params
+        assert tape.get_parameters(trainable_only=False) == params
 
     def test_setting_parameters_error(self, make_tape):
         """Test that exceptions are raised if incorrect parameters
@@ -806,11 +810,10 @@ class TestParameters:
         tape, _ = make_tape
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.set_parameters([0.54])
+            tape.bind_new_parameters([0.54], [0, 1, 2, 3, 4])
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.trainable_params = [2, 3]
-            tape.set_parameters([0.54, 0.54, 0.123])
+            tape.bind_new_parameters([0.54, 0.54, 0.123], [0, 1])
 
     def test_array_parameter(self):
         """Test that array parameters integrate properly"""
@@ -826,10 +829,12 @@ class TestParameters:
 
         b = np.array([0, 1, 0, 0])
         new_params = [b, 0.543, 0.654, 0.123]
-        tape.set_parameters(new_params)
-        assert tape.get_parameters() == new_params
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
 
-        assert np.all(op_.data[0] == b)
+        assert np.all(op_.data[0] == a)
+        assert np.all(new_tape[0].data[0] == b)
 
     def test_measurement_parameter(self):
         """Test that measurement parameters integrate properly"""
@@ -846,10 +851,12 @@ class TestParameters:
 
         H2 = np.array([[0, 1], [1, 1]])
         new_params = [0.543, 0.654, 0.123, H2]
-        tape.set_parameters(new_params)
-        assert tape.get_parameters() == new_params
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
 
-        assert np.all(obs.data[0] == H2)
+        assert np.all(obs.data[0] == H)
+        assert np.all(new_tape[1].obs.data[0] == H2)
 
 
 class TestInverseAdjoint:
@@ -900,7 +907,6 @@ class TestExpand:
         # check that modifying the new tape does not affect the old tape
 
         new_tape.trainable_params = [0]
-        new_tape.set_parameters([10])
 
         assert tape.get_parameters() == [0.1, 0.2, 0.3]
         assert tape.trainable_params == [0, 1, 2]
@@ -1237,10 +1243,10 @@ class TestExecution:
         assert tape.get_parameters() == params
 
         # test setting parameters
-        tape.set_parameters(params=[0.5, 0.6])
-        res3 = dev.execute(tape)
+        new_tape = tape.bind_new_parameters(params=[0.5, 0.6], indices=[0, 1])
+        res3 = dev.execute(new_tape)
         assert not np.allclose(res1, res3, atol=tol, rtol=0)
-        assert tape.get_parameters() == [0.5, 0.6]
+        assert new_tape.get_parameters() == [0.5, 0.6]
 
     def test_no_output_execute(self):
         """Test that tapes with no measurement process return
@@ -1477,18 +1483,6 @@ class TestTapeCopying:
         # check that the output dim is identical
         assert tape.output_dim == copied_tape.output_dim
 
-        # since the copy is shallow, mutating the parameters
-        # on one tape will affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        tape.set_parameters(new_params)
-
-        # check that they are the same objects in memory
-        for i, j in zip(tape.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_tape.get_parameters(), new_params):
-            assert i is j
-
     @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), copy.copy])
     def test_shallow_copy_with_operations(self, copy_fn):
         """Test that shallow copying of a tape and operations allows
@@ -1520,18 +1514,6 @@ class TestTapeCopying:
 
         # check that the output dim is identical
         assert tape.output_dim == copied_tape.output_dim
-
-        # Since they have unique operations, mutating the parameters
-        # on one tape will *not* affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        tape.set_parameters(new_params)
-
-        for i, j in zip(tape.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_tape.get_parameters(), new_params):
-            assert not np.all(i == j)
-            assert i is not j
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
