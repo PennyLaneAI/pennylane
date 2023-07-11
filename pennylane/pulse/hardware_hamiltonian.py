@@ -26,6 +26,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+
 def drive(amplitude, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
     field with a set of qubits.
@@ -325,7 +326,10 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
-                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is likely due to an attempt to add hardware compatible Hamiltonians for different target systems."
+                    f"Cannot add two HardwareHamiltonians with different reorder functions. "
+                    " Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is "
+                    "likely due to an attempt to add hardware compatible Hamiltonians for "
+                    "different target systems."
                 )
             if self.settings is None and other.settings is None:
                 new_settings = None
@@ -374,7 +378,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_coeffs = coeffs + [other]
             with qml.queuing.QueuingManager.stop_recording():
                 new_ops = ops + [qml.Identity(self.wires[0])]
-            
+
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )
