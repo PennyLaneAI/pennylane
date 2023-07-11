@@ -122,7 +122,7 @@ class TransformProgram:
     def __call__(self, tapes):
         processing_fns_list = []
         classical_cotransforms_list = []
-
+        num_tapes = len(tapes)
         for transform_container in self:
             transform, args, kwargs, cotransform, _ = transform_container
 
@@ -137,7 +137,7 @@ class TransformProgram:
             # Merge the processing function into in a single one
             def processing_fn(res):
                 s = len(new_tapes)
-                final_results = [fns[idx](res[idx*s: (idx+1)*s]) for idx in range(len(tapes))]
+                final_results = [fns[idx](res[idx*s: (idx+1)*s]) for idx in range(num_tapes)]
                 return final_results
 
             tapes = execution_tapes

@@ -58,6 +58,17 @@ def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
     transform_program,
+    gradient_fn: Optional[Union[Callable, str]] = None,
+    interface="auto",
+    grad_on_execution="best",
+    gradient_kwargs=None,
+    cache = True,
+    cachesize=10000,
+    max_diff=1,
+    override_shots: int = False,
+    expand_fn="device",  # type: ignore
+    max_expansion=10,
+    device_batch_transform=True,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device with a transform program.
     """

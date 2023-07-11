@@ -952,7 +952,8 @@ class QNode:
             if self.transform_program:
                 res = pennylane.workflow.execution.execute(tapes=[self.tape],
                                                            device=self.device,
-                                                           transform_program=self.transform_program)
+                                                           transform_program=self.transform_program,
+                                                           **self.execute_kwargs)
                 res = res[0]
             else:
                 res = qml.execute(
