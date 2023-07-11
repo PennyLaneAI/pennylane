@@ -72,7 +72,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
         # analytic case
 
         if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state)
+            return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
 
         return tuple(
             measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements

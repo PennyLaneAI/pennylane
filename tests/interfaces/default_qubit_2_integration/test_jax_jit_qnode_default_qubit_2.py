@@ -13,6 +13,7 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 # pylint: disable=too-many-arguments,too-few-public-methods
+from functools import partial
 import pytest
 
 import pennylane as qml
@@ -735,6 +736,7 @@ class TestShotsIntegration:
 
         assert jax.numpy.allclose(circuit(jax.numpy.array(0.0)), 1)
 
+    @pytest.mark.skip("jax.jit does not work with sample")
     def test_changing_shots(self, interface):
         """Test that changing shots works on execution"""
         a, b = jax.numpy.array([0.543, -0.654])
@@ -819,7 +821,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = jax.jit(circuit)()
+        res = jax.jit(circuit, static_argnames="shots")(shots=10)
 
         assert isinstance(res, tuple)
 
@@ -848,9 +850,9 @@ class TestQubitIntegration:
             with pytest.raises(
                 NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
             ):
-                jax.jit(circuit)()
+                jax.jit(circuit, static_argnames="shots")(shots=10)
         else:
-            res = jax.jit(circuit)()
+            res = jax.jit(circuit, static_argnames="shots")(shots=10)
 
             assert isinstance(res, tuple)
 
@@ -1298,7 +1300,6 @@ class TestTapeExpansion:
             PhaseShift(2 * y, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "batch_execute")
         x = jax.numpy.array(0.5)
         y = jax.numpy.array(0.7)
         circuit(x, y)
@@ -1425,7 +1426,7 @@ class TestTapeExpansion:
         res = circuit(d, w, c, shots=50000)  # pylint:disable=unexpected-keyword-arg
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
-        spy.assert_called()
+        spy.assert_not_called()
 
         # test gradients
         grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
@@ -1750,7 +1751,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        grad = jax.jit(jacobian(circuit))(a, shots=shots)
+        grad = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
@@ -1773,7 +1774,9 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        grad = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b, shots=shots)
+        grad = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
+            a, b, shots=shots
+        )
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
@@ -1797,7 +1800,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        grad = jax.jit(jacobian(circuit))(a, shots=shots)
+        grad = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
@@ -1823,7 +1826,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jit(jacobian(circuit))(a, shots=shots)
+        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
@@ -1849,7 +1852,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
 
@@ -1878,7 +1881,7 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        jac = jax.jit(jacobian(circuit))(a, shots=shots)
+        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
@@ -1902,7 +1905,9 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
+            par_0, par_1, shots=shots
+        )
 
         assert isinstance(jac, tuple)
 
@@ -1937,7 +1942,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit))(a, shots=shots)
+        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1971,7 +1976,9 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
+            par_0, par_1, shots=shots
+        )
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2011,7 +2018,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit))(a, shots=shots)
+        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2042,7 +2049,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jit(jacobian(circuit))(a, shots=shots)
+        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2073,7 +2080,7 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2111,7 +2118,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit))(a, shots=shots)
+        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2441,7 +2448,7 @@ class TestReturnHessian:
 def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
 
-    @jax.jit
+    @partial(jax.jit, static_argnames="shots")
     @qml.qnode(DefaultQubit2(), diff_method=diff_method, max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)
@@ -2451,7 +2458,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     x = jax.numpy.array([1.0, 2.0])
     a, b = x
 
-    hess = jax.jit(hessian(circuit))(x, shots=10000)
+    hess = jax.jit(hessian(circuit), static_argnames="shots")(x, shots=10000)
 
     expected_hess = [
         [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],

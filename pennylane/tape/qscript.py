@@ -933,11 +933,15 @@ class QuantumScript:
         if not qml.active_return():
             return self._shape_legacy(device)
 
-        shots = (
-            Shots(device._raw_shot_sequence)
-            if device.shot_vector is not None
-            else Shots(device.shots)
-        )
+        if isinstance(device, qml.devices.experimental.Device):
+            shots = self.shots
+            device = self  # most MPs use `device.wires`, one checks `device.cutoff`
+        else:
+            shots = (
+                Shots(device._raw_shot_sequence)
+                if device.shot_vector is not None
+                else Shots(device.shots)
+            )
 
         if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
