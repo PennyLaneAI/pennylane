@@ -1416,16 +1416,18 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
 def bind_new_parameters_tape(
     tape: QuantumScript, params: Sequence[TensorLike], indices: Sequence[int]
 ):
-    """Create a new operator with updated parameters.
+    """Create a new tape with updated parameters.
 
-    This function takes a :class:`~.tape.QuantumScript` and new parameters as
-    input, and returns a new ``QuantumScript`` containing the new parameters.
-    This function does not mutate the original ``QuantumScript``.
+    This function takes a :class:`~.tape.QuantumScript` as input, and returns
+    a new ``QuantumScript`` containing the new parameters at the provided indices,
+    with the parameters at all other indices remaining the same.
 
     Args:
         tape (.tape.QuantumScript): Tape to update
-        params (Sequence[TensorLike]): New parameters to create tape with. This
-            must have the same shape as ``tape.get_parameters``.
+        params (Sequence[TensorLike]): New parameters to create the tape with. This
+            must have the same length as ``indices``.
+        indices (Sequence[int]): The parameter indices to update with the given parameters.
+            The index of a parameter is defined as its index in ``tape.get_parameters()``.
 
     Returns:
         .tape.QuantumScript: New tape with updated parameters
@@ -1456,10 +1458,8 @@ def bind_new_parameters_tape(
 
             if isinstance(op, Operator):
                 new_op = qml.ops.functions.bind_new_parameters(op, new_params)
-                new_op._check_batching(new_op.data)
             else:
                 new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
-                new_obs._check_batching(new_obs.data)
                 new_op = op.__class__(obs=new_obs)
 
             new_ops.append(new_op)
