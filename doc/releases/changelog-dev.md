@@ -10,6 +10,10 @@
   Instead, it returns `False`.
   [(#4315)](https://github.com/PennyLaneAI/pennylane/pull/4315)
 
+* The `qml.gradients` module no longer mutates operators in-place for any gradient transforms.
+  Instead, operators that need to be mutated are copied with new parameters.
+  [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
