@@ -286,7 +286,7 @@ def _validate_multiprocessing(max_workers):
     varname = "OMP_NUM_THREADS"
     varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
     for var in varnames:
-        if os.getenv(var):
+        if os.getenv(var):  # pragma: no cover
             varname = var
             threads_per_proc = int(os.getenv(var))
             break
