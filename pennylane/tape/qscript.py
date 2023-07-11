@@ -1160,7 +1160,7 @@ class QuantumScript:
 
         warnings.warn(
             "The method tape.unwrap is deprecated and will be removed in PennyLane v0.33. "
-            "Please use convert_to_numpy_parameters instead."
+            "Please use qml.transforms.convert_to_numpy_parameters instead."
         )
 
         return qml.tape.UnwrapTape(self)

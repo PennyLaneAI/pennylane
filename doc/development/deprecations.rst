@@ -66,9 +66,9 @@ Pending deprecations
 
     from pennylane.transforms import convert_to_numpy_parameters
 
-    qscript = qml.tape.QuantumScript([qml.RX(torch.tensor(0.1234), 0)],
+    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
                                      [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
-    unwrapped_qscript = convert_to_numpy_parameters(circuit)
+    unwrapped_qscript = convert_to_numpy_parameters(qscript)
 
     torch_params = qscript.get_parameters()
     numpy_params = unwrapped_qscript.get_parameters()
