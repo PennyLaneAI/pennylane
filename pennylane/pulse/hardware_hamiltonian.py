@@ -326,8 +326,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
-                    f"Cannot add two HardwareHamiltonians with different reorder functions. "
-                    " Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is "
+                    "Cannot add two HardwareHamiltonians with different reorder functions. "
+                    f"Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is "
                     "likely due to an attempt to add hardware compatible Hamiltonians for "
                     "different target systems."
                 )
