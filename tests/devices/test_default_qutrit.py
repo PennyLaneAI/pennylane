@@ -106,6 +106,24 @@ class TestApply:
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
 
+    @pytest.mark.parametrize("operation, expected_output, input, subspace", test_data_no_parameters)
+    def test_apply_operation_single_wire_no_parameters_adjoint(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for single wire
+        operations that have no parameters."""
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.apply(
+            [
+                qml.adjoint(operation(wires=[0]))
+                if subspace is None
+                else qml.adjoint(operation(wires=[0], subspace=subspace))
+            ]
+        )
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
     test_data_two_wires_no_parameters = [
         (qml.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
         (
@@ -165,6 +183,30 @@ class TestApply:
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
+    @pytest.mark.parametrize(
+        "operation,expected_output,input, subspace", all_two_wires_no_parameters
+    )
+    def test_apply_operation_two_wires_no_parameters_adjoint(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for two wire
+        operations that have no parameters."""
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply(
+            [
+                qml.adjoint(operation(wires=[0, 1]))
+                if subspace is None
+                else qml.adjoint(operation(wires=[0, 1], subspace=subspace))
+            ]
+        )
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
         (qml.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), [U_thadamard_01], None),
@@ -214,6 +256,23 @@ class TestApply:
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
 
+    @pytest.mark.parametrize(
+        "operation, expected_output, input, par, subspace", test_data_single_wire_with_parameters
+    )
+    def test_apply_operation_single_wire_with_parameters_adjoint(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for single wire
+        operations that have parameters."""
+
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+
+        kwargs = {} if subspace is None else {"subspace": subspace}
+        qutrit_device_1_wire.apply([qml.adjoint(operation(*par, wires=[0], **kwargs))])
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
         (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TSWAP]),
@@ -247,6 +306,25 @@ class TestApply:
             (3, 3)
         )
         qutrit_device_2_wires.apply([operation(*par, wires=[0, 1])])
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+
+    @pytest.mark.parametrize(
+        "operation,expected_output,input,par", test_data_two_wires_with_parameters
+    )
+    def test_apply_operation_two_wires_with_parameters_adjoint(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+    ):
+        """Tests that applying an adjoint operation yields the expected output state for two wire
+        operations that have parameters."""
+
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply([qml.adjoint(operation(*par, wires=[0, 1]))])
 
         assert np.allclose(
             qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
