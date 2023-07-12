@@ -205,7 +205,7 @@ class TestMscMethods:
 
         assert metadata == tuple()
 
-        new_op = type(sprod_op)._unflatten(*sprod_op.flatten())
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
         assert qml.equal(new_op, sprod_op)
         assert new_op is not sprod_op
 

@@ -435,7 +435,7 @@ class TestMiscMethods:
 
         assert metadata == tuple()
 
-        new_op = type(adj_op)._unflatten(*adj_op.flatten())
+        new_op = type(adj_op)._unflatten(*adj_op._flatten())
         assert qml.equal(adj_op, new_op)
 
 

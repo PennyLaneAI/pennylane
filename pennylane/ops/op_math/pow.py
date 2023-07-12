@@ -163,7 +163,7 @@ class Pow(ScalarSymbolicOp):
 
     @classmethod
     def _unflatten(cls, data, _):
-        return cls(data[0], z=data[1])
+        return pow(data[0], z=data[1])
 
     _operation_type = None  # type if base inherits from operation and not observable
     _operation_observable_type = None  # type if base inherits from both operation and observable

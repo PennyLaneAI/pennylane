@@ -374,7 +374,7 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Tests the _flatten and _unflatten methods."""
         target = qml.S(0)
-        control_wires = qml.wires.Wires((0, 1))
+        control_wires = qml.wires.Wires((1, 2))
         control_values = (0, 0)
         work_wires = qml.wires.Wires(3)
 
@@ -387,9 +387,10 @@ class TestMiscMethods:
         assert metadata == (control_wires, control_values, work_wires)
 
         # make sure metadata is hashable
-        _ = {metadata: "val"}
+        assert hash(metadata)
+
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(new_op)
+        assert qml.equal(op, new_op)
         assert new_op._name == "C(S)"  # make sure initialization was called
 
     def test_copy(self):
