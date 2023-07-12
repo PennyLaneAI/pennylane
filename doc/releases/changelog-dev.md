@@ -10,6 +10,10 @@
   as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
+* `qml.equal` no longer raises errors when operators or measurements of different types are compared.
+  Instead, it returns `False`.
+  [(#4315)](https://github.com/PennyLaneAI/pennylane/pull/4315)
+
 * The `qml.gradients` module no longer mutates operators in-place for any gradient transforms.
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
