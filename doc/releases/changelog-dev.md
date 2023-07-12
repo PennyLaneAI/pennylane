@@ -79,6 +79,9 @@
 
 <h3>Documentation 📝</h3>
 
+* `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
+  [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
+
 <h3>Bug fixes 🐛</h3>
   
 * Stop `metric_tensor` from accidentally catching errors that stem from
