@@ -31,7 +31,7 @@
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * The experimental device interface is integrated with the `QNode` for Jax jit.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
 <h3>Breaking changes 💔</h3>
 
