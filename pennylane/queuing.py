@@ -412,6 +412,10 @@ class AnnotatedQueue(OrderedDict):
         key = key if isinstance(key, WrappedObj) else WrappedObj(key)
         return super().__getitem__(key)
 
+    def __contains__(self, key):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__contains__(key)
+
 
 def apply(op, context=QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
@@ -534,8 +538,7 @@ def apply(op, context=QueuingManager):
         raise RuntimeError("No queuing context available to append operation to.")
 
     # pylint: disable=unsupported-membership-test
-    if WrappedObj(op) in getattr(context, "queue", QueuingManager.active_context()):
-        # if op in getattr(context, "queue", QueuingManager.active_context().queue):
+    if op in getattr(context, "queue", QueuingManager.active_context()):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)
