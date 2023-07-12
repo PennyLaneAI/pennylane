@@ -160,7 +160,7 @@ def integration(style="default", savefile="example_basic.png"):
 
     drawer.fig.suptitle("My Circuit", fontsize="xx-large")
     plt.savefig(folder / savefile)
-    plt.style.use("default")
+    use_style("black_white")
     plt.close()
 
 
@@ -201,7 +201,7 @@ def integration_rcParams(savefile="example_rcParams.png"):
     drawer.fig.suptitle("My Circuit", fontsize="xx-large")
 
     plt.savefig(folder / savefile)
-    plt.style.use("default")
+    use_style("black_white")
     plt.close()
 
 

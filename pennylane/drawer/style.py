@@ -169,7 +169,7 @@ def available_styles():
 
 
 def use_style(style: str):
-    """Set a style setting. Reset to default style using ``plt.style.use('default')``
+    """Set a style setting. Reset to default style using ``use_style('black_white')``
 
     Args:
         style (str): A style specification.
@@ -216,3 +216,7 @@ def use_style(style: str):
             f"style '{style}' provided to ``qml.drawer.use_style``"
             f" does not exist.  Available options are {available_styles()}"
         )
+
+
+if _has_mpl:
+    _black_white()

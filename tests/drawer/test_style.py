@@ -21,6 +21,12 @@ import pennylane as qml
 plt = pytest.importorskip("matplotlib.pyplot")
 
 
+@pytest.fixture(autouse=True)
+def reset_style_after_tests():
+    yield
+    qml.drawer.use_style("black_white")
+
+
 def test_available_styles():
     """Assert ``available_styles`` returns tuple of available styles."""
 
@@ -50,8 +56,6 @@ def test_black_white_style():
     assert plt.rcParams["text.color"] == "black"
     assert plt.rcParams["path.sketch"] is None
 
-    plt.style.use("default")
-
 
 def test_black_white_style_dark():
     """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
@@ -68,8 +72,6 @@ def test_black_white_style_dark():
     assert plt.rcParams["lines.color"] == "white"
     assert plt.rcParams["text.color"] == "white"
     assert plt.rcParams["path.sketch"] is None
-
-    plt.style.use("default")
 
 
 def test_sketch_style():
@@ -89,8 +91,6 @@ def test_sketch_style():
     assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
 
-    plt.style.use("default")
-
 
 def test_sketch_style_dark():
     """Tests the sketch style dark sets ``plt.rcParams`` with correct values"""
@@ -109,7 +109,6 @@ def test_sketch_style_dark():
     assert plt.rcParams["text.color"] == "white"
     assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
-    plt.style.use("default")
 
 
 def test_solarized_light_style():
@@ -127,8 +126,6 @@ def test_solarized_light_style():
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["path.sketch"] is None
 
-    plt.style.use("default")
-
 
 def test_solarized_dark_style():
     """Tests the solarized dark style sets ``plt.rcParams`` with correct values"""
@@ -144,8 +141,6 @@ def test_solarized_dark_style():
     assert plt.rcParams["text.color"] == "#2aa198"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["path.sketch"] is None
-
-    plt.style.use("default")
 
 
 def test_default():

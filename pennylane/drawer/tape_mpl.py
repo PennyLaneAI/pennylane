@@ -210,9 +210,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     return drawer.fig, drawer.ax
 
 
-def tape_mpl(
-    tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
-):
+def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -225,8 +223,8 @@ def tape_mpl(
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
-            If ``None``, the current matplotlib settings will be used.
+            current matplotlib settings will be used, and the initial default is 'black_white'.
+            Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.

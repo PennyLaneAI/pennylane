@@ -258,7 +258,7 @@ class TestMPLIntegration:
         for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert l.get_color() == rgba_green
 
-        plt.style.use("default")
+        qml.drawer.use_style("black_white")
         plt.close()
 
     def test_style_with_matplotlib(self):
@@ -276,7 +276,7 @@ class TestMPLIntegration:
         for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
-        plt.style.use("default")
+        qml.drawer.use_style("black_white")
         plt.close()
 
     def test_style_restores_settings(self):
