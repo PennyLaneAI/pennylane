@@ -55,9 +55,11 @@
 
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
+  [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
 
 * The method ``tape.unwrap()`` and corresponding ``Unwrap.Tape`` class are deprecated. Use
   ``convert_to_numpy_parameters`` instead.
+  [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
 <h3>Documentation 📝</h3>
 
@@ -73,6 +75,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Lillian M. A. Frederiksen,
 Edward Jiang,
 Christina Lee,
 Borja Requena,
