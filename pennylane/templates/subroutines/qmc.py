@@ -342,7 +342,7 @@ class QuantumMonteCarlo(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._hyperparameters = dict(metadata[1])
+        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
 
         # call operation.__init__ to initialize private properties like _name, _id, _pauli_rep, etc.
         Operation.__init__(new_op, *data, wires=metadata[0])

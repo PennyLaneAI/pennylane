@@ -247,6 +247,7 @@ class TestQubitSum:
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
+    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Tests the flatten and unflatten methods"""
         wires = qml.wires.Wires((0, 1, 2, 3))
@@ -260,16 +261,16 @@ class TestIntegerComparator:
 
         data, metadata = op._flatten()
         assert data == tuple()
-        assert len(metadata) == 4
-        assert metadata[0] == ("wires", wires)
-        assert metadata[1] == ("work_wires", work_wires)
-        assert metadata[2] == ("value", 2)
-        assert metadata[3] == ("geq", False)
+        assert len(metadata) == 2
+        assert metadata[0] == wires
+        assert metadata[1][0] == ("work_wires", work_wires)
+        assert metadata[1][1] == ("value", 2)
+        assert metadata[1][2] == ("geq", False)
 
         # check hashable
-        _ = {metadata: "val"}
+        assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op.flatten())
+        new_op = type(op)._unflatten(*op._flatten())
         assert qml.equal(new_op, op)
         assert new_op is not op
 
@@ -458,6 +459,7 @@ class TestIntegerComparator:
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.Identity) for op in tape2.operations)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qml.IntegerComparator(3, wires=[0, 1, 2, 3])

@@ -191,7 +191,6 @@ class MERA(Operation):
         template_weights=None,
         id=None,
     ):
-
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
         shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)

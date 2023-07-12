@@ -522,17 +522,26 @@ class Operator(abc.ABC):
         :title: Serialization and Pytree format
         :href: serialization
 
-    PennyLane operations are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
+        PennyLane operations are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
 
-    For most operators, this process will happen automatically without need for custom implementations.
+        For most operators, this process will happen automatically without need for custom implementations.
 
-    Customization of this process must occur if:
+        Customization of this process must occur if:
 
-    * The data and hyperparameters are insufficient to reproduce the original operation via its initialization
-    * The hyperparameters contain a non-hashable component, such as a list or dictionary.
+        * The data and hyperparameters are insufficient to reproduce the original operation via its initialization
+        * The hyperparameters contain a non-hashable component, such as a list or dictionary.
 
-    Some examples include operator arithemtic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
-    perform preprocessing during initialization.
+        Some examples include operator arithemtic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
+        perform preprocessing during initialization.
+
+        See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
+
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
 
     .. details::
         :title: Parameter broadcasting

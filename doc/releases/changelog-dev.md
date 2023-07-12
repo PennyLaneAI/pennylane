@@ -70,6 +70,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation.
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)

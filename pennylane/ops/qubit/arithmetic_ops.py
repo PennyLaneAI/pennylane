@@ -171,12 +171,11 @@ class QubitCarry(Operation):
         [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
 
         """
-        decomp_ops = [
+        return [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
         ]
-        return decomp_ops
 
 
 class QubitSum(Operation):
@@ -361,13 +360,12 @@ class IntegerComparator(Operation):
 
     def _flatten(self):
         hp = self.hyperparameters
-        metadata = tuple(
-            ("wires", hp["control_wires"] + hp["target_wires"]),
+        metadata = (
             ("work_wires", hp["work_wires"]),
             ("value", hp["value"]),
             ("geq", hp["geq"]),
         )
-        return tuple(), metadata
+        return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
 
     # pylint: disable=too-many-arguments
     def __init__(self, value, geq=True, wires=None, work_wires=None):
