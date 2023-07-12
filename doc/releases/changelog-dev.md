@@ -91,6 +91,10 @@
 * `qml.qinfo.purity` now produces correct results with custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
+* `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbeddings`
+  have a batch dimension.
+  [#4353](https://github.com/PennyLaneAI/pennylane/pull/4353)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
