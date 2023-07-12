@@ -13,6 +13,18 @@
   issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
 
+* Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
+  as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
+  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
+
+* `qml.equal` no longer raises errors when operators or measurements of different types are compared.
+  Instead, it returns `False`.
+  [(#4315)](https://github.com/PennyLaneAI/pennylane/pull/4315)
+
+* The `qml.gradients` module no longer mutates operators in-place for any gradient transforms.
+  Instead, operators that need to be mutated are copied with new parameters.
+  [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
@@ -75,12 +87,19 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+  
+* Stop `metric_tensor` from accidentally catching errors that stem from
+  flawed wires assignments in the original circuit, leading to recursion errors
+  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
 * `qml.qinfo.purity` now produces correct results with custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
+* `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
+  [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
 
 <h3>Contributors ✍️</h3>
 
@@ -89,5 +108,7 @@ This release contains contributions from (in alphabetical order):
 Edward Jiang,
 Christina Lee,
 Vincent Michaud-Rioux,
+Mudit Pandey,
 Borja Requena,
-Matthew Silverman
+Matthew Silverman,
+David Wierichs,
