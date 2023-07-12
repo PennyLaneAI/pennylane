@@ -20,10 +20,10 @@ import math
 import pytest
 from flaky import flaky
 from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
+from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.wires import Wires, WireError
-from scipy.stats import unitary_group
 
 
 U_thadamard_01 = np.multiply(
@@ -811,7 +811,7 @@ class TestDefaultQutritIntegration:
         expected = np.zeros(27)
         expected[0] = 1
         res = circuit()
-        
+
         assert np.allclose(res, expected)
 
 
@@ -1309,7 +1309,9 @@ class TestApplyOperationUnit:
 
         # Set the internal _apply_unitary_tensordot
         history = []
-        mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
+
+        def mock_apply_tensordot(state, matrix, wires):
+            history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
             m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
@@ -1349,11 +1351,12 @@ class TestApplyOperationUnit:
 
         # Create a dummy operation
         expected_test_output = np.ones(1)
-        supported_gate_application = lambda *args, **kwargs: expected_test_output
 
         with monkeypatch.context() as m:
             # Set the internal ops implementations dict
-            m.setattr(dev, "_apply_ops", {"QutritUnitary": supported_gate_application})
+            m.setattr(
+                dev, "_apply_ops", {"QutritUnitary": lambda *args, **kwargs: expected_test_output}
+            )
 
             test_state = np.array([1, 0, 0])
             op = qml.QutritUnitary(TSHIFT, wires=0)
