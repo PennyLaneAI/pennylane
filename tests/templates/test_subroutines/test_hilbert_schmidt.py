@@ -41,7 +41,11 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    assert qml.math.allclose(op.data, new_op.data)
+    assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
+    assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
+    for op1, op2 in zip(op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"]):
+        assert qml.equal(op1, op2)
     assert new_op is not op
 
 
