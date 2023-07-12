@@ -75,7 +75,6 @@ def execute(
     # Apply all transforms (device pre-processing, compilation)
     if not transform_program.is_empty():
         tapes, processing_fns, classical_cotransforms = transform_program(tapes)
-
     # The resulting batch of tapes is executed by the device
     # Execution tapes
     if not transform_program.is_informative():
@@ -87,4 +86,5 @@ def execute(
         if cotransform:
             res = cotransform(res)
         res = p_fn(res)
+
     return res

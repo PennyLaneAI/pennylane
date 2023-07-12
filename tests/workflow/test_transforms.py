@@ -13,12 +13,10 @@
 # limitations under the License.
 """Unit and integration tests for execution of transform programs."""
 from typing import Sequence, Callable
+import copy
 import numpy as np
 
-import pytest
 import pennylane as qml
-import pennylane.math
-from pennylane.workflow import execute
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -37,11 +35,12 @@ def shift_transform(
         tape: qml.tape.QuantumTape, alpha: float
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid (dummy) transform that shift all angles."""
-    tape1 = tape.copy()
+    tape1 = copy.deepcopy(tape)
     parameters = tape1.get_parameters(trainable_only=False)
     parameters = [param + alpha for param in parameters]
     tape1.set_parameters(parameters, trainable_only=False)
     return [tape1], lambda x: x[0]
+
 
 @qml.transforms.transform
 def sum_transform(
@@ -63,34 +62,63 @@ class TestExecutionTransformPrograms:
     def test_shift_transform_execute(self):
         """Test the shift transform on a qnode."""
         transformed_qnode = shift_transform(qnode_circuit, 0.1)
-        assert isinstance(transformed_qnode(0.5), qml.numpy.tensor)
+        res = transformed_qnode(0.5)
 
-        # results
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == qnode_circuit(0.6)
 
     def test_sum_transform_execute(self):
         """Test the sum transform on a qnode."""
         transformed_qnode = sum_transform(qnode_circuit)
-        assert isinstance(transformed_qnode(0.5), qml.numpy.tensor)
-        # results
+        res = transformed_qnode(0.5)
+
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == 2 * qnode_circuit(0.5)
+
+    def test_multiple_sum_transform_execute(self):
+        """Test composition of sum transform on a qnode."""
+        transformed_qnode = sum_transform(sum_transform(qnode_circuit))
+        res = transformed_qnode(0.5)
+
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == 4 * qnode_circuit(0.5)
+
+        transformed_qnode = sum_transform(sum_transform(sum_transform(qnode_circuit)))
+        res = transformed_qnode(0.5)
+
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == 8 * qnode_circuit(0.5)
 
     def test_sum_shift_transform_execute(self):
         """Test the sum and shift transforms on a qnode."""
         transformed_qnode = sum_transform(shift_transform(qnode_circuit, 0.1))
-        assert isinstance(transformed_qnode(0.5), qml.numpy.tensor)
-        # results
+
+        res = transformed_qnode(0.5)
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == 2 * qnode_circuit(0.6)
+
+    def test_multiple_shift_transform_execute(self):
+        """Test multiple shift transformss on a qnode."""
+        transformed_qnode = shift_transform(shift_transform(qnode_circuit, 0.1), 0.2)
+
+        res = transformed_qnode(0.5)
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == qnode_circuit(0.8)
 
     def test_shift_sum_transform_execute(self):
         """Test the shift and sum transforms on a qnode."""
         transformed_qnode = shift_transform(sum_transform(qnode_circuit), 0.1)
-        assert isinstance(transformed_qnode(0.5), qml.numpy.tensor)
+
+        res = transformed_qnode(0.5)
+        assert isinstance(res, qml.numpy.tensor)
+        assert res == 2 * qnode_circuit(0.6)
         # results
 
     def test_sum_shift_results_transform_execute(self):
-        """Test that the sum and shift transforms are not commuting"""
+        """Test that the sum and shift transforms are commuting"""
         transformed_qnode_1 = sum_transform(shift_transform(qnode_circuit, 0.1))
         transformed_qnode_2 = shift_transform(sum_transform(qnode_circuit), 0.1)
         assert isinstance(transformed_qnode_1(0.5), qml.numpy.tensor)
         assert isinstance(transformed_qnode_2(0.5), qml.numpy.tensor)
         # Transforms are not commuting
-        assert not np.allclose(transformed_qnode_1(0.5), transformed_qnode_2(0.5))
-
+        assert np.allclose(transformed_qnode_1(0.5), transformed_qnode_2(0.5))
