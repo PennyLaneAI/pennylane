@@ -20,7 +20,6 @@ from pennylane.ops import RX, RY, RZ
 from pennylane.operation import Operation, AnyWires
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
-INV_ROT = {RX: "X", RY: "Y", RZ: "Z"}
 
 
 class AngleEmbedding(Operation):
