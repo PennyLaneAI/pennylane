@@ -23,6 +23,7 @@ from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.wires import Wires, WireError
+from scipy.stats import unitary_group
 
 
 U_thadamard_01 = np.multiply(
@@ -783,6 +784,35 @@ class TestDefaultQutritIntegration:
 
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
+
+    def test_qutrit_circuit_adjoint_integration(self):
+        """Test that using qml.adjoint in a `default.qutrit` qnode works as expected."""
+        dev = qml.device("default.qutrit", wires=3)
+
+        def ansatz(phi, theta, omega, U):
+            qml.TShift(0)
+            qml.TAdd([0, 1])
+            qml.TRX(phi, wires=2, subspace=(0, 1))
+            qml.TClock(1)
+            qml.TRY(theta, wires=0, subspace=(1, 2))
+            qml.TSWAP([0, 2])
+            qml.QutritUnitary(U, wires=[2, 1])
+            qml.TRZ(omega, wires=1, subspace=(0, 2))
+
+        @qml.qnode(dev)
+        def circuit():
+            phi, theta, omega = np.random.rand(3) * 2 * np.pi
+            U = unitary_group.rvs(9, random_state=10)
+
+            ansatz(phi, theta, omega, U)
+            qml.adjoint(ansatz)(phi, theta, omega, U)
+            return qml.state()
+
+        expected = np.zeros(27)
+        expected[0] = 1
+        res = circuit()
+        
+        assert np.allclose(res, expected)
 
 
 class TestTensorExpval:
