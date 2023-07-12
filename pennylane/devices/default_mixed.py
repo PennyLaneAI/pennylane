@@ -21,6 +21,7 @@ qubit-based quantum circuits.
 
 import functools
 import itertools
+from collections import defaultdict
 from string import ascii_letters as ABC
 
 import pennylane as qml
@@ -34,7 +35,7 @@ from pennylane import (
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP
+from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -157,6 +158,9 @@ class DefaultMixed(QubitDevice):
     _gather = staticmethod(lambda *args, axis=0, **kwargs: qnp.gather(*args, **kwargs))
     _dot = staticmethod(qnp.dot)
 
+    measurement_map = defaultdict(lambda: "")
+    measurement_map[PurityMP] = "purity"
+
     @staticmethod
     def _reduce_sum(array, axes):
         return qnp.sum(array, tuple(axes))
@@ -268,6 +272,12 @@ class DefaultMixed(QubitDevice):
         state = getattr(self, "state", None)
         wires = self.map_wires(wires)
         return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+
+    def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
+        """Returns the purity of the final state"""
+        state = getattr(self, "state", None)
+        wires = self.map_wires(mp.wires)
+        return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def reset(self):
         """Resets the device"""

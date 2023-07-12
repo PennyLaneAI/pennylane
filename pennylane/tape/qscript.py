@@ -21,7 +21,6 @@ import contextlib
 import copy
 from collections import Counter
 from typing import List, Union, Optional, Sequence
-import warnings
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -171,10 +170,6 @@ class QuantumScript:
     [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])]
 
     """
-
-    do_queue = False
-    """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
-    True for its child Quantum Tape."""
 
     def __init__(
         self,
@@ -433,10 +428,12 @@ class QuantumScript:
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
+        n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
+                    for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
@@ -926,7 +923,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
@@ -1009,7 +1005,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.numeric_type
@@ -1134,20 +1129,9 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(
+        return self.__class__(
             ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
         )
-
-        if self.do_queue is not None:
-            do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. "
-                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-            )
-            warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-        if self.do_queue or self.do_queue is None:
-            qml.QueuingManager.append(adj)
-        return adj
 
     def unwrap(self):
         """A context manager that unwraps a quantum script with tensor-like parameters

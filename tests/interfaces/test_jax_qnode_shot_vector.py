@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
-
+# pylint: disable=too-many-arguments,too-many-public-methods
 import pytest
 from flaky import flaky
 
@@ -26,7 +26,7 @@ jax = pytest.importorskip("jax")
 config = pytest.importorskip("jax.config")
 config.config.update("jax_enable_x64", True)
 
-shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
+all_shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
@@ -47,7 +47,7 @@ TOLS = {
 jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
 
-@pytest.mark.parametrize("shots", shots)
+@pytest.mark.parametrize("shots", all_shots)
 @pytest.mark.parametrize(
     "interface,dev_name,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
 )
@@ -767,10 +767,7 @@ class TestReturnWithShotVectors:
             assert h[1].shape == (2, 2, 2)
 
 
-shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
-
-
-@pytest.mark.parametrize("shots", shots)
+@pytest.mark.parametrize("shots", all_shots)
 class TestReturnShotVectorsDevice:
     """Test for shot vectors with device method adjoint_jacobian."""
 
@@ -795,7 +792,7 @@ class TestReturnShotVectorsDevice:
                 qml.QuantumFunctionError,
                 match="Adjoint does not support shot vectors.",
             ):
-                jac = jax.jacobian(circuit)(a)
+                jax.jacobian(circuit)(a)
 
     def test_jac_adjoint_bwd_error(self, shots):
         """Test that an error is raised for adjoint backward."""
@@ -817,7 +814,7 @@ class TestReturnShotVectorsDevice:
             qml.QuantumFunctionError,
             match="Adjoint does not support shot vectors.",
         ):
-            jac = jax.jacobian(circuit)(a)
+            jax.jacobian(circuit)(a)
 
 
 qubit_device_and_diff_method = [
@@ -825,11 +822,11 @@ qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", {}],
 ]
 
-shots = [(1000000, 900000, 800000), (1000000, (900000, 2))]
+shots_large = [(1000000, 900000, 800000), (1000000, (900000, 2))]
 
 
 @flaky(max_runs=5)
-@pytest.mark.parametrize("shots", shots)
+@pytest.mark.parametrize("shots", shots_large)
 @pytest.mark.parametrize(
     "interface,dev_name,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
 )

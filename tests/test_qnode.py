@@ -636,6 +636,27 @@ class TestValidation:
 
         assert len(record) == 0
 
+    def test_not_giving_mode_kwarg_does_not_raise_warning(self):
+        """Test that not providing a value for mode does not raise a warning."""
+        with warnings.catch_warnings(record=True) as record:
+            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1))
+
+        assert len(record) == 0
+
+    def test_giving_mode_kwarg_raises_warning(self):
+        """Test that providing a value for mode raises a warning."""
+        with pytest.warns(UserWarning, match="The `mode` keyword argument is deprecated"):
+            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
+
+    def test_giving_mode_kwarg_raises_warning_old_return(self):
+        """Test that providing a value for mode raises a custom warning with disable_return."""
+        qml.disable_return()
+        with pytest.warns(
+            UserWarning, match="In the new return system, you should set the `grad_on_execution`"
+        ):
+            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
+        qml.enable_return()
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
