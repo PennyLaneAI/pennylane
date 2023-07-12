@@ -94,7 +94,7 @@
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
 
-* `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbeddings`
+* `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
 
