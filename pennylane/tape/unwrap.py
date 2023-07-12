@@ -123,7 +123,6 @@ class UnwrapTape:
         warnings.warn(
             "The UnwrapTape class is deprecated and will be removed in PennyLane v0.33. "
             "Please use qml.transforms.convert_to_numpy_parameters instead."
-
         )
 
         self.tape = tape
