@@ -163,7 +163,7 @@ class ApproxTimeEvolution(Operation):
             >>> ApproxTimeEvolution.compute_decomposition(
             ...     *coeffs_and_time, wires=range(num_qubits), n=trotter_steps, hamiltonian=hamiltonian
             ... )
-                [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
+            [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
         """
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
