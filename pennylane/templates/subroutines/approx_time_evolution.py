@@ -148,22 +148,23 @@ class ApproxTimeEvolution(Operation):
             from pennylane.templates import ApproxTimeEvolution
 
             num_qubits = 2
-            
+
             hamiltonian = qml.Hamiltonian(
                 [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0), qml.PauliX(1)]
             )
-            
+
             dev = qml.device("default.qubit", wires=num_qubits)
-            
+
             evolution_time = 0.5
             trotter_steps = 1
-            
+
             coeffs_and_time = [*hamiltonian.coeffs, evolution_time]
-            
-            >>> ApproxTimeEvolution.compute_decomposition(
-            ...     *coeffs_and_time, wires=range(num_qubits), n=trotter_steps, hamiltonian=hamiltonian
-            ... )
-            [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
+
+
+        >>> ApproxTimeEvolution.compute_decomposition(
+        ...     *coeffs_and_time, wires=range(num_qubits), n=trotter_steps, hamiltonian=hamiltonian
+        ... )
+        [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
         """
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
