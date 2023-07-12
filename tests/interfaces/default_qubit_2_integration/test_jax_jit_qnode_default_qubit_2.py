@@ -1707,6 +1707,7 @@ class TestJIT:
     def test_matrix_parameter(self, dev, diff_method, grad_on_execution, jacobian, tol, interface):
         """Test that the JAX-JIT interface works correctly with a matrix
         parameter"""
+
         # pylint: disable=unused-argument
         @qml.qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
