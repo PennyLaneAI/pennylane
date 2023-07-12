@@ -65,8 +65,8 @@ class QuantumPhaseEstimation(Operation):
            exponentially with the number of qubits :math:`n`.
 
         Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
-        :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. The
-        usage details below give an example of this case.
+        :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. An example
+        of this case is below.
 
         Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
