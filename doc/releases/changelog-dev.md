@@ -32,6 +32,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather on the what it queues.
+  This has substantial performance improvements for deep circuits, particularily for decompositions that would
+  have to use `qml.apply`.
+
+
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4317)](https://github.com/PennyLaneAI/pennylane/pull/4317)
