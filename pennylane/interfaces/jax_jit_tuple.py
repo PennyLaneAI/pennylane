@@ -72,7 +72,7 @@ def _tapes_shape_dtype_tuple(tapes, device):
     for t in tapes:
         shape_and_dtype = _create_shape_dtype_struct(t, device)
         shape_dtypes.append(shape_and_dtype)
-    return shape_dtypes
+    return tuple(shape_dtypes)
 
 
 def _jac_shape_dtype_tuple(tapes, device):
@@ -191,7 +191,7 @@ def _execute_bwd(
             """Compute the forward pass."""
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
-            res = list(res)
+            res = tuple(res)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
