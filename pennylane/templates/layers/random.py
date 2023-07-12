@@ -234,7 +234,7 @@ class RandomLayers(Operation):
         """
         if ratio_imprimitive:
             warnings.warn(
-                "In RandomLayers.compute_decomposition, ratio_imprim has been changed to `ratio_imprimitive` to match the "
+                "In RandomLayers.compute_decomposition, ratio_imprim should be changed to `ratio_imprimitive` to match the "
                 "call signature of the operation.",
                 UserWarning,
             )
