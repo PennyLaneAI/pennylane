@@ -893,116 +893,25 @@ class MPLDrawer:
 
         wires_ctrl = _to_tuple(sorted(wires))
         wires_target = _to_tuple(sorted(wires_target))
-        start_x = measured_layer + self._box_length / 2.0
-        lines = []
 
-        if wires_ctrl[-1] < wires_target[0]:
-            lines.extend(
-                (
-                    # draw from top-most measurement to double-elbow
-                    plt.Line2D(
-                        (start_x, layer + self._cond_shift),
-                        (wires_ctrl[0] - self._cond_shift,) * 2,
-                        **options,
-                    ),
-                    plt.Line2D(
-                        (start_x, layer - self._cond_shift),
-                        (wires_ctrl[0] + self._cond_shift,) * 2,
-                        **options,
-                    ),
-                    # draw vertical lines that reach the target operation
-                    plt.Line2D(
-                        (layer + self._cond_shift,) * 2,
-                        (wires_ctrl[0] - self._cond_shift, wires_target[0]),
-                        **options,
-                    ),
-                    plt.Line2D(
-                        (layer - self._cond_shift,) * 2,
-                        (wires_ctrl[-1] + self._cond_shift, wires_target[0]),
-                        **options,
-                    ),
-                )
-            )
-            for prev_idx, next_wire in enumerate(wires_ctrl[1:]):
-                # draw ⅃ for every wire but the first one
-                #      ‾
-                lines.extend(
-                    (
-                        plt.Line2D(
-                            (layer - self._cond_shift,) * 2,
-                            (wires_ctrl[prev_idx] + self._cond_shift, next_wire - self._cond_shift),
-                            **options,
-                        ),
-                        plt.Line2D(
-                            (start_x, layer - self._cond_shift),
-                            (next_wire - self._cond_shift,) * 2,
-                            **options,
-                        ),
-                        plt.Line2D(
-                            (start_x, layer - self._cond_shift),
-                            (next_wire + self._cond_shift,) * 2,
-                            **options,
-                        ),
-                    )
-                )
-        elif wires_target[-1] < wires_ctrl[0]:
-            lines.extend(
-                (
-                    # draw from bottom-most measurement to double-elbow
-                    plt.Line2D(
-                        (start_x, layer + self._cond_shift),
-                        (wires_ctrl[-1] + self._cond_shift,) * 2,
-                        **options,
-                    ),
-                    plt.Line2D(
-                        (start_x, layer - self._cond_shift),
-                        (wires_ctrl[-1] - self._cond_shift,) * 2,
-                        **options,
-                    ),
-                    # draw vertical lines that reach the target operation
-                    plt.Line2D(
-                        (layer + self._cond_shift,) * 2,
-                        (wires_ctrl[-1] + self._cond_shift, wires_target[-1]),
-                        **options,
-                    ),
-                    plt.Line2D(
-                        (layer - self._cond_shift,) * 2,
-                        (wires_ctrl[0] - self._cond_shift, wires_target[-1]),
-                        **options,
-                    ),
-                )
-            )
-            for wire_idx, ctrl_wire in enumerate(wires_ctrl[:-1]):
-                # draw _  for every wire but the first one
-                #      ‾|
-                lines.extend(
-                    (
-                        plt.Line2D(
-                            (layer - self._cond_shift,) * 2,
-                            (
-                                ctrl_wire + self._cond_shift,
-                                wires_ctrl[wire_idx + 1] - self._cond_shift,
-                            ),
-                            **options,
-                        ),
-                        plt.Line2D(
-                            (start_x, layer - self._cond_shift),
-                            (ctrl_wire - self._cond_shift,) * 2,
-                            **options,
-                        ),
-                        plt.Line2D(
-                            (start_x, layer - self._cond_shift),
-                            (ctrl_wire + self._cond_shift,) * 2,
-                            **options,
-                        ),
-                    )
-                )
-        else:
+        if wires_ctrl[-1] > wires_target[0] and wires_target[-1] > wires_ctrl[0]:
             raise ValueError(
                 "Cannot draw interspersed mid-circuit measurements and conditional operations. "
                 "Consider providing a wire order such that all measurement wires precede all "
                 "wires for the operator being controlled, or vice versa."
             )
 
-        for line in lines:
-            self._ax.add_line(line)
+        all_wires = wires_ctrl + wires_target
+        min_and_max_wire = min(all_wires), max(all_wires)
+        start_x = measured_layer + self._box_length / 2.0
+        shift = self._ctrl_rad / 2
+
+        # horizontal lines on each measured wire, plus dots at the joints to indicate control
+        for w in wires_ctrl:
+            self._ax.add_line(plt.Line2D((start_x, layer), (w - shift, w - shift), **options))
+            self._ax.add_line(plt.Line2D((start_x, layer), (w + shift, w + shift), **options))
+            self._ctrl_circ(layer, w, options=options)
+
+        # vertical lines on the target layer
+        self._ax.add_line(plt.Line2D((layer - shift, layer - shift), min_and_max_wire, **options))
+        self._ax.add_line(plt.Line2D((layer + shift, layer + shift), min_and_max_wire, **options))
