@@ -2707,6 +2707,9 @@ class StatePrep(Operation):
             array: A state vector for all wires in a circuit
         """
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return "|Ψ⟩"
+
 
 def operation_derivative(operation) -> np.ndarray:
     r"""Calculate the derivative of an operation.

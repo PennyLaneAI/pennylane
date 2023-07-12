@@ -30,6 +30,9 @@
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
+* The default label for a `StatePrep` operator is now `|Ψ⟩`.
+  [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather on the what it queues.
