@@ -6,7 +6,7 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` has been changed to `ratio_imprim` to
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
   match the call signature of the operation. 
 
   - Deprecated in v0.32
