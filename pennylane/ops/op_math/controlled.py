@@ -86,24 +86,20 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     """
     custom_controlled_ops = {
-        qml.PauliZ: qml.CZ,
-        qml.PauliY: qml.CY,
-        qml.PauliX: qml.CNOT,
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.PauliX, 1): qml.CNOT,
+        (qml.PauliX, 2): qml.Toffoli,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
+    custom_key = (type(op), len(control))
 
-    if (
-        isinstance(op, tuple(custom_controlled_ops))
-        and len(control) == 1
-        and (control_values is None or control_values[0])
-    ):
+    if custom_key in custom_controlled_ops and (control_values is None or all(control_values)):
         qml.QueuingManager.remove(op)
-        return custom_controlled_ops[type(op)](control + op.wires)
+        return custom_controlled_ops[custom_key](control + op.wires)
     if isinstance(op, qml.PauliX):
         qml.QueuingManager.remove(op)
-        if len(control) == 2 and (control_values is None or all(control_values)):
-            return qml.Toffoli(control + op.wires)
         control_string = (
             None if control_values is None else "".join([str(int(v)) for v in control_values])
         )
