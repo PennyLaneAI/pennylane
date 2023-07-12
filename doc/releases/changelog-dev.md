@@ -98,6 +98,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Isaac De Vlugt,
 Edward Jiang,
 Christina Lee,
 Mudit Pandey,

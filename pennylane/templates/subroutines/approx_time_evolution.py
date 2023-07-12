@@ -78,7 +78,7 @@ class ApproxTimeEvolution(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ApproxTimeEvolution
+            from pennylane import ApproxTimeEvolution
 
             n_wires = 2
             wires = range(n_wires)
@@ -129,8 +129,7 @@ class ApproxTimeEvolution(Operation):
         .. seealso:: :meth:`~.ApproxTimeEvolution.decomposition`.
 
         Args:
-            coeffs_and_time (list[tensor_like or float]): list of coefficients of the Hamiltonian, appended by the time
-                variable
+            *coeffs_and_time (TensorLike): coefficients of the Hamiltonian, appended by the time.
             wires (Any or Iterable[Any]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The Hamiltonian defining the
                time-evolution operator. The Hamiltonian must be explicitly written
@@ -145,15 +144,13 @@ class ApproxTimeEvolution(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ApproxTimeEvolution
+            from pennylane import ApproxTimeEvolution
 
             num_qubits = 2
 
             hamiltonian = qml.Hamiltonian(
                 [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0), qml.PauliX(1)]
             )
-
-            dev = qml.device("default.qubit", wires=num_qubits)
 
             evolution_time = 0.5
             trotter_steps = 1
