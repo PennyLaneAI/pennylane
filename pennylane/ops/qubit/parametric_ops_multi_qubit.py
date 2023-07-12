@@ -67,6 +67,9 @@ class MultiRZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    def _flatten(self):
+        return self.data, (self.wires, tuple())
+
     def __init__(self, theta, wires=None, id=None):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
@@ -577,11 +580,8 @@ class PCPhase(Operation):
         return qml.Hermitian(mat, wires=self.wires)
 
     def _flatten(self):
-        return tuple(self.data), (self.wires, self.hyperparameters["dimension"][0])
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, dim=metadata[1], wires=metadata[0])
+        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
+        return tuple(self.data), (self.wires, hyperparameter)
 
     def __init__(self, phi, dim, wires, id=None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)

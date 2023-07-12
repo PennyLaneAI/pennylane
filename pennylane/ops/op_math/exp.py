@@ -168,7 +168,7 @@ class Exp(ScalarSymbolicOp, Operation):
     _name = "Exp"
 
     def _flatten(self):
-        return tuple(self.base, self.coeff), (self.num_steps,)
+        return (self.base, self.coeff), (self.num_steps,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
