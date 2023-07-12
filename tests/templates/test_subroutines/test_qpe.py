@@ -20,18 +20,18 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
-    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3])
+    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 3])
     data, metadata = op._flatten()
     expected_data = qml.QubitUnitary(np.eye(4), (0, 1))
     assert qml.equal(data[0], expected_data)
 
-    assert metadata[0] == qml.wires.Wires((0, 1))
-    assert metadata[1] == qml.wires.Wires((2, 3))
+    assert metadata[0] == qml.wires.Wires((2, 3))
 
     # make sure metadata is hashable
-    {metadata}
+    assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)
@@ -70,7 +70,7 @@ class TestDecomposition:
         assert qscript[3].base.z == qscript2[3].base.z
         assert qscript[3].control_wires == qscript2[3].control_wires
 
-        assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)
+        assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)  # pylint: disable=no-member
         assert qml.equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
 
         assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
@@ -322,7 +322,7 @@ class TestDecomposition:
 
             return qml.state()
 
-        assert qml.math.isclose(qpe_circuit()[0], 1)
+        assert qml.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
 
 
 class TestInputs:

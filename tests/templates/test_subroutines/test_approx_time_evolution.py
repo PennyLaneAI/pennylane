@@ -21,7 +21,9 @@ import pennylane as qml
 from pennylane.gradients.finite_difference import finite_diff
 
 
-def test_flatten_unflatten(self):
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the _flatten and _unflatten methods."""
     H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
     t = 0.1
     op = qml.ApproxTimeEvolution(H, t, n=20)
@@ -31,9 +33,9 @@ def test_flatten_unflatten(self):
     assert metadata == (20,)
 
     # check metadata hashable
-    _ = {metadata: 0}
+    assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op.flatten())
+    new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)
     assert new_op is not op
 
@@ -382,6 +384,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
+# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",

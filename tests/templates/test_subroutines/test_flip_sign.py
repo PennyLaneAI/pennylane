@@ -26,6 +26,7 @@ def test_repr():
     assert repr(op) == expected
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
     op = qml.FlipSign([0, 1], wires=2)
@@ -36,10 +37,11 @@ def test_flatten_unflatten():
     assert metadata == (op.wires, hyperparameters)
 
     # make sure metadata hasable
-    {metadata}
+    assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    # data casted to tuple. unimportant difference
+    assert qml.equal(qml.FlipSign((0, 1), wires=2), new_op)
     assert op is not new_op
 
 
@@ -76,7 +78,7 @@ class TestFlipSign:
             return qml.state()
 
         def to_number(status):
-            return sum([status[i] * 2 ** (len(status) - i - 1) for i in range(len(status))])
+            return sum(status[i] * 2 ** (len(status) - i - 1) for i in range(len(status)))
 
         if isinstance(n_status, list):
             n_status = to_number(n_status)

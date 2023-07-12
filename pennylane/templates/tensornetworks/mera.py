@@ -96,7 +96,7 @@ def compute_indices(wires, n_block_wires):
                 + wires_list[list_len - n_elements_pre][0 : n_block_wires // 2]
             )
             wires_list = wires_list + new_list
-    return wires_list[::-1]
+    return tuple(tuple(l) for l in wires_list[::-1])
 
 
 class MERA(Operation):
@@ -178,15 +178,9 @@ class MERA(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._wires = metadata[0]
         new_op._hyperparameters = dict(metadata[1])
-        new_op.data = data
+        Operation.__init__(new_op, data, wires=metadata[0])
         return new_op
-
-    def __repr__(self):
-        block = self.hyperparameters["block"]
-        ind_gates = self.hyperparameters["ind_gates"]
-        return f"MERA(weights={self.data[0]}, wires={self.wires}, block = {block}, ind_gates = {ind_gates})"
 
     def __init__(
         self,
@@ -204,7 +198,7 @@ class MERA(Operation):
         n_blocks = int(2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3)
 
         if shape == ():
-            template_weights = np.random.rand(n_params_block, int(n_blocks))
+            template_weights = np.random.rand(n_params_block, n_blocks)
 
         else:
             if shape[0] != n_blocks:

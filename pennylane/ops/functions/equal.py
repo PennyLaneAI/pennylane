@@ -322,6 +322,42 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
 
 
 @_equal.register
+def _equal_hilbert_schmidt(
+    op1: qml.HilbertSchmidt,
+    op2: qml.HilbertSchmidt,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+
+    if not all(
+        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
+    ):
+        return False
+
+    for key in ["v_function", "v_wires"]:
+        if op1.hyperparameters[key] != op2.hyperparameters[key]:
+            return False
+
+    for obj1, obj2 in zip(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"]):
+        if not qml.equal(obj1, obj2):
+            return False
+
+    if check_trainability:
+        for params_1, params_2 in zip(op1.data, op2.data):
+            if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
+                return False
+
+    if check_interface:
+        for params_1, params_2 in zip(op1.data, op2.data):
+            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
+                return False
+
+    return True
+
+
+@_equal.register
 # pylint: disable=unused-argument
 def _equal_measurements(
     op1: MeasurementProcess,

@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
     u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
@@ -37,8 +38,7 @@ def test_flatten_unflatten():
         ("u_tape", u_tape),
     )
 
-    # make sure metadata hashable
-    {metadata}
+    assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)
@@ -130,7 +130,7 @@ class TestHilbertSchmidt:
             op.decomposition()
 
         # make sure it works in non-queuing situations too.
-        decomp = op.decompsition()
+        decomp = op.decomposition()
 
         tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [

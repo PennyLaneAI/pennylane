@@ -21,6 +21,22 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_flatten_unflatten_methods():
+    """Test the _flatten and _unflatten methods."""
+    feature_vector = [1, 2, 3]
+    op = qml.SqueezingEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
+    data, metadata = op._flatten()
+    assert op.data == data
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(new_op, op)
+    assert new_op is not op
+    assert new_op._name == "SqueezingEmbedding"  # make sure initialized
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

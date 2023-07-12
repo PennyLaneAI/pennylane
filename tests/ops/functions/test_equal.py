@@ -1682,3 +1682,27 @@ class TestParametrizedEvolutionComparisons:
 
         assert qml.equal(ev1(params1, t), ev2(params2, t))
         assert not qml.equal(ev1(params1, t), ev3(params3, t))
+
+
+def test_hilbert_schmidt_template():
+    """Tests equality for the hilbert schmidt template."""
+    u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
+    u_tape2 = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
+
+    def v_circuit(params):
+        qml.RZ(params, wires=1)
+
+    v_wires = qml.wires.Wires((0, 1))
+    op1 = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape)
+    op2 = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape)
+    assert qml.equal(op1, op2)
+
+    op3 = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape2)
+    assert qml.equal(op1, op3)
+
+    u_tape4 = qml.tape.QuantumScript([qml.Hadamard("b"), qml.Identity("a")])
+    op4 = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape4)
+    assert not qml.equal(op1, op4)
+
+    op5 = qml.HilbertSchmidt([0.1001], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape)
+    assert not qml.equal(op1, op5)

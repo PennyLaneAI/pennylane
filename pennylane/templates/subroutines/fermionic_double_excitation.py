@@ -520,8 +520,8 @@ class FermionicDoubleExcitation(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-        wires1 = list(wires1)
-        wires2 = list(wires2)
+        wires1 = qml.wires.Wires(wires1)
+        wires2 = qml.wires.Wires(wires2)
 
         self._hyperparameters = {
             "wires1": wires1,

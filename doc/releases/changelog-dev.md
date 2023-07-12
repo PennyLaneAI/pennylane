@@ -6,6 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
+  trainable from untrainable components. These methods will be used in serialization and pytree registration.
+  Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
 * `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
 
