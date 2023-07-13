@@ -39,8 +39,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather than on the what it queues.
-  This change provides substantial performance improvements operators with large decompositions.
+* `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather than on what it queues.
+  This change provides substantial performance improvements for operators with large decompositions.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
