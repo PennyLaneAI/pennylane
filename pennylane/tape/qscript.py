@@ -1437,40 +1437,32 @@ def bind_new_parameters_tape(
     if len(params) != len(indices):
         raise ValueError("Number of provided parameters does not match number of indices")
 
-    new_ops = []
-    idx = 0
-    p_idx = 0
+    # determine the ops that need to be updated
+    op_indices = {}
+    for param_idx, idx in enumerate(sorted(indices)):
+        pinfo = tape._par_info[idx]
+        op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
 
-    for op in tape.circuit:
+        if op_idx not in op_indices:
+            op_indices[op_idx] = {}
+
+        op_indices[op_idx][p_idx] = param_idx
+
+    new_ops = tape.circuit
+
+    for op_idx, p_indices in op_indices.items():
+        op = new_ops[op_idx]
+        data = op.data if isinstance(op, Operator) else op.obs.data
+
+        new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
+
         if isinstance(op, Operator):
-            data = op.data
-        elif op.obs is not None:
-            data = op.obs.data
+            new_op = qml.ops.functions.bind_new_parameters(op, new_params)
         else:
-            data = ()
+            new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
+            new_op = op.__class__(obs=new_obs)
 
-        # determine if any parameters of the operator need to be rebinded
-        if any(i + idx in indices for i in range(len(data))):
-            new_params = []
-            for i, d in enumerate(data):
-                if i + idx in indices:
-                    new_params.append(params[p_idx])
-                    p_idx += 1
-                else:
-                    new_params.append(d)
-
-            if isinstance(op, Operator):
-                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
-            else:
-                new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
-                new_op = op.__class__(obs=new_obs)
-
-            new_ops.append(new_op)
-        else:
-            # no need to change the operator
-            new_ops.append(op)
-
-        idx += len(data)
+        new_ops[op_idx] = new_op
 
     new_prep = new_ops[: len(tape._prep)]
     new_operations = new_ops[len(tape._prep) : len(tape.operations)]
