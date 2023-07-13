@@ -33,13 +33,15 @@
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
+* `Operator.expand` now has a keyword argument ``_update=True``. Turning this to ``False`` improves efficiency,
+  but some properties will not be precomputed on initialization.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355) 
+
 <h3>Breaking changes 💔</h3>
 
-* `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather on the what it queues.
-  This has substantial performance improvements for deep circuits, particularily for decompositions that would
-  have to use `qml.apply`.
+* `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather than on the what it queues.
+  This change provides substantial performance improvements operators with large decompositions.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
-
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
