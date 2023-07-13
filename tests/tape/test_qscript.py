@@ -249,7 +249,7 @@ class TestUpdate:
     )
     def test_update_batch_size(self, x, rot, exp_batch_size):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size when creating"""
+        batch_size when creating a QuantumScript."""
 
         obs = [qml.RX(x, wires=0), qml.Rot(*rot, wires=1)]
         m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
