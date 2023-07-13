@@ -82,6 +82,9 @@
 
 <h3>Documentation 📝</h3>
 
+* `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
+  [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
+
 <h3>Bug fixes 🐛</h3>
   
 * Stop `metric_tensor` from accidentally catching errors that stem from
@@ -92,15 +95,20 @@
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
 * `qml.qinfo.purity` now produces correct results with custom wire labels.
-  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+  [(#4331)](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
+
+* `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
+  have a batch dimension.
+  [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Isaac De Vlugt,
 Edward Jiang,
 Christina Lee,
 Mudit Pandey,
