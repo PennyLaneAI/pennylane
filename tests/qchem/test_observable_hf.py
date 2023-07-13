@@ -21,6 +21,7 @@ from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.pauli import pauli_sentence
 from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.fermi import from_string
 
 
 @pytest.mark.parametrize(
@@ -220,6 +221,68 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
         (
             (np.array([1.0, 1.0]), [[2, 0, 2, 0], [2, 0]]),
             # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [
+                [-0.25 + 0j, 0.25 + 0j, -0.25j, 0.25j, 0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
+                [
+                    qml.Identity(0),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(2),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(2),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(2),
+                    qml.PauliZ(0),
+                    qml.PauliZ(0) @ qml.PauliZ(2),
+                    qml.PauliZ(2),
+                ],
+            ],
+        ),
+        ((np.array([1.23]), [[]]), [[1.23], [qml.Identity(0)]]),
+    ],
+)
+def test_qubit_observable_tuple_input(f_observable, q_observable):
+    r"""Test that qubit_observable returns the correct operator."""
+    # TODO: remove this test when supporting tuple input by qubit_observable is deprecated.
+    h_as_hamiltonian = qchem.qubit_observable(f_observable)
+    h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
+
+    enable_new_opmath()
+
+    h_as_op = qchem.qubit_observable(f_observable)
+    h_ref_as_op = pauli_sentence(h_ref).operation(
+        h_ref.wires
+    )  # easy conversion from ham to operation
+
+    disable_new_opmath()
+
+    assert h_as_hamiltonian.compare(h_ref)
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2])
+    )
+
+
+@pytest.mark.parametrize(
+    ("f_observable", "q_observable"),
+    [
+        (
+            from_string("0+ 0-"),
+            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [[0.5 + 0j, -0.5 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
+        ),
+        (
+            from_string("0+ 0-") + from_string("0+ 0-"),
+            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [[1.0 + 0j, -1.0 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
+        ),
+        (
+            from_string("2+ 0+ 2- 0-"),
+            # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and reformatted
+            [
+                [-0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
+                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(2)],
+            ],
+        ),
+        (
+            from_string("2+ 0+ 2- 0-") + from_string("2+ 0-"),
+            # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and jordan_wigner(FermionOperator('2^ 0', 1)) and reformatted
             [
                 [-0.25 + 0j, 0.25 + 0j, -0.25j, 0.25j, 0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
                 [
