@@ -34,24 +34,6 @@ class QuantumPhaseEstimation(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
-    of the following steps:
-
-    #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
-       of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
-       :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
-       be prepared more generally.
-    #. Apply the ``QuantumPhaseEstimation`` circuit.
-    #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
-       measurement outcomes in the computational basis.
-    #. Find the index of the largest value in the probability distribution and divide that number by
-       :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
-       exponentially with the number of qubits :math:`n`.
-
-    Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
-    :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. The
-    usage details below give an example of this case.
-
     Args:
         unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
             :class:`~.Operator`
@@ -67,6 +49,24 @@ class QuantumPhaseEstimation(Operation):
 
     .. details::
         :title: Usage Details
+
+        This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
+        of the following steps:
+
+        #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
+           of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
+           :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
+           be prepared more generally.
+        #. Apply the ``QuantumPhaseEstimation`` circuit.
+        #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
+           measurement outcomes in the computational basis.
+        #. Find the index of the largest value in the probability distribution and divide that number by
+           :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
+           exponentially with the number of qubits :math:`n`.
+
+        Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
+        :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. An example
+        of this case is below.
 
         Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
