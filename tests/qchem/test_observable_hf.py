@@ -282,7 +282,8 @@ def test_qubit_observable_tuple_input(f_observable, q_observable):
         ),
         (
             from_string("2+ 0+ 2- 0-") + from_string("2+ 0-"),
-            # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and jordan_wigner(FermionOperator('2^ 0', 1)) and reformatted
+            # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and
+            # jordan_wigner(FermionOperator('2^ 0', 1)) and reformatted
             [
                 [-0.25 + 0j, 0.25 + 0j, -0.25j, 0.25j, 0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
                 [
@@ -297,7 +298,7 @@ def test_qubit_observable_tuple_input(f_observable, q_observable):
                 ],
             ],
         ),
-        ((np.array([1.23]), [[]]), [[1.23], [qml.Identity(0)]]),
+        (1.23 * from_string(""), [[1.23], [qml.Identity(0)]]),
     ],
 )
 def test_qubit_observable(f_observable, q_observable):
@@ -329,6 +330,36 @@ def test_qubit_observable(f_observable, q_observable):
         ),
         (
             (np.array([1.0]), [[0, 0, 1, 1]]),  # should produce the 0 operator
+            0.1,
+        ),
+    ],
+)
+def test_qubit_observable_cutoff_tuple_input(f_observable, cut_off):
+    """Test that qubit_observable returns the correct operator when a cutoff is provided."""
+    # TODO: remove this test when supporting tuple input by qubit_observable is deprecated.
+    h_ref, h_ref_op = (qml.Hamiltonian([], []), qml.s_prod(0, qml.Identity(0)))
+    h_as_hamiltonian = qchem.qubit_observable(f_observable, cutoff=cut_off)
+
+    enable_new_opmath()
+    h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
+    disable_new_opmath()
+
+    assert h_as_hamiltonian.compare(h_ref)
+    assert qml.equal(h_as_op, h_ref_op)
+    assert np.allclose(
+        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_op, wire_order=[0, 1, 2])
+    )
+
+
+@pytest.mark.parametrize(
+    ("f_observable", "cut_off"),
+    [
+        (
+            0.01 * from_string("0+ 0-"),
+            0.1,
+        ),
+        (
+            from_string("0+ 0+ 1- 1-"),  # should produce the 0 operator
             0.1,
         ),
     ],

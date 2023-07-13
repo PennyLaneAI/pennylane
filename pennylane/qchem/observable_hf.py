@@ -167,12 +167,12 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     """
     if isinstance(o_ferm, (FermiWord, FermiSentence)):
         h = qml.jordan_wigner(o_ferm, ps=True)
-        h.simplify()
+        h.simplify(tol=cutoff)
 
         if active_new_opmath():
-            return h.operation()
+            return h.operation(wire_order=[0])
 
-        h = h.hamiltonian()
+        h = h.hamiltonian(wire_order=[0])
 
         return qml.Hamiltonian(
             h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
