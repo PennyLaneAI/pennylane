@@ -444,19 +444,6 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
 
-    def _copy_and_shift_params(tape, params, idx, shift, mult):
-        """Create a copy of a tape and of parameters, and set the new tape to the parameters
-        rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
-        new_params = params.copy()
-        new_params[idx] = new_params[idx] * qml.math.convert_like(
-            mult, new_params[idx]
-        ) + qml.math.convert_like(shift, new_params[idx])
-
-        shifted_tape = tape.copy(copy_operations=True)
-        shifted_tape.set_parameters(new_params, disable_check_batching=True)
-        return shifted_tape
-
-    params = list(tape.get_parameters())
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 
