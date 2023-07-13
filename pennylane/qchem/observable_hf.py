@@ -44,6 +44,21 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False)
     >>> coeffs, ops = fermionic_observable(constant, integral)
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
+
+    If the `fs` kwarg is `True`, a fermionic operator is returned.
+
+    >>> constant = np.array([1.0])
+    >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
+    >>> fermionic_observable(constant, integral, fs=True)
+    1.0 * I
+    + 0.5 * a⁺(0) a(0)
+    + -0.8270995 * a⁺(0) a(2)
+    + 0.5 * a⁺(1) a(1)
+    + -0.8270995 * a⁺(1) a(3)
+    + -0.8270995 * a⁺(2) a(0)
+    + 0.5 * a⁺(2) a(2)
+    + -0.8270995 * a⁺(3) a(1)
+    + 0.5 * a⁺(3) a(3)
     """
     coeffs = qml.math.array([])
 
@@ -126,7 +141,22 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     ((-1+0j)) [Z0]
     + ((1+0j)) [I0]
 
-    If the new op-math is active, an arithmetic operator is returned instead.
+    The input can also be a fermionic operator.
+
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+      (-0.3j) [Y0 X1]
+    + (0.3j) [X0 Y1]
+    + (-0.775j) [Y1 X2]
+    + (0.775j) [X1 Y2]
+    + ((0.3+0j)) [Y0 Y1]
+    + ((0.3+0j)) [X0 X1]
+    + ((0.775+0j)) [Y1 Y2]
+    + ((0.775+0j)) [X1 X2]
+
+    If the new op-math is active, an arithmetic operator is returned.
 
     >>> qml.operation.enable_new_opmath()
     >>> coeffs = np.array([1.0, 1.0])
