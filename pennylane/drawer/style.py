@@ -60,6 +60,8 @@ def _black_white():
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
     plt.rcParams["path.sketch"] = None
+    plt.rcParams["font.weight"] = "normal"
+    plt.rcParams["lines.linewidth"] = 1.5
 
 
 @_needs_mpl
