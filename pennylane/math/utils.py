@@ -369,7 +369,7 @@ def is_abstract(tensor, like=None):
         if isinstance(
             tensor,
             (
-                jax.ad.JVPTracer,
+                jax.interpreters.ad.JVPTracer,
                 jax.interpreters.batching.BatchTracer,
                 jax.interpreters.partial_eval.JaxprTracer,
             ),
