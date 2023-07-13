@@ -186,7 +186,7 @@ class TestUpdate:
         assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
         assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
 
@@ -224,7 +224,7 @@ class TestUpdate:
         assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
-        assert obs_id_0 == 0 and p_id_0 == 0
+        assert obs_id_0 == 5 and p_id_0 == 0
 
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in

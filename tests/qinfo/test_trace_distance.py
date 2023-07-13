@@ -110,6 +110,28 @@ class TestTraceDistanceQnode:
         assert qml.math.allclose(td_arg_kwarg, 0.0)
         assert qml.math.allclose(td_kwargs, 0.0)
 
+    @pytest.mark.parametrize("device", devices)
+    def test_trace_distance_wire_labels(self, device, tol):
+        """Test that trace_distance is correct with custom wire labels"""
+        param = np.array([0.678, 1.234])
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        td_circuit = qml.qinfo.trace_distance(circuit, circuit, [wires[0]], [wires[1]])
+        actual = td_circuit((param[0],), (param[1],))
+
+        expected = 0.5 * (
+            np.abs(np.cos(param[0] / 2) ** 2 - np.sin(param[1] / 2) ** 2)
+            + np.abs(np.cos(param[1] / 2) ** 2 - np.sin(param[0] / 2) ** 2)
+        )
+        assert np.allclose(actual, expected, atol=tol)
+
     # 0 and 2 * pi are removed to avoid nan values in the gradient
     parameters = np.linspace(0, 2 * np.pi, 20)[1:-1]
     wires = [1, 2]

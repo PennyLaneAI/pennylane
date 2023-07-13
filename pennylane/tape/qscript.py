@@ -428,10 +428,12 @@ class QuantumScript:
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
+        n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
+                    for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
@@ -923,7 +925,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
@@ -1006,7 +1007,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.numeric_type
