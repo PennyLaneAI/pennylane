@@ -27,11 +27,14 @@ folder = pathlib.Path(__file__).parent
 
 
 def make_imag(circuit, style):
-    fig, ax = qml.draw_mpl(circuit, style=style)(1.2345, 1.2345)
+    qml.drawer.use_style(style)
+
+    fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
     fig.suptitle(style, fontsize="xx-large")
 
     plt.savefig(folder / (style + "_style.png"), transparent=False)
     plt.close()
+    qml.drawer.use_style("default")
 
 
 if __name__ == "__main__":
