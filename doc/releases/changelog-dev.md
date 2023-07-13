@@ -30,6 +30,10 @@
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
+* The `qchem` functions `primitive_norm` and `contracted_norm` are modified to be compatible with
+  higher versions of scipy. The private function `_fac2` for computing double factorials is added. 
+  [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
+
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
@@ -111,6 +115,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri,
 Isaac De Vlugt,
 Edward Jiang,
 Christina Lee,
