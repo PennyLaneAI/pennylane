@@ -152,6 +152,23 @@ class TestAuxiliary:
         h = qchem.integrals._hermite_coulomb(t, u, v, n, p, dr)
         assert np.allclose(h, h_ref)
 
+    @pytest.mark.parametrize(
+        ("n", "result"),
+        [
+            (0, 1),
+            (-1, 1),
+            (-2, 0),
+            (-3, 0),
+            (2, 2),
+            (5, 15),
+            (8, 384),
+        ],
+    )
+    def test_fac2(self, n, result):
+        r"""Test that the _fac2 function returns a correct value."""
+        value = qchem.integrals._fac2(n)
+        assert value == result
+
 
 class TestOverlap:
     """Tests for overlap integrals"""
