@@ -14,7 +14,7 @@
 """Unit and integration tests for the adjoint_jacobian function for DefaultQubit2"""
 import pytest
 import pennylane as qml
-from pennylane.devices.qubit import adjoint_jacobian
+from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from pennylane.tape import QuantumScript
 import pennylane.numpy as np
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
@@ -282,3 +282,143 @@ class TestAdjointJacobian:
             np.cos(c) * np.sin(b) * np.sin(a),
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestAdjointJVP:
+    """Test for adjoint_jvp"""
+
+    @pytest.mark.parametrize("tangents", [(0,), (1.232,)])
+    def test_single_param_single_obs(self, tangents, tol):
+        """Test JVP is correct for a single parameter and observable"""
+        x = np.array(0.654)
+        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = {0}
+
+        actual = adjoint_jvp(qs, tangents)
+        assert isinstance(actual, np.ndarray)
+
+        jac = adjoint_jacobian(qs)
+        expected = jac * tangents[0]
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize("tangents", [(0,), (1.232,)])
+    def test_single_param_multi_obs(self, tangents, tol):
+        """Test JVP is correct for a single parameter and multiple observables"""
+        x = np.array(0.654)
+        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        qs.trainable_params = {0}
+
+        actual = adjoint_jvp(qs, tangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+        assert all(isinstance(r, np.ndarray) for r in actual)
+
+        jac = adjoint_jacobian(qs)
+        expected = np.array(jac) * tangents[0]
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
+    def test_multi_param_single_obs(self, tangents, tol):
+        """Test JVP is correct for multiple parameters and a single observable"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], [qml.expval(qml.PauliY(0))])
+        qs.trainable_params = {0, 1}
+
+        actual = adjoint_jvp(qs, tangents)
+        assert isinstance(actual, np.ndarray)
+
+        jac = adjoint_jacobian(qs)
+        expected = np.dot(np.array(jac), np.array(tangents))
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
+    def test_multi_param_multi_obs(self, tangents, tol):
+        """Test JVP is correct for multiple parameters and observables"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
+        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs)
+        qs.trainable_params = {0, 1}
+
+        actual = adjoint_jvp(qs, tangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 3
+        assert all(isinstance(r, np.ndarray) for r in actual)
+
+        jac = np.array(adjoint_jacobian(qs))
+        expected = jac @ np.array(tangents)
+        assert np.allclose(actual, expected, atol=tol)
+
+
+class TestAdjointVJP:
+    """Test for adjoint_vjp"""
+
+    @pytest.mark.parametrize("cotangents", [(0,), (1.232,)])
+    def test_single_param_single_obs(self, cotangents, tol):
+        """Test VJP is correct for a single parameter and observable"""
+        x = np.array(0.654)
+        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = {0}
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, np.ndarray)
+
+        jac = adjoint_jacobian(qs)
+        expected = jac * cotangents[0]
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize("cotangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
+    def test_single_param_multi_obs(self, cotangents, tol):
+        """Test VJP is correct for a single parameter and multiple observables"""
+        x = np.array(0.654)
+        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        qs.trainable_params = {0}
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, np.ndarray)
+
+        jac = adjoint_jacobian(qs)
+        expected = np.dot(np.array(jac), np.array(cotangents))
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize("cotangents", [(0,), (1.232,)])
+    def test_multi_param_single_obs(self, cotangents, tol):
+        """Test VJP is correct for multiple parameters and a single observable"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], [qml.expval(qml.PauliY(0))])
+        qs.trainable_params = {0, 1}
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+        assert all(isinstance(r, np.ndarray) for r in actual)
+
+        jac = adjoint_jacobian(qs)
+        expected = np.array(jac) * cotangents[0]
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents", [(0, 0, 0), (0, 0.653, 0), (1.236, 0, 0.573), (1.232, 2.963, 1.942)]
+    )
+    def test_multi_param_multi_obs(self, cotangents, tol):
+        """Test VJP is correct for multiple parameters and observables"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
+        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs)
+        qs.trainable_params = {0, 1}
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+        assert all(isinstance(r, np.ndarray) for r in actual)
+
+        jac = np.array(adjoint_jacobian(qs))
+        expected = np.array(cotangents) @ jac
+        assert np.allclose(actual, expected, atol=tol)

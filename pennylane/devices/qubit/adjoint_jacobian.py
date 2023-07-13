@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
-
+from numbers import Number
+from typing import Tuple
 import numpy as np
 
 import pennylane as qml
@@ -33,7 +34,21 @@ def _dot_product_real(bra, ket, num_wires):
     return qml.math.real(qml.math.sum(qml.math.conj(bra) * ket, axis=sum_axes))
 
 
-def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
+def _get_output_ket(tape):
+    """Helper function to get the output state of a tape"""
+
+    # Initialization of state
+    prep_operation = None if len(tape._prep) == 0 else tape._prep[0]
+    ket = create_initial_state(
+        wires=tape.wires, prep_operation=prep_operation
+    )  #  ket(0) if prep_operation is None, else
+    for op in tape._ops:
+        ket = apply_operation(op, ket)
+
+    return ket
+
+
+def adjoint_jacobian(tape: QuantumTape):
     """Implements the adjoint method outlined in
     `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -56,19 +71,12 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
         array or tuple[array]: the derivative of the tape with respect to trainable parameters.
         Dimensions are ``(len(observables), len(trainable_params))``.
     """
-
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    # Initialization of state
-    prep_operation = None if len(tape._prep) == 0 else tape._prep[0]
-    ket = create_initial_state(
-        wires=tape.wires, prep_operation=prep_operation
-    )  #  ket(0) if prep_operation is None, else
-    for op in tape._ops:
-        ket = apply_operation(op, ket)
+    ket = _get_output_ket(tape)
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -108,3 +116,142 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
 
     # must be 2-dimensional
     return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
+
+def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number]):
+    """Implements the adjoint method outlined in
+    `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
+
+    After a forward pass, the circuit is reversed by iteratively applying adjoint
+    gates to scan backwards through the circuit.
+
+    .. note::
+        The adjoint differentiation method has the following restrictions:
+
+        * Only expectation values are supported as measurements.
+
+        * Cannot differentiate with respect to observables.
+
+        * Observable being measured must have a matrix.
+
+    Args:
+        tape (.QuantumTape): circuit that the function takes the gradient of
+
+    Returns:
+        array or tuple[array]: the derivative of the tape with respect to trainable parameters.
+        Dimensions are ``(len(observables), len(trainable_params))``.
+    """
+    # Map wires if custom wire labels used
+    if set(tape.wires) != set(range(tape.num_wires)):
+        wire_map = {w: i for i, w in enumerate(tape.wires)}
+        tape = qml.map_wires(tape, wire_map)
+
+    ket = _get_output_ket(tape)
+
+    n_obs = len(tape.observables)
+    bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
+    for i, obs in enumerate(tape.observables):
+        bras[i] = apply_operation(obs, ket)
+
+    param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
+    trainable_param_number = len(tape.trainable_params) - 1
+
+    tangents_out = np.zeros(n_obs)
+
+    for op in reversed(tape._ops):
+        adj_op = qml.adjoint(op)
+        ket = apply_operation(adj_op, ket)
+
+        if op.grad_method is not None:
+            if param_number in tape.trainable_params:
+                # don't do anything if the tangent is 0
+                if not qml.math.allclose(tangents[trainable_param_number], 0):
+                    d_op_matrix = operation_derivative(op)
+                    ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
+
+                    tangents_out += (
+                        2
+                        * _dot_product_real(bras, ket_temp, len(tape.wires))
+                        * tangents[trainable_param_number]
+                    )
+
+                trainable_param_number -= 1
+            param_number -= 1
+
+        for i in range(n_obs):
+            bras[i] = apply_operation(adj_op, bras[i])
+
+    if n_obs == 1:
+        return np.array(tangents_out[0])
+
+    return tuple(np.array(t) for t in tangents_out)
+
+
+def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number]):
+    """Implements the adjoint method outlined in
+    `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
+
+    After a forward pass, the circuit is reversed by iteratively applying adjoint
+    gates to scan backwards through the circuit.
+
+    .. note::
+        The adjoint differentiation method has the following restrictions:
+
+        * Only expectation values are supported as measurements.
+
+        * Cannot differentiate with respect to observables.
+
+        * Observable being measured must have a matrix.
+
+    Args:
+        tape (.QuantumTape): circuit that the function takes the gradient of
+
+    Returns:
+        array or tuple[array]: the derivative of the tape with respect to trainable parameters.
+        Dimensions are ``(len(observables), len(trainable_params))``.
+    """
+    # Map wires if custom wire labels used
+    if set(tape.wires) != set(range(tape.num_wires)):
+        wire_map = {w: i for i, w in enumerate(tape.wires)}
+        tape = qml.map_wires(tape, wire_map)
+
+    ket = _get_output_ket(tape)
+
+    # filter out observables with zero gradients
+    zero_indices = {i for i, cot in enumerate(cotangents) if qml.math.allclose(cot, 0)}
+    cotangents = [cot for i, cot in enumerate(cotangents) if i not in zero_indices]
+    observables = [obs for i, obs in enumerate(tape.observables) if i not in zero_indices]
+
+    n_obs = len(observables)
+    bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
+    for i, obs in enumerate(observables):
+        bras[i] = apply_operation(obs, ket)
+
+    param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
+    trainable_param_number = len(tape.trainable_params) - 1
+
+    cotangents_in = np.empty(len(tape.trainable_params))
+
+    for op in reversed(tape._ops):
+        adj_op = qml.adjoint(op)
+        ket = apply_operation(adj_op, ket)
+
+        if op.grad_method is not None:
+            if param_number in tape.trainable_params:
+                d_op_matrix = operation_derivative(op)
+                ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
+
+                cotangents_in[trainable_param_number] = qml.math.dot(
+                    2 * _dot_product_real(bras, ket_temp, len(tape.wires)), cotangents
+                )
+
+                trainable_param_number -= 1
+            param_number -= 1
+
+        for i in range(n_obs):
+            bras[i] = apply_operation(adj_op, bras[i])
+
+    if len(tape.trainable_params) == 1:
+        return np.array(cotangents_in[0])
+
+    return tuple(np.array(t) for t in cotangents_in)
