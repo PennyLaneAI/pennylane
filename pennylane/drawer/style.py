@@ -160,6 +160,8 @@ _styles_map = {
     "default": _needs_mpl(lambda: plt.style.use("default")),
 }
 
+__current_style_fn = _black_white
+
 
 def available_styles():
     """Get available style specification strings.
@@ -211,8 +213,9 @@ def use_style(style: str):
             :target: javascript:void(0);
 
     """
+    global __current_style_fn  # pylint:disable=global-statement
     if style in _styles_map:
-        _styles_map[style]()
+        __current_style_fn = _styles_map[style]
     else:
         raise TypeError(
             f"style '{style}' provided to ``qml.drawer.use_style``"
@@ -220,5 +223,20 @@ def use_style(style: str):
         )
 
 
-if _has_mpl:
-    _black_white()
+def _set_style(style: str = None):
+    """
+    Execute a style function to change the current rcParams.
+
+    Args:
+        style (Optional[str]): A style specification. If no style is provided,
+            the latest style set with ``use_style`` is used instead.
+    """
+    if not style:
+        __current_style_fn()
+    elif style in _styles_map:
+        _styles_map[style]()
+    else:
+        raise TypeError(
+            f"style '{style}' provided to ``qml.drawer.use_style``"
+            f" does not exist.  Available options are {available_styles()}"
+        )

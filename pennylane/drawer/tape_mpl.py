@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls
-from .style import use_style
+from .style import _set_style
 
 has_mpl = True
 try:
@@ -384,9 +384,9 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
     """
 
     restore_params = {}
-    if style and has_mpl:
+    if has_mpl:
         restore_params = mpl.rcParams.copy()
-        use_style(style)
+        _set_style(style)
     try:
         return _tape_mpl(
             tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
