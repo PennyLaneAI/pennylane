@@ -218,8 +218,8 @@ def use_style(style: str):
         __current_style_fn = _styles_map[style]
     else:
         raise TypeError(
-            f"style '{style}' provided to ``qml.drawer.use_style``"
-            f" does not exist.  Available options are {available_styles()}"
+            f"style '{style}' provided to ``qml.drawer.use_style`` "
+            f"does not exist.  Available options are {available_styles()}"
         )
 
 
@@ -237,6 +237,6 @@ def _set_style(style: str = None):
         _styles_map[style]()
     else:
         raise TypeError(
-            f"style '{style}' provided to ``qml.drawer.use_style``"
-            f" does not exist.  Available options are {available_styles()}"
+            f"style '{style}' provided to ``_set_style`` "
+            f"does not exist.  Available options are {available_styles()}"
         )

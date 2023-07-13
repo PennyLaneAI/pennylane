@@ -18,13 +18,15 @@ Unit tests for the pennylane.drawer.style` module.
 import pytest
 import pennylane as qml
 
+from pennylane.drawer.style import _set_style
+
 plt = pytest.importorskip("matplotlib.pyplot")
 
 
 @pytest.fixture(autouse=True)
 def reset_style_after_tests():
     yield
-    qml.drawer.use_style("black_white")
+    _set_style("black_white")
 
 
 def test_available_styles():
@@ -44,7 +46,7 @@ def test_available_styles():
 def test_black_white_style():
     """Tests the black white style sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("black_white")
+    _set_style("black_white")
     assert plt.rcParams["savefig.facecolor"] == "white"
     assert plt.rcParams["figure.facecolor"] == "white"
     assert plt.rcParams["axes.facecolor"] == "white"
@@ -60,7 +62,7 @@ def test_black_white_style():
 def test_black_white_style_dark():
     """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("black_white_dark")
+    _set_style("black_white_dark")
 
     almost_black = "#151515"
     assert plt.rcParams["savefig.facecolor"] == almost_black
@@ -77,7 +79,7 @@ def test_black_white_style_dark():
 def test_sketch_style():
     """Tests the sketch style sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("sketch")
+    _set_style("sketch")
 
     assert plt.rcParams["figure.facecolor"] == "white"
     assert plt.rcParams["savefig.facecolor"] == "white"
@@ -95,7 +97,7 @@ def test_sketch_style():
 def test_sketch_style_dark():
     """Tests the sketch style dark sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("sketch_dark")
+    _set_style("sketch_dark")
 
     almost_black = "#151515"  # less harsh than full black
     assert plt.rcParams["figure.facecolor"] == almost_black
@@ -114,7 +116,7 @@ def test_sketch_style_dark():
 def test_solarized_light_style():
     """Tests the solarized light style sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("solarized_light")
+    _set_style("solarized_light")
     assert plt.rcParams["patch.linewidth"] == 3.0
     assert plt.rcParams["savefig.facecolor"] == "#fdf6e3"
     assert plt.rcParams["figure.facecolor"] == "#fdf6e3"
@@ -130,7 +132,7 @@ def test_solarized_light_style():
 def test_solarized_dark_style():
     """Tests the solarized dark style sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("solarized_dark")
+    _set_style("solarized_dark")
     assert plt.rcParams["patch.linewidth"] == 3.0
     assert plt.rcParams["savefig.facecolor"] == "#002b36"
     assert plt.rcParams["figure.facecolor"] == "#002b36"
@@ -149,8 +151,8 @@ def test_default():
     plt.style.use("default")
     initial = plt.rcParams.copy()
 
-    qml.drawer.use_style("black_white")
-    qml.drawer.use_style("default")
+    _set_style("black_white")
+    _set_style("default")
     new = plt.rcParams.copy()
 
     # make sure dictionaries are the same
