@@ -24,7 +24,6 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.fermi import FermiWord
 from pennylane.operation import active_new_opmath
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
 from pennylane.pauli.utils import _binary_matrix_from_pws
@@ -484,7 +483,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     fermop_terms = []
     for idx, bit in enumerate(hf):
         if bit:
-            ps = qml.jordan_wigner(FermiWord({(0, idx): "+"}), ps=True)
+            ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
             ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
         fermop_terms.append(ps)

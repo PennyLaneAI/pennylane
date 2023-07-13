@@ -184,7 +184,8 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
             warnings.warn(
                 "This function will return a fermionic operator by default in the next release. For"
                 " details, see the Fermionic Operators tutorial:"
-                " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+                " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
+                " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
             )
         return fermionic_observable(core_constant, one, two, cutoff, fs)
 

@@ -96,7 +96,8 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False)
     warnings.warn(
         "This function will return a fermionic operator by default in the next release. For details,"
         " see the Fermionic Operators tutorial:"
-        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
+        " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
     )
 
     return coeffs[indices_sort], sorted(operators)
@@ -134,7 +135,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> print(qubit_observable(f))
     Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
     """
-    if isinstance(o_ferm, FermiSentence):
+    if isinstance(o_ferm, (FermiWord, FermiSentence)):
         h = qml.jordan_wigner(o_ferm, ps=True)
         h.simplify()
 
