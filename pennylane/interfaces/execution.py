@@ -941,7 +941,8 @@ def _post_processing(results, processing_fns, classical_cotransforms):
     # Apply postprocessing (apply classical cotransform and processing function)
     for p_fn, cotransform in zip(processing_fns, classical_cotransforms):
         if cotransform:
-            results = cotransform(results)
+            # TODO: add coverage with gradient transform
+            results = cotransform(results)  # pragma:no cover
         results = p_fn(results)
     return results
 

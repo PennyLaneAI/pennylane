@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Transform programs can be executed (forward pass) with ``qml.execute`` and are integrated with ``QNode``.
+  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
+
 <h3>Improvements 🛠</h3>
 
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
@@ -119,6 +122,7 @@ Soran Jahangiri,
 Isaac De Vlugt,
 Edward Jiang,
 Christina Lee,
+Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
