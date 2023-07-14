@@ -294,7 +294,7 @@ def _validate_multiprocessing_circuits(circuits):
 
     if any(_has_snapshot(c) for c in circuits):
         raise RuntimeError(
-            """ProcessPoolExecutor cannot execute a QuantumScript with 
+            """ProcessPoolExecutor cannot execute a QuantumScript with
             a ``Snapshot`` operation. Change the value of ``max_workers``
             to ``None`` or execute the QuantumScript separately."""
         )
