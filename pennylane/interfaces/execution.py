@@ -525,31 +525,31 @@ def execute(
                 results = cached_execute_fn(tapes, execution_config=config)
 
             return batch_fn(results)
+
+        device_supports_interface_data = (
+            new_device_interface
+            or config.interface is None
+            or gradient_fn == "backprop"
+            or device.short_name == "default.mixed"
+            or "passthru_interface" in device.capabilities()
+        )
+        if not device_supports_interface_data:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+
+        # use qml.interfaces so that mocker can spy on it during testing
+        cached_execute_fn = qml.interfaces.cache_execute(
+            batch_execute,
+            cache,
+            expand_fn=expand_fn,
+            return_tuple=False,
+            pass_kwargs=new_device_interface,
+        )
+        if not transform_program.is_informative():
+            results = cached_execute_fn(tapes, execution_config=config)
         else:
-            device_supports_interface_data = (
-                new_device_interface
-                or config.interface is None
-                or gradient_fn == "backprop"
-                or device.short_name == "default.mixed"
-                or "passthru_interface" in device.capabilities()
-            )
-            if not device_supports_interface_data:
-                tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            results = tapes
 
-            # use qml.interfaces so that mocker can spy on it during testing
-            cached_execute_fn = qml.interfaces.cache_execute(
-                batch_execute,
-                cache,
-                expand_fn=expand_fn,
-                return_tuple=False,
-                pass_kwargs=new_device_interface,
-            )
-            if not transform_program.is_informative():
-                results = cached_execute_fn(tapes, execution_config=config)
-            else:
-                results = tapes
-
-            return _post_processing(results, processing_fns, classical_cotransforms)
+        return _post_processing(results, processing_fns, classical_cotransforms)
 
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing

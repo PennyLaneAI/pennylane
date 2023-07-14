@@ -15,7 +15,6 @@
 This module contains the transform program class.
 """
 from .transform_dispatcher import TransformContainer, TransformError
-from pennylane.transforms import map_batch_transform
 
 
 class TransformProgram:
@@ -138,7 +137,9 @@ class TransformProgram:
             new_num_tapes = len(new_tapes)
 
             # Merge the processing function into in a single one
-            def processing_fn(res, num_tapes=num_tapes, new_num_tapes=new_num_tapes, fns=fns):
+            def processing_fn(
+                res, num_tapes=num_tapes, new_num_tapes=new_num_tapes, fns=tuple(fns)
+            ):
                 final_results = [
                     fns[idx](res[idx * new_num_tapes : (idx + 1) * new_num_tapes])
                     for idx in range(num_tapes)
