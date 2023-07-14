@@ -138,10 +138,13 @@ class TransformProgram:
 
             # Merge the processing function into in a single one
             def processing_fn(
-                res, num_tapes=num_tapes, new_num_tapes=new_num_tapes, pfns=tuple(fns)
-            ):
+                res,
+                num_tapes=num_tapes,
+                new_num_tapes=new_num_tapes,
+                p_fns=tuple(fns),
+            ):  # pylint: disable=cell-var-from-loop
                 final_results = [
-                    pfns[idx](res[idx * new_num_tapes : (idx + 1) * new_num_tapes])
+                    p_fns[idx](res[idx * new_num_tapes : (idx + 1) * new_num_tapes])
                     for idx in range(num_tapes)
                 ]
                 return final_results
