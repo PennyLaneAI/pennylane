@@ -571,7 +571,7 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(a_val, requires_grad=True, device=torch_device)
         b = torch.tensor(b_val, requires_grad=True, device=torch_device)
 
-        tape = tape.bind_new_parameters([a, b], [0, 1])
+        tape = tape.bind_new_parameters([2 * a, b], [0, 1])
         res2 = execute([tape], dev, **execute_kwargs)[0]
 
         expected = torch.tensor(
