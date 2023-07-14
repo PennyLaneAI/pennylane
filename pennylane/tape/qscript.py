@@ -719,6 +719,66 @@ class QuantumScript:
         self._update_batch_size()
         self._update_output_dim()
 
+    def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
+        """Create a new tape with updated parameters.
+
+        This function takes a :class:`~.tape.QuantumScript` as input, and returns
+        a new ``QuantumScript`` containing the new parameters at the provided indices,
+        with the parameters at all other indices remaining the same.
+
+        Args:
+            params (Sequence[TensorLike]): New parameters to create the tape with. This
+                must have the same length as ``indices``.
+            indices (Sequence[int]): The parameter indices to update with the given parameters.
+                The index of a parameter is defined as its index in ``tape.get_parameters()``.
+
+        Returns:
+            .tape.QuantumScript: New tape with updated parameters
+        """
+        # pylint: disable=no-member
+
+        if len(params) != len(indices):
+            raise ValueError("Number of provided parameters does not match number of indices")
+
+        # determine the ops that need to be updated
+        op_indices = {}
+        for param_idx, idx in enumerate(sorted(indices)):
+            pinfo = self._par_info[idx]
+            op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
+
+            if op_idx not in op_indices:
+                op_indices[op_idx] = {}
+
+            op_indices[op_idx][p_idx] = param_idx
+
+        new_ops = self.circuit
+
+        for op_idx, p_indices in op_indices.items():
+            op = new_ops[op_idx]
+            data = op.data if isinstance(op, Operator) else op.obs.data
+
+            new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
+
+            if isinstance(op, Operator):
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+            else:
+                new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
+                new_op = op.__class__(obs=new_obs)
+
+            new_ops[op_idx] = new_op
+
+        new_prep = new_ops[: len(self._prep)]
+        new_operations = new_ops[len(self._prep) : len(self.operations)]
+        new_measurements = new_ops[len(self.operations) :]
+
+        new_tape = qml.tape.QuantumScript(
+            new_operations, new_measurements, new_prep, shots=self.shots
+        )
+        new_tape.trainable_params = self.trainable_params
+        new_tape._qfunc_output = self._qfunc_output
+
+        return new_tape
+
     # ========================================================
     # MEASUREMENT SHAPE
     #
@@ -1411,68 +1471,3 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
         return qscript
 
     return wrapper
-
-
-def bind_new_parameters_tape(
-    tape: QuantumScript, params: Sequence[TensorLike], indices: Sequence[int]
-):
-    """Create a new tape with updated parameters.
-
-    This function takes a :class:`~.tape.QuantumScript` as input, and returns
-    a new ``QuantumScript`` containing the new parameters at the provided indices,
-    with the parameters at all other indices remaining the same.
-
-    Args:
-        tape (.tape.QuantumScript): Tape to update
-        params (Sequence[TensorLike]): New parameters to create the tape with. This
-            must have the same length as ``indices``.
-        indices (Sequence[int]): The parameter indices to update with the given parameters.
-            The index of a parameter is defined as its index in ``tape.get_parameters()``.
-
-    Returns:
-        .tape.QuantumScript: New tape with updated parameters
-    """
-    # pylint: disable=no-member
-
-    if len(params) != len(indices):
-        raise ValueError("Number of provided parameters does not match number of indices")
-
-    # determine the ops that need to be updated
-    op_indices = {}
-    for param_idx, idx in enumerate(sorted(indices)):
-        pinfo = tape._par_info[idx]
-        op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
-
-        if op_idx not in op_indices:
-            op_indices[op_idx] = {}
-
-        op_indices[op_idx][p_idx] = param_idx
-
-    new_ops = tape.circuit
-
-    for op_idx, p_indices in op_indices.items():
-        op = new_ops[op_idx]
-        data = op.data if isinstance(op, Operator) else op.obs.data
-
-        new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
-
-        if isinstance(op, Operator):
-            new_op = qml.ops.functions.bind_new_parameters(op, new_params)
-        else:
-            new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
-            new_op = op.__class__(obs=new_obs)
-
-        new_ops[op_idx] = new_op
-
-    new_prep = new_ops[: len(tape._prep)]
-    new_operations = new_ops[len(tape._prep) : len(tape.operations)]
-    new_measurements = new_ops[len(tape.operations) :]
-
-    new_tape = qml.tape.QuantumScript(new_operations, new_measurements, new_prep, shots=tape.shots)
-    new_tape.trainable_params = tape.trainable_params
-    new_tape._qfunc_output = tape._qfunc_output
-
-    return new_tape
-
-
-QuantumScript.bind_new_parameters = bind_new_parameters_tape

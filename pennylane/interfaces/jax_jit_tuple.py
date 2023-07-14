@@ -34,7 +34,7 @@ Zero = jax.custom_derivatives.SymbolicZero
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
-    tc = qml.tape.qscript.bind_new_parameters_tape(t, a, list(range(len(a))))
+    tc = t.bind_new_parameters(a, list(range(len(a))))
     return convert_to_numpy_parameters(tc) if unwrap else tc
 
 
