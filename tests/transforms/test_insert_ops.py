@@ -418,7 +418,7 @@ def test_insert_dev(mocker):
     new_dev = insert(qml.PhaseDamping, 0.4)(dev)
     spy = mocker.spy(new_dev, "default_expand_fn")
 
-    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
+    res_with_noise = qml.execute([in_tape], new_dev, gradient_fn=qml.gradients.param_shift)
     tape = spy.call_args[0][0]
 
     with qml.queuing.AnnotatedQueue() as q_tape_exp:
