@@ -110,7 +110,7 @@ class TransformDispatcher:
             for op in transformed_tape.circuit:
                 qml.apply(op)
 
-            return tape._qfunc_output
+            return tape._qfunc_output  # pylint:disable=protected-access
 
         return qfunc_transformed
 
