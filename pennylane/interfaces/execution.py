@@ -548,7 +548,6 @@ def execute(
             results = cached_execute_fn(tapes, execution_config=config)
         else:
             results = tapes
-
         return _post_processing(results, processing_fns, classical_cotransforms)
 
     # the default execution function is batch_execute

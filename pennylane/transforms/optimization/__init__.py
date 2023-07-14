@@ -16,7 +16,7 @@ This subpackage contains quantum function transforms for optimizing quantum circ
 """
 
 from .remove_barrier import remove_barrier
-from .cancel_inverses import cancel_inverses
+from .cancel_inverses import cancel_inverses, cancel_inverses_new
 from .commute_controlled import commute_controlled
 from .merge_rotations import merge_rotations
 from .merge_amplitude_embedding import merge_amplitude_embedding

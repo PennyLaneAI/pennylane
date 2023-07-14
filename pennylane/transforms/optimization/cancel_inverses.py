@@ -13,10 +13,14 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
+from typing import Sequence, Callable
+
 from pennylane import apply
 from pennylane.ops.op_math import Adjoint
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
+from pennylane.transforms.core import transform
+from pennylane.tape import QuantumTape
 
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -171,3 +175,79 @@ def cancel_inverses(tape):
     # Queue the measurements normally
     for m in tape.measurements:
         apply(m)
+
+
+@transform
+def cancel_inverses_new(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    """Quantum function transform to remove any operations that are applied next to their
+    (self-)inverses or adjoint.
+
+    Args:
+        qfunc (function): A quantum function.
+
+    Returns:
+        function: the transformed quantum function
+
+    **Example**
+
+
+    """
+    # Make a working copy of the list to traverse
+    list_copy = tape.operations.copy()
+    operations = []
+    while len(list_copy) > 0:
+        current_gate = list_copy[0]
+        list_copy.pop(0)
+
+        # Find the next gate that acts on at least one of the same wires
+        next_gate_idx = find_next_gate(current_gate.wires, list_copy)
+
+        # If no such gate is found queue the operation and move on
+        if next_gate_idx is None:
+            operations.append(current_gate)
+            continue
+
+        # Otherwise, get the next gate
+        next_gate = list_copy[next_gate_idx]
+
+        # If either of the two flags is true, we can potentially cancel the gates
+        if _are_inverses(current_gate, next_gate):
+            # If the wires are the same, then we can safely remove both
+            if current_gate.wires == next_gate.wires:
+                list_copy.pop(next_gate_idx)
+                continue
+            # If wires are not equal, there are two things that can happen.
+            # 1. There is not full overlap in the wires; we cannot cancel
+            if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
+                current_gate.wires
+            ):
+                operations.append(current_gate)
+                continue
+
+            # 2. There is full overlap, but the wires are in a different order.
+            # If the wires are in a different order, gates that are "symmetric"
+            # over all wires (e.g., CZ), can be cancelled.
+            if current_gate in symmetric_over_all_wires:
+                list_copy.pop(next_gate_idx)
+                continue
+            # For other gates, as long as the control wires are the same, we can still
+            # cancel (e.g., the Toffoli gate).
+            if current_gate in symmetric_over_control_wires:
+                # TODO[David Wierichs]: This assumes single-qubit targets of controlled gates
+                if (
+                    len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
+                    == len(current_gate.wires) - 1
+                ):
+                    list_copy.pop(next_gate_idx)
+                    continue
+        # Add gate any cases where
+        # - there is no wire symmetry
+        # - the control wire symmetry does not apply because the control wires are not the same
+        # - neither of the flags are_self_inverses and are_inverses are true
+        operations.append(current_gate)
+        continue
+
+    # Queue the measurements normally
+
+    new_tape = QuantumTape(operations, tape.measurements)
+    return [new_tape], lambda x: x[0]
