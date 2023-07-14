@@ -936,8 +936,13 @@ class QuantumScript:
             return self._shape_legacy(device)
 
         if isinstance(device, qml.devices.experimental.Device):
+            # MP.shape (called below) takes 2 arguments: `device` and `shots`.
+            # With the new device interface, shots are stored on tapes rather than the device
+            # As well, MP.shape needs the device largely to see the device wires, and this is
+            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
+            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
             shots = self.shots
-            device = self  # most MPs use `device.wires`, one checks `device.cutoff`
+            device = self
         else:
             shots = (
                 Shots(device._raw_shot_sequence)
