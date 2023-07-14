@@ -40,7 +40,7 @@
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
-* `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` for in order to make
+* `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
   more performant choices.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
