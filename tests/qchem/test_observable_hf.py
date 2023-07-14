@@ -190,11 +190,114 @@ from pennylane.fermi import from_string
         ),
     ],
 )
-def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
+def test_fermionic_observable_fsFalse(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
+    # TODO: remove this test when supporting tuple output by fermionic_observable is deprecated.
     f = qchem.fermionic_observable(core_constant, integral_one, integral_two)
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
+
+
+@pytest.mark.parametrize(
+    ("core_constant", "integral_one", "integral_two", "f_ref"),
+    [
+        (  # computed with openfermion for H2 (format is modified):
+            # H2 bond length: 1 Angstrom, basis = 'sto-3g', multiplicity = 1, charge = 0
+            # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
+            # run_pyscf(molecule).get_integrals()
+            np.array([0.529177210903]),  # nuclear repulsion 1 / 1.88973 Bohr
+            np.array([[-1.11084418e00, 1.01781501e-16], [7.32122533e-17, -5.89121004e-01]]),
+            np.array(
+                [
+                    [
+                        [[6.26402500e-01, -1.84129592e-16], [-2.14279171e-16, 1.96790583e-01]],
+                        [[-2.14279171e-16, 1.96790583e-01], [6.21706763e-01, -1.84062159e-17]],
+                    ],
+                    [
+                        [[-1.84129592e-16, 6.21706763e-01], [1.96790583e-01, -5.28427412e-17]],
+                        [[1.96790583e-01, -5.28427412e-17], [-1.84062159e-17, 6.53070747e-01]],
+                    ],
+                ]
+            ),
+            # computed with openfermion for H2 (format is modified):
+            # get_fermion_operator(run_pyscf(molecule).get_molecular_hamiltonian())
+            0.52917721092 * from_string("")
+            - 1.1108441798837276 * from_string("0+ 0-")
+            + 0.31320124976475916 * from_string("0+ 0+ 0- 0-")
+            + 0.09839529174273519 * from_string("0+ 0+ 2- 2-")
+            + 0.31320124976475916 * from_string("0+ 1+ 1- 0-")
+            + 0.09839529174273519 * from_string("0+ 1+ 3- 2-")
+            + 0.09839529174273519 * from_string("0+ 2+ 0- 2-")
+            + 0.3108533815598568 * from_string("0+ 2+ 2- 0-")
+            + 0.09839529174273519 * from_string("0+ 3+ 1- 2-")
+            + 0.3108533815598568 * from_string("0+ 3+ 3- 0-")
+            + 0.31320124976475916 * from_string("1+ 0+ 0- 1-")
+            + 0.09839529174273519 * from_string("1+ 0+ 2- 3-")
+            - 1.1108441798837276 * from_string("1+ 1-")
+            + 0.31320124976475916 * from_string("1+ 1+ 1- 1-")
+            + 0.09839529174273519 * from_string("1+ 1+ 3- 3-")
+            + 0.09839529174273519 * from_string("1+ 2+ 0- 3-")
+            + 0.3108533815598568 * from_string("1+ 2+ 2- 1-")
+            + 0.09839529174273519 * from_string("1+ 3+ 1- 3-")
+            + 0.3108533815598568 * from_string("1+ 3+ 3- 1-")
+            + 0.3108533815598569 * from_string("2+ 0+ 0- 2-")
+            + 0.09839529174273519 * from_string("2+ 0+ 2- 0-")
+            + 0.3108533815598569 * from_string("2+ 1+ 1- 2-")
+            + 0.09839529174273519 * from_string("2+ 1+ 3- 0-")
+            - 0.5891210037060831 * from_string("2+ 2-")
+            + 0.09839529174273519 * from_string("2+ 2+ 0- 0-")
+            + 0.32653537347128725 * from_string("2+ 2+ 2- 2-")
+            + 0.09839529174273519 * from_string("2+ 3+ 1- 0-")
+            + 0.32653537347128725 * from_string("2+ 3+ 3- 2-")
+            + 0.3108533815598569 * from_string("3+ 0+ 0- 3-")
+            + 0.09839529174273519 * from_string("3+ 0+ 2- 1-")
+            + 0.3108533815598569 * from_string("3+ 1+ 1- 3-")
+            + 0.09839529174273519 * from_string("3+ 1+ 3- 1-")
+            + 0.09839529174273519 * from_string("3+ 2+ 0- 1-")
+            + 0.32653537347128725 * from_string("3+ 2+ 2- 3-")
+            - 0.5891210037060831 * from_string("3+ 3-")
+            + 0.09839529174273519 * from_string("3+ 3+ 1- 1-")
+            + 0.32653537347128725 * from_string("3+ 3+ 3- 3-"),
+        ),
+        (
+            np.array([2.869]),
+            np.array(
+                [
+                    [0.95622463, 0.7827277, -0.53222294],
+                    [0.7827277, 1.42895581, 0.23469918],
+                    [-0.53222294, 0.23469918, 0.48381955],
+                ]
+            ),
+            None,
+            # computed with PL-QChem dipole (format is modified)
+            2.869 * from_string("")
+            + 0.956224634652776 * from_string("0+ 0-")
+            + 0.782727697897828 * from_string("0+ 2-")
+            - 0.532222940905614 * from_string("0+ 4-")
+            + 0.956224634652776 * from_string("1+ 1-")
+            + 0.782727697897828 * from_string("1+ 3-")
+            - 0.532222940905614 * from_string("1+ 5-")
+            + 0.782727697897828 * from_string("2+ 0-")
+            + 1.42895581236226 * from_string("2+ 2-")
+            + 0.234699175620383 * from_string("2+ 4-")
+            + 0.782727697897828 * from_string("3+ 1-")
+            + 1.42895581236226 * from_string("3+ 3-")
+            + 0.234699175620383 * from_string("3+ 5-")
+            - 0.532222940905614 * from_string("4+ 0-")
+            + 0.234699175620383 * from_string("4+ 2-")
+            + 0.483819552892797 * from_string("4+ 4-")
+            - 0.532222940905614 * from_string("5+ 1-")
+            + 0.234699175620383 * from_string("5+ 3-")
+            + 0.483819552892797 * from_string("5+ 5-"),
+        ),
+    ],
+)
+def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
+    r"""Test that fermionic_observable returns the correct fermionic observable."""
+    f = qchem.fermionic_observable(core_constant, integral_one, integral_two, fs=True)
+
+    assert np.allclose(list(f.values()), list(f_ref.values()))
+    assert f.keys() == f_ref.keys()
 
 
 @pytest.mark.parametrize(
