@@ -771,9 +771,7 @@ class QuantumScript:
         new_operations = new_ops[len(self._prep) : len(self.operations)]
         new_measurements = new_ops[len(self.operations) :]
 
-        new_tape = self.__class__(
-            new_operations, new_measurements, new_prep, shots=self.shots
-        )
+        new_tape = self.__class__(new_operations, new_measurements, new_prep, shots=self.shots)
         new_tape.trainable_params = self.trainable_params
         new_tape._qfunc_output = self._qfunc_output
 
