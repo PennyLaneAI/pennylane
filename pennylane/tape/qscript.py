@@ -38,7 +38,6 @@ from pennylane.measurements import (
 )
 from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
-from pennylane.typing import TensorLike
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
