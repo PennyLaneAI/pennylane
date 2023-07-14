@@ -53,6 +53,7 @@ def test_flatten_unflatten():
 
     data, metadata = op._flatten()
 
+    assert qml.math.allclose(data[0], weights)
     # check metadata hashable
     assert hash(metadata)
 
