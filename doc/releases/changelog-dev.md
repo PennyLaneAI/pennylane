@@ -44,6 +44,10 @@
   more performant choices.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
+* The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
+  new `QuantumScript` objects with the provided parameters.
+  [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
