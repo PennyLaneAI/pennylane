@@ -331,7 +331,7 @@ def _validate_multiprocessing_workers(max_workers):
             {num_cpu} logical cores. The processor is likely oversubscribed, which may
             lead to performance deterioration. Consider decreasing the number of processes,
             setting the device or execution config argument `max_workers={num_workers_suggest}`
-            for example, or decreasing the number of threads per process, setting the
-            environment variable `{varname}={num_threads_suggest}` for example.""",
+            for example, or decreasing the number of threads per process by setting the
+            environment variable `{varname}={num_threads_suggest}`.""",
             UserWarning,
         )
