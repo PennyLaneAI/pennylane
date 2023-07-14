@@ -530,7 +530,7 @@ class TestIntegrationNew:
 
         dev = qml.device("default.qubit", wires=6, shots=(10000, (20000, 2), 30000))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.Hadamard(1)
             qml.Hadamard(0)
