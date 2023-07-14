@@ -152,8 +152,8 @@ class TransformProgram:
             if transform_container.classical_cotransform is None:
                 classical_cotransforms_list.append(None)
             else:
-                # TODO: temporary, to be replaced
-                classical_cotransforms_list.append(cotransform)
+                # TODO: coverage when add gradient transform
+                classical_cotransforms_list.append(cotransform)  # pragma:no cover
 
             tapes = execution_tapes
 
