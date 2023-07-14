@@ -16,6 +16,7 @@ from typing import Sequence, Callable
 import copy
 import numpy as np
 
+from functools import partial
 import pennylane as qml
 
 dev = qml.device("default.qubit", wires=2)
@@ -32,7 +33,7 @@ def qnode_circuit(a):
 
 @qml.transforms.transform
 def shift_transform(
-        tape: qml.tape.QuantumTape, alpha: float
+    tape: qml.tape.QuantumTape, alpha: float
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid (dummy) transform that shift all angles."""
     tape1 = copy.deepcopy(tape)
@@ -43,9 +44,7 @@ def shift_transform(
 
 
 @qml.transforms.transform
-def sum_transform(
-        tape: qml.tape.QuantumTape
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+def sum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid (dummy) transform that duplicates the tapes and sum the results."""
     tape1 = tape.copy()
     tape2 = tape.copy()
@@ -56,8 +55,18 @@ def sum_transform(
     return [tape1, tape2], fn
 
 
+@partial(qml.transforms.transform, is_informative=True)
+def len_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid (dummy) informative transform that returns the length of each circuit."""
+
+    def fn(results):
+        return len(results[0])
+
+    return [tape], fn
+
+
 class TestExecutionTransformPrograms:
-    """Class to test the execution of transform programs."""
+    """Class to test the execution of different transform programs."""
 
     def test_shift_transform_execute(self):
         """Test the shift transform on a qnode."""
@@ -122,3 +131,21 @@ class TestExecutionTransformPrograms:
         assert isinstance(transformed_qnode_2(0.5), qml.numpy.tensor)
         # Transforms are not commuting
         assert np.allclose(transformed_qnode_1(0.5), transformed_qnode_2(0.5))
+
+    def test_len_transform_informative(self):
+        """Test the len informative transform."""
+        transformed_qnode = len_transform(qnode_circuit)
+        res = transformed_qnode(0.5)
+        assert res == 4
+
+    def test_len_sum_composition_informative(self):
+        """Test the len informative transform with the sum transform."""
+        transformed_qnode = len_transform(sum_transform(sum_transform(qnode_circuit)))
+        res = transformed_qnode(0.5)
+        assert res == 4 * 4
+
+    def test_len_shift_composition_informative(self):
+        """Test the len informative transform with the sum transform."""
+        transformed_qnode = len_transform(shift_transform(qnode_circuit, 0.2))
+        res = transformed_qnode(0.5)
+        assert res == 4

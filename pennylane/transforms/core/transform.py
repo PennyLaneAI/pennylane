@@ -19,7 +19,9 @@ import pennylane as qml
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
-def transform(quantum_transform, expand_transform=None, classical_cotransform=None):
+def transform(
+    quantum_transform, expand_transform=None, classical_cotransform=None, is_informative=None
+):
     """The transform function is to be used to validate and dispatch a quantum transform on PennyLane objects (tape,
     qfunc and Qnode). It can be used directly as a decorator on qfunc and qnodes.
 
@@ -41,6 +43,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
             * The expand transform must have the same type hinting as a quantum transform.
 
         classical_cotransform(callable): A classical co-transform.
+        is_informative(bool): If true the execution is skipped, because the transform is informative.
 
     **Example**
 
@@ -128,6 +131,7 @@ def transform(quantum_transform, expand_transform=None, classical_cotransform=No
         quantum_transform,
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
+        is_informative=is_informative,
     )
 
 

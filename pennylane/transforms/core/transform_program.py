@@ -139,8 +139,10 @@ class TransformProgram:
 
             # Merge the processing function into in a single one
             def processing_fn(res, num_tapes=num_tapes, new_num_tapes=new_num_tapes, fns=fns):
-                final_results = [fns[idx](res[idx * new_num_tapes: (idx + 1) * new_num_tapes]) for idx in
-                                 range(num_tapes)]
+                final_results = [
+                    fns[idx](res[idx * new_num_tapes : (idx + 1) * new_num_tapes])
+                    for idx in range(num_tapes)
+                ]
                 return final_results
 
             processing_fns_list.append(processing_fn)

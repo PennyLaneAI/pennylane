@@ -312,6 +312,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
+    transform_program=None,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     grad_on_execution="best",
@@ -332,6 +333,8 @@ def execute(
         device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
+        transform_program(pennylane.transform.TransformProgram): The transform program to be applied to the original
+            circuit.
         gradient_fn (None or callable): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
@@ -479,37 +482,74 @@ def execute(
     else:
         batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
-    expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
+    if transform_program is None:
+        expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
-    #### Executing the configured setup #####
+        #### Executing the configured setup #####
 
-    tapes, batch_fn, config = _batch_transform(
-        tapes, device, config, override_shots, device_batch_transform
-    )
+        tapes, batch_fn, config = _batch_transform(
+            tapes, device, config, override_shots, device_batch_transform
+        )
+    else:
+        # TODO: add the device preprocessing and expand fn to the program
+        # transform_program.add_preprocessing()
+        expand_fn = None
+
+    # Apply all transforms (device pre-processing, compilation)
+    if transform_program is not None and not transform_program.is_empty():
+        tapes, processing_fns, classical_cotransforms = transform_program(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
-        device_supports_interface_data = (
-            new_device_interface
-            or config.interface is None
-            or gradient_fn == "backprop"
-            or device.short_name == "default.mixed"
-            or "passthru_interface" in device.capabilities()
-        )
-        if not device_supports_interface_data:
-            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        if transform_program is None:
+            device_supports_interface_data = (
+                new_device_interface
+                or config.interface is None
+                or gradient_fn == "backprop"
+                or device.short_name == "default.mixed"
+                or "passthru_interface" in device.capabilities()
+            )
+            if not device_supports_interface_data:
+                tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
 
-        # use qml.interfaces so that mocker can spy on it during testing
-        cached_execute_fn = qml.interfaces.cache_execute(
-            batch_execute,
-            cache,
-            expand_fn=expand_fn,
-            return_tuple=False,
-            pass_kwargs=new_device_interface,
-        )
-        results = cached_execute_fn(tapes, execution_config=config)
-        return batch_fn(results)
+            # use qml.interfaces so that mocker can spy on it during testing
+            cached_execute_fn = qml.interfaces.cache_execute(
+                batch_execute,
+                cache,
+                expand_fn=expand_fn,
+                return_tuple=False,
+                pass_kwargs=new_device_interface,
+            )
+            if transform_program is None:
+                results = cached_execute_fn(tapes, execution_config=config)
+
+            return batch_fn(results)
+        else:
+            device_supports_interface_data = (
+                new_device_interface
+                or config.interface is None
+                or gradient_fn == "backprop"
+                or device.short_name == "default.mixed"
+                or "passthru_interface" in device.capabilities()
+            )
+            if not device_supports_interface_data:
+                tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+
+            # use qml.interfaces so that mocker can spy on it during testing
+            cached_execute_fn = qml.interfaces.cache_execute(
+                batch_execute,
+                cache,
+                expand_fn=expand_fn,
+                return_tuple=False,
+                pass_kwargs=new_device_interface,
+            )
+            if not transform_program.is_informative():
+                results = cached_execute_fn(tapes, execution_config=config)
+            else:
+                results = tapes
+
+            return _post_processing(results, processing_fns, classical_cotransforms)
 
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing
@@ -894,6 +934,16 @@ def _execute_legacy(
     res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return batch_fn(res)
+
+
+def _post_processing(results, processing_fns, classical_cotransforms):
+    """Apply the post-processing functions to the results."""
+    # Apply postprocessing (apply classical cotransform and processing function)
+    for p_fn, cotransform in zip(processing_fns, classical_cotransforms):
+        if cotransform:
+            results = cotransform(results)
+        results = p_fn(results)
+    return results
 
 
 def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):

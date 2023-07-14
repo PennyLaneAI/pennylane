@@ -25,7 +25,6 @@ from typing import Union
 import autograd
 
 import pennylane as qml
-import pennylane.workflow.execution
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
@@ -964,52 +963,49 @@ class QNode:
             if "mode" in self.execute_kwargs:
                 self.execute_kwargs.pop("mode")
             # pylint: disable=unexpected-keyword-arg
-
-            if self.transform_program:
-                res = pennylane.workflow.execution.execute(tapes=[self.tape],
-                                                           device=self.device,
-                                                           transform_program=self.transform_program,
-                                                           **self.execute_kwargs)
-                res = res[0]
+            if self.transform_program.is_empty():
+                transform_program = None
             else:
-                res = qml.execute(
-                    [self.tape],
-                    device=self.device,
-                    gradient_fn=self.gradient_fn,
-                    interface=self.interface,
-                    gradient_kwargs=self.gradient_kwargs,
-                    override_shots=override_shots,
-                    **self.execute_kwargs,
-                )
+                transform_program = self.transform_program
+            res = qml.execute(
+                [self.tape],
+                device=self.device,
+                transform_program=transform_program,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
 
-                res = res[0]
+            res = res[0]
 
-                # convert result to the interface in case the qfunc has no parameters
+            # convert result to the interface in case the qfunc has no parameters
 
-                if len(self.tape.get_parameters(trainable_only=False)) == 0:
-                    res = _convert_to_interface(res, self.interface)
+            if len(self.tape.get_parameters(trainable_only=False)) == 0:
+                res = _convert_to_interface(res, self.interface)
 
-                if old_interface == "auto":
-                    self.interface = "auto"
+            if old_interface == "auto":
+                self.interface = "auto"
 
-                # Special case of single Measurement in a list
-                if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
-                    return [res]
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
 
-                # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-                if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-                    if self.device._shot_vector:
-                        res = [type(self.tape._qfunc_output)(r) for r in res]
-                        res = tuple(res)
+            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+                if self.device._shot_vector:
+                    res = [type(self.tape._qfunc_output)(r) for r in res]
+                    res = tuple(res)
 
-                    else:
-                        res = type(self.tape._qfunc_output)(res)
+                else:
+                    res = type(self.tape._qfunc_output)(res)
 
-                if override_shots is not False:
-                    # restore the initialization gradient function
-                    self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+            if override_shots is not False:
+                # restore the initialization gradient function
+                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
-                self._update_original_device()
+            self._update_original_device()
 
             return res
         if "mode" in self.execute_kwargs:
