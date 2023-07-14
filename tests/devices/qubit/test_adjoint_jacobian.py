@@ -352,6 +352,29 @@ class TestAdjointJVP:
         expected = jac @ np.array(tangents)
         assert np.allclose(actual, expected, atol=tol)
 
+    @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
+    def test_custom_wire_labels(self, tangents, tol):
+        """Test JVP is correct for custom wire labels"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [
+            qml.expval(qml.PauliZ("a")),
+            qml.expval(qml.PauliX("a")),
+            qml.expval(qml.PauliY("a")),
+        ]
+        qs = QuantumScript([qml.RY(x, "a"), qml.RZ(y, "a")], obs)
+        qs.trainable_params = {0, 1}
+
+        actual = adjoint_jvp(qs, tangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 3
+        assert all(isinstance(r, np.ndarray) for r in actual)
+
+        jac = np.array(adjoint_jacobian(qs))
+        expected = jac @ np.array(tangents)
+        assert np.allclose(actual, expected, atol=tol)
+
 
 class TestAdjointVJP:
     """Test for adjoint_vjp"""
@@ -412,6 +435,31 @@ class TestAdjointVJP:
 
         obs = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
         qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs)
+        qs.trainable_params = {0, 1}
+
+        actual = adjoint_vjp(qs, cotangents)
+        assert isinstance(actual, tuple)
+        assert len(actual) == 2
+        assert all(isinstance(r, np.ndarray) for r in actual)
+
+        jac = np.array(adjoint_jacobian(qs))
+        expected = np.array(cotangents) @ jac
+        assert np.allclose(actual, expected, atol=tol)
+
+    @pytest.mark.parametrize(
+        "cotangents", [(0, 0, 0), (0, 0.653, 0), (1.236, 0, 0.573), (1.232, 2.963, 1.942)]
+    )
+    def test_custom_wire_labels(self, cotangents, tol):
+        """Test VJP is correct for custom wire labels"""
+        x = np.array(0.654)
+        y = np.array(1.221)
+
+        obs = [
+            qml.expval(qml.PauliZ("a")),
+            qml.expval(qml.PauliX("a")),
+            qml.expval(qml.PauliY("a")),
+        ]
+        qs = QuantumScript([qml.RY(x, "a"), qml.RZ(y, "a")], obs)
         qs.trainable_params = {0, 1}
 
         actual = adjoint_vjp(qs, cotangents)
