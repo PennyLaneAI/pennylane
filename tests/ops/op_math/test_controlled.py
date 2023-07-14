@@ -60,12 +60,6 @@ base_num_control_mats = [
 ]
 
 
-custom_controlled_ops = [  # operators with their own controlled class
-    (qml.PauliY, qml.CY),
-    (qml.PauliZ, qml.CZ),
-]
-
-
 class TempOperator(Operator):
     num_wires = 1
 
@@ -1612,58 +1606,53 @@ def test_ctrl_template_and_operations():
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
 
+custom_controlled_ops = [  # operators with their own controlled class
+    (qml.PauliX, 1, qml.CNOT),
+    (qml.PauliY, 1, qml.CY),
+    (qml.PauliZ, 1, qml.CZ),
+    (qml.PauliX, 2, qml.Toffoli),
+]
+
+
 class TestCtrlCustomOperator:
-    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
-    def test_ctrl_custom_operators(self, op_cls, custom_op_cls):
+    @pytest.mark.parametrize("op_cls, num_ctrl_wires, custom_op_cls", custom_controlled_ops)
+    def test_ctrl_custom_operators(self, op_cls, num_ctrl_wires, custom_op_cls):
         """Test that ctrl returns operators with their own controlled class."""
+        ctrl_wires = list(range(1, num_ctrl_wires + 1))
         op = op_cls(wires=0)
-        ctrl_op = qml.ctrl(op, control=1)
-        custom_op = custom_op_cls(wires=[1, 0])
+        ctrl_op = qml.ctrl(op, control=ctrl_wires)
+        custom_op = custom_op_cls(wires=ctrl_wires + [0])
         assert qml.equal(ctrl_op, custom_op)
         assert ctrl_op.name == custom_op.name
 
-    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
-    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, custom_op_cls):
-        """Test that ctrl returns a `Controlled` class when there are multiple control wires."""
-        control_wires = [1, 2]
+    @pytest.mark.parametrize("op_cls, _, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, _, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when there is an excess of control wires."""
+        if op_cls is qml.PauliX:
+            pytest.skip("ctrl(PauliX) becomes MultiControlledX, not Controlled")
+
+        control_wires = list(range(1, 6))
         op = op_cls(wires=0)
         ctrl_op = qml.ctrl(op, control=control_wires)
         expected = Controlled(op, control_wires=control_wires)
         assert not isinstance(ctrl_op, custom_op_cls)
         assert qml.equal(ctrl_op, expected)
 
-    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
-    def test_no_ctrl_custom_operators_control_values(self, op_cls, custom_op_cls):
+    @pytest.mark.parametrize("op_cls, num_ctrl_wires, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_control_values(self, op_cls, num_ctrl_wires, custom_op_cls):
         """Test that ctrl returns a `Controlled` class when the control value is not `True`."""
+        if op_cls is qml.PauliX:
+            pytest.skip("ctrl(PauliX) becomes MultiControlledX, not Controlled")
+
+        ctrl_wires = list(range(1, num_ctrl_wires + 1))
         op = op_cls(wires=0)
-        ctrl_op = qml.ctrl(op, 1, control_values=False)
-        expected = Controlled(op, 1, control_values=False)
+        ctrl_op = qml.ctrl(op, ctrl_wires, control_values=[False] * num_ctrl_wires)
+        expected = Controlled(op, ctrl_wires, control_values=[False] * num_ctrl_wires)
         assert not isinstance(ctrl_op, custom_op_cls)
         assert qml.equal(ctrl_op, expected)
 
-    def test_ctrl_PauliX_one_wire(self):
-        """Tests the type of Operator created when calling ctrl(PauliX)"""
-        with qml.queuing.AnnotatedQueue() as q:
-            op = qml.ctrl(qml.PauliX(1), 0)
-
-        expected = qml.CNOT([0, 1])
-        assert len(q) == 1
-        assert qml.equal(op, expected)
-        assert qml.equal(q.queue[0], expected)
-
-    @pytest.mark.parametrize("control_values", [None, (True, True)])
-    def test_ctrl_PauliX_two_wires(self, control_values):
-        """Tests that ctrl(PauliX) with 2 wires, value-1 control creates a Toffoli gate"""
-        with qml.queuing.AnnotatedQueue() as q:
-            op = qml.ctrl(qml.PauliX(2), [0, 1], control_values=control_values)
-
-        expected = qml.Toffoli([0, 1, 2])
-        assert len(q) == 1
-        assert qml.equal(op, expected)
-        assert qml.equal(q.queue[0], expected)
-
     @pytest.mark.parametrize(
-        "control_wires,control_values, expected_values",
+        "control_wires,control_values,expected_values",
         [
             ([1], (False), "0"),
             ([1, 2], (0, 1), "01"),
@@ -1672,8 +1661,8 @@ class TestCtrlCustomOperator:
             ([1, 2, 3], None, None),
         ],
     )
-    def test_ctrl_PauliX_three_wires(self, control_wires, control_values, expected_values):
-        """Tests that ctrl(PauliX) with many control wires that are non-Toffoli make a MCX"""
+    def test_ctrl_PauliX_MultiControlledX(self, control_wires, control_values, expected_values):
+        """Tests that ctrl(PauliX) with 3+ control wires or Falsy control values make a MCX"""
         with qml.queuing.AnnotatedQueue() as q:
             op = qml.ctrl(qml.PauliX(0), control_wires, control_values=control_values)
 

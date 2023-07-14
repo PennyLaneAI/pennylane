@@ -73,10 +73,8 @@ def ctrl(op, control, control_values=None, work_wires=None):
     :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.
 
-    >>> qml.ctrl(qml.PauliX(0), (1,2))
-    Controlled(PauliX(wires=[0]), control_wires=[1, 2])
-    >>> qml.ctrl(qml.PauliX(0), (1,2)).decomposition()
-    [Toffoli(wires=[1, 2, 0])]
+    >>> qml.ctrl(qml.Hadamard(0), (1,2))
+    Controlled(Hadamard(wires=[0]), control_wires=[1, 2])
 
     Controlled operations work with all other forms of operator math and simplification:
 
