@@ -261,8 +261,6 @@ class op_transform:
             try:
                 # attempt to decompose the operation and call
                 # the tape transform function if defined
-                print(obj)
-                print(obj.expand())
                 return self.tape_fn(obj.expand(), *args, **kwargs)
 
             except (
