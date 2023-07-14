@@ -201,7 +201,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
-                    obj = obj.expand(_update=False)
+                    obj = obj.expand()
                 except DecompositionUndefinedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
