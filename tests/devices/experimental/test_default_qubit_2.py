@@ -75,6 +75,24 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
+def test_snapshot_multiprocessing():
+    """DefaultQubit2 cannot execute tapes with Snapshot if `max_workers` is not `None`"""
+    dev = DefaultQubit2(max_workers=2)
+
+    tape = qml.tape.QuantumScript(
+        [
+            qml.Snapshot(),
+            qml.Hadamard(wires=0),
+            qml.Snapshot("very_important_state"),
+            qml.CNOT(wires=[0, 1]),
+            qml.Snapshot(),
+        ],
+        [qml.expval(qml.PauliX(0))],
+    )
+    with pytest.raises(RuntimeError):
+        dev.execute(tape)
+
+
 class TestTracking:
     """Testing the tracking capabilities of DefaultQubit2."""
 
