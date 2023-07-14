@@ -255,10 +255,10 @@ class TestOperatorConstruction:
                 pass
 
         op = MyOp(wires=0)
-        assert op.hyperparameters == {}  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.hyperparameters == {}
 
         op = MyOpOverwriteInit(wires=0)
-        assert op.hyperparameters == {}  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.hyperparameters == {}
 
     def test_custom_hyperparams(self):
         """Tests that an operation can add custom hyperparams."""
@@ -271,22 +271,6 @@ class TestOperatorConstruction:
 
         state = [0, 1, 0]
         assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
-
-
-class TestExpand:
-    def test_no_init_update(self, update):
-        """Test the the quantum script does not fully initialize."""
-
-        class CustomOp(Operator):
-            """Dummy operator."""
-
-            def decomposition(self):
-                return [qml.RX(1.2, wires=0)]
-
-        op = CustomOp(wires=0)
-        out = op.expand()
-
-        assert not out._par_info
 
 
 class TestBroadcasting:
@@ -559,7 +543,6 @@ class TestHasReprProperties:
         class MyOp(qml.operation.Operator):
             num_wires = 1
 
-            # pylint: disable=arguments-differ
             @staticmethod
             def generator():
                 return np.eye(2)

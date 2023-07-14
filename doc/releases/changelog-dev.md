@@ -40,16 +40,11 @@
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
-<h3>Breaking changes 💔</h3>
-
-* `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather than on what it queues.
-  This change provides substantial performance improvements for operators with large decompositions.
+* `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` for in order to make
+  more performant choices.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
-* `Operator.expand` no longer fully initializes properties like `_par_info` and `wires` on 
-  the output. This is done to avoid performing unnecessary work on an intermediate object.
-  A manual call to `tape._update()` will calculate these quantities.
-  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355) 
+<h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.

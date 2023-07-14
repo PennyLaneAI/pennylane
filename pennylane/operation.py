@@ -1390,8 +1390,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        with qml.QueuingManager.stop_recording():
-            qscript = qml.tape.QuantumScript(self.decomposition(), _update=False)
+        qscript = qml.tape.make_qscript(self.decomposition)()
 
         if not self.data:
             # original operation has no trainable parameters

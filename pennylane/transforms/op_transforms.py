@@ -261,16 +261,18 @@ class op_transform:
             try:
                 # attempt to decompose the operation and call
                 # the tape transform function if defined
+                print(obj)
+                print(obj.expand())
                 return self.tape_fn(obj.expand(), *args, **kwargs)
 
             except (
                 AttributeError,
                 qml.operation.OperatorPropertyUndefined,
                 OperationTransformError,
-            ):
+            ) as e:
                 # if obj.expand() does not exist, a required operation property was not found,
                 # or the tape transform function does not exist, simply raise the original exception
-                raise e1 from None
+                raise e1 from e
 
     def tape_fn(self, obj, *args, **kwargs):
         """The tape transform function.
