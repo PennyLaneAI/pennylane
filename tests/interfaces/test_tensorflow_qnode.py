@@ -18,7 +18,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")

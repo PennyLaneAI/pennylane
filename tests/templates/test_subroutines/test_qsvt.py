@@ -141,12 +141,29 @@ class TestQSVT:
             qml.PCPhase(0.3, dim=1, wires=[0]),
         ]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QSVT(qml.PauliX(wires=0), lst_projectors)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
+
+    def test_decomposition_queues_its_contents(self):
+        """Test that the decomposition method queues the decomposition in the correct order."""
+        lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
+        results = [
+            qml.PCPhase(0.2, dim=1, wires=[0]),
+            qml.PauliX(wires=[0]),
+            qml.PCPhase(0.3, dim=1, wires=[0]),
+        ]
+        op = qml.QSVT(qml.PauliX(wires=0), lst_projectors)
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp = op.decomposition()
+
+        ops, _, _ = qml.queuing.process_queue(q)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(ops, decomp))
 
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),

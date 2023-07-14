@@ -46,6 +46,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
+
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4317)](https://github.com/PennyLaneAI/pennylane/pull/4317)

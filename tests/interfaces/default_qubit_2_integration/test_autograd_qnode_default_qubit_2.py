@@ -21,7 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.devices.experimental import DefaultQubit2
 
 qubit_device_and_diff_method = [

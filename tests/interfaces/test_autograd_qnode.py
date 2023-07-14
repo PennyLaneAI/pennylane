@@ -20,7 +20,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", False],
