@@ -170,9 +170,15 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         h.simplify(tol=cutoff)
 
         if active_new_opmath():
-            return h.operation(wire_order=[0])
+            if not h.wires:
+                return h.operation(wire_order=[0])
+            else:
+                return h.operation()
 
-        h = h.hamiltonian(wire_order=[0])
+        if not h.wires:
+            h = h.hamiltonian(wire_order=[0])
+        else:
+            h = h.hamiltonian()
 
         return qml.Hamiltonian(
             h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
