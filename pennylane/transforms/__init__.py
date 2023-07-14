@@ -220,7 +220,7 @@ from .decompositions import (
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
-from .split_non_commuting import split_non_commuting
+from .split_non_commuting import split_non_commuting, split_non_commuting_new
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
