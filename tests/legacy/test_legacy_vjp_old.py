@@ -323,7 +323,7 @@ class TestVJPGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-        vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+        vjp = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
         assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
 

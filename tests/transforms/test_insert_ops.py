@@ -413,7 +413,7 @@ def test_insert_dev(mocker):
 
     in_tape = QuantumScript.from_queue(q_in_tape)
     dev = qml.device("default.mixed", wires=2)
-    res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
+    res_without_noise = qml.execute([in_tape], dev, gradient_fn=qml.gradients.param_shift)
 
     new_dev = insert(qml.PhaseDamping, 0.4)(dev)
     spy = mocker.spy(new_dev, "default_expand_fn")
