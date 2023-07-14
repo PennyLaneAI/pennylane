@@ -93,7 +93,7 @@ def rcparams(circuit):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = qml.draw_mpl(circuit, style=None)(1.2345, 1.2345)
+    fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345, 1.2345)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()

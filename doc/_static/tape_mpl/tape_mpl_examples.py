@@ -76,7 +76,7 @@ def rcparams(tape):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = tape_mpl(tape, style=None)
+    fig, ax = tape_mpl(tape, style="rcParams")
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
