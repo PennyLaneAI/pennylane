@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
+An internal module for working with pytrees.
 """
+
+from typing import Callable, Tuple, Any
 
 has_jax = True
 try:
@@ -27,27 +29,40 @@ try:
 except ImportError:
     has_torch = False
 
+Leaves = Any
+Metadata = Any
 
-def _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn):
+FlattenFn = Callable[[Any], Tuple[Leaves, Metadata]]
+UnflattenFn = Callable[[Leaves, Metadata], Any]
+
+
+def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn):
     def jax_unflatten(aux, parameters):
         return unflatten_fn(parameters, aux)
 
     jax_tree_util.register_pytree_node(pytree_type, flatten_fn, jax_unflatten)
-    return
 
 
-def _register_pytree_with_torch(pytree_type, flatten_fn, unflatten_fn):
+def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn):
+    """Register a type with all available pytree backends.
 
-    torch_register_pytree(pytree_type, flatten_fn, unflatten_fn)
-    return
+    Current backends are jax and torch.
 
+    Args:
+        pytree_type (type): the type to register, such as ``qml.RX``
+        flatten_fn (Callable): a function that splits an object into trainable leaves and hashable metadata.
+        unflatten_fn (Callable): a function that reconstructs an object from its leaves and metadata.
 
-def register_pytree(pytree_type, flatten_fn, unflatten_fn):
+    Returns:
+        None
+
+    Side Effects:
+        ``pytree`` type becomes registered with available backends.
+
+    """
 
     if has_jax:
         _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
 
     if has_torch:
-        _register_pytree_with_torch(pytree_type, flatten_fn, unflatten_fn)
-
-    return
+        torch_register_pytree(pytree_type, flatten_fn, unflatten_fn)
