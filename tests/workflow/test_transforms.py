@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for execution of transform programs."""
+# pylint: disable=not-callable
 from typing import Sequence, Callable
+from functools import partial
 import copy
 import numpy as np
 
-from functools import partial
 import pennylane as qml
 
 dev = qml.device("default.qubit", wires=2)
