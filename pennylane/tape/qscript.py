@@ -654,7 +654,7 @@ class QuantumScript:
                 params.extend(m.obs.data)
         return params
 
-    def set_parameters(self, params, trainable_only=True, disable_check_batching=False):
+    def set_parameters(self, params, trainable_only=True):
         """Set the parameters incident on the quantum script operations.
 
         Args:
@@ -713,8 +713,6 @@ class QuantumScript:
 
         for op, d in op_data:
             op.data = tuple(d)
-            if disable_check_batching:
-                continue
             op._check_batching(op.data)
 
         self._update_batch_size()
