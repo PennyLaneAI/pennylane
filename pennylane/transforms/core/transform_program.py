@@ -153,7 +153,7 @@ class TransformProgram:
                 classical_cotransforms_list.append(None)
             else:
                 # TODO: coverage when add gradient transform
-                classical_cotransforms_list.append(cotransform)  # pragma:no cover
+                classical_cotransforms_list.append(cotransform)  # pragma: no cover
 
             tapes = execution_tapes
 
