@@ -578,11 +578,11 @@ class TestMetricTensor:
             circuit(weights)
 
         tapes, proc_fn = qml.metric_tensor(tape)
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, gradient_fn=None)
         mt = proc_fn(res)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt013 = proc_fn(res)
         assert isinstance(mt013, np.ndarray)
 
@@ -594,7 +594,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt23 = proc_fn(res)
         assert isinstance(mt23, np.ndarray)
 
@@ -605,7 +605,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt0 = proc_fn(res)
         assert isinstance(mt0, np.ndarray)
 
@@ -637,11 +637,11 @@ class TestMetricTensor:
             circuit(weights)
 
         tapes, proc_fn = qml.metric_tensor(tape)
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, gradient_fn=None)
         mt = proc_fn(res)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt013 = proc_fn(res)
         assert isinstance(mt013, tf.Tensor)
 
@@ -653,7 +653,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt23 = proc_fn(res)
         assert isinstance(mt23, tf.Tensor)
 
@@ -664,7 +664,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt0 = proc_fn(res)
         assert isinstance(mt0, tf.Tensor)
 
@@ -696,11 +696,11 @@ class TestMetricTensor:
             circuit(weights)
 
         tapes, proc_fn = qml.metric_tensor(tape)
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, gradient_fn=None)
         mt = proc_fn(res)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt013 = proc_fn(res)
         assert isinstance(mt013, torch.Tensor)
 
@@ -712,7 +712,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt23 = proc_fn(res)
         assert isinstance(mt23, torch.Tensor)
 
@@ -723,7 +723,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt0 = proc_fn(res)
         assert isinstance(mt0, torch.Tensor)
 
@@ -755,11 +755,11 @@ class TestMetricTensor:
             circuit(weights)
 
         tapes, proc_fn = qml.metric_tensor(tape)
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, gradient_fn=None)
         mt = proc_fn(res)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt013 = proc_fn(res)
         assert isinstance(mt013, jax.numpy.ndarray)
 
@@ -771,7 +771,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt23 = proc_fn(res)
         assert isinstance(mt23, jax.numpy.ndarray)
 
@@ -782,7 +782,7 @@ class TestMetricTensor:
         assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
-        res = qml.execute(tapes, dev, None, interface=interface)
+        res = qml.execute(tapes, dev, gradient_fn=None, interface=interface)
         mt0 = proc_fn(res)
         assert isinstance(mt0, jax.numpy.ndarray)
 
@@ -939,7 +939,7 @@ class TestMetricTensor:
 
         with pytest.warns(UserWarning, match="tensor of a tape with no trainable parameters"):
             mt_tapes, post_processing = qml.metric_tensor(tape)
-        res = post_processing(qml.execute(mt_tapes, dev, None))
+        res = post_processing(qml.execute(mt_tapes, dev, gradient_fn=None))
 
         assert mt_tapes == []
         assert res == ()

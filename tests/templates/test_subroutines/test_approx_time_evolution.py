@@ -412,5 +412,5 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     # compare to finite-differences
     tape = create_tape(coeffs, t)
     g_tapes, fn = finite_diff(tape, _expand=False, validate_params=False)
-    expected = fn(qml.execute(g_tapes, dev, None))
+    expected = fn(qml.execute(g_tapes, dev, gradient_fn=None))
     assert np.allclose(qml.math.hstack(grad), qml.math.stack(expected))

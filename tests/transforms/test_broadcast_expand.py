@@ -104,7 +104,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, dev, gradient_fn=None))
         expected = exp_fn(*params)
 
         if len(tape.measurements) > 1 and size == 1:
@@ -128,7 +128,7 @@ class TestBroadcastExpand:
         assert len(tapes) == 4
         assert all(t.batch_size is None for t in tapes)
 
-        result = fn(qml.execute(tapes, dev, None))
+        result = fn(qml.execute(tapes, dev, gradient_fn=None))
         expected = np.array([1, -1, -1, 1])
 
         assert qml.math.allclose(result, expected)
@@ -165,8 +165,10 @@ class TestBroadcastExpand:
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
             if len(tape.measurements) > 1:
-                return qml.math.stack(fn(qml.execute(tapes, dev, qml.gradients.param_shift)))
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+                return qml.math.stack(
+                    fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
+                )
+            return fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
         expected = exp_fn(*params)
 
@@ -197,7 +199,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            return fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
         expected = exp_fn(*params)
 
@@ -232,7 +234,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            return fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
         with tf.GradientTape(persistent=True) as t:
             out = tf.stack(cost(*params))
@@ -267,8 +269,10 @@ class TestBroadcastExpand:
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
             if len(tape.measurements) > 1:
-                return qml.math.stack(fn(qml.execute(tapes, dev, qml.gradients.param_shift)))
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+                return qml.math.stack(
+                    fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
+                )
+            return fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
         jac = torch.autograd.functional.jacobian(cost, torch_params)
         exp_jac = qml.jacobian(exp_fn)(*params)

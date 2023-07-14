@@ -242,7 +242,7 @@ class TestHamiltonianExpand:
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
             tapes, fn = hamiltonian_expand(tape)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift)
+            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift)
             return fn(res)
 
         assert np.isclose(cost(var), output)
@@ -285,7 +285,7 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
@@ -525,7 +525,7 @@ class TestSumExpand:
         def cost(x):
             qscript.set_parameters(x, trainable_only=False)
             tapes, fn = sum_expand(qscript)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift)
+            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift)
             return fn(res)
 
         assert np.isclose(cost(var), output)
@@ -570,7 +570,7 @@ class TestSumExpand:
 
             qscript = QuantumScript.from_queue(q)
             tapes, fn = sum_expand(qscript)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
@@ -619,7 +619,7 @@ class TestSumExpand:
         def cost(x):
             qscript.set_parameters(x, trainable_only=False)
             tapes, fn = sum_expand(qscript)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift)
+            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift)
             return fn(res)
 
         assert np.isclose(cost(var), output)

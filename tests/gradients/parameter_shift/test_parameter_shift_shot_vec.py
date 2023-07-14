@@ -256,7 +256,7 @@ class TestParamShift:
             g_tapes, post_processing = qml.gradients.param_shift(
                 tape, broadcast=broadcast, shots=shot_vec
             )
-        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(shot_vec)
 
@@ -282,7 +282,7 @@ class TestParamShift:
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.param_shift(tape, shots=shot_vec)
-        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(shot_vec)
 
@@ -310,7 +310,7 @@ class TestParamShift:
         g_tapes, post_processing = qml.gradients.param_shift(tape, shots=shot_vec)
         assert g_tapes == []
 
-        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(shot_vec)
 
@@ -435,7 +435,7 @@ class TestParamShift:
         num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
         assert len(tapes) == 2 * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
         # Test that executing the tapes and the postprocessing function works
-        grad = fn(qml.execute(tapes, dev, None))
+        grad = fn(qml.execute(tapes, dev, gradient_fn=None))
 
         assert isinstance(grad, tuple)
         assert len(grad) == len(shot_vec)

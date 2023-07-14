@@ -120,7 +120,7 @@ class TestSpsaGradient:
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = spsa_grad(tape)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
 
         assert g_tapes == []
         assert isinstance(res, numpy.ndarray)
@@ -142,7 +142,7 @@ class TestSpsaGradient:
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = spsa_grad(tape)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
 
         assert g_tapes == []
         assert isinstance(res, tuple)

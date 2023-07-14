@@ -840,7 +840,7 @@ class TestPulseGeneratorEdgeCases:
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = pulse_generator(tape)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
 
         assert g_tapes == []
         assert isinstance(res, np.ndarray)
@@ -1453,7 +1453,7 @@ class TestPulseGeneratorDiff:
             tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
             tape.trainable_params = [0]
             _tapes, fn = pulse_generator(tape)
-            return fn(qml.execute(_tapes, dev, None))
+            return fn(qml.execute(_tapes, dev, gradient_fn=None))
 
         params = [jnp.array(0.4)]
         p = params[0] * T

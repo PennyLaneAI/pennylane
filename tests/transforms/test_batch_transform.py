@@ -703,7 +703,9 @@ class TestMapBatchTransform:
         spy.assert_called()
         assert len(tapes) == 5
 
-        res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
+        res = qml.execute(
+            tapes, dev, gradient_fn=qml.gradients.param_shift, device_batch_transform=False
+        )
         expected = [np.cos(y), 0.5 + 0.5 * np.cos(x) - 0.5 * np.sin(x / 2)]
 
         assert np.allclose(fn(res), expected)
@@ -733,7 +735,9 @@ class TestMapBatchTransform:
             tapes, fn = qml.transforms.map_batch_transform(
                 qml.transforms.hamiltonian_expand, [tape1, tape2]
             )
-            res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
+            res = qml.execute(
+                tapes, dev, gradient_fn=qml.gradients.param_shift, device_batch_transform=False
+            )
             return np.sum(fn(res))
 
         res = cost(weights)

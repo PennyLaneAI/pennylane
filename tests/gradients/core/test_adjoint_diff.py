@@ -119,7 +119,7 @@ class TestAdjointJacobian:
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
-        numeric_val = fn(qml.execute(tapes, dev, None))
+        numeric_val = fn(qml.execute(tapes, dev, gradient_fn=None))
 
         assert isinstance(calculated_val, np.ndarray)
         assert calculated_val.shape == ()
@@ -144,7 +144,7 @@ class TestAdjointJacobian:
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
-        numeric_val = fn(qml.execute(tapes, dev, None))
+        numeric_val = fn(qml.execute(tapes, dev, gradient_fn=None))
 
         assert isinstance(calculated_val, tuple)
         assert len(calculated_val) == 3
@@ -166,7 +166,7 @@ class TestAdjointJacobian:
         # gradients
         exact = np.cos(par)
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(qml.execute(tapes, dev, None))
+        grad_F = fn(qml.execute(tapes, dev, gradient_fn=None))
         grad_A = dev.adjoint_jacobian(tape)
 
         # different methods must agree
@@ -245,7 +245,7 @@ class TestAdjointJacobian:
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(qml.execute(tapes, dev, None))
+        grad_F = fn(qml.execute(tapes, dev, gradient_fn=None))
         grad_D = dev.adjoint_jacobian(tape)
 
         assert isinstance(grad_D, tuple)
@@ -275,7 +275,7 @@ class TestAdjointJacobian:
 
         grad_D = dev.adjoint_jacobian(tape)
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(qml.execute(tapes, dev, None))
+        grad_F = fn(qml.execute(tapes, dev, gradient_fn=None))
 
         # gradient has the correct shape and every element is nonzero
         assert isinstance(grad_D, tuple)
