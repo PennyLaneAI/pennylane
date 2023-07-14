@@ -66,7 +66,7 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The ``QuantumScript.set_parameters`` method has been deprecated. Please call
+* The ``QuantumScript.set_parameters`` method has been deprecated. Please use
   ``QuantumScript.bind_new_parameters`` instead.
 
   - Deprecated in v0.32
