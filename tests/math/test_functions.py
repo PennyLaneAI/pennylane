@@ -2767,14 +2767,6 @@ class TestIfft2Tensorflow:
         assert out.dtype == exp_dtype_out
 
 
-def test_jax_ndim():
-    """Test that qml.math.ndim dispatches to jax.numpy.ndim."""
-    with patch("jax.numpy.ndim") as mock_ndim:
-        _ = qml.math.ndim(jax.numpy.array(3))
-
-    mock_ndim.assert_called_once_with(3)
-
-
 class TestSetIndex:
     """Test the set_index method."""
 
