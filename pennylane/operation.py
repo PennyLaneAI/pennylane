@@ -250,6 +250,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
+from .pytrees import register_pytree
 
 # =============================================================================
 # Errors
@@ -673,6 +674,16 @@ class Operator(abc.ABC):
         or by calling ``Operator.__init__``.
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
+
+    def __init_subclass__(cls, **kwargs):
+
+        def flatten(op):
+            return op._flatten()
+
+        def unflatten(aux, parameters):
+            return cls._unflatten(parameters, aux)
+
+        register_pytree(cls, flatten, unflatten)
 
     def __copy__(self):
         cls = self.__class__
