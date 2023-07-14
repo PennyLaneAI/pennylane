@@ -113,23 +113,21 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 def ndim(a):
     '''Custom implementation of autoray.ndim to avoid overheads when calling this
     method many times in the parameter shift rule.'''
-    if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
-        return autograd.numpy.ndim(a)
-
     try:
         return a.ndim
     except AttributeError:
+        if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
+            return autograd.numpy.ndim(a)
         return numpy_mimic.ndim(a)
 
 def shape(a):
     '''Custom implementation of autoray.shape to avoid overheads when calling this
     method many times in the parameter shift rule.'''
-    if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
-        return autograd.numpy.shape(a)
-
     try:
         return a.shape
     except AttributeError:
+        if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
+            return autograd.numpy.shape(a)
         return numpy_mimic.shape(a)
 
 
