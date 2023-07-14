@@ -81,7 +81,13 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
     # finite-shot case
 
     if len(circuit.measurements) == 1:
-        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
+        return measure_with_samples(
+            circuit.measurements[0],
+            state,
+            shots=circuit.shots,
+            is_state_batched=is_state_batched,
+            rng=rng,
+        )
 
     rng = default_rng(rng)
     results = tuple(
