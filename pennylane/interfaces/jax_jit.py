@@ -25,7 +25,8 @@ import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms import convert_to_numpy_parameters
+
+from .jax import set_parameters_on_copy_and_unwrap
 
 dtype = jnp.float64
 
@@ -142,16 +143,6 @@ def _execute_legacy(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     total_params = np.sum([len(p) for p in params])
-
-    # Copy a given tape with operations and set parameters
-    def _set_copy_and_unwrap_tape(t, a, unwrap=True):
-        tc = t.copy(copy_operations=True)
-        tc.set_parameters(a)
-        return convert_to_numpy_parameters(tc) if unwrap else tc
-
-    def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
-        """Copy a set of tapes with operations and set parameters"""
-        return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
     @jax.custom_vjp
     def wrapped_exec(params):
