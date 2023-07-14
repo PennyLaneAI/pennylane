@@ -696,7 +696,7 @@ class QuantumScript:
         """
         warnings.warn(
             "The method tape.set_parameters is deprecated and will be removed in v0.33. "
-            "Please use bind_new_parameters on the operations and create a new tape.",
+            "Please call tape.bind_new_parameters instead.",
             UserWarning,
         )
 

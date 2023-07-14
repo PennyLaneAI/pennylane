@@ -91,10 +91,8 @@
   old return system (which is also deprecated). Please use `grad_on_execution` instead.
   [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
 
-* The ``QuantumScript.set_parameters`` method has been deprecated. To achieve the
-  same functionality, please call ``qml.ops.functions.bind_new_parameters`` on all
-  operations in the quantum script, then instantiate a new ``QuantumScript`` with
-  the new operations.
+* The ``QuantumScript.set_parameters`` method has been deprecated. Please call
+  ``QuantumScript.bind_new_parameters`` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
 <h3>Documentation 📝</h3>
