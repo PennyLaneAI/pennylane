@@ -179,7 +179,7 @@ class TestPreprocessing:
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
 
-    @pytest.mark.parametrize("max_workers", [1, 2, 3])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2, 3])
     def test_config_choices_for_threading(self, max_workers):
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
         dev = DefaultQubit2()
@@ -618,7 +618,7 @@ class TestSampleMeasurements:
         assert results[0].shape == (100, 2)
         assert results[1].shape == (50,)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_counts_wires(self, max_workers):
         """Test that a Counts measurement with wires works as expected"""
         x = np.array(np.pi / 2)
@@ -634,7 +634,7 @@ class TestSampleMeasurements:
         values = list(result.values())
         assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes, max_workers):
         """Test that a Counts measurement with an observable works as expected"""
@@ -1121,7 +1121,7 @@ class TestPreprocessingIntegration:
 class TestRandomSeed:
     """Test that the device behaves correctly when provided with a random seed"""
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -1147,7 +1147,7 @@ class TestRandomSeed:
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_different_seed(self, max_workers):
         """Test that different devices given different random seeds will produce
         different results (with almost certainty)"""
@@ -1167,7 +1167,7 @@ class TestRandomSeed:
         assert np.any(result1 != result3)
         assert np.any(result2 != result3)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -1190,7 +1190,7 @@ class TestRandomSeed:
 
         assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     @pytest.mark.parametrize(
         "measurements",
         [
@@ -1228,7 +1228,7 @@ class TestHamiltonianSamples:
 
     This is a copy of the tests in test_sampling.py, but using the device instead"""
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_hamiltonian_expval(self, max_workers):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1242,7 +1242,7 @@ class TestHamiltonianSamples:
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_sum_expval(self, max_workers):
         """Test that sampling works well for Sum observables"""
         x, y = np.array(0.67), np.array(0.95)
@@ -1256,7 +1256,7 @@ class TestHamiltonianSamples:
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_multi_wires(self, max_workers):
         """Test that sampling works for Sums with large numbers of wires"""
         n_wires = 10
@@ -1280,7 +1280,7 @@ class TestHamiltonianSamples:
 
         assert np.allclose(res, expected, atol=0.05)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_complex_hamiltonian(self, max_workers):
         """Test that sampling works for complex Hamiltonians"""
         scale = 0.05
@@ -1369,7 +1369,7 @@ class TestClassicalShadows:
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
         assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_expval(self, max_workers):
         """Test that shadow expval measurements work as expected"""
         dev = DefaultQubit2(seed=100, max_workers=max_workers)
@@ -1382,14 +1382,14 @@ class TestClassicalShadows:
         assert res.shape == ()
         assert np.allclose(res, 1.0, atol=0.05)
 
-    @pytest.mark.parametrize("max_workers", [1, 2])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_reconstruct_bell_state(self, max_workers):
         """Test that a bell state can be faithfully reconstructed"""
         dev = DefaultQubit2(seed=100, max_workers=max_workers)
 
         ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
         meas = [qml.classical_shadow(wires=[0, 1], seed=200)]
-        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
 
         # should prepare the bell state
         bits, recipes = dev.execute(qs)
@@ -1407,7 +1407,7 @@ class TestClassicalShadows:
         # alternative computation
         ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
         meas = [qml.classical_shadow(wires=[0], seed=200)]
-        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         bits, recipes = dev.execute(qs)
 
         shadow = qml.shadows.ClassicalShadow(bits, recipes)

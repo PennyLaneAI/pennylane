@@ -226,9 +226,10 @@ class DefaultQubit2(Device):
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            _wrap_simulate = partial(simulate, rng=self._rng, debugger=self._debugger)
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+            _wrap_simulate = partial(simulate, debugger=self._debugger)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(_wrap_simulate, vanilla_circuits)
+                exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(circuit for circuit in exec_map)
 
             # reset _rng to mimic serial behavior
