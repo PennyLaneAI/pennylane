@@ -217,15 +217,12 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number]):
 
     ket = _get_output_ket(tape)
 
-    # filter out observables with zero gradients
-    zero_indices = {i for i, cot in enumerate(cotangents) if qml.math.allclose(cot, 0)}
-    cotangents = [cot for i, cot in enumerate(cotangents) if i not in zero_indices]
-    observables = [obs for i, obs in enumerate(tape.observables) if i not in zero_indices]
+    if len(tape.observables) == 1:
+        obs = qml.s_prod(cotangents[0], tape.observables[0])
+    else:
+        obs = qml.sum(*(qml.s_prod(cot, obs) for cot, obs in zip(cotangents, tape.observables)))
 
-    n_obs = len(observables)
-    bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
-    for i, obs in enumerate(observables):
-        bras[i] = apply_operation(obs, ket)
+    bra = apply_operation(obs, ket)
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
@@ -241,15 +238,14 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number]):
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
-                cotangents_in[trainable_param_number] = qml.math.dot(
-                    2 * _dot_product_real(bras, ket_temp, len(tape.wires)), cotangents
+                cotangents_in[trainable_param_number] = 2 * qml.math.real(
+                    qml.math.sum(qml.math.conj(bra) * ket_temp)
                 )
 
                 trainable_param_number -= 1
             param_number -= 1
 
-        for i in range(n_obs):
-            bras[i] = apply_operation(adj_op, bras[i])
+        bra = apply_operation(adj_op, bra)
 
     if len(tape.trainable_params) == 1:
         return np.array(cotangents_in[0])
