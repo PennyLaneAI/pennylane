@@ -1381,14 +1381,8 @@ class Operator(abc.ABC):
         """
         raise AdjointUndefinedError
 
-    def expand(self, _update=True):
+    def expand(self):
         """Returns a tape that contains the decomposition of the operator.
-
-        Keyword Args:
-            _update=True (bool): whether or not to compute additional metadata during
-                initialization on the :class:`~.QuantumTape`. Setting this to ``False``
-                cuts substantially down on performance overheads, but some pieces
-                of information may not be avaialable.
 
         Returns:
             .QuantumTape: quantum tape
@@ -1397,7 +1391,7 @@ class Operator(abc.ABC):
             raise DecompositionUndefinedError
 
         with qml.QueuingManager.stop_recording():
-            qscript = qml.tape.QuantumScript(self.decomposition(), _update=_update)
+            qscript = qml.tape.QuantumScript(self.decomposition(), _update=False)
 
         if not self.data:
             # original operation has no trainable parameters

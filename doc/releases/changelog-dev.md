@@ -37,10 +37,6 @@
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
-* `Operator.expand` now has a keyword argument ``_update=True``. Turning this to ``False`` improves efficiency,
-  but some properties will not be precomputed on initialization.
-  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355) 
-
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
@@ -49,6 +45,11 @@
 * `Operator.expand` now relies directly on the output of `Operator.decomposition`, rather than on what it queues.
   This change provides substantial performance improvements for operators with large decompositions.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
+
+* `Operator.expand` no longer fully initializes properties like `_par_info` and `wires` on 
+  the output. This is done to avoid performing unnecessary work on an intermediate object.
+  A manual call to `tape._update()` will calculate these quantities.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355) 
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.

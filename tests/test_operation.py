@@ -274,9 +274,8 @@ class TestOperatorConstruction:
 
 
 class TestExpand:
-    @pytest.mark.parametrize("update", (True, False))
-    def test_update_kwargs(self, update):
-        """Test the _update kwargs controls if the metadata is set."""
+    def test_no_init_update(self, update):
+        """Test the the quantum script does not fully initialize."""
 
         class CustomOp(Operator):
             """Dummy operator."""
@@ -285,12 +284,9 @@ class TestExpand:
                 return [qml.RX(1.2, wires=0)]
 
         op = CustomOp(wires=0)
-        out = op.expand(_update=update)
+        out = op.expand()
 
-        if update:
-            assert out._par_info
-        else:
-            assert not out._par_info
+        assert not out._par_info
 
 
 class TestBroadcasting:
