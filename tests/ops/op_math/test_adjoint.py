@@ -421,9 +421,11 @@ class TestMiscMethods:
         assert isinstance(diag_gate, qml.RY)
         assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
 
+    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""
 
+        # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operator):
             pass
 

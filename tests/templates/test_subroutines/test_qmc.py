@@ -255,6 +255,7 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
+    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""
         p = np.ones(4) / 4

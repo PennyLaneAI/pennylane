@@ -27,6 +27,7 @@ def test_repr():
     assert repr(op) == expected
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
     wires = qml.wires.Wires((0, 1, 2))

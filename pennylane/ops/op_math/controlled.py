@@ -228,7 +228,9 @@ class Controlled(SymbolicOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data[0], control=metadata[0], control_values=metadata[1], work_wires=metadata[2])
+        return cls(
+            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+        )
 
     # pylint: disable=no-self-argument
     @operation.classproperty

@@ -38,6 +38,7 @@ def lst_phis(phis):
 class TestQSVT:
     """Test the qml.QSVT template."""
 
+    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
         op = qml.QSVT(qml.PauliX(wires=0), projectors)

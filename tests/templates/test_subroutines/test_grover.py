@@ -29,6 +29,7 @@ def test_repr():
     assert repr(op) == expected
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods for GroverOperator."""
     work_wires = qml.wires.Wires((3, 4))
@@ -40,7 +41,7 @@ def test_flatten_unflatten():
     assert metadata[1] == (("work_wires", work_wires),)
 
     # make sure metadata hashable
-    {metadata}
+    assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)

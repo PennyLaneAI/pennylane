@@ -20,6 +20,7 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
     weight = 0.5
@@ -33,7 +34,7 @@ def test_flatten_unflatten():
     assert metadata[1] == wires2
 
     # test that its hashable
-    _ = {metadata}
+    assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(op, new_op)

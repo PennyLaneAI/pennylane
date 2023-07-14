@@ -482,6 +482,7 @@ class TestMiscMethods:
         op = Pow(base, 2.5)
         assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
 
+    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Test the _flatten and _unflatten methods."""
 

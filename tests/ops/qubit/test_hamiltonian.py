@@ -667,6 +667,7 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="observables are not valid"):
             qml.Hamiltonian(coeffs, obs)
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
     def test_flatten_unflatten(self, coeffs, ops):
         """Test the flatten and unflatten methods for hamiltonians"""

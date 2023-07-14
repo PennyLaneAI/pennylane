@@ -168,11 +168,12 @@ class Exp(ScalarSymbolicOp, Operation):
     _name = "Exp"
 
     def _flatten(self):
-        return (self.base, self.coeff), (self.num_steps,)
+        return (self.base, self.data[0]), (self.num_steps,)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data[0], coeff=data[1], num_steps=metadata[0])
+        print(data[1])
+        return cls(data[0], data[1], num_steps=metadata[0])
 
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, id=None):

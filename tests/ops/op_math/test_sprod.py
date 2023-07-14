@@ -192,6 +192,7 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_flatten_unflatten(self, op_scalar_tup):
         scalar, op = op_scalar_tup

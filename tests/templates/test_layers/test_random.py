@@ -45,6 +45,7 @@ def test_hyperparameters():
     }
 
 
+# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the behavior of the flatten and unflatten methods."""
     weights = np.array([[0.1, -2.1, 1.4]])
@@ -53,7 +54,7 @@ def test_flatten_unflatten():
     data, metadata = op._flatten()
 
     # check metadata hashable
-    _ = {metadata: 0}
+    assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
     assert qml.equal(new_op, op)
