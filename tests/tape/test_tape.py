@@ -738,14 +738,6 @@ class TestParameters:
         assert new_tape.get_parameters() == new_params
         assert tape.get_parameters() == params
 
-        new_params = (0.1, -0.2, 1, 5, 0)
-        tape.data = new_params
-
-        for pinfo, pval in zip(tape._par_info, new_params):
-            assert pinfo["op"].data[pinfo["p_idx"]] == pval
-
-        assert tape.get_parameters() == list(new_params)
-
     def test_setting_free_parameters(self, make_tape):
         """Test that free parameters are correctly modified after construction"""
         tape, params = make_tape
@@ -859,6 +851,7 @@ class TestParameters:
         assert np.all(new_tape[1].obs.data[0] == H2)
 
 
+# TODO: remove this class when set_parameters is removed
 class TestParametersOld:
     """Tests for parameter processing, setting, and manipulation"""
 
@@ -963,7 +956,8 @@ class TestParametersOld:
         tape, _ = make_tape
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -971,7 +965,8 @@ class TestParametersOld:
         assert tape.get_parameters() == new_params
 
         new_params = (0.1, -0.2, 1, 5, 0)
-        tape.data = new_params
+        with pytest.warns(UserWarning, match=r"The tape.data setter is deprecated"):
+            tape.data = new_params
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -984,7 +979,8 @@ class TestParametersOld:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         count = 0
         for idx, pinfo in enumerate(tape._par_info):
@@ -1009,7 +1005,8 @@ class TestParametersOld:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [3, 1]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         assert tape.get_parameters(trainable_only=True) == new_params
         assert tape.get_parameters(trainable_only=False) == [
@@ -1026,7 +1023,8 @@ class TestParametersOld:
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params, trainable_only=False)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params, trainable_only=False)
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -1039,11 +1037,13 @@ class TestParametersOld:
         tape, _ = make_tape
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.set_parameters([0.54])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.set_parameters([0.54])
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.trainable_params = [2, 3]
-            tape.set_parameters([0.54, 0.54, 0.123])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.trainable_params = [2, 3]
+                tape.set_parameters([0.54, 0.54, 0.123])
 
     def test_array_parameter(self):
         """Test that array parameters integrate properly"""
@@ -1059,7 +1059,9 @@ class TestParametersOld:
 
         b = np.array([0, 1, 0, 0])
         new_params = [b, 0.543, 0.654, 0.123]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
+
         assert tape.get_parameters() == new_params
 
         assert np.all(op_.data[0] == b)
@@ -1079,7 +1081,9 @@ class TestParametersOld:
 
         H2 = np.array([[0, 1], [1, 1]])
         new_params = [0.543, 0.654, 0.123, H2]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
+
         assert tape.get_parameters() == new_params
 
         assert np.all(obs.data[0] == H2)
