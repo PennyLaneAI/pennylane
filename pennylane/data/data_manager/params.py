@@ -45,8 +45,7 @@ class ParamArg(enum.Enum):
         return isinstance(val, ParamArg) or val in cls.values()
 
     def __str__(self) -> str:
-        # pylint thinks 'Literal' is not a 'str'
-        return cast(str, self.value)
+        return self.value  # pylint: disable=invalid-str-returned
 
 
 DEFAULT = ParamArg.DEFAULT
