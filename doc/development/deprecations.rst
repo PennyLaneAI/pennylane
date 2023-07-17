@@ -6,75 +6,17 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `grouping_type` and `grouping_method` arguments of `qchem.molecular_hamiltonian()` are deprecated.
+* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
+  ``disable_return``, as the old return system is deprecated along with these switch functions.
 
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+  - Deprecated in v0.32
+  - Will be removed in v0.33
 
-  Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
+* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
+  system (which is also deprecated). Please use ``grad_on_execution`` instead.
 
-  .. code-block:: python
-
-    H, qubits = molecular_hamiltonian(symbols, coordinates)
-    grouped_h = qml.Hamiltonian(
-        H.coeffs,
-        H.ops,
-        grouping_type=grouping_type,
-        method=grouping_method,
-    )
-
-* ``zyz_decomposition`` and ``xyx_decomposition`` are deprecated, use ``one_qubit_decomposition`` with a rotations
-  keyword instead.
-
-  - Deprecated in v0.31
-  - Will be removed in v0.32
-
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` is deprecated. This affects
-  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
-  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
-
-  - Deprecated in v0.31
-  - Will be removed in v0.32
-
-* ``LieAlgebraOptimizer`` is renamed. Please use ``RiemannianGradientOptimizer`` instead.
-  
-  - Deprecated in v0.31
-  - Will be removed in v0.32
-
-* The ``Operation.base_name`` property is deprecated. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
-
-  - Still accessible in v0.31
-  - Removed in v0.32
-
-* ``qml.math.reduced_dm`` has been deprecated. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
-
-  - Still accessible in v0.31
-  - Removed in v0.32
-
-* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
-  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
-  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
-
-  - Still accepted in v0.31
-  - Removed in v0.32
-
-* The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
-  these quantities can be accessed as fields of the new ``Resources`` object saved under
-  ``specs_dict["resources"]``:
-
-  - ``num_operations`` will no longer be supported, use ``specs_dict["resources"].num_gates``
-  - ``num_used_wires`` will no longer be supported, use ``specs_dict["resources"].num_wires``
-  - ``gate_types`` will no longer be supported, use ``specs_dict["resources"].gate_types``
-  - ``gate_sizes`` will no longer be supported, use ``specs_dict["resources"].gate_sizes``
-  - ``depth`` will no longer be supported, use ``specs_dict["resources"].depth``
-
-  These keys are still accessible in v0.31 and will be removed in v0.32.
-
-* ``QuantumScript``'s ``name`` keyword argument and property are deprecated.
-  This also affects ``QuantumTape`` and ``OperationRecorder``.
-
-  - Deprecated in v0.31
-  - Will be removed in v0.32
+  - Deprecated in v0.32
+  - Will be removed in v0.33
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
@@ -86,7 +28,7 @@ Pending deprecations
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.31
+  - Will be removed in v0.32
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -118,21 +60,98 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
+  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 Completed deprecation cycles
 ----------------------------
 
-* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
+  - Removed in v0.32
+
+* The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
+  all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
+  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+* The ``qml.specs`` dictionary longer supports direct key access to certain keys. Instead
+  these quantities can be accessed as fields of the new ``Resources`` object saved under
+  ``specs_dict["resources"]``:
+
+  - ``num_operations`` is no longer supported, use ``specs_dict["resources"].num_gates``
+  - ``num_used_wires`` is no longer supported, use ``specs_dict["resources"].num_wires``
+  - ``gate_types`` is no longer supported, use ``specs_dict["resources"].gate_types``
+  - ``gate_sizes`` is no longer supported, use ``specs_dict["resources"].gate_sizes``
+  - ``depth`` is no longer supported, use ``specs_dict["resources"].depth``
+
+  These keys were still accessible in v0.31 and removed in v0.32.
+
+* ``qml.math.reduced_dm`` has been removed. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``QuantumScript``'s ``name`` keyword argument and property are removed.
+  This also affects ``QuantumTape`` and ``OperationRecorder``.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+* The ``Operation.base_name`` property is removed. Please use ``Operator.name`` or ``type(obj).__name__`` instead.
+
+  - Still accessible in v0.31
+  - Removed in v0.32
+
+* ``LieAlgebraOptimizer`` has been renamed. Please use ``RiemannianGradientOptimizer`` instead.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+
+* The ``grouping_type`` and ``grouping_method`` arguments of ``qchem.molecular_hamiltonian()`` are removed.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+  Instead, simply construct a new instance of ``Hamiltonian`` with the grouping specified:
+
+  .. code-block:: python
+
+    H, qubits = molecular_hamiltonian(symbols, coordinates)
+    grouped_h = qml.Hamiltonian(
+        H.coeffs,
+        H.ops,
+        grouping_type=grouping_type,
+        groupingmethod=grouping_method,
+    )
+
+* ``zyz_decomposition`` and ``xyx_decomposition`` are removed, use ``one_qubit_decomposition`` with a rotations
+  keyword instead.
+
+  - Deprecated in v0.31
+  - Removed in v0.32
+
+* The ``qml.utils.sparse_hamiltonian`` function has been removed. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-* The ``collections`` module has been deprecated.
+* The ``collections`` module has been removed.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+* ``qml.op_sum`` has been removed. Users should use ``qml.sum`` instead.
 
   - Deprecated in v0.29.
   - Removed in v0.31.
@@ -159,11 +178,11 @@ Completed deprecation cycles
   - The old signature is replaced with the new one in v0.30
 
 
-* The ``grouping`` module is removed. The functionality has been moved and
+* The ``grouping`` module has been removed. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
   - Still accessible in v0.27, v0.28, v0.29, v0.30
-  - Will be removed in v0.31
+  - Removed in v0.31
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions

@@ -14,20 +14,16 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+from itertools import product
 
 import pytest
 
-from itertools import product
-
+from gate_data import I, Z, S, T, H, X
+from test_optimization.utils import check_matrix_equivalence
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.wires import Wires
 from pennylane.transforms import unitary_to_rot
-
-from gate_data import I, Z, S, T, H, X, CNOT
-
-from test_optimization.utils import check_matrix_equivalence
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
 single_qubit_decomps = [
@@ -100,11 +96,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         tof = qml.Toffoli(wires=[0, 1, 2]).matrix()
 
-        def qfunc():
+        def qfunc_with_large_qubit_unitary():
             qml.QubitUnitary(H, wires="a")
             qml.QubitUnitary(tof, wires=["a", "b", "c"])
 
-        transformed_qfunc = unitary_to_rot(qfunc)
+        transformed_qfunc = unitary_to_rot(qfunc_with_large_qubit_unitary)
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -185,7 +181,6 @@ class TestDecomposeSingleQubitUnitaryTransform:
         # Enable float64 support
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -213,12 +208,12 @@ class TestDecomposeSingleQubitUnitaryTransform:
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
     def test_unitary_to_rot_jax_jit(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
+        # pylint: disable=unused-argument
         import jax
 
         # Enable float64 support
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -402,7 +397,6 @@ class TestQubitUnitaryDifferentiability:
         # Enable float64 support
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         def qfunc_with_qubit_unitary(angles):
@@ -512,7 +506,7 @@ def test_unitary_to_rot_multiple_two_qubit(num_reps):
     U = np.array(test_two_qubit_unitaries[1], dtype=np.complex128)
 
     def my_circuit():
-        for rep in range(num_reps):
+        for _ in range(num_reps):
             qml.QubitUnitary(U, wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
 
@@ -678,7 +672,6 @@ class TestTwoQubitUnitaryDifferentiability:
 
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)

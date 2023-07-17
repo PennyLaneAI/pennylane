@@ -1297,7 +1297,7 @@ class QubitDevice(Device):
             float: returns the Von Neumann entropy
         """
         try:
-            state = self.access_state()
+            state = self.density_matrix(wires=self.wires)
         except qml.QuantumFunctionError as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
@@ -1324,7 +1324,7 @@ class QubitDevice(Device):
             float: the mutual information
         """
         try:
-            state = self.access_state()
+            state = self.density_matrix(wires=self.wires)
         except qml.QuantumFunctionError as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
@@ -1361,7 +1361,7 @@ class QubitDevice(Device):
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~pennylane.classical_shadow`
+        .. seealso:: :func:`~.pennylane.classical_shadow`
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
@@ -1441,7 +1441,7 @@ class QubitDevice(Device):
 
         .. note::
 
-            :meth:`marginal_prob` may be used as a utility method
+            :meth:`~.marginal_prob` may be used as a utility method
             to calculate the marginal probability distribution.
 
         Args:

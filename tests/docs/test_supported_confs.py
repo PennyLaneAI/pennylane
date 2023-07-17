@@ -23,14 +23,14 @@ A configuration is specified by:
 
 A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
-import pytest
+# pylint: disable=too-many-arguments
 import re
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import QuantumFunctionError
 from pennylane.measurements import (
-    State,
     Probability,
     Expectation,
     Variance,
@@ -115,6 +115,7 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
 
     dev = qml.device("default.qubit", wires=device_wires, shots=shots)
 
+    # pylint: disable=too-many-return-statements
     @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         for i, wire_label in enumerate(wire_labels):
@@ -123,31 +124,32 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
 
         if return_type == "StateCost":
             return qml.state()
-        elif return_type == "StateVector":
+        if return_type == "StateVector":
             return qml.state()
-        elif return_type == "DensityMatrix":
+        if return_type == "DensityMatrix":
             return qml.density_matrix(wires=single_meas_wire)
-        elif return_type == Probability:
+        if return_type == Probability:
             return qml.probs(wires=multi_meas_wire)
-        elif return_type == Sample:
+        if return_type == Sample:
             return qml.sample(wires=multi_meas_wire)
-        elif return_type == Expectation:
+        if return_type == Expectation:
             return qml.expval(qml.PauliZ(wires=single_meas_wire))
-        elif return_type == "Hermitian":
+        if return_type == "Hermitian":
             return qml.expval(
                 qml.Hermitian(
                     np.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=False), wires=single_meas_wire
                 )
             )
-        elif return_type == "Projector":
+        if return_type == "Projector":
             return qml.expval(qml.Projector(np.array([1]), wires=single_meas_wire))
-        elif return_type == Variance:
+        if return_type == Variance:
             return qml.var(qml.PauliZ(wires=single_meas_wire))
-        elif return_type == VnEntropy:
+        if return_type == VnEntropy:
             return qml.vn_entropy(wires=single_meas_wire)
-        elif return_type == MutualInfo:
+        if return_type == MutualInfo:
             wires1 = [w for w in wire_labels if w != single_meas_wire]
             return qml.mutual_info(wires0=[single_meas_wire], wires1=wires1)
+        return None
 
     return circuit
 
@@ -158,23 +160,24 @@ def get_variable(interface, wire_specs, complex=False):
 
     if interface is None:
         return np.array([0.1] * num_wires)
-    elif interface == "autograd":
+    if interface == "autograd":
         return np.array([0.1] * num_wires, requires_grad=True)
-    elif interface == "jax":
+    if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
         return jnp.array([0.1] * num_wires, dtype=np.complex64 if complex else None)
-    elif interface == "tf":
+    if interface == "tf":
         # complex dtype is required for TF when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
         return tf.Variable(
             [0.1] * num_wires, trainable=True, dtype=tf.complex128 if complex else tf.float64
         )
-    elif interface == "torch":
+    if interface == "torch":
         # complex dtype is required for torch when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
         return torch.tensor(
             [0.1] * num_wires, requires_grad=True, dtype=torch.complex64 if complex else None
         )
+    return None
 
 
 def get_state_cost_fn(circuit):
@@ -199,6 +202,7 @@ def get_density_matrix_cost_fn(circuit):
     return cost_fn
 
 
+# pylint: disable=too-many-return-statements
 def compute_gradient(x, interface, circuit, return_type, complex=False):
     """Return an interface-specific gradient or jacobian using the
     provided parameters:
@@ -224,28 +228,25 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
     if interface == "autograd":
         if return_type in grad_return_cases:
             return qml.grad(cost_fn)(x)
-        else:
-            return qml.jacobian(cost_fn)(x)
-    elif interface == "jax":
+        return qml.jacobian(cost_fn)(x)
+    if interface == "jax":
         if return_type in grad_return_cases:
             return jax.grad(cost_fn)(x)
-        else:
-            return jax.jacrev(cost_fn, holomorphic=complex)(x)
-    elif interface == "tf":
+        return jax.jacrev(cost_fn, holomorphic=complex)(x)
+    if interface == "tf":
         with tf.GradientTape(persistent=True) as tape:
             out = cost_fn(x)
 
         if return_type in grad_return_cases:
             return tape.gradient(out, [x])
-        else:
-            return tape.jacobian(out, [x], experimental_use_pfor=False)
-    elif interface == "torch":
+        return tape.jacobian(out, [x], experimental_use_pfor=False)
+    if interface == "torch":
         if return_type in grad_return_cases:
             res = cost_fn(x)
             res.backward()
             return x.grad
-        else:
-            return F.jacobian(circuit, (x,))
+        return F.jacobian(circuit, (x,))
+    return None
 
 
 class TestSupportedConfs:
@@ -270,7 +271,7 @@ class TestSupportedConfs:
         )
 
         with pytest.raises(QuantumFunctionError, match=msg):
-            circuit = get_qnode(interface, "device", return_type, shots, wire_specs)
+            get_qnode(interface, "device", return_type, shots, wire_specs)
 
     @pytest.mark.parametrize("return_type", return_types)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -283,7 +284,7 @@ class TestSupportedConfs:
         msg = re.escape(msg)
 
         with pytest.raises(QuantumFunctionError, match=msg):
-            circuit = get_qnode(None, "backprop", return_type, None, wire_specs)
+            get_qnode(None, "backprop", return_type, None, wire_specs)
 
     @pytest.mark.parametrize(
         "diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa", "hadamard"]
@@ -302,9 +303,9 @@ class TestSupportedConfs:
         if diff_method == "adjoint" and shots is not None:
             # this warning is still raised in the forward pass
             with pytest.warns(UserWarning, match=warn_msg):
-                circuit = get_qnode(None, diff_method, return_type, shots, wire_specs)
+                get_qnode(None, diff_method, return_type, shots, wire_specs)
         else:
-            circuit = get_qnode(None, diff_method, return_type, shots, wire_specs)
+            get_qnode(None, diff_method, return_type, shots, wire_specs)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -326,7 +327,7 @@ class TestSupportedConfs:
         """Test diff_method=backprop works for all interfaces when shots=None"""
         circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
         x = get_variable(interface, wire_specs)
-        grad = compute_gradient(x, interface, circuit, return_type)
+        compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", return_types)
@@ -336,7 +337,7 @@ class TestSupportedConfs:
         msg = "Backpropagation is only supported when shots=None."
 
         with pytest.raises(QuantumFunctionError, match=msg):
-            circuit = get_qnode(interface, "backprop", return_type, 100, wire_specs)
+            get_qnode(interface, "backprop", return_type, 100, wire_specs)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -358,7 +359,7 @@ class TestSupportedConfs:
             with pytest.warns(UserWarning, match=warn_msg):
                 circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
                 x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", [Expectation, "Hermitian", "Projector"])
@@ -376,13 +377,13 @@ class TestSupportedConfs:
             # correctness is already tested in other test files
             circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs)
-            grad = compute_gradient(x, interface, circuit, return_type)
+            compute_gradient(x, interface, circuit, return_type)
         else:
             # test warning is raised when shots > 0
             with pytest.warns(UserWarning, match=warn_msg):
                 circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
                 x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -398,7 +399,7 @@ class TestSupportedConfs:
         # correctness is already tested in other test files
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
-        grad = compute_gradient(x, interface, circuit, return_type)
+        compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -420,9 +421,9 @@ class TestSupportedConfs:
             x = get_variable(interface, wire_specs, complex=complex)
             if shots is not None:
                 with pytest.warns(UserWarning, match="the returned result is analytic"):
-                    grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+                    compute_gradient(x, interface, circuit, return_type, complex=complex)
             else:
-                grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+                compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -441,9 +442,9 @@ class TestSupportedConfs:
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
             with pytest.warns(UserWarning, match="unaffected by sampling"):
-                grad = compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type)
         else:
-            grad = compute_gradient(x, interface, circuit, return_type)
+            compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.xfail(reason="Finite diff for state measurement is being addressed.")
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -467,9 +468,9 @@ class TestSupportedConfs:
 
             if shots is not None:
                 with pytest.warns(UserWarning, match="unaffected by sampling"):
-                    grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+                    compute_gradient(x, interface, circuit, return_type, complex=complex)
             else:
-                grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+                compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -507,7 +508,7 @@ class TestSupportedConfs:
         with pytest.raises(ValueError, match=msg):
             circuit = get_qnode("autograd", "backprop", "StateVector", None, wire_specs)
             x = get_variable("autograd", wire_specs)
-            grad = compute_gradient(x, "autograd", circuit, "StateVector")
+            compute_gradient(x, "autograd", circuit, "StateVector")
 
     @pytest.mark.parametrize("interface", ["jax", "tf", "torch"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -515,7 +516,7 @@ class TestSupportedConfs:
         """Test gradient of state directly succeeds for non-autograd interfaces"""
         circuit = get_qnode(interface, "backprop", "StateVector", None, wire_specs)
         x = get_variable(interface, wire_specs, complex=True)
-        grad = compute_gradient(x, interface, circuit, "StateVector", complex=True)
+        compute_gradient(x, interface, circuit, "StateVector", complex=True)
 
     wire_specs_list = [
         (2, [0], 0, 0),
@@ -544,7 +545,7 @@ class TestSupportedConfs:
                 "Hadamard test gradient transform is not supported."
             )
             with pytest.raises(ValueError, match=msg):
-                grad = compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type)
         elif return_type == Variance:
             with pytest.raises(
                 ValueError,
@@ -553,6 +554,6 @@ class TestSupportedConfs:
                     "gradient transform is not supported."
                 ),
             ):
-                grad = compute_gradient(x, interface, circuit, return_type)
+                compute_gradient(x, interface, circuit, return_type)
         else:
-            grad = compute_gradient(x, interface, circuit, return_type)
+            compute_gradient(x, interface, circuit, return_type)

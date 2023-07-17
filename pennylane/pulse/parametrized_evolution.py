@@ -18,11 +18,13 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
-from typing import List, Union
+from typing import List, Union, Sequence
 import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.typing import TensorLike
+from pennylane.ops import functions
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian
@@ -40,7 +42,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=None, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -69,9 +71,6 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
@@ -376,7 +375,6 @@ class ParametrizedEvolution(Operation):
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
-        do_queue=None,
         id=None,
         **odeint_kwargs,
     ):
@@ -407,13 +405,15 @@ class ParametrizedEvolution(Operation):
                     f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
                     f"expected {len(H.coeffs_parametrized)} parameters."
                 )
-        super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=H.wires, id=id)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
         self.dense = len(self.wires) < 3 if dense is None else dense
 
-    def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
+    def __call__(
+        self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
+    ):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
@@ -427,6 +427,8 @@ class ParametrizedEvolution(Operation):
             return_intermediate = self.hyperparameters["return_intermediate"]
         if complementary is None:
             complementary = self.hyperparameters["complementary"]
+        if dense is None:
+            dense = self.dense
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
@@ -437,8 +439,7 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
-            dense=self.dense,
-            do_queue=None,
+            dense=dense,
             id=self.id,
             **odeint_kwargs,
         )
@@ -503,3 +504,16 @@ class ParametrizedEvolution(Operation):
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+
+
+@functions.bind_new_parameters.register
+def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Sequence[TensorLike]):
+    return ParametrizedEvolution(
+        op.H,
+        params=params,
+        t=op.t,
+        return_intermediate=op.hyperparameters["return_intermediate"],
+        complementary=op.hyperparameters["complementary"],
+        dense=op.dense,
+        **op.odeint_kwargs,
+    )

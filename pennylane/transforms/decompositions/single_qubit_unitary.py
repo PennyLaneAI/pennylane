@@ -14,7 +14,6 @@
 """Contains transforms and helpers functions for decomposing arbitrary unitary
 operations into elementary gates.
 """
-import warnings
 
 import numpy
 
@@ -46,54 +45,7 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
-def zyz_decomposition(U, wire):
-    r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
-    elementary operations.
-
-    Diagonal operations can be converted to a single :class:`.RZ` gate, while non-diagonal
-    operations will be converted to a :class:`.Rot` gate that implements the original operation
-    up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
-
-    .. warning::
-
-        When used with ``jax.jit``, all unitaries will be converted to :class:`.Rot` gates,
-        including those that are diagonal.
-
-    Args:
-        U (tensor): A 2 x 2 unitary matrix.
-        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-
-    Returns:
-        list[qml.Operation]: A ``Rot`` gate on the specified wire that implements ``U``
-        up to a global phase, or an equivalent ``RZ`` gate if ``U`` is diagonal.
-
-    **Example**
-
-    Suppose we would like to apply the following unitary operation:
-
-    .. code-block:: python3
-
-        U = np.array([
-            [-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-            [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]
-        ])
-
-    For PennyLane devices that cannot natively implement ``QubitUnitary``, we
-    can instead recover a ``Rot`` gate that implements the same operation, up
-    to a global phase:
-
-    >>> decomp = zyz_decomposition(U, 0)
-    >>> decomp
-    [Rot(-0.24209529417800013, 1.14938178234275, 1.7330581433950871, wires=[0])]
-    """
-    warnings.warn(
-        "The zyz_decomposition function is deprecated and will be removed soon. Use"
-        " one_qubit_decomposition() with the keyword rotations='ZYZ'"
-    )
-    return _zyz_decomposition_old(U=U, wire=wire)
-
-
-def _zyz_decomposition_old(U, wire):
+def _rot_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
@@ -198,12 +150,12 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = zyz_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _zyz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RZ(tensor(-0.2420953, requires_grad=True), wires=[0]),
-    RY(tensor(1.14938178, requires_grad=True), wires=[0]),
-    RZ(tensor(1.73305815, requires_grad=True), wires=[0]),
-    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RZ(12.32427531154459, wires=[0]),
+     RY(1.1493817771511352, wires=[0]),
+     RZ(1.733058145303424, wires=[0]),
+     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Cast to batched format for more consistent code
@@ -245,42 +197,6 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
-def xyx_decomposition(U, wire, return_global_phase=False):
-    r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
-    of elementary operations, as a product of X and Y rotations in the form
-    :math:`e^{i\gamma} RX(\phi) RY(\theta) RX(\lambda)`. (batched operation)
-
-    Args:
-        U (array[complex]): A :math:`2 \times 2` unitary matrix.
-        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): Whether to return the global phase
-            as a ``qml.s_prod`` between ``exp(1j)*gamma`` and ``qml.Identity`` as the last
-            element of the returned list of operations.
-
-    Returns:
-        list[Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
-        another ``RX`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
-        the global phase is returned as the last element of the list.
-
-    **Example**
-
-    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
-    >>> decomp
-    [RX(tensor(-1.72101925, requires_grad=True), wires=[0]),
-    RY(tensor(1.39749741, requires_grad=True), wires=[0]),
-    RX(tensor(0.45246584, requires_grad=True), wires=[0]),
-    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
-    """
-    warnings.warn(
-        "The xyx_decomposition function is deprecated and will be removed soon. Use :func:`one_qubit_decomposition` "
-        "with the keyword  rotations=`XYX`"
-    )
-    return _xyx_decomposition(U=U, wire=wire, return_global_phase=return_global_phase)
-
-
 def _xyx_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Y rotations in the form
@@ -303,12 +219,12 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(array(0.45246584), wires=[0]),
-    RY(array(1.39749741), wires=[0]),
-    RX(array(-1.72101925), wires=[0]),
-    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RX(10.845351366405708, wires=[0]),
+     RY(1.3974974118006174, wires=[0]),
+     RX(0.45246583660683803, wires=[0]),
+     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Small number to add to denominators to avoid division by zero
@@ -368,11 +284,11 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = zxz_decomposition(U, 0, return_global_phase=True)
+    >>> decomp = _zxz_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-        [RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
-        RX(tensor(1.14938178, requires_grad=True), wires=[0]),
-        RZ(tensor(-2.97933083, requires_grad=True), wires=[0]),
+        [RZ(10.753478981934784, wires=[0]),
+         RX(1.1493817777940705, wires=[0]),
+         RZ(3.3038544749132295, wires=[0]),
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
@@ -417,10 +333,10 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
     r"""Decompose a one-qubit unitary :math:`U` in terms of elementary operations. (batched operation)
 
-    Any one qubit unitary operation can be implemented upto a global phase by composing RX, RY,
+    Any one qubit unitary operation can be implemented up to a global phase by composing RX, RY,
     and RZ gates.
 
-    Currently supported values for `rotations` are "ZYZ", "XYX", and "ZXZ".
+    Currently supported values for ``rotations`` are "ZYZ", "XYX", and "ZXZ".
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
@@ -431,7 +347,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
-        the list is equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
+        the list is equivalent to the unitary :math:`U` up to a global phase. If ``return_global_phase=True``,
         the global phase is returned as the last element of the list.
 
     **Example**
@@ -440,13 +356,13 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = one_qubit_decomposition(U, 0, "ZXZ", return_global_phase=True)
     >>> decomp
-        [RZ(tensor(-1.81289163, requires_grad=True), wires=[0]),
-        RX(tensor(1.14938178, requires_grad=True), wires=[0]),
-        RZ(tensor(-2.97933083, requires_grad=True), wires=[0]),
+        [RZ(10.753478981934784, wires=[0]),
+         RX(1.1493817777940705, wires=[0]),
+         RZ(3.3038544749132295, wires=[0]),
         (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
     supported_rotations = {
-        "rot": zyz_decomposition,
+        "rot": _rot_decomposition,
         "ZYZ": _zyz_decomposition,
         "XYX": _xyx_decomposition,
         "ZXZ": _zxz_decomposition,

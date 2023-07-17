@@ -60,12 +60,6 @@ base_num_control_mats = [
 ]
 
 
-custom_controlled_ops = [  # operators with their own controlled class
-    (qml.PauliY, qml.CY),
-    (qml.PauliZ, qml.CZ),
-]
-
-
 class TempOperator(Operator):
     num_wires = 1
 
@@ -499,14 +493,7 @@ class TestMiscMethods:
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
 
-    def test_base_name_deprecated(self):
-        """Tests that the base_name property is deprecated."""
-
-        class DummyOp(Operation):
-            """Dummy op."""
-
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert Controlled(DummyOp(2), 1).base_name == "C(DummyOp)"
+    # pylint:disable=no-member
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -598,14 +585,14 @@ class TestSimplify:
 
     def test_simplify_nested_controlled_ops(self):
         """Test the simplify method with nested control operations on different wires."""
-        controlled_op = Controlled(Controlled(qml.PauliX(0), 1), 2)
-        final_op = Controlled(qml.PauliX(0), [2, 1])
+        controlled_op = Controlled(Controlled(qml.Hadamard(0), 1), 2)
+        final_op = Controlled(qml.Hadamard(0), [2, 1])
         simplified_op = controlled_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Controlled)
-        assert isinstance(simplified_op.base, qml.PauliX)
+        assert isinstance(simplified_op.base, qml.Hadamard)
         assert simplified_op.name == final_op.name
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
@@ -633,20 +620,6 @@ class TestQueuing:
 
         assert len(q) == 1
         assert q.queue[0] is op
-
-    def test_do_queue_false(self):
-        """Test that when `do_queue=False` is specified, the controlled op is not queued."""
-        base = qml.PauliX(0)
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-                _ = Controlled(base, 1, do_queue=False)
-
-        assert len(q) == 0
 
 
 base_num_control_mats = [
@@ -973,7 +946,7 @@ class TestDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True)
         loss = circuit(b)
-        loss.backward()
+        loss.backward()  # pylint:disable=no-member
 
         res = b.grad.detach()
         expected = np.sin(b.detach() / 2) / 2
@@ -1633,34 +1606,70 @@ def test_ctrl_template_and_operations():
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
 
+custom_controlled_ops = [  # operators with their own controlled class
+    (qml.PauliX, 1, qml.CNOT),
+    (qml.PauliY, 1, qml.CY),
+    (qml.PauliZ, 1, qml.CZ),
+    (qml.PauliX, 2, qml.Toffoli),
+]
+
+
 class TestCtrlCustomOperator:
-    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
-    def test_ctrl_custom_operators(self, op_cls, custom_op_cls):
+    @pytest.mark.parametrize("op_cls, num_ctrl_wires, custom_op_cls", custom_controlled_ops)
+    def test_ctrl_custom_operators(self, op_cls, num_ctrl_wires, custom_op_cls):
         """Test that ctrl returns operators with their own controlled class."""
+        ctrl_wires = list(range(1, num_ctrl_wires + 1))
         op = op_cls(wires=0)
-        ctrl_op = qml.ctrl(op, control=1)
-        custom_op = custom_op_cls(wires=[1, 0])
+        ctrl_op = qml.ctrl(op, control=ctrl_wires)
+        custom_op = custom_op_cls(wires=ctrl_wires + [0])
         assert qml.equal(ctrl_op, custom_op)
         assert ctrl_op.name == custom_op.name
 
-    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
-    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, custom_op_cls):
-        """Test that ctrl returns a `Controlled` class when there are multiple control wires."""
-        control_wires = [1, 2]
+    @pytest.mark.parametrize("op_cls, _, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, _, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when there is an excess of control wires."""
+        if op_cls is qml.PauliX:
+            pytest.skip("ctrl(PauliX) becomes MultiControlledX, not Controlled")
+
+        control_wires = list(range(1, 6))
         op = op_cls(wires=0)
         ctrl_op = qml.ctrl(op, control=control_wires)
         expected = Controlled(op, control_wires=control_wires)
         assert not isinstance(ctrl_op, custom_op_cls)
         assert qml.equal(ctrl_op, expected)
 
-    @pytest.mark.parametrize("op_cls, custom_op_cls", custom_controlled_ops)
-    def test_no_ctrl_custom_operators_control_values(self, op_cls, custom_op_cls):
+    @pytest.mark.parametrize("op_cls, num_ctrl_wires, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_control_values(self, op_cls, num_ctrl_wires, custom_op_cls):
         """Test that ctrl returns a `Controlled` class when the control value is not `True`."""
+        if op_cls is qml.PauliX:
+            pytest.skip("ctrl(PauliX) becomes MultiControlledX, not Controlled")
+
+        ctrl_wires = list(range(1, num_ctrl_wires + 1))
         op = op_cls(wires=0)
-        ctrl_op = qml.ctrl(op, 1, control_values=False)
-        expected = Controlled(op, 1, control_values=False)
+        ctrl_op = qml.ctrl(op, ctrl_wires, control_values=[False] * num_ctrl_wires)
+        expected = Controlled(op, ctrl_wires, control_values=[False] * num_ctrl_wires)
         assert not isinstance(ctrl_op, custom_op_cls)
         assert qml.equal(ctrl_op, expected)
+
+    @pytest.mark.parametrize(
+        "control_wires,control_values,expected_values",
+        [
+            ([1], (False), "0"),
+            ([1, 2], (0, 1), "01"),
+            ([1, 2, 3], (True, True, True), "111"),
+            ([1, 2, 3], (True, True, False), "110"),
+            ([1, 2, 3], None, None),
+        ],
+    )
+    def test_ctrl_PauliX_MultiControlledX(self, control_wires, control_values, expected_values):
+        """Tests that ctrl(PauliX) with 3+ control wires or Falsy control values make a MCX"""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(qml.PauliX(0), control_wires, control_values=control_values)
+
+        expected = qml.MultiControlledX(wires=control_wires + [0], control_values=expected_values)
+        assert len(q) == 1
+        assert qml.equal(op, expected)
+        assert qml.equal(q.queue[0], expected)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
@@ -1702,7 +1711,7 @@ class TestCtrlTransformDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True)
         loss = circuit(b)
-        loss.backward()
+        loss.backward()  # pylint:disable=no-member
 
         res = b.grad.detach()
         expected = np.sin(b.detach() / 2) / 2
