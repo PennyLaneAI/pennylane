@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane.data.attributes import DatasetOperator
 from pennylane.data.base.typing_util import get_type_str
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, Operator
 
 H_ONE_QUBIT = np.array([[1.0, 0.5j], [-0.5j, 2.5]])
 H_TWO_QUBITS = np.array(
@@ -105,10 +105,10 @@ class TestDatasetOperatorObservable:
         assert obs_in.compare(obs_out)
 
 
-@pytest.mark.parametrize(
-    "op_in", [qml.RX(1.1, 0), qml.FermionicSWAP(1.3, [1, "a"]), qml.Toffoli([1, "a", None])]
-)
 class TestDatasetOperator:
+    @pytest.mark.parametrize(
+        "op_in", [qml.RX(1.1, 0), qml.FermionicSWAP(1.3, [1, "a"]), qml.Toffoli([1, "a", None])]
+    )
     def test_value_init(self, op_in):
         """Test that a DatasetOperator can be value-initialized
         from an operator, and that the deserialized operator
@@ -122,6 +122,20 @@ class TestDatasetOperator:
         assert repr(op_out) == repr(op_in)
         assert op_in.data == op_out.data
 
+    def test_value_init_not_supported(self):
+        """Test that a ValueError is raised if attempting to serialize an unsupported operator."""
+
+        class NotSupported(Operator):
+            ...
+
+        with pytest.raises(
+            TypeError, match="Serialization of operator type 'NotSupported' is not supported"
+        ):
+            DatasetOperator(NotSupported(1))
+
+    @pytest.mark.parametrize(
+        "op_in", [qml.RX(1.1, 0), qml.FermionicSWAP(1.3, [1, "a"]), qml.Toffoli([1, "a", None])]
+    )
     def test_bind_init(self, op_in):
         """Test that a DatasetOperator can be bind-initialized
         from an operator, and that the deserialized operator

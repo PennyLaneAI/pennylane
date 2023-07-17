@@ -33,9 +33,6 @@ class DatasetString(DatasetAttribute[HDF5Array, str, str]):
         return bind.asstr()[()]
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: str) -> HDF5Array:
-        if key in bind_parent:
-            del bind_parent[key]
-
         bind_parent[key] = value
 
         return bind_parent[key]

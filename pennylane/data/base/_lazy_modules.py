@@ -1,5 +1,7 @@
 """Contains a lazy-loaded interface to the HDF5 module. For internal use only."""
 
+# pragma: no cover
+
 import importlib
 from types import ModuleType
 from typing import Any, Callable, Optional, Union

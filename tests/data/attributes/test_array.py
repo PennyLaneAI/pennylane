@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane.data.attributes import DatasetArray
+import pennylane.data.attributes.array
 from pennylane import numpy as qml_numpy
 
 
@@ -51,6 +52,15 @@ class TestDatasetArray:
         arr = DatasetArray(value)
 
         assert arr.get_value().requires_grad == requires_grad
+
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
+    def test_value_init_invalid_interface(self, monkeypatch, interface):
+        """Test that a TypeError is raised if value initialized with an
+        incompatible array type."""
+        monkeypatch.setattr(pennylane.data.attributes.array, "get_interface", lambda _: interface)
+
+        with pytest.raises(TypeError):
+            DatasetArray([1, 2, 3, 4])
 
     @pytest.mark.parametrize("value", [[1, 2, 3], [[1], [2]]])
     def test_bind_init(self, value):

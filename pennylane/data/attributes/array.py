@@ -19,7 +19,7 @@ from numpy.typing import ArrayLike
 
 from pennylane.data.base.attribute import DatasetAttribute, AttributeInfo
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
-import pennylane.math
+from pennylane.math import get_interface, array
 
 
 class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
@@ -32,7 +32,7 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
     def __post_init__(self, value: ArrayLike, info: Optional[AttributeInfo]) -> None:
         super().__post_init__(value, info)
 
-        array_interface = pennylane.math.get_interface(value)
+        array_interface = get_interface(value)
         if array_interface not in ("numpy", "autograd"):
             raise TypeError(
                 f"Expected a 'numpy.ndarray' or 'pennylane.numpy.tensor' array, got '{type(value).__name__}'"
@@ -48,11 +48,11 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
 
         interface = info.get("array_interface", "numpy")
         if info.get("requires_grad") is not None:
-            return pennylane.math.array(
+            return array(
                 self.bind, dtype=bind.dtype, like=interface, requires_grad=info["requires_grad"]
             )
 
-        return pennylane.math.array(self.bind, dtype=bind.dtype, like=interface)
+        return array(self.bind, dtype=bind.dtype, like=interface)
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: ArrayLike) -> HDF5Array:
         bind_parent[key] = value

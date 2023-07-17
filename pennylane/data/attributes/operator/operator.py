@@ -203,7 +203,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             op_key = f"op_{i}"
             if type(op) not in self.consumes_types():
                 raise TypeError(
-                    f"Serialization of operator type {type(op).__name__} is not supported."
+                    f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
             if isinstance(op, Tensor):

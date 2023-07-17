@@ -28,14 +28,6 @@ from pennylane.data.attributes.operator._wires import (
 from pennylane.wires import Wires
 
 
-class BadIntegral:
-    def __hash__(self) -> int:
-        return 0
-
-    def __int__(self) -> int:
-        return 1
-
-
 class TestWiresToJson:
     @pytest.mark.parametrize(
         "in_, out",
@@ -93,3 +85,18 @@ class TestWiresToJson:
 
         with pytest.raises(UnserializableWireError):
             wires_to_json(in_)
+
+    def test_bad_integral_unserializable(self):
+        """Test that wires_to_json raises an ``UnserializableWiresError`` if any
+        of the wires are integer-like, but have a different hash if converted
+        to int."""
+
+        class BadIntegral:
+            def __hash__(self) -> int:
+                return 0
+
+            def __int__(self) -> int:
+                return 1
+
+        with pytest.raises(UnserializableWireError):
+            wires_to_json(Wires([BadIntegral()]))
