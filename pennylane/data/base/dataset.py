@@ -48,10 +48,10 @@ from pennylane.data.base.typing_util import UNSET, T
 @dataclass
 class Field(Generic[T]):
     """
-    The Attribute class is used to declaratively define the
+    The Field class is used to declaratively define the
     attributes of a Dataset subclass, in a similar way to
-    dataclasses. This class should not be used directly when
-    declaring attributes, use the ``attribute()`` function instead.
+    dataclasses. This class should not be used directly,
+    use the ``field()`` function instead.
 
     Attributes:
         attribute_type: The ``DatasetAttribute`` class for this attribute

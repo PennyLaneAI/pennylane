@@ -80,7 +80,9 @@ class AttributeTypeMapper(MutableMapping):
         """
         if isinstance(value, DatasetAttribute):
             if require_type and not isinstance(value, require_type):
-                raise TypeError(key, require_type, type(value))
+                raise TypeError(
+                    f"Expected {key} to be of type '{require_type}', but got '{type(value)}' instead."
+                )
 
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
             if info:
