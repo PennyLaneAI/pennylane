@@ -543,7 +543,7 @@ def _compute_jvps(jacs, tangents, multi_measurements):
             qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
         )
         jvps.append(compute_func(tangents[i], jacs[i]))
-    return jvps
+    return tuple(jvps)
 
 
 def _is_count_result(r):
@@ -568,7 +568,7 @@ def _to_jax(res):
                 else:
                     sub_r.append(jnp.array(r_i))
             res_.append(tuple(sub_r))
-    return res_
+    return tuple(res_)
 
 
 def _to_jax_shot_vector(res):
@@ -576,4 +576,4 @@ def _to_jax_shot_vector(res):
 
     The expected structure of the inputs is a list of tape results with each element in the list being a tuple due to execution using shot vectors.
     """
-    return [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
+    return tuple(tuple(_to_jax([r_])[0] for r_ in r) for r in res)
