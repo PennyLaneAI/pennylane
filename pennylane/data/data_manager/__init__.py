@@ -55,7 +55,7 @@ def _get_data_struct():
 
 
 def _download_partial(
-    s3_url: str, dest: Path, attributes: typing.Iterable[str], overwrite_attrs: bool
+    s3_url: str, dest: Path, attributes: typing.Iterable[str], overwrite: bool
 ) -> None:
     """Download only the requested attributes of the Dataset at ``s3_path`` into ``dest``.
     If a dataset already exists at ``dest``, the attributes will be loaded into
@@ -63,7 +63,7 @@ def _download_partial(
     """
 
     remote_dataset = Dataset(open_hdf5_s3(s3_url))
-    remote_dataset.write(dest, "a", attributes, overwrite_attrs=overwrite_attrs)
+    remote_dataset.write(dest, "a", attributes, overwrite_attrs=overwrite)
 
     del remote_dataset
 
@@ -79,7 +79,7 @@ def _download_dataset(
     s3_path = f"{S3_URL}/{data_path}"
 
     if attributes is not None:
-        _download_partial(s3_path, dest, attributes, overwrite_attrs=force)
+        _download_partial(s3_path, dest, attributes, overwrite=force)
         return
 
     with open(dest, "wb") as f:

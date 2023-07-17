@@ -256,7 +256,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         source: Union[str, Path, "Dataset"],
         attributes: Optional[typing.Iterable[str]] = None,
         *,
-        overwrite_attrs: bool = False,
+        overwrite: bool = False,
     ) -> None:
         """Load dataset from HDF5 file at filepath.
 
@@ -265,14 +265,14 @@ class Dataset(MapperMixin, _DatasetTransform):
                 to read attributes
             attributes: Optional list of attributes to copy. If None, all attributes
                 will be copied.
-            overwrite_attrs: Whether to overwrite attributes that already exist in this
+            overwrite: Whether to overwrite attributes that already exist in this
                 dataset.
         """
         if not isinstance(source, Dataset):
             source = Path(source).expanduser()
             source = Dataset.open(source, mode="r")
 
-        source.write(self, attributes=attributes, overwrite_attrs=overwrite_attrs)
+        source.write(self, attributes=attributes, overwrite=overwrite)
 
     def write(
         self,
@@ -280,9 +280,9 @@ class Dataset(MapperMixin, _DatasetTransform):
         mode: Literal["w", "w-", "a"] = "a",
         attributes: Optional[typing.Iterable[str]] = None,
         *,
-        overwrite_attrs: bool = False,
+        overwrite: bool = False,
     ) -> None:
-        """Write dataset to HDF5 file at filepath. Can also accept an S3 URL.
+        """Write dataset to HDF5 file at filepath.
 
         Args:
             dest: HDF5 file, or path to HDF5 file containing dataset, to write
@@ -292,11 +292,11 @@ class Dataset(MapperMixin, _DatasetTransform):
                 and "a" (append existing, create if doesn't exist). Default is "w-".
             attributes: Optional list of attributes to copy. If None, all attributes
                 will be copied.
-            overwrite_attrs: Whether to overwrite attributes that already exist in this
+            overwrite: Whether to overwrite attributes that already exist in this
                 dataset.
         """
         attributes = attributes if attributes is not None else ()
-        on_conflict = "overwrite" if overwrite_attrs else "ignore"
+        on_conflict = "overwrite" if overwrite else "ignore"
 
         if not isinstance(dest, Dataset):
             dest = Path(dest).expanduser()
