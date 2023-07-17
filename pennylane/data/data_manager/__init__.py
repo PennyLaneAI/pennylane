@@ -18,11 +18,11 @@ them.
 
 import typing
 from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
+from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union
-from copy import deepcopy
 
 import requests
 

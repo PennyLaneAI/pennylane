@@ -15,10 +15,10 @@
 Tests for the :class:`pennylane.data.data_manger.FolderMapView` class.
 """
 
-from pennylane.data.data_manager.foldermap import FolderMapView, Description
-from pennylane.data.data_manager import DEFAULT, DataPath, FULL
 import pytest
 
+from pennylane.data.data_manager import DEFAULT, FULL, DataPath
+from pennylane.data.data_manager.foldermap import Description, FolderMapView
 
 FOLDERMAP = {
     "__params": {

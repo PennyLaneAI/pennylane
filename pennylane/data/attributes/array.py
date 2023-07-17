@@ -14,12 +14,13 @@
 """Contains DatasetAttribute definition for numpy arrays."""
 
 from typing import Optional
+
 import numpy
 from numpy.typing import ArrayLike
 
-from pennylane.data.base.attribute import DatasetAttribute, AttributeInfo
+from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
-from pennylane.math import get_interface, array
+from pennylane.math import array, get_interface
 
 
 class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):

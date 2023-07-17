@@ -18,9 +18,9 @@ Tests for the ``DatasetArray`` attribute type.
 import numpy as np
 import pytest
 
-from pennylane.data.attributes import DatasetArray
 import pennylane.data.attributes.array
 from pennylane import numpy as qml_numpy
+from pennylane.data.attributes import DatasetArray
 
 
 class TestDatasetArray:

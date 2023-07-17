@@ -27,12 +27,12 @@ from typing import (
     List,
     Literal,
     Optional,
+    Tuple,
     Type,
     TypeVar,
     Union,
     cast,
     get_origin,
-    Tuple,
 )
 
 # pylint doesn't think this exists

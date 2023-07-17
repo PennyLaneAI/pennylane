@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane.data.attributes import DatasetOperator
 from pennylane.data.base.typing_util import get_type_str
-from pennylane.operation import Tensor, Operator
+from pennylane.operation import Operator, Tensor
 
 H_ONE_QUBIT = np.array([[1.0, 0.5j], [-0.5j, 2.5]])
 H_TWO_QUBITS = np.array(
@@ -125,7 +125,9 @@ class TestDatasetOperator:
     def test_value_init_not_supported(self):
         """Test that a ValueError is raised if attempting to serialize an unsupported operator."""
 
-        class NotSupported(Operator):
+        class NotSupported(Operator):  # pylint: disable=too-few-public-methods
+            """An operator."""
+
             ...
 
         with pytest.raises(

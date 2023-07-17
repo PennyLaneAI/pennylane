@@ -159,7 +159,7 @@ class TestList:
         """Test that a `DatasetList`  can be compared to other objects."""
         ds = DatasetList(input_type(value))
 
-        assert ds == ds
+        assert ds == input_type(value)
         assert ds != value.append("additional")
         for variable in ["string", 1, 1.0, {"0": 1}, True]:
             assert ds != variable
