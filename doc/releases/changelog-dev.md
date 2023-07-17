@@ -30,6 +30,23 @@
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
+* The `qchem` functions `primitive_norm` and `contracted_norm` are modified to be compatible with
+  higher versions of scipy. The private function `_fac2` for computing double factorials is added. 
+  [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
+
+* The default label for a `StatePrep` operator is now `|Ψ⟩`.
+  [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
+
+* The experimental device interface is integrated with the `QNode` for Jax.
+  [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
+
+* The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
+  new `QuantumScript` objects with the provided parameters.
+  [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
+
+* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
+  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -84,6 +101,9 @@
 
 <h3>Documentation 📝</h3>
 
+* `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
+  [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
+
 <h3>Bug fixes 🐛</h3>
   
 * Stop `metric_tensor` from accidentally catching errors that stem from
@@ -94,16 +114,23 @@
   [(#4295)](https://github.com/PennyLaneAI/pennylane/pull/4295)
 
 * `qml.qinfo.purity` now produces correct results with custom wire labels.
-  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+  [(#4331)](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
+
+* `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
+  have a batch dimension.
+  [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+
 Lillian M. A. Frederiksen,
+Soran Jahangiri,
+Isaac De Vlugt,
 Edward Jiang,
 Christina Lee,
 Mudit Pandey,
