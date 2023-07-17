@@ -42,7 +42,7 @@ def _get_output_ket(tape):
     ket = create_initial_state(
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else
-    for op in tape.operations[bool(prep_operation): ]:
+    for op in tape.operations[bool(prep_operation) :]:
         ket = apply_operation(op, ket)
 
     return ket
