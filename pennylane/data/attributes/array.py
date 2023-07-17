@@ -15,8 +15,6 @@
 
 from typing import Optional
 import numpy
-from numpy._typing._array_like import _SupportsArray
-from numpy._typing._nested_sequence import _NestedSequence
 from numpy.typing import ArrayLike
 
 from pennylane.data.base.attribute import DatasetAttribute, AttributeInfo
