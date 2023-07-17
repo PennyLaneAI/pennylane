@@ -124,7 +124,7 @@ def shape(a):
     '''Custom implementation of autoray.shape to avoid overheads when calling this
     method many times in the parameter shift rule.'''
     try:
-        return a.shape
+        return tuple(a.shape)
     except AttributeError:
         if isinstance(a, autograd.numpy.numpy_boxes.ArrayBox):
             return autograd.numpy.shape(a)
