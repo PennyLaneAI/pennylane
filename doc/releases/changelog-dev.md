@@ -47,6 +47,10 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
+* Functions based on `autoray`, such as `qml.math.ndim`, `qml.math.shape`, and `qml.math.unwrap`
+  have been improved to reduce the overhead of backend inference.
+  [(#4261)](https://github.com/PennyLaneAI/pennylane/pull/4261)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -130,3 +134,4 @@ Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 David Wierichs,
+Frederik Wilde
