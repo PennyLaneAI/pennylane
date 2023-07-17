@@ -19,7 +19,7 @@ Contains types and functions for dataset parameters.
 import enum
 import typing
 from functools import lru_cache
-from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union, cast
+from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union
 
 
 class ParamArg(enum.Enum):
@@ -44,8 +44,8 @@ class ParamArg(enum.Enum):
         of its values."""
         return isinstance(val, ParamArg) or val in cls.values()
 
-    def __str__(self) -> str:
-        return self.value  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+        return self.value
 
 
 DEFAULT = ParamArg.DEFAULT
