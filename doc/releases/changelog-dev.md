@@ -51,6 +51,9 @@
   new `QuantumScript` objects with the provided parameters.
   [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
 
+* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
+  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
