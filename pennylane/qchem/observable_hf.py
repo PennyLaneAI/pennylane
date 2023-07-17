@@ -176,14 +176,17 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
 
         if not h.wires:
             h = h.hamiltonian(wire_order=[0])
+            return qml.Hamiltonian(
+                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+            )
         else:
             h = h.hamiltonian()
 
-        return simplify(
-            qml.Hamiltonian(
-                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+            return simplify(
+                qml.Hamiltonian(
+                    h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+                )
             )
-        )
 
     warnings.warn(
         "Tuple input for the qubit_observable function is deprecated; please use the fermionic"
