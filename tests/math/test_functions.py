@@ -16,7 +16,6 @@
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
-from unittest.mock import patch
 
 import numpy as onp
 import pytest
