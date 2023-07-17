@@ -35,6 +35,7 @@ from pennylane.measurements import (
     VarianceMP,
     Shots,
 )
+from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
@@ -428,10 +429,12 @@ class QuantumScript:
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
+        n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
+                    for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
@@ -716,6 +719,64 @@ class QuantumScript:
         self._update_batch_size()
         self._update_output_dim()
 
+    def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
+        """Create a new tape with updated parameters.
+
+        This function takes a :class:`~.tape.QuantumScript` as input, and returns
+        a new ``QuantumScript`` containing the new parameters at the provided indices,
+        with the parameters at all other indices remaining the same.
+
+        Args:
+            params (Sequence[TensorLike]): New parameters to create the tape with. This
+                must have the same length as ``indices``.
+            indices (Sequence[int]): The parameter indices to update with the given parameters.
+                The index of a parameter is defined as its index in ``tape.get_parameters()``.
+
+        Returns:
+            .tape.QuantumScript: New tape with updated parameters
+        """
+        # pylint: disable=no-member
+
+        if len(params) != len(indices):
+            raise ValueError("Number of provided parameters does not match number of indices")
+
+        # determine the ops that need to be updated
+        op_indices = {}
+        for param_idx, idx in enumerate(sorted(indices)):
+            pinfo = self._par_info[idx]
+            op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
+
+            if op_idx not in op_indices:
+                op_indices[op_idx] = {}
+
+            op_indices[op_idx][p_idx] = param_idx
+
+        new_ops = self.circuit
+
+        for op_idx, p_indices in op_indices.items():
+            op = new_ops[op_idx]
+            data = op.data if isinstance(op, Operator) else op.obs.data
+
+            new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
+
+            if isinstance(op, Operator):
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+            else:
+                new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
+                new_op = op.__class__(obs=new_obs)
+
+            new_ops[op_idx] = new_op
+
+        new_prep = new_ops[: len(self._prep)]
+        new_operations = new_ops[len(self._prep) : len(self.operations)]
+        new_measurements = new_ops[len(self.operations) :]
+
+        new_tape = self.__class__(new_operations, new_measurements, new_prep, shots=self.shots)
+        new_tape.trainable_params = self.trainable_params
+        new_tape._qfunc_output = self._qfunc_output
+
+        return new_tape
+
     # ========================================================
     # MEASUREMENT SHAPE
     #
@@ -921,7 +982,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
@@ -934,11 +994,20 @@ class QuantumScript:
         if not qml.active_return():
             return self._shape_legacy(device)
 
-        shots = (
-            Shots(device._raw_shot_sequence)
-            if device.shot_vector is not None
-            else Shots(device.shots)
-        )
+        if isinstance(device, qml.devices.experimental.Device):
+            # MP.shape (called below) takes 2 arguments: `device` and `shots`.
+            # With the new device interface, shots are stored on tapes rather than the device
+            # As well, MP.shape needs the device largely to see the device wires, and this is
+            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
+            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            shots = self.shots
+            device = self
+        else:
+            shots = (
+                Shots(device._raw_shot_sequence)
+                if device.shot_vector is not None
+                else Shots(device.shots)
+            )
 
         if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
@@ -1004,7 +1073,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.numeric_type
