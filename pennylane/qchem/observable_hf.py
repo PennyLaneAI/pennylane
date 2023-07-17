@@ -179,14 +179,14 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
             return qml.Hamiltonian(
                 h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
             )
-        else:
-            h = h.hamiltonian()
 
-            return simplify(
-                qml.Hamiltonian(
-                    h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
-                )
+        h = h.hamiltonian()
+
+        return simplify(
+            qml.Hamiltonian(
+                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
             )
+        )
 
     warnings.warn(
         "Tuple input for the qubit_observable function is deprecated; please use the fermionic"
