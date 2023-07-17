@@ -28,7 +28,7 @@ from pennylane.transforms import convert_to_numpy_parameters
 from pennylane import DeviceError, Snapshot
 
 from . import Device
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import ExecutionConfig
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
@@ -38,6 +38,8 @@ QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+
+DefaultExecutionConfig = ExecutionConfig(device_options={"max_workers": None})
 
 
 class DefaultQubit2(Device):
@@ -285,10 +287,13 @@ class DefaultQubit2(Device):
 
     # pylint: disable=missing-function-docstring
     def _get_max_workers(self, execution_config=None):
-        if execution_config is None or execution_config.max_workers is None:
+        max_workers = None
+        if execution_config is not None:
+            if isinstance(execution_config.device_options, dict):
+                if "max_workers" in execution_config.device_options.keys():
+                    max_workers = execution_config.device_options["max_workers"]
+        if max_workers is None:
             max_workers = self._max_workers
-        else:
-            max_workers = execution_config.max_workers
         _validate_multiprocessing_workers(max_workers)
         return max_workers
 

@@ -202,11 +202,11 @@ class TestPreprocessing:
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
         dev = DefaultQubit2()
 
-        config = ExecutionConfig(max_workers=max_workers)
+        config = ExecutionConfig(device_options={"max_workers": max_workers})
         circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         _, _, new_config = dev.preprocess(circuit, config)
 
-        assert new_config.max_workers == max_workers
+        assert new_config.device_options["max_workers"] == max_workers
 
 
 class TestSupportsDerivatives:
@@ -223,7 +223,7 @@ class TestSupportsDerivatives:
         qs = qml.tape.QuantumScript([], [qml.state()])
         assert dev.supports_derivatives(config, qs)
 
-        config = ExecutionConfig(gradient_method="backprop", max_workers=1)
+        config = ExecutionConfig(gradient_method="backprop", device_options={"max_workers": 1})
         assert dev.supports_derivatives(config) is False
 
     def test_supports_adjoint(self):
@@ -279,7 +279,9 @@ class TestBasicCircuit:
         )
 
         dev = DefaultQubit2(max_workers=max_workers)
-        config = ExecutionConfig(max_workers=dev._max_workers)  # pylint: disable=protected-access
+        config = ExecutionConfig(
+            device_options={"max_workers": dev._max_workers}  # pylint: disable=protected-access
+        )
         result = dev.execute(qs, execution_config=config)
 
         assert isinstance(result, tuple)

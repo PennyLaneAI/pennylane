@@ -69,9 +69,6 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    max_workers: Optional[int] = None
-    """Maximal number of processes for batch execution"""
-
     def __post_init__(self):
         """
         Validate the configured execution options.
