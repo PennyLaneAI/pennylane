@@ -531,7 +531,7 @@ class Operator(abc.ABC):
         * The data and hyperparameters are insufficient to reproduce the original operation via its initialization
         * The hyperparameters contain a non-hashable component, such as a list or dictionary.
 
-        Some examples include operator arithemtic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
+        Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
         perform preprocessing during initialization.
 
         See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
