@@ -251,7 +251,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qml.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint:disable=super-init-not-called
                 pass
 
         op = MyOp(wires=0)
@@ -266,7 +266,7 @@ class TestOperatorConstruction:
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):
+            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -446,7 +446,7 @@ class TestHasReprProperties:
             num_wires = 1
 
             @staticmethod
-            def compute_matrix():
+            def compute_matrix(*params, **hyperparams):
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -498,7 +498,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):
+            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
                 return [qml.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -536,7 +536,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):
+            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -2126,7 +2126,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint:disable=arguments-differ
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -2161,7 +2161,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):
+            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -2302,19 +2302,17 @@ class TestCVOperation:
 class TestStatePrep:
     """Test the StatePrep interface."""
 
+    class DefaultPrep(StatePrep):
+        """A dummy class that assumes it was given a state vector."""
+
+        # pylint:disable=unused-argument,too-few-public-methods
+        def state_vector(self, wire_order=None):
+            return self.parameters[0]
+
     # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_stateprep(self):
         """Tests a basic implementation of the StatePrep interface."""
-
-        class DefaultPrep(StatePrep):
-            """A dummy class that assumes it was given a state vector."""
-
-            num_wires = qml.operation.AllWires
-
-            def state_vector(self, wire_order=None):
-                return self.parameters[0]
-
-        prep_op = DefaultPrep([1, 0], wires=[0])
+        prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
@@ -2323,10 +2321,14 @@ class TestStatePrep:
         class NoStatePrepOp(StatePrep):
             """A class that is missing the state_vector implementation."""
 
-            num_wires = qml.operation.AllWires
+            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
+
+    def test_StatePrep_label(self):
+        """Tests that StatePrep classes by default have a psi ket label"""
+        assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
 class TestCriteria:

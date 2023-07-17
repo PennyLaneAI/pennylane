@@ -228,41 +228,6 @@ class QuantumMonteCarlo(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    The algorithm proceeds as follows:
-
-    #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}`
-       applied to the first :math:`m` qubits specified by ``target_wires``.
-    #. The function :math:`f(i)` is encoded onto the last qubit of ``target_wires`` using a unitary
-       :math:`\mathcal{R}`.
-    #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
-       :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
-       value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1
-       and 2 prepares an equal superposition over the two states corresponding to the eigenvalues
-       :math:`e^{\pm 2 \pi i \theta}`.
-    #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
-       estimated by finding the probabilities of the :math:`n` estimation wires. This in turn allows
-       for the estimation of :math:`\mu`.
-
-    Visit `Rebentrost et al. (2018) <https://arxiv.org/abs/1805.00109>`__ for further details. In
-    this algorithm, the number of applications :math:`N` of the :math:`\mathcal{Q}` unitary scales
-    as :math:`2^{n}`. However, due to the use of quantum phase estimation, the error
-    :math:`\epsilon` scales as :math:`\mathcal{O}(2^{-n})`. Hence,
-
-    .. math::
-
-        N = \mathcal{O}\left(\frac{1}{\epsilon}\right).
-
-    This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
-    generated from the probability distribution and the average over :math:`f` is taken. In that
-    case,
-
-    .. math::
-
-        N =  \mathcal{O}\left(\frac{1}{\epsilon^{2}}\right).
-
-    Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
-    :math:`N`.
-
     Args:
         probs (array): input probability distribution as a flat array
         func (callable): input function :math:`f` defined on the set of integers
@@ -284,6 +249,41 @@ class QuantumMonteCarlo(Operation):
 
     .. details::
         :title: Usage Details
+
+        The algorithm proceeds as follows:
+
+        #. The probability distribution :math:`p(i)` is encoded using a unitary :math:`\mathcal{A}`
+           applied to the first :math:`m` qubits specified by ``target_wires``.
+        #. The function :math:`f(i)` is encoded onto the last qubit of ``target_wires`` using a unitary
+           :math:`\mathcal{R}`.
+        #. The unitary :math:`\mathcal{Q}` is defined with eigenvalues
+           :math:`e^{\pm 2 \pi i \theta}` such that the phase :math:`\theta` encodes the expectation
+           value through the equation :math:`\mu = (1 + \cos (\pi \theta)) / 2`. The circuit in steps 1
+           and 2 prepares an equal superposition over the two states corresponding to the eigenvalues
+           :math:`e^{\pm 2 \pi i \theta}`.
+        #. The :func:`~.QuantumPhaseEstimation` circuit is applied so that :math:`\pm\theta` can be
+           estimated by finding the probabilities of the :math:`n` estimation wires. This in turn allows
+           for the estimation of :math:`\mu`.
+
+        Visit `Rebentrost et al. (2018) <https://arxiv.org/abs/1805.00109>`__ for further details. In
+        this algorithm, the number of applications :math:`N` of the :math:`\mathcal{Q}` unitary scales
+        as :math:`2^{n}`. However, due to the use of quantum phase estimation, the error
+        :math:`\epsilon` scales as :math:`\mathcal{O}(2^{-n})`. Hence,
+
+        .. math::
+
+            N = \mathcal{O}\left(\frac{1}{\epsilon}\right).
+
+        This scaling can be compared to standard Monte Carlo estimation, where :math:`N` samples are
+        generated from the probability distribution and the average over :math:`f` is taken. In that
+        case,
+
+        .. math::
+
+            N =  \mathcal{O}\left(\frac{1}{\epsilon^{2}}\right).
+
+        Hence, the quantum Monte Carlo algorithm has a quadratically improved time complexity with
+        :math:`N`. An example use case is given below.
 
         Consider a standard normal distribution :math:`p(x)` and a function
         :math:`f(x) = \sin ^{2} (x)`. The expectation value of :math:`f(x)` is
