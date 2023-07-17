@@ -18,9 +18,8 @@ Contains types and functions for dataset parameters.
 
 import enum
 import typing
-from collections.abc import Hashable
 from functools import lru_cache
-from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union
+from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union, cast
 
 
 class ParamArg(enum.Enum):
@@ -46,7 +45,8 @@ class ParamArg(enum.Enum):
         return isinstance(val, ParamArg) or val in cls.values()
 
     def __str__(self) -> str:
-        return self.value
+        # pylint thinks 'Literal' is not a 'str'
+        return cast(str, self.value)
 
 
 DEFAULT = ParamArg.DEFAULT
@@ -58,7 +58,7 @@ ParamName = str
 ParamVal = str
 
 
-class Description(typing.Mapping[ParamName, ParamVal], Hashable):
+class Description(typing.Mapping[ParamName, ParamVal]):
     """An immutable and hashable dictionary that contains all the parameter
     values for a dataset."""
 

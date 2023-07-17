@@ -54,7 +54,7 @@ To create a new dataset in-memory, initialize a new ``Dataset`` with the desired
     >>> dataset.hamiltonian
     <Hamiltonian: terms=2, wires=[0, 1]>
     >>> dataset.eigen
-    {'eigvals': array([-2.,  0.,  0.,  2.]), 
+    {'eigvals': array([-2.,  0.,  0.,  2.]),
     'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
@@ -66,7 +66,7 @@ Attributes can also be assigned to the instance after creation:
     >>> dataset.ground_state
     array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
 
-    
+
 Reading and Writing Datasets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -104,12 +104,12 @@ function can be used to attach metadata on assignment or initialization.
     >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
     >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
     >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
-            hamiltonian, 
+            hamiltonian,
             doc="The hamiltonian of the system"))
     >>> dataset.eigen = attribute(
-            {"eigvals": eigvals, "eigvecs": eigvecs}, 
+            {"eigvals": eigvals, "eigvecs": eigvecs},
             doc="Eigenvalues and eigenvectors of the hamiltonain")
-    
+
 This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
 
     >>> dataset.attr_info["hamiltonian"]["doc"]
@@ -130,7 +130,7 @@ or 'fields', and their associated type and documentation:
 
     class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", params=["mass", "force_constant"]):
         \"""Dataset describing a quantum oscillator.\"""
-        
+
         mass: float = qml.data.field(doc = "The mass of the particle")
         force_constant: float = qml.data.field(doc = "The force constant of the oscillator")
         hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
@@ -138,10 +138,10 @@ or 'fields', and their associated type and documentation:
 
 The ``data_name`` keyword specifies a category or descriptive name for the dataset type, and the ``params``
 keyword to the class is used to specify fields that function as parameters, i.e they determine the behaviour
-of the system. 
+of the system.
 
 When a ``QuantumOscillator`` dataset is created, its attributes will have the documentation from the field
-definition: 
+definition:
 
     >>> dataset = QuantumOscillator(mass=1, force_constant=0.5, hamiltonian=..., energy_levels=...)
     >>> dataset.attr_info["mass"]["doc"]

@@ -63,7 +63,7 @@ def _download_partial(
     """
 
     remote_dataset = Dataset(open_hdf5_s3(s3_url))
-    remote_dataset.write(dest, "a", attributes, overwrite_attrs=overwrite)
+    remote_dataset.write(dest, "a", attributes, overwrite=overwrite)
 
     del remote_dataset
 
