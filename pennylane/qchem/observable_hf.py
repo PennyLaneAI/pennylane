@@ -180,8 +180,10 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         else:
             h = h.hamiltonian()
 
-        return qml.Hamiltonian(
-            h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+        return simplify(
+            qml.Hamiltonian(
+                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+            )
         )
 
     warnings.warn(
