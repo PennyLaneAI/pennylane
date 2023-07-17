@@ -2846,7 +2846,7 @@ def disable_new_opmath():
     True
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.disable_new_opmath()
+    >>> qml.operation.disable_new_opmath()
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.operation.Tensor'>
     """

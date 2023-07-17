@@ -325,8 +325,8 @@ class TestAutogradExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-            tape.set_parameters([a, b])
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return autograd.numpy.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
