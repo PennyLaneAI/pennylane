@@ -122,7 +122,7 @@ class TestFiniteDiff:
             g_tapes, post_processing = qml.gradients.finite_diff(
                 tape, h=h_val, shots=default_shot_vector
             )
-        all_res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
+        all_res = post_processing(qml.execute(g_tapes, dev, None))
         assert len(all_res) == len(default_shot_vector)
 
         for res in all_res:
@@ -148,7 +148,7 @@ class TestFiniteDiff:
             g_tapes, post_processing = qml.gradients.finite_diff(
                 tape, h=h_val, shots=default_shot_vector
             )
-        res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
+        res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
         assert isinstance(res, tuple)

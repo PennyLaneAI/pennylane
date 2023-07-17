@@ -41,19 +41,21 @@ def shift_transform(
     parameters = tape1.get_parameters(trainable_only=False)
     parameters = [param + alpha for param in parameters]
     tape1.set_parameters(parameters, trainable_only=False)
-    return [tape1], lambda x: x[0]
+
+    def null_post_processing(results):
+        return results[0]
+
+    return (tape1,), null_post_processing
 
 
 @qml.transforms.transform
 def sum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid (dummy) transform that duplicates the tapes and sum the results."""
-    tape1 = tape.copy()
-    tape2 = tape.copy()
 
     def fn(results):
         return qml.numpy.tensor(qml.math.sum(results))
 
-    return [tape1, tape2], fn
+    return (tape, tape), fn
 
 
 @partial(qml.transforms.transform, is_informative=True)
@@ -63,7 +65,7 @@ def len_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape]
     def fn(results):
         return len(results[0])
 
-    return [tape], fn
+    return (tape,), fn
 
 
 class TestExecutionTransformPrograms:

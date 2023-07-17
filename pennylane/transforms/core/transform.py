@@ -38,7 +38,7 @@ def transform(
 
             * An expand transform is a function that is applied before applying the defined quantum transform. It
               takes a quantum tape as single input and returns a single tape in a sequence with a dummy processing
-              function, lambda x: x.
+              function.
 
             * The expand transform must have the same type hinting as a quantum transform.
 

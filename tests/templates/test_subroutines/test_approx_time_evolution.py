@@ -393,7 +393,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
         if diff_method is qml.gradients.param_shift:
             tape = dev.expand_fn(tape)
 
-        return qml.execute([tape], dev, gradient_fn=diff_method)[0]
+        return qml.execute([tape], dev, diff_method)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
@@ -412,5 +412,5 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     # compare to finite-differences
     tape = create_tape(coeffs, t)
     g_tapes, fn = finite_diff(tape, _expand=False, validate_params=False)
-    expected = fn(qml.execute(g_tapes, dev, gradient_fn=None))
+    expected = fn(qml.execute(g_tapes, dev, None))
     assert np.allclose(qml.math.hstack(grad), qml.math.stack(expected))

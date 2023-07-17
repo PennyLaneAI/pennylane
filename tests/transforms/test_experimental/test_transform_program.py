@@ -22,6 +22,11 @@ from pennylane.transforms.core import (
     TransformError,
     TransformContainer,
 )
+from pennylane.transforms.core.transform_program import (
+    _batch_postprocessing,
+    _apply_postprocessing_stack,
+    null_postprocessing,
+)
 
 
 def first_valid_transform(
@@ -43,6 +48,85 @@ def second_valid_transform(
         return qml.math.sum(results)
 
     return [tape1, tape2], fn
+
+
+class TestUtilityHelpers:
+    def test_batch_postprocessing(self):
+        """Test the _batch_postprocessing helper function."""
+        results = (1.0, 2.0, 3.0, 4.0)
+
+        def postprocessing1(results):
+            return results[0] + results[1]
+
+        def postprocessing2(results):
+            return results[0] + 1
+
+        out = _batch_postprocessing(results, (postprocessing1, postprocessing2))
+        assert out == (3.0, 4.0)
+
+    def test_postprocessing_stack(self):
+        """Tests the _apply_postprocessing_stack helper function."""
+
+        results = (1.0, 2.0, 3.0, 4.0)
+
+        def postprocessing1(results):
+            return (results[0] + results[1], results[2] + results[3])
+
+        def postprocessing2(results):
+            return (results[0] + 1, results[1] + 2)
+
+        out1 = _apply_postprocessing_stack(results, [postprocessing1], [None, None])
+        assert out1 == (3.0, 7.0)
+
+        out2 = _apply_postprocessing_stack(
+            results, [postprocessing2, postprocessing1], [None, None]
+        )
+        assert out2 == (4.0, 9.0)
+
+
+class TestTransformProgramDunders:
+    def test_bool(self):
+        """Check that a transform program is falsy if empty and truthy is not."""
+        empty_prog = TransformProgram()
+        assert not empty_prog
+
+        transform1 = TransformContainer(transform=first_valid_transform)
+        populated_prog = TransformContainer((transform1,))
+        assert populated_prog
+
+    def test_iter_program(self):
+        """Test iteration over the transform program."""
+        transform_program = TransformProgram()
+        transform1 = TransformContainer(transform=first_valid_transform)
+
+        for _ in range(0, 10):
+            transform_program.push_back(transform1)
+
+        assert len(transform_program) == 10
+
+        for elem in transform_program:
+            assert isinstance(elem, TransformContainer)
+            assert elem.transform is first_valid_transform
+
+    def test_repr_program(self):
+        """Test the string representation of a program."""
+        transform_program = TransformProgram()
+
+        transform1 = TransformContainer(transform=first_valid_transform)
+        transform2 = TransformContainer(transform=second_valid_transform)
+
+        transform_program.push_back(transform1)
+        transform_program.push_back(transform2)
+
+        str_program = repr(transform_program)
+        assert (
+            str_program
+            == "TransformProgram("
+            + str(first_valid_transform.__name__)
+            + ", "
+            + str(second_valid_transform.__name__)
+            + ")"
+        )
 
 
 class TestTransformProgram:
@@ -142,40 +226,6 @@ class TestTransformProgram:
         ):
             transform_program.insert_front(transform3)
 
-    def test_iter_program(self):
-        """Test iteration over the transform program."""
-        transform_program = TransformProgram()
-        transform1 = TransformContainer(transform=first_valid_transform)
-
-        for _ in range(0, 10):
-            transform_program.push_back(transform1)
-
-        assert len(transform_program) == 10
-
-        for elem in transform_program:
-            assert isinstance(elem, TransformContainer)
-            assert elem.transform is first_valid_transform
-
-    def test_repr_program(self):
-        """Test the string representation of a program."""
-        transform_program = TransformProgram()
-
-        transform1 = TransformContainer(transform=first_valid_transform)
-        transform2 = TransformContainer(transform=second_valid_transform)
-
-        transform_program.push_back(transform1)
-        transform_program.push_back(transform2)
-
-        str_program = repr(transform_program)
-        assert (
-            str_program
-            == "TransformProgram("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
-        )
-
     def test_valid_transforms(self):
         """Test that that it is only possible to create valid transforms."""
         transform_program = TransformProgram()
@@ -193,6 +243,21 @@ class TestTransformProgram:
             TransformError, match="The transform program already has an informative transform."
         ):
             transform_program.push_back(transform2)
+
+
+class TestTransformProgramCall:
+    """Tests for calling a TransformProgram on a batch of quantum tapes."""
+
+    def test_call_on_empty_program(self):
+        """Tests that an empty program returns input tapes with the null postprocessing function."""
+
+        batch = qml.tape.QuantumScript([], [qml.state()])
+
+        prog = TransformProgram()
+        new_batch, postprocessing = prog(batch)
+
+        assert new_batch is batch
+        assert postprocessing is null_postprocessing
 
 
 class TestTransformProgramIntegration:

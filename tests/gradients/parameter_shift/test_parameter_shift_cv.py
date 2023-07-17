@@ -377,7 +377,7 @@ class TestParameterShiftLogic:
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.param_shift_cv(tape, dev)
-        res = post_processing(qml.execute(g_tapes, dev, gradient_fn=None))
+        res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
         assert res.shape == (1, 0)
@@ -1172,11 +1172,7 @@ class TestParamShiftInterfaces:
             tapes, fn = param_shift_cv(tape, dev)
             jac = fn(
                 qml.execute(
-                    tapes,
-                    dev,
-                    gradient_fn=param_shift_cv,
-                    gradient_kwargs={"dev": dev},
-                    interface="tf",
+                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="tf"
                 )
             )
             res = jac[1]
@@ -1215,13 +1211,7 @@ class TestParamShiftInterfaces:
         tape.trainable_params = {0, 2}
         tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         jac = fn(
-            qml.execute(
-                tapes,
-                dev,
-                gradient_fn=param_shift_cv,
-                gradient_kwargs={"dev": dev},
-                interface="torch",
-            )
+            qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="torch")
         )
 
         r, phi = params.detach().numpy()
@@ -1268,11 +1258,7 @@ class TestParamShiftInterfaces:
             tapes, fn = qml.gradients.param_shift_cv(tape, dev)
             jac = fn(
                 qml.execute(
-                    tapes,
-                    dev,
-                    gradient_fn=param_shift_cv,
-                    gradient_kwargs={"dev": dev},
-                    interface="jax",
+                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="jax"
                 )
             )
             return jac

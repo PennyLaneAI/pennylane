@@ -312,9 +312,9 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
-    transform_program=None,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
+    transform_program: Optional["TransformProgram"] = None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[bool, dict, Cache] = True,
@@ -452,6 +452,8 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -482,50 +484,19 @@ def execute(
     else:
         batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
-    if transform_program is None:
-        expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
+    expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
-        #### Executing the configured setup #####
+    #### Executing the configured setup #####
 
-        tapes, batch_fn, config = _batch_transform(
-            tapes, device, config, override_shots, device_batch_transform
-        )
-    else:
-        # TODO: add the device preprocessing and expand fn to the program
-        # transform_program.add_preprocessing()
-        expand_fn = None
+    tapes, device_batch_fn, config = _batch_transform(
+        tapes, device, config, override_shots, device_batch_transform
+    )
 
-    # Apply all transforms (device pre-processing, compilation)
-    if transform_program is not None and not transform_program.is_empty():
-        tapes, processing_fns, classical_cotransforms = transform_program(tapes)
+    tapes, transform_program_postprocessing = transform_program(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
-        if transform_program is None:
-            device_supports_interface_data = (
-                new_device_interface
-                or config.interface is None
-                or gradient_fn == "backprop"
-                or device.short_name == "default.mixed"
-                or "passthru_interface" in device.capabilities()
-            )
-            if not device_supports_interface_data:
-                tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-
-            # use qml.interfaces so that mocker can spy on it during testing
-            cached_execute_fn = qml.interfaces.cache_execute(
-                batch_execute,
-                cache,
-                expand_fn=expand_fn,
-                return_tuple=False,
-                pass_kwargs=new_device_interface,
-            )
-            if transform_program is None:
-                results = cached_execute_fn(tapes, execution_config=config)
-
-            return batch_fn(results)
-
         device_supports_interface_data = (
             new_device_interface
             or config.interface is None
@@ -544,12 +515,9 @@ def execute(
             return_tuple=False,
             pass_kwargs=new_device_interface,
         )
-        if not transform_program.is_informative():
-            results = cached_execute_fn(tapes, execution_config=config)
-        else:
-            results = tapes
-
-        return _post_processing(results, processing_fns, classical_cotransforms)
+        results = cached_execute_fn(tapes, execution_config=config)
+        post_processed_results = transform_program_postprocessing(results)
+        return device_batch_fn(post_processed_results)
 
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing
@@ -689,7 +657,8 @@ def execute(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    return batch_fn(res)
+    post_processed_results = transform_program_postprocessing(res)
+    return device_batch_fn(post_processed_results)
 
 
 def _execute_legacy(

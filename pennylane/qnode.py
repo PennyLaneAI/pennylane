@@ -506,7 +506,7 @@ class QNode:
         self._update_gradient_fn()
 
     @property
-    def transform_program(self):
+    def transform_program(self) -> qml.transforms.core.TransformProgram:
         """The transform program used by the QNode.
 
         .. warning:: This is an experimental feature.
@@ -911,6 +911,10 @@ class QNode:
             self.interface = "auto"
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
+
+        # really not sure why pylint is complaining about this
+        if self.transform_program.is_informative:  # pylint: disable=using-constant-test
+            raise NotImplementedError("Informative transform programs are not yet implemented.")
         override_shots = False
         old_interface = self.interface
 
@@ -963,14 +967,10 @@ class QNode:
             if "mode" in self.execute_kwargs:
                 self.execute_kwargs.pop("mode")
             # pylint: disable=unexpected-keyword-arg
-            if self.transform_program.is_empty():
-                transform_program = None
-            else:
-                transform_program = self.transform_program
             res = qml.execute(
                 [self.tape],
                 device=self.device,
-                transform_program=transform_program,
+                transform_program=self.transform_program,
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
                 gradient_kwargs=self.gradient_kwargs,

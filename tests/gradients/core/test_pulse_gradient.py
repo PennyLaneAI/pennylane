@@ -887,7 +887,7 @@ class TestStochPulseGrad:
         assert len(tapes) == 2 * 3
 
         dev = qml.device("default.qubit.jax", wires=2)
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         assert isinstance(res, tuple) and len(res) == 2
         assert qml.math.allclose(res[0][0], np.zeros(5))
         assert qml.math.allclose(res[1][0], np.zeros((2, 5)))
@@ -916,7 +916,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == num_split_times * 2
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t)
         jax.clear_caches()
 
@@ -947,7 +947,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == num_split_times * 2
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t * prefactor)
         jax.clear_caches()
 
@@ -984,7 +984,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == 2 * num_split_times
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         exp_grad = -2 * jnp.sin(2 * theta) * theta_jac
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(res, exp_grad, atol=0.2)
@@ -1024,7 +1024,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == 2 * num_split_times
 
-        jac = fn(qml.execute(tapes, dev, gradient_fn=None))
+        jac = fn(qml.execute(tapes, dev, None))
         probs_jac = jnp.array([-1, 1]) * (2 * jnp.sin(theta) * jnp.cos(theta))
         exp_jac = jnp.tensordot(probs_jac, theta_jac, axes=0)
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
@@ -1067,7 +1067,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == 2 * num_split_times
 
-        jac = fn(qml.execute(tapes, dev, gradient_fn=None))
+        jac = fn(qml.execute(tapes, dev, None))
         expval_jac = -2 * jnp.sin(2 * theta)
         probs_jac = jnp.array([-1, 1]) * (2 * jnp.sin(theta) * jnp.cos(theta))
         exp_jac = (expval_jac * theta_jac, jnp.tensordot(probs_jac, theta_jac, axes=0))
@@ -1098,7 +1098,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=7512)
         assert len(tapes) == 2 * num_split_times
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         # The sampling of pwc functions does not automatically reduce to the analytically
         # correct time integrals, leading to approximations -> coarse tolerance
         assert qml.math.allclose(
@@ -1129,7 +1129,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape)
         assert len(tapes) == 4
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         exp_grad = [
             -2 * jnp.sin(2 * p[0]) * jnp.cos(2 * p[1]) * (T[1] - T[0]),
             -2 * jnp.sin(2 * p[1]) * jnp.cos(2 * p[0]) * (T[1] - T[0]),
@@ -1170,7 +1170,7 @@ class TestStochPulseGrad:
         num_shifts = 2 * 2 + 8
         assert len(tapes) == num_shifts * num_split_times
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode)(params)
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
@@ -1240,7 +1240,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
         assert len(tapes) == 3 * 2 * num_split_times
 
-        res = fn(qml.execute(tapes, dev, gradient_fn=None))
+        res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
@@ -1272,7 +1272,7 @@ class TestStochPulseGrad:
             tape = qml.tape.QuantumScript([op], meas)
             tapes, fn = stoch_pulse_grad(tape)
             assert len(tapes) == exp_num_tapes
-            res = fn(qml.execute(tapes, dev, gradient_fn=None))
+            res = fn(qml.execute(tapes, dev, None))
             return res
 
         params = [jnp.array(0.24)]
@@ -1766,7 +1766,7 @@ class TestStochPulseGradDiff:
             tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
             tape.trainable_params = [0]
             tapes, fn = stoch_pulse_grad(tape)
-            return fn(qml.execute(tapes, dev, gradient_fn=None))
+            return fn(qml.execute(tapes, dev, None))
 
         params = [jnp.array(0.4)]
         p = params[0] * T
