@@ -72,7 +72,7 @@ def _tapes_shape_dtype_tuple(tapes, device):
     for t in tapes:
         shape_and_dtype = _create_shape_dtype_struct(t, device)
         shape_dtypes.append(shape_and_dtype)
-    return shape_dtypes
+    return tuple(shape_dtypes)
 
 
 def _jac_shape_dtype_tuple(tapes, device):
@@ -181,6 +181,8 @@ def _execute_bwd(
     _n=1,
     max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+    is_experimental_device = isinstance(device, qml.devices.experimental.Device)
+
     @jax.custom_jvp
     def execute_wrapper(params):
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
@@ -189,6 +191,7 @@ def _execute_bwd(
             """Compute the forward pass."""
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            res = tuple(res)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
@@ -245,7 +248,9 @@ def _execute_bwd(
                 all_jacs = []
                 for new_t in new_tapes:
                     jvp_tapes, res_processing_fn = gradient_fn(
-                        new_t, shots=device.shots, **gradient_kwargs
+                        new_t,
+                        shots=new_t.shots if is_experimental_device else device.shots,
+                        **gradient_kwargs
                     )
                     jacs = execute(
                         jvp_tapes,
@@ -299,7 +304,9 @@ def _execute_bwd(
             all_jacs = []
             for new_t in new_tapes:
                 jvp_tapes, res_processing_fn = gradient_fn(
-                    new_t, shots=device.shots, **gradient_kwargs
+                    new_t,
+                    shots=new_t.shots if is_experimental_device else device.shots,
+                    **gradient_kwargs
                 )
                 jacs = execute_fn(jvp_tapes)[0]
                 jacs = res_processing_fn(jacs)
@@ -407,7 +414,9 @@ def _execute_fwd(
                 intermediate_jacs = []
 
                 # Adapt the shape of the empty jacobian given the measurement shape
-                shape_dtype = original_shape[0] if len(tapes) == 1 else original_shape[i][0]
+                shape_dtype = original_shape if len(tapes) == 1 else original_shape[i]
+                if isinstance(shape_dtype, tuple):
+                    shape_dtype = shape_dtype[0]
 
                 # Multi measurement
                 if multi_measurement:
