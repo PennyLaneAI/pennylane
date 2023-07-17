@@ -111,8 +111,8 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 
 
 def ndim(a):
-    '''Custom implementation of autoray.ndim to avoid overheads when calling this
-    method many times in the parameter shift rule.'''
+    """Custom implementation of autoray.ndim to avoid overheads when calling this
+    method many times in the parameter shift rule."""
     try:
         return a.ndim
     except AttributeError:
@@ -120,9 +120,10 @@ def ndim(a):
             return autograd.numpy.ndim(a)
         return numpy_mimic.ndim(a)
 
+
 def shape(a):
-    '''Custom implementation of autoray.shape to avoid overheads when calling this
-    method many times in the parameter shift rule.'''
+    """Custom implementation of autoray.shape to avoid overheads when calling this
+    method many times in the parameter shift rule."""
     try:
         return tuple(a.shape)
     except AttributeError:

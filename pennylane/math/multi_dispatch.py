@@ -758,7 +758,7 @@ def unwrap(values, max_depth=None):
             return unwrap(val)
 
         if isinstance(val, ArrayBox):
-            new_val = ar.do('to_numpy', val, like='autograd', max_depth=max_depth)
+            new_val = ar.do("to_numpy", val, like="autograd", max_depth=max_depth)
         else:
             new_val = np.to_numpy(val)
 
