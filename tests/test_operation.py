@@ -1237,6 +1237,21 @@ class TestTensor:
         ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
 
+    def test_flatten_unflatten(self):
+        """Test flattening and unflattening for tensors."""
+        op1 = qml.PauliX(0)
+        op2 = qml.Hermitian(np.eye(2), wires=1)
+        t = Tensor(op1, op2)
+
+        data, metadata = t._flatten()
+        assert qml.equal(data[0], op1)
+        assert qml.equal(data[1], op2)
+        assert not metadata
+        assert hash(metadata)
+
+        new_op = Tensor._unflatten(*t._flatten())
+        assert qml.equal(t, new_op)
+
     def test_warning_for_overlapping_wires(self):
         """Test that creating a Tensor with overlapping wires raises a warning"""
         X = qml.PauliX(0)

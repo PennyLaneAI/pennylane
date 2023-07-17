@@ -1999,7 +1999,7 @@ class Tensor(Observable):
         return tuple(self.obs), tuple()
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, data, _):
         return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
