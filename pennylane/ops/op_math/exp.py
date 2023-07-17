@@ -172,7 +172,6 @@ class Exp(ScalarSymbolicOp, Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        print(data[1])
         return cls(data[0], data[1], num_steps=metadata[0])
 
     # pylint: disable=too-many-arguments
