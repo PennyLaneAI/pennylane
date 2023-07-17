@@ -38,6 +38,21 @@ def lst_phis(phis):
 class TestQSVT:
     """Test the qml.QSVT template."""
 
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
+        op = qml.QSVT(qml.PauliX(wires=0), projectors)
+        data, metadata = op._flatten()
+        assert qml.equal(data[0], qml.PauliX(0))
+        assert len(data[1]) == len(projectors)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(data[1], projectors))
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert op is not new_op
+
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
         for the block-encoding."""

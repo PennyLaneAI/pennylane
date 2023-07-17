@@ -192,6 +192,24 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("op_scalar_tup", ops)
+    def test_flatten_unflatten(self, op_scalar_tup):
+        scalar, op = op_scalar_tup
+        sprod_op = SProd(scalar, op)
+
+        data, metadata = sprod_op._flatten()
+
+        assert len(data) == 2
+        assert data[0] == scalar
+        assert data[1] is op
+
+        assert metadata == tuple()
+
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
+        assert qml.equal(new_op, sprod_op)
+        assert new_op is not sprod_op
+
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):
         """Test the copy dunder method properly copies the operator."""
