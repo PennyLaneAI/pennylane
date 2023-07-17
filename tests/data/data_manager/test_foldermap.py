@@ -111,11 +111,11 @@ class TestFolderMapView:
             ),
         ],
     )
-    def test_find(self, foldermap, kwds, expect):
+    def test_find(self, foldermap_, kwds, expect):
         """Test that the ``find()`` method returns the expected results
         for a range of arguments."""
 
-        assert set(foldermap.find("qchem", **kwds)) == set(
+        assert set(foldermap_.find("qchem", **kwds)) == set(
             (Description(desc), DataPath(path)) for desc, path in expect
         )
 
@@ -149,7 +149,7 @@ class TestFolderMapView:
         key is passed."""
 
         with pytest.raises(KeyError):
-            FolderMapView(init)[key]
+            _ = FolderMapView(init)[key]
 
     @pytest.mark.parametrize(
         "init",
@@ -163,7 +163,7 @@ class TestFolderMapView:
         used, but there is no default defined for that level."""
 
         with pytest.raises(ValueError, match="No default available"):
-            FolderMapView(init)[DEFAULT]
+            _ = FolderMapView(init)[DEFAULT]
 
     @pytest.mark.parametrize(
         "init, keys",

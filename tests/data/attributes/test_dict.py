@@ -101,7 +101,6 @@ class TestDatasetDict:
         dset_dict = DatasetDict(value)
         dset_dict2 = DatasetDict(value)
 
-        assert dset_dict == dset_dict
         assert dset_dict == dset_dict2
         assert dset_dict == value
 
