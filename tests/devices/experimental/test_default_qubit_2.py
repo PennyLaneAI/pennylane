@@ -89,7 +89,7 @@ def test_snapshot_multiprocessing():
         ],
         [qml.expval(qml.PauliX(0))],
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises((RuntimeError, qml.DeviceError)):
         dev.execute(tape)
 
 

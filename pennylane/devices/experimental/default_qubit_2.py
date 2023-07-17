@@ -25,7 +25,7 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane import Snapshot
+from pennylane import DeviceError, Snapshot
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -226,10 +226,10 @@ class DefaultQubit2(Device):
         if max_workers is None:
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
-            _validate_multiprocessing_circuits(circuits)
+            self._validate_multiprocessing_circuits(circuits)
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(simulate, debugger=self._debugger)
+            _wrap_simulate = partial(simulate, debugger=None)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(circuit for circuit in exec_map)
@@ -281,23 +281,27 @@ class DefaultQubit2(Device):
         _validate_multiprocessing_workers(max_workers)
         return max_workers
 
+    def _validate_multiprocessing_circuits(self, circuits):
+        """Make sure the tapes can be processed by a ProcessPoolExecutor instance.
 
-def _validate_multiprocessing_circuits(circuits):
-    """Make sure the tapes can be processed by a ProcessPoolExecutor instance.
+        Args:
+            circuits (QuantumTape_or_Batch): Quantum tapes
+        """
+        if self._debugger is not None:
+            if self._debugger.active:
+                raise DeviceError(
+                    "Debugging with ``Snapshots`` is not available with multiprocessing."
+                )
 
-    Args:
-        circuits (QuantumTape_or_Batch): Quantum tapes
-    """
+        def _has_snapshot(circuit):
+            return any(isinstance(c, Snapshot) for c in circuit)
 
-    def _has_snapshot(circuit):
-        return any(isinstance(c, Snapshot) for c in circuit)
-
-    if any(_has_snapshot(c) for c in circuits):
-        raise RuntimeError(
-            """ProcessPoolExecutor cannot execute a QuantumScript with
-            a ``Snapshot`` operation. Change the value of ``max_workers``
-            to ``None`` or execute the QuantumScript separately."""
-        )
+        if any(_has_snapshot(c) for c in circuits):
+            raise RuntimeError(
+                """ProcessPoolExecutor cannot execute a QuantumScript with
+                a ``Snapshot`` operation. Change the value of ``max_workers``
+                to ``None`` or execute the QuantumScript separately."""
+            )
 
 
 def _validate_multiprocessing_workers(max_workers):
