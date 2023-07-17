@@ -2706,6 +2706,9 @@ class StatePrep(Operation):
             array: A state vector for all wires in a circuit
         """
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return "|Ψ⟩"
+
 
 def operation_derivative(operation) -> np.ndarray:
     r"""Calculate the derivative of an operation.
@@ -2843,7 +2846,7 @@ def disable_new_opmath():
     True
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.disable_new_opmath()
+    >>> qml.operation.disable_new_opmath()
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.operation.Tensor'>
     """
