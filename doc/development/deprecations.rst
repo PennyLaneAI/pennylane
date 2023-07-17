@@ -66,6 +66,12 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
+  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 * The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
    operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
