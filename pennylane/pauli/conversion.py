@@ -145,7 +145,7 @@ def pauli_decompose(
 
 
 def pauli_decompose_fast(matrix, pauli=False, wire_order=None):
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+    r"""Decomposes a square matrix into a linear combination of Pauli operators.
 
     Args:
         H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
@@ -260,7 +260,7 @@ def pauli_decompose_fast(matrix, pauli=False, wire_order=None):
     return qml.Hamiltonian(*terms)
 
 def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators."""
+    r"""Decomposes any matrix into a linear combination of Pauli operators."""
 
     # Pad with zeros to make the matrix shape equal and a power of two.
     shape = matrix.shape
