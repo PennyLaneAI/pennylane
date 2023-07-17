@@ -738,14 +738,6 @@ class TestParameters:
         assert new_tape.get_parameters() == new_params
         assert tape.get_parameters() == params
 
-        new_params = (0.1, -0.2, 1, 5, 0)
-        tape.data = new_params
-
-        for pinfo, pval in zip(tape._par_info, new_params):
-            assert pinfo["op"].data[pinfo["p_idx"]] == pval
-
-        assert tape.get_parameters() == list(new_params)
-
     def test_setting_free_parameters(self, make_tape):
         """Test that free parameters are correctly modified after construction"""
         tape, params = make_tape
@@ -859,6 +851,7 @@ class TestParameters:
         assert np.all(new_tape[1].obs.data[0] == H2)
 
 
+# TODO: remove this class when set_parameters is removed
 class TestParametersOld:
     """Tests for parameter processing, setting, and manipulation"""
 
@@ -972,7 +965,8 @@ class TestParametersOld:
         assert tape.get_parameters() == new_params
 
         new_params = (0.1, -0.2, 1, 5, 0)
-        tape.data = new_params
+        with pytest.warns(UserWarning, match=r"The tape.data setter is deprecated"):
+            tape.data = new_params
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval

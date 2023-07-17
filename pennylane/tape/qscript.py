@@ -528,6 +528,11 @@ class QuantumScript:
 
     @data.setter
     def data(self, params):
+        warnings.warn(
+            "The tape.data setter is deprecated and will be removed in v0.33. "
+            "Please use tape.bind_new_parameters instead.",
+            UserWarning,
+        )
         self.set_parameters(params, trainable_only=False)
 
     @property
