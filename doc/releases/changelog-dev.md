@@ -96,7 +96,7 @@
 
 <h3>Documentation 📝</h3>
 
-* The `qml.pulse.transmon_drive` documentation has been updated.
+* The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
   [#4327](https://github.com/PennyLaneAI/pennylane/pull/4327)
 
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
