@@ -38,11 +38,11 @@ def _get_output_ket(tape):
     """Helper function to get the output state of a tape"""
 
     # Initialization of state
-    prep_operation = None if len(tape._prep) == 0 else tape._prep[0]
+    prep_operation = tape[0] if isinstance(tape[0], qml.operation.StatePrep) else None
     ket = create_initial_state(
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else
-    for op in tape._ops:
+    for op in tape.operations[bool(prep_operation): ]:
         ket = apply_operation(op, ket)
 
     return ket
