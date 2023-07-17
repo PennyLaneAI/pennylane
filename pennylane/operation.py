@@ -1033,17 +1033,8 @@ class Operator(abc.ABC):
         """
         self._batch_size = None
 
-        if len(params) == 0:
-            return
-
-        # discriminate between numpy_like `params` to accelerate two lines below
-        numpy_like = all(hasattr(p, "ndim") and hasattr(p, "shape") for p in params)
-
         try:
-            if numpy_like:
-                ndims = tuple(p.ndim for p in params)
-            else:
-                ndims = tuple(qml.math.ndim(p) for p in params)
+            ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
             # TODO:[dwierichs] When using tf.function with an input_signature that contains
             # an unknown-shaped input, ndim() will not be able to determine the number of
@@ -1057,13 +1048,7 @@ class Operator(abc.ABC):
                 return
             raise e
 
-        if numpy_like:
-            batch_unknown = any(ndim >= 1 and p.shape[0] is None for p, ndim in zip(params, ndims))
-        else:
-            batch_unknown = any(
-                ndim >= 1 and qml.math.shape(p)[0] is None for p, ndim in zip(params, ndims)
-            )
-        if batch_unknown:
+        if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
@@ -2861,7 +2846,7 @@ def disable_new_opmath():
     True
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.disable_new_opmath()
+    >>> qml.operation.disable_new_opmath()
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.operation.Tensor'>
     """

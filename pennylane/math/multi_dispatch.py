@@ -25,8 +25,6 @@ from numpy import ndarray
 from . import single_dispatch  # pylint:disable=unused-import
 from .utils import cast, cast_like, get_interface, requires_grad
 
-conj = np.conj
-
 
 # pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
