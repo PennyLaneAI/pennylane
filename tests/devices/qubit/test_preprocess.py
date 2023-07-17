@@ -431,6 +431,43 @@ class TestAdjointDiffTapeValidation:
         assert qml.equal(res[3], qml.PhaseShift(0.2, wires=0))
         assert qml.equal(res[4], qml.PhaseShift(0.1, wires=0))
 
+    def test_trainable_params_decomposed(self):
+        """Test that the trainable parameters of a tape are updated when it is expanded"""
+        ops = [
+            qml.QubitUnitary([[0, 1], [1, 0]], wires=0),
+            qml.CNOT([0, 1]),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+        ]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+
+        # expansion should map trainable params from [0] -> [0, 1, 2]
+        qs.trainable_params = [0]
+        res = validate_and_expand_adjoint(qs)
+        assert isinstance(res, qml.tape.QuantumScript)
+        assert len(res.operations) == 7
+        assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
+        assert qml.equal(res[1], qml.RY(np.pi, 0))
+        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
+        assert qml.equal(res[3], qml.CNOT([0, 1]))
+        assert qml.equal(res[4], qml.RZ(0.1, 0))
+        assert qml.equal(res[5], qml.RY(0.2, 0))
+        assert qml.equal(res[6], qml.RZ(0.3, 0))
+        assert res.trainable_params == [0, 1, 2]
+
+        # expansion should map trainable params from [2, 3] -> [4, 5]
+        qs.trainable_params = [2, 3]
+        res = validate_and_expand_adjoint(qs)
+        assert isinstance(res, qml.tape.QuantumScript)
+        assert len(res.operations) == 7
+        assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
+        assert qml.equal(res[1], qml.RY(np.pi, 0))
+        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
+        assert qml.equal(res[3], qml.CNOT([0, 1]))
+        assert qml.equal(res[4], qml.RZ(0.1, 0))
+        assert qml.equal(res[5], qml.RY(0.2, 0))
+        assert qml.equal(res[6], qml.RZ(0.3, 0))
+        assert res.trainable_params == [4, 5]
+
     def test_unsupported_obs(self):
         """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""
         obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])

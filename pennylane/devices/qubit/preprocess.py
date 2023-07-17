@@ -113,11 +113,10 @@ def validate_and_expand_adjoint(
     """
 
     try:
-        new_ops = [
-            final_op
-            for op in circuit._ops
-            for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
+        decompositions = [
+            list(_operator_decomposition_gen(op, _accepted_adjoint_operator)) for op in circuit._ops
         ]
+        new_ops = [sub_op for decomp in decompositions for sub_op in decomp]
     except RecursionError as e:
         raise DeviceError(
             "Reached recursion limit trying to decompose operations. "
@@ -126,7 +125,6 @@ def validate_and_expand_adjoint(
 
     prep = circuit._prep[:1]
 
-    trainable_params = []
     for k in circuit.trainable_params:
         if hasattr(circuit._par_info[k]["op"], "return_type"):
             warnings.warn(
@@ -138,8 +136,27 @@ def validate_and_expand_adjoint(
                 "to silence this warning.",
                 UserWarning,
             )
-        else:
-            trainable_params.append(k)
+
+    # determine the trainable params of the expanded tape by examining the decompositions
+    # of operators corresponding to trainable params of the old tape
+
+    trainable_params = []
+    old_offset = len(circuit._prep)
+    new_offset = old_offset
+    for op, decomp in zip(circuit._ops, decompositions):
+        num_decomp_params = sum(len(sub_op.data) for sub_op in decomp)
+        trainable = [i for i in range(len(op.data)) if i + old_offset in circuit.trainable_params]
+
+        if len(op.data) == num_decomp_params:
+            trainable_params.extend(i + new_offset for i in trainable)
+        elif trainable:
+            # let every new param be trainable if at least one old param is trainable.
+            # this works around cases such as U2 where we might not know which parameters
+            # of the decomposition corresponds to which parameters of the original op.
+            trainable_params.extend(i + new_offset for i in range(num_decomp_params))
+
+        old_offset += len(op.data)
+        new_offset += num_decomp_params
 
     # Check validity of measurements
     measurements = []

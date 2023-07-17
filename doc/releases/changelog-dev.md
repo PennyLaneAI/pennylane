@@ -134,6 +134,10 @@
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
 
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` now correctly updates the
+  trainable parameters of the expanded tape.
+  []()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
