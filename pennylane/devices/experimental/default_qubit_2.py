@@ -90,7 +90,18 @@ class DefaultQubit2(Device):
     >>> post_processing_fn(results)
 
     If you monitor your CPU usage, you should see 5 new Python processes pop up to
-    crunch through those ``QuantumScript``'s.
+    crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
+    This may happen if a single device already uses many cores, if NumPy uses a multi-
+    threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
+    process times the number of processes should not exceed the number of cores on your
+    machine. You can control the number of threads per process with the environment
+    variables:
+
+    * OMP_NUM_THREADS
+    * MKL_NUM_THREADS
+    * OPENBLAS_NUM_THREADS
+
+    where the last two are specific to the MKL and OpenBLAS libraries specifically.
 
     This device currently supports backpropagation derivatives:
 
