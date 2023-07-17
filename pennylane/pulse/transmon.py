@@ -53,15 +53,15 @@ def transmon_interaction(
 
     .. math::
 
-        H = \sum_{q\in \text{wires}} \omega_q a^\dagger_q a_q
-        + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
-        + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
+        H = \sum_{q\in \text{wires}} \omega_q b^\dagger_q b_q
+        + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(b^\dagger_i b_j + b_j^\dagger b_i \right)
+        + \sum_{q\in \text{wires}} \alpha_q b^\dagger_q b^\dagger_q b_q b_q
 
-    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
+    where :math:`[b^\dagger_p, b_q] = i \delta_{pq}` are creation and annihilation operators.
     The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math:`= \omega_q/ (2\pi)`,
     the second term their ``coupling`` :math:`= g_{ij}/(2\pi)` and the last the
     ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
-    different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
+    different qubits. In practice, these operators are restricted to a finite dimension of the
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
@@ -72,7 +72,7 @@ def transmon_interaction(
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
     `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_, or `arXiv:2210.15812 <https://arxiv.org/abs/2210.15812>`_.
 
-    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
+    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`b:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
     .. seealso::
 
@@ -115,7 +115,8 @@ def transmon_interaction(
     >>> print(H)
     HardwareHamiltonian: terms=10
 
-    We can also provide individual values for each of the qubit energies and coupling strengths, here of order :math:`0.1 \times 2\pi\text{GHz}` and :math:`1 \times 2\pi\text{GHz}`, respectively.
+    We can also provide individual values for each of the qubit energies and coupling strengths,
+    here of order :math:`0.1 \times 2\pi\text{GHz}` and :math:`1 \times 2\pi\text{GHz}`, respectively.
 
     .. code-block::
 
@@ -256,9 +257,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. math::
 
-        \Omega(t) \left(e^{i (\phi(t) + \nu t)} a_q + e^{-i (\phi(t) + \nu t)} a^\dagger_q\right)
+        \Omega(t) \left(e^{i (\phi(t) + \nu t)} b_q + e^{-i (\phi(t) + \nu t)} b^\dagger_q\right)
 
-    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators
+    where :math:`[b^\dagger_p, b_q] = i \delta_{pq}` are creation and annihilation operators
     and :math:`q` is the qubit label (``wires``).
     The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega / (2\pi)`, :math:`\phi`
     and :math:`\nu / (2\pi)`, respectively, and can all be either fixed numbers (``float``) or depend on time
@@ -272,7 +273,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     (see :func:`~.transmon_interaction`).
     The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
-    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`b:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
     .. note:: Due to convention in the respective fields, we omit the factor :math:`\frac{1}{2}` present in the related constructor :func:`~.rydberg_drive`
 
