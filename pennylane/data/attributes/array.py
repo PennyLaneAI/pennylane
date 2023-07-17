@@ -31,7 +31,7 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
 
     type_id = "array"
 
-    def __post_init__(self, value: ArrayLike, info: AttributeInfo | None) -> None:
+    def __post_init__(self, value: ArrayLike, info: Optional[AttributeInfo]) -> None:
         super().__post_init__(value, info)
 
         self.info["array_interface"] = pennylane.math.get_interface(value)
