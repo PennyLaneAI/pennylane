@@ -360,11 +360,12 @@ class TestAdjointJVP:
 
         obs = [
             qml.expval(qml.PauliZ("a")),
+            qml.expval(qml.PauliY("b")),
             qml.expval(qml.PauliX("a")),
-            qml.expval(qml.PauliY("a")),
         ]
-        qs = QuantumScript([qml.RY(x, "a"), qml.RZ(y, "a")], obs)
+        qs = QuantumScript([qml.RY(x, "b"), qml.RX(y, "a")], obs)
         qs.trainable_params = {0, 1}
+        assert qs.wires.tolist() == ["b", "a"]
 
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
@@ -456,11 +457,12 @@ class TestAdjointVJP:
 
         obs = [
             qml.expval(qml.PauliZ("a")),
+            qml.expval(qml.PauliY("b")),
             qml.expval(qml.PauliX("a")),
-            qml.expval(qml.PauliY("a")),
         ]
-        qs = QuantumScript([qml.RY(x, "a"), qml.RZ(y, "a")], obs)
+        qs = QuantumScript([qml.RY(x, "b"), qml.RX(y, "a")], obs)
         qs.trainable_params = {0, 1}
+        assert qs.wires.tolist() == ["b", "a"]
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
