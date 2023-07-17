@@ -111,11 +111,11 @@ class TestFolderMapView:
             ),
         ],
     )
-    def test_find(self, foldermap_, kwds, expect):
+    def test_find(self, foldermap, kwds, expect):
         """Test that the ``find()`` method returns the expected results
         for a range of arguments."""
 
-        assert set(foldermap_.find("qchem", **kwds)) == set(
+        assert set(foldermap.find("qchem", **kwds)) == set(
             (Description(desc), DataPath(path)) for desc, path in expect
         )
 
