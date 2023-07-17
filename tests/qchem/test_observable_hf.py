@@ -198,6 +198,15 @@ def test_fermionic_observable_fs_False(core_constant, integral_one, integral_two
     assert f[1] == f_ref[1]  # fermionic operators
 
 
+def test_fermionic_observable_warning():
+    r"""Test that a warning is raised if `fs = False` in fermionic_observable."""
+    # TODO: remove this test when supporting tuple output by fermionic_observable is deprecated.
+    constant = np.array([1.0])
+    integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
+    with pytest.warns(UserWarning, match="This function will return a fermionic operator"):
+        qchem.fermionic_observable(constant, integral, fs=False)
+
+
 @pytest.mark.parametrize(
     ("core_constant", "integral_one", "integral_two", "f_ref"),
     [
@@ -360,6 +369,14 @@ def test_qubit_observable_tuple_input(f_observable, q_observable):
     assert np.allclose(
         qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref_as_op, wire_order=[0, 1, 2])
     )
+
+
+def test_qubit_observable_warning():
+    r"""Test that a warning is raised if input is not a fermionic operator in qubit_observable."""
+    # TODO: remove this test when supporting tuple input by qubit_observable is deprecated.
+    f = (np.array([1.0, 1.0]), [[2, 0, 2, 0], [2, 0]])
+    with pytest.warns(UserWarning, match="Tuple input for the qubit_observable function is"):
+        qchem.qubit_observable(f)
 
 
 @pytest.mark.parametrize(

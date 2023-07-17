@@ -214,6 +214,16 @@ def test_fermionic_hamiltonian_fs_False(symbols, geometry, alpha, coeffs_h_ref, 
     assert h[1] == ops_h_ref
 
 
+def test_fermionic_hamiltonian_warning():
+    r"""Test that a warning is raised if `fs = False` in fermionic_hamiltonian."""
+    # TODO: remove this test when supporting tuple output by fermionic_hamiltonian is deprecated.
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    mol = qml.qchem.Molecule(symbols, geometry)
+    with pytest.warns(UserWarning, match="This function will return a fermionic operator"):
+        qchem.fermionic_hamiltonian(mol, fs=False)()
+
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "h_ref"),
     [
