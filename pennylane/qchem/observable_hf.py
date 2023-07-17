@@ -16,7 +16,7 @@ This module contains the functions needed for creating fermionic and qubit obser
 """
 import warnings
 
-# pylint: disable= too-many-branches,
+# pylint: disable= too-many-branches, too-many-return-statements
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.fermi import FermiSentence, FermiWord
@@ -172,8 +172,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         if active_new_opmath():
             if not h.wires:
                 return h.operation(wire_order=[0])
-            else:
-                return h.operation()
+            return h.operation()
 
         if not h.wires:
             h = h.hamiltonian(wire_order=[0])
