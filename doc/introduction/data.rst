@@ -31,7 +31,7 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 >>> H2data = H2datasets[0]
 
 We can load datasets for multiple parameter values by providing a list of values instead of a single value.
-To load all possible values, use the special keyword "full".
+To load all possible values, use the special value :const:`~pennylane.data.FULL`.
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
 >>> print(H2datasets)
@@ -131,9 +131,9 @@ array([-1.5, -0.5,  0.5,  1.5])
 We can then write this :class:`~pennylane.data.Dataset` to storage and read it as follows:
 
 
->>> dataset.write("./path/to/dataset.dat")
+>>> dataset.write("./path/to/dataset.h5")
 >>> read_dataset = qml.data.Dataset()
->>> read_dataset.read("./path/to/dataset.dat")
+>>> read_dataset.read("./path/to/dataset.h5")
 >>> read_dataset.data_name
 "Example"
 >>> read_dataset.hamiltonian

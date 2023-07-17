@@ -22,6 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union
+from copy import deepcopy
 
 import requests
 
@@ -144,7 +145,7 @@ def load(  # pylint: disable=too-many-arguments
     return [Dataset.open(dest_path, "r") for dest_path in dest_paths]
 
 
-def list_datasets():
+def list_datasets() -> dict:
     r"""Returns a dictionary of the available datasets.
 
     Return:
@@ -174,7 +175,17 @@ def list_datasets():
                                     'rectangular': ['2x2', '2x4', '2x8', '4x4']}}}}
     """
 
-    return _get_foldermap()
+    def remove_paths(foldermap):
+        """Copies the foldermap, converting the bottom-level mapping of parameters
+        to Paths to a list of the parameters."""
+        value = next(iter(foldermap.values()))
+
+        if not isinstance(value, typing.Mapping):
+            return sorted(foldermap.keys())
+
+        return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}
+
+    return remove_paths(_get_foldermap())
 
 
 def list_attributes(data_name):
