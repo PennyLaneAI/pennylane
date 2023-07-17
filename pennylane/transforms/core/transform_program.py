@@ -156,7 +156,7 @@ class TransformProgram:
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
-        if not self.is_informative:
+        if not self.is_informative():
             raise TransformError("The transform program already has an informative transform.")
         self._transform_program.append(transform_container)
 
@@ -209,7 +209,7 @@ class TransformProgram:
         Returns:
             bool: Boolean
         """
-        return self[-1].is_informative if self else False
+        return self[-1].is_informative() if self else False
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if not self:

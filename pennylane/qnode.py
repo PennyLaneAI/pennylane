@@ -912,8 +912,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
-        # really not sure why pylint is complaining about this
-        if self.transform_program.is_informative:  # pylint: disable=using-constant-test
+        if self.transform_program.is_informative():
             raise NotImplementedError("Informative transform programs are not yet implemented.")
         override_shots = False
         old_interface = self.interface
