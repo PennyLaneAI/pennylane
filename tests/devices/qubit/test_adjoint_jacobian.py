@@ -353,19 +353,20 @@ class TestAdjointJVP:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
-    def test_custom_wire_labels(self, tangents, tol):
+    @pytest.mark.parametrize("wires", [[1, 0], ["a", "b"]])
+    def test_custom_wire_labels(self, tangents, wires, tol):
         """Test JVP is correct for custom wire labels"""
         x = np.array(0.654)
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ("a")),
-            qml.expval(qml.PauliY("b")),
-            qml.expval(qml.PauliX("a")),
+            qml.expval(qml.PauliZ(wires[1])),
+            qml.expval(qml.PauliY(wires[0])),
+            qml.expval(qml.PauliX(wires[1])),
         ]
-        qs = QuantumScript([qml.RY(x, "b"), qml.RX(y, "a")], obs)
+        qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs)
         qs.trainable_params = {0, 1}
-        assert qs.wires.tolist() == ["b", "a"]
+        assert qs.wires.tolist() == wires
 
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
@@ -450,19 +451,20 @@ class TestAdjointVJP:
     @pytest.mark.parametrize(
         "cotangents", [(0, 0, 0), (0, 0.653, 0), (1.236, 0, 0.573), (1.232, 2.963, 1.942)]
     )
-    def test_custom_wire_labels(self, cotangents, tol):
+    @pytest.mark.parametrize("wires", [[1, 0], ["a", "b"]])
+    def test_custom_wire_labels(self, cotangents, wires, tol):
         """Test VJP is correct for custom wire labels"""
         x = np.array(0.654)
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ("a")),
-            qml.expval(qml.PauliY("b")),
-            qml.expval(qml.PauliX("a")),
+            qml.expval(qml.PauliZ(wires[1])),
+            qml.expval(qml.PauliY(wires[0])),
+            qml.expval(qml.PauliX(wires[1])),
         ]
-        qs = QuantumScript([qml.RY(x, "b"), qml.RX(y, "a")], obs)
+        qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs)
         qs.trainable_params = {0, 1}
-        assert qs.wires.tolist() == ["b", "a"]
+        assert qs.wires.tolist() == wires
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
