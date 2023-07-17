@@ -71,6 +71,15 @@ class BasisEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    def _flatten(self):
+        basis_state = self.hyperparameters["basis_state"]
+        basis_state = tuple(basis_state) if isinstance(basis_state, list) else basis_state
+        return tuple(), (self.wires, basis_state)
+
+    @classmethod
+    def _unflatten(cls, _, metadata) -> "BasisEmbedding":
+        return cls(features=metadata[1], wires=metadata[0])
+
     def __init__(self, features, wires, id=None):
         if isinstance(features, list):
             features = qml.math.stack(features)
