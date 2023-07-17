@@ -1006,11 +1006,20 @@ class QuantumScript:
         if not qml.active_return():
             return self._shape_legacy(device)
 
-        shots = (
-            Shots(device._raw_shot_sequence)
-            if device.shot_vector is not None
-            else Shots(device.shots)
-        )
+        if isinstance(device, qml.devices.experimental.Device):
+            # MP.shape (called below) takes 2 arguments: `device` and `shots`.
+            # With the new device interface, shots are stored on tapes rather than the device
+            # As well, MP.shape needs the device largely to see the device wires, and this is
+            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
+            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            shots = self.shots
+            device = self
+        else:
+            shots = (
+                Shots(device._raw_shot_sequence)
+                if device.shot_vector is not None
+                else Shots(device.shots)
+            )
 
         if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
