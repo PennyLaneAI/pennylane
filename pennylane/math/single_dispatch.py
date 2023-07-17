@@ -652,15 +652,10 @@ def _tensordot_torch(tensor1, tensor2, axes):
 ar.register_function("torch", "tensordot", _tensordot_torch)
 
 
-def _ndim_torch(tensor):
-    return tensor.dim()
-
-
 def _size_torch(tensor):
     return tensor.numel()
 
 
-ar.register_function("torch", "ndim", _ndim_torch)
 ar.register_function("torch", "size", _size_torch)
 
 
@@ -712,15 +707,6 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
-
-
-def _ndim_jax(x):
-    import jax.numpy as jnp
-
-    return jnp.ndim(x)
-
-
-ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):
