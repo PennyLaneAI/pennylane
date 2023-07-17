@@ -40,6 +40,13 @@
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
+* The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
+  new `QuantumScript` objects with the provided parameters.
+  [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
+
+* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
+  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
+
 * The experimental device interface is integrated with the `QNode` for Jax jit.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
