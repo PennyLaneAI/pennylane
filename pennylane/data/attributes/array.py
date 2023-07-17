@@ -34,8 +34,15 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
     def __post_init__(self, value: ArrayLike, info: Optional[AttributeInfo]) -> None:
         super().__post_init__(value, info)
 
-        self.info["array_interface"] = pennylane.math.get_interface(value)
-        if hasattr(value, "requires_grad"):
+        array_interface = pennylane.math.get_interface(value)
+        if array_interface not in ("numpy", "autograd"):
+            raise TypeError(
+                f"Expected a 'numpy.ndarray' or 'pennylane.numpy.tensor' array, got '{type(value).__name__}'"
+            )
+
+        self.info["array_interface"] = array_interface
+
+        if array_interface == "autograd":
             self.info["requires_grad"] = value.requires_grad
 
     def hdf5_to_value(self, bind: HDF5Array) -> numpy.ndarray:
