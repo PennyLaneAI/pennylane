@@ -259,6 +259,67 @@ def pauli_decompose_fast(matrix, pauli=False, wire_order=None):
 
     return qml.Hamiltonian(*terms)
 
+def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
+    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators."""
+
+    # Pad with zeros to make the matrix shape equal and a power of two.
+    shape = matrix.shape
+    num_qubits = int(np.ceil(np.log2(max(shape))))
+    if shape[0] != shape[1]:
+        padd_diffs = np.abs(np.array(shape) - 2**num_qubits)
+        padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
+        matrix = np.pad(matrix, padding, mode='constant', constant_values=0)
+
+    shape = matrix.shape
+    if shape[0] != shape[1]:
+        raise ValueError(f"Matrix should be square, got {shape}")
+
+    num_qubits = int(np.log2(shape[0]))
+    if shape[0] != 2**num_qubits:
+        raise ValueError(f"Dimension of the matrix should be a power of 2, got {shape}")
+
+    if wire_order is None or len(wire_order) != num_qubits:
+        wire_map = {wire: wire for wire in range(num_qubits)}
+    else:
+        wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+
+    # Permute by XORing
+    term_mat = np.zeros(shape, dtype=complex)
+    indices = np.array(range(shape[0]))
+    for idx in range(shape[0]):
+        term_mat[idx, :] = matrix[idx, indices]
+        indices ^= (idx + 1) ^ (idx)
+
+    # Hadamard transform
+    # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
+    t1 = time.time()
+    term_mat.shape = (2,) * (2 * num_qubits)
+    for idx in range(num_qubits):
+        index = [slice(None)] * (2 * num_qubits)
+        slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
+        for sc, ic in zip(slices, indice):
+            index[idx + sc] = ic
+            ind.append(tuple(index))
+        a, b, c = ind
+        term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
+        term_mat[c] *= 1j
+    term_mat /= shape[0]
+    term_mat.shape = shape
+    t2 = time.time()
+
+    # Convert to Hamiltonian and PauliSentence
+    terms = ([], [])
+    for pauli_rep in product("IXYZ", repeat=num_qubits):
+        bit_array = np.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
+        coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
+        if coefficient:
+            terms[0].append(coefficient)
+            terms[1].append(qml.pauli.string_to_pauli_word("".join(pauli_rep), wire_map=wire_map))
+
+    if pauli:
+        return qml.pauli.pauli_sentence(qml.Hamiltonian(*terms))
+
+    return qml.Hamiltonian(*terms)
 
 @singledispatch
 def pauli_sentence(op):
