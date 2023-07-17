@@ -66,8 +66,8 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` class are deprecated, and
-  usage will now raise a warning.
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
+  deprecated, and usage will now raise a warning.
 
   - Deprecated in v0.32
   - Will be removed in v0.33

@@ -28,6 +28,15 @@ def test_tapeunwrap_class_deprecation_warning():
         _ = qml.tape.unwrap.UnwrapTape(tape)
 
 
+def test_unwrap_class_deprecation_warning():
+    """Test that a deprecation warning is raised when initializing UnwrapTape"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(UserWarning, match="The Unwrap class is deprecated and will be removed"):
+        _ = qml.tape.unwrap.Unwrap(tape)
+
+
 def test_tapeunwrap_method_deprecation_warning():
     """Test that a deprecation warning is raised when using the tape.unwrap() method"""
     ops = [qml.RX(0.1, 0)]

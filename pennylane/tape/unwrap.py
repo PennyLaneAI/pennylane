@@ -66,6 +66,11 @@ class Unwrap:
     """
 
     def __init__(self, *tapes, params=None):
+        warnings.warn(
+            "The Unwrap class is deprecated and will be removed in PennyLane v0.33. "
+            "Please use qml.transforms.convert_to_numpy_parameters instead."
+        )
+
         self.tapes = tapes
         self.stack = None
         self.params = params
