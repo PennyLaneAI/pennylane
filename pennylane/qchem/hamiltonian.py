@@ -200,6 +200,7 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=True):
         cutoff (float): cutoff value for discarding the negligible electronic integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
+        fs (bool): if True, a fermi sentence is constructed and used internally
 
     Returns:
         function: function that computes the qubit hamiltonian

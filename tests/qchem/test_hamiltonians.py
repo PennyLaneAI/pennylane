@@ -203,8 +203,9 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
         )
     ],
 )
-def test_fermionic_hamiltonian_fsFalse(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
+def test_fermionic_hamiltonian_fs_False(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
     r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+    # TODO: remove this test when supporting tuple output by fermionic_hamiltonian is deprecated.
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
     h = qchem.fermionic_hamiltonian(mol, fs=False)(*args)

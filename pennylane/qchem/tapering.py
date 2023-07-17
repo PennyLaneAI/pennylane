@@ -480,15 +480,13 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
     # convert the HF state to a corresponding HF observable under the JW transform
-    fermop_terms = []
+    ferm_ps = PauliSentence({PauliWord({0: "I"}): 1.0})
     for idx, bit in enumerate(hf):
         if bit:
             ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
             ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
-        fermop_terms.append(ps)
-
-    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms)
+        ferm_ps *= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
