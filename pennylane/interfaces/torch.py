@@ -152,7 +152,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
                     vjps = processing_fn(
-                        execute(
+                        _execute_legacy(
                             vjp_tapes,
                             ctx.device,
                             ctx.execute_fn,
@@ -330,17 +330,12 @@ class ExecuteTapes(torch.autograd.Function):
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
         ctx.tapes = kwargs["tapes"]
-        ctx.device = kwargs["device"]
 
         ctx.execute_fn = kwargs["execute_fn"]
-        ctx.gradient_fn = kwargs["gradient_fn"]
-
-        ctx.gradient_kwargs = kwargs["gradient_kwargs"]
-        ctx.max_diff = kwargs["max_diff"]
-        ctx._n = kwargs.get("_n", 1)
+        ctx.vjp_fn = kwargs["vjp_fn"]
 
         unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-        res, ctx.jacs = ctx.execute_fn(unwrapped_tapes, **ctx.gradient_kwargs)
+        res = ctx.execute_fn(unwrapped_tapes)
 
         # if any input tensor uses the GPU, the output should as well
         ctx.torch_device = None
@@ -350,96 +345,22 @@ class ExecuteTapes(torch.autograd.Function):
                 ctx.torch_device = p.get_device()
                 break
 
-        res = tuple(_res_to_torch(r, ctx) for r in res)
-        for i, _ in enumerate(res):
-            # In place change of the numpy array Jacobians to Torch objects
-            _jac_to_torch(i, ctx)
-
-        return res
+        return tuple(_res_to_torch(r, ctx) for r in res)
 
     @staticmethod
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
-        multi_measurements = [len(tape.measurements) > 1 for tape in ctx.tapes]
 
-        if ctx.jacs:
-            # Jacobians were computed on the forward pass (mode="forward")
-            # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps(dy, ctx.jacs, multi_measurements)
-
-        else:
-            # Need to compute the Jacobians on the backward pass (accumulation="backward")
-
-            if isinstance(ctx.gradient_fn, qml.gradients.gradient_transform):
-                # Gradient function is a gradient transform.
-
-                # Generate and execute the required gradient tapes
-                if ctx._n < ctx.max_diff:
-                    # The derivative order is less than the max derivative order.
-                    # Compute the VJP recursively by using the gradient transform
-                    # and calling ``execute`` to compute the results.
-                    # This will allow higher-order derivatives to be computed
-                    # if requested.
-
-                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        ctx.tapes,
-                        dy,
-                        ctx.gradient_fn,
-                        reduction="extend",
-                        gradient_kwargs=ctx.gradient_kwargs,
-                    )
-                    # This is where the magic happens. Note that we call ``execute``.
-                    # This recursion, coupled with the fact that the gradient transforms
-                    # are differentiable, allows for arbitrary order differentiation.
-                    res = execute(
-                        vjp_tapes,
-                        ctx.device,
-                        ctx.execute_fn,
-                        ctx.gradient_fn,
-                        ctx.gradient_kwargs,
-                        _n=ctx._n + 1,
-                        max_diff=ctx.max_diff,
-                    )
-                    vjps = processing_fn(res)
-
-                else:
-                    # The derivative order is at the maximum. Compute the VJP
-                    # in a non-differentiable manner to reduce overhead.
-                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        unwrapped_tapes,
-                        dy,
-                        ctx.gradient_fn,
-                        reduction="extend",
-                        gradient_kwargs=ctx.gradient_kwargs,
-                    )
-
-                    vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
-
-            else:
-                # Gradient function is not a gradient transform
-                # (e.g., it might be a device method).
-                # Note that unlike the previous branch:
-                #
-                # - there is no recursion here
-                # - gradient_fn is not differentiable
-                #
-                # so we cannot support higher-order derivatives.
-
-                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-                jacs = ctx.gradient_fn(unwrapped_tapes, **ctx.gradient_kwargs)
-
-                vjps = _compute_vjps(dy, jacs, multi_measurements)
-
+        vjps = ctx.vjp_fn.compute_vjp(ctx.tapes, dy)
         # Remove empty vjps (from tape with non trainable params)
-        vjps = [vjp for vjp in vjps if list(vjp.shape) != [0]]
+        vjps = tuple(vjp for vjp in vjps if list(vjp.shape) != [0])
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
-        return (None,) + tuple(vjps)
+        return (None,) + vjps
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(tapes, execute_fn, vjp_fn):
     """Execute a batch of tapes with Torch parameters on a device.
     This function may be called recursively, if ``gradient_fn`` is a differentiable
     transform, and ``_n < max_diff``.
@@ -467,17 +388,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
-    if not qml.active_return():
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
-    # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
         # set the trainable parameters
@@ -485,15 +395,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
-    kwargs = {
-        "tapes": tapes,
-        "device": device,
-        "execute_fn": execute_fn,
-        "gradient_fn": gradient_fn,
-        "gradient_kwargs": gradient_kwargs,
-        "_n": _n,
-        "max_diff": max_diff,
-    }
+    kwargs = {"tapes": tapes, "execute_fn": execute_fn, "vjp_fn": vjp_fn}
 
     return ExecuteTapes.apply(kwargs, *parameters)
 

@@ -748,7 +748,6 @@ class QuantumScript:
             .tape.QuantumScript: New tape with updated parameters
         """
         # pylint: disable=no-member
-
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
 

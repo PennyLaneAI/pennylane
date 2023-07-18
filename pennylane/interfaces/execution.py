@@ -36,6 +36,7 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
+from .jacobian_products import TransformDerivatives, DeviceDerivatives
 
 device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
@@ -279,7 +280,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         if not execution_tapes:
             if not repeated:
                 res = list(cached_results.values())
-                return (res, []) if return_tuple else res
+                return (res, []) if return_tuple else tuple(res)
 
         else:
             # execute all unique tapes that do not exist in the cache
@@ -519,10 +520,12 @@ def execute(
             return device.execute(tapes, execution_config=config)
 
         execute_fn = qml.interfaces.cache_execute(
-            device_execution_with_config, cache, expand_fn=expand_fn
+            device_execution_with_config, cache, expand_fn=expand_fn, return_tuple=False
         )
     else:
-        execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+        execute_fn = qml.interfaces.cache_execute(
+            batch_execute, cache, expand_fn=expand_fn, return_tuple=False
+        )
 
     _grad_on_execution = False
 
@@ -530,38 +533,10 @@ def execute(
         # must be new device if this is specified as true
         _grad_on_execution = config.grad_on_execution
 
+        vjp_fn = DeviceDerivatives(device, config)
+
         if config.grad_on_execution:
-
-            def execute_fn(internal_tapes):
-                """A partial function that wraps the execute_and_compute_derivatives method of the device.
-
-                Closure Variables:
-                    device: The device to execute on
-                    config: the ExecutionConfig that specifies how to perform the simulations.
-                """
-                return device.execute_and_compute_derivatives(internal_tapes, config)
-
-            gradient_fn = None
-
-        else:
-
-            def execute_fn(internal_tapes) -> Tuple[ResultBatch, Tuple]:
-                """A wrapper around device.execute that adds an empty tuple instead of derivatives.
-
-                Closure Variables:
-                    device: the device to execute on
-                    config: the ExecutionConfig that specifies how to perform the simulations.
-                """
-                return (device.execute(internal_tapes, config), tuple())
-
-            def gradient_fn(internal_tapes):
-                """A partial function that wraps compute_derivatives method of the device.
-
-                Closure Variables:
-                    device: the device to execute on
-                    config: the ExecutionConfig that specifies how to take the derivative.
-                """
-                return device.compute_derivatives(internal_tapes, config)
+            execute_fn = vjp_fn
 
     elif gradient_fn == "device":
         # gradient function is a device method
@@ -617,6 +592,10 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
+    else:
+        # a gradient transform
+        vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
+
     mapped_interface = INTERFACE_MAP[config.interface]
     try:
         if mapped_interface == "autograd":
@@ -639,9 +618,7 @@ def execute(
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn(interface, tapes)
 
-        res = _execute(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+        res = _execute(tapes, execute_fn, vjp_fn=vjp_fn)
 
     except ImportError as e:
         raise qml.QuantumFunctionError(
@@ -869,20 +846,20 @@ def _execute_legacy(
         ) from e
     try:
         if mapped_interface == "autograd":
-            from .autograd import execute as _execute
+            from .autograd import _execute_legacy as _execute
         elif mapped_interface == "tf":
             import tensorflow as tf
 
             if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
+                from .tensorflow_autograph import _execute_legacy as _execute
 
                 _grad_on_execution = _mode == "forward"
 
                 _execute = partial(_execute, grad_on_execution=_grad_on_execution)
             else:
-                from .tensorflow import execute as _execute
+                from .tensorflow import _execute_legacy as _execute
         elif mapped_interface == "torch":
-            from .torch import execute as _execute
+            from .torch import _execute_legacy as _execute
         else:  # is jax
             _execute = _get_jax_execute_fn(interface, tapes)
     except ImportError as e:

@@ -369,7 +369,7 @@ def _execute_fwd_legacy(
     return res
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, execute_fn, vjp_fn):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -394,156 +394,26 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     # Set the trainable parameters
-    if _n == 1:
-        for tape in tapes:
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+    for tape in tapes:
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
-
-    if gradient_fn is None:
-        # PennyLane forward execution
-        return _execute_fwd(
-            parameters,
-            tapes,
-            execute_fn,
-            gradient_kwargs,
-            _n=_n,
-        )
-
-    # PennyLane backward execution
-    return _execute_bwd(
-        parameters,
-        tapes,
-        device,
-        execute_fn,
-        gradient_fn,
-        gradient_kwargs,
-        _n=_n,
-        max_diff=max_diff,
-    )
-
-
-def _execute_bwd(
-    params,
-    tapes,
-    device,
-    execute_fn,
-    gradient_fn,
-    gradient_kwargs,
-    _n=1,
-    max_diff=2,
-):
-    """The main interface execution function where jacobians of the execute
-    function are computed by the registered backward function."""
-
-    # pylint: disable=unused-variable
-    # Copy a given tape with operations and set parameters
-
-    if isinstance(device, qml.devices.experimental.Device):
-        # cant test until we integrate device with shot vector
-        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        jvp_shots = None
-    else:
-        has_partitioned_shots = jvp_shots = device.shot_vector
+    has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     @jax.custom_jvp
     def execute_wrapper(params):
         new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-        res, _ = execute_fn(new_tapes, **gradient_kwargs)
+        res = execute_fn(new_tapes)
         return _to_jax_shot_vector(res) if has_partitioned_shots else _to_jax(res)
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            at_max_diff = _n == max_diff
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff)
-            _args = (
-                new_tapes,
-                tangents[0],
-                gradient_fn,
-                jvp_shots,
-            )
-            _kwargs = {
-                "reduction": "append",
-                "gradient_kwargs": gradient_kwargs,
-            }
-            if at_max_diff:
-                jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
-                jvps = processing_fn(execute_fn(jvp_tapes)[0])
-            else:
-                jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0])
+        return vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
 
-                jvps = processing_fn(
-                    execute(
-                        jvp_tapes,
-                        device,
-                        execute_fn,
-                        gradient_fn,
-                        gradient_kwargs,
-                        _n=_n + 1,
-                        max_diff=max_diff,
-                    )
-                )
-            res = execute_wrapper(primals[0])
-        else:
-            # Execution: execute the function first
-            res = execute_wrapper(primals[0])
-            # Backward: Gradient function is a device method.
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0])
-            jacs = gradient_fn(new_tapes, **gradient_kwargs)
-            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
-            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-
-        return res, jvps
-
-    return execute_wrapper(params)
-
-
-def _execute_fwd(
-    params,
-    tapes,
-    execute_fn,
-    gradient_kwargs,
-    _n=1,
-):
-    """The auxiliary execute function for cases when the user requested
-    jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
-    provided. This function does not allow multiple derivatives. It currently does not support shot vectors
-    because adjoint jacobian for default qubit does not support it.."""
-
-    # pylint: disable=unused-variable
-    @jax.custom_jvp
-    def execute_wrapper(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-        res, jacs = execute_fn(new_tapes, **gradient_kwargs)
-        res = _to_jax(res)
-
-        return res, jacs
-
-    @execute_wrapper.defjvp
-    def execute_wrapper_jvp(primals, tangents):
-        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        res, jacs = execute_wrapper(primals[0])
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-
-        jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-        return (res, jacs), (jvps, jacs)
-
-    res, _jacs = execute_wrapper(params)
-    return res
-
-
-def _compute_jvps(jacs, tangents, multi_measurements):
-    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
-    jvps = []
-    for i, multi in enumerate(multi_measurements):
-        compute_func = (
-            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
-        )
-        jvps.append(compute_func(tangents[i], jacs[i]))
-    return tuple(jvps)
+    return _to_jax(execute_wrapper(parameters))
 
 
 def _is_count_result(r):
