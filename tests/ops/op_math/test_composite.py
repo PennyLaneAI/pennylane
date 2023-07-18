@@ -276,6 +276,19 @@ class TestMscMethods:
         for i, operand in enumerate(ops_lst):
             assert op[i] == operand
 
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_flatten_unflatten(self, ops_lst):
+        """Test _flatten and _unflatten."""
+        op = ValidOp(*ops_lst)
+        data, metadata = op._flatten()
+        for data_op, input_op in zip(data, ops_lst):
+            assert data_op is input_op
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+
 
 class TestProperties:
     """Test class properties."""
