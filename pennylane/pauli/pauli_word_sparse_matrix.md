@@ -1,6 +1,6 @@
 # Pauli word sparse representation
 
-Pauli words, a.k.a. Pauli strings, are operatos resulting from the tensor products of Pauli matrices or the identity. Namely:
+Pauli words, a.k.a. Pauli strings, are operators resulting from the tensor products of Pauli matrices or the identity. Namely:
 
 $$
 I = \begin{pmatrix}
