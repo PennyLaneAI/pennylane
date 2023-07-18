@@ -48,7 +48,7 @@ class StronglyEntanglingLayers(Operation):
         wires (Iterable): wires that the template acts on
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if ``None``
                                 using :math:`r=l \mod M` for the :math:`l` th layer and :math:`M` wires.
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+        imprimitive (type of pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Example:
 
