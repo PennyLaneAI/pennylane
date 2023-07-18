@@ -56,9 +56,9 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
                     observables.pop(ind)
                     available_indices.pop(ind)
                     break
-        indices.append(indices_this_group)
+        indices.append(tuple(indices_this_group))
 
-    return indices
+    return tuple(indices)
 
 
 class Hamiltonian(Observable):
@@ -165,6 +165,16 @@ class Hamiltonian(Observable):
     grad_method = "A"  # supports analytic gradients
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
+
+    def _flatten(self):
+        # note that we are unable to restore grouping type or method without creating new properties
+        return (self.data, self._ops), (self.grouping_indices,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls(data[0], data[1])
+        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
+        return new_op
 
     def __init__(
         self,
@@ -325,10 +335,11 @@ class Hamiltonian(Observable):
             or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
         ):
             raise ValueError(
-                f"The grouped index value needs to be a list of lists of integers between 0 and the "
+                f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
                 f"number of observables in the Hamiltonian; got {value}"
             )
-        self._grouping_indices = value
+        # make sure all tuples so can be hashable
+        self._grouping_indices = tuple(tuple(sublist) for sublist in value)
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """

@@ -528,6 +528,11 @@ class QuantumScript:
 
     @data.setter
     def data(self, params):
+        warnings.warn(
+            "The tape.data setter is deprecated and will be removed in v0.33. "
+            "Please use tape.bind_new_parameters instead.",
+            UserWarning,
+        )
         self.set_parameters(params, trainable_only=False)
 
     @property
@@ -693,6 +698,12 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [4, 1, 6]
         """
+        warnings.warn(
+            "The method tape.set_parameters is deprecated and will be removed in v0.33. "
+            "Please use tape.bind_new_parameters instead.",
+            UserWarning,
+        )
+
         if trainable_only:
             iterator = zip(self.trainable_params, params)
             required_length = self.num_params

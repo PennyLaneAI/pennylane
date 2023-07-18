@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation. 
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
 * ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
   ``disable_return``, as the old return system is deprecated along with these switch functions.
 
@@ -69,9 +75,6 @@ Pending deprecations
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
   deprecated, and usage will now raise a warning.
 
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
 
   .. code-block:: python
@@ -85,6 +88,12 @@ Pending deprecations
     torch_params = qscript.get_parameters()
     numpy_params = unwrapped_qscript.get_parameters()
     
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
+  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 Completed deprecation cycles
 ----------------------------

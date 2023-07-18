@@ -6,6 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
+  trainable from untrainable components. These methods will be used in serialization and pytree registration.
+  Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
   as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
@@ -85,6 +90,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation.
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
@@ -101,6 +110,9 @@
   old return system (which is also deprecated). Please use `grad_on_execution` instead.
   [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
 
+* The `QuantumScript.set_parameters` method and the `QuantumScript.data` setter has
+  been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
+  [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
 <h3>Documentation 📝</h3>
 

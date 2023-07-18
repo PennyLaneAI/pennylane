@@ -2063,6 +2063,18 @@ class MultiControlledX(Operation):
 
     grad_method = None
 
+    def _flatten(self):
+        hyperparameters = (
+            ("wires", self.wires),
+            ("control_values", self.hyperparameters["control_values"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+        )
+        return tuple(), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, _, metadata):
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
     def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
         if wires is None:
