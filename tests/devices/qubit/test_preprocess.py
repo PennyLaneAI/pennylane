@@ -443,7 +443,7 @@ class TestAdjointDiffTapeValidation:
         # expansion should map trainable params from [0] -> [0, 1, 2]
         qs.trainable_params = [0]
         res = validate_and_expand_adjoint(qs)
-        assert isinstance(res, qml.tape.QuantumScript)
+        assert isinstance(res, QuantumScript)
         assert len(res.operations) == 7
         assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
         assert qml.equal(res[1], qml.RY(np.pi, 0))
@@ -457,7 +457,7 @@ class TestAdjointDiffTapeValidation:
         # expansion should map trainable params from [2, 3] -> [4, 5]
         qs.trainable_params = [2, 3]
         res = validate_and_expand_adjoint(qs)
-        assert isinstance(res, qml.tape.QuantumScript)
+        assert isinstance(res, QuantumScript)
         assert len(res.operations) == 7
         assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
         assert qml.equal(res[1], qml.RY(np.pi, 0))
@@ -467,6 +467,21 @@ class TestAdjointDiffTapeValidation:
         assert qml.equal(res[5], qml.RY(0.2, 0))
         assert qml.equal(res[6], qml.RZ(0.3, 0))
         assert res.trainable_params == [4, 5]
+
+    def test_u3_non_trainable_params(self):
+        """Test that a warning is raised and all parameters are trainable in the expanded
+        tape when not all parameters in U3 are trainable"""
+        qs = QuantumScript([qml.U3(0.2, 0.4, 0.6, wires=0)], [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = [0, 2]
+
+        with pytest.warns(UserWarning, match="Some non-trainable parameters in U3"):
+            res = validate_and_expand_adjoint(qs)
+
+        assert isinstance(res, QuantumScript)
+
+        # U3 decomposes into 5 operators
+        assert len(res.operations) == 5
+        assert res.trainable_params == [0, 1, 2, 3, 4]
 
     def test_unsupported_obs(self):
         """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""

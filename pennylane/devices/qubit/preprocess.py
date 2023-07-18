@@ -150,6 +150,13 @@ def validate_and_expand_adjoint(
         if len(op.data) == num_decomp_params:
             trainable_params.extend(i + new_offset for i in trainable)
         elif trainable:
+            if len(trainable) < len(op.data):
+                warnings.warn(
+                    f"Some non-trainable parameters in {op.name} will be treated as trainable "
+                    "in the expanded tape due to ambiguities in its decomposition.",
+                    UserWarning,
+                )
+
             # let every new param be trainable if at least one old param is trainable.
             # this works around cases such as U2 where we might not know which parameters
             # of the decomposition corresponds to which parameters of the original op.
