@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation. 
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
 * ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
   ``disable_return``, as the old return system is deprecated along with these switch functions.
 
@@ -62,6 +68,12 @@ Pending deprecations
 
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
   raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
+  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
 
   - Deprecated in v0.32
   - Will be removed in v0.33

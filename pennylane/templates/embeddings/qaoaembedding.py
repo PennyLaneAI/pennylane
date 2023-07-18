@@ -64,7 +64,8 @@ class QAOAEmbedding(Operation):
         features (tensor_like): tensor of features to encode
         weights (tensor_like): tensor of weights
         wires (Iterable): wires that the template acts on
-        local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
+        local_field (str, type): type of local field used, either one of ``'X'``, ``'Y'``, or ``'Z'`` or
+            :class:`~.RX`, :class:`~.RY`, or :class:`~.RZ`.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -166,7 +167,9 @@ class QAOAEmbedding(Operation):
             local_field = qml.RX
         elif local_field == "Y":
             local_field = qml.RY
-        else:
+        elif not (
+            isinstance(local_field, type) and issubclass(local_field, (qml.RX, qml.RY, qml.RZ))
+        ):
             raise ValueError(f"did not recognize local field {local_field}")
 
         shape = qml.math.shape(features)
@@ -230,7 +233,7 @@ class QAOAEmbedding(Operation):
             features (tensor_like): tensor of features to encode
             weights (tensor_like): tensor of weights
             wires (Any or Iterable[Any]): wires that the template acts on
-            local_field (.Operator): class of local field gate
+            local_field (type): type of :class:`~.Operator` for local field gate
 
         Returns:
             list[.Operator]: decomposition of the operator

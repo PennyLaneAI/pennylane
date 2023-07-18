@@ -208,6 +208,13 @@ class Adjoint(SymbolicOp):
     _operation_observable_type = None  # type if base inherits from both operation and observable
     _observable_type = None  # type if base inherits from observable and not operation
 
+    def _flatten(self):
+        return (self.base,), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(data[0])
+
     # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Mixes in parents based on inheritance structure of base.
