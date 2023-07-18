@@ -15,9 +15,8 @@
 
 from typing import Tuple, Type
 
-import numpy as np
-
 from pennylane.data.base.attribute import DatasetAttribute
+from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.qchem import Molecule
 
@@ -32,19 +31,23 @@ class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
         return (Molecule,)
 
     def hdf5_to_value(self, bind: HDF5Group) -> Molecule:
+        mapper = AttributeTypeMapper(bind)
+
         return Molecule(
-            symbols=list(bind["symbols"].asstr()),
-            coordinates=np.array(bind["coordinates"]),
-            charge=int(bind["charge"][()]),
-            mult=int(bind["mult"][()]),
-            basis_name=bind["basis_name"].asstr()[()],
-            l=np.array(bind["l"]),
-            alpha=np.array(bind["alpha"]),
-            coeff=np.array(bind["coeff"]),
+            symbols=mapper["symbols"].get_value(),
+            coordinates=mapper["coordinates"].get_value(),
+            charge=mapper["charge"].get_value(),
+            mult=mapper["mult"].get_value(),
+            basis_name=mapper["basis_name"].get_value(),
+            l=mapper["l"].get_value(),
+            alpha=mapper["alpha"].get_value(),
+            coeff=mapper["coeff"].get_value(),
         )
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Molecule) -> HDF5Group:
         bind = bind_parent.create_group(key)
+
+        bind = AttributeTypeMapper(bind)
 
         bind["symbols"] = value.symbols
         bind["coordinates"] = value.coordinates
@@ -55,4 +58,4 @@ class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
         bind["alpha"] = value.alpha
         bind["coeff"] = value.coeff
 
-        return bind
+        return bind.bind
