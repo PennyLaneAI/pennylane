@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires):  # TODO: Change name to mid_measure
+def measure(wires, reset=False, postselect=None):  # TODO: Change name to mid_measure
     """Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -56,13 +56,19 @@ def measure(wires):  # TODO: Change name to mid_measure
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Mid circuit measurements can be manipulated using the following dunder methods
-    `+`, `-`, `*`, `/`, `~` (not), `&` (and), `|` (or), `==`, `<=`, `>=`, `<`, `>`. With other mid-circuit measurements or scalars.
+    ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``, ``>=``, ``<``, ``>``
+    with other mid-circuit measurements or scalars.
 
     Note:
-        python `not`, `and`, `or`, do not work since these do not have dunder methods. Instead use `~`, `&`, `|`.
+        Python ``not``, ``and``, ``or``, do not work since these do not have dunder methods.
+        Instead use ``~``, ``&``, ``|``.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
+        reset (bool): Whether to reset the measured wire to the :math:`|0>` state.
+            ``False`` by default.
+        postselect (Optional[int]): Which measurement outcome to postselect the circuit on.
+            Can be ``0`` or ``1``. ``None`` by default.
 
     Returns:
         MidMeasureMP: measurement process instance
@@ -78,7 +84,7 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    MidMeasureMP(wires=wire, id=measurement_id)
+    MidMeasureMP(wires=wire, id=measurement_id, reset=reset, postselect=postselect)
     return MeasurementValue([measurement_id], processing_fn=lambda v: v)
 
 
@@ -94,10 +100,14 @@ class MidMeasureMP(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
+            where the instance has to be identified.
+        reset (bool): Whether to reset the measured wire to the :math:`|0>` state.
+            ``False`` by default.
+        postselect (Optional[int]): Which measurement outcome to postselect the circuit on.
+            Can be ``0`` or ``1``. ``None`` by default.
     """
 
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
+    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None, reset: bool = False):
         super().__init__(wires=wires, id=id)
 
     @property
