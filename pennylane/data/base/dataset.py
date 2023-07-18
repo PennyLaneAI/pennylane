@@ -17,7 +17,7 @@ for declaratively defining dataset classes.
 """
 
 import typing
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
 from typing import (
@@ -130,13 +130,11 @@ class Dataset(MapperMixin, _DatasetTransform):
     fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
 
     bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
-    validate: InitVar[bool] = _init_arg(default=False, kw_only=False)
     data_name_: Optional[str] = _init_arg(default=None, alias="data_name")
 
     def __init__(
         self,
         bind: Optional[HDF5Group] = None,
-        validate: bool = False,
         *,
         data_name: Optional[str] = None,
         params: Optional[Tuple[str, ...]] = None,
@@ -149,8 +147,6 @@ class Dataset(MapperMixin, _DatasetTransform):
             bind: The HDF5 group that contains this dataset. If None, a new
                 group will be created in memory. Any attributes that already exist
                 in ``bind`` will be loaded into this dataset.
-            validate: If ``True``, all declared fields of this dataset must
-                be provided in ``attrs`` or contained in ``bind``.
             data_name: String describing the type of data this datasets contains, e.g
                 'qchem' for quantum chemistry. Defaults to the data name defined by
                 the class, this is 'generic' for base datasets.
@@ -174,9 +170,6 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         for name, attr in attrs.items():
             setattr(self, name, attr)
-
-        if validate:
-            self._validate_attrs()
 
     @classmethod
     def open(
@@ -304,20 +297,6 @@ class Dataset(MapperMixin, _DatasetTransform):
             dest.info.update(self.info)
 
         hdf5.copy_all(self.bind, dest.bind, *attributes, on_conflict=on_conflict)
-
-    def _validate_attrs(self) -> None:
-        """Validates that ``attrs`` matched the delcared fields of this
-        dataset."""
-        missing = []
-        for name in self.fields:
-            if name not in self.attrs:
-                missing.append(name)
-
-        if missing:
-            missing_args = ", ".join(f"'{arg}'" for arg in missing)
-            raise TypeError(
-                f"__init__() missing {len(missing)} required keyword argument(s): {missing_args}"
-            )
 
     def _init_bind(self, data_name: Optional[str] = None, params: Optional[Tuple[str, ...]] = None):
         if self.bind.file.mode == "r+":

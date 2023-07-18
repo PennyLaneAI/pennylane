@@ -29,7 +29,6 @@ from pennylane.data.attributes import (
     DatasetString,
 )
 from pennylane.data.base.attribute import AttributeInfo, match_obj_type
-from pennylane.data.base.hdf5 import create_group
 
 
 def _sort_types(types: Iterable[type]) -> List[type]:
@@ -97,47 +96,42 @@ class TestAttributeInfo:
 
         assert info.doc == doc
 
-    @pytest.mark.parametrize("attrs_bind", [None, create_group().attrs])
-    def test_save(self, attrs_bind):
+    def test_save(self):
         """Test that save() copies all items into the other
         AttributeInfo."""
-        x, y = AttributeInfo(py_type="list", data=1), AttributeInfo(attrs_bind, data=2)
+        x, y = AttributeInfo(py_type="list", data=1), AttributeInfo(data=2)
 
         x.save(y)
 
         assert y.py_type == "list"
         assert y["data"] == 1
 
-    @pytest.mark.parametrize("attrs_bind", [None, create_group().attrs])
-    def test_load(self, attrs_bind):
+    def test_load(self):
         """Test the load() copies all items from the other AttributeInfo."""
-        x, y = AttributeInfo(py_type="list", data=1), AttributeInfo(attrs_bind, data=2)
+        x, y = AttributeInfo(py_type="list", data=1), AttributeInfo(data=2)
 
         y.load(x)
 
         assert y.py_type == "list"
         assert y["data"] == 1
 
-    @pytest.mark.parametrize("attrs_bind", [None, create_group().attrs])
-    def test_len(self, attrs_bind):
+    def test_len(self):
         """Test that __iter__ returns the keys and attributes of ``AttributeInfo``."""
 
-        info = AttributeInfo(attrs_bind, py_type="list", data=1)
+        info = AttributeInfo(py_type="list", data=1)
 
         assert set(iter(info)) == {"py_type", "data"}
 
-    @pytest.mark.parametrize("attrs_bind", [None, create_group().attrs])
-    def test_iter(self, attrs_bind):
+    def test_iter(self):
         """Test that __len__ returns the number of items in ``AttributeInfo``."""
 
-        info = AttributeInfo(attrs_bind, py_type="list", doc="docs", data=1)
+        info = AttributeInfo(py_type="list", doc="docs", data=1)
 
         assert len(info) == 3
 
-    @pytest.mark.parametrize("attrs_bind", [None, create_group().attrs])
-    def test_delitem(self, attrs_bind):
+    def test_delitem(self):
         """Test that __delitem__ deletes items and preserves __len__."""
-        info = AttributeInfo(attrs_bind, py_type="list", doc="docs", data=1)
+        info = AttributeInfo(py_type="list", doc="docs", data=1)
 
         del info["py_type"]
         del info["data"]
@@ -145,14 +139,13 @@ class TestAttributeInfo:
         assert len(info) == 1
         assert set(info.keys()) == {"doc"}
 
-    @pytest.mark.parametrize("attrs_bind", [None, create_group().attrs])
     @pytest.mark.parametrize(
         "key, expect", [("py_type", "list"), ("doc", "some_docs"), ("data", 1)]
     )
-    def test_getitem(self, attrs_bind, key, expect):
+    def test_getitem(self, key, expect):
         """Test that __getitem__ returns None if there is no value for a key
         that corresponds to an annotated attribute (e.g 'doc', 'py_type')."""
-        info = AttributeInfo(attrs_bind, py_type="list", doc="some_docs", data=1)
+        info = AttributeInfo(py_type="list", doc="some_docs", data=1)
 
         assert info[key] == expect
 

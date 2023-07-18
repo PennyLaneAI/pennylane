@@ -16,8 +16,8 @@
 from typing import Tuple, Type
 
 from pennylane.data.base.attribute import DatasetAttribute
-from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.hdf5 import HDF5Group
+from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.qchem import Molecule
 
 
