@@ -28,7 +28,7 @@ from pennylane.transforms import convert_to_numpy_parameters
 from pennylane import DeviceError, Snapshot
 
 from . import Device
-from .execution_config import ExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
@@ -38,8 +38,6 @@ QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
-
-DefaultExecutionConfig = ExecutionConfig(device_options={"max_workers": None})
 
 
 class DefaultQubit2(Device):
