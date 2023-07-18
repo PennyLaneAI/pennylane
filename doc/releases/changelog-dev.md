@@ -136,7 +136,7 @@
 
 * `qml.devices.qubit.preprocess.validate_and_expand_adjoint` now correctly updates the
   trainable parameters of the expanded tape.
-  []()
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
 <h3>Contributors ✍️</h3>
 
