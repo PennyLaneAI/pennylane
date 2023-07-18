@@ -339,6 +339,15 @@ class QuantumMonteCarlo(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
+
+        # call operation.__init__ to initialize private properties like _name, _id, _pauli_rep, etc.
+        Operation.__init__(new_op, *data, wires=metadata[0])
+        return new_op
+
     def __init__(self, probs, func, target_wires, estimation_wires, id=None):
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
             raise ValueError("The probability distribution must be specified as a flat array")
