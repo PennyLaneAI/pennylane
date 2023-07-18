@@ -288,11 +288,13 @@ class DefaultQubit2(Device):
     # pylint: disable=missing-function-docstring
     def _get_max_workers(self, execution_config=None):
         max_workers = None
-        if execution_config is not None:
-            if isinstance(execution_config.device_options, dict):
-                if "max_workers" in execution_config.device_options.keys():
-                    max_workers = execution_config.device_options["max_workers"]
-        if max_workers is None:
+        if (
+            execution_config
+            and execution_config.device_options
+            and "max_workers" in execution_config.device_options
+        ):
+            max_workers = execution_config.device_options["max_workers"]
+        else:
             max_workers = self._max_workers
         _validate_multiprocessing_workers(max_workers)
         return max_workers
