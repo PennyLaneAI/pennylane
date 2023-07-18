@@ -61,8 +61,6 @@ class AttributeInfo(MutableMapping):
     attrs_namespace: ClassVar[str] = "qml.data"
     attrs_bind: typing.MutableMapping[str, Any]
 
-    doc: Optional[str]
-
     @overload
     def __init__(  # overload to specify known keyword args
         self,
@@ -102,6 +100,15 @@ class AttributeInfo(MutableMapping):
     def py_type(self, type_: Union[str, Type]):
         self["py_type"] = get_type_str(type_)
 
+    @property
+    def doc(self) -> Optional[str]:
+        """Documentation for this attribute."""
+        return self.get("doc")
+
+    @doc.setter
+    def doc(self, doc: str):
+        self["doc"] = doc
+
     def __len__(self) -> int:
         return self.attrs_bind.get("qml.__data_len__", 0)
 
@@ -120,13 +127,7 @@ class AttributeInfo(MutableMapping):
             self._update_len(1)
 
     def __getitem__(self, __name: str) -> Any:
-        try:
-            return self.attrs_bind[self.bind_key(__name)]
-        except KeyError as exc:
-            if __name in self.__annotations__:
-                return None
-
-            raise KeyError(__name) from exc
+        return self.attrs_bind[self.bind_key(__name)]
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         if __name in self.__class__.__dict__:

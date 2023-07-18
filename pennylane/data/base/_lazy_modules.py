@@ -1,6 +1,5 @@
 """Contains a lazy-loaded interface to the HDF5 module. For internal use only."""
 
-# pragma: no cover
 
 import importlib
 from types import ModuleType
@@ -56,7 +55,6 @@ class lazy_module:  # pylint: disable=too-few-public-methods
                 raise attr_exc from import_exc
 
             self.__submods[__name] = submod
-
             return submod
 
         return resource
