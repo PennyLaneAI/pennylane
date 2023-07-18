@@ -297,8 +297,7 @@ class TestAdjointJVP:
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, np.ndarray)
 
-        jac = adjoint_jacobian(qs)
-        expected = jac * tangents[0]
+        expected = -tangents[0] * np.sin(x)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("tangents", [(0,), (1.232,)])
@@ -313,8 +312,7 @@ class TestAdjointJVP:
         assert len(actual) == 2
         assert all(isinstance(r, np.ndarray) for r in actual)
 
-        jac = adjoint_jacobian(qs)
-        expected = np.array(jac) * tangents[0]
+        expected = tangents[0] * np.array([-np.sin(x), np.cos(x)])
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
@@ -329,8 +327,9 @@ class TestAdjointJVP:
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, np.ndarray)
 
-        jac = adjoint_jacobian(qs)
-        expected = np.dot(np.array(jac), np.array(tangents))
+        expected = np.dot(
+            np.array([np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)]), np.array(tangents)
+        )
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
@@ -348,7 +347,13 @@ class TestAdjointJVP:
         assert len(actual) == 3
         assert all(isinstance(r, np.ndarray) for r in actual)
 
-        jac = np.array(adjoint_jacobian(qs))
+        jac = np.array(
+            [
+                [-np.sin(x), 0],
+                [np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)],
+                [np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)],
+            ]
+        )
         expected = jac @ np.array(tangents)
         assert np.allclose(actual, expected, atol=tol)
 
@@ -360,9 +365,9 @@ class TestAdjointJVP:
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ(wires[1])),
-            qml.expval(qml.PauliY(wires[0])),
-            qml.expval(qml.PauliX(wires[1])),
+            qml.expval(qml.PauliZ(wires[0])),
+            qml.expval(qml.PauliY(wires[1])),
+            qml.expval(qml.PauliX(wires[0])),
         ]
         qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs)
         qs.trainable_params = {0, 1}
@@ -373,7 +378,7 @@ class TestAdjointJVP:
         assert len(actual) == 3
         assert all(isinstance(r, np.ndarray) for r in actual)
 
-        jac = np.array(adjoint_jacobian(qs))
+        jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = jac @ np.array(tangents)
         assert np.allclose(actual, expected, atol=tol)
 
@@ -391,8 +396,7 @@ class TestAdjointVJP:
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, np.ndarray)
 
-        jac = adjoint_jacobian(qs)
-        expected = jac * cotangents[0]
+        expected = -cotangents[0] * np.sin(x)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("cotangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
@@ -405,8 +409,7 @@ class TestAdjointVJP:
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, np.ndarray)
 
-        jac = adjoint_jacobian(qs)
-        expected = np.dot(np.array(jac), np.array(cotangents))
+        expected = np.dot(np.array([-np.sin(x), np.cos(x)]), np.array(cotangents))
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("cotangents", [(0,), (1.232,)])
@@ -423,8 +426,7 @@ class TestAdjointVJP:
         assert len(actual) == 2
         assert all(isinstance(r, np.ndarray) for r in actual)
 
-        jac = adjoint_jacobian(qs)
-        expected = np.array(jac) * cotangents[0]
+        expected = cotangents[0] * np.array([np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)])
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize(
@@ -444,7 +446,13 @@ class TestAdjointVJP:
         assert len(actual) == 2
         assert all(isinstance(r, np.ndarray) for r in actual)
 
-        jac = np.array(adjoint_jacobian(qs))
+        jac = np.array(
+            [
+                [-np.sin(x), 0],
+                [np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)],
+                [np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)],
+            ]
+        )
         expected = np.array(cotangents) @ jac
         assert np.allclose(actual, expected, atol=tol)
 
@@ -458,9 +466,9 @@ class TestAdjointVJP:
         y = np.array(1.221)
 
         obs = [
-            qml.expval(qml.PauliZ(wires[1])),
-            qml.expval(qml.PauliY(wires[0])),
-            qml.expval(qml.PauliX(wires[1])),
+            qml.expval(qml.PauliZ(wires[0])),
+            qml.expval(qml.PauliY(wires[1])),
+            qml.expval(qml.PauliX(wires[0])),
         ]
         qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs)
         qs.trainable_params = {0, 1}
@@ -471,6 +479,6 @@ class TestAdjointVJP:
         assert len(actual) == 2
         assert all(isinstance(r, np.ndarray) for r in actual)
 
-        jac = np.array(adjoint_jacobian(qs))
+        jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = np.array(cotangents) @ jac
         assert np.allclose(actual, expected, atol=tol)
