@@ -506,7 +506,7 @@ class QNode:
         self._update_gradient_fn()
 
     @property
-    def transform_program(self) -> qml.transforms.core.TransformProgram:
+    def transform_program(self) -> "qml.transforms.core.TransformProgram":
         """The transform program used by the QNode.
 
         .. warning:: This is an experimental feature.
@@ -912,7 +912,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
 
-        if self.transform_program.is_informative():
+        if self.transform_program.is_informative:
             raise NotImplementedError("Informative transform programs are not yet implemented.")
         override_shots = False
         old_interface = self.interface
@@ -1021,6 +1021,7 @@ class QNode:
             [self.tape],
             device=self.device,
             gradient_fn=self.gradient_fn,
+            transform_program=self.transform_program,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform program."""
+# pylint: disable=no-member
 from typing import Sequence, Callable
 
 import pytest
@@ -99,7 +100,7 @@ class TestTransformProgramDunders:
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform)
 
-        for _ in range(0, 10):
+        for _ in range(10):
             transform_program.push_back(transform1)
 
         assert len(transform_program) == 10
@@ -258,6 +259,144 @@ class TestTransformProgramCall:
 
         assert new_batch is batch
         assert postprocessing is null_postprocessing
+
+    def test_cotransform_support_notimplemented(self):
+        """Test that a transform with a cotransfrom raises a not implemented error."""
+
+        my_transform = TransformContainer(
+            first_valid_transform, classical_cotransform=lambda res: res
+        )
+
+        prog = TransformProgram((my_transform,))
+
+        batch = (qml.tape.QuantumScript([], [qml.state()]),)
+        with pytest.raises(NotImplementedError, match="cotransforms are not yet supported"):
+            prog(batch)
+
+    def test_single_transform_program(self):
+        """Basic test with a single transform that only modifies the tape but not the results."""
+
+        def single_null_postprocessing(results):
+            return results[0]
+
+        def remove_operation_at_index(
+            tape: qml.tape.QuantumTape, index: int
+        ) -> (Sequence[qml.tape.QuantumTape], Callable):
+            """A valid transform."""
+            new_ops = list(tape.operations)
+            new_ops.pop(index)  # pylint:disable=protected-access
+            return (
+                qml.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots),
+            ), single_null_postprocessing
+
+        container = TransformContainer(remove_operation_at_index, kwargs={"index": 1})
+        prog = TransformProgram((container,))
+
+        tape0 = qml.tape.QuantumScript(
+            [qml.S(0), qml.T(1), qml.SX(2)], [qml.expval(qml.PauliZ(0))], shots=100
+        )
+        batch = (tape0,)
+        new_batch, fn = prog(batch)
+
+        assert len(new_batch) == 1
+        expected = [qml.S(0), qml.SX(2), qml.expval(qml.PauliZ(0))]
+        for op1, op2 in zip(expected, new_batch[0]):
+            assert qml.equal(op1, op2)
+        assert new_batch[0].shots == qml.measurements.Shots(100)
+
+        assert fn.func is _apply_postprocessing_stack
+        assert fn.args == tuple()
+        assert fn.keywords["cotransform_stack"] == [None]
+
+        assert len(fn.keywords["postprocessing_stack"]) == 1
+        postprocessing0 = fn.keywords["postprocessing_stack"][0]
+        assert postprocessing0.func is _batch_postprocessing
+        assert postprocessing0.args == tuple()
+        assert postprocessing0.keywords["individual_fns"] == [single_null_postprocessing]
+
+        results = (2.0,)
+        assert fn(results) == (2.0,)
+
+    def test_chain_two_postprocessings(self):
+        """Test postprocessing functions applied in reverse order."""
+
+        def add_one(results):
+            return results[0] + 1.0
+
+        def scale_two(results):
+            return results[0] * 2.0
+
+        def transform_add(tape: qml.tape.QuantumTape):
+            """A valid transform."""
+            return (tape,), add_one
+
+        def transform_mul(tape: qml.tape.QuantumTape):
+            return (tape,), scale_two
+
+        container1 = TransformContainer(transform_add)
+        container2 = TransformContainer(transform_mul)
+        prog = TransformProgram((container1, container2))
+
+        tape0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))], shots=100)
+        batch = (tape0,)
+        new_batch, fn = prog(batch)
+
+        assert len(new_batch) == 1
+        assert new_batch[0] is tape0
+
+        assert fn.func is _apply_postprocessing_stack
+        assert fn.args == tuple()
+        assert fn.keywords["cotransform_stack"] == [None, None]
+        assert len(fn.keywords["postprocessing_stack"]) == 2
+
+        postprocessing0 = fn.keywords["postprocessing_stack"][0]
+        assert postprocessing0.func is _batch_postprocessing
+        assert postprocessing0.args == tuple()
+        assert postprocessing0.keywords["individual_fns"] == [
+            add_one,
+        ]
+
+        postprocessing1 = fn.keywords["postprocessing_stack"][1]
+        assert postprocessing1.func is _batch_postprocessing
+        assert postprocessing1.args == tuple()
+        assert postprocessing1.keywords["individual_fns"] == [
+            scale_two,
+        ]
+
+        results = (1.0,)
+        expected = (3.0,)  # 2.0 *1.0 + 1.0
+        assert fn(results) == expected
+
+        # Test reverse direction
+
+        prog_reverse = TransformProgram((container2, container1))
+        new_batch, fn = prog_reverse(batch)
+
+        assert len(new_batch) == 1
+        assert new_batch[0] is tape0
+
+        assert fn.func is _apply_postprocessing_stack
+        assert fn.args == tuple()
+        assert fn.keywords["cotransform_stack"] == [None, None]
+        assert len(fn.keywords["postprocessing_stack"]) == 2
+
+        postprocessing0 = fn.keywords["postprocessing_stack"][0]
+        assert postprocessing0.func is _batch_postprocessing
+        assert postprocessing0.args == tuple()
+        assert postprocessing0.keywords["individual_fns"] == [
+            scale_two,
+        ]
+
+        postprocessing1 = fn.keywords["postprocessing_stack"][1]
+        assert postprocessing1.func is _batch_postprocessing
+        assert postprocessing1.args == tuple()
+        assert postprocessing1.keywords["individual_fns"] == [
+            add_one,
+        ]
+
+        results = (1.0,)
+        expected = (4.0,)  # (1.0 + 1.0) * 2.0
+        assert fn(results) == expected
 
 
 class TestTransformProgramIntegration:

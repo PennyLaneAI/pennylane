@@ -15,7 +15,7 @@
 This module contains the transform program class.
 """
 from functools import partial
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, Sequence
 
 from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
@@ -26,7 +26,9 @@ PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
 
 
-def _batch_postprocessing(results: ResultBatch, individual_fns: PostProcessingFn) -> ResultBatch:
+def _batch_postprocessing(
+    results: ResultBatch, individual_fns: List[PostProcessingFn]
+) -> ResultBatch:
     """Broadcast individual post processing functions onto the their respective tapes.
 
     Args:
@@ -122,7 +124,7 @@ class TransformProgram:
 
     """
 
-    def __init__(self, initial_program: Optional["TransformProgram"] = None):
+    def __init__(self, initial_program: Optional[Sequence] = None):
         self._transform_program = list(initial_program) if initial_program else []
 
     def __iter__(self):
@@ -156,7 +158,7 @@ class TransformProgram:
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
-        if not self.is_informative():
+        if self.is_informative:
             raise TransformError("The transform program already has an informative transform.")
         self._transform_program.append(transform_container)
 
@@ -166,7 +168,7 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
-        if transform_container.is_informative() and not self.is_empty():
+        if transform_container.is_informative and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -189,7 +191,7 @@ class TransformProgram:
         Raises:
             TransformError: It raises an error if the program is empty.
         """
-        if not self:
+        if self:
             return self._transform_program[-1]
         raise TransformError(
             "The transform program is empty and you cannot get the last transform container."
@@ -203,13 +205,14 @@ class TransformProgram:
         """
         return len(self) == 0
 
+    @property
     def is_informative(self) -> bool:
         """Check if the transform program is informative or not.
 
         Returns:
             bool: Boolean
         """
-        return self[-1].is_informative() if self else False
+        return self[-1].is_informative if self else False
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if not self:
@@ -220,6 +223,9 @@ class TransformProgram:
         for transform_container in self:
             transform, args, kwargs, cotransform, _ = transform_container
 
+            if cotransform:
+                raise NotImplementedError("cotransforms are not yet supported")
+
             execution_tapes = []
             fns = []
 
@@ -228,7 +234,7 @@ class TransformProgram:
                 execution_tapes.extend(new_tapes)
                 fns.append(fn)
 
-            batch_postprocessing = partial(_batch_postprocessing, inidividual_fns=fns)
+            batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns)
             batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
 
             processing_fns_stack.append(batch_postprocessing)
@@ -240,7 +246,7 @@ class TransformProgram:
         postprocessing_fn = partial(
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,
-            cotransfrom_stack=classical_cotransforms_stack,
+            cotransform_stack=classical_cotransforms_stack,
         )
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
