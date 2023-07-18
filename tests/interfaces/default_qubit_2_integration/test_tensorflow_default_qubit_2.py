@@ -324,8 +324,10 @@ class TestTensorflowExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-            tape.set_parameters([a, b])
-            return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return qml.math.hstack(
+                execute([new_tape], device, **execute_kwargs)[0], like="tensorflow"
+            )
 
         with tf.GradientTape() as t:
             res = cost(a, b)

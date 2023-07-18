@@ -668,9 +668,8 @@ class TestParameterShiftRule:
 
         autograd_val = fn(dev.batch_execute(tapes))
 
-        tape_fwd, tape_bwd = tape.copy(copy_operations=True), tape.copy(copy_operations=True)
-        tape_fwd.set_parameters([theta + np.pi / 2])
-        tape_bwd.set_parameters([theta - np.pi / 2])
+        tape_fwd = tape.bind_new_parameters([theta + np.pi / 2], [1])
+        tape_bwd = tape.bind_new_parameters([theta - np.pi / 2], [1])
 
         shot_vec_manual_res = dev.batch_execute([tape_fwd, tape_bwd])
 
@@ -724,10 +723,10 @@ class TestParameterShiftRule:
             s = np.zeros_like(params)
             s[idx] += np.pi / 2
 
-            tape.set_parameters(params + s)
+            tape = tape.bind_new_parameters(params + s, [1, 2, 3])
             forward = dev.execute(tape)
 
-            tape.set_parameters(params - s)
+            tape = tape.bind_new_parameters(params - s, [1, 2, 3])
             backward = dev.execute(tape)
 
             shot_vec_comp = []

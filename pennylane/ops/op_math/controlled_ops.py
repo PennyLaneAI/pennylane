@@ -102,6 +102,12 @@ class ControlledQubitUnitary(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(
+            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+        )
+
     # pylint: disable= too-many-arguments
     def __init__(
         self,
@@ -173,6 +179,13 @@ class CY(ControlledOp):
 
     grad_method = None
     """Gradient computation method."""
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
 
     def __init__(self, wires, id=None):
         control_wire, wire = wires
@@ -269,6 +282,13 @@ class CZ(ControlledOp):
 
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
 
     def __init__(self, wires):
         control_wire, wire = wires

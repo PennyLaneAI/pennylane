@@ -497,6 +497,13 @@ class FermionicDoubleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
+    def _flatten(self):
+        return self.data, (self.hyperparameters["wires1"], self.hyperparameters["wires2"])
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
+        return cls(data[0], wires1=metadata[0], wires2=metadata[1])
+
     def __init__(self, weight, wires1=None, wires2=None, id=None):
         if len(wires1) < 2:
             raise ValueError(
@@ -513,8 +520,8 @@ class FermionicDoubleExcitation(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-        wires1 = list(wires1)
-        wires2 = list(wires2)
+        wires1 = qml.wires.Wires(wires1)
+        wires2 = qml.wires.Wires(wires2)
 
         self._hyperparameters = {
             "wires1": wires1,

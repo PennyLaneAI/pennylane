@@ -263,6 +263,14 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    def _flatten(self):
+        data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
+        return data, tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _) -> "QSVT":
+        return cls(*data)
+
     def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
