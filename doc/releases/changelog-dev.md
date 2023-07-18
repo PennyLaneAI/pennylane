@@ -130,6 +130,11 @@
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
 
+* The observable data of `qml.GellMann` now includes its index, allowing correct comparison
+  between instances of `qml.GellMann`, as well as Hamiltonians and Tensors
+  containing `qml.GellMann`.
+  [()]()
+
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
