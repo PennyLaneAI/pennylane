@@ -107,8 +107,16 @@ class MidMeasureMP(MeasurementProcess):
             Can be ``0`` or ``1``. ``None`` by default.
     """
 
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None, reset: bool = False):
+    def __init__(
+        self,
+        wires: Optional[Wires] = None,
+        id: Optional[str] = None,
+        reset: bool = False,
+        postselect: Optional[int] = None,
+    ):
         super().__init__(wires=wires, id=id)
+        self.reset = reset
+        self.postselect = postselect
 
     @property
     def return_type(self):

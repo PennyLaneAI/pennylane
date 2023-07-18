@@ -86,6 +86,8 @@ def defer_measurements(tape):
     tensor(-0.49622252, requires_grad=True)
     """
     measured_wires = {}
+    new_wires = {}
+    m_idx = 0
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -94,24 +96,31 @@ def defer_measurements(tape):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     for op in tape:
-        op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
-        if len(op_wires_measured) > 0:
-            raise ValueError(
-                f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
-            )
+        # op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
+        # if len(op_wires_measured) > 0:
+        #     raise ValueError(
+        #         f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
+        #     )
 
         if isinstance(op, MidMeasureMP):
             measured_wires[op.id] = op.wires[0]
+            new_wires[op.id] = f"m{m_idx}"
+            # Add qml.CNOT([op.wires[0], f"m{m_idx}])
+            # if op.reset:
+                # Add qml.CNOT([f"m{m_idx}, op.wires[0]])
+            m_idx += 1
 
         elif op.__class__.__name__ == "Conditional":
-            _add_control_gate(op, measured_wires)
+            _add_control_gate(op, new_wires)
         else:
             apply(op)
 
+    tape._update_circuit_info() # pylint: disable=protected-access
 
-def _add_control_gate(op, measured_wires):
+
+def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    control = [control_wires[m_id] for m_id in op.meas_val.measurement_ids]
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             ctrl(
