@@ -228,6 +228,15 @@ class Controlled(SymbolicOp):
 
     """
 
+    def _flatten(self):
+        return (self.base,), (self.control_wires, tuple(self.control_values), self.work_wires)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(
+            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+        )
+
     # pylint: disable=no-self-argument
     @operation.classproperty
     def __signature__(cls):  # pragma: no cover

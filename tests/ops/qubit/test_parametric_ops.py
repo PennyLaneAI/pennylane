@@ -141,6 +141,16 @@ class TestOperations:
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
+    def test_flatten_unflatten(self, op):
+        """Test that the flatten and unflatten methods work as expected."""
+        _, metadata = op._flatten()
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
