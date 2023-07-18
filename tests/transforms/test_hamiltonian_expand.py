@@ -285,7 +285,7 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
@@ -570,7 +570,7 @@ class TestSumExpand:
 
             qscript = QuantumScript.from_queue(q)
             tapes, fn = sum_expand(qscript)
-            res = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 

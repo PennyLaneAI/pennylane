@@ -215,6 +215,9 @@ class TransformProgram:
         return self[-1].is_informative if self else False
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
+        if self.is_informative:
+            raise NotImplementedError("Informative transforms are not yet supported.")
+
         if not self:
             return tapes, null_postprocessing
         processing_fns_stack = []

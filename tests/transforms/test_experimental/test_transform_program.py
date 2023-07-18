@@ -52,6 +52,8 @@ def second_valid_transform(
 
 
 class TestUtilityHelpers:
+    """test the private functions used in post processing."""
+
     def test_batch_postprocessing(self):
         """Test the _batch_postprocessing helper function."""
         results = (1.0, 2.0, 3.0, 4.0)
@@ -86,6 +88,8 @@ class TestUtilityHelpers:
 
 
 class TestTransformProgramDunders:
+    """Test the dunder methods."""
+
     def test_bool(self):
         """Check that a transform program is falsy if empty and truthy is not."""
         empty_prog = TransformProgram()

@@ -314,7 +314,6 @@ def execute(
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
-    transform_program: Optional["qml.transforms.core.TransformProgram"] = None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[bool, dict, Cache] = True,
@@ -339,8 +338,6 @@ def execute(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        transform_program(pennylane.transforms.core.TransformProgram): The transform program to be applied to the original
-            circuit.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
@@ -439,7 +436,6 @@ def execute(
             device,
             gradient_fn,
             interface=interface,
-            transform_program=transform_program,
             mode=mode,
             gradient_kwargs=gradient_kwargs,
             cache=cache,
@@ -452,8 +448,6 @@ def execute(
         )
 
     ### Specifying and preprocessing variables ####
-
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
 
     if interface == "auto":
         params = []
@@ -489,11 +483,9 @@ def execute(
 
     #### Executing the configured setup #####
 
-    tapes, device_batch_fn, config = _batch_transform(
+    tapes, batch_fn, config = _batch_transform(
         tapes, device, config, override_shots, device_batch_transform
     )
-
-    tapes, transform_program_postprocessing = transform_program(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
@@ -517,8 +509,7 @@ def execute(
             pass_kwargs=new_device_interface,
         )
         results = cached_execute_fn(tapes, execution_config=config)
-        post_processed_results = transform_program_postprocessing(results)
-        return device_batch_fn(post_processed_results)
+        return batch_fn(results)
 
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing
@@ -658,8 +649,7 @@ def execute(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    post_processed_results = transform_program_postprocessing(res)
-    return device_batch_fn(post_processed_results)
+    return batch_fn(res)
 
 
 def _execute_legacy(
@@ -667,7 +657,6 @@ def _execute_legacy(
     device: device_type,
     gradient_fn: Callable = None,
     interface="auto",
-    transform_program: Optional["qml.transforms.core.TransformProgram"] = None,
     mode="best",
     gradient_kwargs=None,
     cache=True,
@@ -691,8 +680,6 @@ def _execute_legacy(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        transform_program(pennylane.transforms.core.TransformProgram): The transform program to be applied to the original
-            circuit.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -785,8 +772,6 @@ def _execute_legacy(
     if isinstance(device, qml.devices.experimental.Device):
         raise ValueError("New device interface only works with return types enabled.")
 
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
-
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -800,8 +785,6 @@ def _execute_legacy(
         tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res
-
-    tapes, transform_program_postprocessing = transform_program(tapes)
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -827,16 +810,14 @@ def _execute_legacy(
             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
         )(unwrapped_tapes)
 
-        res = transform_program_postprocessing(res)
         return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
-        cached_execute = qml.interfaces.cache_execute(
-            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        return batch_fn(
+            qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
         )
-        res = cached_execute(tapes)
-        res = transform_program_postprocessing(res)
-        return batch_fn(res)
 
     # the default execution function is batch_execute
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
@@ -911,7 +892,7 @@ def _execute_legacy(
         ) from e
 
     res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
-    res = transform_program_postprocessing(res)
+
     return batch_fn(res)
 
 

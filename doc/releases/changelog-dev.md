@@ -4,10 +4,13 @@
 
 <h3>New features since last release</h3>
 
-* Transform programs can be executed (forward pass) with ``qml.execute`` and are integrated with ``QNode``.
-  [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
+* Transform programs 
 
 <h3>Improvements 🛠</h3>
+
+* Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
+  and return a new batch of circuits and a single post processing function.
+  [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
