@@ -133,7 +133,7 @@
 * The observable data of `qml.GellMann` now includes its index, allowing correct comparison
   between instances of `qml.GellMann`, as well as Hamiltonians and Tensors
   containing `qml.GellMann`.
-  [()]()
+  [(#4366)](https://github.com/PennyLaneAI/pennylane/pull/4366)
 
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
