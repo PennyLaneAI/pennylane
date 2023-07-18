@@ -75,7 +75,7 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-def test_snapshot_multiprocessing():
+def test_snapshot_multiprocessing_execute():
     """DefaultQubit2 cannot execute tapes with Snapshot if `max_workers` is not `None`"""
     dev = DefaultQubit2(max_workers=2)
 
@@ -89,8 +89,26 @@ def test_snapshot_multiprocessing():
         ],
         [qml.expval(qml.PauliX(0))],
     )
-    with pytest.raises((RuntimeError, qml.DeviceError)):
+    with pytest.raises(RuntimeError, match="ProcessPoolExecutor cannot execute a QuantumScript"):
         dev.execute(tape)
+
+
+def test_snapshot_multiprocessing_qnode():
+    """DefaultQubit2 cannot execute tapes with Snapshot if `max_workers` is not `None`"""
+    dev = DefaultQubit2(max_workers=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Snapshot("tag")
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.Snapshot()
+        return qml.expval(qml.PauliX(0) + qml.PauliY(0))
+
+    with pytest.raises(
+        qml.DeviceError, match="Debugging with ``Snapshots`` is not available with multiprocessing."
+    ):
+        qml.snapshots(circuit)()
 
 
 class TestTracking:

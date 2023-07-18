@@ -305,11 +305,8 @@ class DefaultQubit2(Device):
         Args:
             circuits (QuantumTape_or_Batch): Quantum tapes
         """
-        if self._debugger is not None:  # pragma: no cover
-            if self._debugger.active:
-                raise DeviceError(
-                    "Debugging with ``Snapshots`` is not available with multiprocessing."
-                )
+        if self._debugger and self._debugger.active:
+            raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
 
         def _has_snapshot(circuit):
             return any(isinstance(c, Snapshot) for c in circuit)
