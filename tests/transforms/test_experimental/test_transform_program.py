@@ -264,6 +264,17 @@ class TestTransformProgramCall:
         assert new_batch is batch
         assert postprocessing is null_postprocessing
 
+    def test_informative_transforms_not_supported(self):
+        """Test that a program with an informative raises a `NotImplementedError` on call."""
+        my_transform = TransformContainer(first_valid_transform, is_informative=True)
+        prog = TransformProgram((my_transform,))
+        batch = (qml.tape.QuantumScript([], [qml.state()]),)
+
+        with pytest.raises(
+            NotImplementedError, match="Informative transforms are not yet supported."
+        ):
+            prog(batch)
+
     def test_cotransform_support_notimplemented(self):
         """Test that a transform with a cotransfrom raises a not implemented error."""
 
