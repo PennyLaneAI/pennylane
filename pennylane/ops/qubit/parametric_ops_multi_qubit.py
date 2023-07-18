@@ -260,8 +260,7 @@ class PauliRot(Operation):
             f"The given Pauli word '{pauli_word}' contains characters that are not "
             "allowed. Allowed characters are I, X, Y and Z"
         )
-        invalid_len_msg = (
-        )
+        invalid_len_msg = ()
         num_wires = len(self.wires)
         if isinstance(pauli_word, str):
             if not PauliRot._check_pauli_word(pauli_word):
@@ -269,27 +268,26 @@ class PauliRot(Operation):
                     f"The given Pauli word '{pauli_word}' contains characters that are not "
                     "allowed. Allowed characters are I, X, Y and Z"
                 )
-            if not (_len:=len(pauli_word)) == num_wires:
+            if not (_len := len(pauli_word)) == num_wires:
                 raise ValueError(
                     f"The given Pauli word has length {_len}, length "
                     f"{num_wires} was expected for wires {self.wires}"
                 )
             return
         if self._batch_size and self._batch_size != len(pauli_word):
-            raise ValueError("Cannot batch both") #TODO
+            raise ValueError("Cannot batch both")  # TODO
         if not PauliRot._check_pauli_word("".join(pauli_word)):
             raise ValueError(
                 f"The given Pauli word '{pauli_word}' contains characters that are not "
                 "allowed. Allowed characters are I, X, Y and Z"
             )
-        if not all((_len:=len(w)) == num_wires for w in pauli_word):
+        if not all((_len := len(w)) == num_wires for w in pauli_word):
             raise ValueError(
                 f"The given Pauli word has length {_len}, length "
                 f"{num_wires} was expected for wires {self.wires}"
             )
 
         self._batch_size = len(pauli_word)
-
 
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
@@ -372,7 +370,9 @@ class PauliRot(Operation):
         if not isinstance(pauli_word, str):
             if qml.math.ndim(theta) != 0:
                 assert len(theta) == len(pauli_word)
-                return qml.math.stack([PauliRot.compute_matrix(t, word) for t, word in zip(theta, pauli_word)])
+                return qml.math.stack(
+                    [PauliRot.compute_matrix(t, word) for t, word in zip(theta, pauli_word)]
+                )
             return qml.math.stack([PauliRot.compute_matrix(theta, word) for word in pauli_word])
 
         if not PauliRot._check_pauli_word(pauli_word):

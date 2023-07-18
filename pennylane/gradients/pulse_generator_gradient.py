@@ -226,7 +226,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
     all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
     if use_broadcasting:
-        angles = np.tile([np.pi/2, -np.pi/2], len(pauli_words))
+        angles = np.tile([np.pi / 2, -np.pi / 2], len(pauli_words))
         pauli_words = [w for w in pauli_words for _ in (0, 1)]
         pauli_rots = [qml.PauliRot(angles, pauli_words, wires=op.wires)]
     else:
@@ -265,12 +265,15 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, u
     """
 
     if use_broadcasting:
+
         def _parshift_and_contract_single(res_list, coeffs):
             """Execute the standard parameter-shift rule on a list of results
             and contract with Pauli basis coefficients."""
             psr_deriv = ((res := res_list[0])[::2] - res[1::2]) / 2
             return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
+
     else:
+
         def _parshift_and_contract_single(res_list, coeffs):
             """Execute the standard parameter-shift rule on a list of results
             and contract with Pauli basis coefficients."""
@@ -390,7 +393,9 @@ def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
             # Apply the parameter-shift rule (respecting the tape output formatting)
             # and contract the result with the coefficients of the effective generators
             # in the Pauli basis. This computes the partial derivative.
-            g = _parshift_and_contract(res, coeffs, single_measure, not partitioned_shots, use_broadcasting)
+            g = _parshift_and_contract(
+                res, coeffs, single_measure, not partitioned_shots, use_broadcasting
+            )
             grads.append(g)
 
             # Memorize the parameter shape for the nonzero gradient entry
