@@ -50,6 +50,10 @@
 * The experimental device interface is integrated with the `QNode` for Jax jit.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
+* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
+  the JVP and VJP of a tape using the adjoint method.
+  [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
