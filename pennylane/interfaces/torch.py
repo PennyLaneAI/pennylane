@@ -369,7 +369,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-def execute(tapes, execute_fn, vjp_fn):
+def execute(tapes, execute_fn, vjp_fn, device=None):
     """Execute a batch of tapes with Torch parameters on a device.
     This function may be called recursively, if ``gradient_fn`` is a differentiable
     transform, and ``_n < max_diff``.

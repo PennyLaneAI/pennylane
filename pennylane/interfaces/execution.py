@@ -637,11 +637,13 @@ def execute(
             interface_boundary = _get_interface_boundary(
                 mapped_interface, tapes, _grad_on_execution
             )
-            execute_fn = partial(interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn)
+            execute_fn = partial(
+                interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn, device=device
+            )
             vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
 
     interface_boundary = _get_interface_boundary(mapped_interface, tapes, _grad_on_execution)
-    res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn)
+    res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn, device=device)
     return batch_fn(res)
 
 

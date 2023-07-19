@@ -291,7 +291,7 @@ def _execute_legacy(
     return _execute(*parameters)
 
 
-def execute(tapes, execute_fn, vjp_fn):
+def execute(tapes, execute_fn, vjp_fn, device=None):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:

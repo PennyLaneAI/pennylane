@@ -269,7 +269,7 @@ autograd.extend.defvjp(__execute_legacy, _vjp_legacy, argnums=[0])
 #################
 
 
-def execute(tapes, execute_fn, vjp_fn):
+def execute(tapes, execute_fn, vjp_fn, device=None):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
