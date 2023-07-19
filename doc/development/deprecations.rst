@@ -72,8 +72,33 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
+  deprecated, and usage will now raise a warning.
+
+  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
+
+  .. code-block:: python
+
+    from pennylane.transforms import convert_to_numpy_parameters
+
+    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
+                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    unwrapped_qscript = convert_to_numpy_parameters(qscript)
+
+    torch_params = qscript.get_parameters()
+    numpy_params = unwrapped_qscript.get_parameters()
+    
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
   been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+
+* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  by default.
 
   - Deprecated in v0.32
   - Will be removed in v0.33

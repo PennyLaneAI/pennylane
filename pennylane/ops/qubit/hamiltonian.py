@@ -564,6 +564,8 @@ class Hamiltonian(Observable):
                 parameters = tuple(
                     str(param) for param in ob.parameters
                 )  # Converts params into immutable type
+                if isinstance(ob, qml.GellMann):
+                    parameters += (ob.hyperparameters["index"],)
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
 
