@@ -112,6 +112,10 @@
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
 
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+  are deprecated. Use ``convert_to_numpy_parameters`` instead.
+  [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
+
 * `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
   `disable_return`, as the old return system is deprecated along with these switch functions.
   [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
@@ -161,6 +165,7 @@
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
