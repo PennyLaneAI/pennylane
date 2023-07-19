@@ -11,16 +11,8 @@ where the quantum dataset is a collection of `quantum data` obtained from variou
 
 .. note::
 
-    The packages ``zstd`` and ``dill`` are required to use the :mod:`~pennylane.data` module. 
-    These can be installed with ``pip install zstd dill``.
-
-.. warning::
-    
-        PennyLane datasets use the ``dill`` module to compress, store, and read data. Since ``dill``
-        is built on the ``pickle`` module, we reproduce an important warning from the ``pickle``
-        module: it is possible to construct malicious pickle data which will execute arbitrary code
-        during unpickling. Never unpickle data that could have come from an untrusted source, or
-        that could have been tampered with.
+    The packages ``aiohttp``, ``fsspec``, and ``h5py`` are required to use the :mod:`~pennylane.data` module. 
+    These can be installed with ``pip install aiohttp fsspec h5py``.
 
 Loading Datasets in PennyLane
 -----------------------------
@@ -39,7 +31,7 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 >>> H2data = H2datasets[0]
 
 We can load datasets for multiple parameter values by providing a list of values instead of a single value.
-To load all possible values, use the special keyword "full".
+To load all possible values, use the special value :const:`~pennylane.data.FULL`.
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
 >>> print(H2datasets)
@@ -139,9 +131,9 @@ array([-1.5, -0.5,  0.5,  1.5])
 We can then write this :class:`~pennylane.data.Dataset` to storage and read it as follows:
 
 
->>> dataset.write("./path/to/dataset.dat")
+>>> dataset.write("./path/to/dataset.h5")
 >>> read_dataset = qml.data.Dataset()
->>> read_dataset.read("./path/to/dataset.dat")
+>>> read_dataset.read("./path/to/dataset.h5")
 >>> read_dataset.data_name
 "Example"
 >>> read_dataset.hamiltonian
