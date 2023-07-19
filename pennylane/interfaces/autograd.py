@@ -337,7 +337,6 @@ def _execute(
     - ``tapes`` is a *required* argument
 
     """
-    tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
     return execute_fn(tapes)
 
 
@@ -379,7 +378,9 @@ def vjp(
         vjps = vjp_fn.compute_vjp(tapes, dy)
 
         # not sure what this post processing is for
-        return tuple(qml.math.to_numpy(v) if isinstance(v, ArrayBox) else v for v in vjps)
+        return tuple(
+            qml.math.to_numpy(v, max_depth=3) if isinstance(v, ArrayBox) else v for v in vjps
+        )
 
     return grad_fn
 
