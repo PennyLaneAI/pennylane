@@ -403,14 +403,14 @@ def execute(tapes, execute_fn, vjp_fn):
 
     @jax.custom_jvp
     def execute_wrapper(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
         res = execute_fn(new_tapes)
         return _to_jax_shot_vector(res) if has_partitioned_shots else _to_jax(res)
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0])
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
         return vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
 
     return _to_jax(execute_wrapper(parameters))

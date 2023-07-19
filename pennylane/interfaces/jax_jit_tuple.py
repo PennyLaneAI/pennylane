@@ -110,7 +110,7 @@ def _filter_zeros_tangents(tangents):
     return non_zeros_tangents
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(tapes, execute_fn, vjp_fn):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -149,48 +149,28 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
-    if gradient_fn is None:
-        return _execute_fwd(
-            parameters,
-            tapes=tapes,
-            device=device,
-            execute_fn=execute_fn,
-            gradient_kwargs=gradient_kwargs,
-            _n=_n,
-        )
-
     return _execute_bwd(
         parameters,
         tapes=tapes,
-        device=device,
         execute_fn=execute_fn,
-        gradient_fn=gradient_fn,
-        gradient_kwargs=gradient_kwargs,
-        _n=_n,
-        max_diff=max_diff,
+        vjp_fn=vjp_fn,
     )
 
 
 def _execute_bwd(
     params,
     tapes=None,
-    device=None,
     execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
-    _n=1,
-    max_diff=2,
-):  # pylint: disable=dangerous-default-value,unused-argument
-    is_experimental_device = isinstance(device, qml.devices.experimental.Device)
-
+    vjp_fn=None,
+):  # pylint: disable=unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
 
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
-            res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p, unwrap=False)
+            res = execute_fn(new_tapes)
             res = tuple(res)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
