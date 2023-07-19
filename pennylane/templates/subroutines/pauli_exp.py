@@ -69,5 +69,5 @@ class PauliExp(Operation):
                 decomp_ops.append(qml.Hadamard(wires=wires[i]))
                 decomp_ops.append(qml.S(wires=wires[i]))
 
-        return decomp_ops
+        return decomp_ops 
 
