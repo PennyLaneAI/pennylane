@@ -39,6 +39,9 @@
 * Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
+* The `qchem` module is upgraded to use the fermionic operators of the `fermi` module.
+  [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
+
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
@@ -157,8 +160,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Soran Jahangiri,
 Isaac De Vlugt,
+Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Vincent Michaud-Rioux,
