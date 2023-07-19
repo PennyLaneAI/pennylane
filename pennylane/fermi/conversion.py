@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functions to convert a fermionic operator to the qubit basis."""
 
+import warnings
 from functools import singledispatch
 from typing import Union
 import numpy as np
@@ -164,6 +165,12 @@ def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
+
+    warnings.warn(
+        "List input for the jordan_wigner function is deprecated; please use the fermionic operators format. For "
+        "details, see the Fermionic Operators tutorial: https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+    )
+
     if len(op) == 1:
         op = [(op[0], 1)]
 
