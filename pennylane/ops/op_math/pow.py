@@ -158,6 +158,13 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    def _flatten(self):
+        return (self.base, self.z), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return pow(data[0], z=data[1])
+
     _operation_type = None  # type if base inherits from operation and not observable
     _operation_observable_type = None  # type if base inherits from both operation and observable
     _observable_type = None  # type if base inherits from observable and not oepration

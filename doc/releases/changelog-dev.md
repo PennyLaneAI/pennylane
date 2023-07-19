@@ -6,6 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
+  trainable from untrainable components. These methods will be used in serialization and pytree registration.
+  Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
   as in `gradients.hadamard_grad`. Support all valid wire input formats for `aux_wire`.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
@@ -53,6 +58,10 @@
 * The experimental device interface is integrated with the `QNode` for Jax jit.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
+* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
+  the JVP and VJP of a tape using the adjoint method.
+  [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -88,6 +97,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation.
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
@@ -106,6 +119,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
+  [#4327](https://github.com/PennyLaneAI/pennylane/pull/4327)
+
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
   [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
 
@@ -123,6 +139,11 @@
 
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
+
+* The observable data of `qml.GellMann` now includes its index, allowing correct comparison
+  between instances of `qml.GellMann`, as well as Hamiltonians and Tensors
+  containing `qml.GellMann`.
+  [(#4366)](https://github.com/PennyLaneAI/pennylane/pull/4366)
 
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
