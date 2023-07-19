@@ -384,6 +384,7 @@ class QNode:
         device: Union[Device, "qml.devices.experimental.Device"],
         interface="auto",
         diff_method="best",
+        shots=None,
         expansion_strategy="gradient",
         max_expansion=10,
         grad_on_execution="best",
@@ -450,6 +451,7 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
+        self._shots = qml.measurements.Shots(shots)
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -489,6 +491,15 @@ class QNode:
             self.interface,
             self.diff_method,
         )
+
+    @property
+    def default_shots(self) -> qml.measurements.Shots:
+        """The default shots to use for an execution.
+
+        Can be overridden on a per-call basis using the ``qnode(*args, shots=new_shots, **kwargs)`` syntax.
+
+        """
+        return self._shots
 
     @property
     def interface(self):
@@ -828,14 +839,7 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
-        if not self._qfunc_uses_shots_arg:
-            shots = kwargs.pop("shots", None)
-        else:
-            shots = (
-                self._original_device._raw_shot_sequence
-                if self._original_device._shot_vector
-                else self._original_device.shots
-            )
+        shots = self._shots if self._qfunc_uses_shots_arg else kwargs.pop("shots", self._shots)
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -918,35 +922,24 @@ class QNode:
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
             self.device.tracker = self._original_device.tracker
 
+        original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
         if not self._qfunc_uses_shots_arg:
-            # If shots specified in call but not in qfunc signature,
-            # interpret it as device shots value for this call.
-            override_shots = kwargs.get("shots", False)
+            # takes in override shots
 
-            if override_shots is not False:
+            if "shots" in kwargs:
                 # Since shots has changed, we need to update the preferred gradient function.
                 # This is because the gradient function chosen at initialization may
                 # no longer be applicable.
 
-                # store the initialization gradient function
-                original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
-
                 # pylint: disable=not-callable
                 # update the gradient function
                 if isinstance(self._original_device, Device):
-                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
+                    set_shots(self._original_device, kwargs["shots"])(self._update_gradient_fn)()
                 else:
-                    self._update_gradient_fn(shots=override_shots)
+                    self._update_gradient_fn(shots=kwargs["shots"])
 
             else:
-                if isinstance(self._original_device, Device):
-                    kwargs["shots"] = (
-                        self._original_device._raw_shot_sequence
-                        if self._original_device._shot_vector
-                        else self._original_device.shots
-                    )
-                else:
-                    kwargs["shots"] = None
+                kwargs["shots"] = self._shots
 
         # construct the tape
         self.construct(args, kwargs)
@@ -996,9 +989,8 @@ class QNode:
                 else:
                     res = type(self.tape._qfunc_output)(res)
 
-            if override_shots is not False:
-                # restore the initialization gradient function
-                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+            # restore the initialization gradient function
+            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
             self._update_original_device()
 
