@@ -23,6 +23,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
 def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":

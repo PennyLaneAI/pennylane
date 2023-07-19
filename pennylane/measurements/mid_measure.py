@@ -84,8 +84,9 @@ def measure(wires, reset=False, postselect=None):  # TODO: Change name to mid_me
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    MidMeasureMP(wires=wire, id=measurement_id, reset=reset, postselect=postselect)
-    return MeasurementValue([measurement_id], processing_fn=lambda v: v)
+    mv = MeasurementValue([measurement_id], processing_fn=lambda v: v)
+    mp = MidMeasureMP(wires=wire, value=mv, id=measurement_id, reset=reset, postselect=postselect)
+    return mv
 
 
 T = TypeVar("T")
@@ -99,6 +100,7 @@ class MidMeasureMP(MeasurementProcess):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        value (MeasurementValue): object storing measurement outcome.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified.
         reset (bool): Whether to reset the measured wire to the :math:`|0>` state.
@@ -110,11 +112,13 @@ class MidMeasureMP(MeasurementProcess):
     def __init__(
         self,
         wires: Optional[Wires] = None,
+        value: "MeasurementValue" = None,
         id: Optional[str] = None,
         reset: bool = False,
         postselect: Optional[int] = None,
     ):
         super().__init__(wires=wires, id=id)
+        self.value = value
         self.reset = reset
         self.postselect = postselect
 
@@ -147,7 +151,10 @@ class MeasurementValue(Generic[T]):
 
     def __init__(self, measurement_ids, processing_fn):
         self.measurement_ids = measurement_ids
+        # self.mid_measures = mid_measures
+        # self.measurement_ids = [m.id for m in mid_measures]
         self.processing_fn = processing_fn
+        self.wires = None
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
@@ -225,9 +232,15 @@ class MeasurementValue(Generic[T]):
     def __or__(self, other):
         return self._transform_bin_op(lambda a, b: a or b, other)
 
+    def __matmul__(self, other):
+        mv = self._merge(other)
+        mv.wires = self.wires + other.wires
+        return mv
+
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
+        # return MeasurementValue(self.mid_measures, lambda *x: fn(self.processing_fn(*x)))
 
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""

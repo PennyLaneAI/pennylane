@@ -85,9 +85,7 @@ def defer_measurements(tape):
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
     """
-    measured_wires = {}
     new_wires = {}
-    m_idx = 0
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -95,27 +93,24 @@ def defer_measurements(tape):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
+    # Current wire in which pre-measurement state will be saved
+    new_wire_latest = tape.num_wires
     for op in tape:
-        # op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
-        # if len(op_wires_measured) > 0:
-        #     raise ValueError(
-        #         f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
-        #     )
 
         if isinstance(op, MidMeasureMP):
-            measured_wires[op.id] = op.wires[0]
-            new_wires[op.id] = f"m{m_idx}"
-            # Add qml.CNOT([op.wires[0], f"m{m_idx}])
-            # if op.reset:
-                # Add qml.CNOT([f"m{m_idx}, op.wires[0]])
-            m_idx += 1
+            new_wires[op.id] = new_wire_latest
+            apply(qml.CNOT([op.wires[0], new_wire_latest]))
+
+            if op.reset:
+                apply(qml.CNOT([new_wire_latest, op.wires[0]]))
+            new_wire_latest += 1
+
+            op.value.wires = Wires(new_wire_latest)
 
         elif op.__class__.__name__ == "Conditional":
             _add_control_gate(op, new_wires)
         else:
             apply(op)
-
-    tape._update_circuit_info() # pylint: disable=protected-access
 
 
 def _add_control_gate(op, control_wires):

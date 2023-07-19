@@ -22,6 +22,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
 def _sample_to_str(sample):
@@ -131,7 +132,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
+    if op is not None and not isinstance(op, MeasurementValue) and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:

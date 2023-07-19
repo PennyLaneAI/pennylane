@@ -23,6 +23,7 @@ from pennylane.ops import Projector
 from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
+from .mid_measure import MeasurementValue
 
 
 def expval(op: Operator):
@@ -52,7 +53,7 @@ def expval(op: Operator):
     Returns:
         ExpectationMP: measurement process instance
     """
-    if not op.is_hermitian:
+    if not isinstance(op, MeasurementValue) and not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
     return ExpectationMP(obs=op)
@@ -127,7 +128,12 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx]
-        eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
+
+        if self.mid_measure:
+            eigvals = qml.math.arange(0, 2**len(self.wires))
+        else:
+            eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
+
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
         prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)

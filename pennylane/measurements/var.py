@@ -24,6 +24,7 @@ from pennylane.ops import Projector
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
+from .mid_measure import MeasurementValue
 
 
 def var(op: Operator) -> "VarianceMP":
@@ -53,7 +54,7 @@ def var(op: Operator) -> "VarianceMP":
     >>> circuit(0.5)
     0.7701511529340698
     """
-    if not op.is_hermitian:
+    if not isinstance(op, MeasurementValue) and not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
     return VarianceMP(obs=op)
 
@@ -133,7 +134,10 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx] - probs[idx] ** 2
 
-        eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
+        if self.mid_measure:
+            eigvals = qml.math.arange(0, 2**len(self.wires))
+        else:
+            eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
 
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state

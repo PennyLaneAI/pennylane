@@ -21,6 +21,7 @@ from pennylane import numpy as np
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .mid_measure import MeasurementValue
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
@@ -99,7 +100,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
 
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
+    if op is not None and not isinstance(op, MeasurementValue) and not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
