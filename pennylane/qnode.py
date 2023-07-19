@@ -444,6 +444,13 @@ class QNode:
                 UserWarning,
             )
 
+        if hasattr(device, "shots") and device.shots != shots and not device.shots and not shots:
+            warnings.warn(
+                "Shots should now be specified on the qnode instead of on the device."
+                "Using shots from the device. QNode specified shots will be used in v0.33."
+            )
+            shots = device.shots
+
         # input arguments
         self.func = func
         self.device = device
