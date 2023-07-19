@@ -153,6 +153,9 @@ class TransformDerivatives(DerivativeExecutor):
 
     """
 
+    def __repr__(self):
+        return f"TransformDerivatives({self._inner_execute}, gradient_transform={self._gradient_transform}, gradient_kwargs={self._gradient_kwargs})"
+
     def __init__(
         self,
         inner_execute: Callable,
@@ -192,9 +195,8 @@ class TransformDerivatives(DerivativeExecutor):
     def execute_and_compute_vjp(self, tapes, dy) -> Tuple[ResultBatch, Tuple]:
         num_result_tapes = len(tapes)
 
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         jvp_tapes, vjp_processing_fn = qml.gradients.batch_vjp(
-            numpy_tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
+            tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
 
         full_batch = tuple(tapes) + tuple(jvp_tapes)
@@ -208,9 +210,8 @@ class TransformDerivatives(DerivativeExecutor):
         return tuple(results), tuple(vjps)
 
     def compute_vjp(self, tapes, dy):
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-            numpy_tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
+            tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
 
         vjp_results = self._inner_execute(vjp_tapes)
@@ -315,8 +316,7 @@ class DeviceDerivatives(DerivativeExecutor):
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
 
         if tapes not in self._jacobian_cache:
-            unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-            jacs = self._device.compute_derivatives(unwrapped_tapes, self._execution_config)
+            jacs = self._device.compute_derivatives(tapes, self._execution_config)
             self._jacobian_cache[tapes] = jacs
 
         return _compute_vjps(dy, self._jacobian_cache[tapes], multi_measurements)

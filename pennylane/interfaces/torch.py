@@ -330,7 +330,7 @@ class ExecuteTapes(torch.autograd.Function):
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
         ctx.tapes = kwargs["tapes"]
-
+        print("forward parameters: ", parameters)
         ctx.execute_fn = kwargs["execute_fn"]
         ctx.vjp_fn = kwargs["vjp_fn"]
 
@@ -353,8 +353,17 @@ class ExecuteTapes(torch.autograd.Function):
         parameter values p and output gradient dy"""
 
         vjps = ctx.vjp_fn.compute_vjp(ctx.tapes, dy)
+
+        # split tensor into separate entries
+        print("here: ", vjps)
+        unpacked_vjps = []
+        for vjp_slice in vjps:
+            if vjp_slice is not None and list(vjp_slice.shape) != [0]:
+                unpacked_vjps.extend(vjp_slice)
+        vjps = tuple(unpacked_vjps)
+
         # Remove empty vjps (from tape with non trainable params)
-        vjps = tuple(vjp for vjp in vjps if list(vjp.shape) != [0])
+        # vjps = tuple(vjp for vjp in vjps if list(vjp.shape) != [0])
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
         return (None,) + vjps

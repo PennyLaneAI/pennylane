@@ -166,6 +166,38 @@ def _preprocess_expand_fn(
     return device_expansion_function
 
 
+def _get_interface_boundary(interface: str, tapes, grad_on_execution):
+
+    try:
+        if interface == "autograd":
+            from .autograd import execute as _execute
+
+        elif interface == "tf":
+            import tensorflow as tf
+
+            if not tf.executing_eagerly() or "autograph" in interface:
+                from .tensorflow_autograph import execute as _execute
+
+                _execute = partial(_execute, grad_on_execution=grad_on_execution)
+
+            else:
+                from .tensorflow import execute as _execute
+
+        elif interface == "torch":
+            from .torch import execute as _execute
+
+        elif interface == "jax":
+            _execute = _get_jax_execute_fn(interface, tapes)
+
+    except ImportError as e:
+        raise qml.QuantumFunctionError(
+            f"{interface} not found. Please install the latest "
+            f"version of {interface} to enable the '{interface}' interface."
+        ) from e
+
+    return _execute
+
+
 def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
@@ -457,9 +489,7 @@ def execute(
         interface = qml.math.get_interface(*params)
 
     new_device_interface = isinstance(device, qml.devices.experimental.Device)
-    if gradient_fn is None:
-        _gradient_method = None
-    elif isinstance(gradient_fn, str):
+    if gradient_fn is None or isinstance(gradient_fn, str):
         _gradient_method = gradient_fn
     else:
         _gradient_method = "gradient-transform"
@@ -469,6 +499,8 @@ def execute(
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
     )
     gradient_kwargs = gradient_kwargs or {}
+
+    mapped_interface = INTERFACE_MAP[config.interface]
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -517,15 +549,21 @@ def execute(
     if new_device_interface:
 
         def device_execution_with_config(tapes):
+            tapes = tuple(expand_fn(t) for t in tapes)
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             return device.execute(tapes, execution_config=config)
 
         execute_fn = qml.interfaces.cache_execute(
-            device_execution_with_config, cache, expand_fn=expand_fn, return_tuple=False
+            device_execution_with_config, cache, return_tuple=False
         )
     else:
-        execute_fn = qml.interfaces.cache_execute(
-            batch_execute, cache, expand_fn=expand_fn, return_tuple=False
-        )
+
+        def inner_execute(tapes):
+            tapes = tuple(expand_fn(t) for t in tapes)
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            return batch_execute(tapes)
+
+        execute_fn = qml.interfaces.cache_execute(inner_execute, cache, return_tuple=False)
 
     _grad_on_execution = False
 
@@ -595,37 +633,15 @@ def execute(
     else:
         # a gradient transform
         vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
+        if max_diff == 2:
+            interface_boundary = _get_interface_boundary(
+                mapped_interface, tapes, _grad_on_execution
+            )
+            execute_fn = partial(interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn)
+            vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
 
-    mapped_interface = INTERFACE_MAP[config.interface]
-    try:
-        if mapped_interface == "autograd":
-            from .autograd import execute as _execute
-
-        elif mapped_interface == "tf":
-            import tensorflow as tf
-
-            if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
-
-                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
-
-            else:
-                from .tensorflow import execute as _execute
-
-        elif mapped_interface == "torch":
-            from .torch import execute as _execute
-
-        elif mapped_interface == "jax":
-            _execute = _get_jax_execute_fn(interface, tapes)
-
-        res = _execute(tapes, execute_fn, vjp_fn=vjp_fn)
-
-    except ImportError as e:
-        raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
-        ) from e
-
+    interface_boundary = _get_interface_boundary(mapped_interface, tapes, _grad_on_execution)
+    res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn)
     return batch_fn(res)
 
 
