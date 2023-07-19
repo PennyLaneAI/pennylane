@@ -4,14 +4,14 @@
 
 <h3>New features since last release</h3>
 
-<h3>Improvements 🛠</h3>
-
 * `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
   A `ProcessPoolExecutor` executes tapes asynchronously
   using a pool of at most `max_workers` processes. If `max_workers` is `None`
   or not given, only the current process executes tapes. If you experience any
   issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
+
+<h3>Improvements 🛠</h3>
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
