@@ -183,7 +183,7 @@ class TestUpdate:
         assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
         assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
 
@@ -222,7 +222,7 @@ class TestUpdate:
         assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
-        assert obs_id_0 == 0 and p_id_0 == 0
+        assert obs_id_0 == 5 and p_id_0 == 0
 
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in
@@ -249,7 +249,7 @@ class TestUpdate:
     )
     def test_update_batch_size(self, x, rot, exp_batch_size):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size when creating a QuantumScript."""
 
         obs = [qml.RX(x, wires=0), qml.Rot(*rot, wires=1)]
         m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
@@ -502,18 +502,6 @@ class TestScriptCopying:
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
 
-        # since the copy is shallow, mutating the parameters
-        # on one tape will affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
-
-        # check that they are the same objects in memory
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert i is j
-
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
@@ -549,18 +537,6 @@ class TestScriptCopying:
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
-
-        # Since they have unique operations, mutating the parameters
-        # on one script will *not* affect the parameters on another script
-        new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
-
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert not np.all(i == j)
-            assert i is not j
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""

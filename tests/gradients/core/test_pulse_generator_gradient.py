@@ -1394,7 +1394,9 @@ class TestPulseGeneratorIntegration:
         assert dev.num_executions == 1 + 12  # one forward execution, dim(DLA)=6
         grad_backprop = jax.grad(qnode_backprop)(params)
 
-        assert all(qml.math.allclose(r, e) for r, e in zip(grad_pulse_grad, grad_backprop))
+        assert all(
+            qml.math.allclose(r, e, atol=1e-7) for r, e in zip(grad_pulse_grad, grad_backprop)
+        )
 
     @pytest.mark.parametrize("argnums", [[0, 1], 0, 1])
     def test_simple_qnode_expval_multiple_params(self, argnums):

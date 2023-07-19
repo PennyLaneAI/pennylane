@@ -15,9 +15,9 @@
 Unit tests for the :func:`pennylane.template.broadcast` function.
 Integration tests should be placed into ``test_templates.py``.
 """
-# pylint: disable=protected-access,cell-var-from-loop
-import pytest
+# pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 from math import pi
+import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.templates import broadcast

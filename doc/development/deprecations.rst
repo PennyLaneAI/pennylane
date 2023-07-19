@@ -6,12 +6,23 @@ Deprecations
 Pending deprecations
 --------------------
 
-* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
-  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
-  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation. 
 
-  - Still accepted in v0.31
-  - Removed in v0.32
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
+  ``disable_return``, as the old return system is deprecated along with these switch functions.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
+  system (which is also deprecated). Please use ``grad_on_execution`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
@@ -63,12 +74,36 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
+  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
+  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  by default.
+
   - Deprecated in v0.32
   - Will be removed in v0.33
 
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
+  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+
+  - Still accepted in v0.31
+  - Removed in v0.32
 
 * The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
   all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
