@@ -19,6 +19,35 @@ import pytest
 import pennylane as qml
 
 
+def test_tapeunwrap_class_deprecation_warning():
+    """Test that a deprecation warning is raised when initializing UnwrapTape"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(UserWarning, match="The UnwrapTape class is deprecated and will be removed"):
+        _ = qml.tape.unwrap.UnwrapTape(tape)
+
+
+def test_unwrap_class_deprecation_warning():
+    """Test that a deprecation warning is raised when initializing UnwrapTape"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(UserWarning, match="The Unwrap class is deprecated and will be removed"):
+        _ = qml.tape.unwrap.Unwrap(tape)
+
+
+def test_tapeunwrap_method_deprecation_warning():
+    """Test that a deprecation warning is raised when using the tape.unwrap() method"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(
+        UserWarning, match="The method tape.unwrap is deprecated and will be removed"
+    ):
+        _ = tape.unwrap()
+
+
 @pytest.mark.tf
 def test_unwrap_tensorflow():
     """Test that unwrapping a tape with TensorFlow parameters
