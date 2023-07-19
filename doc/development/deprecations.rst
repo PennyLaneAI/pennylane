@@ -74,9 +74,9 @@ Pending deprecations
 
 
 * The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
-   operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
-   ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
-   by default.
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  by default.
 
   - Deprecated in v0.32
   - Will be removed in v0.33
