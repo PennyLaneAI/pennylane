@@ -346,7 +346,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         """
         existing_type_id = self.info.get("type_id")
         if existing_type_id is None:
-            raise ValueError(f"'bind' does not contain a dataset attribute.")
+            raise ValueError("'bind' does not contain a dataset attribute.")
         if existing_type_id != self.type_id:
             raise TypeError(f"'bind' is bound to another attribute type '{existing_type_id}'")
 

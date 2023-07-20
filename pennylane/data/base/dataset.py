@@ -205,6 +205,11 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         return cls(f)
 
+    def close(self) -> None:
+        """Close the underlying dataset file. The dataset will
+        become inaccessible."""
+        self.bind.close()
+
     @property
     def data_name(self) -> str:
         """Returns the data name (category) of this dataset."""

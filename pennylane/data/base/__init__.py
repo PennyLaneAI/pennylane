@@ -16,5 +16,6 @@ type machinery, and the low-level HDF5 interface of the data module."""
 
 from .attribute import AttributeInfo, DatasetAttribute
 from .dataset import Dataset, field
+from .mapper import DatasetNotWriteableError
 
-__all__ = ("AttributeInfo", "DatasetAttribute", "Dataset", "field")
+__all__ = ("AttributeInfo", "DatasetAttribute", "Dataset", "DatasetNotWriteableError", "field")

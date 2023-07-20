@@ -161,6 +161,7 @@ from .attributes import (
     DatasetSparseArray,
     DatasetString,
 )
+from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
 from .base.dataset import Dataset, field
 from .data_manager import (
@@ -173,11 +174,12 @@ from .data_manager import (
 )
 
 __all__ = (
-    "DatasetAttribute",
     "AttributeInfo",
     "attribute",
     "field",
     "Dataset",
+    "DatasetAttribute",
+    "DatasetNotWriteableError",
     "DatasetArray",
     "DatasetScalar",
     "DatasetString",

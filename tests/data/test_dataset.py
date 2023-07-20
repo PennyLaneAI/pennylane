@@ -22,7 +22,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pennylane.data import AttributeInfo, Dataset, DatasetScalar, field
+from pennylane.data import (
+    AttributeInfo,
+    Dataset,
+    DatasetNotWriteableError,
+    DatasetScalar,
+    field,
+)
 from pennylane.data.base.hdf5 import open_group
 
 
@@ -147,3 +153,57 @@ class TestDataset:
         ds = MyDataset(x="1", y="2", description="abc")
 
         assert ds.params == {"x": "1", "y": "2"}
+
+    @pytest.mark.parametrize("mode", ["w-", "w", "a"])
+    def test_open_create(self, tmp_path, mode):
+        """Test that open() can create a new dataset on disk."""
+
+        path = Path(tmp_path, "dset.h5")
+        dset = Dataset.open(Path(tmp_path, "dset.h5"), mode=mode)
+
+        assert isinstance(dset, Dataset)
+        assert Path(tmp_path, "dset.h5").exists()
+        assert Path(dset.bind.filename) == path.absolute()
+
+    def test_open_existing_read_only(self, tmp_path):
+        """Test that open() can load an existing dataset
+        on disk in read-only mode."""
+
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, mode="w")
+        existing.data = "some data"
+
+        existing.close()
+
+        dset = Dataset.open(path, mode="r")
+
+        assert isinstance(dset, Dataset)
+        assert Path(dset.bind.filename) == path.absolute()
+        assert dset.data == "some data"
+
+        with pytest.raises(DatasetNotWriteableError):
+            dset.other_data = "some other data"
+
+        dset.close()
+
+    def test_open_existing_read_write(self, tmp_path):
+        """Test that open() can load an existing dataset
+        on disk for modification."""
+
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, mode="w")
+        existing.data = "some data"
+
+        existing.close()
+
+        dset = Dataset.open(path, mode="a")
+
+        assert isinstance(dset, Dataset)
+        assert Path(dset.bind.filename) == path.absolute()
+        assert dset.data == "some data"
+
+        dset.other_data = "some other data"
+
+        dset.close()
+
+        assert Dataset.open(path, "r").other_data == "some other data"

@@ -83,7 +83,7 @@ def _download_dataset(
         return
 
     with open(dest, "wb") as f:
-        resp = requests.get(s3_path, timeout=5.0)
+        resp = get(s3_path, timeout=5.0)
         resp.raise_for_status()
 
         f.write(resp.content)

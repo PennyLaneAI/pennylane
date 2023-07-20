@@ -15,6 +15,7 @@
 Tests for the ``DatasetNone`` attribute type.
 """
 
+import pytest
 
 from pennylane.data.attributes.none import DatasetNone
 
