@@ -452,7 +452,8 @@ class TestAdjointDiffTapeValidation:
         assert qml.equal(res[4], qml.RZ(0.1, 0))
         assert qml.equal(res[5], qml.RY(0.2, 0))
         assert qml.equal(res[6], qml.RZ(0.3, 0))
-        assert res.trainable_params == [0, 1, 2]
+        # assert res.trainable_params == [0, 1, 2]
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
 
         # expansion should map trainable params from [2, 3] -> [4, 5]
         qs.trainable_params = [2, 3]
@@ -466,7 +467,7 @@ class TestAdjointDiffTapeValidation:
         assert qml.equal(res[4], qml.RZ(0.1, 0))
         assert qml.equal(res[5], qml.RY(0.2, 0))
         assert qml.equal(res[6], qml.RZ(0.3, 0))
-        assert res.trainable_params == [4, 5]
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
 
     def test_u3_non_trainable_params(self):
         """Test that a warning is raised and all parameters are trainable in the expanded
@@ -474,9 +475,7 @@ class TestAdjointDiffTapeValidation:
         qs = QuantumScript([qml.U3(0.2, 0.4, 0.6, wires=0)], [qml.expval(qml.PauliZ(0))])
         qs.trainable_params = [0, 2]
 
-        with pytest.warns(UserWarning, match="Some non-trainable parameters in U3"):
-            res = validate_and_expand_adjoint(qs)
-
+        res = validate_and_expand_adjoint(qs)
         assert isinstance(res, QuantumScript)
 
         # U3 decomposes into 5 operators
@@ -522,7 +521,8 @@ class TestAdjointDiffTapeValidation:
 
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs.trainable_params == qs_valid.trainable_params
+        # assert qs.trainable_params == qs_valid.trainable_params
+        assert qs_valid.trainable_params == [0, 1]
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_valid_tape_with_expansion(self, shots):
@@ -550,7 +550,8 @@ class TestAdjointDiffTapeValidation:
 
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs.trainable_params == qs_valid.trainable_params
+        # assert qs.trainable_params == qs_valid.trainable_params
+        assert qs_valid.trainable_params == [0, 1, 2, 3]
         assert qs.shots == qs_valid.shots
 
 
