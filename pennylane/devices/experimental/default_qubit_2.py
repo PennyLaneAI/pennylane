@@ -32,7 +32,7 @@ from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
-from ..qubit.adjoint_jacobian import adjoint_jacobian
+from ..qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -494,7 +494,7 @@ class DefaultQubit2(Device):
 
         return res[0] if is_single_circuit else res
 
-    def execute_and_compute_jvp(
+    def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
@@ -524,7 +524,7 @@ class DefaultQubit2(Device):
                 simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
                 for c in circuits
             )
-            jvps = tuple(
+            vjps = tuple(
                 adjoint_vjp(c, t, state=r[1]) for c, t, r in zip(circuits, cotangents, results)
             )
             results = tuple(r[0] for r in results)
