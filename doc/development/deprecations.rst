@@ -66,6 +66,14 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* ``qml.qchem.jordan_wigner`` is deprecated, and usage will now raise a warning.
+  Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
+  is also deprecated; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
+  ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
+  :mod:`pennylane.fermi` module documentation and the
+  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
+  tutorial for more details.
+
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
   raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
 
@@ -93,7 +101,6 @@ Pending deprecations
 
   - Deprecated in v0.32
   - Will be removed in v0.33
-
 
 * The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
   operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and

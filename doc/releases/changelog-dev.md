@@ -104,6 +104,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
+  List input to define the fermionic operator is also deprecated; the fermionic 
+  operators in the ``qml.fermi`` module should be used instead.
+  [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
+
 * The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
