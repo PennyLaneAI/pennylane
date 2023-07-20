@@ -246,9 +246,9 @@ class MeasurementValue(Generic[T]):
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""
 
-        # create a new merged list with no duplicates and in lexical ordering
-        # all_ids_list = itertools.chain(*(self.measurement_ids + other.measurement_ids))
+        # create a new merged list with no duplicates
         all_measurement_ids = list(dict.fromkeys(self.measurement_ids + other.measurement_ids))
+        # Order the list lexicographically for merging sub functions
         merged_measurement_ids = sorted(all_measurement_ids)
 
         # create a new function that selects the correct indices for each sub function
