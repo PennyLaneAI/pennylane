@@ -29,6 +29,7 @@ from pennylane.transforms import convert_to_numpy_parameters
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def _compute_vjp(dy, jacs, device=None):
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(

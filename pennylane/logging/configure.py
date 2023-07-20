@@ -5,18 +5,19 @@ import os
 TRACE = 1
 path = os.path.dirname(__file__)
 
+
 def configure_logging(config_file):
     """
     This method allows custom logging configuration throughout PennyLane.
     All configurations are read through config_file `toml` or `yaml` files.
     """
-    if config_file.endswith('.yaml'):
+    if config_file.endswith(".yaml"):
         import yaml
 
         with open(os.path.join(path, config_file), "r") as f:
             config = yaml.safe_load(f.read())
             logging.config.dictConfig(config)
-    elif config_file.endswith('.toml'):
+    elif config_file.endswith(".toml"):
         import pytoml
 
         with open(os.path.join(path, config_file), "r") as f:
@@ -33,6 +34,7 @@ def configure_logging(config_file):
     logging.addLevelName(TRACE, "TRACE")
     lc = logging.getLoggerClass()
     lc.trace = trace
+
 
 def enable_logging(use_yaml=False):
     """

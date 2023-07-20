@@ -33,6 +33,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
