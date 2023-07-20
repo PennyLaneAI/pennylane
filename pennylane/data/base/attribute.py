@@ -395,9 +395,9 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
             existing_type = DatasetAttribute.type_consumer_registry.get(type_)
             if existing_type is not None:
                 warnings.warn(
-                    f"Conflicting default types: Both '{cls.__name__}' and '{existing_type.__name__}'"
-                    f" consume type '{type_.__name__}'. '{type_.__name__}'"
-                    f" will now be consumed by '{cls.__name__}'"
+                    f"Conflicting default types: Both '{cls.__name__}' and '{existing_type.__name__}' "
+                    f"consume type '{type_.__name__}'. '{type_.__name__}' "
+                    f"will now be consumed by '{cls.__name__}'"
                 )
             DatasetAttribute.__type_consumer_registry[type_] = cls
 
