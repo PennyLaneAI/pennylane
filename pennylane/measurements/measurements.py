@@ -27,7 +27,6 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from pennylane.measurements import MeasurementValue
 from .shots import Shots
 
 # =============================================================================
@@ -154,8 +153,6 @@ class MeasurementProcess(ABC):
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = qml.math.asarray(eigvals)
-
-        self.mid_measure = True if isinstance(obs, MeasurementValue) else False
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand receiving
@@ -288,7 +285,7 @@ class MeasurementProcess(ABC):
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        if self.mid_measure:
+        if getattr(self, "mid_measure", False):
             return []
 
         try:
@@ -367,12 +364,12 @@ class MeasurementProcess(ABC):
         Returns:
             array: eigvals representation
         """
-        if not self.mid_measure:
+        if not getattr(self, "mid_measure", False):
             if self.obs is not None:
                 with contextlib.suppress(qml.operation.EigvalsUndefinedError):
                     return self.obs.eigvals()
             return self._eigvals
-        
+
         raise RuntimeError("Can't request eigenvalues of a mid-circuit measurement.")
 
     @property
@@ -383,12 +380,16 @@ class MeasurementProcess(ABC):
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
         # which we have to check to be defined. The subsequent creation of the new
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
-        return False if self.obs is None or self.mid_measure else self.obs.has_diagonalizing_gates
+        return (
+            False
+            if self.obs is None or getattr(self, "mid_measure", False)
+            else self.obs.has_diagonalizing_gates
+        )
 
     @property
     def samples_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
-        return self.obs is None or self.mid_measure
+        return self.obs is None or getattr(self, "mid_measure", False)
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -423,7 +424,7 @@ class MeasurementProcess(ABC):
         >>> print(tape.measurements[0].obs)
         None
         """
-        if self.obs is None or self.mid_measure:
+        if self.obs is None or getattr(self, "mid_measure", False):
             raise qml.operation.DecompositionUndefinedError
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -434,7 +435,7 @@ class MeasurementProcess(ABC):
 
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
-        if self.obs is not None and not self.mid_measure:
+        if self.obs is not None and not getattr(self, "mid_measure", False):
             context.remove(self.obs)
         context.append(self)
 

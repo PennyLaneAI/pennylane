@@ -16,6 +16,7 @@ This module contains the qml.measure measurement.
 """
 import uuid
 from typing import Generic, TypeVar, Optional
+import itertools
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -154,7 +155,7 @@ class MeasurementValue(Generic[T]):
         # self.mid_measures = mid_measures
         # self.measurement_ids = [m.id for m in mid_measures]
         self.processing_fn = processing_fn
-        self.wires = None
+        self.wires = Wires([])
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
@@ -233,21 +234,22 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(lambda a, b: a or b, other)
 
     def __matmul__(self, other):
-        mv = self._merge(other)
-        mv.wires = self.wires + other.wires
-        return mv
+        return self._merge(other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
-        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
+        mv = MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
+        mv.wires = self.wires
+        return mv
         # return MeasurementValue(self.mid_measures, lambda *x: fn(self.processing_fn(*x)))
 
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
-        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
-        merged_measurement_ids.sort()
+        # all_ids_list = itertools.chain(*(self.measurement_ids + other.measurement_ids))
+        all_measurement_ids = list(dict.fromkeys(self.measurement_ids + other.measurement_ids))
+        merged_measurement_ids = sorted(all_measurement_ids)
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
@@ -263,7 +265,9 @@ class MeasurementValue(Generic[T]):
 
             return out_1, out_2
 
-        return MeasurementValue(merged_measurement_ids, merged_fn)
+        mv = MeasurementValue(all_measurement_ids, merged_fn)
+        mv.wires = self.wires + other.wires
+        return mv
 
     def __getitem__(self, i):
         branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))

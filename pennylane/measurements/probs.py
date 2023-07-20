@@ -14,10 +14,11 @@
 """
 This module contains the qml.probs measurement.
 """
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
@@ -100,7 +101,11 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
 
-    if op is not None and not isinstance(op, MeasurementValue) and not qml.operation.defines_diagonalizing_gates(op):
+    if (
+        op is not None
+        and not isinstance(op, MeasurementValue)
+        and not qml.operation.defines_diagonalizing_gates(op)
+    ):
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
@@ -131,6 +136,16 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    def __init__(
+        self,
+        obs: Optional[Operator] = None,
+        wires: Optional[Wires] = None,
+        eigvals=None,
+        id: Optional[str] = None,
+    ):
+        self.mid_measure = True if obs is not None and isinstance(obs, MeasurementValue) else False
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
     @property
     def return_type(self):

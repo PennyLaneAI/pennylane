@@ -15,7 +15,7 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -76,6 +76,16 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
+    def __init__(
+        self,
+        obs: Optional[Operator] = None,
+        wires: Optional[Wires] = None,
+        eigvals=None,
+        id: Optional[str] = None,
+    ):
+        self.mid_measure = True if obs is not None and isinstance(obs, MeasurementValue) else False
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
     @property
     def return_type(self):
         return Expectation
@@ -116,6 +126,10 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         samples = qml.sample(op=self.obs).process_samples(
             samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
+        if self.mid_measure:
+            powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
+            samples = samples @ powers_of_two
+
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -130,12 +144,13 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             return probs[idx]
 
         if self.mid_measure:
-            eigvals = qml.math.arange(0, 2**len(self.wires))
+            eigvals = qml.math.arange(0, 2 ** len(self.wires))
+            prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         else:
             eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
+            # we use ``self.wires`` instead of ``self.obs`` because the observable was
+            # already applied to the state
+            prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
 
-        # we use ``self.wires`` instead of ``self.obs`` because the observable was
-        # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
         return qml.math.dot(prob, eigvals)

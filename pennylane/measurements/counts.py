@@ -132,7 +132,9 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
-    if op is not None and not isinstance(op, MeasurementValue) and not op.is_hermitian:  # None type is also allowed for op
+    if (
+        op is not None and not isinstance(op, MeasurementValue) and not op.is_hermitian
+    ):  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
@@ -176,6 +178,7 @@ class CountsMP(SampleMeasurement):
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
+        self.mid_measure = True if obs is not None and isinstance(obs, MeasurementValue) else False
         super().__init__(obs, wires, eigvals, id)
 
     def __repr__(self):

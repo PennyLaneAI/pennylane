@@ -102,7 +102,9 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
            [0, 0]])
 
     """
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
+    if (
+        op is not None and not isinstance(op, MeasurementValue) and not op.is_hermitian
+    ):  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
@@ -134,6 +136,16 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
+    def __init__(
+        self,
+        obs: Optional[Operator] = None,
+        wires: Optional[Wires] = None,
+        eigvals=None,
+        id: Optional[str] = None,
+    ):
+        self.mid_measure = True if obs is not None and isinstance(obs, MeasurementValue) else False
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
     @property
     def return_type(self):
         return Sample
@@ -143,7 +155,7 @@ class SampleMP(SampleMeasurement):
     def numeric_type(self):
         # Note: we only assume an integer numeric type if the observable is a
         # built-in observable with integer eigenvalues or a tensor product thereof
-        if self.obs is None:
+        if self.obs is None or self.mid_measure:
             # Computational basis samples
             return int
         int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
@@ -158,7 +170,7 @@ class SampleMP(SampleMeasurement):
                 f"{self.__class__.__name__}."
             )
         if shots.has_partitioned_shots:
-            if self.obs is None:
+            if self.obs is None or self.mid_measure:
                 # TODO: revisit when qml.sample without an observable fully
                 # supports shot vectors
                 raise MeasurementShapeError(
@@ -210,7 +222,7 @@ class SampleMP(SampleMeasurement):
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        name = self.obs.name if self.obs is not None else None
+        name = self.obs.name if self.obs is not None and not self.mid_measure else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -224,7 +236,7 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None:
+        if self.obs is None or self.mid_measure:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 

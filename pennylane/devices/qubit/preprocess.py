@@ -24,12 +24,13 @@ import pennylane as qml
 
 from pennylane.operation import Tensor
 from pennylane.measurements import (
-    MidMeasureMP,
-    StateMeasurement,
-    SampleMeasurement,
-    ExpectationMP,
     ClassicalShadowMP,
+    ExpectationMP,
+    MeasurementValue,
+    MidMeasureMP,
+    SampleMeasurement,
     ShadowExpvalMP,
+    StateMeasurement,
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
@@ -242,7 +243,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
         if isinstance(observable, Tensor):
             if any(o.name not in _observables for o in observable.obs):
                 raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
-        elif observable.name not in _observables:
+        elif not isinstance(observable, MeasurementValue) and observable.name not in _observables:
             raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
 
     return circuit

@@ -95,22 +95,26 @@ def defer_measurements(tape):
 
     # Current wire in which pre-measurement state will be saved
     new_wire_latest = tape.num_wires
-    for op in tape:
-
+    for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             new_wires[op.id] = new_wire_latest
-            apply(qml.CNOT([op.wires[0], new_wire_latest]))
+            qml.CNOT([op.wires[0], new_wire_latest])
 
             if op.reset:
-                apply(qml.CNOT([new_wire_latest, op.wires[0]]))
-            new_wire_latest += 1
+                qml.CNOT([new_wire_latest, op.wires[0]])
+            op.value.wires = op.value.wires + Wires(new_wire_latest)
 
-            op.value.wires = Wires(new_wire_latest)
+            new_wire_latest += 1
 
         elif op.__class__.__name__ == "Conditional":
             _add_control_gate(op, new_wires)
         else:
             apply(op)
+
+    for m in tape.measurements:
+        if m.mid_measure:
+            m.obs.wires = Wires([new_wires[m_id] for m_id in m.obs.measurement_ids])
+        apply(m)
 
 
 def _add_control_gate(op, control_wires):
