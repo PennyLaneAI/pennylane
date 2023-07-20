@@ -18,6 +18,7 @@ Tests for :mod:`pennylane.data.base.dataset`.
 
 from numbers import Number
 from pathlib import Path
+from typing import ClassVar, Dict
 
 import numpy as np
 import pytest
@@ -25,10 +26,13 @@ import pytest
 from pennylane.data import (
     AttributeInfo,
     Dataset,
+    DatasetJSON,
     DatasetNotWriteableError,
     DatasetScalar,
+    attribute,
     field,
 )
+from pennylane.data.base.dataset import UNSET, _init_arg
 from pennylane.data.base.hdf5 import open_group
 
 
@@ -60,6 +64,7 @@ class TestDataset:
         assert ds.x == 1
         assert (ds.y == np.array([1, 2, 3])).all()
         assert ds.z == "abc"
+        assert ds.list_attributes() == ["description", "x", "y", "z"]
 
     @pytest.mark.parametrize("data_name, expect", [(None, "generic"), ("other_name", "other_name")])
     def test_init_dataname(self, data_name, expect):
@@ -78,6 +83,13 @@ class TestDataset:
         ds = MyDataset(x="1", y="2", description="abc", data_name=data_name)
 
         assert ds.data_name == expect
+
+    def test_getattr_unset_fields(self):
+        """Test that __getattr__ returns UNSET if a dataset field
+        is not set."""
+
+        my_dataset = MyDataset(x="a", y="b")
+        assert my_dataset.description is UNSET
 
     def test_setattr(self):
         """Test that __setattrr__ successfully sets new attributes."""
@@ -123,21 +135,37 @@ class TestDataset:
         assert ds.attrs["description"].info.doc == MyDataset.fields["description"].info.doc
         assert ds.attrs["description"].info["type_id"] == "string"
 
-    @pytest.mark.parametrize("mode", ["w-", "w", "a"])
-    def test_write(self, tmp_path, mode):
-        """Test that the ``write`` method creates a Zarr file that contains
-        the all the data in the dataset."""
-        ds = Dataset(x=DatasetScalar(1.0, AttributeInfo(py_type=int, doc="an int")))
+    def test_delattr(self):
+        """Test that __delattr__ removes the attribute from the dataset
+        and the underlying file."""
 
-        path: Path = tmp_path / "test"
-        ds.write(path, mode=mode)
+        ds = Dataset(x=1)
 
-        zgrp = open_group(path, mode="r")
+        del ds.x
 
-        ds_2 = Dataset(zgrp)
+        with pytest.raises(AttributeError, match="'Dataset' object has no attribute 'x'"):
+            _ = ds.x
 
-        assert ds_2.bind is not ds.bind
-        assert ds.attrs == ds_2.attrs
+        assert "x" not in ds.bind
+
+    def test_delattr_no_such_attribute(self):
+        """Test the __delattr__ raises an AttributeError if the attribute
+        does not exist."""
+
+        ds = Dataset(y=1)
+
+        with pytest.raises(AttributeError, match="'Dataset' object has no attribute 'x'"):
+            del ds.x
+
+    def test_repr(self):
+        """Test the __repr__ has the expected format."""
+
+        ds = Dataset(x=1, y="A string", width=3, z=None, length=4, params=("length", "width"))
+
+        assert (
+            repr(ds)
+            == "<Dataset = length: 4, width: 3, attributes: ['x', 'y', 'width', 'z', 'length']>"
+        )
 
     @pytest.mark.parametrize(
         "params, expect", [(None, {}), (tuple(), {}), (("x", "y"), {"x": "1", "y": "2"})]
@@ -153,6 +181,17 @@ class TestDataset:
         ds = MyDataset(x="1", y="2", description="abc")
 
         assert ds.params == {"x": "1", "y": "2"}
+
+    def test_attribute_info(self):
+        """Test that attribute info can be set and accessed
+        on a dataset attribute."""
+
+        dset = Dataset(x=1, y=attribute(3, doc="y Documentation"))
+
+        dset.attr_info["x"].doc = "x Documentation"
+
+        assert dset.attr_info["x"].doc == "x Documentation"
+        assert dset.attr_info["y"].doc == "y Documentation"
 
     @pytest.mark.parametrize("mode", ["w-", "w", "a"])
     def test_open_create(self, tmp_path, mode):
@@ -228,3 +267,110 @@ class TestDataset:
 
         with pytest.raises(AttributeError):
             Dataset.open(path).other_data
+
+    @pytest.mark.parametrize(
+        "attributes_arg, attributes_expect", [(None, ["x", "y", "z"]), (["x", "y"], ["x", "y"])]
+    )
+    def test_read_from_path(self, tmp_path, attributes_arg, attributes_expect):
+        """Test that read() can load attributes from a Dataset file."""
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, "w")
+
+        existing.x = 1
+        existing.y = attribute("abc", doc="abc")
+        existing.z = [1, 2, 3]
+
+        existing.close()
+
+        dset = Dataset()
+        dset.read(path, attributes=attributes_arg)
+
+        assert dset.list_attributes() == attributes_expect
+        assert dset.y == "abc"
+        assert dset.attr_info["y"].doc == "abc"
+
+    @pytest.mark.parametrize(
+        "attributes_arg, attributes_expect", [(None, ["x", "y", "z"]), (["x", "y"], ["x", "y"])]
+    )
+    def test_read_from_dataset(self, attributes_arg, attributes_expect):
+        """Test that read() can load attributes from a Dataset file."""
+
+        existing = Dataset()
+
+        existing.x = 1
+        existing.y = attribute("abc", doc="abc")
+        existing.z = [1, 2, 3]
+
+        dset = Dataset(x=2)
+        dset.read(existing, attributes=attributes_arg)
+
+        assert dset.list_attributes() == attributes_expect
+        assert dset.y == "abc"
+        assert dset.attr_info["y"].doc == "abc"
+
+    @pytest.mark.parametrize("overwrite, expect_x", [(False, 2), (True, 1)])
+    def test_read_overwrite(self, overwrite, expect_x):
+        """Test that overwrite determnines whether an existing attribute
+        is overwritten by read()."""
+
+        existing = Dataset(x=1)
+        new = Dataset(x=2)
+
+        new.read(existing, overwrite=overwrite)
+        assert new.x == expect_x
+
+    @pytest.mark.parametrize("mode", ["w-", "w", "a"])
+    def test_write(self, tmp_path, mode):
+        """Test that the ``write`` method creates a Zarr file that contains
+        the all the data in the dataset."""
+        ds = Dataset(x=DatasetScalar(1.0, AttributeInfo(py_type=int, doc="an int")))
+
+        path: Path = tmp_path / "test"
+        ds.write(path, mode=mode)
+
+        zgrp = open_group(path, mode="r")
+
+        ds_2 = Dataset(zgrp)
+
+        assert ds_2.bind is not ds.bind
+        assert ds.attrs == ds_2.attrs
+
+    def test_init_subclass(self):
+        """Test that __init_subclass__() does the following:
+
+        - Does not create fields for _InitArg and ClassVar
+        - collects fields from type annotations, including py_type
+        - gets data name and params from class arguments
+        """
+
+        class NewDataset(Dataset, data_name="new_dataset", params=("x", "y")):
+            """Dataset"""
+
+            class_info: ClassVar[str] = "Class variable"
+
+            init_arg: int = _init_arg(1)
+
+            x: int
+            y: str = field(doc="y documentation")
+            jsonable: Dict[str, str] = field(DatasetJSON, doc="json data")
+
+        ds = NewDataset(init_arg=3, x=1, y="abc", jsonable={"a": "b"})
+
+        assert ds.data_name == "new_dataset"
+        assert ds.params == {"x": 1, "y": "abc"}
+
+        assert ds.attr_info["x"].py_type == "int"
+        assert ds.attr_info["y"].py_type == "str"
+        assert ds.attr_info["y"].doc == "y documentation"
+        assert ds.attr_info["jsonable"].py_type == "dict[str, str]"
+        assert ds.attr_info["jsonable"].doc == "json data"
+
+    def test_dataset_as_attribute(self):
+        """Test that a Dataset can be an attribute of
+        another dataset."""
+
+        child = Dataset(x=1, y=2)
+        parent = Dataset(child=child)
+
+        assert isinstance(parent.child, Dataset)
+        assert parent.child.list_attributes() == child.list_attributes()

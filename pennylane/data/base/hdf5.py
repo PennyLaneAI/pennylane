@@ -67,7 +67,9 @@ def copy(
             do nothing
     """
     if key in dest:
-        if on_conflict == "raise":
+        if on_conflict == "overwrite":
+            del dest[key]
+        elif on_conflict == "raise":
             raise ValueError(f"Key {key} already exists in {source.name}")
         if on_conflict == "ignore":
             return

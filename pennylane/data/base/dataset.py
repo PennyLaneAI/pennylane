@@ -268,6 +268,8 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         source.write(self, attributes=attributes, overwrite=overwrite)
 
+        source.close()
+
     def write(
         self,
         dest: Union[str, Path, "Dataset"],
@@ -326,13 +328,17 @@ class Dataset(MapperMixin, _DatasetTransform):
             if __name in self.fields:
                 return UNSET
 
-            raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{__name}'"
+            ) from exc
 
     def __delattr__(self, __name: str) -> None:
         try:
             del self._mapper[__name]
         except KeyError as exc:
-            raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{__name}'"
+            ) from exc
 
     def __repr__(self) -> str:
         repr_items = ", ".join(
