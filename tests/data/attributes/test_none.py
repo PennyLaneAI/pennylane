@@ -18,6 +18,8 @@ Tests for the ``DatasetNone`` attribute type.
 
 from pennylane.data.attributes.none import DatasetNone
 
+pytestmark = pytest.mark.data
+
 
 class TestDatasetsNone:
     """Test that ``DatasetNone`` is correctly bind and value

@@ -20,6 +20,8 @@ import pytest
 from pennylane.data.data_manager import DEFAULT, FULL, DataPath
 from pennylane.data.data_manager.foldermap import Description, FolderMapView
 
+pytestmark = pytest.mark.data
+
 FOLDERMAP = {
     "__params": {
         "qchem": ["molname", "basis", "bondlength"],

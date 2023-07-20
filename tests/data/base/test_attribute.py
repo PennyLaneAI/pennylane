@@ -38,6 +38,10 @@ from pennylane.data.base.attribute import (
 )
 from pennylane.data.base.hdf5 import HDF5Group, create_group
 
+pytestmark = pytest.mark.data
+
+pytest.importorskip("h5py")
+
 
 def _sort_types(types: Iterable[type]) -> List[type]:
     """

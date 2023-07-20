@@ -22,6 +22,8 @@ import pytest
 
 from pennylane.data import DatasetList
 
+pytestmark = pytest.mark.data
+
 
 def _generate_slices(len_: int):
     """Generates slices ``[{start}:{stop}:{step}]`` with all valid

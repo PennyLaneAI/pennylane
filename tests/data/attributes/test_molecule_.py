@@ -23,6 +23,8 @@ from pennylane.data.attributes.molecule import DatasetMolecule
 from pennylane.data.base.typing_util import get_type_str
 from pennylane.qchem import Molecule
 
+pytestmark = pytest.mark.data
+
 
 def _assert_molecules_equal(mol_in: Molecule, mol_out: Molecule):
     """Asserts that mol_in and mol_out are identical."""

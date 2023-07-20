@@ -20,6 +20,8 @@ import pytest
 
 from pennylane.data.data_manager.params import ParamArg, format_param_args
 
+pytestmark = pytest.mark.data
+
 
 class TestParamArg:
     """Tests for ``ParamArg``."""

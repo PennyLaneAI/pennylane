@@ -19,6 +19,8 @@ import pytest
 
 from pennylane.data.attributes.json import DatasetJSON
 
+pytestmark = pytest.mark.data
+
 
 @pytest.mark.parametrize(
     "value",

@@ -28,6 +28,8 @@ from pennylane.data.attributes.operator._wires import (
 )
 from pennylane.wires import Wires
 
+pytestmark = pytest.mark.data
+
 
 class TestWiresToJson:
     @pytest.mark.parametrize(

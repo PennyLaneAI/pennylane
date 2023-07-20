@@ -22,6 +22,8 @@ import pennylane.data.attributes.array
 from pennylane import numpy as qml_numpy
 from pennylane.data.attributes import DatasetArray
 
+pytestmark = pytest.mark.data
+
 
 class TestDatasetArray:
     @pytest.mark.parametrize(

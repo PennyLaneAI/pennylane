@@ -21,6 +21,8 @@ import scipy.sparse
 
 from pennylane.data.attributes.sparse_array import DatasetSparseArray
 
+pytestmark = pytest.mark.data
+
 SP_MATRIX = scipy.sparse.random(10, 15)
 
 

@@ -23,6 +23,8 @@ import pennylane as qml
 from pennylane.data.base.typing_util import get_type, get_type_str
 from pennylane.qchem import Molecule
 
+pytestmark = pytest.mark.data
+
 
 @pytest.mark.parametrize(
     "type_, expect",
