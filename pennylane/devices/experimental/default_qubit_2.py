@@ -16,6 +16,7 @@ This module contains the next generation successor to default qubit
 """
 
 from functools import partial
+from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
 import os
@@ -282,6 +283,270 @@ class DefaultQubit2(Device):
         raise NotImplementedError(
             f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
         )
+
+    def execute_and_compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(batches=1, executions=len(circuits))
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        if execution_config.gradient_method != "adjoint":
+            raise NotImplementedError(
+                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
+            )
+
+        max_workers = self._get_max_workers(execution_config)
+        if max_workers is None:
+            results = tuple(
+                simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
+                for c in circuits
+            )
+            jacs = tuple(adjoint_jacobian(c, state=r[1]) for c, r in zip(circuits, results))
+            results = tuple(r[0] for r in results)
+        else:
+            self._validate_multiprocessing_circuits(circuits)
+
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+
+            def wrapper(c, rng):
+                res, final_state, _ = simulate(c, rng=rng, debugger=None, return_final_state=True)
+                jac = adjoint_jacobian(c, state=final_state)
+                return res, jac
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = tuple(executor.map(wrapper, vanilla_circuits, seeds))
+                results, jacs = tuple(zip(*results))
+
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return results[0], jacs[0] if is_single_circuit else results, jacs
+
+    def supports_jvp(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        """Whether or not this device defines a custom jacobian vector product.
+
+        ``DefaultQubit2`` supports backpropagation derivatives with analytic results, as well as
+        adjoint differentiation.
+
+        Args:
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
+            circuit (QuantumTape): An optional circuit to check derivatives support for.
+
+        Returns:
+            bool: Whether or not a derivative can be calculated provided the given information
+        """
+        return self.supports_derivatives(execution_config, circuit)
+
+    def compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        tangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            tangents = [tangents]
+
+        if self.tracker.active:
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        if execution_config.gradient_method != "adjoint":
+            raise NotImplementedError(
+                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
+            )
+
+        max_workers = self._get_max_workers(execution_config)
+        if max_workers is None:
+            res = tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
+        else:
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
+
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res[0] if is_single_circuit else res
+
+    def execute_and_compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        tangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            tangents = [tangents]
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(batches=1, executions=len(circuits))
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        if execution_config.gradient_method != "adjoint":
+            raise NotImplementedError(
+                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
+            )
+
+        max_workers = self._get_max_workers(execution_config)
+        if max_workers is None:
+            results = tuple(
+                simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
+                for c in circuits
+            )
+            jvps = tuple(
+                adjoint_jvp(c, t, state=r[1]) for c, t, r in zip(circuits, tangents, results)
+            )
+            results = tuple(r[0] for r in results)
+        else:
+            self._validate_multiprocessing_circuits(circuits)
+
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+
+            def wrapper(c, t, rng):
+                res, final_state, _ = simulate(c, rng=rng, debugger=None, return_final_state=True)
+                jvp = adjoint_jvp(c, t, state=final_state)
+                return res, jvp
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = tuple(executor.map(wrapper, vanilla_circuits, tangents, seeds))
+                results, jvps = tuple(zip(*results))
+
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return results[0], jvps[0] if is_single_circuit else results, jvps
+
+    def supports_vjp(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        """Whether or not this device defines a custom vector jacobian product.
+
+        ``DefaultQubit2`` supports backpropagation derivatives with analytic results, as well as
+        adjoint differentiation.
+
+        Args:
+            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+            circuit (None, QuantumTape): A specific circuit to check differentation for.
+
+        Returns:
+            bool: Whether or not a derivative can be calculated provided the given information
+        """
+        return self.supports_derivatives(execution_config, circuit)
+
+    def compute_vjp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        cotangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            cotangents = [cotangents]
+
+        if self.tracker.active:
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        if execution_config.gradient_method != "adjoint":
+            raise NotImplementedError(
+                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
+            )
+
+        max_workers = self._get_max_workers(execution_config)
+        if max_workers is None:
+            res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
+        else:
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
+
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return res[0] if is_single_circuit else res
+
+    def execute_and_compute_jvp(
+        self,
+        circuits: QuantumTape_or_Batch,
+        cotangents: Tuple[Number],
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+            cotangents = [cotangents]
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(batches=1, executions=len(circuits))
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        if execution_config.gradient_method != "adjoint":
+            raise NotImplementedError(
+                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
+            )
+
+        max_workers = self._get_max_workers(execution_config)
+        if max_workers is None:
+            results = tuple(
+                simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
+                for c in circuits
+            )
+            jvps = tuple(
+                adjoint_vjp(c, t, state=r[1]) for c, t, r in zip(circuits, cotangents, results)
+            )
+            results = tuple(r[0] for r in results)
+        else:
+            self._validate_multiprocessing_circuits(circuits)
+
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
+
+            def wrapper(c, t, rng):
+                res, final_state, _ = simulate(c, rng=rng, debugger=None, return_final_state=True)
+                vjp = adjoint_vjp(c, t, state=final_state)
+                return res, vjp
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = tuple(executor.map(wrapper, vanilla_circuits, cotangents, seeds))
+                results, vjps = tuple(zip(*results))
+
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        return results[0], vjps[0] if is_single_circuit else results, vjps
 
     # pylint: disable=missing-function-docstring
     def _get_max_workers(self, execution_config=None):

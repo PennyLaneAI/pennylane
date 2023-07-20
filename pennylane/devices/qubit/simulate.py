@@ -24,7 +24,30 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
-def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result:
+def _final_state(circuit, debugger=None):
+    """
+    Get the final state from executing the ops in the circuit
+    """
+    prep = circuit[0] if isinstance(circuit[0], qml.operation.StatePrep) else None
+    state = create_initial_state(circuit.wires, prep)
+
+    # initial state is batched only if the state preparation (if it exists) is batched
+    is_state_batched = False
+    if prep and prep.batch_size is not None:
+        is_state_batched = True
+
+    for op in circuit.operations[bool(prep) :]:
+        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+
+        # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
+        is_state_batched = is_state_batched or op.batch_size is not None
+
+    return state, is_state_batched
+
+
+def simulate(
+    circuit: qml.tape.QuantumScript, rng=None, debugger=None, return_final_state=False
+) -> Result:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.
@@ -35,6 +58,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
         debugger (._Debugger): The debugger to use
+        return_final_state (bool): Whether to return the final state in addition to the results
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -55,39 +79,32 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
         wire_map = {w: i for i, w in enumerate(circuit.wires)}
         circuit = qml.map_wires(circuit, wire_map)
 
-    state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
-
-    # initial state is batched only if the state preparation (if it exists) is batched
-    is_state_batched = False
-    if circuit._prep and circuit._prep[0].batch_size is not None:
-        is_state_batched = True
-
-    for op in circuit._ops:
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
-
-        # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
-        is_state_batched = is_state_batched or op.batch_size is not None
+    state, is_state_batched = _final_state(circuit, debugger=debugger)
 
     if not circuit.shots:
         # analytic case
 
         if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
+            results = measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
 
-        return tuple(
-            measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
-        )
+        else:
+            results = tuple(
+                measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
+            )
+
+        return (results, state, is_state_batched) if return_final_state else results
 
     # finite-shot case
 
     if len(circuit.measurements) == 1:
-        return measure_with_samples(
+        results = measure_with_samples(
             circuit.measurements[0],
             state,
             shots=circuit.shots,
             is_state_batched=is_state_batched,
             rng=rng,
         )
+        return (results, state, is_state_batched) if return_final_state else results
 
     rng = default_rng(rng)
     results = tuple(
@@ -97,9 +114,8 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
         for mp in circuit.measurements
     )
 
-    # no shot vector
-    if not circuit.shots.has_partitioned_shots:
-        return results
+    if circuit.shots.has_partitioned_shots:
+        # shot vector case: move the shot vector axis before the measurement axis
+        results = tuple(zip(*results))
 
-    # shot vector case: move the shot vector axis before the measurement axis
-    return tuple(zip(*results))
+    return (results, state, is_state_batched) if return_final_state else results
