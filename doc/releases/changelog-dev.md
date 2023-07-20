@@ -6,8 +6,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* `data.Dataset` now uses HDF5 instead of pickle for serialization.
-  [(4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
+* `data.Dataset` now uses HDF5 instead of dill for serialization.
+  [(#4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
   
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.

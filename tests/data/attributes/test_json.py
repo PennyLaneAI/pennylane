@@ -26,7 +26,7 @@ pytestmark = pytest.mark.data
     "value",
     ["string", 1, {"one": "two"}, None, [1, "two"]],
 )
-class TestDatasetArray:
+class TestDatasetJSON:
     def test_value_init(self, value):
         """Test that DatasetJSON is correctly value-initialized."""
         dset_json = DatasetJSON(value)
