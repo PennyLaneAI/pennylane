@@ -332,7 +332,7 @@ class DefaultQubit2(Device):
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        return results[0], jacs[0] if is_single_circuit else results, jacs
+        return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
     def supports_jvp(
         self,
@@ -439,7 +439,7 @@ class DefaultQubit2(Device):
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        return results[0], jvps[0] if is_single_circuit else results, jvps
+        return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
 
     def supports_vjp(
         self,
@@ -546,7 +546,7 @@ class DefaultQubit2(Device):
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-        return results[0], vjps[0] if is_single_circuit else results, vjps
+        return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
 
     # pylint: disable=missing-function-docstring
     def _get_max_workers(self, execution_config=None):
