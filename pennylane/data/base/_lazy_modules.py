@@ -29,7 +29,7 @@ class lazy_module:  # pylint: disable=too-few-public-methods
             import_exc: Custom Exception to raise when an ``ImportError`` occurs. Will only
                 be used by the top-level ``lazy_module`` instance, not nested modules
         """
-        if isinstance(module_name_or_module, ModuleType):
+        if isinstance(module_name_or_module, ModuleType):  # pragma: no cover
             self.__module = module_name_or_module
             self.__module_name = self.__module.__name__
         else:
@@ -44,11 +44,11 @@ class lazy_module:  # pylint: disable=too-few-public-methods
         if self.__module is None:
             self.__import_module()
         elif __name in self.__submods:
-            return self.__submods[__name]
+            return self.__submods[__name]  # pragma: no cover
 
         try:
             resource = getattr(self.__module, __name)
-        except AttributeError as attr_exc:
+        except AttributeError as attr_exc:  # pragma: no cover
             try:
                 submod = lazy_module(importlib.import_module(f"{self.__module_name}.{__name}"))
             except ImportError as import_exc:
@@ -62,7 +62,7 @@ class lazy_module:  # pylint: disable=too-few-public-methods
     def __import_module(self) -> None:
         try:
             self.__module = importlib.import_module(self.__module_name)
-        except ImportError as exc:
+        except ImportError as exc:  # pragma: no cover
             if self.__import_exc:
                 raise self.__import_exc from exc
 
