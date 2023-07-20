@@ -175,8 +175,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     def open(
         cls,
         filepath: Union[str, Path],
-        mode: Literal["w", "w-", "a", "r"] = "r",
-        copy: bool = False,
+        mode: Literal["w", "w-", "a", "r", "copy"] = "r",
     ) -> "Dataset":
         """Open existing dataset or create a new one at ``filepath``.
 
@@ -184,24 +183,21 @@ class Dataset(MapperMixin, _DatasetTransform):
             filepath: Path to dataset file
             mode: File handling mode. Possible values are "w-" (create, fail if file
                 exists), "w" (create, overwrite existing), "a" (append existing,
-                create if doesn't exist), "r" (read existing, must exist). Default is "r".
-            copy: Whether to load the dataset into memory after opening. If False, and the dataset
-                is opened in write mode, any changes made to the dataset will be automatically written
-                to the file.
-
+                create if doesn't exist), "r" (read existing, must exist), and "copy",
+                which loads the dataset into memory and detaches it from the underlying
+                file. Default is "r".
         Returns:
             Dataset object from file
         """
         filepath = Path(filepath).expanduser()
 
-        f = h5py.File(filepath, mode)
-
-        if copy:
-            f_copy = hdf5.create_group()
-            hdf5.copy_all(f, f_copy)
-            f.close()
-
-            f = f_copy
+        if mode == "copy":
+            f_to_copy = h5py.File(filepath, "r")
+            f = hdf5.create_group()
+            hdf5.copy_all(f_to_copy, f)
+            f_to_copy.close()
+        else:
+            f = h5py.File(filepath, mode)
 
         return cls(f)
 

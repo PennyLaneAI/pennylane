@@ -88,10 +88,10 @@ and 'a' for editing. ``open()`` can be used to create a new dataset directly on 
     >>> new_dataset = Dataset.open("~/datasets/new_datasets.h5", mode="w")
 
 By default, any changes made to an opened dataset will be committed directly to the file, which will fail
-if the file is opened read-only. The `copy` argument can be used to load the dataset into memory and detach
+if the file is opened read-only. The `"copy"` mode can be used to load the dataset into memory and detach
 it from the file:
 
-    >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="r", copy=True)
+    >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="copy")
     >>> my_dataset.new_attribute = "abc"
 
 

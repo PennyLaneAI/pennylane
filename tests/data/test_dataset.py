@@ -207,3 +207,24 @@ class TestDataset:
         dset.close()
 
         assert Dataset.open(path, "r").other_data == "some other data"
+
+    def test_open_existing_copy(self, tmp_path):
+        """Test that open() can load an existing dataset
+        on disk and copy it into memory."""
+
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, "w")
+
+        existing.data = "some data"
+        existing.close()
+
+        dset = Dataset.open(path, "copy")
+
+        assert dset.bind.filename != str(path)
+        assert dset.data == "some data"
+
+        dset.other_data = "other data"
+        dset.close()
+
+        with pytest.raises(AttributeError):
+            Dataset.open(path).other_data
