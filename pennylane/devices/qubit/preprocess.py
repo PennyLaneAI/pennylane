@@ -189,6 +189,9 @@ def validate_and_expand_adjoint(
     expanded_tape = qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
     # expanded_tape.trainable_params = trainable_params
 
+    parameters = expanded_tape.get_parameters(trainable_only=False, operations_only=True)
+    expanded_tape.trainable_params = qml.math.get_trainable_indices(parameters)
+
     return expanded_tape
 
 

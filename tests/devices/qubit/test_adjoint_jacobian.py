@@ -117,6 +117,7 @@ class TestAdjointJacobian:
         qs = QuantumScript(ops, measurements)
         qs.trainable_params = set(range(1, 1 + op.num_params))
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = set(range(1, 1 + op.num_params))
 
         tapes, fn = qml.gradients.finite_diff(qs)
         results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
@@ -181,7 +182,7 @@ class TestAdjointJacobian:
     @pytest.mark.autograd
     def test_gradient_gate_with_multiple_parameters(self, tol):
         """Tests that gates with multiple free parameters yield correct gradients."""
-        x, y, z = [0.5, 0.3, -0.7]
+        x, y, z = np.array([0.5, 0.3, -0.7])
 
         qs = QuantumScript(
             [qml.RX(0.4, wires=[0]), qml.Rot(x, y, z, wires=[0]), qml.RY(-0.2, wires=[0])],
@@ -208,7 +209,7 @@ class TestAdjointJacobian:
     )
     def test_state_prep(self, prep_op, tol):
         """Tests provides correct answer when provided state preparation operation."""
-        x, y, z = [0.5, 0.3, -0.7]
+        x, y, z = np.array([0.5, 0.3, -0.7])
 
         qs = QuantumScript(
             [qml.RX(0.4, wires=[0]), qml.Rot(x, y, z, wires=[0]), qml.RY(-0.2, wires=[0])],
@@ -216,7 +217,7 @@ class TestAdjointJacobian:
             [prep_op],
         )
 
-        qs.trainable_params = {1, 2, 3}
+        qs.trainable_params = {2, 3, 4}
         qs_valid = validate_and_expand_adjoint(qs)
 
         grad_D = adjoint_jacobian(qs_valid)
@@ -229,7 +230,7 @@ class TestAdjointJacobian:
     def test_gradient_of_tape_with_hermitian(self, tol):
         """Test that computing the gradient of a tape that obtains the
         expectation value of a Hermitian operator works correctly."""
-        a, b, c = [0.5, 0.3, -0.7]
+        a, b, c = np.array([0.5, 0.3, -0.7])
 
         mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
         qs = QuantumScript(
@@ -258,7 +259,7 @@ class TestAdjointJacobian:
     def test_gradient_of_tape_with_tensor(self, tol):
         """Test that computing the gradient of a tape that obtains the
         expectation value of a Tensor operator works correctly."""
-        a, b, c = [0.5, 0.3, -0.7]
+        a, b, c = np.array([0.5, 0.3, -0.7])
 
         qs = QuantumScript(
             [
