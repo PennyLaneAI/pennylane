@@ -136,7 +136,7 @@ class DefaultFormatter(Formatter):
         return formatter.format(record)
 
 
-class AnotherLogFormatter(Formatter):
+class LogFormatter(Formatter):
     indigo = "\x1b[38;4;45m"
     blue = "\x1b[38;4;44m"
     yellow = "\x1b[38;4;43m"
