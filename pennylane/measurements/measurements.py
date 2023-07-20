@@ -167,6 +167,9 @@ class MeasurementProcess(ABC):
         self.name = "Identity"
         self.data = []
 
+        if not hasattr(self, "mid_measure"):
+            self.mid_measure = False
+
         # Queue the measurement process
         self.queue()
 
