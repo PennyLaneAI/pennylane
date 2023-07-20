@@ -16,6 +16,7 @@ Tests for the wire serialization functions in :mod:`pennylane.data.attributes.op
 """
 
 import json
+from typing import Any
 
 import numpy as np
 import pytest
@@ -91,7 +92,7 @@ class TestWiresToJson:
         of the wires are integer-like, but have a different hash if converted
         to int."""
 
-        class BadIntegral:
+        class BadInt(int):
             def __hash__(self) -> int:
                 return 0
 
@@ -99,4 +100,4 @@ class TestWiresToJson:
                 return 1
 
         with pytest.raises(UnserializableWireError):
-            wires_to_json(Wires([BadIntegral()]))
+            wires_to_json(Wires([BadInt()]))

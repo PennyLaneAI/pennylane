@@ -15,7 +15,8 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
-from typing import Iterable, List
+from copy import copy, deepcopy
+from typing import Any, Iterable, List
 
 import numpy as np
 import pytest
@@ -28,7 +29,14 @@ from pennylane.data.attributes import (
     DatasetSparseArray,
     DatasetString,
 )
-from pennylane.data.base.attribute import AttributeInfo, match_obj_type
+from pennylane.data.base.attribute import (
+    UNSET,
+    AttributeInfo,
+    DatasetAttribute,
+    attribute,
+    match_obj_type,
+)
+from pennylane.data.base.hdf5 import HDF5Group, create_group
 
 
 def _sort_types(types: Iterable[type]) -> List[type]:
@@ -64,12 +72,36 @@ def _sort_types(types: Iterable[type]) -> List[type]:
             for sp_cls in _sort_types(DatasetSparseArray.consumes_types())
         ),
         *((op, DatasetOperator) for op in _sort_types(DatasetOperator.consumes_types())),
+        (DatasetNone(), DatasetNone),
+        (DatasetArray([1, 2, 3]), DatasetArray),
+        (DatasetString("abc"), DatasetString),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
     """Test that ``match_obj_type`` returns the expected attribute
     type for each argument."""
     assert match_obj_type(type_or_obj) is attribute_type
+
+
+@pytest.mark.parametrize(
+    "val, attribute_type",
+    (
+        ("", DatasetString),
+        ("abc", DatasetString),
+        (0, DatasetScalar),
+        (0.0, DatasetScalar),
+        (np.int64(0), DatasetScalar),
+        (complex(1, 2), DatasetScalar),
+        (None, DatasetNone),
+    ),
+)
+def test_attribute(val, attribute_type):
+    """Test that attribute() returns the correct attribute type
+    for values."""
+    dset_attr = attribute(val)
+
+    assert isinstance(dset_attr, attribute_type)
+    assert dset_attr.get_value() == val
 
 
 class TestAttributeInfo:
@@ -166,3 +198,170 @@ class TestAttributeInfo:
             repr(AttributeInfo(data=1, py_type="list"))
             == "AttributeInfo({'data': 1, 'py_type': 'list'})"
         )
+
+    def test_getattr_none(self):
+        """Test that __getattr__ returns None if the key
+        does not exist."""
+
+        info = AttributeInfo()
+        assert info.foo is None
+
+
+class NoDefaultAttribute(DatasetAttribute):
+    """Example dataset attribute with no defined default value."""
+
+    type_id = "test"
+
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Any) -> Any:
+        return None
+
+    def hdf5_to_value(self, bind: Any) -> Any:
+        return None
+
+
+class TestAttribute:
+    """Tests for DatasetAttribute."""
+
+    def test_init_no_default_value(self):
+        """Test that an attribute class with no defined default
+        will raise a ValueError if initialized with no arguments."""
+
+        with pytest.raises(
+            TypeError, match=r"__init__\(\) missing 1 required positional argument: 'value'"
+        ):
+            NoDefaultAttribute()
+
+    def test_default_value_is_unset(self):
+        """Test that the default_value() method returns UNSET if
+        not overidden in a subclass."""
+
+        assert NoDefaultAttribute.default_value() is UNSET
+
+    def test_bind_init_from_invalid_bind(self):
+        """Test that a ValueError is raised when the bind
+        does not contain a dataset attribute."""
+
+        with pytest.raises(ValueError, match=f"'bind' does not contain a dataset attribute."):
+            DatasetNone(bind=create_group())
+
+    def test_bind_init_from_other_bind(self):
+        """Test that a TypeError is raised when the bind contains
+        a dataset attribute of a different type."""
+
+        attr = DatasetNone()
+
+        with pytest.raises(TypeError, match=f"'bind' is bound to another attribute type 'none'"):
+            DatasetString(bind=attr.bind)
+
+    @pytest.mark.parametrize(
+        "val, attribute_type",
+        (
+            ("", DatasetString),
+            ("abc", DatasetString),
+            (0, DatasetScalar),
+            (0.0, DatasetScalar),
+            (np.int64(0), DatasetScalar),
+            (complex(1, 2), DatasetScalar),
+            (None, DatasetNone),
+        ),
+    )
+    def test_repr(self, val, attribute_type):
+        """Test that __repr__ has the expected format."""
+
+        assert repr(attribute(val)) == f"{attribute_type.__name__}({repr(val)})"
+
+    @pytest.mark.parametrize(
+        "val",
+        (
+            "",
+            "abc",
+            0,
+            0.0,
+            np.int64(0),
+            complex(1, 2),
+            None,
+        ),
+    )
+    def test_str(self, val):
+        """Test that __str__ returns the string representation of the value"""
+
+        assert str(attribute(val)) == str(val)
+
+    @pytest.mark.parametrize("copy_func", [copy, deepcopy])
+    @pytest.mark.parametrize(
+        "val",
+        (
+            "abc",
+            0,
+            0.0,
+            np.int64(0),
+            complex(1, 2),
+            None,
+        ),
+    )
+    def test_copy_preserves_values(self, copy_func, val):
+        """Test that copy preserves values"""
+
+        dset_attr = attribute(val)
+        assert copy_func(dset_attr) == dset_attr
+
+    def test_abstract_subclass_not_registered(self):
+        """Test that a DatasetAttribute subclass marked as
+        abstract will not be registered."""
+
+        class AbstractAttribute(DatasetAttribute, abstract=True):
+            """An abstract attribute."""
+
+            type_id = "_abstract_test_"
+
+        assert "_abstract_test_" not in DatasetAttribute.registry
+
+    def test_conflicting_type_id(self):
+        """Test that a TypeError is raised if when a subclass of
+        a DatasetAttribute has the same type id as another."""
+
+        class Attribute(DatasetAttribute):
+            """An attribute"""
+
+            type_id = "_attr_"
+
+        with pytest.raises(
+            TypeError, match=f"DatasetAttribute with type_id '_attr_' already exists: {Attribute}"
+        ):
+
+            class Conflicting(DatasetAttribute):
+                """A conflicting attribute"""
+
+                type_id = "_attr_"
+
+    def test_conflicting_consumes_types(self):
+        """Test that a Warning is raised if an subclass captures the same
+        type as another"""
+
+        class MyType:
+            pass
+
+        class Attribute(DatasetAttribute):
+            """An attribute"""
+
+            type_id = "_attr_2_"
+
+            @classmethod
+            def consumes_types(cls):
+                return (MyType,)
+
+        with pytest.warns(
+            Warning,
+            match=f"Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
+        ):
+
+            class Conflicting(DatasetAttribute):
+                """A conflicting attribute"""
+
+                type_id = "_attr_3_"
+
+                @classmethod
+                def consumes_types(cls):
+                    return (MyType,)
+
+            assert match_obj_type(MyType) is Conflicting

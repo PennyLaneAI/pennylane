@@ -346,13 +346,9 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         """
         existing_type_id = self.info.get("type_id")
         if existing_type_id is None:
-            raise TypeError(
-                f"HDF5 '{type(self.bind).__qualname__}' does not contain a dataset attribute."
-            )
+            raise ValueError(f"'bind' does not contain a dataset attribute.")
         if existing_type_id != self.type_id:
-            raise TypeError(
-                f"HDF5 '{type(self.bind).__qualname__}' is bound to another attribute type {existing_type_id}"
-            )
+            raise TypeError(f"'bind' is bound to another attribute type '{existing_type_id}'")
 
     def __copy__(self: Self) -> Self:
         impl_group = hdf5.create_group()
@@ -398,7 +394,9 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
             existing_type = DatasetAttribute.type_consumer_registry.get(type_)
             if existing_type is not None:
                 warnings.warn(
-                    f"Conflicting default types: Both '{cls}' and '{existing_type}' consume type '{type_}'. '{type_}' will now be consumed by '{cls}'"
+                    f"Conflicting default types: Both '{cls.__name__}' and '{existing_type.__name__}'"
+                    f" consume type '{type_.__name__}'. '{type_.__name__}'"
+                    f" will now be consumed by '{cls.__name__}'"
                 )
             DatasetAttribute.__type_consumer_registry[type_] = cls
 
@@ -406,13 +404,11 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
 
 def attribute(
-    val: T, doc: Optional[str] = None, is_param: bool = False, **kwargs: Any
+    val: T, doc: Optional[str] = None, **kwargs: Any
 ) -> DatasetAttribute[HDF5Any, T, Any]:
     """Returns ``DatasetAttribute`` class matching ``val``, with other arguments passed
     to the ``AttributeInfo`` class."""
-    return match_obj_type(val)(
-        val, AttributeInfo(doc=doc, py_type=type(val), is_param=is_param, **kwargs)
-    )
+    return match_obj_type(val)(val, AttributeInfo(doc=doc, py_type=type(val), **kwargs))
 
 
 def get_attribute_type(h5_obj: HDF5) -> Type[DatasetAttribute[HDF5, Any, Any]]:

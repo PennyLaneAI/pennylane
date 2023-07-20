@@ -15,10 +15,6 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 import os
-
-# pylint:disable=protected-access
-from concurrent.futures import ThreadPoolExecutor
-from glob import glob
 from pathlib import PosixPath
 from unittest.mock import MagicMock, patch
 
@@ -26,6 +22,9 @@ import pytest
 import requests
 
 import pennylane as qml
+
+# pylint:disable=protected-access
+
 
 pytestmark = pytest.mark.data
 
@@ -101,9 +100,16 @@ def wait_mock_fixture(_futures, return_when=None):
     return MagicMock(done=[])
 
 
+@pytest.fixture(autouse=True)
+def mock_load(monkeypatch):
+    mock = MagicMock(return_value=[qml.data.Dataset()])
+    monkeypatch.setattr(qml.data.data_manager, "load", mock)
+
+    return mock
+
+
 @patch.object(requests, "get", get_mock)
 @patch("pennylane.data.data_manager.sleep")
-@patch("pennylane.data.data_manager.load", return_value=[qml.data.Dataset()])
 @patch("builtins.input")
 class TestLoadInteractive:
     """
@@ -144,7 +150,7 @@ class TestLoadInteractive:
         ],
     )
     def test_load_interactive_success(
-        self, mock_input, mock_load, mock_sleep, side_effect, data_name, kwargs, sleep_call_count
+        self, mock_input, mock_sleep, mock_load, side_effect, data_name, kwargs, sleep_call_count
     ):  # pylint:disable=too-many-arguments
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
@@ -152,7 +158,7 @@ class TestLoadInteractive:
         mock_load.assert_called_once_with(data_name, **kwargs)
         assert mock_sleep.call_count == sleep_call_count
 
-    def test_load_interactive_without_confirm(self, mock_input, mock_load, _mock_sleep):
+    def test_load_interactive_without_confirm(self, mock_input, _mock_sleep, mock_load):
         """Test that load_interactive returns None if the user doesn't confirm."""
         mock_input.side_effect = ["1", "1", "2", "", "", "n"]
         assert qml.data.load_interactive() is None
@@ -169,7 +175,7 @@ class TestLoadInteractive:
         ],
     )
     def test_load_interactive_invalid_inputs(
-        self, mock_input, _mock_load, _mock_sleep, side_effect, error_message
+        self, mock_input, _mock_sleep, mock_load, side_effect, error_message
     ):
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
