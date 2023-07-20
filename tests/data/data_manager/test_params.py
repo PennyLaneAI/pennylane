@@ -16,9 +16,16 @@ Tests for the :class:`pennylane.data.data_manager.params.ParamArg` class.
 """
 
 
+from unittest.mock import patch
+
 import pytest
 
-from pennylane.data.data_manager.params import ParamArg, format_param_args
+from pennylane.data.data_manager.params import (
+    Description,
+    ParamArg,
+    format_param_args,
+    format_params,
+)
 
 pytestmark = pytest.mark.data
 
@@ -76,3 +83,48 @@ class TestParamArg:
 def test_format_param_args(param, details, expected):
     """Test that format_param_args behaves as expected."""
     assert format_param_args(param, details) == expected
+
+
+@pytest.mark.parametrize(
+    "param, details, match_error",
+    [
+        (
+            "layout",
+            (1, None),
+            r"Invalid layout value of '\(1, None\)'. Must be a string or a tuple of ints.",
+        ),
+        ("bondlength", None, r"Invalid bondlength 'None'. Must be a string, int or float."),
+        ("foo", 1, r"Invalid type 'int' for parameter 'foo'"),
+    ],
+)
+def test_format_param_args_errors(param, details, match_error):
+    """Test that format_param_args raises the expected errors
+    for incorrect inputs."""
+    with pytest.raises(TypeError, match=match_error):
+        format_param_args(param, details)
+
+
+def test_format_params():
+    """Test that format_params calls format_param_args with each parameter."""
+    assert format_params(
+        layout=[1, 4], bondlength=["0.5", "0.6"], z="full", y=ParamArg.DEFAULT
+    ) == {
+        "bondlength": ["0.5", "0.6"],
+        "layout": ["1x4"],
+        "y": ParamArg.DEFAULT,
+        "z": ParamArg.FULL,
+    }
+
+
+class TestDescription:
+    """Tests for Description."""
+
+    def test_str(self):
+        """Test that __str__ is equivalent to dict __str__."""
+        params = {"foo": "bar", "x": "y"}
+        assert str(Description(params)) == str(params)
+
+    def test_repr(self):
+        """Test that __repr__ is equivalent to dict __repr__."""
+        params = {"foo": "bar", "x": "y"}
+        assert repr(Description(params)) == f"Description({repr(params)})"

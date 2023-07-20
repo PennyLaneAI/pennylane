@@ -123,8 +123,6 @@ def load(  # pylint: disable=too-many-arguments
     foldermap = _get_foldermap()
 
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
-    if not data_paths:
-        return []
 
     dest_paths = [folder_path / data_path for data_path in data_paths]
 
@@ -141,7 +139,7 @@ def load(  # pylint: disable=too-many-arguments
             if result.exception():
                 raise result.exception()
 
-    return [Dataset.open(dest_path, "r") for dest_path in dest_paths]
+    return [Dataset.open(Path(dest_path), "r") for dest_path in dest_paths]
 
 
 def list_datasets() -> dict:

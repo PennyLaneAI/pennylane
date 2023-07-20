@@ -15,9 +15,16 @@
 Tests for the :class:`pennylane.data.mapper.AttributeTypeMapper` class.
 """
 
+from unittest.mock import MagicMock
+
+import pytest
+
+import pennylane.data.base.mapper
 from pennylane.data import AttributeInfo, Dataset, DatasetScalar
 from pennylane.data.base.hdf5 import create_group
 from pennylane.data.base.mapper import AttributeTypeMapper
+
+pytestmark = pytest.mark.data
 
 
 class TestMapper:  # pylint: disable=too-few-public-methods
@@ -46,3 +53,15 @@ class TestMapper:  # pylint: disable=too-few-public-methods
 
         assert dset.attr_info["x"].doc == "abc"
         assert dset.attr_info["x"]["extra"] == "xyz"
+
+    def test_set_item_other_value_error(self, monkeypatch):
+        """Test that set_item() only captures a ValueError if it is
+        caused by a HDF5 file not being writeable."""
+        monkeypatch.setattr(
+            pennylane.data.base.mapper,
+            "match_obj_type",
+            MagicMock(side_effect=ValueError("Something")),
+        )
+
+        with pytest.raises(ValueError, match="Something"):
+            AttributeTypeMapper(create_group()).set_item("x", 1, None)

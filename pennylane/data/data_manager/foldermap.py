@@ -24,8 +24,13 @@ from typing import Any, List, Literal, Optional, Tuple, Union
 
 from .params import Description, ParamArg, ParamVal
 
+
 # Type for a dataset path, relative to the foldermap.json file
-DataPath = PurePosixPath
+class DataPath(PurePosixPath):
+    """Type for Dataset Path, relative to the foldermap.json file."""
+
+    def __repr__(self) -> str:
+        return repr(str(self))
 
 
 class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
@@ -74,14 +79,11 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         """
         self.__curr_level = __curr_level
 
-    def get_default_key(self) -> str:
+    def get_default_key(self) -> Optional[str]:
         """Get the default key for this level of the foldermap.
         Raises a ValueError if it does not have a default.
         """
-        try:
-            return self.__curr_level["__default"]
-        except KeyError as exc:
-            raise ValueError("No default available for parameter") from exc
+        return self.__curr_level.get("__default")
 
     def find(
         self,
@@ -110,19 +112,16 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
 
         for param_name in param_names:
             param_arg = params.get(param_name, missing_default)
-            if param_arg is None:
-                raise ValueError(f"Missing argument for parameter '{param_name}'")
 
             while curr:
                 curr_description, curr_level = curr.pop()
-                if isinstance(curr_level, DataPath):
-                    done.append((curr_description, curr_level))
-                    continue
-
                 if param_arg == ParamArg.FULL:
                     next_params = curr_level
                 elif param_arg == ParamArg.DEFAULT:
-                    next_params = (curr_level.get_default_key(),)
+                    default = curr_level.get_default_key()
+                    if default is None:
+                        raise ValueError(f"No default available for parameter '{param_name}'")
+                    next_params = (default,)
                 elif isinstance(param_arg, str):
                     next_params = (param_arg,)
                 else:
@@ -152,7 +151,10 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
             raise KeyError(__key)
 
         if __key == ParamArg.DEFAULT:
-            return self[self.get_default_key()]
+            default = self.get_default_key()
+            if default is None:
+                raise ValueError("No default available")
+            return self[default]
 
         elem = self.__curr_level[__key]
         if isinstance(elem, Mapping):
@@ -172,6 +174,4 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         return f"{{{items_repr}}}"
 
     def __str__(self) -> str:
-        items_str = ", ".join((f"{str(k)}: {str(v)}") for k, v in self.items())
-
-        return f"{{{items_str}}}"
+        return repr(self)

@@ -15,13 +15,15 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 import os
-from pathlib import PosixPath
+from pathlib import Path, PosixPath
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 
 import pennylane as qml
+import pennylane.data.data_manager
+from pennylane.data import Dataset
 
 # pylint:disable=protected-access
 
@@ -30,13 +32,26 @@ pytestmark = pytest.mark.data
 
 
 _folder_map = {
+    "__params": {
+        "qchem": ["molname", "basis", "bondlength"],
+        "qspin": ["sysname", "periodicity", "lattice", "layout"],
+    },
     "qchem": {
         "H2": {
-            "6-31G": {"0.46": PosixPath("0.46"), "1.16": PosixPath("1.16"), "1.0": PosixPath("1.0")}
+            "6-31G": {
+                "0.46": PosixPath("qchem/H2/6-31G/0.46.h5"),
+                "1.16": PosixPath("qchem/H2/6-31G/1.16.h5"),
+                "1.0": PosixPath("qchem/H2/6-31G/1.0.h5"),
+            }
         }
     },
-    "qspin": {"Heisenberg": {"closed": {"chain": {"1x4": PosixPath("1.4")}}}},
+    "qspin": {
+        "Heisenberg": {
+            "closed": {"chain": {"1x4": PosixPath("qspin/Heisenberg/closed/chain/1x4/1.4.h5")}}
+        }
+    },
 }
+
 _data_struct = {
     "qchem": {
         "docstr": "Quantum chemistry dataset.",
@@ -65,7 +80,7 @@ def get_mock(url, timeout=1.0):
 
 
 @pytest.fixture(autouse=True)
-def patch_requests_get(monkeypatch):
+def mock_requests_get(request, monkeypatch):
     """Patches `requests.get()` in the data_manager module so that
     it returns mock JSON data for the foldermap and data struct."""
 
@@ -79,10 +94,14 @@ def patch_requests_get(monkeypatch):
             json_data = None
 
         mock_resp.json.return_value = json_data
+        if hasattr(request, "param"):
+            mock_resp.content = request.param
 
         return mock_resp
 
     monkeypatch.setattr(qml.data.data_manager, "get", mock_get)
+
+    return mock_get
 
 
 def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
@@ -100,7 +119,7 @@ def wait_mock_fixture(_futures, return_when=None):
     return MagicMock(done=[])
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_load(monkeypatch):
     mock = MagicMock(return_value=[qml.data.Dataset()])
     monkeypatch.setattr(qml.data.data_manager, "load", mock)
@@ -199,3 +218,90 @@ class TestMiscHelpers:
         assert qml.data.list_attributes("qchem") == _data_struct["qchem"]["attributes"]
         with pytest.raises(ValueError, match="Currently the hosted datasets are of types"):
             qml.data.list_attributes("invalid_data_name")
+
+
+@pytest.fixture
+def mock_download_dataset(monkeypatch):
+    def mock(data_path, dest, attributes, force):
+        dset = Dataset.open(Path(dest), "w")
+        dset.close()
+
+    monkeypatch.setattr(pennylane.data.data_manager, "_download_dataset", mock)
+
+    return mock
+
+
+@pytest.mark.usefixtures("mock_download_dataset")
+@pytest.mark.parametrize(
+    "data_name, params, expect_paths",
+    [
+        (
+            "qchem",
+            {"molname": "H2", "basis": "6-31G", "bondlength": ["0.46", "1.16"]},
+            ["qchem/H2/6-31G/0.46.h5", "qchem/H2/6-31G/1.16.h5"],
+        )
+    ],
+)
+def test_load(tmp_path, data_name, params, expect_paths):
+    """Test that load fetches the correct datasets at the
+    expected paths."""
+
+    folder_path = tmp_path
+    dsets = pennylane.data.data_manager.load(
+        data_name=data_name,
+        folder_path=folder_path,
+        **params,
+    )
+
+    assert {Path(dset.bind.filename) for dset in dsets} == {
+        Path(tmp_path, path) for path in expect_paths
+    }
+
+
+def test_load_except(monkeypatch, tmp_path):
+    """Test that an exception raised by _download_dataset is propagated."""
+    monkeypatch.setattr(
+        pennylane.data.data_manager, "_download_dataset", MagicMock(side_effect=ValueError("exc"))
+    )
+
+    with pytest.raises(ValueError, match="exc"):
+        pennylane.data.data_manager.load(
+            "qchem", molname="H2", basis="6-31G", bondlength="0.46", folder_path=tmp_path
+        )
+
+
+@pytest.mark.parametrize("mock_requests_get", [b"This is binary data"], indirect=True)
+def test_download_dataset_full(tmp_path, mock_requests_get):
+    """Tests that _download_dataset will fetch the dataset file
+    using requests if all attributes are requested."""
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path",
+        tmp_path / "dataset",
+        attributes=None,
+    )
+
+    with open(tmp_path / "dataset", "rb") as f:
+        assert f.read() == b"This is binary data"
+
+
+def test_download_dataset_partial(tmp_path, monkeypatch):
+    """Tests that _download_dataset will fetch the dataset file
+    using requests if all attributes are requested."""
+
+    remote_dataset = Dataset()
+    remote_dataset.x = 1
+    remote_dataset.y = 2
+
+    monkeypatch.setattr(
+        pennylane.data.data_manager, "open_hdf5_s3", MagicMock(return_value=remote_dataset.bind)
+    )
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path", tmp_path / "dataset", attributes=["x"]
+    )
+
+    local = Dataset.open(tmp_path / "dataset")
+
+    assert local.x == 1
+    assert not hasattr(local, "y")

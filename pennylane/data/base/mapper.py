@@ -137,11 +137,6 @@ class AttributeTypeMapper(MutableMapping):
         self._cache.pop(key, None)
         del self.bind[key]
 
-    def __repr__(self) -> str:
-        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
-
-        return f"{{{items_repr}}}"
-
 
 class MapperMixin:  # pylint: disable=too-few-public-methods
     """Mixin class for Dataset types that provide an interface
