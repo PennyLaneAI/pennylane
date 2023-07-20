@@ -305,6 +305,12 @@ def device(name, *args, **kwargs):
     if name in plugin_devices:
         options = {}
 
+        if "shots" in kwargs:
+            warnings.warn(
+                "In v0.33, the shots will always be determined by the QNode. Please specify shots there.",
+                UserWarning,
+            )
+
         # load global configuration settings if available
         config = kwargs.get("config", default_config)
 

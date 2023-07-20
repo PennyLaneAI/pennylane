@@ -244,7 +244,7 @@ class TestSnapshot:
 
         assert result == expected
 
-    @pytest.mark.parametrize("shots", [None, 0, 1, 100])
+    @pytest.mark.parametrize("shots", [None, 1, 100])
     def test_different_shots(self, shots):
         """Test that snapshots are returned correctly with different QNode shot values."""
         dev = qml.device("default.qubit", wires=2)
@@ -265,9 +265,10 @@ class TestSnapshot:
             2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
             "execution_results": np.array(0),
         }
-
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
-        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+        for key in (0, "very_importand_state", 2):
+            assert np.allclose(result[key], expected[key])
+        # can't compare results as too noisy
 
     @pytest.mark.parametrize(
         "m,expected_result",

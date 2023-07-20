@@ -444,7 +444,12 @@ class QNode:
                 UserWarning,
             )
 
-        if hasattr(device, "shots") and device.shots != shots and not device.shots and not shots:
+        if (
+            hasattr(device, "shots")
+            and device.shots != shots
+            and device.shots is not None
+            and shots is None
+        ):
             warnings.warn(
                 "Shots should now be specified on the qnode instead of on the device."
                 "Using shots from the device. QNode specified shots will be used in v0.33."
@@ -458,7 +463,7 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
-        self._shots = qml.measurements.Shots(shots)
+        self._shots = shots
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -506,7 +511,7 @@ class QNode:
         Can be overridden on a per-call basis using the ``qnode(*args, shots=new_shots, **kwargs)`` syntax.
 
         """
-        return self._shots
+        return qml.measurements.Shots(self._shots)
 
     @property
     def interface(self):
@@ -754,9 +759,7 @@ class QNode:
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
 
-                device = qml.device(
-                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
-                )
+                device = qml.device(backprop_devices[mapped_interface], wires=device.wires)
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
 
@@ -842,16 +845,16 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
-    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
+    def construct(self, args, kwargs, override_shots="unset"):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
-        shots = self._shots if self._qfunc_uses_shots_arg else kwargs.pop("shots", self._shots)
+        override_shots = self._shots if isinstance(override_shots, str) else override_shots
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
+        self._tape = make_qscript(self.func, override_shots)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
@@ -930,10 +933,10 @@ class QNode:
             self.device.tracker = self._original_device.tracker
 
         original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
+        override_shots = self._shots
         if not self._qfunc_uses_shots_arg:
-            # takes in override shots
-
             if "shots" in kwargs:
+                override_shots = kwargs.pop("shots")
                 # Since shots has changed, we need to update the preferred gradient function.
                 # This is because the gradient function chosen at initialization may
                 # no longer be applicable.
@@ -941,15 +944,12 @@ class QNode:
                 # pylint: disable=not-callable
                 # update the gradient function
                 if isinstance(self._original_device, Device):
-                    set_shots(self._original_device, kwargs["shots"])(self._update_gradient_fn)()
+                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
                 else:
-                    self._update_gradient_fn(shots=kwargs["shots"])
-
-            else:
-                kwargs["shots"] = self._shots
+                    self._update_gradient_fn(shots=override_shots)
 
         # construct the tape
-        self.construct(args, kwargs)
+        self.construct(args, kwargs, override_shots=override_shots)
 
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (
@@ -1056,9 +1056,7 @@ class QNode:
             qfunc_output_type = type(self._qfunc_output)
             return qfunc_output_type(res)
 
-        if override_shots is not False:
-            # restore the initialization gradient function
-            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+        self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
         self._update_original_device()
 
