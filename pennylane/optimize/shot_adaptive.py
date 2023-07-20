@@ -303,9 +303,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """Compute the single shot gradients of an ExpvalCost object"""
         qnodes = expval_cost.qnodes
         coeffs = expval_cost.hamiltonian.coeffs
-        device = qnodes[0].device
 
-        self.check_device(device)
+        self.check_device(qnodes[0].device)
 
         if self.lipschitz is None:
             self.check_learning_rate(coeffs)
