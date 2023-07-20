@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+  A `ProcessPoolExecutor` executes tapes asynchronously
+  using a pool of at most `max_workers` processes. If `max_workers` is `None`
+  or not given, only the current process executes tapes. If you experience any
+  issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
+  [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
+
 <h3>Improvements 🛠</h3>
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
@@ -97,6 +104,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
+  List input to define the fermionic operator is also deprecated; the fermionic 
+  operators in the ``qml.fermi`` module should be used instead.
+  [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
+
 * The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
@@ -104,6 +116,10 @@
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+  are deprecated. Use ``convert_to_numpy_parameters`` instead.
+  [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
 * `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
   `disable_return`, as the old return system is deprecated along with these switch functions.
@@ -154,9 +170,11 @@
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
+Vincent Michaud-Rioux,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
