@@ -44,9 +44,7 @@ def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
-def _create_shape_dtype_struct(
-    tape: "qml.tape.QuantumScript", device: Union["qml.Device", "qml.devices.experimental.Device"]
-) -> Union[Tuple, jax.ShapeDtypeStruct]:
+def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
 
@@ -59,20 +57,21 @@ def _create_shape_dtype_struct(
     return tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype))
 
 
-def _jac_shape_dtype_struct(
-    tape: "qml.tape.QuantumScript", device: Union["qml.Device", "qml.devices.experimental.Device"]
-) -> Union[Tuple, jax.ShapeDtypeStruct]:
+def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
     """The shape of a jacobian for a single tape given a device.
 
     Args:
         tape (QuantumTape): the tape who's output we want to determine
         device (Device): the device used to execute the tape.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliX(0)), qml.probs(wires=(0,1))])
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliX(0)), qml.probs(0)])
     >>> dev = qml.devices.experimental.DefaultQubit2()
     >>> _jac_shape_dtype_struct(tape, dev)
     (ShapeDtypeStruct(shape=(), dtype=float64),
-    ShapeDtypeStruct(shape=(4,), dtype=float64))
+    ShapeDtypeStruct(shape=(2,), dtype=float64))
+    >>> tapes, fn = qml.gradients.param_shift(tape)
+    >>> fn(dev.execute(tapes))
+    (array(0.), array([-0.42073549,  0.42073549]))
     """
     shape_and_dtype = _create_shape_dtype_struct(tape, device)
     if len(tape.trainable_params) == 1:
@@ -80,6 +79,52 @@ def _jac_shape_dtype_struct(
     if len(tape.measurements) == 1:
         return tuple(shape_and_dtype for _ in tape.trainable_params)
     return tuple(tuple(_s for _ in tape.trainable_params) for _s in shape_and_dtype)
+
+
+def _empty_jacs_for_shape(
+    shape_dtype: Union[Tuple, jax.ShapeDtypeStruct]
+) -> Union[Tuple, jnp.Array]:
+    """Converts a nested tuple containing ``jax.ShapeDtypeStruct`` into a nested tuples
+    containing zeros arrays of the appropriate shape.
+
+    """
+    if isinstance(shape_dtype, tuple):
+        return tuple(_empty_jacs_for_shape(struct) for struct in shape_dtype)
+    return jnp.zeros(shape_dtype.shape, shape_dtype.dtype)
+
+
+def _switched_jacobian(tape, device, original_trainable_parameters, jacs):
+    """Adds in jacobians with of all zeros for parameters that had zero tangent.
+
+    Used in ``execute_wrapper_jvp`` for grad_on_execution=True with device derivatives.
+
+    Note that this adds an additional nesting dimension to ``jacs``, with one jacobian
+    for each original trainable parameter. I am unsure why this works.
+
+    >>> dev = qml.devices.experimental.DefaultQubit2()
+    >>> config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+    >>> tape = qml.tape.QuantumTape([qml.RY(1.0, 0), qml.RX(0.6, 0), qml.RX(0.7, 0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape.trainable_params = [0, 2]
+    >>> jac = dev.compute_derivatives(tape, config)
+    >>> jac
+    (array(-0.2250925), array(-0.52061271))
+    >>> _switched_jacobian(tape, dev, [0,1,2], jac)
+    ((array(-0.2250925), array(-0.52061271)),
+    (Array(0., dtype=float64), Array(0., dtype=float64)),
+    (array(-0.2250925), array(-0.52061271)))
+
+    """
+    intermediate_jacs = []
+
+    shape_dtype = _jac_shape_dtype_struct(tape, device)
+
+    for param_idx in original_trainable_parameters:
+        if param_idx in tape.trainable_params:
+            p_jac = jacs
+        else:
+            p_jac = _empty_jacs_for_shape(shape_dtype)
+        intermediate_jacs.append(p_jac)
+    return tuple(intermediate_jacs)
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
@@ -192,10 +237,9 @@ def _execute_bwd(
 
         # Select the trainable params. Non-trainable params contribute a 0 gradient.
         for tangent, tape in zip(tangents[0], tapes):
-            trainable_params = tuple(
+            tape.trainable_params = tuple(
                 idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
             )
-            tape.trainable_params = trainable_params
 
         if not isinstance(gradient_fn, qml.gradients.gradient_transform):
             # is a device method
@@ -327,28 +371,26 @@ def _execute_fwd(
 
         shape_dtype_structs = tuple(_create_shape_dtype_struct(t, device) for t in tapes)
 
-        jac_shape_dtype_structs = tuple(_jac_shape_dtype_struct(t, device) for t in tapes)
-        jac_shape_dtype_structs = (
-            jac_shape_dtype_structs[0] if len(tapes) == 1 else jac_shape_dtype_structs
-        )
+        jac_shape = tuple(_jac_shape_dtype_struct(t, device) for t in tapes)
+        jac_shape = jac_shape[0] if len(tapes) == 1 else jac_shape
 
-        return jax.pure_callback(wrapper, (shape_dtype_structs, jac_shape_dtype_structs), params)
+        return jax.pure_callback(wrapper, (shape_dtype_structs, jac_shape), params)
 
     @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
-        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
+        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers.
+
+        Closure Variables:
+            tapes, execute_wrapper
+        """
 
         # Get the original trainable parameters and the trainable parameters from symbolic zeros
         original_trainable_parameters = [tape.trainable_params for tape in tapes]
 
-        switch_trainable = []
         for tangent, tape in zip(tangents[0], tapes):
-            new_trainable_params = [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
-            if tape.trainable_params != new_trainable_params:
-                tape.trainable_params = new_trainable_params
-                switch_trainable.append(True)
-            else:
-                switch_trainable.append(False)
+            tape.trainable_params = [
+                idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
+            ]
 
         # Forward execution with the right trainable parameters
         res, jacs = execute_wrapper(primals[0])
@@ -357,31 +399,12 @@ def _execute_fwd(
 
         updated_jacs = []
 
-        # Add zeros in the jacobians if the trainable params were switched
-        for tape_index, (tape, switch) in enumerate(zip(tapes, switch_trainable)):
-            if not switch:
-                updated_jacs.append(jacs_[tape_index])
+        for tape, tape_jac, orig_trainable in zip(tapes, jacs_, original_trainable_parameters):
+            if tape.trainable_params != orig_trainable:
+                # Add zeros in the jacobians if the trainable params were switched
+                updated_jacs.append(_switched_jacobian(tape, device, orig_trainable, tape_jac))
             else:
-                intermediate_jacs = []
-
-                shape_dtype = _jac_shape_dtype_struct(tape, device)
-
-                if len(tape.measurements) > 1:
-                    if isinstance(shape_dtype[0][0], tuple):
-                        shape_dtype = shape_dtype[0]
-                    jac_empty = tuple(
-                        jnp.zeros(shape=tensor.shape, dtype=tensor.dtype) for tensor in shape_dtype
-                    )
-                else:
-                    # not exactly sure why we need this line
-                    if isinstance(shape_dtype, tuple):
-                        shape_dtype = shape_dtype[0]
-                    jac_empty = jnp.zeros(shape_dtype.shape, shape_dtype.dtype)
-
-                for param_idx in original_trainable_parameters[tape_index]:
-                    p_jac = jacs_[tape_index] if param_idx in tape.trainable_params else jac_empty
-                    intermediate_jacs.append(p_jac)
-                updated_jacs.append(tuple(intermediate_jacs))
+                updated_jacs.append(tape_jac)
 
         updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
 
