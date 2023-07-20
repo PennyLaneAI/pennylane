@@ -15,7 +15,7 @@
 Tests for the :class:`pennylane.data.mapper.AttributeTypeMapper` class.
 """
 
-from pennylane.data import AttributeInfo
+from pennylane.data import AttributeInfo, Dataset, DatasetScalar
 from pennylane.data.base.hdf5 import create_group
 from pennylane.data.base.mapper import AttributeTypeMapper
 
@@ -33,3 +33,16 @@ class TestMapper:  # pylint: disable=too-few-public-methods
         mapper = AttributeTypeMapper(bind)
 
         assert mapper.info == info
+
+    def test_set_item_attribute_with_info(self):
+        """Test that set_item() copies info from the
+        info argument when passed a DatasetAttribute."""
+        dset = Dataset()
+        mapper = AttributeTypeMapper(dset.bind)
+
+        mapper.set_item(
+            "x", DatasetScalar(1, info=AttributeInfo(doc="abc")), info=AttributeInfo(extra="xyz")
+        )
+
+        assert dset.attr_info["x"].doc == "abc"
+        assert dset.attr_info["x"]["extra"] == "xyz"

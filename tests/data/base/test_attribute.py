@@ -144,12 +144,13 @@ class TestAttributeInfo:
 
     def test_load(self):
         """Test the load() copies all items from the other AttributeInfo."""
-        x, y = AttributeInfo(py_type="list", data=1), AttributeInfo(data=2)
+        x, y = AttributeInfo(py_type="list", data=1, extra="abc"), AttributeInfo(data=2)
 
         y.load(x)
 
         assert y.py_type == "list"
         assert y["data"] == 1
+        assert y["extra"] == "abc"
 
     def test_len(self):
         """Test that __iter__ returns the keys and attributes of ``AttributeInfo``."""
