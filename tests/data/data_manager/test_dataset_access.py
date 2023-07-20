@@ -170,14 +170,16 @@ class TestLoadInteractive:
     )
     def test_load_interactive_success(
         self, mock_input, mock_sleep, mock_load, side_effect, data_name, kwargs, sleep_call_count
-    ):  # pylint:disable=too-many-arguments
+    ):  # pylint:disable=too-many-arguments, redefined-outer-name
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
         mock_load.assert_called_once_with(data_name, **kwargs)
         assert mock_sleep.call_count == sleep_call_count
 
-    def test_load_interactive_without_confirm(self, mock_input, _mock_sleep, mock_load):
+    def test_load_interactive_without_confirm(
+        self, mock_input, _mock_sleep, mock_load
+    ):  # pylint:disable=redefined-outer-name
         """Test that load_interactive returns None if the user doesn't confirm."""
         mock_input.side_effect = ["1", "1", "2", "", "", "n"]
         assert qml.data.load_interactive() is None
@@ -195,7 +197,7 @@ class TestLoadInteractive:
     )
     def test_load_interactive_invalid_inputs(
         self, mock_input, _mock_sleep, mock_load, side_effect, error_message
-    ):
+    ):  # pylint: disable=redefined-outer-name
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
@@ -270,8 +272,9 @@ def test_load_except(monkeypatch, tmp_path):
         )
 
 
+@pytest.mark.usefixtures("mock_requests_get")
 @pytest.mark.parametrize("mock_requests_get", [b"This is binary data"], indirect=True)
-def test_download_dataset_full(tmp_path, mock_requests_get):
+def test_download_dataset_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     using requests if all attributes are requested."""
 

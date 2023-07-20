@@ -217,7 +217,9 @@ class NoDefaultAttribute(DatasetAttribute):
 
     type_id = "test"
 
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Any) -> Any:
+    def value_to_hdf5(
+        self, bind_parent: HDF5Group, key: str, value: Any
+    ) -> Any:  # pylint: disable=unused-argument
         return None
 
     def hdf5_to_value(self, bind: Any) -> Any:
@@ -246,7 +248,7 @@ class TestAttribute:
         """Test that a ValueError is raised when the bind
         does not contain a dataset attribute."""
 
-        with pytest.raises(ValueError, match=f"'bind' does not contain a dataset attribute."):
+        with pytest.raises(ValueError, match="'bind' does not contain a dataset attribute."):
             DatasetNone(bind=create_group())
 
     def test_bind_init_from_other_bind(self):
@@ -255,7 +257,7 @@ class TestAttribute:
 
         attr = DatasetNone()
 
-        with pytest.raises(TypeError, match=f"'bind' is bound to another attribute type 'none'"):
+        with pytest.raises(TypeError, match="'bind' is bound to another attribute type 'none'"):
             DatasetString(bind=attr.bind)
 
     @pytest.mark.parametrize(
@@ -310,11 +312,13 @@ class TestAttribute:
         dset_attr = attribute(val)
         assert copy_func(dset_attr) == dset_attr
 
-    def test_abstract_subclass_not_registered(self):
+    def test_abstract_subclass_not_registered(self):  # pylint: disable=unused-variable
         """Test that a DatasetAttribute subclass marked as
         abstract will not be registered."""
 
-        class AbstractAttribute(DatasetAttribute, abstract=True):
+        class AbstractAttribute(
+            DatasetAttribute, abstract=True
+        ):  # pylint: disable=too-few-public-methods
             """An abstract attribute."""
 
             type_id = "_abstract_test_"
@@ -325,7 +329,7 @@ class TestAttribute:
         """Test that a TypeError is raised if when a subclass of
         a DatasetAttribute has the same type id as another."""
 
-        class Attribute(DatasetAttribute):
+        class Attribute(DatasetAttribute):  # pylint: disable=too-few-public-methods
             """An attribute"""
 
             type_id = "_attr_"
@@ -334,7 +338,7 @@ class TestAttribute:
             TypeError, match=f"DatasetAttribute with type_id '_attr_' already exists: {Attribute}"
         ):
 
-            class Conflicting(DatasetAttribute):
+            class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods
                 """A conflicting attribute"""
 
                 type_id = "_attr_"
@@ -343,10 +347,12 @@ class TestAttribute:
         """Test that a Warning is raised if an subclass captures the same
         type as another"""
 
-        class MyType:
+        class MyType:  # pylint: disable=too-few-public-methods
             pass
 
-        class Attribute(DatasetAttribute):
+        class Attribute(
+            DatasetAttribute
+        ):  # pylint: disable=unused-variable, too-few-public-methods
             """An attribute"""
 
             type_id = "_attr_2_"
@@ -360,7 +366,7 @@ class TestAttribute:
             match=f"Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
         ):
 
-            class Conflicting(DatasetAttribute):
+            class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods
                 """A conflicting attribute"""
 
                 type_id = "_attr_3_"

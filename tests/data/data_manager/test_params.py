@@ -16,8 +16,6 @@ Tests for the :class:`pennylane.data.data_manager.params.ParamArg` class.
 """
 
 
-from unittest.mock import patch
-
 import pytest
 
 from pennylane.data.data_manager.params import (

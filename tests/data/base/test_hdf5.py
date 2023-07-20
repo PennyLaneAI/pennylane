@@ -61,7 +61,9 @@ def patch_h5py(monkeypatch):
         ),
     ],
 )
-def test_open_hdf5_s3(mock_fsspec, kwargs, call_args, call_kwargs):
+def test_open_hdf5_s3(
+    mock_fsspec, kwargs, call_args, call_kwargs
+):  # pylint: disable=redefined-outer-name
     """Test that open_hdf5_s3 calls fsspec.open() with the expected arguments."""
 
     ret = hdf5.open_hdf5_s3("/bucket", **kwargs)

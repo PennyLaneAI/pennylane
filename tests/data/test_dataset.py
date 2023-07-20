@@ -38,7 +38,7 @@ from pennylane.data.base.hdf5 import open_group
 
 class MyDataset(
     Dataset, data_name="my_dataset", params=("x", "y")
-):  # pylint: disable=too-few-public-methods
+):  # pylint: disable=too-many-public-methods
     """A dataset subclass for testing."""
 
     x: str = field()
@@ -277,7 +277,7 @@ class TestDataset:
         dset.close()
 
         with pytest.raises(AttributeError):
-            Dataset.open(path).other_data
+            _ = Dataset.open(path).other_data
 
     @pytest.mark.parametrize(
         "attributes_arg, attributes_expect", [(None, ["x", "y", "z"]), (["x", "y"], ["x", "y"])]
@@ -354,7 +354,9 @@ class TestDataset:
         - gets data name and params from class arguments
         """
 
-        class NewDataset(Dataset, data_name="new_dataset", params=("x", "y")):
+        class NewDataset(
+            Dataset, data_name="new_dataset", params=("x", "y")
+        ):  # pylint: disable= too-few-public-methods
             """Dataset"""
 
             class_info: ClassVar[str] = "Class variable"

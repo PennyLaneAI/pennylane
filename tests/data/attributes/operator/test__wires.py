@@ -16,7 +16,6 @@ Tests for the wire serialization functions in :mod:`pennylane.data.attributes.op
 """
 
 import json
-from typing import Any
 
 import numpy as np
 import pytest
