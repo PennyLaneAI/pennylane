@@ -33,12 +33,12 @@ system and its evolution. For example, a dataset for an arbitrary quantum system
 a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state. Datasets
 can contain a range of object types, including:
 
-    - ``numpy.ndarray``
-    - any numeric type
-    - :class:`qml.qchem.Molecule`
-    - most :class:`qml.operation.Operator` types
-    - `list` of any supported type
-    - `dict` of any supported type, as long as the keys are strings
+- ``numpy.ndarray``
+- any numeric type
+- :class:`~.qchem.Molecule`
+- most :class:`~.Operator` types
+- ``list`` of any supported type
+- ``dict`` of any supported type, as long as the keys are strings
 
 
 Creating a Dataset
@@ -112,7 +112,7 @@ function can be used to attach metadata on assignment or initialization.
 
 This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
 
-    >>> dataset.attr_info["hamiltonian"]["doc"]
+    >>> dataset.attr_info["eigen"]["doc"]
     'The hamiltonian of the system'
 
 
@@ -126,7 +126,7 @@ a quantum oscillator, which contains the first 1000 energy levels for different 
 The datasets declarative API allows us to create subclasses of ``Dataset`` that define the required attributes,
 or 'fields', and their associated type and documentation:
 
-.. code-block
+.. code-block:: python
 
     class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", params=["mass", "force_constant"]):
         \"""Dataset describing a quantum oscillator.\"""

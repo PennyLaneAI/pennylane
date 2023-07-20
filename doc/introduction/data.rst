@@ -12,7 +12,11 @@ where the quantum dataset is a collection of `quantum data` obtained from variou
 .. note::
 
     The packages ``aiohttp``, ``fsspec``, and ``h5py`` are required to use the :mod:`~pennylane.data` module. 
-    These can be installed with ``pip install aiohttp fsspec h5py``.
+    These can be installed with:
+    
+    .. code-block:: console
+    
+        pip install aiohttp fsspec h5py
 
 Loading Datasets in PennyLane
 -----------------------------
