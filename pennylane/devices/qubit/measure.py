@@ -20,7 +20,12 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.ops import Sum, Hamiltonian
-from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP, MeasurementValue
+from pennylane.measurements import (
+    StateMeasurement,
+    MeasurementProcess,
+    ExpectationMP,
+    MeasurementValue,
+)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
