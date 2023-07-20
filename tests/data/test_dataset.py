@@ -84,6 +84,24 @@ class TestDataset:
 
         assert ds.data_name == expect
 
+    def test_subclass_bind_init(self):
+        """Test that Dataset can be bind-initialized from a HDF5 group that
+        was initialized by a subclass of Dataset."""
+
+        bind = MyDataset(x="1", y="2", description="test").bind
+
+        ds = Dataset(bind)
+
+        assert ds.data_name == "my_dataset"
+        assert ds.params == {"x": "1", "y": "2"}
+
+    def test_subclass_category_id(self):
+        """Test that a subclass of Dataset preserves the defined
+        category_id."""
+
+        ds = MyDataset(x="1", y="2", description="test")
+        assert ds.data_name == "my_dataset"
+
     def test_getattr_unset_fields(self):
         """Test that __getattr__ returns UNSET if a dataset field
         is not set."""
@@ -109,24 +127,6 @@ class TestDataset:
         assert ds.attrs["x"].info.py_type == "numbers.Number"
         assert ds.attrs["x"].info.doc == "docstring"
 
-    def test_subclass_category_id(self):
-        """Test that a subclass of Dataset preserves the defined
-        category_id."""
-
-        ds = MyDataset(x="1", y="2", description="test")
-        assert ds.data_name == "my_dataset"
-
-    def test_dataset_bind_init_from_subclass(self):
-        """Test that Dataset can be bind-initialized from a HDF5 group that
-        was initialized by a subclass of Dataset."""
-
-        bind = MyDataset(x="1", y="2", description="test").bind
-
-        ds = Dataset(bind)
-
-        assert ds.data_name == "my_dataset"
-        assert ds.params == {"x": "1", "y": "2"}
-
     def test_setattr_preserves_field_info(self):
         """Test that __setattr__ preserves AttributeInfo for fields."""
 
@@ -134,6 +134,17 @@ class TestDataset:
 
         assert ds.attrs["description"].info.doc == MyDataset.fields["description"].info.doc
         assert ds.attrs["description"].info["type_id"] == "string"
+
+    def test_setattr_field_conflicting_type(self):
+        """Test that __setattr__ raises a TypeError when setting an attribute
+        with a `DatasetAttribute` different from the field type."""
+
+        dset = MyDataset(x="1", y="2", description="test")
+
+        with pytest.raises(
+            TypeError, match="Expected 'x' to be of type 'DatasetString', but got 'DatasetScalar'."
+        ):
+            dset.x = DatasetScalar(1)
 
     def test_delattr(self):
         """Test that __delattr__ removes the attribute from the dataset

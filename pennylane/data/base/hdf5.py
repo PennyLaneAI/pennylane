@@ -70,7 +70,7 @@ def copy(
         if on_conflict == "overwrite":
             del dest[key]
         elif on_conflict == "raise":
-            raise ValueError(f"Key {key} already exists in {source.name}")
+            raise ValueError(f"Key '{key}' already exists in '{source.name}'")
         if on_conflict == "ignore":
             return
 
