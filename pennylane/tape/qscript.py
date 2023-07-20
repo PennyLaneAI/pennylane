@@ -1236,6 +1236,12 @@ class QuantumScript:
         <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
         <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
         """
+
+        warnings.warn(
+            "The method tape.unwrap is deprecated and will be removed in PennyLane v0.33. "
+            "Please use qml.transforms.convert_to_numpy_parameters instead."
+        )
+
         return qml.tape.UnwrapTape(self)
 
     # ========================================================
