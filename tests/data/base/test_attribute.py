@@ -15,6 +15,8 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
+# pylint: disable=unused-argument,too-many-public-methods
+
 from copy import copy, deepcopy
 from typing import Any, Iterable, List
 
@@ -369,7 +371,7 @@ class TestAttribute:
 
         with pytest.warns(
             Warning,
-            match=f"Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
+            match="Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
         ):
 
             class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods
