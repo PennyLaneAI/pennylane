@@ -385,6 +385,9 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         cls.fields = MappingProxyType(fields)
 
+    def __dir__(self):
+        return self.list_attributes()
+
     __data_name__ = "generic"
     __params__ = tuple()
 
