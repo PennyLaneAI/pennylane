@@ -22,7 +22,6 @@ from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumTape
 
 from .apply_operation import apply_operation
-from .initialize_state import create_initial_state
 from .simulate import get_final_state
 
 # pylint: disable=protected-access, too-many-branches

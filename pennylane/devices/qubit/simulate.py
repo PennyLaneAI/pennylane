@@ -80,7 +80,6 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
             is_state_batched=is_state_batched,
             rng=rng,
         )
-        return results
 
     rng = default_rng(rng)
     results = tuple(
