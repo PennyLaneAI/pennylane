@@ -119,13 +119,12 @@ class Dataset(MapperMixin, _DatasetTransform):
         fields: A mapping of attribute names to their ``Attribute`` information. Note that
             this contains attributes declared on the class, not attributes added to
             an instance. Use ``attrs`` to view all attributes on an instance.
-        bind: The HDF5 group that contains this dataset's attributes
     """
 
     __data_name__: ClassVar[str]
     __identifiers__: ClassVar[Tuple[str, ...]]
 
-    fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
+    fields: ClassVar[typing.Mapping[str, Field]]
 
     bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
     data_name_: Optional[str] = _init_arg(default=None, alias="data_name")
@@ -404,6 +403,9 @@ class Dataset(MapperMixin, _DatasetTransform):
     type_id = "dataset"
     """Type identifier for this dataset. Used internally to load datasets
     from other datasets."""
+
+
+Dataset.fields = MappingProxyType({})
 
 
 class _DatasetAttributeType(DatasetAttribute[HDF5Group, Dataset, Dataset]):

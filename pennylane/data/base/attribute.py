@@ -47,8 +47,6 @@ class AttributeInfo(MutableMapping):
     attribute. Is stored in the HDF5 object's ``attrs`` dict.
 
     Attributes:
-        attrs_namespace: Keys for this class's attributes will
-            be prefixed with this string in ``attrs_bind``.
         attrs_bind: The HDF5 attrs dict that this instance is bound to,
             or any mutable mapping
         py_type: Type annotation for this attribute
