@@ -257,12 +257,12 @@ class PauliRot(Operation):
 
     Broadcasting over different Pauli words instead:
 
-    >>> print(circuit(0.5, ["X", "Y", "Z"]))
+    >>> print(circuit(0.5, ("X", "Y", "Z")))
     [0.76484219 0.86008934 0.98006658]
 
     Broadcasting the angle and Pauli word simultaneously:
 
-    >>> print(circuit(angles, ["X", "Y", "Z"]))
+    >>> print(circuit(angles, ("X", "Y", "Z")))
     [-0.02919952 -0.57677028  0.98006658]
     """
     num_wires = AnyWires

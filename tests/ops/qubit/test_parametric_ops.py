@@ -3092,7 +3092,7 @@ class TestPauliRot:
     def test_PauliRot_matrix_broadcast_word(self, tol):
         """Test that the PauliRot matrix is correct for broadcasted words."""
         angles = np.array([0.2, 0.1, 0.7, 0.3, 0.2])
-        words = ["IX", "ZI", "YY", "XX", "YZ"]
+        words = ("IX", "ZI", "YY", "XX", "YZ")
         ops = [
             qml.Identity(0) @ qml.PauliX(1),
             qml.PauliZ(0) @ qml.Identity(1),
@@ -3109,7 +3109,7 @@ class TestPauliRot:
         """Test that the PauliRot matrix is correct for broadcasted words and angles."""
         angles, words, expected = list(zip(*PAULI_ROT_MATRIX_TEST_DATA))
 
-        res = qml.PauliRot.compute_matrix(angles, words)
+        res = qml.PauliRot.compute_matrix(angles, tuple(words))
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -3117,7 +3117,7 @@ class TestPauliRot:
         """Test that the PauliRot matrix raises an error for mismatching
         angles and words broadcasting dimensions."""
         angles = np.array([0.2, 0.1, 0.7, 0.3, 0.2])
-        words = ["IX", "ZI"]
+        words = ("IX", "ZI")
         with pytest.raises(ValueError, match="When broadcasting the rotation angle"):
             qml.PauliRot.compute_matrix(angles, words)
 
@@ -3352,11 +3352,11 @@ class TestPauliRot:
         in particular mismatching broadcasting dimensions between angles
         and Pauli words or wrong Pauli words in a broadcasted word."""
         with pytest.raises(ValueError, match="When broadcasting the rotation angle"):
-            qml.PauliRot(np.array([0.65, 0.6]), ["IX", "YI", "XX"], [0, "p"])
+            qml.PauliRot(np.array([0.65, 0.6]), ("IX", "YI", "XX"), [0, "p"])
         with pytest.raises(ValueError, match="The given Pauli word .* contains"):
-            qml.PauliRot(0.65, ["IX", "YI", "XS"], [0, "p"])
+            qml.PauliRot(0.65, ("IX", "YI", "XS"), [0, "p"])
         with pytest.raises(ValueError, match="The given Pauli word has length"):
-            qml.PauliRot(0.65, ["IX", "YI", "XZY"], [0, "p"])
+            qml.PauliRot(0.65, ("IX", "YI", "XZY"), [0, "p"])
 
     def test_empty_wire_list_error_paulirot(self):
         """Test that PauliRot operator raises an error when instantiated with wires=[]."""
