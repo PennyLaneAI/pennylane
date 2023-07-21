@@ -17,7 +17,7 @@ types."""
 import typing
 from typing import Generic
 
-from typing_extensions import TypeVarTuple, Unpack
+from typing_extensions import TypeVarTuple, Unpack  # pylint: disable=no-name-in-module
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group

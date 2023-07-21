@@ -351,7 +351,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     def _set_parent(self, parent: HDF5Group, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
         hdf5.copy(source=self.bind, dest=parent, key=key, on_conflict="overwrite")
-        self._bind = parent[key]
+        self._bind = parent[key]  # pylint: disable=attribute-defined-outside-init
 
     def _check_bind(self):
         """

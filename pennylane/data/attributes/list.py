@@ -16,12 +16,12 @@ types."""
 
 import typing
 from collections.abc import Sequence
-from typing import Generic, List, Literal, Optional, Tuple, Union, overload
+from typing import Generic, List, Union, overload
 
-from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
+from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
-from pennylane.data.base.mapper import AttributeTypeMapper, MapperMixin
-from pennylane.data.base.typing_util import UNSET, T
+from pennylane.data.base.mapper import MapperMixin
+from pennylane.data.base.typing_util import T
 
 
 class DatasetList(  # pylint: disable=too-many-ancestors
