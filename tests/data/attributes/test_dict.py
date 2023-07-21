@@ -19,6 +19,8 @@ import pytest
 
 from pennylane.data.attributes import DatasetDict
 
+pytestmark = pytest.mark.data
+
 
 class TestDatasetDict:
     def test_default_init(self):

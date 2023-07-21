@@ -26,7 +26,17 @@ from pennylane.data.base.attribute import (
     get_attribute_type,
     match_obj_type,
 )
-from pennylane.data.base.hdf5 import HDF5Group
+from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
+
+
+class DatasetNotWriteableError(RuntimeError):
+    """Exception raised when attempting to set an attribute
+    on a dataset whose underlying file is not writeable."""
+
+    def __init__(self, bind: HDF5Any):
+        self.bind = bind
+
+        super().__init__(f"Dataset file is not writeable: {bind.filename}")
 
 
 class AttributeTypeMapper(MutableMapping):
@@ -78,20 +88,27 @@ class AttributeTypeMapper(MutableMapping):
                 If ``value`` is an ``DatasetAttribute``, it must be an instance of ``require_type``.
                 Otherwise, ``value`` must be serializable by ``require_type``.
         """
-        if isinstance(value, DatasetAttribute):
-            if require_type and not isinstance(value, require_type):
-                raise TypeError(
-                    f"Expected {key} to be of type '{require_type}', but got '{type(value)}' instead."
-                )
+        try:
+            if isinstance(value, DatasetAttribute):
+                if require_type and not isinstance(value, require_type):
+                    raise TypeError(
+                        f"Expected '{key}' to be of type '{require_type.__name__}', but got '{type(value).__name__}'."
+                    )
 
-            value._set_parent(self.bind, key)  # pylint: disable=protected-access
-            if info:
-                value.info.load(info)
-        elif require_type is not None:
-            require_type(value, info, parent_and_key=(self.bind, key))
-        else:
-            attr_type = match_obj_type(value)
-            attr_type(value, info, parent_and_key=(self.bind, key))
+                value._set_parent(self.bind, key)  # pylint: disable=protected-access
+                if info:
+                    info.save(value.info)
+
+            elif require_type is not None:
+                require_type(value, info, parent_and_key=(self.bind, key))
+            else:
+                attr_type = match_obj_type(value)
+                attr_type(value, info, parent_and_key=(self.bind, key))
+        except ValueError as exc:
+            if exc.args[0] == "Unable to create dataset (no write intent on file)":
+                raise DatasetNotWriteableError(self.bind) from exc
+
+            raise exc
 
         self._cache.pop(key, None)
 
@@ -119,11 +136,6 @@ class AttributeTypeMapper(MutableMapping):
     def __delitem__(self, key: str) -> None:
         self._cache.pop(key, None)
         del self.bind[key]
-
-    def __repr__(self) -> str:
-        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
-
-        return f"{{{items_repr}}}"
 
 
 class MapperMixin:  # pylint: disable=too-few-public-methods

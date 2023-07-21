@@ -27,6 +27,8 @@ from pennylane.data.attributes.operator._wires import (
 )
 from pennylane.wires import Wires
 
+pytestmark = pytest.mark.data
+
 
 class TestWiresToJson:
     @pytest.mark.parametrize(
@@ -91,7 +93,7 @@ class TestWiresToJson:
         of the wires are integer-like, but have a different hash if converted
         to int."""
 
-        class BadIntegral:
+        class BadInt(int):
             def __hash__(self) -> int:
                 return 0
 
@@ -99,4 +101,4 @@ class TestWiresToJson:
                 return 1
 
         with pytest.raises(UnserializableWireError):
-            wires_to_json(Wires([BadIntegral()]))
+            wires_to_json(Wires([BadInt()]))

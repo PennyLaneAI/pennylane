@@ -66,7 +66,6 @@ def field(  # pylint: disable=too-many-arguments, unused-argument
     attribute_type: Union[Type[DatasetAttribute[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
-    is_param: bool = False,
     **kwargs,
 ) -> Any:
     """Used to define fields on a declarative Dataset.
@@ -82,7 +81,7 @@ def field(  # pylint: disable=too-many-arguments, unused-argument
 
     return Field(
         cast(Type[DatasetAttribute[HDF5Any, T, T]], attribute_type),
-        AttributeInfo(doc=doc, py_type=py_type, is_param=is_param, **kwargs),
+        AttributeInfo(doc=doc, py_type=py_type, **kwargs),
     )
 
 
@@ -175,8 +174,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     def open(
         cls,
         filepath: Union[str, Path],
-        mode: Literal["w", "w-", "a", "r"] = "r",
-        copy: bool = False,
+        mode: Literal["w", "w-", "a", "r", "copy"] = "r",
     ) -> "Dataset":
         """Open existing dataset or create a new one at ``filepath``.
 
@@ -184,26 +182,28 @@ class Dataset(MapperMixin, _DatasetTransform):
             filepath: Path to dataset file
             mode: File handling mode. Possible values are "w-" (create, fail if file
                 exists), "w" (create, overwrite existing), "a" (append existing,
-                create if doesn't exist), "r" (read existing, must exist). Default is "r".
-            copy: Whether to load the dataset into memory after opening. If False, and the dataset
-                is opened in write mode, any changes made to the dataset will be automatically written
-                to the file.
-
+                create if doesn't exist), "r" (read existing, must exist), and "copy",
+                which loads the dataset into memory and detaches it from the underlying
+                file. Default is "r".
         Returns:
             Dataset object from file
         """
         filepath = Path(filepath).expanduser()
 
-        f = h5py.File(filepath, mode)
-
-        if copy:
-            f_copy = hdf5.create_group()
-            hdf5.copy_all(f, f_copy)
-            f.close()
-
-            f = f_copy
+        if mode == "copy":
+            f_to_copy = h5py.File(filepath, "r")
+            f = hdf5.create_group()
+            hdf5.copy_all(f_to_copy, f)
+            f_to_copy.close()
+        else:
+            f = h5py.File(filepath, mode)
 
         return cls(f)
+
+    def close(self) -> None:
+        """Close the underlying dataset file. The dataset will
+        become inaccessible."""
+        self.bind.close()
 
     @property
     def data_name(self) -> str:
@@ -267,6 +267,8 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         source.write(self, attributes=attributes, overwrite=overwrite)
 
+        source.close()
+
     def write(
         self,
         dest: Union[str, Path, "Dataset"],
@@ -325,13 +327,17 @@ class Dataset(MapperMixin, _DatasetTransform):
             if __name in self.fields:
                 return UNSET
 
-            raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{__name}'"
+            ) from exc
 
     def __delattr__(self, __name: str) -> None:
         try:
             del self._mapper[__name]
         except KeyError as exc:
-            raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{__name}'"
+            ) from exc
 
     def __repr__(self) -> str:
         repr_items = ", ".join(

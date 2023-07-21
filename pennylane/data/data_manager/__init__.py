@@ -18,13 +18,12 @@ them.
 
 import typing
 from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
-from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
 from typing import List, Optional, Union
 
-import requests
+from requests import get
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
@@ -40,7 +39,7 @@ DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 @lru_cache(maxsize=1)
 def _get_foldermap():
     """Fetch the foldermap from S3."""
-    response = requests.get(FOLDERMAP_URL, timeout=5.0)
+    response = get(FOLDERMAP_URL, timeout=5.0)
     response.raise_for_status()
 
     return FolderMapView(response.json())
@@ -49,7 +48,7 @@ def _get_foldermap():
 @lru_cache(maxsize=1)
 def _get_data_struct():
     """Fetch the data struct from S3."""
-    response = requests.get(DATA_STRUCT_URL, timeout=5.0)
+    response = get(DATA_STRUCT_URL, timeout=5.0)
     response.raise_for_status()
 
     return response.json()
@@ -84,7 +83,7 @@ def _download_dataset(
         return
 
     with open(dest, "wb") as f:
-        resp = requests.get(s3_path, timeout=5.0)
+        resp = get(s3_path, timeout=5.0)
         resp.raise_for_status()
 
         f.write(resp.content)
@@ -124,8 +123,6 @@ def load(  # pylint: disable=too-many-arguments
     foldermap = _get_foldermap()
 
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
-    if not data_paths:
-        return []
 
     dest_paths = [folder_path / data_path for data_path in data_paths]
 
@@ -142,7 +139,7 @@ def load(  # pylint: disable=too-many-arguments
             if result.exception():
                 raise result.exception()
 
-    return [Dataset.open(dest_path, "r") for dest_path in dest_paths]
+    return [Dataset.open(Path(dest_path), "r") for dest_path in dest_paths]
 
 
 def list_datasets() -> dict:

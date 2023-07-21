@@ -12,29 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``DatasetJSON`` attribute type.
+Tests for the ``DatasetTuple`` attribute type.
 """
-
 import pytest
 
-from pennylane.data.attributes.json import DatasetJSON
+from pennylane.data.attributes.tuple import DatasetTuple
 
 pytestmark = pytest.mark.data
 
 
-@pytest.mark.parametrize(
-    "value",
-    ["string", 1, {"one": "two"}, None, [1, "two"]],
-)
-class TestDatasetJSON:
-    def test_value_init(self, value):
-        """Test that DatasetJSON is correctly value-initialized."""
-        dset_json = DatasetJSON(value)
+@pytest.mark.parametrize("value", [tuple(), (1, 2), (["a", "b"], 3, [])])
+class TestDatasetTuple:
+    """Tests for DatasetTuple."""
 
-        assert dset_json.get_value() == value
+    def test_value_init(self, value):
+        """Tests that a ``DatasetTuple`` can be successfully value-initialized."""
+        dset_tuple = DatasetTuple(value)
+
+        assert dset_tuple.get_value() == value
 
     def test_bind_init(self, value):
-        """Test that DatasetJSON is correctly bind-initialized."""
-        bind = DatasetJSON(value).bind
+        """Tests that a ``DatasetTuple`` is correctly bind-initialzed."""
+        bind = DatasetTuple(value).bind
 
-        assert DatasetJSON(bind=bind).get_value() == value
+        dset_tuple = DatasetTuple(bind=bind)
+
+        assert dset_tuple.get_value() == value

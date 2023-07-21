@@ -34,28 +34,28 @@ class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
         mapper = AttributeTypeMapper(bind)
 
         return Molecule(
-            symbols=mapper["symbols"].get_value(),
-            coordinates=mapper["coordinates"].get_value(),
-            charge=mapper["charge"].get_value(),
-            mult=mapper["mult"].get_value(),
-            basis_name=mapper["basis_name"].get_value(),
-            l=mapper["l"].get_value(),
-            alpha=mapper["alpha"].get_value(),
-            coeff=mapper["coeff"].get_value(),
+            symbols=mapper["symbols"].copy_value(),
+            coordinates=mapper["coordinates"].copy_value(),
+            charge=mapper["charge"].copy_value(),
+            mult=mapper["mult"].copy_value(),
+            basis_name=mapper["basis_name"].copy_value(),
+            l=mapper["l"].copy_value(),
+            alpha=mapper["alpha"].copy_value(),
+            coeff=mapper["coeff"].copy_value(),
         )
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Molecule) -> HDF5Group:
         bind = bind_parent.create_group(key)
 
-        bind = AttributeTypeMapper(bind)
+        mapper = AttributeTypeMapper(bind)
 
-        bind["symbols"] = value.symbols
-        bind["coordinates"] = value.coordinates
-        bind["charge"] = value.charge
-        bind["mult"] = value.mult
-        bind["basis_name"] = value.basis_name
-        bind["l"] = value.l
-        bind["alpha"] = value.alpha
-        bind["coeff"] = value.coeff
+        mapper["symbols"] = value.symbols
+        mapper["coordinates"] = value.coordinates
+        mapper["charge"] = value.charge
+        mapper["mult"] = value.mult
+        mapper["basis_name"] = value.basis_name
+        mapper["l"] = value.l
+        mapper["alpha"] = value.alpha
+        mapper["coeff"] = value.coeff
 
-        return bind.bind
+        return bind

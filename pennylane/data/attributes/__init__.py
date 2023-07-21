@@ -23,6 +23,7 @@ from .operator import DatasetOperator
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
 from .string import DatasetString
+from .tuple import DatasetTuple
 
 __all__ = (
     "DatasetArray",
@@ -35,4 +36,5 @@ __all__ = (
     "DatasetMolecule",
     "DatasetNone",
     "DatasetJSON",
+    "DatasetTuple",
 )

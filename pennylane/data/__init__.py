@@ -33,12 +33,12 @@ system and its evolution. For example, a dataset for an arbitrary quantum system
 a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state. Datasets
 can contain a range of object types, including:
 
-    - ``numpy.ndarray``
-    - any numeric type
-    - :class:`qml.qchem.Molecule`
-    - most :class:`qml.operation.Operator` types
-    - `list` of any supported type
-    - `dict` of any supported type, as long as the keys are strings
+- ``numpy.ndarray``
+- any numeric type
+- :class:`~.qchem.Molecule`
+- most :class:`~.Operator` types
+- ``list`` of any supported type
+- ``dict`` of any supported type, as long as the keys are strings
 
 
 Creating a Dataset
@@ -88,10 +88,10 @@ and 'a' for editing. ``open()`` can be used to create a new dataset directly on 
     >>> new_dataset = Dataset.open("~/datasets/new_datasets.h5", mode="w")
 
 By default, any changes made to an opened dataset will be committed directly to the file, which will fail
-if the file is opened read-only. The `copy` argument can be used to load the dataset into memory and detach
+if the file is opened read-only. The `"copy"` mode can be used to load the dataset into memory and detach
 it from the file:
 
-    >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="r", copy=True)
+    >>> my_dataset = Dataset.open("~/dataset/my_dataset/h5", mode="copy")
     >>> my_dataset.new_attribute = "abc"
 
 
@@ -106,13 +106,13 @@ function can be used to attach metadata on assignment or initialization.
     >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
             hamiltonian,
             doc="The hamiltonian of the system"))
-    >>> dataset.eigen = attribute(
+    >>> dataset.eigen = qml.data.attribute(
             {"eigvals": eigvals, "eigvecs": eigvecs},
             doc="Eigenvalues and eigenvectors of the hamiltonain")
 
 This metadata can then be accessed using the :meth:`Dataset.attr_info` mapping:
 
-    >>> dataset.attr_info["hamiltonian"]["doc"]
+    >>> dataset.attr_info["eigen"]["doc"]
     'The hamiltonian of the system'
 
 
@@ -126,7 +126,7 @@ a quantum oscillator, which contains the first 1000 energy levels for different 
 The datasets declarative API allows us to create subclasses of ``Dataset`` that define the required attributes,
 or 'fields', and their associated type and documentation:
 
-.. code-block
+.. code-block:: python
 
     class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", params=["mass", "force_constant"]):
         \"""Dataset describing a quantum oscillator.\"""
@@ -160,7 +160,9 @@ from .attributes import (
     DatasetScalar,
     DatasetSparseArray,
     DatasetString,
+    DatasetTuple,
 )
+from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
 from .base.dataset import Dataset, field
 from .data_manager import (
@@ -173,11 +175,12 @@ from .data_manager import (
 )
 
 __all__ = (
-    "DatasetAttribute",
     "AttributeInfo",
     "attribute",
     "field",
     "Dataset",
+    "DatasetAttribute",
+    "DatasetNotWriteableError",
     "DatasetArray",
     "DatasetScalar",
     "DatasetString",
@@ -188,6 +191,7 @@ __all__ = (
     "DatasetMolecule",
     "DatasetSparseArray",
     "DatasetJSON",
+    "DatasetTuple",
     "load",
     "load_interactive",
     "list_attributes",

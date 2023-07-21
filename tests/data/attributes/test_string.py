@@ -19,6 +19,8 @@ import pytest
 
 from pennylane.data.attributes.string import DatasetString
 
+pytestmark = pytest.mark.data
+
 
 class TestDatasetString:
     """Tests for ``DatasetString`` value and bind initialization."""

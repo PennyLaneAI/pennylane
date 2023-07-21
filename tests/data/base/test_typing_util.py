@@ -20,8 +20,15 @@ import typing
 import pytest
 
 import pennylane as qml
-from pennylane.data.base.typing_util import get_type, get_type_str
+from pennylane.data.base.typing_util import (
+    UNSET,
+    get_type,
+    get_type_str,
+    resolve_special_type,
+)
 from pennylane.qchem import Molecule
+
+pytestmark = pytest.mark.data
 
 
 @pytest.mark.parametrize(
@@ -37,6 +44,7 @@ from pennylane.qchem import Molecule
         (typing.Union[int, "str", Molecule], "Union[int, str, pennylane.qchem.molecule.Molecule]"),
         (str, "str"),
         (typing.Type[str], "type[str]"),
+        (typing.Union[typing.List[typing.List[int]], str], "Union[list[list[int]], str]"),
     ],
 )
 def test_get_type_str(type_, expect):
@@ -60,3 +68,14 @@ def test_get_type(obj, expect):
     """Test that ``get_type()`` returns the expected value for various objects
     and types."""
     assert get_type(obj) is expect
+
+
+def test_unset_bool():
+    """Test that UNSET is falsy."""
+    assert not UNSET
+
+
+@pytest.mark.parametrize("type_, expect", [(typing.List[typing.List[int]], (list, [list]))])
+def test_resolve_special_type(type_, expect):
+    """Test resolve_special_type()."""
+    assert resolve_special_type(type_) == expect

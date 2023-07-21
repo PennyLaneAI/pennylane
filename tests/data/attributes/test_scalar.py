@@ -19,6 +19,8 @@ import pytest
 
 from pennylane.data.attributes.scalar import DatasetScalar
 
+pytestmark = pytest.mark.data
+
 
 @pytest.mark.parametrize("value, py_type", [(1, "int"), (1.0, "float"), (complex(1, 2), "complex")])
 class TestDatasetScalar:

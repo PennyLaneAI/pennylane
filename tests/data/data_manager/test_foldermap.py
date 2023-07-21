@@ -20,6 +20,8 @@ import pytest
 from pennylane.data.data_manager import DEFAULT, FULL, DataPath
 from pennylane.data.data_manager.foldermap import Description, FolderMapView
 
+pytestmark = pytest.mark.data
+
 FOLDERMAP = {
     "__params": {
         "qchem": ["molname", "basis", "bondlength"],
@@ -47,6 +49,7 @@ FOLDERMAP = {
 
 @pytest.fixture
 def foldermap():
+    """Foldermap fixture"""
     return FolderMapView(FOLDERMAP)
 
 
@@ -106,6 +109,19 @@ class TestFolderMapView:
                     (
                         {"molname": "O2", "basis": "STO-3G", "bondlength": "0.6"},
                         "qchem/O2/STO-3G/0.6.h5",
+                    ),
+                ],
+            ),
+            (
+                {"missing_default": DEFAULT, "molname": "O2", "basis": ["STO-3G", "6-31G"]},
+                [
+                    (
+                        {"molname": "O2", "basis": "STO-3G", "bondlength": "0.5"},
+                        "qchem/O2/STO-3G/0.5.h5",
+                    ),
+                    (
+                        {"molname": "O2", "basis": "6-31G", "bondlength": "0.5"},
+                        "qchem/O2/6-31G/0.5.h5",
                     ),
                 ],
             ),
@@ -193,3 +209,61 @@ class TestFolderMapView:
         publicly visible keys only."""
 
         assert len(FolderMapView(init)) == len_
+
+    def test_find_not_top_level(self):
+        """Test that a RuntimeError is raised if calling
+        find() from below the top level of the foldermap."""
+
+        with pytest.raises(
+            RuntimeError, match=r"Can only call find\(\) from top level of foldermap"
+        ):
+            FolderMapView(FOLDERMAP)["qchem"].find("qchem")
+
+    def test_find_invalid_data_name(self):
+        """Test that a ValueError is raised for an invalid data_name."""
+        with pytest.raises(ValueError, match="No datasets with data name: 'foo'"):
+            FolderMapView(FOLDERMAP).find("foo")
+
+    def test_find_missing_arg_no_default(self):
+        """Test that a ValueError is raised when a parameter is not
+        provided, and it doesn't have a default."""
+        with pytest.raises(ValueError, match="No default available for parameter 'molname'"):
+            FolderMapView(FOLDERMAP).find("qchem")
+
+    def test_repr(self):
+        """Test that __repr__ is equivalent to a dict repr, with the private
+        keys removed."""
+        assert repr(
+            FolderMapView(
+                {
+                    "__params": {
+                        "qchem": ["molname", "basis", "bondlength"],
+                    },
+                    "qchem": {
+                        "H2": {
+                            "__default": "STO-3G",
+                            "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
+                        }
+                    },
+                }
+            )
+        ) == repr({"qchem": {"H2": {"STO-3G": {"0.7": "qchem/H2/STO-3G/0.7.h5"}}}})
+
+    def test_str(self):
+        """Test that __str__ is equivalent to a dict __str__, with the private
+        keys removed."""
+        assert str(
+            FolderMapView(
+                {
+                    "__params": {
+                        "qchem": ["molname", "basis", "bondlength"],
+                    },
+                    "qchem": {
+                        "H2": {
+                            "__default": "STO-3G",
+                            "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
+                        }
+                    },
+                }
+            )
+        ) == str({"qchem": {"H2": {"STO-3G": {"0.7": "qchem/H2/STO-3G/0.7.h5"}}}})

@@ -42,7 +42,7 @@ class ParamArg(enum.Enum):
     def is_arg(cls, val: Union["ParamArg", str]) -> bool:
         """Returns true if ``val`` is a ``ParamArg``, or one
         of its values."""
-        return isinstance(val, ParamArg) or val in cls.values()
+        return isinstance(val, ParamArg) or (isinstance(val, str) and val in cls.values())
 
     def __str__(self) -> str:  # pylint: disable=invalid-str-returned
         return self.value
@@ -128,7 +128,7 @@ def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, List[Pa
 
 
 def format_params(**params: Any) -> Dict[ParamName, Union[ParamArg, ParamVal]]:
-    """Converts params is a dictionary whose keys are parameter names and
+    """Converts params to a dictionary whose keys are parameter names and
     whose values are single ``ParamaterArg`` objects or lists of parameter values."""
     return {
         param_name: format_param_args(param_name, param) for param_name, param in params.items()
