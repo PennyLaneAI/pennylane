@@ -32,7 +32,10 @@ def get_final_state(circuit, debugger=None):
         wire_map = {w: i for i, w in enumerate(circuit.wires)}
         circuit = qml.map_wires(circuit, wire_map)
 
-    prep = circuit[0] if isinstance(circuit[0], qml.operation.StatePrep) else None
+    prep = None
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrep):
+        prep = circuit[0]
+
     state = create_initial_state(circuit.wires, prep)
 
     # initial state is batched only if the state preparation (if it exists) is batched

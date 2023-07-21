@@ -297,8 +297,11 @@ class DefaultQubit2(Device):
         if self.tracker.active:
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(batches=1, executions=len(circuits))
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.update(
+                execute_and_derivative_batches=1,
+                executions=len(circuits),
+                derivatives=len(circuits),
+            )
             self.tracker.record()
 
         if execution_config.gradient_method != "adjoint":
@@ -306,15 +309,11 @@ class DefaultQubit2(Device):
                 f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
             )
 
-        def wrapper(c, rng=None, debugger=None):
-            state = get_final_state(c, debugger=debugger)
-            jac = adjoint_jacobian(c, state=state)
-            res = measure_final_state(c, state, False, rng=rng)
-            return res, jac
-
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
-            results = tuple(wrapper(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+            results = tuple(
+                _adjoint_jac_wrapper(c, rng=self._rng, debugger=self._debugger) for c in circuits
+            )
             results, jacs = tuple(zip(*results))
         else:
             self._validate_multiprocessing_circuits(circuits)
@@ -323,7 +322,7 @@ class DefaultQubit2(Device):
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                results = tuple(executor.map(wrapper, vanilla_circuits, seeds))
+                results = tuple(executor.map(_adjoint_jac_wrapper, vanilla_circuits, seeds))
 
             results, jacs = tuple(zip(*results))
 
@@ -400,8 +399,11 @@ class DefaultQubit2(Device):
         if self.tracker.active:
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(batches=1, executions=len(circuits))
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.update(
+                execute_and_derivative_batches=1,
+                executions=len(circuits),
+                derivatives=len(circuits),
+            )
             self.tracker.record()
 
         if execution_config.gradient_method != "adjoint":
@@ -409,16 +411,10 @@ class DefaultQubit2(Device):
                 f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
             )
 
-        def wrapper(c, t, rng=None, debugger=None):
-            state = get_final_state(c, debugger=debugger)
-            jvp = adjoint_jvp(c, t, state=state)
-            res = measure_final_state(c, state, False, rng=rng)
-            return res, jvp
-
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             results = tuple(
-                wrapper(c, t, rng=self._rng, debugger=self._debugger)
+                _adjoint_jvp_wrapper(c, t, rng=self._rng, debugger=self._debugger)
                 for c, t in zip(circuits, tangents)
             )
             results, jvps = tuple(zip(*results))
@@ -429,7 +425,9 @@ class DefaultQubit2(Device):
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                results = tuple(executor.map(wrapper, vanilla_circuits, tangents, seeds))
+                results = tuple(
+                    executor.map(_adjoint_jvp_wrapper, vanilla_circuits, tangents, seeds)
+                )
 
             results, jvps = tuple(zip(*results))
 
@@ -506,8 +504,11 @@ class DefaultQubit2(Device):
         if self.tracker.active:
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(batches=1, executions=len(circuits))
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.update(
+                execute_and_derivative_batches=1,
+                executions=len(circuits),
+                derivatives=len(circuits),
+            )
             self.tracker.record()
 
         if execution_config.gradient_method != "adjoint":
@@ -515,16 +516,10 @@ class DefaultQubit2(Device):
                 f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
             )
 
-        def wrapper(c, t, rng=None, debugger=None):
-            state = get_final_state(c, debugger=debugger)
-            vjp = adjoint_vjp(c, t, state=state)
-            res = measure_final_state(c, state, False, rng=rng)
-            return res, vjp
-
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             results = tuple(
-                wrapper(c, t, rng=self._rng, debugger=self._debugger)
+                _adjoint_vjp_wrapper(c, t, rng=self._rng, debugger=self._debugger)
                 for c, t in zip(circuits, cotangents)
             )
             results, vjps = tuple(zip(*results))
@@ -535,7 +530,9 @@ class DefaultQubit2(Device):
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                results = tuple(executor.map(wrapper, vanilla_circuits, cotangents, seeds))
+                results = tuple(
+                    executor.map(_adjoint_vjp_wrapper, vanilla_circuits, cotangents, seeds)
+                )
 
             results, vjps = tuple(zip(*results))
 
@@ -613,3 +610,24 @@ def _validate_multiprocessing_workers(max_workers):
             environment variable `{varname}={num_threads_suggest}`.""",
             UserWarning,
         )
+
+
+def _adjoint_jac_wrapper(c, rng=None, debugger=None):
+    state, is_state_batched = get_final_state(c, debugger=debugger)
+    jac = adjoint_jacobian(c, state=state)
+    res = measure_final_state(c, state, is_state_batched, rng=rng)
+    return res, jac
+
+
+def _adjoint_jvp_wrapper(c, t, rng=None, debugger=None):
+    state, is_state_batched = get_final_state(c, debugger=debugger)
+    jvp = adjoint_jvp(c, t, state=state)
+    res = measure_final_state(c, state, is_state_batched, rng=rng)
+    return res, jvp
+
+
+def _adjoint_vjp_wrapper(c, t, rng=None, debugger=None):
+    state, is_state_batched = get_final_state(c, debugger=debugger)
+    vjp = adjoint_vjp(c, t, state=state)
+    res = measure_final_state(c, state, is_state_batched, rng=rng)
+    return res, vjp
