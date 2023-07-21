@@ -111,7 +111,7 @@ def load(  # pylint: disable=too-many-arguments
         folder_path (str) : Path to the directory used for saving datasets. Defaults to './datasets'
         force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
         num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
-        cache_dir: Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
+        cache_dir (str): Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
