@@ -253,9 +253,22 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
                 this attribute, and its key.
         """
         if bind is not None:
-            self._bind = bind
-            self._check_bind()
-            return
+            self._bind_init(bind)
+        else:
+            self._value_init(value, info, parent_and_key)
+
+    def _bind_init(self, bind: HDF5) -> None:
+        """Constructor for bind initialization. See __init__()."""
+        self._bind = bind
+        self._check_bind()
+
+    def _value_init(
+        self,
+        value: Union[InitValueType, Literal[UNSET]],
+        info: Optional[AttributeInfo],
+        parent_and_key: Optional[Tuple[HDF5Group, str]],
+    ):
+        """Constructor for value initialization. See __init__()."""
 
         if parent_and_key is not None:
             parent, key = parent_and_key

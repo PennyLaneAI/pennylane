@@ -160,6 +160,7 @@ from .attributes import (
     DatasetScalar,
     DatasetSparseArray,
     DatasetString,
+    DatasetTuple,
 )
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
@@ -190,6 +191,7 @@ __all__ = (
     "DatasetMolecule",
     "DatasetSparseArray",
     "DatasetJSON",
+    "DatasetTuple",
     "load",
     "load_interactive",
     "list_attributes",

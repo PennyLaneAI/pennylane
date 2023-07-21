@@ -23,11 +23,13 @@ import pytest
 
 from pennylane.data.attributes import (
     DatasetArray,
+    DatasetList,
     DatasetNone,
     DatasetOperator,
     DatasetScalar,
     DatasetSparseArray,
     DatasetString,
+    DatasetTuple,
 )
 from pennylane.data.base.attribute import (
     UNSET,
@@ -79,6 +81,8 @@ def _sort_types(types: Iterable[type]) -> List[type]:
         (DatasetNone(), DatasetNone),
         (DatasetArray([1, 2, 3]), DatasetArray),
         (DatasetString("abc"), DatasetString),
+        (DatasetList([1, 2, 3]), DatasetList),
+        (DatasetTuple((1, "a", [3])), DatasetTuple),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
@@ -97,6 +101,8 @@ def test_match_obj_type(type_or_obj, attribute_type):
         (np.int64(0), DatasetScalar),
         (complex(1, 2), DatasetScalar),
         (None, DatasetNone),
+        ([1, (2, 3)], DatasetList),
+        ((1, [2, 3]), DatasetTuple),
     ),
 )
 def test_attribute(val, attribute_type):
