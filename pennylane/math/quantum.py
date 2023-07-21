@@ -864,7 +864,7 @@ def sqrt_matrix(density_matrix):
     """
     # small constant to make the eigenvalues all non-zero and distinct; this is necessary
     # to ensure that the gradient of eigh is well-defined
-    epsilon = 1e-20 * np.diag(np.arange(density_matrix.shape[0]) + 1)
+    epsilon = 1e-20 * np.diag(np.arange(density_matrix.shape[-1]) + 1)
     epsilon = qml.math.cast_like(qml.math.convert_like(epsilon, density_matrix), density_matrix)
 
     evs, vecs = qml.math.linalg.eigh(density_matrix + epsilon)
