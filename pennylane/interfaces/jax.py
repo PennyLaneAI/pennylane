@@ -29,8 +29,7 @@ dtype = jnp.float64
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a)
+    tc = t.bind_new_parameters(a, t.trainable_params)
     return convert_to_numpy_parameters(tc) if unwrap else tc
 
 
@@ -544,7 +543,7 @@ def _compute_jvps(jacs, tangents, multi_measurements):
             qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
         )
         jvps.append(compute_func(tangents[i], jacs[i]))
-    return jvps
+    return tuple(jvps)
 
 
 def _is_count_result(r):
@@ -569,7 +568,7 @@ def _to_jax(res):
                 else:
                     sub_r.append(jnp.array(r_i))
             res_.append(tuple(sub_r))
-    return res_
+    return tuple(res_)
 
 
 def _to_jax_shot_vector(res):
@@ -577,4 +576,4 @@ def _to_jax_shot_vector(res):
 
     The expected structure of the inputs is a list of tape results with each element in the list being a tuple due to execution using shot vectors.
     """
-    return [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
+    return tuple(tuple(_to_jax([r_])[0] for r_ in r) for r in res)

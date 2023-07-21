@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
+  match the call signature of the operation. 
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
 * ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
   ``disable_return``, as the old return system is deprecated along with these switch functions.
 
@@ -60,8 +66,46 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* ``qml.qchem.jordan_wigner`` is deprecated, and usage will now raise a warning.
+  Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
+  is also deprecated; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
+  ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
+  :mod:`pennylane.fermi` module documentation and the
+  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
+  tutorial for more details.
+
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
   raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
+  deprecated, and usage will now raise a warning.
+
+  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
+
+  .. code-block:: python
+
+    from pennylane.transforms import convert_to_numpy_parameters
+
+    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
+                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    unwrapped_qscript = convert_to_numpy_parameters(qscript)
+
+    torch_params = qscript.get_parameters()
+    numpy_params = unwrapped_qscript.get_parameters()
+    
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
+  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  by default.
 
   - Deprecated in v0.32
   - Will be removed in v0.33

@@ -20,6 +20,24 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the _flatten and _unflatten methods."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
+    data, metadata = op._flatten()
+    assert data == tuple()
+    assert metadata[0] == wires
+    assert metadata[1] == (1, 1, 1)
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = op._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
