@@ -108,6 +108,9 @@ class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """
 
 
+Self = TypeVar("Self", bound="Dataset")
+
+
 class Dataset(MapperMixin, _DatasetTransform):
     """
     Base class for Datasets.
@@ -119,12 +122,8 @@ class Dataset(MapperMixin, _DatasetTransform):
         bind: The HDF5 group that contains this dataset's attributes
     """
 
-    Self = TypeVar("Self", bound="Dataset")
-
-    type_id = "dataset"
-
     __data_name__: ClassVar[str]
-    __params__: ClassVar[Tuple[str, ...]]
+    __identifiers__: ClassVar[Tuple[str, ...]]
 
     fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
 
@@ -136,7 +135,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         bind: Optional[HDF5Group] = None,
         *,
         data_name: Optional[str] = None,
-        params: Optional[Tuple[str, ...]] = None,
+        identifiers: Optional[Tuple[str, ...]] = None,
         **attrs: Any,
     ):
         """
@@ -149,7 +148,7 @@ class Dataset(MapperMixin, _DatasetTransform):
             data_name: String describing the type of data this datasets contains, e.g
                 'qchem' for quantum chemistry. Defaults to the data name defined by
                 the class, this is 'generic' for base datasets.
-            params: Tuple of names of attributes of this dataset that will serve
+            identifiers: Tuple of names of attributes of this dataset that will serve
                 as its parameters
             **attrs: Attributes to add to this dataset.
         """
@@ -158,7 +157,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         else:
             self._bind = hdf5.create_group()
 
-        self._init_bind(data_name, params)
+        self._init_bind(data_name, identifiers)
 
         for name in self.fields:
             try:
@@ -211,9 +210,11 @@ class Dataset(MapperMixin, _DatasetTransform):
         return self.info.get("data_name", self.__data_name__)
 
     @property
-    def params(self) -> typing.Mapping[str, str]:  # pylint: disable=function-redefined
+    def identifiers(self) -> typing.Mapping[str, str]:  # pylint: disable=function-redefined
         """Returns this dataset's parameters."""
-        return {attr_name: getattr(self, attr_name) for attr_name in self.info.get("params", [])}
+        return {
+            attr_name: getattr(self, attr_name) for attr_name in self.info.get("identifiers", [])
+        }
 
     @property
     def info(self) -> AttributeInfo:
@@ -300,14 +301,16 @@ class Dataset(MapperMixin, _DatasetTransform):
 
         hdf5.copy_all(self.bind, dest.bind, *attributes, on_conflict=on_conflict)
 
-    def _init_bind(self, data_name: Optional[str] = None, params: Optional[Tuple[str, ...]] = None):
+    def _init_bind(
+        self, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
+    ):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
                 self.info["type_id"] = self.type_id
             if "data_name" not in self.info:
                 self.info["data_name"] = data_name or self.__data_name__
-            if "params" not in self.info:
-                self.info["params"] = params or self.__params__
+            if "identifiers" not in self.info:
+                self.info["identifiers"] = identifiers or self.__identifiers__
 
     def __setattr__(self, __name: str, __value: Union[Any, DatasetAttribute]) -> None:
         if __name.startswith("_") or __name in type(self).__dict__:
@@ -340,15 +343,21 @@ class Dataset(MapperMixin, _DatasetTransform):
             ) from exc
 
     def __repr__(self) -> str:
+        attrs_str = [repr(attr) for attr in self.list_attributes()]
+        if len(attrs_str) > 2:
+            attrs_str = attrs_str[:2]
+            attrs_str.append("...")
+
+        attrs_str = "[" + ", ".join(attrs_str) + "]"
         repr_items = ", ".join(
             f"{name}: {value}"
-            for name, value in {**self.params, "attributes": (str(list(self.attrs)))}.items()
+            for name, value in {**self.identifiers, "attributes": attrs_str}.items()
         )
 
         return f"<{type(self).__name__} = {repr_items}>"
 
     def __init_subclass__(
-        cls, *, data_name: Optional[str] = None, params: Optional[Tuple[str, ...]] = None
+        cls, *, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
     ) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
@@ -358,8 +367,8 @@ class Dataset(MapperMixin, _DatasetTransform):
         fields = {}
         if data_name:
             cls.__data_name__ = data_name
-        if params:
-            cls.__params__ = params
+        if identifiers:
+            cls.__identifiers__ = identifiers
 
         # get field info from annotated class attributes, e.g:
         # name: int = field(...)
@@ -389,7 +398,11 @@ class Dataset(MapperMixin, _DatasetTransform):
         return self.list_attributes()
 
     __data_name__ = "generic"
-    __params__ = tuple()
+    __identifiers__ = tuple()
+
+    type_id = "dataset"
+    """Type identifier for this dataset. Used internalyl to load datasets
+    from other datasets."""
 
 
 class _DatasetAttributeType(DatasetAttribute[HDF5Group, Dataset, Dataset]):

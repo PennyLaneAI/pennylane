@@ -128,7 +128,7 @@ or 'fields', and their associated type and documentation:
 
 .. code-block:: python
 
-    class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", params=["mass", "force_constant"]):
+    class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", identifiers=["mass", "force_constant"]):
         \"""Dataset describing a quantum oscillator.\"""
 
         mass: float = qml.data.field(doc = "The mass of the particle")
@@ -136,7 +136,7 @@ or 'fields', and their associated type and documentation:
         hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
         energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
 
-The ``data_name`` keyword specifies a category or descriptive name for the dataset type, and the ``params``
+The ``data_name`` keyword specifies a category or descriptive name for the dataset type, and the ``identifiers``
 keyword to the class is used to specify fields that function as parameters, i.e they determine the behaviour
 of the system.
 

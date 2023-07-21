@@ -137,6 +137,12 @@ class AttributeTypeMapper(MutableMapping):
         self._cache.pop(key, None)
         del self.bind[key]
 
+    def __repr__(self):
+        return repr(dict(self))
+
+    def __str__(self):
+        return str(dict(self))
+
 
 class MapperMixin:  # pylint: disable=too-few-public-methods
     """Mixin class for Dataset types that provide an interface
