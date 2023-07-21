@@ -229,8 +229,10 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         """Load list of serialized ops from ``bind``."""
         ops = []
 
-        op_class_names = bind["op_class_names"].asstr()
-        op_wire_labels = bind["op_wire_labels"].asstr()
+        names_bind = bind["op_class_names"]
+        wires_bind = bind["op_wire_labels"]
+        op_class_names = [] if names_bind.shape == (0,) else names_bind.asstr()
+        op_wire_labels = [] if wires_bind.shape == (0,) else wires_bind.asstr()
 
         for i, op_class_name in enumerate(op_class_names):
             op_key = f"op_{i}"

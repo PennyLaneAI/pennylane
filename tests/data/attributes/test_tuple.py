@@ -21,16 +21,17 @@ from pennylane.data.attributes.tuple import DatasetTuple
 pytestmark = pytest.mark.data
 
 
-@pytest.mark.parametrize("value", [tuple(), (1, 2), (["a", "b"], 3, [])])
 class TestDatasetTuple:
     """Tests for DatasetTuple."""
 
+    @pytest.mark.parametrize("value", [tuple(), (1, 2), (["a", "b"], 3, [])])
     def test_value_init(self, value):
         """Tests that a ``DatasetTuple`` can be successfully value-initialized."""
         dset_tuple = DatasetTuple(value)
 
         assert dset_tuple.get_value() == value
 
+    @pytest.mark.parametrize("value", [tuple(), (1, 2), (["a", "b"], 3, [])])
     def test_bind_init(self, value):
         """Tests that a ``DatasetTuple`` is correctly bind-initialzed."""
         bind = DatasetTuple(value).bind
@@ -38,3 +39,9 @@ class TestDatasetTuple:
         dset_tuple = DatasetTuple(bind=bind)
 
         assert dset_tuple.get_value() == value
+
+    def test_default_init(self):
+        """Tests that a ``DatasetTuple`` can be default-initialzed to
+        an empty tuple."""
+        dset_tuple = DatasetTuple()
+        assert dset_tuple.get_value() == tuple()

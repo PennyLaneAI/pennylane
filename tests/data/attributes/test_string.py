@@ -22,17 +22,16 @@ from pennylane.data.attributes.string import DatasetString
 pytestmark = pytest.mark.data
 
 
+@pytest.mark.parametrize("value", ["", "abc"])
 class TestDatasetString:
     """Tests for ``DatasetString`` value and bind initialization."""
 
-    @pytest.mark.parametrize("value", ["", "abc"])
     def test_value_init(self, value):
         """Tests that a ``Datastring`` can be successfully value-initialized."""
         dstr = DatasetString(value)
 
         assert dstr == value
 
-    @pytest.mark.parametrize("value", ["", "abc"])
     def test_bind_init(self, value):
         """Tests that a ``Datastring`` is correctly bind-initialzed."""
         bind = DatasetString(value).bind

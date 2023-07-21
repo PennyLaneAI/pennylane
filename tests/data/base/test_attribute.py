@@ -15,6 +15,8 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
+# pylint: disable=unused-argument,too-many-public-methods
+
 from copy import copy, deepcopy
 from typing import Any, Iterable, List
 
@@ -82,7 +84,9 @@ def _sort_types(types: Iterable[type]) -> List[type]:
         (DatasetArray([1, 2, 3]), DatasetArray),
         (DatasetString("abc"), DatasetString),
         (DatasetList([1, 2, 3]), DatasetList),
+        ([1, 2, 3], DatasetList),
         (DatasetTuple((1, "a", [3])), DatasetTuple),
+        ((1, 2, 3), DatasetTuple),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
@@ -369,7 +373,7 @@ class TestAttribute:
 
         with pytest.warns(
             Warning,
-            match=f"Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
+            match="Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
         ):
 
             class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods

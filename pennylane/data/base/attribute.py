@@ -14,7 +14,6 @@
 """Contains the base class for Dataset attribute types, and a class for
 attribute metadata."""
 
-import itertools
 import typing
 import warnings
 from abc import ABC, abstractmethod
@@ -147,8 +146,10 @@ class AttributeInfo(MutableMapping):
 
     def __iter__(self) -> Iterator[str]:
         ns = f"{self.attrs_namespace}."
-        return itertools.chain.from_iterable(
-            key.split(ns, maxsplit=1)[1:2] for key in self.attrs_bind
+
+        return (
+            key.split(ns, maxsplit=1)[1]
+            for key in filter(lambda k: k.startswith(ns), self.attrs_bind)
         )
 
     def __repr__(self) -> str:

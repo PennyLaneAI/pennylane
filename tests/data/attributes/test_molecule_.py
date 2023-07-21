@@ -36,6 +36,7 @@ def _assert_molecules_equal(mol_in: Molecule, mol_out: Molecule):
     assert (mol_out.coordinates == mol_in.coordinates).all()
     assert mol_out.l == mol_in.l
     assert mol_out.mult == mol_in.mult
+    assert mol_out.charge == mol_in.charge
 
 
 @pytest.mark.parametrize(

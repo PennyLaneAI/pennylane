@@ -99,12 +99,10 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
         return (key for key in self.bind.keys())
 
     def __str__(self) -> str:
-        return repr(self)
+        return str(dict(self))
 
     def __repr__(self) -> str:
-        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
-
-        return f"{{{items_repr}}}"
+        return repr(dict(self))
 
     def _check_key(self, __key: str) -> None:
         """Checks that __key is a string, and raises a ``TypeError`` if it isn't."""

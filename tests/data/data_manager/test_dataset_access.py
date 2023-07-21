@@ -288,6 +288,26 @@ def test_download_dataset_full(tmp_path):
         assert f.read() == b"This is binary data"
 
 
+@pytest.mark.usefixtures("mock_requests_get")
+@pytest.mark.parametrize("mock_requests_get", [b"This is downloaded data"], indirect=True)
+@pytest.mark.parametrize(
+    "force, expect_data", [(False, b"This is local data"), (True, b"This is downloaded data")]
+)
+def test_download_dataset_full_already_exists(tmp_path, force, expect_data):
+    """Tests that _download_dataset will only overwrite an exists
+    dataset in the same path if `force` is True."""
+
+    with open(tmp_path / "dataset", "wb") as f:
+        f.write(b"This is local data")
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path", tmp_path / "dataset", attributes=None, force=force
+    )
+
+    with open(tmp_path / "dataset", "rb") as f:
+        assert f.read() == expect_data
+
+
 def test_download_dataset_partial(tmp_path, monkeypatch):
     """Tests that _download_dataset will fetch the dataset file
     using requests if all attributes are requested."""
