@@ -213,7 +213,8 @@ class Dataset(MapperMixin, _DatasetTransform):
     def identifiers(self) -> typing.Mapping[str, str]:  # pylint: disable=function-redefined
         """Returns this dataset's parameters."""
         return {
-            attr_name: getattr(self, attr_name) for attr_name in self.info.get("identifiers", [])
+            attr_name: getattr(self, attr_name)
+            for attr_name in self.info.get("identifiers", self.info.get("params", []))
         }
 
     @property
