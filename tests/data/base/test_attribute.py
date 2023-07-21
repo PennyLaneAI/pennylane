@@ -84,7 +84,9 @@ def _sort_types(types: Iterable[type]) -> List[type]:
         (DatasetArray([1, 2, 3]), DatasetArray),
         (DatasetString("abc"), DatasetString),
         (DatasetList([1, 2, 3]), DatasetList),
+        ([1, 2, 3], DatasetList),
         (DatasetTuple((1, "a", [3])), DatasetTuple),
+        ((1, 2, 3), DatasetTuple),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
