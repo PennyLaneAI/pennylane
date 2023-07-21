@@ -109,7 +109,13 @@ class TestDatasetOperatorObservable:
 
 class TestDatasetOperator:
     @pytest.mark.parametrize(
-        "op_in", [qml.RX(1.1, 0), qml.FermionicSWAP(1.3, [1, "a"]), qml.Toffoli([1, "a", None])]
+        "op_in",
+        [
+            qml.RX(1.1, 0),
+            qml.FermionicSWAP(1.3, [1, "a"]),
+            qml.Toffoli([1, "a", None]),
+            qml.Hamiltonian([], []),
+        ],
     )
     def test_value_init(self, op_in):
         """Test that a DatasetOperator can be value-initialized
@@ -138,7 +144,13 @@ class TestDatasetOperator:
             DatasetOperator(NotSupported(1))
 
     @pytest.mark.parametrize(
-        "op_in", [qml.RX(1.1, 0), qml.FermionicSWAP(1.3, [1, "a"]), qml.Toffoli([1, "a", None])]
+        "op_in",
+        [
+            qml.RX(1.1, 0),
+            qml.FermionicSWAP(1.3, [1, "a"]),
+            qml.Toffoli([1, "a", None]),
+            qml.Hamiltonian([], []),
+        ],
     )
     def test_bind_init(self, op_in):
         """Test that a DatasetOperator can be bind-initialized

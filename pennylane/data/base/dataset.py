@@ -108,6 +108,9 @@ class _DatasetTransform:  # pylint: disable=too-few-public-methods
     """
 
 
+Self = TypeVar("Self", bound="Dataset")
+
+
 class Dataset(MapperMixin, _DatasetTransform):
     """
     Base class for Datasets.
@@ -118,10 +121,6 @@ class Dataset(MapperMixin, _DatasetTransform):
             an instance. Use ``attrs`` to view all attributes on an instance.
         bind: The HDF5 group that contains this dataset's attributes
     """
-
-    Self = TypeVar("Self", bound="Dataset")
-
-    type_id = "dataset"
 
     __data_name__: ClassVar[str]
     __params__: ClassVar[Tuple[str, ...]]
@@ -390,6 +389,10 @@ class Dataset(MapperMixin, _DatasetTransform):
 
     __data_name__ = "generic"
     __params__ = tuple()
+
+    type_id = "dataset"
+    """Type identifier for this dataset. Used internalyl to load datasets
+    from other datasets."""
 
 
 class _DatasetAttributeType(DatasetAttribute[HDF5Group, Dataset, Dataset]):

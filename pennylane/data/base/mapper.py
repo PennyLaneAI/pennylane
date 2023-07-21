@@ -18,7 +18,7 @@ class that provides the mapper class."""
 import typing
 from collections.abc import MutableMapping
 from types import MappingProxyType
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, FrozenSet, Optional, Type
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
@@ -130,12 +130,21 @@ class AttributeTypeMapper(MutableMapping):
     def __iter__(self) -> typing.Iterator[str]:
         return iter(self.bind)
 
+    def keys(self) -> FrozenSet[str]:
+        return frozenset(iter(self))
+
     def __contains__(self, key: str) -> bool:
         return key in self._cache or key in self.bind
 
     def __delitem__(self, key: str) -> None:
         self._cache.pop(key, None)
         del self.bind[key]
+
+    def __repr__(self):
+        return repr(dict(self))
+
+    def __str__(self):
+        return str(dict(self))
 
 
 class MapperMixin:  # pylint: disable=too-few-public-methods

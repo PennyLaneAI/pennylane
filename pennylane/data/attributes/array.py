@@ -14,14 +14,14 @@
 """Contains DatasetAttribute definition for numpy arrays."""
 
 import numpy
-from numpy.typing import ArrayLike
 
 from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 from pennylane.math import array, get_interface
+from pennylane.typing import TensorLike
 
 
-class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
+class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, TensorLike]):
     """
     Attribute type for objects that implement the Array protocol, including numpy arrays
     and pennylane.math.tensor.
@@ -29,7 +29,7 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
 
     type_id = "array"
 
-    def __post_init__(self, value: ArrayLike) -> None:
+    def __post_init__(self, value: TensorLike) -> None:
         super().__post_init__(value)
 
         array_interface = get_interface(value)
@@ -43,7 +43,7 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
         if array_interface == "autograd":
             self.info["requires_grad"] = value.requires_grad
 
-    def hdf5_to_value(self, bind: HDF5Array) -> numpy.ndarray:
+    def hdf5_to_value(self, bind: HDF5Array) -> TensorLike:
         info = AttributeInfo(bind.attrs)
 
         interface = info.get("array_interface", "numpy")
@@ -54,7 +54,7 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
 
         return array(self.bind, dtype=bind.dtype, like=interface)
 
-    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: ArrayLike) -> HDF5Array:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: TensorLike) -> HDF5Array:
         bind_parent[key] = value
 
         return bind_parent[key]

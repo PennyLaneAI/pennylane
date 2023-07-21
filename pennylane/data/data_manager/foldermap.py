@@ -172,7 +172,10 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         return DataPath(elem)
 
     def __iter__(self) -> typing.Iterator[str]:
-        return (key for key in self.__curr_level if key not in self.__PRIVATE_KEYS)
+        return (key for key in self.__curr_level.keys() if key not in self.__PRIVATE_KEYS)
+
+    def keys(self) -> typing.FrozenSet[str]:
+        return frozenset(iter(self))
 
     def __len__(self) -> int:
         return sum(1 for _ in self.__iter__())
