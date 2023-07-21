@@ -71,6 +71,9 @@
 
 * Readability improvements and stylistic changes to `pennylane/interfaces/jax_jit_tuple.py`
 
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
