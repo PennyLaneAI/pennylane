@@ -216,3 +216,107 @@ class TestFidelityMath:
 
         fidelity = qml.math.fidelity(state0, state1, check_state)
         assert qml.math.allclose(fidelity, expected)
+
+
+class TestGradient:
+    """Test the gradient of qml.math.fidelity"""
+
+    @staticmethod
+    def cost_fn_single(x):
+        state1 = qml.math.diag([qml.math.cos(x / 2) ** 2, qml.math.sin(x / 2) ** 2])
+        state2 = qml.math.convert_like(qml.math.diag([1, 0]), state1)
+        return qml.math.fidelity(state1, state2) + qml.math.fidelity(state2, state1)
+
+    @staticmethod
+    def cost_fn_multi(x):
+        state1 = qml.math.diag([qml.math.cos(x / 2) ** 2, 0, 0, qml.math.sin(x / 2) ** 2])
+        state2 = qml.math.convert_like(qml.math.diag([1, 0, 0, 0]), state1)
+        return qml.math.fidelity(state1, state2) + qml.math.fidelity(state2, state1)
+
+    @staticmethod
+    def expected_res(x):
+        return 2 * qml.math.cos(x / 2) ** 2
+
+    @staticmethod
+    def expected_grad(x):
+        return -qml.math.sin(x)
+
+    @pytest.mark.autograd
+    def test_single_wire_autograd(self, tol):
+        x = np.array(0.456)
+        res = self.cost_fn_single(x)
+        grad = qml.grad(self.cost_fn_single)(x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.jax
+    def test_single_wire_jax(self, tol):
+        x = jnp.array(0.456)
+        res = self.cost_fn_single(x)
+        grad = jax.grad(self.cost_fn_single)(x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.torch
+    def test_single_wire_torch(self, tol):
+        x = torch.from_numpy(np.array(0.456)).requires_grad_()
+        res = self.cost_fn_single(x)
+        res.backward()
+        grad = x.grad
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.tf
+    def test_single_wire_tf(self, tol):
+        x = tf.Variable(0.456, trainable=True)
+
+        with tf.GradientTape() as tape:
+            res = self.cost_fn_single(x)
+
+        grad = tape.gradient(res, x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.autograd
+    def test_multi_wire_autograd(self, tol):
+        x = np.array(0.456)
+        res = self.cost_fn_multi(x)
+        grad = qml.grad(self.cost_fn_multi)(x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.jax
+    def test_multi_wire_jax(self, tol):
+        x = jnp.array(0.456)
+        res = self.cost_fn_multi(x)
+        grad = jax.grad(self.cost_fn_multi)(x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.torch
+    def test_multi_wire_torch(self, tol):
+        x = torch.from_numpy(np.array(0.456)).requires_grad_()
+        res = self.cost_fn_multi(x)
+        res.backward()
+        grad = x.grad
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
+    @pytest.mark.tf
+    def test_multi_wire_tf(self, tol):
+        x = tf.Variable(0.456, trainable=True)
+
+        with tf.GradientTape() as tape:
+            res = self.cost_fn_multi(x)
+
+        grad = tape.gradient(res, x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
