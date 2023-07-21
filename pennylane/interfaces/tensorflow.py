@@ -28,8 +28,7 @@ from pennylane.transforms import convert_to_numpy_parameters
 
 def _set_copy_and_unwrap_tape(t, a):
     """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a, trainable_only=False)
+    tc = t.bind_new_parameters(a, list(range(len(a))))
     return convert_to_numpy_parameters(tc)
 
 
