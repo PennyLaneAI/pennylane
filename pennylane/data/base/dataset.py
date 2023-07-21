@@ -401,7 +401,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     __identifiers__ = tuple()
 
     type_id = "dataset"
-    """Type identifier for this dataset. Used internalyl to load datasets
+    """Type identifier for this dataset. Used internally to load datasets
     from other datasets."""
 
 
