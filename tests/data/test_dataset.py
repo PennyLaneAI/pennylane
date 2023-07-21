@@ -38,7 +38,7 @@ from pennylane.data.base.hdf5 import open_group
 
 
 class MyDataset(
-    Dataset, data_name="my_dataset", params=("x", "y")
+    Dataset, data_name="my_dataset", identifiers=("x", "y")
 ):  # pylint: disable=too-many-public-methods
     """A dataset subclass for testing."""
 
@@ -94,7 +94,7 @@ class TestDataset:
         ds = Dataset(bind)
 
         assert ds.data_name == "my_dataset"
-        assert ds.params == {"x": "1", "y": "2"}
+        assert ds.identifiers == {"x": "1", "y": "2"}
 
     def test_subclass_category_id(self):
         """Test that a subclass of Dataset preserves the defined
@@ -169,30 +169,40 @@ class TestDataset:
         with pytest.raises(AttributeError, match="'Dataset' object has no attribute 'x'"):
             del ds.x
 
+    def test_repr_shortened(self):
+        """Test the __repr__ has the expected format when there is more than 2 attributes."""
+
+        ds = Dataset(x=1, y="A string", width=3, z=None, length=4, identifiers=("length", "width"))
+
+        assert repr(ds) == "<Dataset = length: 4, width: 3, attributes: ['x', 'y', ...]>"
+
     def test_repr(self):
-        """Test the __repr__ has the expected format."""
+        """Test the __repr__ has the expected format when there is less than 2 attributes."""
 
-        ds = Dataset(x=1, y="A string", width=3, z=None, length=4, params=("length", "width"))
+        ds = Dataset(x=1, y="A string")
 
-        assert (
-            repr(ds)
-            == "<Dataset = length: 4, width: 3, attributes: ['x', 'y', 'width', 'z', 'length']>"
-        )
+        assert repr(ds) == "<Dataset = attributes: ['x', 'y']>"
+
+    def test__dir__(self):
+        """Test that __dir__ returns all attributes."""
+
+        ds = Dataset(x=1, y="2")
+        assert dir(ds) == ["x", "y"]
 
     @pytest.mark.parametrize(
-        "params, expect", [(None, {}), (tuple(), {}), (("x", "y"), {"x": "1", "y": "2"})]
+        "identifiers, expect", [(None, {}), (tuple(), {}), (("x", "y"), {"x": "1", "y": "2"})]
     )
-    def test_params_base(self, params, expect):
-        """Test that dataset params can be set."""
-        ds = Dataset(x="1", y="2", params=params)
+    def test_identifiers_base(self, identifiers, expect):
+        """Test that dataset identifiers can be set."""
+        ds = Dataset(x="1", y="2", identifiers=identifiers)
 
-        assert ds.params == expect
+        assert ds.identifiers == expect
 
-    def test_subclass_params(self):
-        """Test that dataset subclasses' params can be set."""
+    def test_subclass_identifiers(self):
+        """Test that dataset subclasses' identifiers can be set."""
         ds = MyDataset(x="1", y="2", description="abc")
 
-        assert ds.params == {"x": "1", "y": "2"}
+        assert ds.identifiers == {"x": "1", "y": "2"}
 
     def test_attribute_info(self):
         """Test that attribute info can be set and accessed
@@ -352,11 +362,11 @@ class TestDataset:
 
         - Does not create fields for _InitArg and ClassVar
         - collects fields from type annotations, including py_type
-        - gets data name and params from class arguments
+        - gets data name and identifiers from class arguments
         """
 
         class NewDataset(
-            Dataset, data_name="new_dataset", params=("x", "y")
+            Dataset, data_name="new_dataset", identifiers=("x", "y")
         ):  # pylint: disable= too-few-public-methods
             """Dataset"""
 
@@ -371,7 +381,7 @@ class TestDataset:
         ds = NewDataset(init_arg=3, x=1, y="abc", jsonable={"a": "b"})
 
         assert ds.data_name == "new_dataset"
-        assert ds.params == {"x": 1, "y": "abc"}
+        assert ds.identifiers == {"x": 1, "y": "abc"}
 
         assert ds.attr_info["x"].py_type == "int"
         assert ds.attr_info["y"].py_type == "str"

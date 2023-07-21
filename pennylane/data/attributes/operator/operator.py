@@ -40,7 +40,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             the operator
         - The ``data`` and ``wires`` attributes will produce an identical copy of
             operator if passed into the classes' ``__init__()`` method. Generally,
-            this means ``__init__()`` do not mutate the ``params`` and ``wires``
+            this means ``__init__()`` do not mutate the ``identifiers`` and ``wires``
             arguments.
         - Hyperparameters are not used or are automatically derived by ``__init__()``.
 

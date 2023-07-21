@@ -130,9 +130,6 @@ class AttributeTypeMapper(MutableMapping):
     def __iter__(self) -> typing.Iterator[str]:
         return iter(self.bind)
 
-    def keys(self) -> FrozenSet[str]:
-        return frozenset(iter(self))
-
     def __contains__(self, key: str) -> bool:
         return key in self._cache or key in self.bind
 

@@ -65,3 +65,21 @@ class TestMapper:  # pylint: disable=too-few-public-methods
 
         with pytest.raises(ValueError, match="Something"):
             AttributeTypeMapper(create_group()).set_item("x", 1, None)
+
+    def test_repr(self):
+        """Test that __repr__ is equivalent to dict.__repr__."""
+        mapper = AttributeTypeMapper(create_group())
+
+        mapper["x"] = 1
+        mapper["y"] = {"a": "b"}
+
+        assert repr(mapper) == repr({"x": DatasetScalar(1), "y": {"a": "b"}})
+
+    def test_str(self):
+        """Test that __str__ is equivalent to dict.__str__."""
+        mapper = AttributeTypeMapper(create_group())
+
+        mapper["x"] = 1
+        mapper["y"] = {"a": "b"}
+
+        assert str(mapper) == str({"x": DatasetScalar(1), "y": {"a": "b"}})
