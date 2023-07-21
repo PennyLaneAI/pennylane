@@ -179,7 +179,7 @@ def _insert_op(tape, ops, op_idx):
     ]
 
 
-def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
+def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     """Compute the modified tapes and coefficients required to compute the pulse generator
     derivative of a tape with respect to an indicated trainable parameter.
 
@@ -189,7 +189,6 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
             with respect to which to differentiate.
         atol (float): absolute tolerance used to determine whether a coefficient is zero.
         cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
-        use_broadcasting (bool): TODO
 
     Returns:
         list[`~.QuantumScript`]: Modified tapes to be added to the pulse generator differentiation
@@ -225,16 +224,11 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
     all_coeffs = _one_parameter_paulirot_coeffs(generators, num_wires)
     all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
-    if use_broadcasting:
-        angles = np.tile([np.pi / 2, -np.pi / 2], len(pauli_words))
-        pauli_words = [w for w in pauli_words for _ in (0, 1)]
-        pauli_rots = [qml.PauliRot(angles, pauli_words, wires=op.wires)]
-    else:
-        pauli_rots = [
-            qml.PauliRot(angle, word, wires=op.wires)
-            for word in pauli_words
-            for angle in [np.pi / 2, -np.pi / 2]
-        ]
+    pauli_rots = [
+        qml.PauliRot(angle, word, wires=op.wires)
+        for word in pauli_words
+        for angle in [np.pi / 2, -np.pi / 2]
+    ]
     # create tapes with the above PauliRot gates inserted, one per tape
     tapes = _insert_op(tape, pauli_rots, op_idx)
     # get the previous total number of tapes from the cache and determine start and end indices
@@ -249,7 +243,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
     return tapes, (start, end, all_coeffs[term_idx]), cache
 
 
-def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, use_broadcasting):
+def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     """Compute parameter-shift tape derivatives and contract them with coefficients.
 
     Args:
@@ -264,21 +258,11 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, u
         parameter-shift derivative computed from ``results`` and the ``coeffs``.
     """
 
-    if use_broadcasting:
-
-        def _parshift_and_contract_single(res_list, coeffs):
-            """Execute the standard parameter-shift rule on a list of results
-            and contract with Pauli basis coefficients."""
-            psr_deriv = ((res := res_list[0])[::2] - res[1::2]) / 2
-            return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
-
-    else:
-
-        def _parshift_and_contract_single(res_list, coeffs):
-            """Execute the standard parameter-shift rule on a list of results
-            and contract with Pauli basis coefficients."""
-            psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
-            return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
+    def _parshift_and_contract_single(res_list, coeffs):
+        """Execute the standard parameter-shift rule on a list of results
+        and contract with Pauli basis coefficients."""
+        psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
+        return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
 
     if single_measure and single_shot_entry:
         # single measurement and single shot entry
@@ -295,7 +279,7 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, u
     )
 
 
-def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
+def _expval_pulse_generator(tape, argnum, shots, atol):
     """Compute the pulse generator parameter-shift rule for a quantum circuit that returns expectation
     values of observables.
 
@@ -359,7 +343,7 @@ def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
         # If the pulse has been analyzed before, retrieve the tape/results pointers of
         # the pulse and the coefficients belonging to the current parameter from the cache,
         # but do not add create any additional tapes.
-        tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting)
+        tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, cache)
 
         gradient_data.append((*data, shape))
         gradient_tapes.extend(tapes)
@@ -393,9 +377,7 @@ def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
             # Apply the parameter-shift rule (respecting the tape output formatting)
             # and contract the result with the coefficients of the effective generators
             # in the Pauli basis. This computes the partial derivative.
-            g = _parshift_and_contract(
-                res, coeffs, single_measure, not partitioned_shots, use_broadcasting
-            )
+            g = _parshift_and_contract(res, coeffs, single_measure, not partitioned_shots)
             grads.append(g)
 
             # Memorize the parameter shape for the nonzero gradient entry
@@ -419,7 +401,7 @@ def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
     return gradient_tapes, processing_fn
 
 
-def _pulse_generator(tape, argnum=None, shots=None, use_broadcasting=False, atol=1e-7):
+def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -722,7 +704,7 @@ def _pulse_generator(tape, argnum=None, shots=None, use_broadcasting=False, atol
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    return _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol)
+    return _expval_pulse_generator(tape, argnum, shots, atol)
 
 
 def expand_invalid_trainable_pulse_generator(x, *args, **kwargs):

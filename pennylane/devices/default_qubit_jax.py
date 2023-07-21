@@ -192,7 +192,6 @@ class DefaultQubitJax(DefaultQubit):
         if (
             2 * len(operation.wires) > self.num_wires
             and not operation.hyperparameters["complementary"]
-            and state.ndim == self.num_wires
         ):
             # the device state vector contains less values than the operation matrix --> evolve state
             return self._evolve_state_vector_under_parametrized_evolution(state, operation)
