@@ -324,6 +324,8 @@ def _execute_bwd(
 
         return jax.pure_callback(wrapper, shape_dtype_structs, inner_params, vectorized=True)
 
+    # execute_wrapper_jvp merely registered, not used.
+    # pylint: disable=unused-variable
     @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
         """Calculate the jvp in such a way that we can bind it to jax.
