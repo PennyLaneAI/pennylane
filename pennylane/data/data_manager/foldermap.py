@@ -43,7 +43,8 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
     paramater using the '__default' key. This view hides that
     key, and allows the default parameter to be accessed.
 
-    For example:
+    For example, the underlying foldermap data will look like
+    this:
 
         {
             "__params": {
@@ -67,6 +68,9 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
                 }
             },
         }
+
+    When accessed through ``FolderMapView``, the '__default' and '__params'
+    keys will be hidden.
     """
 
     __PRIVATE_KEYS = {"__default", "__params"}
@@ -174,9 +178,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         return sum(1 for _ in self.__iter__())
 
     def __repr__(self) -> str:
-        items_repr = ", ".join((f"{repr(k)}: {repr(v)}") for k, v in self.items())
-
-        return f"{{{items_repr}}}"
+        return repr(dict(self))
 
     def __str__(self) -> str:
-        return repr(self)
+        return str(dict(self))

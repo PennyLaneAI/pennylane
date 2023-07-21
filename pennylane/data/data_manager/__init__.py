@@ -82,6 +82,9 @@ def _download_dataset(
         _download_partial(s3_path, dest, attributes, overwrite=force)
         return
 
+    if dest.exists() and not force:
+        return
+
     with open(dest, "wb") as f:
         resp = get(s3_path, timeout=5.0)
         resp.raise_for_status()
@@ -105,9 +108,10 @@ def load(  # pylint: disable=too-many-arguments
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
         attributes (list[str]) : An optional list to specify individual data element that are required
+        folder_path (str) : Path to the directory used for saving datasets. Defaults to './datasets'
         force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
-        download_dir (str) : Path to the directory used for saving datasets
         num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
+        cache_dir: Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
@@ -136,7 +140,7 @@ def load(  # pylint: disable=too-many-arguments
         ]
         results = wait(futures, return_when=FIRST_EXCEPTION)
         for result in results.done:
-            if result.exception():
+            if result.exception() is not None:
                 raise result.exception()
 
     return [Dataset.open(Path(dest_path), "r") for dest_path in dest_paths]
