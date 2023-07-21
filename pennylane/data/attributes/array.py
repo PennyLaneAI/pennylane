@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for numpy arrays."""
 
-
 import numpy
 from numpy.typing import ArrayLike
 
@@ -24,7 +23,8 @@ from pennylane.math import array, get_interface
 
 class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
     """
-    Attribute type for objects that implement the Array protocol, including numpy arrays.
+    Attribute type for objects that implement the Array protocol, including numpy arrays
+    and pennylane.math.tensor.
     """
 
     type_id = "array"
