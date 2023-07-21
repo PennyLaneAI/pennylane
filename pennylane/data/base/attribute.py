@@ -49,8 +49,6 @@ class AttributeInfo(MutableMapping):
     Attributes:
         attrs_bind: The HDF5 attrs dict that this instance is bound to,
             or any mutable mapping
-        py_type: Type annotation for this attribute
-        doc: Documentation for this attribute
         **kwargs: Extra metadata to include. Must be a string, number
             or numpy array
     """
