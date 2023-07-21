@@ -4,11 +4,22 @@
 
 <h3>New features since last release</h3>
 
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+  A `ProcessPoolExecutor` executes tapes asynchronously
+  using a pool of at most `max_workers` processes. If `max_workers` is `None`
+  or not given, only the current process executes tapes. If you experience any
+  issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
+  [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
+
 <h3>Improvements 🛠</h3>
 
 * `data.Dataset` now uses HDF5 instead of dill for serialization.
   [(#4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
-  
+
+* `HardwareHamiltonian`s can now be summed with `int` or `float`.
+  A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+  [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
+
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
@@ -34,6 +45,9 @@
 
 * Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
+* The `qchem` module is upgraded to use the fermionic operators of the `fermi` module.
+  [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
 
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
@@ -61,6 +75,9 @@
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
+
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
 <h3>Breaking changes 💔</h3>
 
@@ -97,6 +114,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
+  List input to define the fermionic operator is also deprecated; the fermionic 
+  operators in the ``qml.fermi`` module should be used instead.
+  [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
+
 * The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
@@ -104,6 +126,10 @@
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+  are deprecated. Use ``convert_to_numpy_parameters`` instead.
+  [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
 * `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
   `disable_return`, as the old return system is deprecated along with these switch functions.
@@ -140,18 +166,30 @@
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
 
+* The observable data of `qml.GellMann` now includes its index, allowing correct comparison
+  between instances of `qml.GellMann`, as well as Hamiltonians and Tensors
+  containing `qml.GellMann`.
+  [(#4366)](https://github.com/PennyLaneAI/pennylane/pull/4366)
+
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
+
+* The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
+  [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Soran Jahangiri,
+Utkarsh Azad
+Jack Brown
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
+Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
+Vincent Michaud-Rioux,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
