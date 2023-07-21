@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for numpy arrays."""
 
-from typing import Optional
 
 import numpy
 from numpy.typing import ArrayLike
