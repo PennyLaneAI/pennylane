@@ -70,6 +70,7 @@
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
 
 * Readability improvements and stylistic changes to `pennylane/interfaces/jax_jit_tuple.py`
+  [(#4379)](https://github.com/PennyLaneAI/pennylane/pull/4379/)
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
