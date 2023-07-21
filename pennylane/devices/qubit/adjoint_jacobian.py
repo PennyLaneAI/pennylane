@@ -23,7 +23,7 @@ from pennylane.tape import QuantumTape
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
-from .simulate import _final_state
+from .simulate import get_final_state
 
 # pylint: disable=protected-access, too-many-branches
 
@@ -66,7 +66,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = state if state is not None else _final_state(tape)[0]
+    ket = state if state is not None else get_final_state(tape)[0]
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -141,7 +141,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = state if state is not None else _final_state(tape)[0]
+    ket = state if state is not None else get_final_state(tape)[0]
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -215,7 +215,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = state if state is not None else _final_state(tape)[0]
+    ket = state if state is not None else get_final_state(tape)[0]
 
     obs = qml.dot(cotangents, tape.observables)
     bra = apply_operation(obs, ket)

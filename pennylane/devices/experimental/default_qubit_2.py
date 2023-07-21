@@ -30,7 +30,7 @@ from pennylane import DeviceError, Snapshot
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from ..qubit.simulate import simulate
+from ..qubit.simulate import simulate, get_final_state, measure_final_state
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
@@ -306,28 +306,26 @@ class DefaultQubit2(Device):
                 f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
             )
 
+        def wrapper(c, rng=None, debugger=None):
+            state = get_final_state(c, debugger=debugger)
+            jac = adjoint_jacobian(c, state=state)
+            res = measure_final_state(c, state, False, rng=rng)
+            return res, jac
+
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
-            results = tuple(
-                simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
-                for c in circuits
-            )
-            jacs = tuple(adjoint_jacobian(c, state=r[1]) for c, r in zip(circuits, results))
-            results = tuple(r[0] for r in results)
+            results = tuple(wrapper(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+            results, jacs = tuple(zip(*results))
         else:
             self._validate_multiprocessing_circuits(circuits)
 
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
-            def wrapper(c, rng):
-                res, final_state, _ = simulate(c, rng=rng, debugger=None, return_final_state=True)
-                jac = adjoint_jacobian(c, state=final_state)
-                return res, jac
-
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(executor.map(wrapper, vanilla_circuits, seeds))
-                results, jacs = tuple(zip(*results))
+
+            results, jacs = tuple(zip(*results))
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
@@ -411,30 +409,29 @@ class DefaultQubit2(Device):
                 f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
             )
 
+        def wrapper(c, t, rng=None, debugger=None):
+            state = get_final_state(c, debugger=debugger)
+            jvp = adjoint_jvp(c, t, state=state)
+            res = measure_final_state(c, state, False, rng=rng)
+            return res, jvp
+
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             results = tuple(
-                simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
-                for c in circuits
+                wrapper(c, t, rng=self._rng, debugger=self._debugger)
+                for c, t in zip(circuits, tangents)
             )
-            jvps = tuple(
-                adjoint_jvp(c, t, state=r[1]) for c, t, r in zip(circuits, tangents, results)
-            )
-            results = tuple(r[0] for r in results)
+            results, jvps = tuple(zip(*results))
         else:
             self._validate_multiprocessing_circuits(circuits)
 
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
-            def wrapper(c, t, rng):
-                res, final_state, _ = simulate(c, rng=rng, debugger=None, return_final_state=True)
-                jvp = adjoint_jvp(c, t, state=final_state)
-                return res, jvp
-
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(executor.map(wrapper, vanilla_circuits, tangents, seeds))
-                results, jvps = tuple(zip(*results))
+
+            results, jvps = tuple(zip(*results))
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
@@ -518,30 +515,29 @@ class DefaultQubit2(Device):
                 f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
             )
 
+        def wrapper(c, t, rng=None, debugger=None):
+            state = get_final_state(c, debugger=debugger)
+            vjp = adjoint_vjp(c, t, state=state)
+            res = measure_final_state(c, state, False, rng=rng)
+            return res, vjp
+
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             results = tuple(
-                simulate(c, rng=self._rng, debugger=self._debugger, return_final_state=True)
-                for c in circuits
+                wrapper(c, t, rng=self._rng, debugger=self._debugger)
+                for c, t in zip(circuits, cotangents)
             )
-            vjps = tuple(
-                adjoint_vjp(c, t, state=r[1]) for c, t, r in zip(circuits, cotangents, results)
-            )
-            results = tuple(r[0] for r in results)
+            results, vjps = tuple(zip(*results))
         else:
             self._validate_multiprocessing_circuits(circuits)
 
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
-            def wrapper(c, t, rng):
-                res, final_state, _ = simulate(c, rng=rng, debugger=None, return_final_state=True)
-                vjp = adjoint_vjp(c, t, state=final_state)
-                return res, vjp
-
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(executor.map(wrapper, vanilla_circuits, cotangents, seeds))
-                results, vjps = tuple(zip(*results))
+
+            results, vjps = tuple(zip(*results))
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))

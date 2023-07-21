@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
+from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
 
 
 class TestCurrentlyUnsupportedCases:
@@ -66,30 +66,25 @@ class TestStatePrep:
 class TestBasicCircuit:
     """Tests a basic circuit with one rx gate and two simple expectation values."""
 
-    @pytest.mark.parametrize("return_final_state", [False, True])
-    def test_basic_circuit_numpy(self, return_final_state):
+    def test_basic_circuit_numpy(self):
         """Test execution with a basic circuit."""
         phi = np.array(0.397)
         qs = qml.tape.QuantumScript(
             [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
         )
-        result = simulate(qs, return_final_state=return_final_state)
-
-        if return_final_state:
-            assert isinstance(result, tuple)
-            assert len(result) == 3
-
-            # the second element is the final state, and the third is whether it is batched
-            assert np.allclose(result[1], np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]))
-            assert not result[2]
-
-            result = result[0]
+        result = simulate(qs)
 
         assert isinstance(result, tuple)
         assert len(result) == 2
 
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
+
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+
+        assert np.allclose(state, np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]))
+        assert not is_state_batched
 
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self):
@@ -184,8 +179,7 @@ class TestBasicCircuit:
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
 
-    @pytest.mark.parametrize("return_final_state", [False, True])
-    def test_broadcasted_prep_state(self, return_final_state):
+    def test_broadcasted_prep_state(self):
         """Test that simulate works for state measurements
         when the state prep has broadcasted parameters"""
         x = np.array(1.2)
@@ -195,33 +189,28 @@ class TestBroadcasting:
         prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep)
-        res = simulate(qs, return_final_state=return_final_state)
-
-        if return_final_state:
-            assert isinstance(res, tuple)
-            assert len(res) == 3
-
-            # the second element is the final state, and the third is whether it is batched
-            expected = np.array(
-                [
-                    [np.cos(x / 2), 0, 0, np.sin(x / 2)],
-                    [0, np.cos(x / 2), np.sin(x / 2), 0],
-                    [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
-                    [0, -np.sin(x / 2), np.cos(x / 2), 0],
-                ]
-            ).reshape((4, 2, 2))
-            assert np.allclose(res[1], expected)
-            assert res[2]
-
-            res = res[0]
+        res = simulate(qs)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
         assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
 
-    @pytest.mark.parametrize("return_final_state", [False, True])
-    def test_broadcasted_op_state(self, return_final_state):
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+
+    def test_broadcasted_op_state(self):
         """Test that simulate works for state measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
@@ -230,28 +219,24 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
         qs = qml.tape.QuantumScript(ops, measurements)
-        res = simulate(qs, return_final_state=return_final_state)
-
-        if return_final_state:
-            assert isinstance(res, tuple)
-            assert len(res) == 3
-
-            # the second element is the final state, and the third is whether it is batched
-            expected = np.zeros((4, 2, 2))
-            expected[:, 0, 1] = np.cos(x / 2)
-            expected[:, 1, 0] = np.sin(x / 2)
-            assert np.allclose(res[1], expected)
-            assert res[2]
-
-            res = res[0]
+        res = simulate(qs)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x))
         assert np.allclose(res[1], -np.cos(x))
 
-    @pytest.mark.parametrize("return_final_state", [False, True])
-    def test_broadcasted_prep_sample(self, return_final_state):
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+
+    def test_broadcasted_prep_sample(self):
         """Test that simulate works for sample measurements
         when the state prep has broadcasted parameters"""
         x = np.array(1.2)
@@ -261,25 +246,7 @@ class TestBroadcasting:
         prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
-        res = simulate(qs, rng=123, return_final_state=return_final_state)
-
-        if return_final_state:
-            assert isinstance(res, tuple)
-            assert len(res) == 3
-
-            # the second element is the final state, and the third is whether it is batched
-            expected = np.array(
-                [
-                    [np.cos(x / 2), 0, 0, np.sin(x / 2)],
-                    [0, np.cos(x / 2), np.sin(x / 2), 0],
-                    [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
-                    [0, -np.sin(x / 2), np.cos(x / 2), 0],
-                ]
-            ).reshape((4, 2, 2))
-            assert np.allclose(res[1], expected)
-            assert res[2]
-
-            res = res[0]
+        res = simulate(qs, rng=123)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -290,8 +257,21 @@ class TestBroadcasting:
             res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
         )
 
-    @pytest.mark.parametrize("return_final_state", [False, True])
-    def test_broadcasted_op_sample(self, return_final_state):
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+
+    def test_broadcasted_op_sample(self):
         """Test that simulate works for sample measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
@@ -300,25 +280,22 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
         qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(10000))
-        res = simulate(qs, rng=123, return_final_state=return_final_state)
-
-        if return_final_state:
-            assert isinstance(res, tuple)
-            assert len(res) == 3
-
-            # the second element is the final state, and the third is whether it is batched
-            expected = np.zeros((4, 2, 2))
-            expected[:, 0, 1] = np.cos(x / 2)
-            expected[:, 1, 0] = np.sin(x / 2)
-            assert np.allclose(res[1], expected)
-            assert res[2]
-
-            res = res[0]
+        res = simulate(qs, rng=123)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x), atol=0.05)
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
 
 
 class TestDebugger:
