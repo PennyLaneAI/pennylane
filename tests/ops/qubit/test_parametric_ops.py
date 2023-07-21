@@ -3113,6 +3113,14 @@ class TestPauliRot:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_PauliRot_matrix_broadcast_word_angle_mismatch(self):
+        """Test that the PauliRot matrix raises an error for mismatching
+        angles and words broadcasting dimensions."""
+        angles = np.array([0.2, 0.1, 0.7, 0.3, 0.2])
+        words = ["IX", "ZI"]
+        with pytest.raises(ValueError, match="When broadcasting the rotation angle"):
+            qml.PauliRot.compute_matrix(angles, words)
+
     @pytest.mark.parametrize(
         "theta,pauli_word,compressed_pauli_word,wires,compressed_wires",
         [
@@ -3434,7 +3442,6 @@ class TestPauliRot:
         assert coeff == -0.5
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
-
 
     def test_batch_size(self):
         """Test that the batch_size of PauliRot is determined correctly."""

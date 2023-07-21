@@ -401,7 +401,7 @@ class PauliRot(Operation):
             if not len(theta) == len(pauli_word):
                 raise ValueError(
                     "When broadcasting the rotation angle and the Pauli word, the broadcasting "
-                    f"dimensions have to match, but got {self._batch_size} and {len(pauli_word)}."
+                    f"dimensions have to match, but got {len(theta)} and {len(pauli_word)}."
                 )
 
             return qml.math.stack(
