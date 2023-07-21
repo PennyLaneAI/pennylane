@@ -168,6 +168,9 @@
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
 
+* The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
+  [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
