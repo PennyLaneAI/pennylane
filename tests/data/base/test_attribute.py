@@ -15,7 +15,7 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
-# pylint: disable=unused-argument,too-many-public-methods
+# pylint: disable=unused-argument,unused-variable,too-many-public-methods
 
 from copy import copy, deepcopy
 from typing import Any, Iterable, List

@@ -15,7 +15,7 @@
 Tests for :mod:`pennylane.data.base.dataset`.
 """
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, too-many-public-methods
 
 from numbers import Number
 from pathlib import Path
