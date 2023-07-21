@@ -34,7 +34,9 @@ class DatasetList(  # pylint: disable=too-many-ancestors
 
     type_id = "list"
 
-    def __post_init__(self, value: typing.Iterable[T], info):
+    def __post_init__(self, value: typing.Iterable[T]):
+        super().__post_init__(value)
+
         self.extend(value)
 
     @classmethod

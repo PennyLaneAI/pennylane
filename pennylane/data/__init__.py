@@ -106,7 +106,7 @@ function can be used to attach metadata on assignment or initialization.
     >>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
             hamiltonian,
             doc="The hamiltonian of the system"))
-    >>> dataset.eigen = attribute(
+    >>> dataset.eigen = qml.data.attribute(
             {"eigvals": eigvals, "eigvecs": eigvecs},
             doc="Eigenvalues and eigenvectors of the hamiltonain")
 

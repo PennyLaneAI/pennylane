@@ -51,8 +51,8 @@ class DatasetSparseArray(Generic[SparseT], DatasetAttribute[HDF5Group, SparseT, 
 
     type_id = "sparse_array"
 
-    def __post_init__(self, value: SparseT, info) -> None:
-        super().__post_init__(value, info)
+    def __post_init__(self, value: SparseT) -> None:
+        super().__post_init__(value)
         self.info["sparse_array_class"] = type(value).__qualname__
 
     @property

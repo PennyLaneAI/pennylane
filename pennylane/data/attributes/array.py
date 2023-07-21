@@ -30,8 +30,8 @@ class DatasetArray(DatasetAttribute[HDF5Array, numpy.ndarray, ArrayLike]):
 
     type_id = "array"
 
-    def __post_init__(self, value: ArrayLike, info: Optional[AttributeInfo]) -> None:
-        super().__post_init__(value, info)
+    def __post_init__(self, value: ArrayLike) -> None:
+        super().__post_init__(value)
 
         array_interface = get_interface(value)
         if array_interface not in ("numpy", "autograd"):

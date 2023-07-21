@@ -66,7 +66,6 @@ def field(  # pylint: disable=too-many-arguments, unused-argument
     attribute_type: Union[Type[DatasetAttribute[HDF5Any, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
-    is_param: bool = False,
     **kwargs,
 ) -> Any:
     """Used to define fields on a declarative Dataset.
@@ -82,7 +81,7 @@ def field(  # pylint: disable=too-many-arguments, unused-argument
 
     return Field(
         cast(Type[DatasetAttribute[HDF5Any, T, T]], attribute_type),
-        AttributeInfo(doc=doc, py_type=py_type, is_param=is_param, **kwargs),
+        AttributeInfo(doc=doc, py_type=py_type, **kwargs),
     )
 
 

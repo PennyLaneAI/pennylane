@@ -282,7 +282,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
 
         self._bind = self._set_value(value, info, parent, key)
         self._check_bind()
-        self.__post_init__(value, self.info)
+        self.__post_init__(value)
 
     @property
     def info(self) -> AttributeInfo:
@@ -318,7 +318,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         """
         return ()
 
-    def __post_init__(self, value: InitValueType, info: Optional[AttributeInfo]) -> None:
+    def __post_init__(self, value: InitValueType) -> None:
         """Called after __init__(), only during value initialization. Can be implemented
         in subclasses that require additional initialization."""
 

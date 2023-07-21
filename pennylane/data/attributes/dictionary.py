@@ -38,7 +38,8 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 
     type_id = "dict"
 
-    def __post_init__(self, value: typing.Mapping[str, T], info):
+    def __post_init__(self, value: typing.Mapping[str, T]):
+        super().__post_init__(value)
         self.update(value)
 
     @classmethod
