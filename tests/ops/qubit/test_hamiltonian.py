@@ -786,6 +786,45 @@ class TestHamiltonian:
             (0.5, frozenset([("PauliX", qml.wires.Wires(2), ())])),
         }
 
+    def test_data_gell_mann(self):
+        """Tests that the obs_data method for Hamiltonians with qml.GellMann
+        observables includes the Gell-Mann index."""
+        H = qml.Hamiltonian(
+            [1, -1, 0.5],
+            [
+                qml.GellMann(wires=0, index=3),
+                qml.GellMann(wires=0, index=3) @ qml.GellMann(wires=1, index=1),
+                qml.GellMann(wires=2, index=2),
+            ],
+        )
+        data = H._obs_data()
+
+        assert data == {
+            (1, frozenset([("GellMann", qml.wires.Wires(0), (3,))])),
+            (
+                -1,
+                frozenset(
+                    [("GellMann", qml.wires.Wires(0), (3,)), ("GellMann", qml.wires.Wires(1), (1,))]
+                ),
+            ),
+            (0.5, frozenset([("GellMann", qml.wires.Wires(2), (2,))])),
+        }
+
+    def test_compare_gell_mann(self):
+        """Tests that the compare method returns the correct result for Hamiltonians
+        with qml.GellMann present."""
+        H1 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=2)])
+        H2 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)])
+        H3 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=1)])
+        H4 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)])
+
+        assert H1.compare(qml.GellMann(wires=2, index=2)) is True
+        assert H1.compare(qml.GellMann(wires=2, index=1)) is False
+        assert H1.compare(H3) is False
+        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)) is True
+        assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
+        assert H2.compare(H4) is False
+
     def test_hamiltonian_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
