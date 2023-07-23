@@ -114,18 +114,17 @@ Self = TypeVar("Self", bound="Dataset")
 class Dataset(MapperMixin, _DatasetTransform):
     """
     Base class for Datasets.
-
-    Attributes:
-        fields: A mapping of attribute names to their ``Attribute`` information. Note that
-            this contains attributes declared on the class, not attributes added to
-            an instance. Use ``attrs`` to view all attributes on an instance.
-        bind: The HDF5 group that contains this dataset's attributes
     """
 
     __data_name__: ClassVar[str]
     __identifiers__: ClassVar[Tuple[str, ...]]
 
-    fields: ClassVar[typing.Mapping[str, Field]] = MappingProxyType({})
+    fields: ClassVar[typing.Mapping[str, Field]]
+    """
+    A mapping of attribute names to their ``Attribute`` information. Note that
+    this contains attributes declared on the class, not attributes added to
+    an instance. Use ``attrs`` to view all attributes on an instance.
+    """
 
     bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
     data_name_: Optional[str] = _init_arg(default=None, alias="data_name")
@@ -213,7 +212,8 @@ class Dataset(MapperMixin, _DatasetTransform):
     def identifiers(self) -> typing.Mapping[str, str]:  # pylint: disable=function-redefined
         """Returns this dataset's parameters."""
         return {
-            attr_name: getattr(self, attr_name) for attr_name in self.info.get("identifiers", [])
+            attr_name: getattr(self, attr_name)
+            for attr_name in self.info.get("identifiers", self.info.get("params", []))
         }
 
     @property
@@ -401,8 +401,11 @@ class Dataset(MapperMixin, _DatasetTransform):
     __identifiers__ = tuple()
 
     type_id = "dataset"
-    """Type identifier for this dataset. Used internalyl to load datasets
+    """Type identifier for this dataset. Used internally to load datasets
     from other datasets."""
+
+
+Dataset.fields = MappingProxyType({})
 
 
 class _DatasetAttributeType(DatasetAttribute[HDF5Group, Dataset, Dataset]):
