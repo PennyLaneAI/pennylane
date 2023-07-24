@@ -449,7 +449,7 @@ class ParametrizedEvolution(Operation):
         if not self.hyperparameters["return_intermediate"] or self.t is None:
             return
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
-        # subtract and additional 1 because the full time evolution is not being returned.
+        # subtract an additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
 
     @property

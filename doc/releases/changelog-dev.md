@@ -4,13 +4,22 @@
 
 <h3>New features since last release</h3>
 
-* Transform programs 
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+  A `ProcessPoolExecutor` executes tapes asynchronously
+  using a pool of at most `max_workers` processes. If `max_workers` is `None`
+  or not given, only the current process executes tapes. If you experience any
+  issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
+  [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
 
 <h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
+
+* `HardwareHamiltonian`s can now be summed with `int` or `float`.
+  A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+  [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
@@ -38,6 +47,9 @@
 * Added a function `qml.math.fidelity_statevector` that computes the fidelity between two state vectors.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
+* The `qchem` module is upgraded to use the fermionic operators of the `fermi` module.
+  [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
+
 * QNode transforms in `qml.qinfo` now support custom wire labels.
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
@@ -51,6 +63,10 @@
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
+* `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
+  more performant choices.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
+
 * The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
   new `QuantumScript` objects with the provided parameters.
   [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
@@ -61,11 +77,20 @@
 * The experimental device interface is integrated with the `QNode` for Jax jit.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
-* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
+* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
 
+* Readability improvements and stylistic changes to `pennylane/interfaces/jax_jit_tuple.py`
+  [(#4379)](https://github.com/PennyLaneAI/pennylane/pull/4379/)
+
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
 <h3>Breaking changes 💔</h3>
+
+* `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
@@ -100,6 +125,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
+  List input to define the fermionic operator is also deprecated; the fermionic 
+  operators in the ``qml.fermi`` module should be used instead.
+  [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
+
 * The `qml.RandomLayers.compute_decomposition` keyword argument `ratio_imprimitive` will be changed to `ratio_imprim` to
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
@@ -107,6 +137,10 @@
 * The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+  are deprecated. Use ``convert_to_numpy_parameters`` instead.
+  [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
 * `qml.enable_return` and `qml.disable_return` are deprecated. Please avoid calling
   `disable_return`, as the old return system is deprecated along with these switch functions.
@@ -121,6 +155,9 @@
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
 <h3>Documentation 📝</h3>
+
+* The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
+  [#4327](https://github.com/PennyLaneAI/pennylane/pull/4327)
 
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
   [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
@@ -140,18 +177,28 @@
 * `default.qutrit` now supports all qutrit operations used with `qml.adjoint`.
   [(#4348)](https://github.com/PennyLaneAI/pennylane/pull/4348)
 
+* The observable data of `qml.GellMann` now includes its index, allowing correct comparison
+  between instances of `qml.GellMann`, as well as Hamiltonians and Tensors
+  containing `qml.GellMann`.
+  [(#4366)](https://github.com/PennyLaneAI/pennylane/pull/4366)
+
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
+
+* The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
+  [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Soran Jahangiri,
 Isaac De Vlugt,
+Lillian M. A. Frederiksen,
+Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
 Borja Requena,
