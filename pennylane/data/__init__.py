@@ -20,8 +20,9 @@ Additionally, users can easily create, write to disk, and read custom datasets u
 :class:`~pennylane.data.Dataset` class.
 
 .. currentmodule:: pennylane.data
+
 .. autosummary::
-   :toctree: api
+    :toctree: api
 
 Description
 -----------
