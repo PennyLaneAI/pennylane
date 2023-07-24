@@ -9,7 +9,6 @@ formatters:
     format: "\x1b[38;4;45m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\x1b[0m"
   custom:
       '()': "pennylane.logging.formatters.formatter.LogFormatter"
-##print("\x1b[38;4;45mI AM HERE!!!!!\x1b[0m")
 
 # Define handler for each logger. This specifies the associated class to use as a handler, the logging level associated with said handler, the formatter to use defined earlier, where to send the output (associated with the choice of handler class), and additional metadata needed. For exaemple, the following handlers output to both files (using RotatingFileHandler) and the output streams (using StreamHandler).
 handlers:
