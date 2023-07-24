@@ -18,7 +18,7 @@ for pkg in toml_libs:
 _path = os.path.dirname(__file__)
 
 # Define a more verbose mode for the messages. Not currently controlled by internal log configurations.
-TRACE = 1
+TRACE = logging.DEBUG // 2
 
 
 def enable_logging():
@@ -38,11 +38,14 @@ def enable_logging():
         pl_config = tomllib.load(f)
         logging.config.dictConfig(pl_config)
 
-    # Enable a more verbose mode than DEBUG.
-    # Used to enable inspection of function definitions in log messages.
     def trace(self, message, *args, **kws):
+        """Enable a more verbose mode than DEBUG. Used to enable inspection of function definitions in log messages."""
+
+        # Due to limitations in how the logging module exposes support for custom levels, accessing the private method `_log` has no alternative.
+        # pylint: disable=protected-access
         self._log(TRACE, message, args, **kws)
 
     logging.addLevelName(TRACE, "TRACE")
+    logging.TRACE = TRACE
     lc = logging.getLoggerClass()
     lc.trace = trace
