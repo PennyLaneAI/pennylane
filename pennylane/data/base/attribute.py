@@ -45,12 +45,6 @@ T = TypeVar("T")
 class AttributeInfo(MutableMapping):
     """Contains metadata that may be assigned to a dataset
     attribute. Is stored in the HDF5 object's ``attrs`` dict.
-
-    Attributes:
-        attrs_bind: The HDF5 attrs dict that this instance is bound to,
-            or any mutable mapping
-        **kwargs: Extra metadata to include. Must be a string, number
-            or numpy array
     """
 
     attrs_namespace: ClassVar[str] = "qml.data"
@@ -169,12 +163,6 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     The DatasetAttribute class provides an interface for converting Python objects to and from a HDF5
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
     DatasetAttribute, and Python types to compatible AttributeTypes.
-
-    Attributes:
-        type_id: Unique identifier for this DatasetAttribute class. Must be declared
-            in subclasses.
-        registry: Maps type_ids to their DatasetAttribute classes
-        type_consumer_registry: Maps types to their default DatasetAttribute
     """
 
     Self = TypeVar("Self", bound="DatasetAttribute")

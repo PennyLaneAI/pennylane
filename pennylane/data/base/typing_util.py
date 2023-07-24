@@ -58,7 +58,6 @@ def get_type(type_or_obj: Union[object, Type]) -> Type:
     """Given an object or an object type, returns the underlying class.
 
     Examples:
-
         >>> _get_type(list)
         <class 'list'>
         >>> _get_type(List[int])
@@ -137,7 +136,6 @@ def resolve_special_type(type_: Any) -> Optional[Tuple[type, List[type]]]:
         (<class 'list'>, [<class 'list'>])
 
     Further examples:
-
         >>> resolve_special_type(Union[str, int])
         (typing.Union, [<class 'str'>, <class 'int'>])
         >>> resolve_special_type(List[int])
