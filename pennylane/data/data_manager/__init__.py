@@ -157,7 +157,7 @@ def list_datasets() -> dict:
     Note that the results of calling this function may differ from this example as more datasets
     are added. For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
-    .. code-block :: pycon
+    .. code-block:: pycon
 
         >>> qml.data.list_datasets()
         {'qchem': {'H2': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
