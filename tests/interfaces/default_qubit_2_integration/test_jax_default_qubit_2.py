@@ -141,7 +141,10 @@ class TestJaxExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        assert device.tracker.totals["batches"] == 1
+        if execute_kwargs.get("gradient_fn", None) == "adjoint":
+            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+        else:
+            assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
