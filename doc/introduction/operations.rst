@@ -163,6 +163,7 @@ Non-parametrized gates
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CH
     ~pennylane.SWAP
     ~pennylane.ISWAP
     ~pennylane.ECR
@@ -414,10 +415,10 @@ CV observables
     ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
-    ~pennylane.P
+    ~pennylane.QuadP
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
-    ~pennylane.X
+    ~pennylane.QuadX
 
 :html:`</div>`
 
@@ -458,6 +459,38 @@ Qutrit gates constructed from a matrix
 
     ~pennylane.QutritUnitary
     ~pennylane.ControlledQutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_param:
+
+Qutrit parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TRX
+    ~pennylane.TRY
+    ~pennylane.TRZ
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_stateprep:
+
+Qutrit State preparation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritBasisState
 
 :html:`</div>`
 

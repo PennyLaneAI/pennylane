@@ -35,8 +35,7 @@ dtype = jnp.float64
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a)
+    tc = t.bind_new_parameters(a, t.trainable_params)
     return convert_to_numpy_parameters(tc) if unwrap else tc
 
 
@@ -460,17 +459,18 @@ def _execute_bwd(
     # pylint: disable=unused-variable
     # Copy a given tape with operations and set parameters
 
+    if isinstance(device, qml.devices.experimental.Device):
+        # cant test until we integrate device with shot vector
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+        jvp_shots = None
+    else:
+        has_partitioned_shots = jvp_shots = device.shot_vector
+
     @jax.custom_jvp
     def execute_wrapper(params):
         new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
         res, _ = execute_fn(new_tapes, **gradient_kwargs)
-
-        if device.shot_vector:
-            res = _to_jax_shot_vector(res)
-        else:
-            res = _to_jax(res)
-
-        return res
+        return _to_jax_shot_vector(res) if has_partitioned_shots else _to_jax(res)
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
@@ -482,7 +482,7 @@ def _execute_bwd(
                 new_tapes,
                 tangents[0],
                 gradient_fn,
-                device.shot_vector,
+                jvp_shots,
             )
             _kwargs = {
                 "reduction": "append",
@@ -505,7 +505,6 @@ def _execute_bwd(
                         max_diff=max_diff,
                     )
                 )
-
             res = execute_wrapper(primals[0])
         else:
             # Execution: execute the function first
@@ -549,25 +548,9 @@ def _execute_fwd(
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-        return res, jvps
+        return (res, jacs), (jvps, jacs)
 
-    res = execute_wrapper(params)
-
-    tracing = []
-    for i, tape in enumerate(tapes):
-        if len(tape.measurements) == 1:
-            tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
-        else:
-            tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
-
-    tracing = any(tracing)
-
-    # When there are no tracers (not differentiating), we have the result of
-    # the forward pass and the jacobian, but only need the result of the
-    # forward pass
-    if len(res) == 2 and not tracing:
-        res = res[0]
-
+    res, _jacs = execute_wrapper(params)
     return res
 
 
@@ -579,7 +562,7 @@ def _compute_jvps(jacs, tangents, multi_measurements):
             qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
         )
         jvps.append(compute_func(tangents[i], jacs[i]))
-    return jvps
+    return tuple(jvps)
 
 
 def _is_count_result(r):
@@ -604,7 +587,7 @@ def _to_jax(res):
                 else:
                     sub_r.append(jnp.array(r_i))
             res_.append(tuple(sub_r))
-    return res_
+    return tuple(res_)
 
 
 def _to_jax_shot_vector(res):
@@ -612,4 +595,4 @@ def _to_jax_shot_vector(res):
 
     The expected structure of the inputs is a list of tape results with each element in the list being a tuple due to execution using shot vectors.
     """
-    return [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
+    return tuple(tuple(_to_jax([r_])[0] for r_ in r) for r in res)

@@ -115,9 +115,7 @@ class AllSinglesDoubles(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(
-        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
-    ):
+    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
@@ -151,7 +149,7 @@ class AllSinglesDoubles(Operation):
         if hf_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

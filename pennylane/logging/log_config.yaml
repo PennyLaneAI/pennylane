@@ -81,10 +81,9 @@ handlers:
     formatter: detailed
     stream: ext://sys.stderr
 
-# Not fully sure what this does yet. Maybe sets the global handlers and overal level?
 root:
   level: DEBUG
-  handlers: [console_custom] #[console, error_console, root_file_handler]
+  handlers: [console_custom] # Options are [console, error_console, root_file_handler]
   propagate: yes
 
 # This controls the loggers that are included in the code-base. It allows override and control over the default behaviours to better suit a need (e.g. to adjust the format, output, etc). I assume this specializes the cases to be excpetional modificaitons of the `root` definitions earlier.
@@ -99,5 +98,5 @@ loggers:
     propagate: no
   main:
     level: DEBUG
-    handlers: [console_custom] #[info_file_handler, warn_file_handler, error_file_handler, debug_file_handler]
+    handlers: [console_custom] # Options are [info_file_handler, warn_file_handler, error_file_handler, debug_file_handler]
     propagate: no

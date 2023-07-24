@@ -1,0 +1,162 @@
+name: Unit Test
+on:
+  workflow_call:
+    inputs:
+      job_name:
+        description: The name of the Job as it would appear on GitHub Actions UI
+        required: true
+        type: string
+      branch:
+        description: The PennyLane branch to checkout and run unit tests for
+        required: true
+        type: string
+      coverage_artifact_name:
+        description: Name of the artifact file that will contain the coverage file for codevoc
+        required: true
+        type: string
+      checkout_fetch_depth:
+        description: How many commits to checkout from HEAD of branch passed
+        required: false
+        type: number
+        default: 1
+      python_version:
+        description: The version of Python to use in order to run unit tests
+        required: false
+        type: string
+        default: 3.9
+      install_jax:
+        description: Indicate if JAX should be installed or not
+        required: false
+        type: boolean
+        default: true
+      jax_version:
+        description: The version of JAX to install. Leave empty to install latest version.
+        required: false
+        type: string
+        default: ''
+      install_tensorflow:
+        description: Indicate if TensorFlow should be installed or not
+        required: false
+        type: boolean
+        default: true
+      tensorflow_version:
+        description: The version of TensorFlow to install. Leave empty to install latest version.
+        required: false
+        type: string
+        default: ''
+      keras_version:
+        description: The version of Keras to install alongside TensorFlow. This will only be install if TensorFlow is being installed. Leave empty to install latest version.
+        required: false
+        type: string
+        default: ''
+      install_pytorch:
+        description: Indicate if PyTorch should be installed or not
+        required: false
+        type: boolean
+        default: true
+      pytorch_version:
+        description: The version of PyTorch to install. Leave empty to install latest version.
+        required: false
+        type: string
+        default: ''
+      install_pennylane_lightning_master:
+        description: Indicate if PennyLane-Lightning should be installed from the master branch
+        required: false
+        type: boolean
+        default: true
+      pytest_test_directory:
+        description: The directory where the PennyLane tests are that should be run by PyTest
+        required: false
+        type: string
+        default: tests
+      pytest_coverage_flags:
+        description: Coverage flags for PyTest
+        required: false
+        type: string
+        default: ''
+      pytest_markers:
+        description: Custom mark string to pass to PyTest
+        required: false
+        type: string
+        default: ''
+      pytest_additional_args:
+        description: Additional arguments to pass to PyTest
+        required: false
+        type: string
+        default: ''
+      additional_pip_packages:
+        description: Additional packages to install. Values will be passed to pip install {value}
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  test:
+    name: ${{ inputs.job_name }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: ${{ inputs.checkout_fetch_depth }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '${{ inputs.python_version }}'
+
+      - name: Upgrade PIP
+        run: pip install --upgrade pip && pip install wheel --upgrade
+
+      - name: Install PennyLane dependencies
+        run: |
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        if: inputs.install_pytorch == true
+        env:
+          TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
+        run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        if: inputs.install_tensorflow == true
+        env:
+          TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
+        run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
+
+      - name: Install JAX
+        if: inputs.install_jax == true
+        env:
+          JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
+        run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
+
+      - name: Install additional PIP packages
+        if: inputs.additional_pip_packages != ''
+        run: pip install ${{ inputs.additional_pip_packages }}
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Install PennyLane-Lightning master
+        if: inputs.install_pennylane_lightning_master == true
+        run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+
+      - name: Run PennyLane Unit Tests
+        env:
+          PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
+        # Calling PyTest by invoking Python first as that adds the current directory to sys.path
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload Coverage File
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.coverage_artifact_name }}
+          path: coverage.xml

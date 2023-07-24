@@ -16,14 +16,15 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 
-from scipy.linalg import block_diag
 import pytest
 
+import numpy.testing as np_testing
 from pennylane import numpy as np
 from pennylane.operation import AnyWires
-import numpy.testing as np_testing
 from pennylane.ops import cv
 from pennylane.wires import Wires
+
+import pennylane as qml
 
 s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
@@ -83,7 +84,7 @@ class TestCV:
             cv.Kerr(2.568, wires=2),
         ],
     )
-    def test_adjoint_no_heisenberg_rep_defined(self, op, tol):
+    def test_adjoint_no_heisenberg_rep_defined(self, op):
         op_d = op.adjoint()
         assert op.parameters[0] == -op_d.parameters[0]
 
@@ -285,3 +286,15 @@ class TestLabel:
 
         assert op.label(base_label="name") == label1
         assert op.label(base_label="name", decimals=2) == label2
+
+
+def test_warning_when_initializing_x():
+    """Test that initializing the CV position observable as qml.X instead of qml.QuadX raises a warning"""
+    with pytest.warns(UserWarning, match="Use of qml.X is deprecated and will be removed"):
+        _ = qml.X(0)
+
+
+def test_warning_when_initializing_p():
+    """Test that initializing the CV momentum observable as qml.P instead of qml.QuadP raises a warning"""
+    with pytest.warns(UserWarning, match="Use of qml.P is deprecated and will be removed"):
+        _ = qml.P(0)

@@ -16,6 +16,7 @@ This module contains functionality for debugging quantum programs on simulator d
 """
 import pennylane as qml
 from pennylane import DeviceError
+from pennylane.devices import experimental
 
 
 class _Debugger:
@@ -29,7 +30,12 @@ class _Debugger:
     """
 
     def __init__(self, dev):
-        if "Snapshot" not in dev.operations:
+        # old device API: check if Snapshot is supported
+        if isinstance(dev, qml.Device) and "Snapshot" not in dev.operations:
+            raise DeviceError("Device does not support snapshots.")
+
+        # new device API: check if it's the simulator device
+        if isinstance(dev, experimental.Device) and not isinstance(dev, experimental.DefaultQubit2):
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}
@@ -55,9 +61,9 @@ def snapshots(qnode):
     Returns:
         A function that has the same argument signature as ``qnode`` and returns a dictionary.
         When called, the function will execute the QNode on the registered device and retrieve
-        the saved snapshots obtained via the ``qml.Snapshot`` operation. Additionally, the snapshot
-        dictionary always contains the execution results of the QNode, so the use of the tag
-        "execution_results" should be avoided to prevent conflicting key names.
+        the saved snapshots obtained via the :class:`~.pennylane.Snapshot` operation. Additionally,
+        the snapshot dictionary always contains the execution results of the QNode, so the use of
+        the tag "execution_results" should be avoided to prevent conflicting key names.
 
     **Example**
 

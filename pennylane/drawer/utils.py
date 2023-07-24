@@ -98,4 +98,5 @@ def unwrap_controls(op):
 
             next_ctrl = next_ctrl.base
 
+    control_values = [bool(int(i)) for i in control_values] if control_values else control_values
     return control_wires, control_values

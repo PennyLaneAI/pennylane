@@ -146,6 +146,7 @@ class MutualInfoMP(StateMeasurement):
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.mutual_info(
             state,
             indices0=list(self._wires[0]),

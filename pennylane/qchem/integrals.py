@@ -56,10 +56,11 @@ def primitive_norm(l, alpha):
     array([1.79444183])
     """
     lx, ly, lz = l
+
     n = (
         (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
-        / qml.math.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
+        / qml.math.sqrt(_fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1))
     )
     return n
 
@@ -102,12 +103,28 @@ def contracted_norm(l, alpha, a):
     0.39969026908800853
     """
     lx, ly, lz = l
-    c = np.pi**1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
+
+    c = np.pi**1.5 / 2 ** sum(l) * _fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
     n = 1 / qml.math.sqrt(c * s)
     return n
+
+
+def _fac2(n):
+    """Compute the double factorial of an integer.
+
+    The function uses the definition :math:`(-1)!! = 1`.
+
+    Args:
+        n (int): number for which the double factorial is computed
+
+    Returns:
+        int: the computed double factorial
+
+    """
+    return int(fac2(n) if n != -1 else 1)
 
 
 def _generate_params(params, args):
@@ -282,7 +299,7 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
@@ -475,7 +492,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
@@ -650,7 +667,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
         r"""Compute the kinetic integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
@@ -858,7 +875,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the electron-nuclear attraction integral
@@ -1003,7 +1020,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
         r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
 
         Args:
-            args (array[float]): initial values of the differentiable parameters
+            *args (array[float]): initial values of the differentiable parameters
 
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions

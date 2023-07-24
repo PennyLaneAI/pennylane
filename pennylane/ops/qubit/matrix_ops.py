@@ -17,6 +17,7 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
+from itertools import product
 
 import numpy as np
 from pennylane.math import norm, cast, eye, zeros, transpose, conj, sqrt, sqrt_matrix
@@ -25,6 +26,50 @@ from pennylane import numpy as pnp
 import pennylane as qml
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
 from pennylane.wires import Wires
+
+
+_walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
+
+
+def _walsh_hadamard_transform(D, n=None):
+    r"""Compute the Walsh–Hadamard Transform of a one-dimensional array.
+
+    Args:
+        D (tensor_like): The array or tensor to be transformed. Must have a length that
+            is a power of two.
+
+    Returns:
+        tensor_like: The transformed tensor with the same shape as the input ``D``.
+
+    Due to the execution of the transform as a sequence of tensor multiplications
+    with shapes ``(2, 2), (2, 2,... 2)->(2, 2,... 2)``, the theoretical scaling of this
+    method is the same as the one for the
+    `Fast Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Fast_Walsh-Hadamard_transform>`__:
+    On ``n`` qubits, there are ``n`` calls to ``tensordot``, each multiplying a
+    ``(2, 2)`` matrix to a ``(2,)*n`` vector, with a single axis being contracted. This means
+    that there are ``n`` operations with a FLOP count of ``4 * 2**(n-1)``, where ``4`` is the cost
+    of a single ``(2, 2) @ (2,)`` contraction and ``2**(n-1)`` is the number of copies due to the
+    non-contracted ``n-1`` axes.
+    Due to the large internal speedups of compiled matrix multiplication and compatibility
+    with autodifferentiation frameworks, the approach taken here is favourable over a manual
+    realization of the FWHT unless memory limitations restrict the creation of intermediate
+    arrays.
+    """
+    orig_shape = qml.math.shape(D)
+    n = n or int(qml.math.log2(orig_shape[-1]))
+    # Reshape the array so that we may apply the Hadamard transform to each axis individually
+    if broadcasted := len(orig_shape) > 1:
+        new_shape = (orig_shape[0],) + (2,) * n
+    else:
+        new_shape = (2,) * n
+    D = D.reshape(new_shape)
+    # Apply Hadamard transform to each axis, shifted by one for broadcasting
+    for i in range(broadcasted, n + broadcasted):
+        D = qml.math.tensordot(_walsh_hadamard_matrix, D, axes=[[1], [i]])
+    # The axes are in reverted order after all matrix multiplications, so we need to transpose;
+    # If D was broadcasted, this moves the broadcasting axis to first position as well.
+    # Finally, reshape to original shape
+    return qml.math.transpose(D).reshape(orig_shape)
 
 
 class QubitUnitary(Operation):
@@ -41,8 +86,6 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
@@ -74,7 +117,7 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, do_queue=True, id=None, unitary_check=False
+        self, U, wires, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
@@ -104,7 +147,7 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
-        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(U, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -139,7 +182,7 @@ class QubitUnitary(Operation):
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
 
-        See :func:`~.transforms.zyz_decomposition` and :func:`~.transforms.two_qubit_decomposition`
+        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.transforms.two_qubit_decomposition`
         for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
@@ -166,7 +209,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
+            return qml.transforms.decompositions.one_qubit_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -296,13 +339,18 @@ class DiagonalQubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, which has further
-        decompositions for one and two qubit matrices.
+        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, :class:`~.RZ`,
+        :class:`~.IsingZZ`, and/or :class:`~.MultiRZ` depending on the number of wires.
+
+        .. note::
+
+            The parameters of the decomposed operations are cast to the ``complex128`` dtype
+            as real dtypes can lead to ``NaN`` values in the decomposition.
 
         .. seealso:: :meth:`~.DiagonalQubitUnitary.decomposition`.
 
         Args:
-            U (array[complex]): square unitary matrix
+            D (tensor_like): diagonal of the matrix
             wires (Iterable[Any] or Wires): the wire(s) the operation acts on
 
         Returns:
@@ -310,11 +358,44 @@ class DiagonalQubitUnitary(Operation):
 
         **Example:**
 
-        >>> qml.DiagonalQubitUnitary.compute_decomposition([1, 1], wires=0)
-        [QubitUnitary(array([[1, 0], [0, 1]]), wires=[0])]
+        >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
+        >>> qml.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
+        [QubitUnitary(array([[0.36235775+0.93203909j, 0.        +0.j        ],
+         [0.        +0.j        , 0.36235775+0.93203909j]]), wires=[0]),
+         RZ(1.5000000000000002, wires=[1]),
+         RZ(-0.10000000000000003, wires=[0]),
+         IsingZZ(0.2, wires=[0, 1])]
 
         """
-        return [QubitUnitary(DiagonalQubitUnitary.compute_matrix(D), wires=wires)]
+        n = len(wires)
+
+        # Cast the diagonal into a complex dtype so that the logarithm works as expected
+        D_casted = qml.math.cast(D, "complex128")
+
+        phases = qml.math.real(qml.math.log(D_casted) * (-1j))
+        coeffs = _walsh_hadamard_transform(phases, n).T
+        global_phase = qml.math.exp(1j * coeffs[0])
+        # For all other gates, there is a prefactor -1/2 to be compensated.
+        coeffs = coeffs * (-2.0)
+
+        # TODO: Replace the following by a GlobalPhase gate.
+        ops = [QubitUnitary(qml.math.tensordot(global_phase, qml.math.eye(2), axes=0), wires[0])]
+        for wire0 in range(n):
+            # Single PauliZ generators correspond to the coeffs at powers of two
+            ops.append(qml.RZ(coeffs[1 << wire0], n - 1 - wire0))
+            # Double PauliZ generators correspond to the coeffs at the sum of two powers of two
+            ops.extend(
+                qml.IsingZZ(coeffs[(1 << wire0) + (1 << wire1)], [n - 1 - wire0, n - 1 - wire1])
+                for wire1 in range(wire0)
+            )
+
+        # Add all multi RZ gates that are not generated by single or double PauliZ generators
+        ops.extend(
+            qml.MultiRZ(c, [wires[k] for k in np.where(term)[0]])
+            for c, term in zip(coeffs, product((0, 1), repeat=n))
+            if sum(term) > 2
+        )
+        return ops
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
@@ -358,8 +439,6 @@ class BlockEncode(Operation):
     Args:
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     Raises:
@@ -420,7 +499,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, do_queue=True, id=None):
+    def __init__(self, A, wires, id=None):
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])
@@ -446,7 +525,7 @@ class BlockEncode(Operation):
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, id=id)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
@@ -460,8 +539,8 @@ class BlockEncode(Operation):
         .. seealso:: :meth:`~.BlockEncode.matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
 
         Returns:

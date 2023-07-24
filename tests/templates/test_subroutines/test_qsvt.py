@@ -38,6 +38,21 @@ def lst_phis(phis):
 class TestQSVT:
     """Test the qml.QSVT template."""
 
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
+        op = qml.QSVT(qml.PauliX(wires=0), projectors)
+        data, metadata = op._flatten()
+        assert qml.equal(data[0], qml.PauliX(0))
+        assert len(data[1]) == len(projectors)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(data[1], projectors))
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert op is not new_op
+
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
         for the block-encoding."""
@@ -363,6 +378,12 @@ class Testqsvt:
                 [0],
                 0.009,
             ),  # angles from pyqsp give 0.1*x**2
+            (
+                -1,
+                [-1.164, 0.3836, 0.383, 0.406],
+                [0],
+                -1,
+            ),  # angles from pyqsp give 0.5 * (5 * x**3 - 3 * x)
         ],
     )
     def test_output_wx(self, A, phis, wires, result):
@@ -375,6 +396,37 @@ class Testqsvt:
             return qml.expval(qml.PauliZ(wires=0))
 
         assert np.isclose(np.real(qml.matrix(circuit)())[0][0], result, rtol=1e-3)
+
+    @pytest.mark.parametrize(
+        ("A", "phis", "wires", "result"),
+        [
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                [-1.520692517929803, 0.05010380886509347],
+                [0, 1],
+                0.01,
+            ),  # angles from pyqsp give 0.1*x
+            (
+                0.3,
+                [-0.8104500678299933, 1.520692517929803, 0.7603462589648997],
+                [0],
+                0.009,
+            ),  # angles from pyqsp give 0.1*x**2
+            (
+                -1,
+                [-1.164, 0.3836, 0.383, 0.406],
+                [0],
+                -1,
+            ),  # angles from pyqsp give 0.5 * (5 * x**3 - 3 * x)
+        ],
+    )
+    def test_matrix_wx(self, A, phis, wires, result):
+        """Assert that the matrix method produces the expected result using both call signatures."""
+        m1 = qml.matrix(qml.qsvt(A, phis, wires, convention="Wx"))
+        m2 = qml.matrix(qml.qsvt)(A, phis, wires, convention="Wx")
+
+        assert np.isclose(np.real(m1[0, 0]), result, rtol=1e-3)
+        assert np.allclose(m1, m2)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(

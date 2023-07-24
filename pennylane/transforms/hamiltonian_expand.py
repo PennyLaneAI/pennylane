@@ -51,12 +51,8 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
 
     .. code-block:: python3
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-
-            qml.expval(H)
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
     We can use the ``hamiltonian_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian.
@@ -80,11 +76,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
 
         H = qml.Hamiltonian([1., 2., 3.], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(H)
+        tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
     With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
     ``[qml.PauliX(1), qml.PauliX(0)]``):
@@ -110,11 +102,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         # the initialisation already computes grouping information and stores it in the Hamiltonian
         assert H.grouping_indices is not None
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(H)
+        tape = qml.tape.QuantumTape(ops, [qml.expval(H)])
 
     Grouping information has been used to reduce the number of tapes from 3 to 2:
 
@@ -158,7 +146,9 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+            new_tape = tape.__class__(
+                tape._ops, (qml.expval(o) for o in obs), tape._prep, shots=tape.shots
+            )
 
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
@@ -195,7 +185,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
+        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep, shots=tape.shots)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
@@ -240,15 +230,14 @@ def sum_expand(tape: QuantumTape, group=True):
 
     .. code-block:: python3
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-
-            qml.expval(S)
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(1))
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        measurements = [
+            qml.expval(S),
+            qml.expval(qml.PauliZ(0)),
+            qml.expval(qml.PauliX(1)),
             qml.expval(qml.PauliZ(2))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can use the ``sum_expand`` transform to generate new tapes and a classical
     post-processing function to speed-up the computation of the expectation value of the `Sum`.
@@ -289,11 +278,8 @@ def sum_expand(tape: QuantumTape, group=True):
 
         S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(S)
+        ops = [qml.Hadamard(0), qml.CNOT((0,1)), qml.PauliX(2)]
+        tape = qml.tape.QuantumTape(ops, [qml.expval(S)])
 
     With grouping, the Sum gets split into two groups of observables (here
     ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
@@ -353,12 +339,13 @@ def sum_expand(tape: QuantumTape, group=True):
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
         qscripts = [
-            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep)
+            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep, shots=tape.shots)
             for m_group in m_groups
         ]
     else:
         qscripts = [
-            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
+            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep, shots=tape.shots)
+            for m in measurements
         ]
 
     def processing_fn(expanded_results):

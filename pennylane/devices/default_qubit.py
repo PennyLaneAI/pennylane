@@ -28,9 +28,12 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
+from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.measurements import ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
@@ -76,6 +79,20 @@ def _get_slice(index, axis, num_axes):
 # pylint: disable=unused-argument
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
+
+    .. warning::
+
+        The API of ``DefaultQubit`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.experimental.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.experimental.Device` and the implementation in
+        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -308,10 +325,10 @@ class DefaultQubit(QubitDevice):
             return state
         wires = operation.wires
 
-        if operation.__class__.__name__ in self._apply_ops:
+        if str(operation.name) in self._apply_ops:  # cast to string because of Tensor
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
-            return self._apply_ops[operation.base_name](state, axes)
+            return self._apply_ops[operation.name](state, axes)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
@@ -553,6 +570,15 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        is_state_batched = self._ndim(self.state) == 2
+        # intercept Sums
+        if isinstance(observable, Sum) and not self.shots:
+            return measure(
+                ExpectationMP(observable.map_wires(self.wire_map)),
+                self._pre_rotated_state,
+                is_state_batched,
+            )
+
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
@@ -569,7 +595,7 @@ class DefaultQubit(QubitDevice):
 
         if backprop_mode:
             # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-            if self._ndim(self.state) == 2:
+            if is_state_batched:
                 raise NotImplementedError(
                     "Expectation values of Hamiltonians for interface!=None are "
                     "not supported together with parameter broadcasting yet"
@@ -609,7 +635,7 @@ class DefaultQubit(QubitDevice):
             Hmat = observable.sparse_matrix(wire_order=self.wires)
 
             state = qml.math.toarray(self.state)
-            if self._ndim(state) == 2:
+            if is_state_batched:
                 res = qml.math.array(
                     [
                         csr_matrix.dot(

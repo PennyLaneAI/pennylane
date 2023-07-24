@@ -14,7 +14,7 @@
 """
 Unit tests for computing Autograd gradients of quantum functions.
 """
-# pylint: disable=no-member,redefined-outer-name,too-few-public-methods,no-value-for-parameter,not-callable,no-self-use,unexpected-keyword-arg
+# pylint: disable=no-value-for-parameter
 
 import pytest
 import autograd
@@ -30,75 +30,75 @@ thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
 
 
+# pylint: disable=too-few-public-methods
 class PolyN(qml.ops.PolyXP):
     "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
 
     def __init__(self, wires):
-        hbar = 2
         q = np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
         super().__init__(q, wires=wires)
         self.name = "PolyXP"
 
 
-@pytest.fixture(scope="module")
-def gaussian_dev():
+@pytest.fixture(scope="module", name="gaussian_dev")
+def gaussian_dev_fixture():
     """Gaussian device."""
     return qml.device("default.gaussian", wires=2)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_R(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_R")
+def grad_fn_R_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Rotation(y, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_BS(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_BS")
+def grad_fn_BS_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_D(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_D")
+def grad_fn_D_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(r, phi):
         qml.Displacement(r, phi, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_S(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_S")
+def grad_fn_S_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Squeezing(y, 0.0, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
 
-@pytest.fixture(scope="module")
-def grad_fn_S_Fock(gaussian_dev):
+@pytest.fixture(scope="module", name="grad_fn_S_Fock")
+def grad_fn_S_Fock_fixture(gaussian_dev):
     """Gradient with autograd."""
 
     @qml.qnode(gaussian_dev)
@@ -237,7 +237,7 @@ class TestCVGradient:
         def qf(x, y):
             qml.Displacement(x, 0, wires=[0])
             qml.Squeezing(y, -1.3 * y, wires=[0])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
@@ -282,7 +282,7 @@ class TestCVGradient:
             qml.Displacement(x, 0, wires=[0])
             qml.Rotation(y, wires=[0])
             qml.Displacement(0, x, wires=[0])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         q = qml.QNode(circuit, gaussian_dev)
         q(*par)
@@ -316,7 +316,7 @@ class TestCVGradient:
         def circuit(x):
             qml.Displacement(x, 0, wires=0)
             qml.InterferometerUnitary(U, wires=[0, 1])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         qnode = qml.QNode(circuit, gaussian_dev)
         qnode(x)
@@ -337,7 +337,7 @@ class TestCVGradient:
             qml.Displacement(x, 0, wires=[0])
             qml.Rotation(y, wires=[0])
             qml.Displacement(0, x, wires=[0])
-            return qml.expval(qml.X(0)), qml.expval(qml.NumberOperator(0))
+            return qml.expval(qml.QuadX(0)), qml.expval(qml.NumberOperator(0))
 
         q = qml.QNode(circuit, gaussian_dev)
 

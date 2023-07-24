@@ -33,7 +33,8 @@ def append_gate(tape, params, gates):
 
     for i, g in enumerate(gates):
         g = copy.copy(g)
-        g.data[0] = params[i]
+        new_params = (params[i], *g.data[1:])
+        g.data = new_params
         qml.apply(g)
 
     for m in tape.measurements:
@@ -100,7 +101,7 @@ class AdaptiveOptimizer:
     >>> for i in range(len(operator_pool)):
     ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
     ...     print('Energy:', energy)
-    ...     print(qml.draw(circuit)())
+    ...     print(qml.draw(circuit, show_matrices=False)())
     ...     print('Largest Gradient:', gradient)
     ...     print()
     ...     if gradient < 1e-3:

@@ -18,13 +18,16 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
-from typing import List, Union
+from typing import List, Union, Sequence
 import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.typing import TensorLike
+from pennylane.ops import functions
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .hardware_hamiltonian import HardwareHamiltonian
 
 has_jax = True
 try:
@@ -39,7 +42,7 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=True, id=None, **odeint_kwargs)
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
     the :func:`~.pennylane.evolve` function
@@ -68,7 +71,6 @@ class ParametrizedEvolution(Operation):
             ``ParametrizedEvolution`` and will not affect other gates.
             To return the matrix at intermediate evolution times, activate ``return_intermediate``
             (see below).
-        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
@@ -93,6 +95,8 @@ class ParametrizedEvolution(Operation):
             where :math:`t_i` are the additional times provided in ``t``.
             If ``True``, the *remaining* time evolution to :math:`t_f` is computed instead, returning
             :math:`\{U(t_0, t_f), U(t_1, t_f),\dots, U(t_{f-1}, t_f), U(t_f, t_f)\}`.
+        dense (bool): Whether the evolution should use dense matrices. Per default, this is decided by
+            the number of wires, i.e. ``dense = len(wires) < 3``.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
@@ -102,6 +106,8 @@ class ParametrizedEvolution(Operation):
 
     To create a :class:`~.ParametrizedEvolution`, we first define a :class:`~.ParametrizedHamiltonian`
     describing the system, and then pass it to :func:`~pennylane.evolve`:
+
+
 
     .. code-block:: python
 
@@ -368,9 +374,9 @@ class ParametrizedEvolution(Operation):
         t: Union[float, List[float]] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
-        do_queue=True,
+        dense: bool = None,
         id=None,
-        **odeint_kwargs
+        **odeint_kwargs,
     ):
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
@@ -382,19 +388,32 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+            if isinstance(t, (list, tuple)):
+                t = qml.math.stack(t)
+            self.t = qml.math.cast(qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float)
         if complementary and not return_intermediate:
             warnings.warn(
                 "The keyword argument complementary does not have any effect if "
                 "return_intermediate is set to False."
             )
-        params = [] if params is None else params
-        super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        if params is None:
+            params = []
+        else:
+            if not isinstance(H, HardwareHamiltonian) and len(params) != len(H.coeffs_parametrized):
+                raise ValueError(
+                    "The length of the params argument and the number of scalar-valued functions "
+                    f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
+                    f"expected {len(H.coeffs_parametrized)} parameters."
+                )
+        super().__init__(*params, wires=H.wires, id=id)
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
+        self.dense = len(self.wires) < 3 if dense is None else dense
 
-    def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
+    def __call__(
+        self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
+    ):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
@@ -408,6 +427,8 @@ class ParametrizedEvolution(Operation):
             return_intermediate = self.hyperparameters["return_intermediate"]
         if complementary is None:
             complementary = self.hyperparameters["complementary"]
+        if dense is None:
+            dense = self.dense
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
@@ -418,9 +439,9 @@ class ParametrizedEvolution(Operation):
             t=t,
             return_intermediate=return_intermediate,
             complementary=complementary,
-            do_queue=True,
+            dense=dense,
             id=self.id,
-            **odeint_kwargs
+            **odeint_kwargs,
         )
 
     def _check_time_batching(self):
@@ -428,7 +449,7 @@ class ParametrizedEvolution(Operation):
         if not self.hyperparameters["return_intermediate"] or self.t is None:
             return
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
-        # subtract and additional 1 because the full time evolution is not being returned.
+        # subtract an additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
 
     @property
@@ -467,7 +488,7 @@ class ParametrizedEvolution(Operation):
 
         with jax.ensure_compile_time_eval():
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                self.H, dense=len(self.wires) < 3, wire_order=self.wires
+                self.H, dense=self.dense, wire_order=self.wires
             )
 
         def fun(y, t):
@@ -483,3 +504,16 @@ class ParametrizedEvolution(Operation):
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+
+
+@functions.bind_new_parameters.register
+def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Sequence[TensorLike]):
+    return ParametrizedEvolution(
+        op.H,
+        params=params,
+        t=op.t,
+        return_intermediate=op.hyperparameters["return_intermediate"],
+        complementary=op.hyperparameters["complementary"],
+        dense=op.dense,
+        **op.odeint_kwargs,
+    )

@@ -60,7 +60,9 @@ from pennylane.measurements import (
     VarianceMP,
     VnEntropy,
     VnEntropyMP,
+    Shots,
 )
+from pennylane.resource import Resources
 from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
@@ -299,7 +301,7 @@ class QubitDevice(Device):
 
         * :meth:`~.probability`
 
-        Additional keyword arguments may be passed to the this method
+        Additional keyword arguments may be passed to this method
         that can be utilised by :meth:`apply`. An example would be passing
         the ``QNode`` hash that can be used later for parametric compilation.
 
@@ -348,7 +350,20 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots, results=results)
+            shots_from_dev = self._shots if not self.shot_vector else self._raw_shot_sequence
+            tape_resources = circuit.specs["resources"]
+
+            resources = Resources(  # temporary until shots get updated on tape !
+                tape_resources.num_wires,
+                tape_resources.num_gates,
+                tape_resources.gate_types,
+                tape_resources.gate_sizes,
+                tape_resources.depth,
+                Shots(shots_from_dev),
+            )
+            self.tracker.update(
+                executions=1, shots=self._shots, results=results, resources=resources
+            )
             self.tracker.record()
 
         return results
@@ -1289,7 +1304,7 @@ class QubitDevice(Device):
         """
         state = getattr(self, "state", None)
         wires = self.map_wires(wires)
-        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qml.math.reduce_statevector(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
         r"""Returns the Von Neumann entropy prior to measurement.
@@ -1305,7 +1320,7 @@ class QubitDevice(Device):
             float: returns the Von Neumann entropy
         """
         try:
-            state = self.access_state()
+            state = self.density_matrix(wires=self.wires)
         except qml.QuantumFunctionError as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
@@ -1332,7 +1347,7 @@ class QubitDevice(Device):
             float: the mutual information
         """
         try:
-            state = self.access_state()
+            state = self.density_matrix(wires=self.wires)
         except qml.QuantumFunctionError as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
@@ -1369,7 +1384,7 @@ class QubitDevice(Device):
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~pennylane.classical_shadow`
+        .. seealso:: :func:`~.pennylane.classical_shadow`
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
@@ -1449,7 +1464,7 @@ class QubitDevice(Device):
 
         .. note::
 
-            :meth:`marginal_prob` may be used as a utility method
+            :meth:`~.marginal_prob` may be used as a utility method
             to calculate the marginal probability distribution.
 
         Args:
@@ -1657,8 +1672,10 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if observable.name == "Projector" and len(observable.parameters[0]) == len(
+            observable.wires
+        ):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1687,8 +1704,10 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if observable.name == "Projector" and len(observable.parameters[0]) == len(
+            observable.wires
+        ):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1917,6 +1936,11 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        if tape.batch_size is not None:
+            raise qml.QuantumFunctionError(
+                "Parameter broadcasting is not supported with adjoint differentiation"
+            )
+
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment
@@ -1933,9 +1957,6 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
                 )
-
-            if not hasattr(m.obs, "base_name"):
-                m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
         if self.shot_vector is not None:
             raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")

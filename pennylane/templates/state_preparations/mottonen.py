@@ -287,7 +287,7 @@ class MottonenStatePreparation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, state_vector, wires, do_queue=True, id=None):
+    def __init__(self, state_vector, wires, id=None):
         # check if the `state_vector` param is batched
         batched = len(qml.math.shape(state_vector)) > 1
 
@@ -315,7 +315,7 @@ class MottonenStatePreparation(Operation):
                         f"State vectors have to be of norm 1.0, vector {i} has norm {norm}"
                     )
 
-        super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state_vector, wires=wires, id=id)
 
     @property
     def num_params(self):

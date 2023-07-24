@@ -42,7 +42,7 @@ def _replace_obs(tape: QuantumTape, obs, *args, **kwargs):
 
         # queue the new observable
         obs(*args, **kwargs)
-    qscript = QuantumScript.from_queue(q)
+    qscript = QuantumScript.from_queue(q, shots=tape.shots)
 
     def processing_fn(res):
         if qml.active_return():

@@ -15,6 +15,7 @@
 Unit tests for the qubit matrix-based operations.
 """
 # pylint: disable=import-outside-toplevel
+from functools import reduce
 import numpy as np
 import pytest
 
@@ -24,6 +25,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
+from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 
 class TestQubitUnitary:
@@ -235,14 +237,18 @@ class TestQubitUnitary:
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize(
-        "U,expected_gate,expected_params",
+        "U,expected_gates,expected_params",
         [
-            (I, qml.RZ, [0.0]),
-            (Z, qml.RZ, [np.pi]),
-            (S, qml.RZ, [np.pi / 2]),
-            (T, qml.RZ, [np.pi / 4]),
-            (qml.matrix(qml.RZ(0.3, wires=0)), qml.RZ, [0.3]),
-            (qml.matrix(qml.RZ(-0.5, wires=0)), qml.RZ, [-0.5]),
+            (I, (qml.RZ, qml.RY, qml.RZ), [0.0, 0.0, 0.0]),
+            (Z, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, 0.0, np.pi / 2]),
+            (S, (qml.RZ, qml.RY, qml.RZ), [np.pi / 4, 0.0, np.pi / 4]),
+            (T, (qml.RZ, qml.RY, qml.RZ), [np.pi / 8, 0.0, np.pi / 8]),
+            (qml.matrix(qml.RZ(0.3, wires=0)), (qml.RZ, qml.RY, qml.RZ), [0.15, 0.0, 0.15]),
+            (
+                qml.matrix(qml.RZ(-0.5, wires=0)),
+                (qml.RZ, qml.RY, qml.RZ),
+                [12.316370614359172, 0.0, 12.316370614359172],
+            ),
             (
                 np.array(
                     [
@@ -250,16 +256,20 @@ class TestQubitUnitary:
                         [9.831019270939975e-01 + 0.1830590094588862j, 0],
                     ]
                 ),
-                qml.Rot,
-                [-0.18409714468526372, np.pi, 0.18409714468526372],
+                (qml.RZ, qml.RY, qml.RZ),
+                [12.382273469673908, np.pi, 0.18409714468526372],
             ),
-            (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
-            (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)), qml.Rot, [0.2, 0.5, -0.3]),
+            (H, (qml.RZ, qml.RY, qml.RZ), [np.pi, np.pi / 2, 0.0]),
+            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, 10.995574287564276]),
+            (
+                qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)),
+                (qml.RZ, qml.RY, qml.RZ),
+                [0.2, 0.5, 12.266370614359172],
+            ),
             (
                 np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
-                qml.Rot,
-                [-1.0, 2.0, -3.0],
+                (qml.RZ, qml.RY, qml.RZ),
+                [11.566370614359172, 2.0, 9.566370614359172],
             ),
             # An instance of a broadcast unitary
             (
@@ -267,21 +277,22 @@ class TestQubitUnitary:
                 * qml.Rot(
                     np.array([1.2, 2.3]), np.array([0.12, 0.5]), np.array([0.98, 0.567]), wires=0
                 ).matrix(),
-                qml.Rot,
+                (qml.RZ, qml.RY, qml.RZ),
                 [[1.2, 2.3], [0.12, 0.5], [0.98, 0.567]],
             ),
         ],
     )
-    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
+    def test_qubit_unitary_decomposition(self, U, expected_gates, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
         decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
         decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
-        assert len(decomp) == 1 == len(decomp2)
-        assert isinstance(decomp[0], expected_gate)
-        assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
-        assert isinstance(decomp2[0], expected_gate)
-        assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
+        assert len(decomp) == 3 == len(decomp2)
+        for i in range(3):
+            assert isinstance(decomp[i], expected_gates[i])
+            assert np.allclose(decomp[i].parameters, expected_params[i], atol=1e-7)
+            assert isinstance(decomp2[i], expected_gates[i])
+            assert np.allclose(decomp2[i].parameters, expected_params[i], atol=1e-7)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
@@ -334,36 +345,212 @@ class TestQubitUnitary:
         assert qml.equal(out, expected)
 
 
+class TestWalshHadamardTransform:
+    """Test the helper function walsh_hadamard_transform."""
+
+    @pytest.mark.parametrize(
+        "inp, exp",
+        [
+            ([1, 1, 1, 1], [1, 0, 0, 0]),
+            ([1, 1.5, 0.5, 1], [1, -0.25, 0.25, 0]),
+            ([1, 0, -1, 2.5], [0.625, -0.625, -0.125, 1.125]),
+        ],
+    )
+    def test_compare_analytic_results(self, inp, exp):
+        """Test against hard-coded results."""
+        inp = np.array(inp)
+        output = _walsh_hadamard_transform(inp)
+        assert qml.math.allclose(output, exp)
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    @pytest.mark.parametrize("provide_n", [True, False])
+    def test_compare_matrix_mult(self, n, provide_n):
+        """Test against matrix multiplication for a few random inputs."""
+        np.random.seed(382)
+        inp = np.random.random(2**n)
+        output = _walsh_hadamard_transform(inp, n=n if provide_n else None)
+        h = np.array([[0.5, 0.5], [0.5, -0.5]])
+        h = reduce(np.kron, [h] * n)
+        exp = h @ inp
+        assert qml.math.allclose(output, exp)
+
+    def test_compare_analytic_results_broadcasted(self):
+        """Test against hard-coded results."""
+        inp = np.array([[1, 1, 1, 1], [1, 1.5, 0.5, 1], [1, 0, -1, 2.5]])
+        exp = [[1, 0, 0, 0], [1, -0.25, 0.25, 0], [0.625, -0.625, -0.125, 1.125]]
+        output = _walsh_hadamard_transform(inp)
+        assert qml.math.allclose(output, exp)
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    @pytest.mark.parametrize("provide_n", [True, False])
+    def test_compare_matrix_mult_broadcasted(self, n, provide_n):
+        """Test against matrix multiplication for a few random inputs."""
+        np.random.seed(382)
+        inp = np.random.random((5, 2**n))
+        output = _walsh_hadamard_transform(inp, n=n if provide_n else None)
+        h = np.array([[0.5, 0.5], [0.5, -0.5]])
+        h = reduce(np.kron, [h] * n)
+        exp = qml.math.moveaxis(qml.math.tensordot(h, inp, [[1], [1]]), 0, 1)
+        assert qml.math.allclose(output, exp)
+
+
 class TestDiagonalQubitUnitary:
     """Test the DiagonalQubitUnitary operation."""
 
-    def test_decomposition(self):
-        """Test that DiagonalQubitUnitary falls back to QubitUnitary."""
-        D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
+    def test_decomposition_single_qubit(self):
+        """Test that a single-qubit DiagonalQubitUnitary is decomposed correctly."""
+        D = np.array([1j, -1])
 
-        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
-        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0]).decomposition()
 
-        assert len(decomp) == 1 == len(decomp2)
-        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires([0, 1, 2]) == decomp2[0].wires
-        assert np.allclose(decomp[0].data[0], np.diag(D))
-        assert np.allclose(decomp2[0].data[0], np.diag(D))
+        ph = np.exp(3j * np.pi / 4)
+        for dec in (decomp, decomp2):
+            assert len(dec) == 2
+            assert qml.equal(decomp[0], qml.QubitUnitary(np.eye(2) * ph, 0))
+            assert qml.equal(decomp[1], qml.RZ(np.pi / 2, 0))
 
-    def test_decomposition_broadcasted(self):
-        """Test that the broadcasted DiagonalQubitUnitary falls back to QubitUnitary."""
-        D = np.outer([1.0, -1.0], [1.0, -1.0, 1j, 1.0])
+    def test_decomposition_single_qubit_broadcasted(self):
+        """Test that a broadcasted single-qubit DiagonalQubitUnitary is decomposed correctly."""
+        D = np.stack(
+            [[1j, -1], np.exp(1j * np.array([np.pi / 8, -np.pi / 8])), [1j, -1j], [-1, -1]]
+        )
+        angles = np.array([np.pi / 2, -np.pi / 4, -np.pi, 0])
+
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0]).decomposition()
+
+        ph = [np.exp(3j * np.pi / 4), 1, 1, -1]
+        for dec in (decomp, decomp2):
+            assert len(dec) == 2
+            assert qml.equal(decomp[0], qml.QubitUnitary(np.array([np.eye(2) * p for p in ph]), 0))
+            assert qml.equal(decomp[1], qml.RZ(angles, 0))
+
+    def test_decomposition_two_qubits(self):
+        """Test that a two-qubit DiagonalQubitUnitary is decomposed correctly."""
+        D = np.exp(1j * np.array([1, -1, 0.5, 1]))
 
         decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1])
         decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1]).decomposition()
 
-        assert len(decomp) == 1 == len(decomp2)
-        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires([0, 1]) == decomp2[0].wires
+        for dec in (decomp, decomp2):
+            assert len(dec) == 4
+            assert qml.equal(decomp[0], qml.QubitUnitary(np.eye(2) * np.exp(0.375j), 0))
+            assert qml.equal(decomp[1], qml.RZ(-0.75, 1))
+            assert qml.equal(decomp[2], qml.RZ(0.75, 0))
+            assert qml.equal(decomp[3], qml.IsingZZ(-1.25, [0, 1]))
 
-        expected = np.array([np.diag([1.0, -1.0, 1j, 1.0]), np.diag([-1.0, 1.0, -1j, -1.0])])
-        assert np.allclose(decomp[0].data[0], expected)
-        assert np.allclose(decomp2[0].data[0], expected)
+    def test_decomposition_two_qubits_broadcasted(self):
+        """Test that a broadcasted two-qubit DiagonalQubitUnitary is decomposed correctly."""
+        D = np.exp(1j * np.array([[1, -1, 0.5, 1], [2.3, 1.9, 0.3, -0.9], [1.1, 0.4, -0.8, 1.2]]))
+
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1]).decomposition()
+
+        angles = [[-0.75, -0.8, 0.65], [0.75, -2.4, -0.55], [-1.25, 0.4, -1.35]]
+        ph = [np.exp(1j * 0.375), np.exp(1j * 0.9), np.exp(1j * 0.475)]
+        for dec in (decomp, decomp2):
+            assert len(dec) == 4
+            assert qml.equal(decomp[0], qml.QubitUnitary(np.array([np.eye(2) * p for p in ph]), 0))
+            assert qml.equal(decomp[1], qml.RZ(angles[0], 1))
+            assert qml.equal(decomp[2], qml.RZ(angles[1], 0))
+            assert qml.equal(decomp[3], qml.IsingZZ(angles[2], [0, 1]))
+
+    def test_decomposition_three_qubits(self):
+        """Test that a three-qubit DiagonalQubitUnitary is decomposed correctly."""
+        D = np.exp(1j * np.array([1, -1, 0.5, 1, 0.2, 0.1, 0.6, 2.3]))
+
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
+
+        for dec in (decomp, decomp2):
+            assert len(dec) == 8
+            assert qml.equal(decomp[0], qml.QubitUnitary(np.eye(2) * np.exp(0.5875j), 0))
+            assert qml.equal(decomp[1], qml.RZ(0.025, 2))
+            assert qml.equal(decomp[2], qml.RZ(1.025, 1))
+            assert qml.equal(decomp[3], qml.IsingZZ(-1.075, [1, 2]))
+            assert qml.equal(decomp[4], qml.RZ(0.425, 0))
+            assert qml.equal(decomp[5], qml.IsingZZ(-0.775, [0, 2]))
+            assert qml.equal(decomp[6], qml.IsingZZ(-0.275, [0, 1]))
+            assert qml.equal(decomp[7], qml.MultiRZ(-0.175, [0, 1, 2]))
+
+    def test_decomposition_three_qubits_broadcasted(self):
+        """Test that a broadcasted three-qubit DiagonalQubitUnitary is decomposed correctly."""
+        D = np.exp(
+            1j
+            * np.array(
+                [[1, -1, 0.5, 1, 0.2, 0.1, 0.6, 2.3], [1, 0.2, 0.1, 0.6, 2.3, 0.5, 0.2, 0.1]]
+            )
+        )
+
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
+
+        angles = [
+            [0.025, -0.55],
+            [1.025, -0.75],
+            [-1.075, -0.75],
+            [0.425, 0.3],
+            [-0.775, 0.4],
+            [-0.275, 0.5],
+            [-0.175, 0.1],
+        ]
+        ph = [np.exp(0.5875j), np.exp(0.625j)]
+        for dec in (decomp, decomp2):
+            assert len(dec) == 8
+            assert qml.equal(decomp[0], qml.QubitUnitary(np.array([np.eye(2) * p for p in ph]), 0))
+            assert qml.equal(decomp[1], qml.RZ(angles[0], 2))
+            assert qml.equal(decomp[2], qml.RZ(angles[1], 1))
+            assert qml.equal(decomp[3], qml.IsingZZ(angles[2], [1, 2]))
+            assert qml.equal(decomp[4], qml.RZ(angles[3], 0))
+            assert qml.equal(decomp[5], qml.IsingZZ(angles[4], [0, 2]))
+            assert qml.equal(decomp[6], qml.IsingZZ(angles[5], [0, 1]))
+            assert qml.equal(decomp[7], qml.MultiRZ(angles[6], [0, 1, 2]))
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_decomposition_matrix_match(self, n):
+        """Test that the matrix of the decomposition matches the original matrix."""
+        np.random.seed(7241)
+        D = np.exp(1j * np.random.random(2**n))
+        wires = list(range(n))
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, wires)
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=wires).decomposition()
+
+        orig_mat = qml.DiagonalQubitUnitary(D, wires=wires).matrix()
+        decomp_mat = qml.matrix(qml.tape.QuantumScript(decomp), wire_order=wires)
+        decomp_mat2 = qml.matrix(qml.tape.QuantumScript(decomp2), wire_order=wires)
+        assert qml.math.allclose(orig_mat, decomp_mat)
+        assert qml.math.allclose(orig_mat, decomp_mat2)
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_decomposition_matrix_match_broadcasted(self, n):
+        """Test that the broadcasted matrix of the decomposition matches the original matrix."""
+        np.random.seed(7241)
+        D = np.exp(1j * np.random.random((5, 2**n)))
+        wires = list(range(n))
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, wires)
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=wires).decomposition()
+
+        orig_mat = qml.DiagonalQubitUnitary(D, wires=wires).matrix()
+        decomp_mat = qml.matrix(qml.tape.QuantumScript(decomp), wire_order=wires)
+        decomp_mat2 = qml.matrix(qml.tape.QuantumScript(decomp2), wire_order=wires)
+        assert qml.math.allclose(orig_mat, decomp_mat)
+        assert qml.math.allclose(orig_mat, decomp_mat2)
+
+    @pytest.mark.parametrize(
+        "dtype", [np.float64, np.float32, np.int64, np.int32, np.complex128, np.complex64]
+    )
+    def test_decomposition_cast_to_complex128(self, dtype):
+        """Test that the parameters of decomposed operations are of the correct dtype."""
+        D = np.array([1, 1, -1, -1]).astype(dtype)
+        wires = [0, 1]
+        decomp1 = qml.DiagonalQubitUnitary(D, wires).decomposition()
+        decomp2 = qml.DiagonalQubitUnitary.compute_decomposition(D, wires)
+
+        assert decomp1[0].data[0].dtype == np.complex128
+        assert decomp2[0].data[0].dtype == np.complex128
+        assert all(op.data[0].dtype == np.float64 for op in decomp1[1:])
+        assert all(op.data[0].dtype == np.float64 for op in decomp2[1:])
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""

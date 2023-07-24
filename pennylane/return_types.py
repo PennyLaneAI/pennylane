@@ -15,6 +15,8 @@
 Class and functions for activating, deactivating and checking the new return types system
 """
 # pylint: disable=global-statement
+import warnings
+
 __activated = True
 
 
@@ -615,6 +617,13 @@ def enable_return():
         (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
     """
 
+    warnings.warn(
+        "The old return system is deprecated, and will be removed along with "
+        "`qml.enable_return()` in v0.33. Please consult the QNode returns page for guidance on "
+        "switching to the new return system: https://docs.pennylane.ai/en/stable/introduction/returns.html",
+        UserWarning,
+    )
+
     global __activated
     __activated = True
 
@@ -646,6 +655,14 @@ def disable_return():
     tensor([0.5       , 0.5       , 0.08014815, 0.96939564, 0.03060436, 0.93879128], requires_grad=True)
 
     """
+
+    warnings.warn(
+        "The old return system is deprecated, and will be removed along with "
+        "`qml.disable_return()` in v0.33. Please consult the QNode returns page for guidance on "
+        "switching to the new return system: https://docs.pennylane.ai/en/stable/introduction/returns.html",
+        UserWarning,
+    )
+
     global __activated
     __activated = False  # pragma: no cover
 
@@ -678,4 +695,5 @@ def active_return():
     >>> active_return()
     False
     """
+
     return __activated
