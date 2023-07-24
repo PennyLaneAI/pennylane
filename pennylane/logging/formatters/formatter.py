@@ -1,7 +1,6 @@
 import logging
 from logging import Formatter
 from typing import NamedTuple, Tuple, Union
-from dataclasses import dataclass
 
 # For color-code definitions see https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 # 24-bit mode support RGB color codes in 8bit-wide r;g;b format
