@@ -98,5 +98,5 @@ loggers:
     propagate: no
   main:
     level: DEBUG
-    handlers: [console_custom] #[info_file_handler, warn_file_handler, error_file_handler, debug_file_handler]
+    handlers: [console_custom] # Options are [info_file_handler, warn_file_handler, error_file_handler, debug_file_handler]
     propagate: no
