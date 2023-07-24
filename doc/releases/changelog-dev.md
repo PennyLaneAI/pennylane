@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `HardwareHamiltonian`s can now be summed with `int` or `float`.
+  A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+  [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
+
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
@@ -170,6 +174,9 @@
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
+
+* The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
+  [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
 <h3>Contributors ✍️</h3>
 
