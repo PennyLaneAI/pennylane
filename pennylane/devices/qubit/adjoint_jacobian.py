@@ -65,7 +65,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = state or get_final_state(tape)[0]
+    ket = state if state is not None else get_final_state(tape)[0]
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -140,7 +140,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = state or get_final_state(tape)[0]
+    ket = state if state is not None else get_final_state(tape)[0]
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -214,7 +214,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = state or get_final_state(tape)[0]
+    ket = state if state is not None else get_final_state(tape)[0]
 
     obs = qml.dot(cotangents, tape.observables)
     bra = apply_operation(obs, ket)

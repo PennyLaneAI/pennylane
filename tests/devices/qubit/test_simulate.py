@@ -309,7 +309,7 @@ class TestBroadcasting:
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
 
         state, is_state_batched = get_final_state(qs)
-        result = measure_final_state(qs, state, is_state_batched, rng=123)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
 
         expected_state = np.zeros((4, 2, 2))
         expected_state[:, 0, 1] = np.cos(x / 2)
