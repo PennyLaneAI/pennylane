@@ -73,9 +73,12 @@
 * The experimental device interface is integrated with the `QNode` for Jax jit.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
-* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
+* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
+
+* Readability improvements and stylistic changes to `pennylane/interfaces/jax_jit_tuple.py`
+  [(#4379)](https://github.com/PennyLaneAI/pennylane/pull/4379/)
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
