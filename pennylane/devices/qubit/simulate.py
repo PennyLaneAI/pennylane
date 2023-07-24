@@ -26,7 +26,18 @@ from .sampling import measure_with_samples
 
 def get_final_state(circuit, debugger=None):
     """
-    Get the final state from executing the ops in the circuit
+    Get the final state that results from executing the given quantum script.
+
+    This is an internal function that will be called by the successor to ``default.qubit``.
+
+    Args:
+        circuit (.QuantumScript): The single circuit to simulate
+        debugger (._Debugger): The debugger to use
+
+    Returns:
+        Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
+            whether the state has a batch dimension.
+
     """
     if set(circuit.wires) != set(range(circuit.num_wires)):
         wire_map = {w: i for i, w in enumerate(circuit.wires)}
@@ -54,7 +65,20 @@ def get_final_state(circuit, debugger=None):
 
 def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
     """
-    TODO
+    Perform the measurements required by the circuit on the provided state.
+
+    This is an internal function that will be called by the successor to ``default.qubit``.
+
+    Args:
+        circuit (.QuantumScript): The single circuit to simulate
+        state (TensorLike): The state to perform measurement on
+        is_state_batched (bool): Whether the state has a batch dimension or not.
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+
+    Returns:
+        Tuple[TensorLike]: The measurement results
     """
     if set(circuit.wires) != set(range(circuit.num_wires)):
         wire_map = {w: i for i, w in enumerate(circuit.wires)}
