@@ -81,7 +81,6 @@ handlers:
     formatter: detailed
     stream: ext://sys.stderr
 
-# Not fully sure what this does yet. Maybe sets the global handlers and overal level?
 root:
   level: DEBUG
   handlers: [console_custom] #[console, error_console, root_file_handler]
