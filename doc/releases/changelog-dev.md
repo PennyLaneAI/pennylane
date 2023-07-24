@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.gradients.pulse_generator` now supports broadcasting via the
+  `use_broadcasting` keyword argument. It supplies a speedup on simulators.
+  [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
+
 * `qml.PauliRot` now allows broadcasting across the `pauli_word` hyperparameter.
   Note that the behaviour of broadcasting over hyperparameters such as `pauli_word` may 
   change in the future.
