@@ -17,9 +17,9 @@ Tests for the classical fisher information matrix in the pennylane.qinfo
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods, bad-continuation
 import pytest
 
+import numpy as np
 import pennylane as qml
 import pennylane.numpy as pnp
-import numpy as np
 
 
 from pennylane.qinfo import classical_fisher, quantum_fisher
@@ -44,16 +44,18 @@ class TestMakeProbs:
         tape, _ = new_qnode.construct(x, {})
         assert tape[0].observables[0].return_type == qml.measurements.Probability
 
-    def test_make_probs(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_make_probs(self, shots):
         """Testing the private _make_probs transform"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(0)
             qml.PauliZ(1)
             qml.PauliY(2)
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         new_tape, fn = _make_probs(tape)
         assert len(new_tape) == 1
         assert np.isclose(fn([1]), 1)
+        assert new_tape[0].shots == tape.shots
 
 
 class TestComputeclassicalFisher:
@@ -70,11 +72,9 @@ class TestComputeclassicalFisher:
 
         assert np.allclose(res, res.T)
         assert all(
-            [
-                res[i, j] == np.sum(dp[:, i] * dp[:, j] / p)
-                for i in range(n_params)
-                for j in range(n_params)
-            ]
+            res[i, j] == np.sum(dp[:, i] * dp[:, j] / p)
+            for i in range(n_params)
+            for j in range(n_params)
         )
 
     @pytest.mark.parametrize("n_params", np.arange(1, 10))

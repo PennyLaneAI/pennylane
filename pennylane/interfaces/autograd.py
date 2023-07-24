@@ -16,14 +16,13 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-from collections.abc import Sequence
-
 import logging
 import inspect
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+from collections.abc import Sequence
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -308,19 +307,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            """Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s""",
-            tapes,
-            device.short_name,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n,
-            max_diff,
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
     if not qml.active_return():
         return _execute_legacy(
             tapes,
@@ -466,13 +452,22 @@ def vjp(
             return cached_jac["jacobian"]
 
         jacs = []
-        for t in tapes:
-            g_tapes, fn = gradient_fn(t, shots=device.shot_vector, **gradient_kwargs)
+        if isinstance(device, qml.devices.experimental.Device):
+            shot_vector = (
+                tapes[0].shots.shot_vector if tapes[0].shots.has_partitioned_shots else None
+            )
+        else:
+            shot_vector = device.shot_vector
 
-            unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
-            res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
-            jacs.append(fn(res))
+        def partial_gradient_fn(tape):
+            return gradient_fn(tape, shots=shot_vector, **gradient_kwargs)
 
+        g_tapes, fn = qml.transforms.map_batch_transform(partial_gradient_fn, tapes)
+        unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
+
+        res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
+
+        jacs = fn(res)
         cached_jac["jacobian"] = jacs
         return jacs
 
@@ -494,6 +489,12 @@ def vjp(
         dy = dy[0]
 
         computing_jacobian = _n == max_diff
+        if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
+            # assumes all tapes have the same shot vector
+            has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+            vjp_shots = None
+        else:
+            has_partitioned_shots = vjp_shots = device.shot_vector
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -503,7 +504,7 @@ def vjp(
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
+            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -517,7 +518,7 @@ def vjp(
                         unwrapped_tapes,
                         dy,
                         gradient_fn,
-                        shots=device.shot_vector,
+                        shots=vjp_shots,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -529,7 +530,7 @@ def vjp(
                         tapes,
                         dy,
                         gradient_fn,
-                        shots=device.shot_vector,
+                        shots=vjp_shots,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -561,22 +562,18 @@ def vjp(
                 unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
                 jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
-                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
+                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-        if device.short_name == "strawberryfields.gbs":  # pragma: no cover
-            # TODO: remove this exceptional case once the source of this issue
-            # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
-            return (return_vjps,)  # pragma: no cover
 
         return return_vjps
 
     return grad_fn
 
 
-def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
+def _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
@@ -584,15 +581,14 @@ def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
             jacs,
             dy,
             multi_measurements,
-            shots,
+            has_partitioned_shots,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        shot_vector_defined = isinstance(shots, Sequence)
-        dy_ = dy[i] if shot_vector_defined else (dy[i],)
-        jac_ = jacs[i] if shot_vector_defined else (jacs[i],)
+        dy_ = dy[i] if has_partitioned_shots else (dy[i],)
+        jac_ = jacs[i] if has_partitioned_shots else (jacs[i],)
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):

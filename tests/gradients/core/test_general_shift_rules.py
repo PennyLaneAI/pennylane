@@ -84,12 +84,14 @@ class TestIterateShiftRuleWithMultipliers:
 
     @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
     def test_first_order(self, period):
+        """Test first order iteration of a rule with multipliers."""
         rule = [(-0.9, 0.7, -0.2), (0.2, 1.2, 0.4)]
         iterated_rule = _iterate_shift_rule_with_multipliers(rule, 1, period)
         assert np.allclose(iterated_rule, rule)
 
     @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
     def test_second_order(self, period):
+        """Test second order iteration of a rule with multipliers."""
         rule = [(0.2, 1.2, 0.4), (-0.9, 0.7, -0.2)]
         iterated_rule = _iterate_shift_rule_with_multipliers(rule, 2, period)
         expected = np.array(
@@ -107,6 +109,7 @@ class TestIterateShiftRuleWithMultipliers:
 
     @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
     def test_third_order(self, period):
+        """Test third order iteration of a rule with multipliers."""
         rule = [(0.2, 1.2, 0.4), (-0.9, 0.7, -0.2)]
         iterated_rule = _iterate_shift_rule_with_multipliers(rule, 3, period)
         expected = np.array(
@@ -157,7 +160,6 @@ class TestGenerateShiftRule:
 
         frequencies = (1,)
 
-        n_terms = 2
         correct_terms = [[0.5, np.pi / 2], [-0.5, -np.pi / 2]]
         generated_terms = generate_shift_rule(frequencies)
 
@@ -169,7 +171,6 @@ class TestGenerateShiftRule:
 
         frequencies = (1, 2)
 
-        n_terms = 4
         correct_terms = [
             [0.8535533905932737, np.pi / 4],
             [-0.8535533905932737, -np.pi / 4],
@@ -186,8 +187,6 @@ class TestGenerateShiftRule:
         a 2-qubit generator of the form: 1/2*X0Y1 + 5/2*Y0X1."""
 
         frequencies = (1, 4, 5, 6)
-
-        n_terms = 8
 
         correct_terms = [
             [2.8111804455102014, np.pi / 8],
@@ -212,7 +211,6 @@ class TestGenerateShiftRule:
         frequencies = (1, 4, 5, 6)
         custom_shifts = (1 / 13 * np.pi, 3 / 7 * np.pi, 2 / 3 * np.pi, 3 / 4 * np.pi)
 
-        n_terms = 8
         correct_terms = [
             [2.709571194594805, np.pi / 13],
             [-2.709571194594805, -np.pi / 13],
@@ -232,7 +230,6 @@ class TestGenerateShiftRule:
         """Tests the correct four term shift rule is generated given non-integer frequencies."""
 
         frequencies = (1 / 3, 2 / 3)
-        n_terms = 4
 
         correct_terms = [
             [0.2845177968644246, 3 * np.pi / 4],
@@ -255,7 +252,6 @@ class TestGenerateShiftRule:
             np.pi / 3,
             2 * np.pi / 3,
         )
-        n_terms = 6
 
         correct_terms = [
             [1.7548361197453346, 0.7853981633974483],

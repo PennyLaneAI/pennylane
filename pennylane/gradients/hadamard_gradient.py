@@ -17,16 +17,18 @@ of a qubit-based quantum tape.
 """
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.transforms.metric_tensor import _get_aux_wire
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 
 from .gradient_transform import (
+    _all_zero_grad,
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
 )
 
 
@@ -90,7 +92,6 @@ def _hadamard_grad(
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
-    >>> qml.enable_return()
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
@@ -109,11 +110,9 @@ def _hadamard_grad(
     device evaluation. Instead, the processed tapes, and post-processing
     function, which together define the gradient are directly returned:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     qml.expval(qml.PauliZ(0))
+    >>> ops = [qml.RX(p, wires=0) for p in params]
+    >>> measurements = [qml.expval(qml.PauliZ(0))]
+    >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
     >>> gradient_tapes
     [<QuantumTape: wires=[0, 1], params=3>,
@@ -146,7 +145,6 @@ def _hadamard_grad(
 
     If you use custom wires on your device, you need to pass an auxiliary wire.
 
-    >>> qml.enable_return()
     >>> dev_wires = ("a", "c")
     >>> dev = qml.device("default.qubit", wires=dev_wires)
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
@@ -180,45 +178,26 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
-    if not qml.active_return():
-        raise NotImplementedError(
-            "The Hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
-        )
-    if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of variances with the Hadamard test gradient is not implemented."
-        )
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    transform_name = "Hadamard test"
+    assert_active_return(transform_name)
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_no_variance(tape.measurements, transform_name)
+    shots = qml.measurements.Shots(shots)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
-    gradient_analysis(tape, grad_fn=hadamard_grad)
-    method = "analytic"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    if device_wires and len(tape.wires) == len(device_wires):
-        raise qml.QuantumFunctionError("The device has no free wire for the auxiliary wire.")
-
-    # Get default for aux_wire
-    if aux_wire is None:
-        aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
-    elif aux_wire[0] in tape.wires:
-        raise qml.QuantumFunctionError("The auxiliary wire is already used.")
-    elif aux_wire[0] not in device_wires:
-        raise qml.QuantumFunctionError(
-            "The requested auxiliary wire does not exist on the used device."
-        )
+    # Validate or get default for aux_wire
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 
@@ -302,7 +281,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 else:
                     measurements.append(qml.probs(op=obs_new))
 
-            new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+            new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=tape.shots)
 
             _rotations, _measurements = qml.tape.tape.rotations_and_diagonal_measurements(new_tape)
             # pylint: disable=protected-access
@@ -316,10 +295,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
         gradient_data.append(num_tape)
 
-    def processing_fn(results):  # pylint: disable=too-many-branches
-        multi_measurements = len(tape.measurements) > 1
-        multi_params = len(tape.trainable_params) > 1
+    multi_measurements = len(tape.measurements) > 1
+    multi_params = len(tape.trainable_params) > 1
 
+    def processing_fn(results):  # pylint: disable=too-many-branches
         final_res = [
             [qml.math.convert_like(2 * coeff * r, r) for r in res]
             if isinstance(res, tuple)
@@ -330,10 +309,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         # Post process for probs
         if measurements_probs:
             projector = np.array([1, -1])
-            if multi_measurements:
-                projector = qml.math.convert_like(projector, final_res[0][0])
-            else:
-                projector = qml.math.convert_like(projector, final_res[0])
+            like = final_res[0][0] if multi_measurements else final_res[0]
+            projector = qml.math.convert_like(projector, like)
             for idx, res in enumerate(final_res):
                 if multi_measurements:
                     for prob_idx in measurements_probs:

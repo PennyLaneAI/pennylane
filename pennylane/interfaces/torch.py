@@ -403,9 +403,8 @@ class ExecuteTapes(torch.autograd.Function):
                 ctx.torch_device = p.get_device()
                 break
 
-        for i, r in enumerate(res):
-            res[i] = _res_to_torch(r, ctx)
-
+        res = tuple(_res_to_torch(r, ctx) for r in res)
+        for i, _ in enumerate(res):
             # In place change of the numpy array Jacobians to Torch objects
             _jac_to_torch(i, ctx)
 
@@ -605,23 +604,25 @@ def _res_to_torch(r, ctx):
 def _jac_to_torch(i, ctx):
     """Convert Jacobian from unwrapped execution to torch in the given ctx."""
     if ctx.jacs:
+        ctx_jacs = list(ctx.jacs)
         multi_m = len(ctx.tapes[i].measurements) > 1
         multi_p = len(ctx.tapes[i].trainable_params) > 1
 
         # Multiple measurements and parameters: Jacobian is a tuple of tuple
         if multi_p and multi_m:
             jacobians = []
-            for jacobian in ctx.jacs[i]:
+            for jacobian in ctx_jacs[i]:
                 inside_nested_jacobian = [
                     torch.as_tensor(j, device=ctx.torch_device) for j in jacobian
                 ]
                 inside_nested_jacobian_tuple = tuple(inside_nested_jacobian)
                 jacobians.append(inside_nested_jacobian_tuple)
-            ctx.jacs[i] = tuple(jacobians)
+            ctx_jacs[i] = tuple(jacobians)
         # Single measurement and single parameter: Jacobian is a tensor
         elif not multi_p and not multi_m:
-            ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
+            ctx_jacs[i] = torch.as_tensor(np.array(ctx_jacs[i]), device=ctx.torch_device)
         # Multiple measurements or multiple parameters: Jacobian is a tuple
         else:
-            jacobian = [torch.as_tensor(jac, device=ctx.torch_device) for jac in ctx.jacs[i]]
-            ctx.jacs[i] = tuple(jacobian)
+            jacobian = [torch.as_tensor(jac, device=ctx.torch_device) for jac in ctx_jacs[i]]
+            ctx_jacs[i] = tuple(jacobian)
+        ctx.jacs = tuple(ctx_jacs)

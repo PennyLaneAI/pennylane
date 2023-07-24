@@ -19,8 +19,11 @@ This module contains functions that act on operators and tapes.
 .. autosummary::
     :toctree: api
 
+    ~ops.functions.bind_new_parameters
+    ~dot
     ~eigvals
     ~equal
+    ~evolve
     ~generator
     ~is_commuting
     ~is_hermitian
@@ -28,10 +31,9 @@ This module contains functions that act on operators and tapes.
     ~map_wires
     ~matrix
     ~simplify
-    ~evolve
-    ~dot
 
 """
+from .bind_new_parameters import bind_new_parameters
 from .dot import dot
 from .eigvals import eigvals
 from .equal import equal

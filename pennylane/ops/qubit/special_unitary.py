@@ -125,6 +125,41 @@ def pauli_basis_strings(num_wires):
     return ["".join(letters) for letters in product(_pauli_letters, repeat=num_wires)][1:]
 
 
+def _pauli_decompose(matrix, num_wires):
+    r"""Compute the coefficients of a matrix or a batch of matrices (batch dimension(s) in the
+    leading axes) in the Pauli basis.
+
+    Args:
+        matrix (tensor_like): Matrix or batch of matrices to decompose into the Pauli basis.
+        num_wires (int): Number of wires the matrices act on.
+
+    Returns:
+        tensor_like: Coefficients of the input ``matrix`` in the Pauli basis.
+
+    For a matrix :math:`M`, these coefficients are defined via
+    :math:`M = \sum_\ell c_\ell P_\ell` and they can be computed using the (Frobenius) inner
+    product of :math:`M` with the corresponding Pauli word :math:`P_\ell`:
+    :math:`c_\ell = \frac{1}{2^N}\operatorname{Tr}\left\{P_\ell M\right\}` where the prefactor
+    is the normalization that makes the standard Pauli basis orthonormal, and :math:`N`
+    is the number of qubits.
+    That is, the normalization is such that a single Pauli word :math:`P_k` has
+    coefficients ``c_\ell = \delta_{k\ell}``.
+
+    Note that this implementation takes :math:`\mathcal{O}(16^N)` operations per input
+    matrix but there is a more efficient method taking only :math:`\mathcal{O}(N4^N)`
+    operations per matrix.
+    """
+    # Create the dense Pauli basis tensor (shape (d^2-1, d, d)) with d = 2**num_wires
+    basis = pauli_basis_matrices(num_wires)
+    # Contract the Pauli basis tensor with the input, which has shape (*batch_dims, d, d)
+    # We are interested in the traces of the matrix products, for each Pauli basis. Both
+    # contractions (mult and trace) can be executed by providing all axes of size d to
+    # ``tensordot``, which gives us a vectorized way to compute the coefficients.
+    coefficients = qml.math.tensordot(basis, matrix, axes=[[1, 2], [-1, -2]])
+    # Finally, cast to the original data type and renormalize
+    return qml.math.cast(coefficients, matrix.dtype) / 2**num_wires
+
+
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
 
@@ -169,8 +204,6 @@ class SpecialUnitary(Operation):
         theta (tensor_like): Pauli coordinates of the exponent :math:`A(\bm{\theta})`.
             See details below for the order of the Pauli words.
         wires (Sequence[int] or int): The wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     Raises:
@@ -369,7 +402,7 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta, wires, do_queue=True, id=None):
+    def __init__(self, theta, wires, id=None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qml.math.shape(theta)
@@ -387,7 +420,7 @@ class SpecialUnitary(Operation):
                 f"{expected_dim}). The parameters have shape {theta_shape}"
             )
 
-        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(theta, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta, num_wires):
@@ -594,9 +627,8 @@ class SpecialUnitary(Operation):
 
         """
         num_wires = self.hyperparameters["num_wires"]
-        basis = pauli_basis_matrices(num_wires)
         generators = self.get_one_parameter_generators(interface)
-        return qml.math.tensordot(basis, generators, axes=[[1, 2], [2, 1]]) / 2**num_wires
+        return _pauli_decompose(generators, num_wires)
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.

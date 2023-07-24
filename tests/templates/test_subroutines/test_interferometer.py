@@ -52,7 +52,7 @@ class TestInterferometer:
         with pytest.raises(ValueError, match="did not recognize beamsplitter"):
             circuit(varphi, bs="a")
 
-    def test_clements_beamsplitter_convention(self, tol):
+    def test_clements_beamsplitter_convention(self):
         """test the beamsplitter convention"""
         N = 2
         wires = range(N)
@@ -95,7 +95,7 @@ class TestInterferometer:
         assert isinstance(rec[0], qml.Rotation)
         assert np.allclose(rec[0].parameters, varphi, atol=tol)
 
-    def test_two_mode_rect(self, tol):
+    def test_two_mode_rect(self):
         """Test that a two mode interferometer using the rectangular mesh
         correctly gives a beamsplitter+rotation gate"""
         N = 2
@@ -117,7 +117,7 @@ class TestInterferometer:
         assert isinstance(rec[2], qml.Rotation)
         assert rec[2].parameters == [varphi[1]]
 
-    def test_two_mode_triangular(self, tol):
+    def test_two_mode_triangular(self):
         """Test that a two mode interferometer using the triangular mesh
         correctly gives a beamsplitter+rotation gate"""
         N = 2
@@ -141,7 +141,7 @@ class TestInterferometer:
         assert isinstance(rec[2], qml.Rotation)
         assert rec[2].parameters == [varphi[1]]
 
-    def test_three_mode(self, tol):
+    def test_three_mode(self):
         """Test that a three mode interferometer using either mesh gives the correct gates"""
         N = 3
         wires = range(N)
@@ -185,7 +185,7 @@ class TestInterferometer:
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
 
-    def test_four_mode_rect(self, tol):
+    def test_four_mode_rect(self):
         """Test that a 4 mode interferometer using rectangular mesh gives the correct gates"""
         N = 4
         wires = range(N)
@@ -211,7 +211,7 @@ class TestInterferometer:
             assert op.parameters == [varphi[idx]]
             assert op.wires == Wires([idx])
 
-    def test_four_mode_triangular(self, tol):
+    def test_four_mode_triangular(self):
         """Test that a 4 mode interferometer using triangular mesh gives the correct gates"""
         N = 4
         wires = range(N)
@@ -275,7 +275,7 @@ class TestInterferometer:
         @qml.qnode(dev)
         def circuit(theta, phi, varphi):
             qml.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=range(4))
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
         phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])
@@ -294,14 +294,14 @@ class TestInterferometer:
             circuit(theta, phi, wrong_varphi)
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected",
+        "n_wires, expected",
         [
-            (2, 3, [(3,), (3,), (3,)]),
-            (3, 1, [(0,), (0,), (1,)]),
-            (4, 2, [(1,), (1,), (2,)]),
+            (3, [(3,), (3,), (3,)]),
+            (1, [(0,), (0,), (1,)]),
+            (2, [(1,), (1,), (2,)]),
         ],
     )
-    def test_shapes(self, n_layers, n_wires, tol, expected):
+    def test_shapes(self, n_wires, tol, expected):
         """Test that the shape method returns the correct shapes for
         the weight tensors"""
 

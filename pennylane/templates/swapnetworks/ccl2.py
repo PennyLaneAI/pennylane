@@ -27,8 +27,13 @@ class TwoLocalSwapNetwork(Operation):
 
     Args:
         wires (Iterable or Wires): ordered sequence of wires on which the swap network acts
-        acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation applied on a pair of logical wires specified by `index` currently stored in physical wires provided by `wires` before they are swapped apart. Parameters for the operation are specified using `param`, and any additional keyword arguments for the callable should be provided using the ``kwargs`` separately
-        weights (tensor): weight tensor for the parameterized acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
+        acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns
+            a two-local operation applied on a pair of logical wires specified by `index` currently
+            stored in physical wires provided by `wires` before they are swapped apart.
+            Parameters for the operation are specified using `param`, and any additional
+            keyword arguments for the callable should be provided using the ``kwargs`` separately
+        weights (tensor): weight tensor for the parameterized acquaintances of length
+            :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
         fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=\pi` is used instead of :class:`~.pennylane.SWAP`
         shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first one
         **kwargs: additional keyword arguments for `acquaintances`
@@ -47,7 +52,7 @@ class TwoLocalSwapNetwork(Operation):
         ... def swap_network_circuit():
         ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
         ...    return qml.state()
-        >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+        >>> qml.draw(swap_network_circuit, expansion_strategy='device')()
         0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤  State
         1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
         2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤  State
@@ -72,7 +77,7 @@ class TwoLocalSwapNetwork(Operation):
             ... def swap_network_circuit():
             ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
             ...    return qml.state()
-            >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+            >>> qml.draw(swap_network_circuit, expansion_strategy='device')()
             0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
             1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
             2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
@@ -84,6 +89,14 @@ class TwoLocalSwapNetwork(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
+        new_op._weights = data[0]  # pylint: disable=protected-access
+        Operation.__init__(new_op, *data, wires=metadata[0])
+        return new_op
+
     def __init__(
         self,
         wires,
@@ -91,7 +104,6 @@ class TwoLocalSwapNetwork(Operation):
         weights=None,
         fermionic=True,
         shift=False,
-        do_queue=True,
         id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
@@ -125,9 +137,9 @@ class TwoLocalSwapNetwork(Operation):
         }
 
         if acquaintances is not None and self._weights is not None:
-            super().__init__(self._weights, wires=wires, do_queue=do_queue, id=id)
+            super().__init__(self._weights, wires=wires, id=id)
         else:
-            super().__init__(wires=wires, do_queue=do_queue, id=id)
+            super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):

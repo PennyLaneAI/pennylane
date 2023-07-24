@@ -168,7 +168,7 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.3 jaxlib==0.4.3"
+            "You can install jax via: pip install jax==0.4.10 jaxlib==0.4.10"
         )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
@@ -234,7 +234,7 @@ def pwc(timespan):
         time = jnp.linspace(0, 10, 1000)
         timespan=(2, 7)
         y = qml.pulse.pwc(timespan)(params, time)
-        plt.plot(time, y, label=f"params={params},\ntimespan={timespan}")
+        plt.plot(time, y, label=f"params={params}, timespan={timespan}")
         plt.legend()
         plt.show()
 

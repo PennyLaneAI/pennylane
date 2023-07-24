@@ -20,8 +20,8 @@ import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
 
-from pennylane.ops.qubit.attributes import Attribute
-from pennylane.ops import Controlled
+from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
+from pennylane.operation import AnyWires
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -471,3 +471,56 @@ class TestSupportsBroadcasting:
         expected_mat = np.array(mats)
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
+
+
+all_qubit_operators = sorted(qml.ops.qubit.__all__)  # pylint: disable=no-member
+unitarily_generated_ops = sorted(list(has_unitary_generator))
+
+
+class TestHasUnitaryGenerator:
+    """Test that all operations in the ``has_unitary_generator`` attribute
+    actually have unitary generators."""
+
+    @pytest.mark.parametrize("entry", unitarily_generated_ops)
+    def test_generator_unitarity(self, entry):
+        """Test directly that generators of the operators in the ``has_unitary_generator``
+        attribute are unitary up to a factor of 2."""
+        op_class = getattr(qml, entry)
+        phi = 1.23
+        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        if op_class is qml.PauliRot:
+            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == AnyWires
+        elif op_class is qml.PCPhase:
+            op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
+        else:
+            op = op_class(phi, wires=wires)
+        gen = qml.generator(op, format="observable")
+        # Some generators are unitary up to a factor - in this case norm of first
+        # column will be scaled by this factor, so normalize generator first.
+        assert qml.is_unitary(qml.s_prod(1 / np.linalg.norm(qml.matrix(gen), axis=0)[0], gen))
+
+    @pytest.mark.parametrize("entry", all_qubit_operators)
+    def test_no_missing_entries(self, entry):
+        """Test directly that generators of the operators not in the ``has_unitary_generator``
+        attribute are not unitary (up to a factor of 2)."""
+        if entry in unitarily_generated_ops:
+            pytest.skip("Operator declared as having unitary generator")
+
+        op_class = getattr(qml, entry)
+
+        if not op_class.has_generator:
+            pytest.skip("Operator does not have a generator")
+        phi = 1.23
+        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        if op_class is qml.PauliRot:
+            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == AnyWires
+        elif op_class is qml.PCPhase:
+            op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
+        else:
+            op = op_class(phi, wires=wires)
+        gen = qml.generator(op, format="observable")
+        # Some generators are unitary up to a factor - in this case norm of first
+        # column will be scaled by this factor, so normalize generator first.
+        # When `gen`` is not unitary, may give divide by zero warning, but non-unitarity
+        # can still be confirmed in this case.
+        assert not qml.is_unitary(qml.s_prod(1 / np.linalg.norm(qml.matrix(gen), axis=0)[0], gen))

@@ -12,24 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
-from typing import Union
-
 # pylint: disable=protected-access
+from numpy.random import default_rng
+
 import pennylane as qml
-from pennylane.typing import TensorLike
+from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
+from .sampling import measure_with_samples
 
 
-def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
+def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        debugger (._Debugger): The debugger to use
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -52,9 +57,49 @@ def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
 
     state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
 
+    # initial state is batched only if the state preparation (if it exists) is batched
+    is_state_batched = False
+    if circuit._prep and circuit._prep[0].batch_size is not None:
+        is_state_batched = True
+
     for op in circuit._ops:
-        state = apply_operation(op, state)
+        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+
+        # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
+        is_state_batched = is_state_batched or op.batch_size is not None
+
+    if not circuit.shots:
+        # analytic case
+
+        if len(circuit.measurements) == 1:
+            return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
+
+        return tuple(
+            measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
+        )
+
+    # finite-shot case
 
     if len(circuit.measurements) == 1:
-        return measure(circuit.measurements[0], state)
-    return tuple(measure(mp, state) for mp in circuit.measurements)
+        return measure_with_samples(
+            circuit.measurements[0],
+            state,
+            shots=circuit.shots,
+            is_state_batched=is_state_batched,
+            rng=rng,
+        )
+
+    rng = default_rng(rng)
+    results = tuple(
+        measure_with_samples(
+            mp, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
+        )
+        for mp in circuit.measurements
+    )
+
+    # no shot vector
+    if not circuit.shots.has_partitioned_shots:
+        return results
+
+    # shot vector case: move the shot vector axis before the measurement axis
+    return tuple(zip(*results))
