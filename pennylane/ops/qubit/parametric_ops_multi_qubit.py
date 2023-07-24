@@ -229,15 +229,41 @@ class PauliRot(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
 
+    .. note::
+
+        This operation supports broadcasting of the ``pauli_word`` hyperparameter, which is an
+        experimental feature. Broadcasting over hyperparameters generically not supported in
+        PennyLane and may change behaviour in the future.
+        When broadcasting both the rotation angle and the ``pauli_word`` hyperparameter, they
+        are taken to be broadcasted *simultaneously* (think Python's ``zip``) and need to have
+        the same dimension.
+
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=1)
     >>> @qml.qnode(dev)
-    ... def example_circuit():
-    ...     qml.PauliRot(0.5, 'X',  wires=0)
+    ... def circuit(angle, word="X"):
+    ...     qml.RX(0.2, 0)
+    ...     qml.PauliRot(angle, word,  wires=0)
     ...     return qml.expval(qml.PauliZ(0))
-    >>> print(example_circuit())
+    >>> print(circuit(0.5))
     0.8775825618903724
+
+    Using broadcasting of the rotation angle:
+
+    >>> angles = np.array([1.4, -2.2, 0.6])
+    >>> print(circuit(angles))
+    [ 0.16996714 -0.58850112  0.82533561]
+
+    Broadcasting over different Pauli words instead:
+
+    >>> print(circuit(0.5, ("X", "Y", "Z")))
+    [0.76484219 0.86008934 0.98006658]
+
+    Broadcasting the angle and Pauli word simultaneously:
+
+    >>> print(circuit(angles, ("X", "Y", "Z")))
+    [-0.02919952 -0.57677028  0.98006658]
     """
     num_wires = AnyWires
     num_params = 1
@@ -258,42 +284,9 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def _check_word_batching(self, pauli_word):
-        invalid_word_msg = (
-            f"The given Pauli word '{pauli_word}' contains characters that are not "
-            "allowed. Allowed characters are I, X, Y and Z"
-        )
-        invalid_len_msg = ()
-        num_wires = len(self.wires)
-        if isinstance(pauli_word, str):
-            if not PauliRot._check_pauli_word(pauli_word):
-                raise ValueError(
-                    f"The given Pauli word '{pauli_word}' contains characters that are not "
-                    "allowed. Allowed characters are I, X, Y and Z"
-                )
-            if not (_len := len(pauli_word)) == num_wires:
-                raise ValueError(
-                    f"The given Pauli word has length {_len}, length "
-                    f"{num_wires} was expected for wires {self.wires}"
-                )
-            return
-        if self._batch_size and self._batch_size != len(pauli_word):
-            raise ValueError("Cannot batch both")  # TODO
-        if not PauliRot._check_pauli_word("".join(pauli_word)):
-            raise ValueError(
-                f"The given Pauli word '{pauli_word}' contains characters that are not "
-                "allowed. Allowed characters are I, X, Y and Z"
-            )
-        if not all((_len := len(w)) == num_wires for w in pauli_word):
-            raise ValueError(
-                f"The given Pauli word has length {_len}, length "
-                f"{num_wires} was expected for wires {self.wires}"
-            )
-
-        self._batch_size = len(pauli_word)
-
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
+        pauli_word = pauli_word if isinstance(pauli_word, str) else tuple(pauli_word)
         self.hyperparameters["pauli_word"] = pauli_word
 
         self._check_word_batching(pauli_word)
@@ -347,6 +340,40 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
+    def _check_word_batching(self, pauli_word):
+        """Check that the broadcasting/batching of a Pauli word is valid and
+        consistent with potential broadcasting of a ``PauliRot`` instance."""
+        invalid_word_msg = (
+            f"The given Pauli word '{pauli_word}' contains characters that are not "
+            "allowed. Allowed characters are I, X, Y and Z"
+        )
+        num_wires = len(self.wires)
+        if isinstance(pauli_word, str):
+            # Single string, no broadcasting
+            if not PauliRot._check_pauli_word(pauli_word):
+                raise ValueError(invalid_word_msg)
+            if not (_len := len(pauli_word)) == num_wires:
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
+        else:
+            # Iterable of strings, broadcasting
+            if self._batch_size and self._batch_size != len(pauli_word):
+                raise ValueError(
+                    "When broadcasting the rotation angle and the Pauli word, the broadcasting "
+                    f"dimensions have to match, but got {self._batch_size} and {len(pauli_word)}."
+                )
+
+            if not PauliRot._check_pauli_word("".join(pauli_word)):
+                raise ValueError(invalid_word_msg)
+            if not all((_len := len(w)) == num_wires for w in pauli_word):
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
+            self._batch_size = len(pauli_word)
+
     @staticmethod
     def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -371,12 +398,17 @@ class PauliRot(Operation):
          [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
         """
         if not isinstance(pauli_word, str):
-            if qml.math.ndim(theta) != 0:
-                assert len(theta) == len(pauli_word)
-                return qml.math.stack(
-                    [PauliRot.compute_matrix(t, word) for t, word in zip(theta, pauli_word)]
+            if qml.math.ndim(theta) == 0:
+                return qml.math.stack([PauliRot.compute_matrix(theta, word) for word in pauli_word])
+            if not len(theta) == len(pauli_word):
+                raise ValueError(
+                    "When broadcasting the rotation angle and the Pauli word, the broadcasting "
+                    f"dimensions have to match, but got {len(theta)} and {len(pauli_word)}."
                 )
-            return qml.math.stack([PauliRot.compute_matrix(theta, word) for word in pauli_word])
+
+            return qml.math.stack(
+                [PauliRot.compute_matrix(t, word) for t, word in zip(theta, pauli_word)]
+            )
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(

@@ -13,6 +13,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.PauliRot` now allows broadcasting across the `pauli_word` hyperparameter.
+  Note that the behaviour of broadcasting over hyperparameters such as `pauli_word` may 
+  change in the future.
+  [(#4381)](https://github.com/PennyLaneAI/pennylane/pull/4381)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)

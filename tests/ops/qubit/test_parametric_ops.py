@@ -19,6 +19,7 @@ import copy
 from functools import reduce
 
 import numpy as np
+from scipy.linalg import expm
 import pytest
 from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
@@ -3088,6 +3089,38 @@ class TestPauliRot:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_PauliRot_matrix_broadcast_word(self, tol):
+        """Test that the PauliRot matrix is correct for broadcasted words."""
+        angles = np.array([0.2, 0.1, 0.7, 0.3, 0.2])
+        words = ("IX", "ZI", "YY", "XX", "YZ")
+        ops = [
+            qml.Identity(0) @ qml.PauliX(1),
+            qml.PauliZ(0) @ qml.Identity(1),
+            qml.PauliY(0) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliX(1),
+            qml.PauliY(0) @ qml.PauliZ(1),
+        ]
+        expected = [expm(-0.5j * angle * qml.matrix(op)) for op, angle in zip(ops, angles)]
+        res = qml.PauliRot.compute_matrix(angles, words)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_PauliRot_matrix_broadcast_word_angle(self, tol):
+        """Test that the PauliRot matrix is correct for broadcasted words and angles."""
+        angles, words, expected = list(zip(*PAULI_ROT_MATRIX_TEST_DATA))
+
+        res = qml.PauliRot.compute_matrix(angles, tuple(words))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_PauliRot_matrix_broadcast_word_angle_mismatch(self):
+        """Test that the PauliRot matrix raises an error for mismatching
+        angles and words broadcasting dimensions."""
+        angles = np.array([0.2, 0.1, 0.7, 0.3, 0.2])
+        words = ("IX", "ZI")
+        with pytest.raises(ValueError, match="When broadcasting the rotation angle"):
+            qml.PauliRot.compute_matrix(angles, words)
+
     @pytest.mark.parametrize(
         "theta,pauli_word,compressed_pauli_word,wires,compressed_wires",
         [
@@ -3307,12 +3340,31 @@ class TestPauliRot:
     def test_init_incorrect_pauli_word_error(self):
         """Test that __init__ throws an error if a wrong Pauli word is supplied."""
 
-        with pytest.raises(
-            ValueError,
-            match='The given Pauli word ".*" contains characters that are not allowed.'
-            " Allowed characters are I, X, Y and Z",
-        ):
+        match_ = (
+            "The given Pauli word '.*' contains characters that are not allowed."
+            " Allowed characters are I, X, Y and Z"
+        )
+        with pytest.raises(ValueError, match=match_):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
+
+    @pytest.mark.parametrize("pauli_word", (["ZX", "YI"], np.array(["ZX", "YI"])))
+    def test_init_pauli_word_cast_to_tuple(self, pauli_word):
+        """Test that __init__ casts any iterable that is not a string to a tuple."""
+        op = qml.PauliRot(0.3, pauli_word, wires=[0, 1])
+        hyper = op.hyperparameters["pauli_word"]
+        assert isinstance(hyper, tuple)
+        assert hyper == ("ZX", "YI")
+
+    def test_pauli_rot_raises_invalid_word_broadcasting(self):
+        """Test that an error is raised for invalid broadcasting of PauliRot,
+        in particular mismatching broadcasting dimensions between angles
+        and Pauli words or wrong Pauli words in a broadcasted word."""
+        with pytest.raises(ValueError, match="When broadcasting the rotation angle"):
+            qml.PauliRot(np.array([0.65, 0.6]), ("IX", "YI", "XX"), [0, "p"])
+        with pytest.raises(ValueError, match="The given Pauli word .* contains"):
+            qml.PauliRot(0.65, ("IX", "YI", "XS"), [0, "p"])
+        with pytest.raises(ValueError, match="The given Pauli word has length"):
+            qml.PauliRot(0.65, ("IX", "YI", "XZY"), [0, "p"])
 
     def test_empty_wire_list_error_paulirot(self):
         """Test that PauliRot operator raises an error when instantiated with wires=[]."""
@@ -3398,6 +3450,14 @@ class TestPauliRot:
         assert coeff == -0.5
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
+
+    def test_batch_size(self):
+        """Test that the batch_size of PauliRot is determined correctly."""
+        angles = np.array([0.5, 0.2, 0.5])
+        assert qml.PauliRot(0.4, "X", 0).batch_size is None
+        assert qml.PauliRot(angles, "X", 0).batch_size == 3
+        assert qml.PauliRot(0.2, ["X", "Y", "Z"], 0).batch_size == 3
+        assert qml.PauliRot(angles, ["X", "Y", "Z"], 0).batch_size == 3
 
 
 class TestMultiRZ:
