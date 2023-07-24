@@ -44,6 +44,8 @@ class DefaultQubit2(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
     Args:
+        shots (int, Tuple[int], Tuple[Tuple[int]]): The default number of shots to use in executions involving
+            this device.
         seed (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -134,8 +136,8 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, seed=None, max_workers=None) -> None:
-        super().__init__()
+    def __init__(self, shots=None, seed=None, max_workers=None) -> None:
+        super().__init__(shots=shots)
         self._max_workers = max_workers
         self._rng = np.random.default_rng(seed)
         self._debugger = None

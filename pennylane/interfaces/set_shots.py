@@ -18,6 +18,9 @@ to be temporarily modified.
 # pylint: disable=protected-access
 import contextlib
 
+import pennylane as qml
+from pennylane.measurements import Shots
+
 
 @contextlib.contextmanager
 def set_shots(device, shots):
@@ -40,6 +43,11 @@ def set_shots(device, shots):
     >>> set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
+    if isinstance(device, qml.devices.experimental.Device):
+        yield
+        return
+    if isinstance(shots, Shots):
+        shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
         yield
         return

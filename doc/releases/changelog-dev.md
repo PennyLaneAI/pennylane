@@ -109,6 +109,12 @@
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
+* `qml.interfaces.set_shots` now has null behaviour for the experimental Device and accepts
+  a `Shots` object as well as `int`'s and tuples of `int`'s.
+
+* `QNode.construct` now accepts a `shots` keyword argument, instead of excepting `shots` to be merged
+  into the `kwargs` dictinary.
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 

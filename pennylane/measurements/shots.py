@@ -190,7 +190,11 @@ class Shots:
 
     def __eq__(self, other):
         """Equality between Shot instances."""
-        return self.total_shots == other.total_shots and self.shot_vector == other.shot_vector
+        return (
+            isinstance(other, Shots)
+            and self.total_shots == other.total_shots
+            and self.shot_vector == other.shot_vector
+        )
 
     def __hash__(self):
         """Hash for a given Shot instance."""
