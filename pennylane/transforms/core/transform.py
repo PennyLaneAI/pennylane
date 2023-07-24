@@ -42,7 +42,7 @@ def transform(
 
             * The expand transform must have the same type hinting as a quantum transform.
 
-        classical_cotransform(callable): A classical co-transform.
+        classical_cotransform(callable): A classical co-transform. NOT YET SUPPORTED.
         is_informative(bool): If true the execution is skipped, because the transform is informative.
 
     **Example**
@@ -123,9 +123,10 @@ def transform(
 
     # 3: CHeck the classical co-transform
     if classical_cotransform is not None:
+        raise NotImplementedError("Classical cotransforms are not yet integrated.")
         # TODO: Add more verification in a future PR
-        if not callable(classical_cotransform):
-            raise TransformError("The classical co-transform must be a valid Python function.")
+        # if not callable(classical_cotransform):
+        #    raise TransformError("The classical co-transform must be a valid Python function.")
 
     return TransformDispatcher(
         quantum_transform,

@@ -64,7 +64,9 @@ class TestUtilityHelpers:
         def postprocessing2(results):
             return results[0] + 1
 
-        out = _batch_postprocessing(results, (postprocessing1, postprocessing2))
+        out = _batch_postprocessing(
+            results, (postprocessing1, postprocessing2), [slice(0, 2), slice(2, 4)]
+        )
         assert out == (3.0, 4.0)
 
     def test_postprocessing_stack(self):
@@ -78,12 +80,10 @@ class TestUtilityHelpers:
         def postprocessing2(results):
             return (results[0] + 1, results[1] + 2)
 
-        out1 = _apply_postprocessing_stack(results, [postprocessing1], [None, None])
+        out1 = _apply_postprocessing_stack(results, [postprocessing1])
         assert out1 == (3.0, 7.0)
 
-        out2 = _apply_postprocessing_stack(
-            results, [postprocessing2, postprocessing1], [None, None]
-        )
+        out2 = _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
         assert out2 == (4.0, 9.0)
 
 
@@ -321,13 +321,13 @@ class TestTransformProgramCall:
 
         assert fn.func is _apply_postprocessing_stack
         assert fn.args == tuple()
-        assert fn.keywords["cotransform_stack"] == [None]
 
         assert len(fn.keywords["postprocessing_stack"]) == 1
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
         assert postprocessing0.func is _batch_postprocessing
         assert postprocessing0.args == tuple()
         assert postprocessing0.keywords["individual_fns"] == [single_null_postprocessing]
+        assert postprocessing0.keywords["batch_slices"] == [slice(0, 1)]
 
         results = (2.0,)
         assert fn(results) == (2.0,)
@@ -361,7 +361,6 @@ class TestTransformProgramCall:
 
         assert fn.func is _apply_postprocessing_stack
         assert fn.args == tuple()
-        assert fn.keywords["cotransform_stack"] == [None, None]
         assert len(fn.keywords["postprocessing_stack"]) == 2
 
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
@@ -370,6 +369,7 @@ class TestTransformProgramCall:
         assert postprocessing0.keywords["individual_fns"] == [
             add_one,
         ]
+        assert postprocessing0.keywords["batch_slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
@@ -377,6 +377,7 @@ class TestTransformProgramCall:
         assert postprocessing1.keywords["individual_fns"] == [
             scale_two,
         ]
+        assert postprocessing1.keywords["batch_slices"] == [slice(0, 1)]
 
         results = (1.0,)
         expected = (3.0,)  # 2.0 *1.0 + 1.0
@@ -401,6 +402,7 @@ class TestTransformProgramCall:
         assert postprocessing0.keywords["individual_fns"] == [
             scale_two,
         ]
+        assert postprocessing0.keywords["batch_slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
@@ -408,6 +410,7 @@ class TestTransformProgramCall:
         assert postprocessing1.keywords["individual_fns"] == [
             add_one,
         ]
+        assert postprocessing1.keywords["batch_slices"] == [slice(0, 1)]
 
         results = (1.0,)
         expected = (4.0,)  # (1.0 + 1.0) * 2.0

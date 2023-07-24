@@ -27,7 +27,7 @@ BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
 
 
 def _batch_postprocessing(
-    results: ResultBatch, individual_fns: List[PostProcessingFn]
+    results: ResultBatch, individual_fns: List[PostProcessingFn], batch_slices: List[slice]
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto the their respective tapes.
 
@@ -35,30 +35,27 @@ def _batch_postprocessing(
         results (ResultBatch): The numeric outcome from executing a batch of :class:`~.QuantumTape`
 
     Keyword Args:
-        individual_fns (Callable): postprocessing functions converting a batch of results into a single result
+        individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
            corresponding to only a single :class:`~.QuantumTape`.
-
-    Note that this function does not perform validation on the sizes.
-
-    If there are ``N`` ``individual_fns`` each one accepts a batch of ``M`` results, then the input ``results`` must be
-    ``M*N`` long.
+        batch_slices (List[slice]): the indices
 
     >>> results = (1.0, 2.0, 3.0, 4.0)
     >>> def postprocessing1(results):
     ...     return results[0] + results[1]
     >>> def postprocessing2(results):
     ...     return results[0]+0.5
-    >>> _batch_postprocessing(results, (postprocessing1, postprocessing2))
-    (3.0, 3.5)
+    >>> def postprocessing3(results):
+    ...     return results[0]*2
+    >>> slices = [slice(0,2), slice(2,3), slice(3,4)]
+    >>> individual_fns = [postprocessing1, postprocessing2, postprocessing3]
+    >>> _batch_postprocessing(results, individual_fns, slices)
+    (3.0, 3.5, 8.0)
 
     """
-    num_results = len(results)
-    num_input_tapes = len(individual_fns)
-    results_per_input_tape = num_results // num_input_tapes
 
     new_results = []
-    for i, post_processing_fn in enumerate(individual_fns):
-        selected_results = results[i * results_per_input_tape : (i + 1) * results_per_input_tape]
+    for slice_selection, post_processing_fn in zip(batch_slices, individual_fns):
+        selected_results = results[slice_selection]
         new_results.append(post_processing_fn(selected_results))
 
     return tuple(new_results)
@@ -67,7 +64,6 @@ def _batch_postprocessing(
 def _apply_postprocessing_stack(
     results: ResultBatch,
     postprocessing_stack: List[BatchPostProcessingFn],
-    cotransform_stack: List[Optional[BatchPostProcessingFn]],
 ) -> ResultBatch:
     """Applies the postprocessing and cotransform postprocessing functions in a Last-In-First-Out LIFO manner.
 
@@ -76,7 +72,6 @@ def _apply_postprocessing_stack(
 
     Keyword Args:
         postprocessing_stack (List(BatchPostProcessingFn)): a LIFO stack of post processing functions.
-        cotransform_stack (List(BatchPostProcessingFn)): a LIFO stack of classical cotransform functions.
 
     Returns:
         ResultBatch: the post processed results.
@@ -86,15 +81,13 @@ def _apply_postprocessing_stack(
     ...     return (results[0] + results[1], results[2] + results[3])
     >>> def postprocessing2(results):
     .... return (results[0] + 1, results[1] + 2)
-    >>> _apply_postprocessing_stack(results, [postprocessing1], [None, None])
+    >>> _apply_postprocessing_stack(results, [postprocessing1])
     (3.0, 7.0)
-    >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1], [None, None])
+    >>> _apply_postprocessing_stack(results, [postprocessing2, postprocessing1])
     (4.0, 9.0)
 
     """
-    for postprocessing, cotransform in zip(postprocessing_stack[::-1], cotransform_stack[::-1]):
-        if cotransform:
-            results = cotransform(results)
+    for postprocessing in zip(postprocessing_stack[::-1]):
         results = postprocessing(results)
     return results
 
@@ -221,27 +214,29 @@ class TransformProgram:
         if not self:
             return tapes, null_postprocessing
         processing_fns_stack = []
-        classical_cotransforms_stack = []
 
         for transform_container in self:
-            transform, args, kwargs, cotransform, _ = transform_container
-
-            if cotransform:
-                raise NotImplementedError("cotransforms are not yet supported")
+            transform, args, kwargs, _, _ = transform_container
 
             execution_tapes = []
             fns = []
+            batch_slices = []
 
+            start = 0
             for tape in tapes:
                 new_tapes, fn = transform(tape, *args, **kwargs)
                 execution_tapes.extend(new_tapes)
                 fns.append(fn)
+                end = start + len(new_tapes)
+                batch_slices.append(slice(start, end))
+                start = end
 
-            batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns)
+            batch_postprocessing = partial(
+                _batch_postprocessing, individual_fns=fns, batch_slices=batch_slices
+            )
             batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
 
             processing_fns_stack.append(batch_postprocessing)
-            classical_cotransforms_stack.append(cotransform)
 
             # set input tapes for next iteration.
             tapes = execution_tapes
@@ -249,7 +244,6 @@ class TransformProgram:
         postprocessing_fn = partial(
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,
-            cotransform_stack=classical_cotransforms_stack,
         )
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
