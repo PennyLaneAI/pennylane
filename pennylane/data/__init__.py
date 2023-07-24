@@ -178,8 +178,8 @@ from .data_manager import (
 __all__ = (
     # "AttributeInfo",
     # "attribute",
-    # "field",
-    "Dataset",
+    "field",
+    # "Dataset",
     # "DatasetAttribute",
     # "DatasetNotWriteableError",
     # "DatasetArray",
