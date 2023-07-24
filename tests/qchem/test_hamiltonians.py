@@ -367,6 +367,26 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data, fs):
     )
 
 
+def test_diff_hamiltonian_active_space():
+    r"""Test that diff_hamiltonian works when an active space is defined."""
+
+    symbols = ["H", "H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+
+    mol = qchem.Molecule(symbols, geometry, charge=1)
+    args = [geometry]
+
+    h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
+
+    assert isinstance(h, qml.Hamiltonian)
+
+    enable_new_opmath()
+    h_op = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
+    disable_new_opmath()
+
+    assert not isinstance(h_op, qml.Hamiltonian)
+
+
 @pytest.mark.parametrize("fs", [True, False])
 def test_gradient_expvalH(fs):
     r"""Test that the gradient of expval(H) computed with ``qml.grad`` is equal to the value

@@ -16,7 +16,11 @@
 * `qml.PauliRot` now allows broadcasting across the `pauli_word` hyperparameter.
   Note that the behaviour of broadcasting over hyperparameters such as `pauli_word` may 
   change in the future.
-  [(#4___)](https://github.com/PennyLaneAI/pennylane/pull/4___)
+  [(#4381)](https://github.com/PennyLaneAI/pennylane/pull/4381)
+
+* `HardwareHamiltonian`s can now be summed with `int` or `float`.
+  A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+  [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
@@ -73,6 +77,9 @@
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
+
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
 <h3>Breaking changes 💔</h3>
 
@@ -169,6 +176,9 @@
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
+
+* The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
+  [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
 <h3>Contributors ✍️</h3>
 
