@@ -537,7 +537,9 @@ class TestGenerateTapesAndCoeffs:
                     assert len(t.operations) == len(old_tape.operations) + 1
                     expected_ops = copy.copy(old_tape.operations)
                     expected_ops.insert(insert_idx, qml.PauliRot(sign * np.pi / 2, word, wires))
-                    assert all(qml.equal(op, old_op) for op, old_op in zip(t.operations, expected_ops))
+                    assert all(
+                        qml.equal(op, old_op) for op, old_op in zip(t.operations, expected_ops)
+                    )
             assert tup[:2] == (start, end)
 
         # Check coefficients
@@ -579,8 +581,8 @@ class TestGenerateTapesAndCoeffs:
         # There is a factor of 2 for the exp(i*(pauliword)) to PauliRot conversion
         exp_coeffs = [jnp.array(2 * self.T)]
         num_tapes = 1 if bcast else 2
-        expected = (-5, -5+num_tapes, num_tapes, words, wires, tape, 0, exp_coeffs)
-        exp_cache = {"total_num_tapes": -5+num_tapes, 0: (-5, -5+num_tapes, [coeffs])}
+        expected = (-5, -5 + num_tapes, num_tapes, words, wires, tape, 0, exp_coeffs)
+        exp_cache = {"total_num_tapes": -5 + num_tapes, 0: (-5, -5 + num_tapes, [coeffs])}
 
         self.check_tapes_and_coeffs_equality(grad_tapes, (start, end, coeffs), expected, bcast)
         self.check_cache_equality(cache, exp_cache)
