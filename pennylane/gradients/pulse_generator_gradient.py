@@ -189,7 +189,10 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
             with respect to which to differentiate.
         atol (float): absolute tolerance used to determine whether a coefficient is zero.
         cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
-        use_broadcasting (bool): TODO
+        use_broadcasting (bool): Whether to use broadcasting for the generated tapes or not.
+            If ``True``, all modified tapes for one particular pulse operation are batched
+            into a single tape. The largest-possible broadcasting dimension resulting from this
+            is ``2(4**N-1)`` where ``N`` is the number of wires the pulse acts on.
 
     Returns:
         list[`~.QuantumScript`]: Modified tapes to be added to the pulse generator differentiation
@@ -258,6 +261,7 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, u
         single_measure (bool): whether the tape execution results contain single measurements.
         single_shot_entry (bool): whether the tape execution results were obtained with a single
             shots setting.
+        use_broadcasting (bool): Whether broadcasing was used to obtain the results.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: contraction between the
@@ -296,8 +300,8 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry, u
 
 
 def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
-    """Compute the pulse generator parameter-shift rule for a quantum circuit that returns expectation
-    values of observables.
+    """Compute the pulse generator parameter-shift rule for a quantum circuit that returns
+    expectation values of observables.
 
     Args:
         tape (`~.QuantumTape`): Quantum circuit to be differentiated with the pulse generator
@@ -309,6 +313,10 @@ def _expval_pulse_generator(tape, argnum, shots, use_broadcasting, atol):
             returned by this transform. Note that this argument does not *influence* the shots
             used for execution, but *informs* the transform about the shots to ensure a compatible
             return value formatting.
+        use_broadcasting (bool): Whether to use broadcasting for the parameter-shifted tapes or not.
+            If ``True``, all modified tapes for one particular pulse operation are batched
+            into a single tape. The largest-possible broadcasting dimension resulting from this
+            is ``2(4**N-1)`` where ``N`` is the number of wires the pulse acts on.
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
@@ -453,6 +461,10 @@ def _pulse_generator(tape, argnum=None, shots=None, use_broadcasting=False, atol
             returned by this transform. Note that this argument does not *influence* the shots
             used for execution, but *informs* the transform about the shots to ensure a compatible
             return value formatting.
+        use_broadcasting (bool): Whether to use broadcasting for the parameter-shifted tapes or not.
+            If ``True``, all modified tapes for one particular pulse operation are batched
+            into a single tape. The largest-possible broadcasting dimension resulting from this
+            is ``2(4**N-1)`` where ``N`` is the number of wires the pulse acts on.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
@@ -495,6 +507,7 @@ def _pulse_generator(tape, argnum=None, shots=None, use_broadcasting=False, atol
 
     .. code-block:: python
 
+        from pennylane.gradients import pulse_generator
         jax.config.update("jax_enable_x64", True)
         H = (
             qml.pulse.constant * qml.PauliY(0)
@@ -511,7 +524,7 @@ def _pulse_generator(tape, argnum=None, shots=None, use_broadcasting=False, atol
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_generator)
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator)
         def circuit(params):
             op = qml.evolve(H)(params, t)
             return qml.expval(qml.PauliX(0))
@@ -525,7 +538,34 @@ def _pulse_generator(tape, argnum=None, shots=None, use_broadcasting=False, atol
      Array([0.00164913, 0.00284788], dtype=float64),
      Array(-0.09984584, dtype=float64, weak_type=True)]
 
-    Alternatively, we may apply the transform to the tape of the pulse program, obtaining
+    We may activate the option ``use_broadcasting`` to improve the performance when running
+    on classical simulators. Internally, this reuses the time evolution for multiple
+    parameter-shifted circuits that insert different Pauli rotations (also see details below).
+    We can compare the performance with a simple test:
+
+    .. code-block:: python
+
+        from time import process_time
+
+        @qml.qnode(dev, interface="jax", diff_method=pulse_generator, use_broadcasting=True)
+        def faster_grad_circuit(params):
+            op = qml.evolve(H)(params, t)
+            return qml.expval(qml.PauliX(0))
+
+        times = []
+        for node in [circuit, faster_grad_circuit]:
+            start = process_time()
+            jax.grad(node)(params)
+            times.append(process_time() - start)
+
+    >>> print(times) # Show the gradient computation times in seconds.
+    [5.254342910000002, 2.549157430000001]
+
+    The speedup can be expected to grow with the complexity of the pulse Hamiltonian, and
+    with the number of qubits it acts on.
+
+    As an alternative to the differentiation with JAX,
+    we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
     >>> circuit.construct((params,), {}) # Build the tape of the circuit.
