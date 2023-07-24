@@ -21,10 +21,7 @@ from pennylane import numpy as np
 
 def expected_purity_ising_xx(param):
     """Returns the analytical purity for subsystems of the IsingXX"""
-
-    eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
-    return eig_1**2 + eig_2**2
+    return np.cos(param / 2) ** 4 + np.sin(param / 2) ** 4
 
 
 def expected_purity_grad_ising_xx(param):
@@ -377,6 +374,26 @@ class TestPurity:
         grad_purity = tape.gradient(purity, param)
 
         assert qml.math.allclose(grad_purity, grad_expected_purity)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_purity_wire_labels(self, device, tol):
+        """Test that purity is correct with custom wire labels"""
+        param = np.array(1.234)
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        purity0 = qml.qinfo.purity(circuit_state, wires=[wires[0]])(param)
+        purity1 = qml.qinfo.purity(circuit_state, wires=[wires[1]])(param)
+        expected = expected_purity_ising_xx(param)
+
+        assert qml.math.allclose(purity0, expected, atol=tol)
+        assert qml.math.allclose(purity1, expected, atol=tol)
 
 
 @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])

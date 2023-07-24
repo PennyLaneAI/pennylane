@@ -81,6 +81,28 @@ class TestDensityMatrixQNode:
 
         assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("angle", angle_values)
+    def test_density_matrix_wire_labels(self, device, angle, tol):
+        """Test that density matrix is correct with custom wire labels"""
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        dm0 = qml.qinfo.reduced_dm(circuit, wires=[wires[0]])(angle)
+        dm1 = qml.qinfo.reduced_dm(circuit, wires=[wires[1]])(angle)
+
+        exp0 = np.array([[np.sin(angle / 2) ** 2, 0], [0, np.cos(angle / 2) ** 2]])
+        exp1 = np.array([[np.cos(angle / 2) ** 2, 0], [0, np.sin(angle / 2) ** 2]])
+
+        assert np.allclose(exp0, dm0, atol=tol)
+        assert np.allclose(exp1, dm1, atol=tol)
+
     def test_qnode_not_returning_state(self):
         """Test that the QNode of reduced_dm function must return state."""
         dev = qml.device("default.qubit", wires=1)
