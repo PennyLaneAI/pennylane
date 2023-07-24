@@ -183,6 +183,7 @@ class Dataset(MapperMixin, _DatasetTransform):
                 create if doesn't exist), "r" (read existing, must exist), and "copy",
                 which loads the dataset into memory and detaches it from the underlying
                 file. Default is "r".
+
         Returns:
             Dataset object from file
         """
