@@ -174,6 +174,7 @@ def list_datasets() -> dict:
                                         'rectangular': ['2x2', '2x4', '2x8', '4x4']},
                             'open': {'chain': ['1x16', '1x4', '1x8'],
                                     'rectangular': ['2x2', '2x4', '2x8', '4x4']}}}}
+
     """
 
     def remove_paths(foldermap):
@@ -250,7 +251,7 @@ def load_interactive():
 
     **Example**
 
-    .. code-block :: pycon
+    .. code-block:: pycon
 
         >>> qml.data.load_interactive()
         Please select a data name:
@@ -277,6 +278,7 @@ def load_interactive():
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
         <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
+
     """
 
     foldermap = _get_foldermap()
