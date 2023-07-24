@@ -15,10 +15,9 @@
 reference plugin.
 """
 import warnings
+import inspect
+import logging
 import semantic_version
-import inspect, logging
-
-logger = logging.getLogger(__name__)
 
 try:
     import torch
@@ -33,6 +32,9 @@ except ImportError as e:  # pragma: no cover
 import numpy as np
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from . import DefaultQubit
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class DefaultQubitTorch(DefaultQubit):

@@ -16,11 +16,12 @@ This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
+import logging
+import inspect
+
 import numpy as np
 import torch
 import torch.utils._pytree as pytree
-import logging
-import inspect
 
 import pennylane as qml
 from pennylane.measurements import CountsMP

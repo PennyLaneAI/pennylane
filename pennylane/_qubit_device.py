@@ -25,7 +25,8 @@ import itertools
 import warnings
 from collections import defaultdict
 from typing import Union, List
-import inspect, logging
+import inspect
+import logging
 
 import numpy as np
 
@@ -68,6 +69,7 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _sample_to_str(sample):
