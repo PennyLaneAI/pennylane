@@ -284,41 +284,9 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def _check_word_batching(self, pauli_word):
-        """Check that the broadcasting/batching of a Pauli word is valid and
-        consistent with potential broadcasting of a ``PauliRot`` instance."""
-        invalid_word_msg = (
-            f"The given Pauli word '{pauli_word}' contains characters that are not "
-            "allowed. Allowed characters are I, X, Y and Z"
-        )
-        num_wires = len(self.wires)
-        invalid_len_msg = lambda length: (
-            f"The given Pauli word has length {length}, length "
-            f"{num_wires} was expected for wires {self.wires}"
-        )
-        if isinstance(pauli_word, str):
-            # Single string, no broadcasting
-            if not PauliRot._check_pauli_word(pauli_word):
-                raise ValueError(invalid_word_msg)
-            if not (_len := len(pauli_word)) == num_wires:
-                raise ValueError(invalid_len_msg(_len))
-        else:
-            # Iterable of strings, broadcasting
-            if self._batch_size and self._batch_size != len(pauli_word):
-                raise ValueError(
-                    "When broadcasting the rotation angle and the Pauli word, the broadcasting "
-                    f"dimensions have to match, but got {self._batch_size} and {len(pauli_word)}."
-                )
-
-            if not PauliRot._check_pauli_word("".join(pauli_word)):
-                raise ValueError(invalid_word_msg)
-            if not all((_len := len(w)) == num_wires for w in pauli_word):
-                raise ValueError(invalid_len_msg(_len))
-
-            self._batch_size = len(pauli_word)
-
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
+        pauli_word = pauli_word if isinstance(pauli_word, str) else tuple(pauli_word)
         self.hyperparameters["pauli_word"] = pauli_word
 
         self._check_word_batching(pauli_word)
@@ -371,6 +339,39 @@ class PauliRot(Operation):
             bool: Whether the Pauli word has correct structure.
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
+
+    def _check_word_batching(self, pauli_word):
+        """Check that the broadcasting/batching of a Pauli word is valid and
+        consistent with potential broadcasting of a ``PauliRot`` instance."""
+        invalid_word_msg = (
+            f"The given Pauli word '{pauli_word}' contains characters that are not "
+            "allowed. Allowed characters are I, X, Y and Z"
+        )
+        num_wires = len(self.wires)
+        invalid_len_msg = lambda length: (
+            f"The given Pauli word has length {length}, length "
+            f"{num_wires} was expected for wires {self.wires}"
+        )
+        if isinstance(pauli_word, str):
+            # Single string, no broadcasting
+            if not PauliRot._check_pauli_word(pauli_word):
+                raise ValueError(invalid_word_msg)
+            if not (_len := len(pauli_word)) == num_wires:
+                raise ValueError(invalid_len_msg(_len))
+        else:
+            # Iterable of strings, broadcasting
+            if self._batch_size and self._batch_size != len(pauli_word):
+                raise ValueError(
+                    "When broadcasting the rotation angle and the Pauli word, the broadcasting "
+                    f"dimensions have to match, but got {self._batch_size} and {len(pauli_word)}."
+                )
+
+            if not PauliRot._check_pauli_word("".join(pauli_word)):
+                raise ValueError(invalid_word_msg)
+            if not all((_len := len(w)) == num_wires for w in pauli_word):
+                raise ValueError(invalid_len_msg(_len))
+
+            self._batch_size = len(pauli_word)
 
     @staticmethod
     def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ

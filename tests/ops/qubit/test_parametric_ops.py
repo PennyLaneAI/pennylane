@@ -3347,6 +3347,14 @@ class TestPauliRot:
         with pytest.raises(ValueError, match=match_):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
+    @pytest.mark.parametrize("pauli_word", (["ZX", "YI"], np.array(["ZX", "YI"])))
+    def test_init_pauli_word_cast_to_tuple(self, pauli_word):
+        """Test that __init__ casts any iterable that is not a string to a tuple."""
+        op = qml.PauliRot(0.3, pauli_word, wires=[0, 1])
+        hyper = op.hyperparameters["pauli_word"]
+        assert isinstance(hyper, tuple)
+        assert hyper == ("ZX", "YI")
+
     def test_pauli_rot_raises_invalid_word_broadcasting(self):
         """Test that an error is raised for invalid broadcasting of PauliRot,
         in particular mismatching broadcasting dimensions between angles

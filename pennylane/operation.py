@@ -1536,9 +1536,7 @@ class Operator(abc.ABC):
         (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
 
         """
-        hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items()
-        )
+        hashable_hyperparameters = tuple(self.hyperparameters.items())
         return self.data, (self.wires, hashable_hyperparameters)
 
     @classmethod
