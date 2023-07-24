@@ -1,3 +1,4 @@
+"""The PennyLane log-level formatters are defined here with default options, and ANSI-terminal color-codes."""
 import logging
 from logging import Formatter
 from typing import NamedTuple, Tuple, Union
