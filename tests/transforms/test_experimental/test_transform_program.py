@@ -17,6 +17,7 @@ from typing import Sequence, Callable
 
 import pytest
 import pennylane as qml
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import (
     transform,
     TransformProgram,
@@ -28,6 +29,7 @@ from pennylane.transforms.core.transform_program import (
     _apply_postprocessing_stack,
     null_postprocessing,
 )
+from pennylane.typing import ResultBatch, Result
 
 
 def first_valid_transform(
@@ -285,7 +287,9 @@ class TestTransformProgramCall:
         prog = TransformProgram((my_transform,))
 
         batch = (qml.tape.QuantumScript([], [qml.state()]),)
-        with pytest.raises(NotImplementedError, match="cotransforms are not yet supported"):
+        with pytest.raises(
+            NotImplementedError, match="cotransforms are not yet integrated with TransformProgram"
+        ):
             prog(batch)
 
     def test_single_transform_program(self):
@@ -393,7 +397,6 @@ class TestTransformProgramCall:
 
         assert fn.func is _apply_postprocessing_stack
         assert fn.args == tuple()
-        assert fn.keywords["cotransform_stack"] == [None, None]
         assert len(fn.keywords["postprocessing_stack"]) == 2
 
         postprocessing0 = fn.keywords["postprocessing_stack"][0]
@@ -415,6 +418,55 @@ class TestTransformProgramCall:
         results = (1.0,)
         expected = (4.0,)  # (1.0 + 1.0) * 2.0
         assert fn(results) == expected
+
+    def test_postprocessing_batch_circuit_ragged(self):
+        """Tests postprocessing when the input is a batch and the transform outputs different sizes of batches
+        for each input tape.
+        """
+        # note this does not work for partitioned shots
+        def sum_measurements(results: ResultBatch) -> Result:
+            return sum(results)
+
+        def split_sum_terms(tape):
+            sum_obj = tape.measurements[0].obs
+            new_tapes = tuple(
+                QuantumScript(tape.operations, [qml.expval(o)], shots=tape.shots) for o in sum_obj
+            )
+
+            return new_tapes, sum_measurements
+
+        container = TransformContainer(split_sum_terms)
+        prog = TransformProgram((container,))
+
+        op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+
+        orig1 = qml.tape.QuantumScript([op], [qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(0)))])
+        orig2 = qml.tape.QuantumScript(
+            [op], [qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)))]
+        )
+        orig3 = qml.tape.QuantumScript(
+            [op], [qml.expval(qml.sum(*(qml.PauliX(i) for i in range(5))))]
+        )  # contributes 5 terms
+
+        batch, fn = prog((orig1, orig2, orig3))
+
+        assert len(batch) == 10
+
+        assert fn.func is _apply_postprocessing_stack
+        assert not fn.args
+        fn_stack = fn.keywords["postprocessing_stack"]
+        assert len(fn_stack) == 1
+
+        assert fn_stack[0].func is _batch_postprocessing
+        assert fn_stack[0].keywords["individual_fns"] == [
+            sum_measurements,
+            sum_measurements,
+            sum_measurements,
+        ]
+        assert fn_stack[0].keywords["batch_slices"] == [slice(0, 2), slice(2, 5), slice(5, 10)]
+
+        dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
+        assert fn(dummy_results) == (3, 12, 5)
 
 
 class TestTransformProgramIntegration:

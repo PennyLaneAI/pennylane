@@ -87,7 +87,7 @@ def _apply_postprocessing_stack(
     (4.0, 9.0)
 
     """
-    for postprocessing in zip(postprocessing_stack[::-1]):
+    for postprocessing in reversed(postprocessing_stack):
         results = postprocessing(results)
     return results
 
@@ -216,7 +216,11 @@ class TransformProgram:
         processing_fns_stack = []
 
         for transform_container in self:
-            transform, args, kwargs, _, _ = transform_container
+            transform, args, kwargs, cotransform, _ = transform_container
+            if cotransform:
+                raise NotImplementedError(
+                    "cotransforms are not yet integrated with TransformProgram"
+                )
 
             execution_tapes = []
             fns = []
