@@ -69,21 +69,19 @@ class DefaultFormatter(Formatter):
     # 0x000000 Background
     text_bg = (0, 0, 0)
 
-    cmap = {
-        "default": ColorScheme(
-            debug=(220, 238, 200),  # Grey 1
-            debug_bg=text_bg,
-            info=(80, 125, 125),  # Blue
-            info_bg=text_bg,
-            warning=(208, 167, 133),  # Orange
-            warning_bg=text_bg,
-            error=(208, 133, 133),  # Red 1
-            error_bg=text_bg,
-            critical=(135, 53, 53),  # Red 2
-            critical_bg=(210, 210, 210),  # Grey 2
-            use_rgb=True,
-        )
-    }
+    cmap = ColorScheme(
+        debug=(220, 238, 200),  # Grey 1
+        debug_bg=text_bg,
+        info=(80, 125, 125),  # Blue
+        info_bg=text_bg,
+        warning=(208, 167, 133),  # Orange
+        warning_bg=text_bg,
+        error=(208, 133, 133),  # Red 1
+        error_bg=text_bg,
+        critical=(135, 53, 53),  # Red 2
+        critical_bg=(210, 210, 210),  # Grey 2
+        use_rgb=True,
+    )
 
     FORMATS = {
         logging.DEBUG: build_code_rgb(cmap.debug, cmap.debug_bg) + fmt_str + ANSI_CODES["end"],
