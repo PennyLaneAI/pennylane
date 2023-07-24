@@ -1892,6 +1892,8 @@ class Observable(Operator):
 
         for ob in obs:
             parameters = tuple(param.tobytes() for param in ob.parameters)
+            if isinstance(ob, qml.GellMann):
+                parameters += (ob.hyperparameters["index"],)
             tensor.add((ob.name, ob.wires, parameters))
 
         return tensor
