@@ -230,7 +230,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache, use_broadcasting):
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
     if use_broadcasting:
         angles = np.tile([np.pi / 2, -np.pi / 2], len(pauli_words))
-        pauli_words = [w for w in pauli_words for _ in (0, 1)]
+        pauli_words = tuple(w for w in pauli_words for _ in (0, 1))
         pauli_rots = [qml.PauliRot(angles, pauli_words, wires=op.wires)]
     else:
         pauli_rots = [
