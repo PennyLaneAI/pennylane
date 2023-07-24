@@ -46,19 +46,20 @@ Creating a Dataset
 
 To create a new dataset in-memory, initialize a new ``Dataset`` with the desired attributes:
 
-    >>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
-    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
-    >>> dataset = qml.data.Dataset(
-            hamiltonian = hamiltonian,
-            eigen = {"eigvals": eigvals, "eigvecs": eigvecs})
-    >>> dataset.hamiltonian
-    <Hamiltonian: terms=2, wires=[0, 1]>
-    >>> dataset.eigen
-    {'eigvals': array([-2.,  0.,  0.,  2.]),
-    'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-       [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-       [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
-       [1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])}
+>>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+>>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
+>>> dataset = qml.data.Dataset(
+...   hamiltonian = hamiltonian,
+...   eigen = {"eigvals": eigvals, "eigvecs": eigvecs}
+... )
+>>> dataset.hamiltonian
+<Hamiltonian: terms=2, wires=[0, 1]>
+>>> dataset.eigen
+{'eigvals': array([-2.,  0.,  0.,  2.]),
+'eigvecs': array([[0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+   [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+   [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
+   [1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])}
 
 Attributes can also be assigned to the instance after creation:
 

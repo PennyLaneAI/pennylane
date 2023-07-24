@@ -16,7 +16,7 @@
 * `data.Dataset` now uses HDF5 instead of dill for serialization.
   [(#4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
 
-* `HardwareHamiltonian`s can now be summed with `int` or `float`. A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+* `HardwareHamiltonian` objects can now be summed with `int` or `float`. A sequence of `HardwareHamiltonian` object can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
