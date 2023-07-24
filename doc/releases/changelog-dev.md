@@ -16,8 +16,7 @@
 * `data.Dataset` now uses HDF5 instead of dill for serialization.
   [(#4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
 
-* `HardwareHamiltonian`s can now be summed with `int` or `float`.
-  A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+* `HardwareHamiltonian`s can now be summed with `int` or `float`. A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
@@ -145,7 +144,7 @@
 
 <h3>Documentation 📝</h3>
 
-* The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
+* The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has    been updated.
   [#4327](https://github.com/PennyLaneAI/pennylane/pull/4327)
 
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
@@ -182,8 +181,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
-Jack Brown
+Utkarsh Azad,
+Jack Brown,
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
