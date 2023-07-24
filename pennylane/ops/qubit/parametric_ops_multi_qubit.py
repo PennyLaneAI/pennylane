@@ -348,16 +348,15 @@ class PauliRot(Operation):
             "allowed. Allowed characters are I, X, Y and Z"
         )
         num_wires = len(self.wires)
-        invalid_len_msg = lambda length: (
-            f"The given Pauli word has length {length}, length "
-            f"{num_wires} was expected for wires {self.wires}"
-        )
         if isinstance(pauli_word, str):
             # Single string, no broadcasting
             if not PauliRot._check_pauli_word(pauli_word):
                 raise ValueError(invalid_word_msg)
             if not (_len := len(pauli_word)) == num_wires:
-                raise ValueError(invalid_len_msg(_len))
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
         else:
             # Iterable of strings, broadcasting
             if self._batch_size and self._batch_size != len(pauli_word):
@@ -369,8 +368,10 @@ class PauliRot(Operation):
             if not PauliRot._check_pauli_word("".join(pauli_word)):
                 raise ValueError(invalid_word_msg)
             if not all((_len := len(w)) == num_wires for w in pauli_word):
-                raise ValueError(invalid_len_msg(_len))
-
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
             self._batch_size = len(pauli_word)
 
     @staticmethod
