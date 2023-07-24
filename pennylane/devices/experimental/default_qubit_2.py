@@ -363,7 +363,7 @@ class DefaultQubit2(Device):
             tangents = [tangents]
 
         if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
         if execution_config.gradient_method != "adjoint":
@@ -400,9 +400,7 @@ class DefaultQubit2(Device):
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
             self.tracker.update(
-                execute_and_derivative_batches=1,
-                executions=len(circuits),
-                derivatives=len(circuits),
+                execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
             )
             self.tracker.record()
 
@@ -468,7 +466,7 @@ class DefaultQubit2(Device):
             cotangents = [cotangents]
 
         if self.tracker.active:
-            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.update(vjp_batches=1, vjps=len(circuits))
             self.tracker.record()
 
         if execution_config.gradient_method != "adjoint":
@@ -505,9 +503,7 @@ class DefaultQubit2(Device):
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
             self.tracker.update(
-                execute_and_derivative_batches=1,
-                executions=len(circuits),
-                derivatives=len(circuits),
+                execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
             )
             self.tracker.record()
 

@@ -172,9 +172,15 @@ class TestTracking:
 
         assert tracker.history == {
             "executions": [2, 4, 6],
-            "derivatives": [1, 2, 3, 4, 5, 6],
-            "derivative_batches": [1, 1, 1],
-            "execute_and_derivative_batches": [1, 1, 1],
+            "derivatives": [1, 2],
+            "derivative_batches": [1],
+            "execute_and_derivative_batches": [1],
+            "jvps": [3, 4],
+            "jvp_batches": [1],
+            "execute_and_jvp_batches": [1],
+            "vjps": [5, 6],
+            "vjp_batches": [1],
+            "execute_and_vjp_batches": [1],
             "resources": [Resources(num_wires=1)] * 12,
         }
 
