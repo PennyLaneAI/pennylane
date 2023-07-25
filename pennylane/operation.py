@@ -1536,8 +1536,8 @@ class Operator(abc.ABC):
         (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
 
         """
-        hashable_hyperparameters = tuple(self.hyperparameters.items())
-        return self.data, (self.wires, hashable_hyperparameters)
+        # Casting to tuple is essential to make metadata/hyperparameters hashable
+        return self.data, (self.wires, tuple(self.hyperparameters.items()))
 
     @classmethod
     def _unflatten(cls, data, metadata):
