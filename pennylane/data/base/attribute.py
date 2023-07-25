@@ -173,8 +173,6 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     Attributes:
         type_id: Unique identifier for this DatasetAttribute class. Must be declared
             in subclasses.
-        registry: Maps type_ids to their DatasetAttribute classes
-        type_consumer_registry: Maps types to their default DatasetAttribute
     """
 
     type_id: ClassVar[str]
@@ -381,9 +379,12 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     __type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = {}
 
     registry: typing.Mapping[str, Type["DatasetAttribute"]] = MappingProxyType(__registry)
+    """Maps type_ids to their DatasetAttribute classes."""
+
     type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = MappingProxyType(
         __type_consumer_registry
     )
+    """Maps types to their default DatasetAttribute"""
 
     def __init_subclass__(  # pylint: disable=arguments-differ
         cls, *, abstract: bool = False
