@@ -258,6 +258,24 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
 
+        config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
+        assert dev.supports_derivatives(config) is True
+        assert dev.supports_jvp(config) is True
+        assert dev.supports_vjp(config) is True
+
+        assert dev.supports_derivatives(config, qs) is True
+        assert dev.supports_jvp(config, qs) is True
+        assert dev.supports_vjp(config, qs) is True
+
+        config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=False)
+        assert dev.supports_derivatives(config) is False
+        assert dev.supports_jvp(config) is False
+        assert dev.supports_vjp(config) is False
+
+        assert dev.supports_derivatives(config, qs) is False
+        assert dev.supports_jvp(config, qs) is False
+        assert dev.supports_vjp(config, qs) is False
+
     def test_doesnt_support_adjoint_with_invalid_tape(self):
         """Tests that DefaultQubit2 does not support adjoint differentiation with invalid circuits."""
         dev = DefaultQubit2()

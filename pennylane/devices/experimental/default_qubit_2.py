@@ -170,9 +170,13 @@ class DefaultQubit2(Device):
         ):
             return True
 
-        if execution_config.gradient_method == "adjoint":
+        if (
+            execution_config.gradient_method == "adjoint"
+            and execution_config.use_device_gradient in [None, True]
+        ):
             if circuit is None:
                 return True
+
             return isinstance(validate_and_expand_adjoint(circuit), QuantumScript)
 
         return False
