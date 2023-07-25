@@ -170,7 +170,7 @@ class Device(abc.ABC):
         .. warning::
 
             This function is tracked by machine learning interfaces and should be fully differentiable.
-            The ``pennylane.math`` module can be used to construct fully differntiable transformations.
+            The ``pennylane.math`` module can be used to construct fully differentiable transformations.
 
             Additional preprocessing independent of machine learning interfaces can be done inside of
             the :meth:`~.execute` method.
