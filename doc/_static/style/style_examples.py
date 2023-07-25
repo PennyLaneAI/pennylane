@@ -34,7 +34,7 @@ def make_imag(circuit, style):
 
     plt.savefig(folder / (style + "_style.png"), transparent=False)
     plt.close()
-    qml.drawer.use_style("default")
+    qml.drawer.use_style("black_white")
 
 
 if __name__ == "__main__":
