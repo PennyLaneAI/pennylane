@@ -17,7 +17,7 @@ of Dataset attributes."""
 
 import typing
 from collections.abc import Mapping
-from typing import Dict, Generic, TypeVar, Union
+from typing import Dict, Generic, Union
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
@@ -33,8 +33,6 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 ):
     """Provides a dict-like collection for Dataset attribute types. Keys must
     be strings."""
-
-    Self = TypeVar("Self", bound="DatasetDict")
 
     type_id = "dict"
 
