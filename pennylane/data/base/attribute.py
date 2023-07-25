@@ -173,11 +173,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     Attributes:
         type_id: Unique identifier for this DatasetAttribute class. Must be declared
             in subclasses.
-        registry: Maps type_ids to their DatasetAttribute classes
-        type_consumer_registry: Maps types to their default DatasetAttribute
     """
-
-    Self = TypeVar("Self", bound="DatasetAttribute")
 
     type_id: ClassVar[str]
 
@@ -361,13 +357,13 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         if existing_type_id != self.type_id:
             raise TypeError(f"'bind' is bound to another attribute type '{existing_type_id}'")
 
-    def __copy__(self: Self) -> Self:
+    def __copy__(self) -> "DatasetAttribute":
         impl_group = hdf5.create_group()
         hdf5.copy(self.bind, impl_group, "_")
 
         return type(self)(bind=impl_group["_"])
 
-    def __deepcopy__(self: Self, memo) -> Self:
+    def __deepcopy__(self, memo) -> "DatasetAttribute":
         return self.__copy__()
 
     def __eq__(self, __value: object) -> bool:
@@ -383,9 +379,12 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     __type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = {}
 
     registry: typing.Mapping[str, Type["DatasetAttribute"]] = MappingProxyType(__registry)
+    """Maps type_ids to their DatasetAttribute classes."""
+
     type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = MappingProxyType(
         __type_consumer_registry
     )
+    """Maps types to their default DatasetAttribute"""
 
     def __init_subclass__(  # pylint: disable=arguments-differ
         cls, *, abstract: bool = False
