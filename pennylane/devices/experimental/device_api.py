@@ -37,10 +37,6 @@ class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
 
-    .. warning::
-
-        This interface is **experimental** and not yet integrated with the rest of PennyLane.
-
     Device drivers should be configured to run under :func:`~.enable_return`, the newer
     return shape specification, as the old return shape specification is deprecated.
 

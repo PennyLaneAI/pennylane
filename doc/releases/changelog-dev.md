@@ -13,10 +13,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* The documentation for `pennylane.devices.experimental.Device` is improved to clarify
-  some aspects of its use.
-  [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
-
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
@@ -161,6 +157,10 @@
 
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
   [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
+
+* The documentation for `pennylane.devices.experimental.Device` is improved to clarify
+  some aspects of its use.
+  [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
   
