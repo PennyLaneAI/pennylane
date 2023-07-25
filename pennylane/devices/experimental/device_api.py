@@ -87,6 +87,28 @@ class Device(abc.ABC):
         Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
         then the package requirements should specify the minimium PennyLane version required to work with the device.
 
+    .. details::
+        :title: The relationship between preprocessing and execution
+
+        The :meth:`~.preprocess` method is assumed to be run before any :meth:`~.execute` or differentiation method.
+        If an arbitrary, non-preprocessed circuit is provided, :meth:`~.execute` has no responsibility to perform any
+        validation or provide clearer error messages.
+
+        >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
+        >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
+        >>> dev = DefaultQubit2()
+        >>> dev.execute(circuit)
+        MatrixUndefinedError
+        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])
+        >>> config = ExecutionConfig(gradient_method="adjoint")
+        >>> dev.compute_derivatives(circuit, config)
+        ValueError: Operation Rot is not written in terms of a single parameter
+        >>> new_circuit, postprocessing, new_config = dev.preprocess(circuit, config)
+        >>> dev.compute_derivatives(new_circuit, new_config)
+        ((array(0.), array(-0.74570521), array(0.)),)
+
+        Any validation checks or error messages should occur in :meth:`~.preprocess` to avoid failures after expending
+        computation resources.
 
     .. details::
         :title: Execution Configuration
@@ -173,6 +195,34 @@ class Device(abc.ABC):
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
         * choosing a best gradient method and ``grad_on_execution`` value.
+
+        .. details::
+            :title: Post processing function and derivatives
+
+            Derivatives and jacobian products will be bound to the machine learning library before the postprocessing
+            function is called on results. Therefore the machine learning library will be responsible for combining the
+            device provided derivatives and post processing derivatives.
+
+            .. code-block:: python
+                from pennylane.interfaces.jax import execute as jax_boundary
+
+                def f(x):
+                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
+                    config = ExecutionConfig(gradient_method="adjoint")
+                    batch, fn, new_config = dev.preprocess(circuit, config)
+
+                    def execute_fn(tapes):
+                        return dev.execute_and_compute_derivatives(tapes, config)
+
+                    results = jax_boundary(batch, dev, execute_fn, None, {})
+                    return fn(results)
+
+                x = jax.numpy.array([1.0, 2.0, 3.0])
+                jax.grad(f)(x)
+
+
+            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary`` function.
+            Only then is the classical postprocessing called on the result object.
 
         """
 
