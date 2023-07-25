@@ -440,7 +440,7 @@ class TestQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        class U3(qml.U3):
+        class U3(qml.U3):  # pylint:disable=too-few-public-methods
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -1053,7 +1053,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):
+        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
 
             def decomposition(self):
@@ -1109,7 +1109,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):
+        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
 
             def decomposition(self):
