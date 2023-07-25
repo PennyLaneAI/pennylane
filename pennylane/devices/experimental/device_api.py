@@ -173,7 +173,7 @@ class Device(abc.ABC):
             The ``pennylane.math`` module can be used to construct fully differntiable transformations.
 
             Additional preprocessing independent of machine learning interfaces can be done inside of
-            the :meth:`~.execute` metod.
+            the :meth:`~.execute` method.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
