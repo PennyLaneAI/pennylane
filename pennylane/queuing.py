@@ -166,6 +166,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
+from typing import Optional
 
 
 class QueuingError(Exception):
@@ -234,7 +235,7 @@ class QueuingManager:
         return bool(cls._active_contexts)
 
     @classmethod
-    def active_context(cls):
+    def active_context(cls) -> Optional["AnnotatedQueue"]:
         """Returns the currently active queuing context."""
         return cls._active_contexts[-1] if cls.recording() else None
 
@@ -411,6 +412,10 @@ class AnnotatedQueue(OrderedDict):
         key = key if isinstance(key, WrappedObj) else WrappedObj(key)
         return super().__getitem__(key)
 
+    def __contains__(self, key):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__contains__(key)
+
 
 def apply(op, context=QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
@@ -532,7 +537,8 @@ def apply(op, context=QueuingManager):
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    if op in getattr(context, "queue", QueuingManager.active_context().queue):
+    # pylint: disable=unsupported-membership-test
+    if op in getattr(context, "queue", QueuingManager.active_context()):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)
