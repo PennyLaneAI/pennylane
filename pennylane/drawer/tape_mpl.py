@@ -223,8 +223,8 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            current matplotlib settings will be used, and the initial default is 'black_white'. If you would
-            like to use your environment's current rcParams, set `style` to "rcParams".
+            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
+            If you would like to use your environment's current rcParams, set `style` to "rcParams".
             Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
