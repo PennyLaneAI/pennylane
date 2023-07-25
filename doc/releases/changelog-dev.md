@@ -165,6 +165,10 @@
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
   [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
 
+* The documentation for `pennylane.devices.experimental.Device` is improved to clarify
+  some aspects of its use.
+  [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
+
 <h3>Bug fixes 🐛</h3>
   
 * Stop `metric_tensor` from accidentally catching errors that stem from
@@ -192,11 +196,16 @@
 * The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
   [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
-* Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
+* When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
+  `qml.drawer.use_style` instead of `black_white`.
+  [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
+
+ * Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
   an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
 
 <h3>Contributors ✍️</h3>
 
