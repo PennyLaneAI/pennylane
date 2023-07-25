@@ -845,7 +845,7 @@ class TestQubitIntegrationHigherOrder:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            max_diff=2
+            max_diff=2,
         )
 
         if diff_method == "adjoint":
@@ -1325,7 +1325,7 @@ class TestTapeExpansion:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
-                "num_directions": 10
+                "num_directions": 10,
             }
             tol = TOL_FOR_SPSA
 

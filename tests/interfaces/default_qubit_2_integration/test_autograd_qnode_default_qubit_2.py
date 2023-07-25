@@ -118,7 +118,7 @@ class TestQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -173,7 +173,7 @@ class TestQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -398,9 +398,7 @@ class TestQNode:
         """Test that operation and nested tape expansion
         is differentiable"""
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
 
         if diff_method == "spsa":
@@ -538,9 +536,7 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
 
         if diff_method == "adjoint":
@@ -574,9 +570,7 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
 
         if diff_method == "adjoint":
@@ -643,7 +637,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
@@ -691,7 +685,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -793,13 +787,11 @@ class TestQubitIntegration:
         """Test that the returned gradient value for two chained qubit QNodes
         is correct."""
         kwargs = dict(
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution
+            interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
 
         if diff_method == "spsa":
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         dev1 = dev
 
@@ -1307,15 +1299,13 @@ class TestQubitIntegration:
     def test_projector(self, interface, dev, diff_method, grad_on_execution, tol):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution
+            diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
         elif diff_method == "spsa":
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -1417,8 +1407,8 @@ class TestTapeExpansion:
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The diff method requested does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            kwargs['sampler_rng'] = np.random.default_rng(SEED_FOR_SPSA)
-            kwargs['num_directions'] = 10
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
@@ -1479,8 +1469,8 @@ class TestTapeExpansion:
         elif diff_method == "spsa":
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
-                'sampler_rng': np.random.default_rng(SEED_FOR_SPSA),
-                'num_directions': 10
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+                "num_directions": 10,
             }
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":

@@ -1524,7 +1524,7 @@ class TestTapeExpansion:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
-                "num_directions": 10
+                "num_directions": 10,
             }
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":

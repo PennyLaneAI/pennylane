@@ -973,9 +973,7 @@ class TestQubitIntegrationHigherOrder:
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
             spsa_kwargs = dict(
-                sampler_rng=np.random.default_rng(SEED_FOR_SPSA),
-                num_directions=100,
-                h=0.001
+                sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=100, h=0.001
             )
             kwargs = {**kwargs, **spsa_kwargs}
             tol = TOL_FOR_SPSA
@@ -1585,10 +1583,7 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not yet support Hamiltonians.")
         elif diff_method == "spsa":
-            gradient_kwargs = {
-                "h": H_FOR_SPSA,
-                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)
-            }
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3, shots=50000)
