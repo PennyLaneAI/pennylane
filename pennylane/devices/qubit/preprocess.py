@@ -113,10 +113,6 @@ def validate_and_expand_adjoint(
     """
 
     try:
-        # decompositions = [
-        #     list(_operator_decomposition_gen(op, _accepted_adjoint_operator)) for op in circuit._ops
-        # ]
-        # new_ops = [sub_op for decomp in decompositions for sub_op in decomp]
         new_ops = [
             final_op
             for op in circuit._ops
@@ -142,34 +138,6 @@ def validate_and_expand_adjoint(
                 UserWarning,
             )
 
-    # determine the trainable params of the expanded tape by examining the decompositions
-    # of operators corresponding to trainable params of the old tape
-
-    # trainable_params = []
-    # old_offset = len(circuit._prep)
-    # new_offset = old_offset
-    # for op, decomp in zip(circuit._ops, decompositions):
-    #     num_decomp_params = sum(len(sub_op.data) for sub_op in decomp)
-    #     trainable = [i for i in range(len(op.data)) if i + old_offset in circuit.trainable_params]
-
-    #     if len(op.data) == num_decomp_params:
-    #         trainable_params.extend(i + new_offset for i in trainable)
-    #     elif trainable:
-    #         if len(trainable) < len(op.data):
-    #             warnings.warn(
-    #                 f"Some non-trainable parameters in {op.name} will be treated as trainable "
-    #                 "in the expanded tape due to ambiguities in its decomposition.",
-    #                 UserWarning,
-    #             )
-
-    #         # let every new param be trainable if at least one old param is trainable.
-    #         # this works around cases such as U2 where we might not know which parameters
-    #         # of the decomposition corresponds to which parameters of the original op.
-    #         trainable_params.extend(i + new_offset for i in range(num_decomp_params))
-
-    #     old_offset += len(op.data)
-    #     new_offset += num_decomp_params
-
     # Check validity of measurements
     measurements = []
     for m in circuit.measurements:
@@ -187,10 +155,9 @@ def validate_and_expand_adjoint(
         measurements.append(m)
 
     expanded_tape = qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
-    # expanded_tape.trainable_params = trainable_params
 
-    parameters = expanded_tape.get_parameters(trainable_only=False, operations_only=True)
-    expanded_tape.trainable_params = qml.math.get_trainable_indices(parameters)
+    # parameters = expanded_tape.get_parameters(trainable_only=False, operations_only=True)
+    # expanded_tape.trainable_params = qml.math.get_trainable_indices(parameters)
 
     return expanded_tape
 
