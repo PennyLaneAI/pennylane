@@ -163,13 +163,16 @@ class TestQNode:
 
     def test_jacobian(self, dev_name, diff_method, grad_on_execution, mocker, tol, interface):
         """Test jacobian calculation"""
+        kwargs = dict(
+            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            np.random.seed(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         num_wires = 2
@@ -183,9 +186,7 @@ class TestQNode:
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
-        @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        @qnode(dev, **kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -724,11 +725,13 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
-
+        kwargs = dict(
+            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         num_wires = 2
@@ -741,9 +744,7 @@ class TestQubitIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        @qnode(dev, **kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -780,10 +781,13 @@ class TestQubitIntegration:
     def test_ragged_differentiation(self, dev_name, diff_method, grad_on_execution, tol, interface):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        kwargs = dict(
+            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         num_wires = 2
@@ -796,9 +800,7 @@ class TestQubitIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
-        )
+        @qnode(dev, **kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1147,12 +1149,15 @@ class TestQubitIntegration:
 
     def test_projector(self, dev_name, diff_method, grad_on_execution, tol, interface):
         """Test that the variance of a projector is correctly returned"""
+        kwargs = dict(
+            diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
         elif diff_method == "hadamard":
             pytest.skip("Variance not implemented yet.")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -1161,9 +1166,7 @@ class TestQubitIntegration:
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)
 
-        @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
-        )
+        @qnode(dev, **kwargs)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
@@ -1449,8 +1452,11 @@ class TestTapeExpansion:
         if diff_method in ("adjoint", "backprop", "hadamard"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "spsa":
-            np.random.seed(SEED_FOR_SPSA)
-            gradient_kwargs = {"h": H_FOR_SPSA}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+                "num_directions": 20
+            }
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":
             gradient_kwargs = {"h": 0.05}
