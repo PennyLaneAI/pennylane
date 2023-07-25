@@ -42,6 +42,9 @@ class grad:
     compute the gradient. The value of the forward pass is available via the
     :attr:`~.forward` property.
 
+    .. warning::
+        ``grad`` is intended to be used with the Autograd interface only.
+
     Args:
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
@@ -262,7 +265,7 @@ def jacobian(func, argnum=None):
     As we can see, there are two entries in the output, one Jacobian for each
     QNode argument. The shape ``(3, 2)`` of the first Jacobian is the combination
     of the QNode output shape (``(3,)``) and the shape of ``x`` (``(2,)``).
-    Similarily, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(3, 2, 4)``.
+    Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(3, 2, 4)``.
 
     Instead we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnum``:
@@ -313,7 +316,7 @@ def jacobian(func, argnum=None):
         if argnum is None:
             # Infer which arguments to consider trainable
             _argnum = _get_argnum(args)
-            # Infer whether to unpack from the infered argnum
+            # Infer whether to unpack from the inferred argnum
             unpack = len(_argnum) == 1
         else:
             # For a single integer as argnum, unpack the Jacobian tuple

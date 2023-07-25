@@ -120,6 +120,17 @@ class TestHardwareHamiltonian:
         ]
         assert sum_rm.settings == settings
 
+    def test__repr__(self):
+        """Test repr method returns expected string"""
+        test_example = HardwareHamiltonian(
+            coeffs=[2],
+            observables=[qml.PauliY(8)],
+            pulses=[HardwarePulse(5, 6, 7, 8)],
+            reorder_fn=_reorder_parameters,
+        )
+        str = repr(test_example)
+        assert str == "HardwareHamiltonian: terms=1"
+
     def test_add_parametrized_hamiltonian(self):
         """Tests that adding a `HardwareHamiltonian` and `ParametrizedHamiltonian` works as
         expected."""
@@ -154,6 +165,55 @@ class TestHardwareHamiltonian:
         assert all(qml.equal(op1, op2) for op1, op2 in zip(res2.ops_fixed, ops))
         assert res2.ops_parametrized == []
         assert res2.wires == qml.wires.Wires(h_wires)
+
+    @pytest.mark.parametrize("scalars", [(0.2, 1), (0.9, 0.2), (1, 5), (3, 0.5)])
+    def test_add_scalar(self, scalars):
+        """Test that adding a scalar/number to a `HardwareHamiltonian` works as expected."""
+        coeffs = [2, 3]
+        ops = [qml.PauliZ(2), qml.PauliX(0)]
+
+        H = HardwareHamiltonian(
+            coeffs=coeffs,
+            observables=ops,
+            pulses=[HardwarePulse(qml.pulse.constant, 6, 7, 8)],
+        )
+        orig_matrix = qml.matrix(H([0.3], 0.1))
+        H1 = H + scalars[0]
+        assert len(H1.ops) == len(H1.coeffs) == 3
+        assert qml.equal(H1.ops[-1], qml.Identity(2))
+        assert qml.math.allclose(qml.matrix(H1([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
+        H2 = scalars[1] + H1
+        assert len(H2.ops) == len(H2.coeffs) == 4
+        assert qml.equal(H2.ops[-2], qml.Identity(2))
+        assert qml.equal(H2.ops[-1], qml.Identity(2))
+        assert qml.math.allclose(
+            qml.matrix(H2([0.3], 0.1)), orig_matrix + np.eye(4) * (scalars[0] + scalars[1])
+        )
+        H += scalars[0]
+        assert len(H.ops) == len(H.coeffs) == 3
+        assert qml.equal(H.ops[-1], qml.Identity(2))
+        assert qml.math.allclose(qml.matrix(H([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
+
+    def test_add_zero(self):
+        """Test that adding an int or a float that is zero to a `HardwareHamiltonian`
+        returns an unchanged copy."""
+        coeffs = [2, 3]
+        ops = [qml.PauliZ(2), qml.PauliX(0)]
+
+        H = HardwareHamiltonian(
+            coeffs=coeffs,
+            observables=ops,
+            pulses=[HardwarePulse(qml.pulse.constant, 6, 7, 8)],
+        )
+        orig_matrix = qml.matrix(H([0.3], 0.1))
+        H1 = H + 0
+        assert len(H1.ops) == len(H1.coeffs) == 2
+        assert qml.math.allclose(qml.matrix(H1([0.3], 0.1)), orig_matrix)
+        assert H1 is not H
+        H2 = 0.0 + H
+        assert len(H2.ops) == len(H2.coeffs) == 2
+        assert qml.math.allclose(qml.matrix(H2([0.3], 0.1)), orig_matrix)
+        assert H2 is not H
 
     @pytest.mark.xfail
     def test_add_raises_warning(self):
@@ -285,11 +345,18 @@ class TestInteractionWithOperators:
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
+    def test_adding_scalar_does_not_queue_id(self):
+        """Test that no additional Identity operation is queued when adding a scalar."""
+        R = drive(amplitude=f1, phase=0, wires=[0, 1])
+        with qml.queuing.AnnotatedQueue() as q:
+            R += 3
+        assert len(q) == 0
+
     def test_unknown_type_raises_error(self):
         """Test that adding an invalid object to a HardwareHamiltonian raises an error."""
         R = drive(amplitude=f1, phase=0, wires=[0, 1])
         with pytest.raises(TypeError, match="unsupported operand type"):
-            R += 3
+            R += 3j
 
 
 class TestDrive:

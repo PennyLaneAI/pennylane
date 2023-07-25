@@ -430,27 +430,25 @@ class THadamard(Operation):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        subspace (Sequence[int]): the 2D subspace on which to apply the operation. This should be
-            `None` for the generalized Hadamard.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
+        subspace (Optional[Sequence[int]]): the 2D subspace on which to apply the operation.
+            This should be `None` for the generalized Hadamard.
 
     **Example**
 
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.THadamard(wires=0, subspace=[0, 1]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(0, 1)).matrix()
     array([[ 0.70710678+0.j,  0.70710678+0.j,  0.        +0.j],
            [ 0.70710678+0.j, -0.70710678+0.j,  0.        +0.j],
            [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
 
-    >>> qml.THadamard(wires=0, subspace=[0, 2]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(0, 2)).matrix()
     array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
            [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
            [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
 
-    >>> qml.THadamard(wires=0, subspace=[1, 2]).matrix()
+    >>> qml.THadamard(wires=0, subspace=(1, 2)).matrix()
     array([[ 1.        +0.j,  0.        +0.j,  0.        +0.j],
            [ 0.        +0.j,  0.70710678+0.j,  0.70710678+0.j],
            [ 0.        +0.j,  0.70710678+0.j, -0.70710678+0.j]])
@@ -467,13 +465,13 @@ class THadamard(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "TH"
 
-    def __init__(self, wires, subspace=None, do_queue=True):
+    def __init__(self, wires, subspace=None):
         self._subspace = Operation.validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue)
+        super().__init__(wires=wires)
 
     @property
     def subspace(self):
@@ -507,7 +505,7 @@ class THadamard(Operation):
 
         **Example**
 
-        >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
+        >>> print(qml.THadamard.compute_matrix(subspace=(0, 2)))
         array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
                [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
                [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])

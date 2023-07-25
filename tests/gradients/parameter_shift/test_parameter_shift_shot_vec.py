@@ -18,9 +18,9 @@ from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane._device import _process_shot_sequence, _get_num_copies
 from pennylane.gradients import param_shift
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
 
@@ -650,6 +650,7 @@ class TestParameterShiftRule:
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
+        np.random.seed(824)
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=1, shots=shot_vec)
@@ -667,9 +668,8 @@ class TestParameterShiftRule:
 
         autograd_val = fn(dev.batch_execute(tapes))
 
-        tape_fwd, tape_bwd = tape.copy(copy_operations=True), tape.copy(copy_operations=True)
-        tape_fwd.set_parameters([theta + np.pi / 2])
-        tape_bwd.set_parameters([theta - np.pi / 2])
+        tape_fwd = tape.bind_new_parameters([theta + np.pi / 2], [1])
+        tape_bwd = tape.bind_new_parameters([theta - np.pi / 2], [1])
 
         shot_vec_manual_res = dev.batch_execute([tape_fwd, tape_bwd])
 
@@ -723,10 +723,10 @@ class TestParameterShiftRule:
             s = np.zeros_like(params)
             s[idx] += np.pi / 2
 
-            tape.set_parameters(params + s)
+            tape = tape.bind_new_parameters(params + s, [1, 2, 3])
             forward = dev.execute(tape)
 
-            tape.set_parameters(params - s)
+            tape = tape.bind_new_parameters(params - s, [1, 2, 3])
             backward = dev.execute(tape)
 
             shot_vec_comp = []
@@ -2581,11 +2581,11 @@ class TestReturn:
         # One trainable param
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -2615,11 +2615,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -2649,11 +2649,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -2689,11 +2689,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 
-        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        grad_transform_shots = Shots(shot_vec)
         tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]

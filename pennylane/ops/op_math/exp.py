@@ -33,7 +33,6 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
-from pennylane.ops.qubit.attributes import has_unitary_generator_types
 from pennylane.wires import Wires
 
 from .sprod import SProd
@@ -124,7 +123,6 @@ class Exp(ScalarSymbolicOp, Operation):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str): id for the Exp operator. Default is None.
 
     **Example**
@@ -169,9 +167,16 @@ class Exp(ScalarSymbolicOp, Operation):
     control_wires = Wires([])
     _name = "Exp"
 
+    def _flatten(self):
+        return (self.base, self.data[0]), (self.num_steps,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1], num_steps=metadata[0])
+
     # pylint: disable=too-many-arguments
-    def __init__(self, base, coeff=1, num_steps=None, do_queue=True, id=None):
-        super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
+    def __init__(self, base, coeff=1, num_steps=None, id=None):
+        super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
 
@@ -244,6 +249,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return d
 
+    # pylint:disable=too-many-branches
     def _recursive_decomposition(self, base: Operator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
@@ -277,9 +283,22 @@ class Exp(ScalarSymbolicOp, Operation):
             ops = base.ops if isinstance(base, Hamiltonian) else base.operands
             return self._trotter_decomposition(ops, coeffs)
 
-        for op_class in has_unitary_generator_types:
-            # Check if the exponentiated operator is a generator of another operator
-            if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
+        # Store operator classes with generators
+        has_generator_types = []
+        has_generator_types_anywires = []
+        for op_name in qml.ops.qubit.__all__:  # pylint:disable=no-member
+            op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
+            if op_class.has_generator:
+                if op_class.num_wires == AnyWires:
+                    has_generator_types_anywires.append(op_class)
+                elif op_class.num_wires == len(base.wires):
+                    has_generator_types.append(op_class)
+        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires == AnyWires
+        has_generator_types.extend(has_generator_types_anywires)
+
+        for op_class in has_generator_types:
+            # PauliRot and PCPhase have different positional args
+            if op_class not in {qml.PauliRot, qml.PCPhase}:
                 g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
                 new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))

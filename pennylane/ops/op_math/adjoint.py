@@ -15,7 +15,6 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from functools import wraps
-import warnings
 
 import pennylane as qml
 from pennylane.math import conj, moveaxis, transpose
@@ -175,7 +174,7 @@ class Adjoint(SymbolicOp):
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
     (PauliX(wires=[0]), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
-    [1.234]
+    (1.234,)
 
     .. details::
         :title: Developer Details
@@ -209,17 +208,26 @@ class Adjoint(SymbolicOp):
     _operation_observable_type = None  # type if base inherits from both operation and observable
     _observable_type = None  # type if base inherits from observable and not operation
 
+    def _flatten(self):
+        return (self.base,), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(data[0])
+
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, do_queue=True, id=None):
+    def __new__(cls, base=None, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Adjoint", their *identity* and location in memory will
-        be different based on ``base``'s inheritance.  We cache the different types in private class
+        be different based on ``base``'s inheritance. We cache the different types in private class
         variables so that:
 
         >>> Adjoint(op).__class__ is Adjoint(op).__class__
         True
         >>> type(Adjoint(op)) == type(Adjoint(op))
+        True
+        >>> isinstance(Adjoint(op), type(Adjoint(op)))
         True
         >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
         True
@@ -251,9 +259,9 @@ class Adjoint(SymbolicOp):
 
         return object.__new__(Adjoint)
 
-    def __init__(self, base=None, do_queue=True, id=None):
+    def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, id=id)
 
     def __repr__(self):
         return f"Adjoint({self.base})"
@@ -335,14 +343,6 @@ class AdjointOperation(Operation):
     .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin
     class can be removed.
     """
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
 
     @property
     def name(self):

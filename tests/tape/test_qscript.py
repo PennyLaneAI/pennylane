@@ -27,19 +27,10 @@ from pennylane.tape import QuantumScript
 class TestInitialization:
     """Test the non-update components of intialization."""
 
-    def test_name(self):
-        """Test the name property."""
-        name = "hello"
-        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
-            qs = QuantumScript(name=name)
-            assert qs.name == name
-
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript(_update=False)
-        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
-            assert qs.name is None
         assert len(qs._ops) == 0
         assert len(qs._prep) == 0
         assert len(qs._measurements) == 0
@@ -192,7 +183,7 @@ class TestUpdate:
         assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
         assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
 
@@ -231,7 +222,7 @@ class TestUpdate:
         assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
-        assert obs_id_0 == 0 and p_id_0 == 0
+        assert obs_id_0 == 5 and p_id_0 == 0
 
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in
@@ -258,7 +249,7 @@ class TestUpdate:
     )
     def test_update_batch_size(self, x, rot, exp_batch_size):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size when creating a QuantumScript."""
 
         obs = [qml.RX(x, wires=0), qml.Rot(*rot, wires=1)]
         m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
@@ -428,17 +419,12 @@ class TestInfomationProperties:
         assert qs._specs is None
 
         assert qs.specs["resources"] == qml.resource.Resources()
-        assert qs.specs["gate_sizes"] == defaultdict(int)
-        assert qs.specs["gate_types"] == defaultdict(int)
 
-        assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
         assert qs.specs["num_diagonalizing_gates"] == 0
-        assert qs.specs["num_used_wires"] == 0
         assert qs.specs["num_trainable_params"] == 0
-        assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 9
+        assert len(qs.specs) == 4
 
         assert qs._specs is qs.specs
 
@@ -450,7 +436,7 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 9
+        assert len(specs) == 4
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
@@ -458,15 +444,9 @@ class TestInfomationProperties:
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
-
-        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
-        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
-        assert specs["depth"] == 3
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
@@ -483,18 +463,6 @@ class TestInfomationProperties:
         assert isinstance(qs.shots, Shots)
         assert qs.shots.total_shots == total_shots
         assert qs.shots.shot_vector == shot_vector
-
-    def test_specs_warning(self, make_script):
-        """Test that a deprecation warning is displayed when trying to access deprecated
-        fields of the specs dictionary."""
-        deprecated_keys = ("gate_types", "gate_sizes", "num_operations", "num_used_wires", "depth")
-
-        qs = make_script
-        specs = qs.specs
-
-        for old_key in deprecated_keys:
-            with pytest.warns(UserWarning, match=f"The {old_key} key is deprecated"):
-                _ = specs[f"{old_key}"]
 
 
 class TestScriptCopying:
@@ -534,18 +502,6 @@ class TestScriptCopying:
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
 
-        # since the copy is shallow, mutating the parameters
-        # on one tape will affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
-
-        # check that they are the same objects in memory
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert i is j
-
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
@@ -572,7 +528,6 @@ class TestScriptCopying:
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
         # the data list is copied, but the elements of the list remain th same
-        assert copied_qs.operations[0].data is not qs.operations[0].data
         assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
 
         assert qs.get_parameters() == copied_qs.get_parameters()
@@ -582,18 +537,6 @@ class TestScriptCopying:
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
-
-        # Since they have unique operations, mutating the parameters
-        # on one script will *not* affect the parameters on another script
-        new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
-
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert not np.all(i == j)
-            assert i is not j
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""

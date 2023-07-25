@@ -56,7 +56,6 @@ class ControlledQubitUnitary(ControlledOp):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on (optional if U is provided as a QubitUnitary)
         control_values (List[int, bool]): a list providing the state of the control qubits to control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the operator (default False)
-        do_queue (bool): indicates whether the operator should be recorded when created in a tape context
 
     **Example**
 
@@ -103,6 +102,12 @@ class ControlledQubitUnitary(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(
+            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+        )
+
     # pylint: disable= too-many-arguments
     def __init__(
         self,
@@ -110,7 +115,6 @@ class ControlledQubitUnitary(ControlledOp):
         control_wires,
         wires=None,
         control_values=None,
-        do_queue=True,
         unitary_check=False,
         work_wires=None,
     ):
@@ -127,20 +131,18 @@ class ControlledQubitUnitary(ControlledOp):
             control_wires,
             control_values=control_values,
             work_wires=work_wires,
-            do_queue=do_queue,
         )
         self._name = "ControlledQubitUnitary"
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
         values = None if self.control_values is None else self.control_values + [True]
-        new_op = ControlledQubitUnitary(
+        return ControlledQubitUnitary(
             self.base,
             control_wires=ctrl_wires,
             control_values=values,
             work_wires=self.work_wires,
         )
-        return new_op
 
 
 class CY(ControlledOp):
@@ -163,6 +165,8 @@ class CY(ControlledOp):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
     """
     num_wires = 2
     """int: Number of wires that the operator acts on."""
@@ -176,11 +180,18 @@ class CY(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, wires, do_queue=True, id=None):
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
+
+    def __init__(self, wires, id=None):
         control_wire, wire = wires
         base = PauliY(wire)
 
-        super().__init__(base, control_wire, do_queue=do_queue, id=id)
+        super().__init__(base, control_wire, id=id)
         self._name = "CY"
 
     @staticmethod
@@ -271,6 +282,13 @@ class CZ(ControlledOp):
 
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    def _flatten(self):
+        return tuple(), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0])
 
     def __init__(self, wires):
         control_wire, wire = wires

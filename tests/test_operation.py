@@ -59,11 +59,11 @@ class TestOperatorConstruction:
     """Test custom operators construction."""
 
     def test_operation_outside_context(self):
-        """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
-        op = qml.ops.CNOT(wires=[0, 1], do_queue=False)
+        """Test that an operation can be instantiated outside a QNode context"""
+        op = qml.ops.CNOT(wires=[0, 1])
         assert isinstance(op, qml.operation.Operation)
 
-        op = qml.ops.RX(0.5, wires=0, do_queue=True)
+        op = qml.ops.RX(0.5, wires=0)
         assert isinstance(op, qml.operation.Operation)
 
         op = qml.ops.Hadamard(wires=0)
@@ -87,7 +87,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
-            DummyOp(0.5, wires=[1, 1], do_queue=False)
+            DummyOp(0.5, wires=[1, 1])
 
     def test_num_wires_default_any_wires(self):
         """Test that num_wires is `AnyWires` by default."""
@@ -219,7 +219,7 @@ class TestOperatorConstruction:
 
         op = DummyOp(1.234, "a")
         assert op.wires[0] == "a"
-        assert op.data == [1.234]
+        assert op.data == (1.234,)
 
     def test_no_wires(self):
         """Test an error is raised if no wires are passed."""
@@ -251,7 +251,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qml.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint:disable=super-init-not-called
                 pass
 
         op = MyOp(wires=0)
@@ -266,7 +266,7 @@ class TestOperatorConstruction:
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):
+            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -293,6 +293,35 @@ class TestOperatorConstruction:
 
         with pytest.warns(UserWarning, match="The behaviour of operator hashing"):
             _ = hash(op)
+
+
+class TestPytreeMethods:
+    def test_pytree_defaults(self):
+        """Test the default behavior for the flatten and unflatten methods."""
+
+        class CustomOp(qml.operation.Operator):
+            """A dummy operation with hyperparameters."""
+
+            def __init__(self, x1, x2, wires, info):
+                self._hyperparameters = {"info": info}
+                self.i_got_initialized = True  # check initialization got called
+                super().__init__(x1, x2, wires=wires)
+
+        info = "value"
+        op = CustomOp(1.2, 2.3, wires=(0, 1), info=info)
+
+        data, metadata = op._flatten()
+        assert data == (1.2, 2.3)
+        assert len(metadata) == 2
+        assert metadata[0] == qml.wires.Wires((0, 1))
+        assert metadata[1] == (("info", "value"),)
+
+        # check metadata is hashable
+        _ = {metadata: 0}
+
+        new_op = CustomOp._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert new_op.i_got_initialized
 
 
 class TestBroadcasting:
@@ -439,7 +468,7 @@ class TestHasReprProperties:
             num_wires = 1
 
             @staticmethod
-            def compute_matrix():
+            def compute_matrix(*params, **hyperparams):
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -491,7 +520,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):
+            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
                 return [qml.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -529,7 +558,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):
+            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -845,15 +874,6 @@ class TestOperationConstruction:
 
         op = DummyOp(wires=0)
         assert op.is_hermitian is False
-
-    def test_base_name_deprecated(self):
-        """Test that the base name property raises a deprecation warning."""
-
-        class DummyOp(qml.operation.Operation):
-            pass
-
-        with pytest.warns(UserWarning, match=r"Operation.base_name is deprecated."):
-            assert DummyOp(2).base_name == "DummyOp"
 
 
 class TestObservableConstruction:
@@ -1239,6 +1259,21 @@ class TestTensor:
         ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
 
+    def test_flatten_unflatten(self):
+        """Test flattening and unflattening for tensors."""
+        op1 = qml.PauliX(0)
+        op2 = qml.Hermitian(np.eye(2), wires=1)
+        t = Tensor(op1, op2)
+
+        data, metadata = t._flatten()
+        assert qml.equal(data[0], op1)
+        assert qml.equal(data[1], op2)
+        assert not metadata
+        assert hash(metadata)
+
+        new_op = Tensor._unflatten(*t._flatten())
+        assert qml.equal(t, new_op)
+
     def test_warning_for_overlapping_wires(self):
         """Test that creating a Tensor with overlapping wires raises a warning"""
         X = qml.PauliX(0)
@@ -1379,7 +1414,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.data == [p]
+        assert t.data == (p,)
 
     def test_data_setter(self):
         """Test the data setter"""
@@ -1387,10 +1422,10 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.data == [p]
+        assert t.data == (p,)
         new_data = np.eye(4) * 6
-        t.data = [[], [new_data]]
-        assert qml.math.allequal(t.data, [new_data])
+        t.data = [(), (new_data,)]
+        assert qml.math.allequal(t.data, (new_data,))
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
@@ -2113,7 +2148,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint:disable=arguments-differ
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -2148,7 +2183,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):
+            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -2289,19 +2324,17 @@ class TestCVOperation:
 class TestStatePrep:
     """Test the StatePrep interface."""
 
+    class DefaultPrep(StatePrep):
+        """A dummy class that assumes it was given a state vector."""
+
+        # pylint:disable=unused-argument,too-few-public-methods
+        def state_vector(self, wire_order=None):
+            return self.parameters[0]
+
     # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_stateprep(self):
         """Tests a basic implementation of the StatePrep interface."""
-
-        class DefaultPrep(StatePrep):
-            """A dummy class that assumes it was given a state vector."""
-
-            num_wires = qml.operation.AllWires
-
-            def state_vector(self, wire_order=None):
-                return self.parameters[0]
-
-        prep_op = DefaultPrep([1, 0], wires=[0])
+        prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
@@ -2310,10 +2343,14 @@ class TestStatePrep:
         class NoStatePrepOp(StatePrep):
             """A class that is missing the state_vector implementation."""
 
-            num_wires = qml.operation.AllWires
+            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
+
+    def test_StatePrep_label(self):
+        """Tests that StatePrep classes by default have a psi ket label"""
+        assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
 class TestCriteria:
@@ -2541,14 +2578,14 @@ def test_docstring_example_of_operator_class(tol):
         grad_method = "A"
 
         # pylint: disable=too-many-arguments
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 
             self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
-            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+            super().__init__(angle, wires=all_wires, id=id)
 
         @property
         def num_params(self):

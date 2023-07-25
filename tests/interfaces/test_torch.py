@@ -12,25 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Torch interface"""
+# pylint: disable=protected-access,too-few-public-methods
 import numpy as np
 import pytest
-
-pytestmark = pytest.mark.torch
-
-torch = pytest.importorskip("torch")
-torch_functional = pytest.importorskip("torch.autograd.functional")
-torch_cuda = pytest.importorskip("torch.cuda")
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
+
+pytestmark = pytest.mark.torch
+torch = pytest.importorskip("torch")
+torch_functional = pytest.importorskip("torch.autograd.functional")
+torch_cuda = pytest.importorskip("torch.cuda")
 
 
 @pytest.mark.parametrize("interface", ["torch", "auto"])
 class TestTorchExecuteUnitTests:
     """Unit tests for torch execution"""
 
-    def test_jacobian_options(self, interface, mocker, tol):
+    def test_jacobian_options(self, interface, mocker):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -77,7 +77,7 @@ class TestTorchExecuteUnitTests:
         ):
             execute(
                 [tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface=interface
-            )[0]
+            )
 
     def test_grad_on_execution_reuse_state(self, interface, mocker):
         """Test that grad_on_execution uses the `device.execute_and_gradients` pathway
@@ -94,13 +94,13 @@ class TestTorchExecuteUnitTests:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res = execute(
+        execute(
             [tape],
             dev,
             gradient_fn="device",
             gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
             interface=interface,
-        )[0]
+        )
 
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
@@ -120,13 +120,13 @@ class TestTorchExecuteUnitTests:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        res = execute(
+        execute(
             [tape],
             dev,
             gradient_fn="device",
             gradient_kwargs={"method": "adjoint_jacobian"},
             interface=interface,
-        )[0]
+        )
 
         # two device executions; one for the value, one for the Jacobian
         assert dev.num_executions == 2
@@ -218,7 +218,7 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
-    def test_caching_param_shift(self, tol):
+    def test_caching_param_shift(self):
         """Test that, with the parameter-shift transform,
         Torch always uses the optimum number of evals when computing the Jacobian."""
         dev = qml.device("default.qubit", wires=1)
@@ -351,7 +351,7 @@ if torch_cuda.is_available():
     torch_devices.append(torch.device("cuda"))
 
 
-execute_kwargs = [
+execute_kwargs_integration = [
     {"gradient_fn": param_shift, "interface": "torch"},
     {
         "gradient_fn": "device",
@@ -395,7 +395,7 @@ execute_kwargs = [
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("torch_device", torch_devices)
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_integration)
 class TestTorchExecuteIntegration:
     """Test the torch interface execute function
     integrates well for both forward and backward execution"""
@@ -571,7 +571,7 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(a_val, requires_grad=True, device=torch_device)
         b = torch.tensor(b_val, requires_grad=True, device=torch_device)
 
-        tape.set_parameters([2 * a, b])
+        tape = tape.bind_new_parameters([2 * a, b], [0, 1])
         res2 = execute([tape], dev, **execute_kwargs)[0]
 
         expected = torch.tensor(
@@ -635,7 +635,7 @@ class TestTorchExecuteIntegration:
         assert isinstance(params.grad, torch.Tensor)
         assert params.shape == (2,)
 
-    def test_no_trainable_parameters(self, torch_device, execute_kwargs, tol):
+    def test_no_trainable_parameters(self, torch_device, execute_kwargs):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -708,15 +708,13 @@ class TestTorchExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
-                tape = qml.tape.QuantumTape()
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
+                return [
                     qml.Rot(lam, theta, -lam, wires=wires),
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
-                return tape
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
@@ -901,6 +899,7 @@ class TestTorchExecuteIntegration:
 
     def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
+        # pylint: disable=unused-argument
         if (
             execute_kwargs["gradient_fn"] == "device"
             and execute_kwargs["grad_on_execution"] is True
@@ -932,6 +931,7 @@ class TestTorchExecuteIntegration:
 
     def test_sampling_expval(self, torch_device, execute_kwargs):
         """Test sampling works as expected if combined with expectation values"""
+        # pylint: disable=unused-argument
         if (
             execute_kwargs["gradient_fn"] == "device"
             and execute_kwargs["grad_on_execution"] is True
@@ -961,6 +961,7 @@ class TestTorchExecuteIntegration:
 
     def test_sampling_gradient_error(self, torch_device, execute_kwargs):
         """Test differentiating a tape with sampling results in an error"""
+        # pylint: disable=unused-argument
         if (
             execute_kwargs["gradient_fn"] == "device"
             and execute_kwargs["grad_on_execution"] is True
@@ -985,9 +986,10 @@ class TestTorchExecuteIntegration:
         ):
             res.backward()
 
-    def test_repeated_application_after_expand(self, torch_device, execute_kwargs, tol):
+    def test_repeated_application_after_expand(self, torch_device, execute_kwargs):
         """Test that the Torch interface continues to work after
         tape expansions"""
+        # pylint: disable=unused-argument
         n_qubits = 2
         dev = qml.device("default.qubit", wires=n_qubits)
 
@@ -1000,7 +1002,7 @@ class TestTorchExecuteIntegration:
         tape = qml.tape.QuantumScript.from_queue(q)
 
         tape = tape.expand()
-        res1 = execute([tape], dev, **execute_kwargs)[0]
+        execute([tape], dev, **execute_kwargs)
 
 
 @pytest.mark.parametrize("torch_device", torch_devices)
@@ -1018,6 +1020,7 @@ class TestHigherOrderDerivatives:
     def test_parameter_shift_hessian(self, torch_device, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using torch, yielding second derivatives."""
+        # pylint: disable=unused-argument
         dev = qml.device("default.qubit", wires=2)
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
@@ -1204,13 +1207,13 @@ class TestHigherOrderDerivatives:
         assert torch.allclose(res.to(torch_device), expected.to(torch_device), atol=tol, rtol=0)
 
 
-execute_kwargs = [
+execute_kwargs_hamiltonian = [
     {"gradient_fn": param_shift, "interface": "torch"},
     {"gradient_fn": finite_diff, "interface": "torch"},
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_hamiltonian)
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
@@ -1268,6 +1271,7 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+        # pylint: disable=unused-argument
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False, dtype=torch.float64)
         coeffs2 = torch.tensor([0.7], requires_grad=False, dtype=torch.float64)
         weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
@@ -1285,6 +1289,7 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+        # pylint: disable=unused-argument
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True, dtype=torch.float64)
         coeffs2 = torch.tensor([0.7], requires_grad=True, dtype=torch.float64)
         weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)

@@ -30,15 +30,13 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def sum(*summands, do_queue=True, id=None, lazy=True):
+def sum(*summands, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
@@ -71,17 +69,15 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
            [ 1, -1]])
     """
     if lazy:
-        return Sum(*summands, do_queue=do_queue, id=id)
+        return Sum(*summands, id=id)
 
     summands_simp = Sum(
         *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
-        do_queue=do_queue,
         id=id,
     )
 
-    if do_queue:
-        for op in summands:
-            QueuingManager.remove(op)
+    for op in summands:
+        QueuingManager.remove(op)
 
     return summands_simp
 
@@ -90,10 +86,9 @@ class Sum(CompositeOp):
     r"""Symbolic operator representing the sum of operators.
 
     Args:
-        summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
+        *summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::
@@ -173,11 +168,12 @@ class Sum(CompositeOp):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return (
-            all(s.is_hermitian for s in self)
-            if self._pauli_rep is None
-            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
-        )
+        if self._pauli_rep is not None:
+            coeffs_list = list(self._pauli_rep.values())
+            if not math.is_abstract(coeffs_list[0]):
+                return not any(math.iscomplex(c) for c in coeffs_list)
+
+        return all(s.is_hermitian for s in self)
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.

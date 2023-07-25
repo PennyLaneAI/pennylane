@@ -55,8 +55,6 @@ class RX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -73,8 +71,8 @@ class RX(Operation):
     def generator(self):
         return -0.5 * PauliX(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -152,8 +150,6 @@ class RY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -170,8 +166,8 @@ class RY(Operation):
     def generator(self):
         return -0.5 * PauliY(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -248,8 +244,6 @@ class RZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -266,8 +260,8 @@ class RZ(Operation):
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -385,8 +379,6 @@ class PhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -403,8 +395,8 @@ class PhaseShift(Operation):
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
@@ -561,8 +553,6 @@ class Rot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -575,8 +565,8 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
-        super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, theta, omega, wires, id=None):
+        super().__init__(phi, theta, omega, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -726,8 +716,6 @@ class U1(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -743,8 +731,8 @@ class U1(Operation):
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -855,8 +843,6 @@ class U2(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -869,8 +855,8 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
-    def __init__(self, phi, delta, wires, do_queue=True, id=None):
-        super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, delta, wires, id=None):
+        super().__init__(phi, delta, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi, delta):  # pylint: disable=arguments-differ
@@ -998,8 +984,6 @@ class U3(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
@@ -1012,8 +996,8 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
-        super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, theta, phi, delta, wires, id=None):
+        super().__init__(theta, phi, delta, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta, phi, delta):  # pylint: disable=arguments-differ

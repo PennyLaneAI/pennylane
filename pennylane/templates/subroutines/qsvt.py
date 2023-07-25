@@ -121,7 +121,8 @@ def qsvt(A, angles, wires, convention=None):
 
     c, r = qml.math.shape(A)
 
-    UA = BlockEncode(A, wires=wires, do_queue=False)
+    with qml.QueuingManager.stop_recording():
+        UA = BlockEncode(A, wires=wires)
     projectors = []
 
     if convention == "Wx":
@@ -129,13 +130,20 @@ def qsvt(A, angles, wires, convention=None):
         global_phase = (len(angles) - 1) % 4
 
         if global_phase:
-            qml.exp(qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase))
+            with qml.QueuingManager.stop_recording():
+                global_phase_op = qml.exp(
+                    qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase)
+                )
 
     for idx, phi in enumerate(angles):
         dim = c if idx % 2 else r
-        projectors.append(PCPhase(phi, dim=dim, wires=wires, do_queue=False))
+        with qml.QueuingManager.stop_recording():
+            projectors.append(PCPhase(phi, dim=dim, wires=wires))
 
     projectors = projectors[::-1]  # reverse order to match equation
+
+    if convention == "Wx":
+        return qml.prod(global_phase_op, QSVT(UA, projectors))
     return QSVT(UA, projectors)
 
 
@@ -255,7 +263,15 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, UA, projectors, do_queue=True, id=None):
+    def _flatten(self):
+        data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
+        return data, tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _) -> "QSVT":
+        return cls(*data)
+
+    def __init__(self, UA, projectors, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
 
@@ -268,7 +284,7 @@ class QSVT(Operation):
         proj_wires = set.union(*(proj.wires.toset() for proj in projectors))
 
         total_wires = ua_wires.union(proj_wires)
-        super().__init__(wires=total_wires, do_queue=do_queue, id=id)
+        super().__init__(wires=total_wires, id=id)
 
     @staticmethod
     def compute_decomposition(
@@ -313,17 +329,20 @@ class QSVT(Operation):
         UA_adj = copy.copy(UA)
 
         for idx, op in enumerate(projectors[:-1]):
-            qml.apply(op)
+            if qml.QueuingManager.recording():
+                qml.apply(op)
             op_list.append(op)
 
             if idx % 2 == 0:
-                qml.apply(UA)
+                if qml.QueuingManager.recording():
+                    qml.apply(UA)
                 op_list.append(UA)
 
             else:
                 op_list.append(adjoint(UA_adj))
 
-        qml.apply(projectors[-1])
+        if qml.QueuingManager.recording():
+            qml.apply(projectors[-1])
         op_list.append(projectors[-1])
 
         return op_list
@@ -349,8 +368,8 @@ class QSVT(Operation):
         .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             tensor_like: matrix representation

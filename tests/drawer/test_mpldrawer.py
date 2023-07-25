@@ -19,6 +19,7 @@ page in the developement guide.
 """
 # pylint: disable=protected-access,wrong-import-position
 
+import warnings
 import pytest
 
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -429,6 +430,28 @@ class TestCTRL:
         assert circle.center == (0, 0)
         plt.close()
 
+    @pytest.mark.parametrize(
+        "control_wires,target_wires",
+        [
+            ((1,), (0, 2)),
+            ((0, 2), (1, 3)),
+            ((1, 3), (0, 2)),
+            ((0, 2, 4), (1, 3)),
+        ],
+    )
+    def test_ctrl_raises_warning_with_overlap(self, control_wires, target_wires):
+        """Tests that a warning is raised if some control indicators are not visible."""
+        drawer = MPLDrawer(1, 4)
+        with pytest.warns(UserWarning, match="control indicators are hidden behind an operator"):
+            drawer.ctrl(0, control_wires, target_wires)
+
+    @pytest.mark.parametrize("control_wires,target_wires", [((0,), (1, 2)), ((2,), (0, 1))])
+    def test_ctrl_no_warning_without_overlap(self, control_wires, target_wires):
+        drawer = MPLDrawer(1, 3)
+        with warnings.catch_warnings(record=True) as w:
+            drawer.ctrl(0, control_wires, target_wires)
+        assert len(w) == 0
+
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
 
@@ -737,3 +760,78 @@ class TestAutosize:
         assert self.text_in_box(drawer)
 
         plt.close()
+
+
+class TestCond:
+    """Test the cond double-wire drawing function."""
+
+    def test_cond_basic(self):
+        """Tests cond from one wire to the next."""
+        drawer = MPLDrawer(n_wires=2, n_layers=2)
+        wire_data_before = [line.get_data() for line in drawer._wire_lines]
+
+        drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
+        actual_data = [line.get_data() for line in drawer.ax.lines]
+
+        assert actual_data == [
+            ((-1, 2), (0, 0)),
+            ((-1, 2), (1, 1)),
+            ((0.375, 1.03), (-0.03, -0.03)),
+            ((0.375, 0.97), (0.03, 0.03)),
+            ((1.03, 1.03), (-0.03, 1)),
+            ((0.97, 0.97), (0.03, 1)),
+        ]
+        assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
+
+    def test_cond_two_ctrl_wires(self):
+        """Tests cond from two separated wires."""
+        drawer = MPLDrawer(n_wires=4, n_layers=2)
+        drawer.cond(layer=1, measured_layer=0, wires=[0, 2], wires_target=[3])
+        actual_data = [line.get_data() for line in drawer.ax.lines]
+
+        assert actual_data == [
+            ((-1, 2), (0, 0)),
+            ((-1, 2), (1, 1)),
+            ((-1, 2), (2, 2)),
+            ((-1, 2), (3, 3)),
+            ((0.375, 1.03), (-0.03, -0.03)),
+            ((0.375, 0.97), (0.03, 0.03)),
+            ((1.03, 1.03), (-0.03, 3)),
+            ((0.97, 0.97), (2.03, 3)),
+            ((0.97, 0.97), (0.03, 1.97)),
+            ((0.375, 0.97), (1.97, 1.97)),
+            ((0.375, 0.97), (2.03, 2.03)),
+        ]
+
+    def test_cond_two_ctrl_wires_upward(self):
+        """Test cond when the conditional operation is above the control wires."""
+        drawer = MPLDrawer(n_wires=3, n_layers=2)
+        drawer.cond(layer=1, measured_layer=0, wires=[1, 2], wires_target=[0])
+        actual_data = [line.get_data() for line in drawer.ax.lines]
+        assert actual_data == [
+            ((-1, 2), (0, 0)),
+            ((-1, 2), (1, 1)),
+            ((-1, 2), (2, 2)),
+            ((0.375, 1.03), (2.03, 2.03)),
+            ((0.375, 0.97), (1.97, 1.97)),
+            ((1.03, 1.03), (2.03, 0)),
+            ((0.97, 0.97), (0.97, 0)),
+            ((0.97, 0.97), (1.03, 1.97)),
+            ((0.375, 0.97), (0.97, 0.97)),
+            ((0.375, 0.97), (1.03, 1.03)),
+        ]
+
+    @pytest.mark.parametrize(
+        "ctrl_wires, target_wires",
+        [
+            ((1,), (0, 2)),
+            ((1, 3), (0, 2)),
+            ((0, 2), (1,)),
+            ((0, 2), (1, 3)),
+        ],
+    )
+    def test_cond_fail_with_bad_order(self, ctrl_wires, target_wires):
+        """Tests cond raises an error when the wires aren't neatly separated."""
+        drawer = MPLDrawer(n_wires=4, n_layers=2)
+        with pytest.raises(ValueError, match="Cannot draw interspersed mid-circuit measurements"):
+            drawer.cond(layer=1, measured_layer=0, wires=ctrl_wires, wires_target=target_wires)

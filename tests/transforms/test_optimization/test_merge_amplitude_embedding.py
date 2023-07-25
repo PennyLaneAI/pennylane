@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``merge_amplitude_embedding``.
+"""
 import pytest
 from pennylane import numpy as np
 
@@ -70,6 +72,25 @@ class TestMergeAmplitudeEmbedding:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
         assert qnode()[3] == 1.0
+
+    def test_broadcasting(self):
+        """Test that merging preserves the batch dimension"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        @qml.transforms.merge_amplitude_embedding
+        def qnode():
+            qml.AmplitudeEmbedding([[1, 0], [0, 1]], wires=0)
+            qml.AmplitudeEmbedding([1, 0], wires=1)
+            qml.AmplitudeEmbedding([[0, 1], [1, 0]], wires=2)
+            return qml.state()
+
+        res = qnode()
+        assert qnode.tape.batch_size == 2
+
+        # |001> and |100>
+        expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])
+        assert np.allclose(res, expected)
 
 
 class TestMergeAmplitudeEmbeddingInterfaces:
@@ -134,7 +155,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         from jax import numpy as jnp
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):

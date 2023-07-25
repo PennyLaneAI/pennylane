@@ -13,9 +13,9 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
-import pennylane as qml
+from numpy.random import default_rng
 
-import pennylane.numpy as np
+import pennylane as qml
 from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
@@ -24,7 +24,7 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
-def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
+def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.
@@ -34,6 +34,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
+        debugger (._Debugger): The debugger to use
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -56,25 +57,44 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Result:
 
     state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
 
-    for op in circuit._ops:
-        state = apply_operation(op, state)
+    # initial state is batched only if the state preparation (if it exists) is batched
+    is_state_batched = False
+    if circuit._prep and circuit._prep[0].batch_size is not None:
+        is_state_batched = True
 
-    if circuit.shots.total_shots is None:
+    for op in circuit._ops:
+        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+
+        # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
+        is_state_batched = is_state_batched or op.batch_size is not None
+
+    if not circuit.shots:
         # analytic case
 
         if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state)
+            return measure(circuit.measurements[0], state, is_state_batched=is_state_batched)
 
-        return tuple(measure(mp, state) for mp in circuit.measurements)
+        return tuple(
+            measure(mp, state, is_state_batched=is_state_batched) for mp in circuit.measurements
+        )
 
     # finite-shot case
 
     if len(circuit.measurements) == 1:
-        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
+        return measure_with_samples(
+            circuit.measurements[0],
+            state,
+            shots=circuit.shots,
+            is_state_batched=is_state_batched,
+            rng=rng,
+        )
 
-    rng = np.random.default_rng(rng)
+    rng = default_rng(rng)
     results = tuple(
-        measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
+        measure_with_samples(
+            mp, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
+        )
+        for mp in circuit.measurements
     )
 
     # no shot vector

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the qml.transforms.classical_jacobian function."""
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 
@@ -27,54 +28,53 @@ y = pnp.array([[1.0, 2.0], [4.0, 5.0]], requires_grad=True)
 z = pnp.array([2.1, -0.3, 0.62, 0.89], requires_grad=True)
 
 
-def circuit_0(a):
+def circuit_0(val):
     qml.RZ(0.2, wires=0)
-    [qml.RX(a, wires=0) for i in range(4)]
+    _ = [qml.RX(val, wires=0) for i in range(4)]
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_1(a, b):
-    qml.RX(qml.math.sin(a), wires=0)
-    qml.RZ(a / 3, wires=0)
+def circuit_1(a_, b_):
+    qml.RX(qml.math.sin(a_), wires=0)
+    qml.RZ(a_ / 3, wires=0)
     qml.CNOT(wires=[0, 1])
-    qml.RY(b**2, wires=1)
-    qml.RZ(1 / b, wires=1)
+    qml.RY(b_**2, wires=1)
+    qml.RZ(1 / b_, wires=1)
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_2(x):
-    [qml.RX(x[i], wires=0) for i in range(3)]
+def circuit_2(par):
+    _ = [qml.RX(par[i], wires=0) for i in range(3)]
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_3(x, y):
-    [qml.RX(x[i], wires=0) for i in range(3)]
-    for i in range(2):
-        [qml.RY(y[i, j], wires=1) for j in range(2)]
+def circuit_3(par0, par1):
+    _ = [qml.RX(p, wires=0) for p in par0]
+    _ = [qml.RY(p, wires=1) for par in par1 for p in par]
     return qml.expval(qml.PauliZ(0))
 
 
 perm_3 = ([2, 0, 1], [1, 2, 0, 3])
 
 
-def circuit_4(x, y):
+def circuit_4(x_, y_):
     for i in perm_3[0]:
-        qml.RX(x[i], wires=0)
+        qml.RX(x_[i], wires=0)
     for j in perm_3[1]:
-        qml.RY(y[j // 2, j % 2], wires=1)
+        qml.RY(y_[j // 2, j % 2], wires=1)
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_5(x, y, z):
-    [qml.RX(x[i], wires=0) for i in range(3)]
-    qml.RZ(y[0, 1] * y[1, 0], wires=1)
-    qml.RY(z[0] + 0.2 * z[1] ** 2, wires=1)
+def circuit_5(par0, par1, par2):
+    _ = [qml.RX(_x, wires=0) for _x in par0]
+    qml.RZ(par1[0, 1] * par1[1, 0], wires=1)
+    qml.RY(par2[0] + 0.2 * par2[1] ** 2, wires=1)
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_6(w, x):
-    [qml.RX(w[i], wires=0) for i in range(3)]
-    [qml.RX(x[i], wires=0) for i in range(3)]
+def circuit_6(par0, par1):
+    _ = [qml.RX(p, wires=0) for p in par0]
+    _ = [qml.RX(p, wires=0) for p in par1]
     return qml.expval(qml.PauliZ(0))
 
 
@@ -132,7 +132,6 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, inter
     qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
-    arg_shapes = [qml.math.shape(arg) for arg in args]
     if len(args) == 1:
         # For a single argument, the Jacobian is unpacked
         assert np.allclose(jac, expected_jac[0])

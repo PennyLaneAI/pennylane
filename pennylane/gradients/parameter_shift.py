@@ -326,21 +326,40 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def _make_zero_rep(g, single_measure, has_partitioned_shots):
+def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
-    of a gradient computation, where g is a previously computed non-zero gradient entry."""
-    if single_measure and not has_partitioned_shots:
-        zero_rep = qml.math.zeros_like(g)
-    elif single_measure:
-        zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
-    elif not has_partitioned_shots:
-        zero_rep = tuple(qml.math.zeros_like(meas_g) for meas_g in g)
+    of a gradient computation, where g is a previously computed non-zero gradient entry.
+
+    Args:
+        g (tensor_like): Gradient entry that was computed for a different parameter, from which
+            we inherit the shape and data type of the zero-valued entry to create
+        single_measure (bool): Whether the differentiated function returned a single measurement.
+        has_partitioned_shots (bool): Whether the differentiated function used a shot vector.
+        par_shapes (tuple(tuple)): Shapes of the parameter for which ``g`` is the gradient entry,
+            and of the parameter for which to create a zero-valued gradient entry, in this order.
+
+    Returns:
+        tensor_like or tuple(tensor_like) or tuple(tuple(tensor_like)): Zero-valued gradient entry
+        similar to the non-zero gradient entry ``g``, potentially adapted to differences between
+        parameter shapes if ``par_shapes`` were provided.
+
+    """
+    cut_dims, par_shape = (len(par_shapes[0]), par_shapes[1]) if par_shapes else (0, ())
+
+    if par_shapes is None:
+        zero_entry = qml.math.zeros_like
     else:
-        zero_rep = tuple(
-            tuple(qml.math.zeros_like(grad_component) for grad_component in shot_comp_g)
-            for shot_comp_g in g
-        )
-    return zero_rep
+
+        def zero_entry(grad_entry):
+            """Create a gradient entry that is zero and has the correctly modified shape."""
+            new_shape = par_shape + qml.math.shape(grad_entry)[cut_dims:]
+            return qml.math.zeros(new_shape, like=grad_entry)
+
+    if single_measure and not has_partitioned_shots:
+        return zero_entry(g)
+    if single_measure or not has_partitioned_shots:
+        return tuple(map(zero_entry, g))
+    return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
 
 
 def expval_param_shift(
@@ -370,9 +389,9 @@ def expval_param_shift(
                 saving a quantum evaluation.
             broadcast (bool): Whether or not to use parameter broadcasting to create the
                 a single broadcasted tape per operation instead of one tape per shift angle.
-            shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
-                outputted by this transform. Note that this argument doesn't influence the shots used for tape
-                execution, but provides information to the transform about the shots.
+            shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will be
+                used to execute the tapes outputted by this transform. Note that this argument doesn't influence
+                the shots used for tape execution, but provides information to the transform about the shots.
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing a
@@ -1262,12 +1281,9 @@ def param_shift(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
-        ...     qml.var(qml.PauliZ(0))
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
         [<QuantumTape: wires=[0, 1], params=3>,
@@ -1315,11 +1331,9 @@ def param_shift(
         broadcasted tapes:
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         >>> len(gradient_tapes)
         3
@@ -1389,7 +1403,7 @@ def param_shift(
     if unsupported_params:
         # If shots were provided, assume that the fallback function also takes that arg
 
-        fallback_fn = partial(fallback_fn, shots=shots) if shots.total_shots else fallback_fn
+        fallback_fn = partial(fallback_fn, shots=shots) if shots else fallback_fn
         if not argnum:
             return fallback_fn(tape)
 
@@ -1473,11 +1487,9 @@ def param_shift(
             res = fn(results)
         except (ValueError, TypeError) as e:
             raise e.__class__(
-                "The processing function of the gradient transform ran into errors "
-                "while the new return type system was turned on. Make sure to "
-                "pass the device shots to the param_shift gradient transform "
-                "using the shots argument or disable the new return type "
-                "system by calling the qml.disable_return function."
+                "The processing function of the gradient transform ran into errors. "
+                "Make sure to pass the device shots to the param_shift gradient transform "
+                "using the shots argument."
             ) from e
         return res
 
@@ -1668,12 +1680,9 @@ def _param_shift_legacy(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
-        ...     qml.var(qml.PauliZ(0))
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
         [<QuantumTape: wires=[0, 1], params=3>,
@@ -1699,11 +1708,9 @@ def _param_shift_legacy(
         broadcasted tapes:
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         >>> len(gradient_tapes)
         3

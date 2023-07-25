@@ -196,10 +196,10 @@ use the provided optimizers:
     ~pennylane.AdagradOptimizer
     ~pennylane.AdamOptimizer
     ~pennylane.GradientDescentOptimizer
-    ~pennylane.LieAlgebraOptimizer
     ~pennylane.MomentumOptimizer
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
+    ~pennylane.RiemannianGradientOptimizer
     ~pennylane.RMSPropOptimizer
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
