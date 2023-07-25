@@ -232,7 +232,7 @@ class PauliRot(Operation):
     .. note::
 
         This operation supports broadcasting of the ``pauli_word`` hyperparameter, which is an
-        experimental feature. Broadcasting over hyperparameters generically not supported in
+        experimental feature. Broadcasting over hyperparameters is generically not supported in
         PennyLane and may change behaviour in the future.
         When broadcasting both the rotation angle and the ``pauli_word`` hyperparameter, they
         are taken to be broadcasted *simultaneously* (think Python's ``zip``) and need to have
@@ -247,7 +247,7 @@ class PauliRot(Operation):
     ...     qml.PauliRot(angle, word,  wires=0)
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(circuit(0.5))
-    0.8775825618903724
+    0.7648421872844883
 
     Using broadcasting of the rotation angle:
 
