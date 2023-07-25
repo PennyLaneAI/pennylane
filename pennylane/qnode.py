@@ -20,7 +20,7 @@ import inspect
 import warnings
 from collections.abc import Sequence
 from typing import Union
-
+import logging
 
 import autograd
 
@@ -29,7 +29,6 @@ from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumTape, make_qscript
-import logging
 
 # See https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
 logger = logging.getLogger(__name__)

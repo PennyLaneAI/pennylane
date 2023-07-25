@@ -14,7 +14,7 @@ version = 1
 "()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
 
 [formatters.qml_alt_formatter]
-"()" = "pennylane.logging.formatters.formatter.LogFormatter"
+"()" = "pennylane.logging.formatters.formatter.SimpleFormatter"
 
 [formatters.local_detailed]
 format = "\u001B[38;2;45;145;210m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"

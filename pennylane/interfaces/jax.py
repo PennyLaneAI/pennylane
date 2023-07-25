@@ -16,11 +16,8 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import inspect, logging
-
-# See https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
+import inspect
+import logging
 
 import jax
 import jax.numpy as jnp
@@ -31,6 +28,9 @@ from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):

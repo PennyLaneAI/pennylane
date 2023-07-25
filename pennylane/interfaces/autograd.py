@@ -19,10 +19,6 @@ to a PennyLane Device class.
 import logging
 import inspect
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
-
-from collections.abc import Sequence
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -30,6 +26,10 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import CountsMP
 from pennylane.transforms import convert_to_numpy_parameters
+
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _execute_legacy(

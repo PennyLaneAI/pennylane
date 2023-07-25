@@ -14,3 +14,4 @@ autoray==0.3.1
 matplotlib~=3.5
 opt_einsum~=3.3
 requests~=2.28.1
+tomli~=2.0.0 # Drop once minimum Python version is 3.11

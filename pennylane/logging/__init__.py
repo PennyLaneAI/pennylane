@@ -1,1 +1,3 @@
-from .configure import configure_logging, enable_logging, TRACE
+from .configure import configure_logging
+from .configure import enable_logging
+from .configure import TRACE

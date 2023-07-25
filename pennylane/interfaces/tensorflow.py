@@ -16,6 +16,9 @@ This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,too-many-branches
+import inspect
+import logging
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager import context
@@ -24,8 +27,6 @@ import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.measurements import CountsMP, Shots
 from pennylane.transforms import convert_to_numpy_parameters
-
-import inspect, logging
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -68,7 +69,7 @@ def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
             dy,
             jacs,
             multi_measurements,
-            shots,
+            has_partitioned_shots,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
