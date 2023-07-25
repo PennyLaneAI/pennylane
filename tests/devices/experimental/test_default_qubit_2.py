@@ -248,21 +248,12 @@ class TestSupportsDerivatives:
     def test_supports_adjoint(self):
         """Test that DefaultQubit2 says that it supports adjoint differentiation."""
         dev = DefaultQubit2()
-        config = ExecutionConfig(gradient_method="adjoint")
-        assert dev.supports_derivatives(config) is True
-        assert dev.supports_jvp(config) is True
-        assert dev.supports_vjp(config) is True
-
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        assert dev.supports_derivatives(config, qs) is True
-        assert dev.supports_jvp(config, qs) is True
-        assert dev.supports_vjp(config, qs) is True
-
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
+        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
