@@ -17,7 +17,6 @@ This module contains the base quantum tape.
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
 from threading import RLock
-import warnings
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
@@ -199,7 +198,14 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_queue.append(obj)
                 continue
 
-            if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
+            elif isinstance(obj, qml.measurements.MeasurementProcess):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -243,10 +249,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): Deprecated way to give a name to the quantum tape. Avoid using.
-        do_queue (bool): Whether or not to queue.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -373,24 +375,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         measurements=None,
         prep=None,
         shots=None,
-        name=None,
-        do_queue=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        if do_queue is not None:
-            do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. "
-                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-            )
-            warnings.warn(do_queue_deprecation_warning, UserWarning)
-        self.do_queue = do_queue
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()
-        if self.do_queue or self.do_queue is None:
-            QueuingManager.append(self)
+        QueuingManager.append(self)
         QueuingManager.add_active_queue(self)
         return self
 
@@ -398,6 +390,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QueuingManager.remove_active_queue()
         QuantumTape._lock.release()
         self._process_queue()
+
+    def adjoint(self):
+        adjoint_tape = super().adjoint()
+        QueuingManager.append(adjoint_tape)
+        return adjoint_tape
 
     # ========================================================
     # construction methods

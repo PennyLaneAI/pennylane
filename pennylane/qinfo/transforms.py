@@ -49,8 +49,10 @@ def reduced_dm(qnode, wires):
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
-    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduced_dm`
+    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices = [wire_map[w] for w in wires]
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
@@ -66,7 +68,7 @@ def reduced_dm(qnode, wires):
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = dm_func(state_built, indices=wires, c_dtype=qnode.device.C_DTYPE)
+        density_matrix = dm_func(state_built, indices=indices, c_dtype=qnode.device.C_DTYPE)
         return density_matrix
 
     return wrapper
@@ -121,6 +123,8 @@ def purity(qnode, wires):
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices = [wire_map[w] for w in wires]
 
     def wrapper(*args, **kwargs):
         # Construct tape
@@ -141,7 +145,7 @@ def purity(qnode, wires):
         if not dm_measurement:
             state_built = qml.math.dm_from_state_vector(state_built)
 
-        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
+        return qml.math.purity(state_built, indices, c_dtype=qnode.device.C_DTYPE)
 
     return wrapper
 
@@ -184,6 +188,8 @@ def vn_entropy(qnode, wires, base=None):
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices = [wire_map[w] for w in wires]
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
 
@@ -205,11 +211,13 @@ def vn_entropy(qnode, wires, base=None):
                 return 0.0
 
             density_matrix = qnode(*args, **kwargs)
-            entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+            entropy = qml.math.vn_entropy(
+                density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE
+            )
             return entropy
 
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+        entropy = qml.math.vn_entropy(density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE)
         return entropy
 
     return wrapper
@@ -263,12 +271,15 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices0 = [wire_map[w] for w in wires0]
+    indices1 = [wire_map[w] for w in wires1]
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
 
     def wrapper(*args, **kwargs):
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.mutual_info(density_matrix, wires0, wires1, base=base)
+        entropy = qml.math.mutual_info(density_matrix, indices0, indices1, base=base)
         return entropy
 
     return wrapper

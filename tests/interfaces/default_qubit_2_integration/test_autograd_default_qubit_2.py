@@ -97,6 +97,28 @@ class TestCaching:
         assert tracker2.totals["executions"] == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
 
+    def test_single_backward_pass_batch(self):
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
+        is requested for multiple tapes."""
+
+        dev = DefaultQubit2()
+
+        def f(x):
+            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
+            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.probs(wires=0)])
+
+            results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
+            return results[0] + results[1]
+
+        x = qml.numpy.array(0.1)
+        with dev.tracker:
+            out = qml.jacobian(f)(x)
+
+        assert dev.tracker.totals["batches"] == 2
+        assert dev.tracker.history["executions"] == [2, 4]
+        expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
+        assert qml.math.allclose(out, expected)
+
 
 # add tests for lightning 2 when possible
 # set rng for device when possible
@@ -303,8 +325,8 @@ class TestAutogradExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-            tape.set_parameters([a, b])
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return autograd.numpy.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
@@ -405,15 +427,13 @@ class TestAutogradExecuteIntegration:
         class U3(qml.U3):
             """Dummy operator."""
 
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(

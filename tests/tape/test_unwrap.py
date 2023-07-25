@@ -19,6 +19,35 @@ import pytest
 import pennylane as qml
 
 
+def test_tapeunwrap_class_deprecation_warning():
+    """Test that a deprecation warning is raised when initializing UnwrapTape"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(UserWarning, match="The UnwrapTape class is deprecated and will be removed"):
+        _ = qml.tape.unwrap.UnwrapTape(tape)
+
+
+def test_unwrap_class_deprecation_warning():
+    """Test that a deprecation warning is raised when initializing UnwrapTape"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(UserWarning, match="The Unwrap class is deprecated and will be removed"):
+        _ = qml.tape.unwrap.Unwrap(tape)
+
+
+def test_tapeunwrap_method_deprecation_warning():
+    """Test that a deprecation warning is raised when using the tape.unwrap() method"""
+    ops = [qml.RX(0.1, 0)]
+    tape = qml.tape.QuantumTape(ops)
+
+    with pytest.warns(
+        UserWarning, match="The method tape.unwrap is deprecated and will be removed"
+    ):
+        _ = tape.unwrap()
+
+
 @pytest.mark.tf
 def test_unwrap_tensorflow():
     """Test that unwrapping a tape with TensorFlow parameters
@@ -38,7 +67,7 @@ def test_unwrap_tensorflow():
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        with tape.unwrap() as unwrapped_tape:
+        with tape.unwrap():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)
@@ -73,7 +102,7 @@ def test_unwrap_torch():
     params = tape.get_parameters(trainable_only=False)
     tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    with tape.unwrap() as unwrapped_tape:
+    with tape.unwrap():
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
         params = tape.get_parameters(trainable_only=False)
@@ -105,7 +134,7 @@ def test_unwrap_autograd():
         qml.RZ(p[3], wires=0)
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    with tape.unwrap() as unwrapped_tape:
+    with tape.unwrap():
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
         params = tape.get_parameters(trainable_only=False)
@@ -138,7 +167,7 @@ def test_unwrap_autograd_backward():
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        with tape.unwrap() as unwrapped_tape:
+        with tape.unwrap():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)
@@ -160,7 +189,6 @@ def test_unwrap_autograd_backward():
 def test_unwrap_jax():
     """Test that unwrapping a tape with JAX parameters
     works as expected"""
-    import jax
     from jax import numpy as jnp
 
     p = [
@@ -180,7 +208,7 @@ def test_unwrap_jax():
     params = tape.get_parameters(trainable_only=False)
     tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    with tape.unwrap() as unwrapped_tape:
+    with tape.unwrap():
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
         params = tape.get_parameters(trainable_only=False)
@@ -217,7 +245,7 @@ def test_unwrap_jax_backward():
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        with tape.unwrap() as unwrapped_tape:
+        with tape.unwrap():
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
             params = tape.get_parameters(trainable_only=False)

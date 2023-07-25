@@ -34,7 +34,7 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """Converts a :func:`~.QNode` to a Keras
+    """Converts a :class:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras
@@ -133,19 +133,19 @@ class KerasLayer(Layer):
                 return qlayer(x).shape
 
         >>> print_output_shape([qml.expval(qml.PauliZ(0))])
-        (5,)
+        TensorShape([5])
         >>> print_output_shape([qml.probs(wires=[0, 1])])
-        (5, 4)
+        TensorShape([5, 4])
         >>> print_output_shape([qml.sample(wires=[0, 1])])
-        (5, 100, 2)
+        TensorShape([5, 100, 2])
 
         If the QNode returns multiple measurements, then the measurement results will be flattened
         and concatenated, resulting in an output of shape ``(batch_dim, total_flattened_dim)``:
 
         >>> print_output_shape([qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])])
-        (5, 5)
+        TensorShape([5, 5])
         >>> print_output_shape([qml.probs([0, 1]), qml.sample(wires=[0, 1])])
-        (5, 204)
+        TensorShape([5, 204])
 
         **Initializing weights**
 

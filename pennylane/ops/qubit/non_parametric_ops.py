@@ -202,8 +202,8 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -357,8 +357,8 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -509,8 +509,8 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1254,10 +1254,6 @@ class ECR(Operation):
 
     Args:
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
 
@@ -2067,15 +2063,20 @@ class MultiControlledX(Operation):
 
     grad_method = None
 
+    def _flatten(self):
+        hyperparameters = (
+            ("wires", self.wires),
+            ("control_values", self.hyperparameters["control_values"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+        )
+        return tuple(), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, _, metadata):
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        work_wires=None,
-        do_queue=None,
-    ):
+    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
         if wires is None:
             raise ValueError("Must specify the wires where the operation acts on")
         if control_wires is None:
@@ -2115,7 +2116,7 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_values"] = control_values
         self.total_wires = total_wires
 
-        super().__init__(wires=self.total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires)
 
     def __repr__(self):
         return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
@@ -2354,10 +2355,10 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, wires=Wires([]), only_visual=False, do_queue=None, id=None):
+    def __init__(self, wires=Wires([]), only_visual=False, id=None):
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
@@ -2426,13 +2427,13 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
+    def __init__(self, *params, wires=None, id=None):
         if wires == []:
             raise ValueError(
                 f"{self.__class__.__name__}: wrong number of wires. "
                 f"At least one wire has to be given."
             )
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=unused-argument

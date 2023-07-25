@@ -48,7 +48,7 @@ class StronglyEntanglingLayers(Operation):
         wires (Iterable): wires that the template acts on
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if ``None``
                                 using :math:`r=l \mod M` for the :math:`l` th layer and :math:`M` wires.
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+        imprimitive (type of pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
     Example:
 
@@ -132,7 +132,7 @@ class StronglyEntanglingLayers(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=None, id=None):
+    def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
         shape = qml.math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
@@ -162,7 +162,7 @@ class StronglyEntanglingLayers(Operation):
 
         self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or qml.CNOT}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

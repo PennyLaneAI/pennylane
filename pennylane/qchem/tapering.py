@@ -24,11 +24,10 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli import simplify, pauli_sentence
-from pennylane.pauli.utils import _binary_matrix_from_pws
-from pennylane.qchem.observable_hf import jordan_wigner
-from pennylane.wires import Wires
 from pennylane.operation import active_new_opmath
+from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
+from pennylane.pauli.utils import _binary_matrix_from_pws
+from pennylane.wires import Wires
 
 # Global Variables
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
@@ -133,10 +132,10 @@ def symmetry_generators(h):
     in the Hamiltonian as given in `arXiv:1910.14644 <https://arxiv.org/abs/1910.14644>`_.
 
     Args:
-        h (~.Operator): Hamiltonian for which symmetries are to be generated to perform tapering
+        h (Operator): Hamiltonian for which symmetries are to be generated to perform tapering
 
     Returns:
-        list[~.Operator]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
+        list[Operator]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
 
     **Example**
 
@@ -188,7 +187,7 @@ def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[~.Operator]): list of generators of symmetries, :math:`\tau`'s,
+        generators (list[Operator]): list of generators of symmetries, :math:`\tau`'s,
             for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
 
@@ -232,11 +231,11 @@ def clifford(generators, paulixops):
     :math:`k` Pauli-X operators.
 
     Args:
-        generators (list[~.Operator]): generators expressed as PennyLane Hamiltonians
-        paulixops (list[~.Operation]): list of single-qubit Pauli-X operators
+        generators (list[Operator]): generators expressed as PennyLane Hamiltonians
+        paulixops (list[Operation]): list of single-qubit Pauli-X operators
 
     Returns:
-        (~.Operator): Clifford operator expressed as a PennyLane operator
+        (Operator): Clifford operator expressed as a PennyLane operator
 
     **Example**
 
@@ -285,12 +284,12 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
     Args:
         ps_h (~.PauliSentence): The Hamiltonian to be tapered
-        generators (list[~.Operator]): generators expressed as PennyLane Hamiltonians
+        generators (list[Operator]): generators expressed as PennyLane Hamiltonians
         paulixops (list[~.PauliX]): list of single-qubit Pauli-X operators
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators.
 
     Returns:
-        (~.Operator): the tapered Hamiltonian
+        (Operator): the tapered Hamiltonian
     """
 
     u = clifford(generators, paulixops)
@@ -357,13 +356,13 @@ def taper(h, generators, paulixops, paulix_sector):
     eigenvalues is defined as the Pauli sector.
 
     Args:
-        h (~.Operator): Hamiltonian as a PennyLane operator
-        generators (list[~.Operator]): generators expressed as PennyLane Hamiltonians
+        h (Operator): Hamiltonian as a PennyLane operator
+        generators (list[Operator]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
 
     Returns:
-        (~.Operator): the tapered Hamiltonian
+        (Operator): the tapered Hamiltonian
 
     **Example**
 
@@ -402,8 +401,8 @@ def optimal_sector(qubit_op, generators, active_electrons):
     act and the wires that correspond to occupied orbitals in the HF state.
 
     Args:
-        qubit_op (~.Operator): Hamiltonian for which symmetries are being generated
-        generators (list[~.Operator]): list of symmetry generators for the Hamiltonian
+        qubit_op (Operator): Hamiltonian for which symmetries are being generated
+        generators (list[Operator]): list of symmetry generators for the Hamiltonian
         active_electrons (int): The number of active electrons in the system
 
     Returns:
@@ -455,7 +454,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     and leaving the rest in state :math:`|0\rangle`.
 
     Args:
-        generators (list[~.Operator]): list of generators of symmetries, taus, for the Hamiltonian
+        generators (list[Operator]): list of generators of symmetries, taus, for the Hamiltonian
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
         num_electrons (int): number of active electrons in the system
@@ -481,17 +480,13 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
     # convert the HF state to a corresponding HF observable under the JW transform
-    fermop_terms = []
+    ferm_ps = PauliSentence({PauliWord({0: "I"}): 1.0})
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_terms = jordan_wigner([idx])
-            op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
+            ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
-            op_term = qml.Hamiltonian([1.0], [qml.Identity(idx)])
-        fermop_terms.append(op_term)
-
-    fermop_terms_as_ps = [pauli_sentence(term) for term in fermop_terms]
-    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
+            ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
+        ferm_ps *= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
@@ -752,7 +747,7 @@ def taper_operation(
     if active_new_opmath():
         raise qml.QuantumFunctionError(
             "This function is currently not supported with the new operator arithmetic "
-            "framework. Please de-activate it using `qml.disable_new_opmath()`"
+            "framework. Please de-activate it using `qml.operation.disable_new_opmath()`"
         )
 
     # maintain a flag to track functional form of the operation

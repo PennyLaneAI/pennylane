@@ -203,7 +203,16 @@ class kUpCCGSD(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, do_queue=None, id=None):
+    def _flatten(self):
+        hyperparameters = (
+            ("k", self.hyperparameters["k"]),
+            ("delta_sz", self.hyperparameters["delta_sz"]),
+            # tuple version of init_state is essentially identical, but is hashable
+            ("init_state", tuple(self.hyperparameters["init_state"])),
+        )
+        return self.data, (self.wires, hyperparameters)
+
+    def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, id=None):
         if len(wires) < 4:
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
         if len(wires) % 2:
@@ -236,8 +245,9 @@ class kUpCCGSD(Operation):
             "s_wires": s_wires,
             "d_wires": d_wires,
             "k": k,
+            "delta_sz": delta_sz,
         }
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -245,8 +255,14 @@ class kUpCCGSD(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, s_wires, d_wires, k, init_state
-    ):  # pylint: disable=arguments-differ
+        weights,
+        wires,
+        s_wires,
+        d_wires,
+        k,
+        init_state,
+        delta_sz=None,
+    ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

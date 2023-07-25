@@ -14,6 +14,7 @@
 """
 Unit tests for the the arithmetic qubit operations
 """
+# pylint: disable=too-many-arguments
 import copy
 import itertools
 
@@ -85,8 +86,8 @@ class TestQubitCarry:
         spy = mocker.spy(qml.QubitCarry, "decomposition")
 
         with qml.queuing.AnnotatedQueue() as q:
-            for i in range(len(input_string)):
-                if input_string[i] == "1":
+            for i, letter in enumerate(input_string):
+                if letter == "1":
                     qml.PauliX(i)
             qml.QubitCarry(wires=wires)
             qml.probs(wires=[0, 1, 2, 3])
@@ -190,17 +191,15 @@ class TestQubitSum:
         dev = qml.device("default.qubit", wires=3)
         spy = mocker.spy(qml.QubitSum, "decomposition")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(input_state, wires=[0, 1, 2])
+        if expand:
+            ops = [
+                qml.QubitStateVector(input_state, wires=[0, 1, 2]),
+                *qml.QubitSum(wires=wires).expand(),
+            ]
+        else:
+            ops = [qml.QubitStateVector(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
 
-            if expand:
-                qml.QubitSum(wires=wires).expand()
-            else:
-                qml.QubitSum(wires=wires)
-
-            qml.state()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(ops, [qml.state()])
         result = dev.execute(tape)
         assert np.allclose(result, output_state)
 
@@ -245,6 +244,33 @@ class TestQubitSum:
 
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Tests the flatten and unflatten methods"""
+        wires = qml.wires.Wires((0, 1, 2, 3))
+        work_wires = qml.wires.Wires(4)
+        op = qml.IntegerComparator(
+            2,
+            geq=False,
+            wires=(0, 1, 2, 3),
+            work_wires=(4),
+        )
+
+        data, metadata = op._flatten()
+        assert data == tuple()
+        assert len(metadata) == 2
+        assert metadata[0] == wires
+        assert metadata[1][0] == ("work_wires", work_wires)
+        assert metadata[1][1] == ("value", 2)
+        assert metadata[1][2] == ("geq", False)
+
+        # check hashable
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(new_op, op)
+        assert new_op is not op
 
     @pytest.mark.parametrize(
         "value,geq,wires,work_wires,expected_error_message",
@@ -431,6 +457,7 @@ class TestIntegerComparator:
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.Identity) for op in tape2.operations)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qml.IntegerComparator(3, wires=[0, 1, 2, 3])

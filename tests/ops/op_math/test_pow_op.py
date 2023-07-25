@@ -56,16 +56,6 @@ class TestConstructor:
         assert isinstance(op, Pow)
         assert isinstance(op.base, TempOperator)
 
-    @pytest.mark.parametrize("do_queue", [True, False])
-    def test_pow_do_queue_deprecation(self, do_queue):
-        """Test that a deprecation warning is given, when do_queue is not set to ``None``."""
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-        with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-            qml.pow(qml.PauliX(0), 2, lazy=False, do_queue=do_queue)
-
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
     def test_nonlazy_identity_simplification(self, op):
         """Test that nonlazy pow returns a single identity if the power decomposes
@@ -86,7 +76,7 @@ class TestConstructor:
                 return [qml.S(0), qml.T(0)]
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
-        assert isinstance(new_op, qml.ops.Prod)
+        assert isinstance(new_op, qml.ops.Prod)  # pylint:disable=no-member
         assert qml.equal(new_op.operands[0], qml.S(0))
         assert qml.equal(new_op.operands[1], qml.T(0))
 
@@ -217,7 +207,7 @@ class TestInitialization:
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        params = rng.random(shape)
+        params = rng.random(shape)  # pylint:disable=no-member
 
         base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
         op: Pow = power_method(base=base, z=2.67)
@@ -415,7 +405,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
+        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)  # pylint:disable=no-member
         assert pow_op.arithmetic_depth == 2
 
     def test_simplify_nested_pow_ops(self):
@@ -455,15 +445,15 @@ class TestSimplify:
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.SProd)
+        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
-        pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(base=qml.PauliX(0), control_wires=1, id=3)
+        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
+        final_op = ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3)
         simplified_op = pow_op.simplify()
 
         assert isinstance(simplified_op, ControlledOp)
@@ -491,6 +481,25 @@ class TestMiscMethods:
         base = qml.RX(1, 0) + qml.S(1)
         op = Pow(base, 2.5)
         assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Test the _flatten and _unflatten methods."""
+
+        target = qml.S(0)
+        z = -0.5
+        op = Pow(target, z)
+        data, metadata = op._flatten()
+
+        assert len(data) == 2
+        assert data[0] is target
+        assert data[1] == z
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert new_op is not op
+        assert qml.equal(new_op, op)
 
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
@@ -612,20 +621,6 @@ class TestQueueing:
 
         assert len(q) == 1
         assert q.queue[0] is op
-
-    def test_do_queue_False(self):
-        """Test that when `do_queue` is specified, the operation is not queued."""
-        base = qml.PauliX(0)
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-                _ = Pow(base, 4.5, do_queue=False)
-
-        assert len(q) == 0
 
 
 class TestMatrix:
@@ -896,15 +891,6 @@ class TestDecompositionExpand:
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestOperationProperties:
     """Test Operation specific properties."""
-
-    def test_base_name_deprecated(self, power_method):
-        """Tests that the base_name property is deprecated."""
-
-        class DummyOp(qml.operation.Operation):
-            """Dummy op."""
-
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert power_method(DummyOp(2), 2).base_name == "DummyOp**2"
 
     def test_basis(self, power_method):
         """Test that the basis attribute is the same as the base op's basis attribute."""

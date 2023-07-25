@@ -28,7 +28,7 @@ from pennylane.queuing import QueuingManager
 from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, lazy=True, do_queue=None, id=None):
+def s_prod(scalar, operator, lazy=True, id=None):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -38,9 +38,6 @@ def s_prod(scalar, operator, lazy=True, do_queue=None, id=None):
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
-        do_queue (bool): determines if the scalar product operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
@@ -76,13 +73,10 @@ def s_prod(scalar, operator, lazy=True, do_queue=None, id=None):
            [ 2., 0.]])
     """
     if lazy or not isinstance(operator, SProd):
-        return SProd(scalar, operator, do_queue=do_queue, id=id)
+        return SProd(scalar, operator, id=id)
 
-    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
-
-    if do_queue or do_queue is None:
-        QueuingManager.remove(operator)
-
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, id=id)
+    QueuingManager.remove(operator)
     return sprod_op
 
 
@@ -95,10 +89,6 @@ class SProd(ScalarSymbolicOp):
         base (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
-        do_queue (bool): determines if the scalar product operator will be queued
-            (currently not supported).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the scalar product operator. Default is None.
 
     .. note::
@@ -139,8 +129,15 @@ class SProd(ScalarSymbolicOp):
     """
     _name = "SProd"
 
-    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=None, id=None):
-        super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
+    def _flatten(self):
+        return (self.scalar, self.base), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(data[0], data[1])
+
+    def __init__(self, scalar: Union[int, float, complex], base: Operator, id=None):
+        super().__init__(base=base, scalar=scalar, id=id)
 
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
             scalar = copy(self.scalar)

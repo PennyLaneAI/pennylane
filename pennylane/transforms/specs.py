@@ -88,20 +88,23 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
-            * ``"num_operations"``
-            * ``"num_observables"``
-            * ``"num_diagonalizing_gates"``
-            * ``"gate_sizes"``: dictionary mapping gate number of wires to number of occurances
-            * ``"gate_types"``: dictionary mapping gate types to number of occurances
+            * ``"num_operations"`` number of operations in the qnode
+            * ``"num_observables"`` number of observables in the qnode
+            * ``"num_diagonalizing_gates"`` number of diagonalizing gates required for execution of the qnode
+            * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
             * ``"num_used_wires"``: number of wires used by the circuit
             * ``"num_device_wires"``: number of wires in device
             * ``"depth"``: longest path in directed acyclic graph representation
-            * ``"dev_short_name"``: name of QNode device
-            * ``"diff_method"``
+            * ``"device_name"``: name of QNode device
+            * ``"expansion_strategy"``: string specifying method for decomposing operations in the circuit
+            * ``"gradient_options"``: additional configurations for gradient computations
+            * ``"interface"``: autodiff framework to dispatch to for the qnode execution
+            * ``"diff_method"``: a string specifying the differntiation method
+            * ``"gradient_fn"``: executable to compute the gradient of the qnode
 
         Potential Additional Information:
             * ``"num_trainable_params"``: number of individual scalars that are trainable
-            * ``"num_parameter_shift_executions"``: number of times circuit will execute when
+            * ``"num_gradient_executions"``: number of times circuit will execute when
                     calculating the derivative
 
         Returns:

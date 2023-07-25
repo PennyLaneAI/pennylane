@@ -100,7 +100,13 @@ class DisplacementEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=None, id=None):
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        Operation.__init__(new_op, *data, wires=metadata[0])
+        return new_op
+
+    def __init__(self, features, wires, method="amplitude", c=0.1, id=None):
         shape = qml.math.shape(features)
         constants = [c] * shape[0]
         constants = qml.math.convert_like(constants, features)
@@ -121,7 +127,7 @@ class DisplacementEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize method {method}")
 
-        super().__init__(pars, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(pars, wires=wires, id=id)
 
     @property
     def num_params(self):

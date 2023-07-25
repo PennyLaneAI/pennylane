@@ -102,7 +102,7 @@ class TestInitialization:
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
-        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=None, id=test_id)
+        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), id=test_id)
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
@@ -191,6 +191,24 @@ class TestMscMethods:
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
+
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("op_scalar_tup", ops)
+    def test_flatten_unflatten(self, op_scalar_tup):
+        scalar, op = op_scalar_tup
+        sprod_op = SProd(scalar, op)
+
+        data, metadata = sprod_op._flatten()
+
+        assert len(data) == 2
+        assert data[0] == scalar
+        assert data[1] is op
+
+        assert metadata == tuple()
+
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
+        assert qml.equal(new_op, sprod_op)
+        assert new_op is not sprod_op
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):

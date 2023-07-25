@@ -308,8 +308,8 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-            tape.set_parameters([a, b])
-            return jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
         jac = jac_fn(a, b)
@@ -384,16 +384,13 @@ class TestJaxExecuteIntegration:
         class U3(qml.U3):
             """Dummy operator."""
 
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ],
-                    shots=shots,
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(

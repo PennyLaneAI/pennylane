@@ -16,7 +16,6 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
-import warnings
 
 from scipy.linalg import fractional_matrix_power
 
@@ -37,7 +36,7 @@ from .symbolicop import ScalarSymbolicOp, SymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, do_queue=None, id=None):
+def pow(base, z=1, lazy=True, id=None):
     """Raise an Operator to a power.
 
     Args:
@@ -47,10 +46,6 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -93,11 +88,11 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
 
     """
     if lazy:
-        return Pow(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, id=id)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, id=id)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
@@ -106,16 +101,7 @@ def pow(base, z=1, lazy=True, do_queue=None, id=None):
         pow_op = pow_ops[0]
     else:
         pow_op = qml.prod(*pow_ops)
-
-    if do_queue is not None:
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-        warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-    if do_queue or do_queue is None:
-        QueuingManager.remove(base)
+    QueuingManager.remove(base)
 
     return pow_op
 
@@ -133,14 +119,6 @@ class PowOperation(Operation):
 
     # until we add gradient support
     grad_method = None
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
 
     @property
     def name(self):
@@ -180,12 +158,19 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    def _flatten(self):
+        return (self.base, self.z), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return pow(data[0], z=data[1])
+
     _operation_type = None  # type if base inherits from operation and not observable
     _operation_observable_type = None  # type if base inherits from both operation and observable
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, z=1, do_queue=None, id=None):
+    def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
@@ -226,11 +211,11 @@ class Pow(ScalarSymbolicOp):
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, do_queue=None, id=None):
+    def __init__(self, base=None, z=1, id=None):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
             if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (

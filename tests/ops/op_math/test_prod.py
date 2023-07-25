@@ -122,7 +122,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=None, id=id)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert prod_op.wires == Wires((0, "a"))
         assert prod_op.num_wires == 2
@@ -216,7 +216,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=None)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
         assert prod_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
@@ -224,7 +224,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         but is a Hamiltonian has `has_matrix=True`."""
 
         H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
-        prod_op = prod(H, qml.RZ(0.23, wires=5), do_queue=None)
+        prod_op = prod(H, qml.RZ(0.23, wires=5))
         assert prod_op.has_matrix is True
 
     @pytest.mark.parametrize(
@@ -234,7 +234,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators of which one does not have `has_matrix=True`
         has `has_matrix=False`."""
 
-        prod_op = prod(first_factor, MyOp(0.23, wires="a"), do_queue=None)
+        prod_op = prod(first_factor, MyOp(0.23, wires="a"))
         assert prod_op.has_matrix is False
 
     @pytest.mark.parametrize(
@@ -253,7 +253,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        prod_op = prod(*factors, do_queue=None)
+        prod_op = prod(*factors)
         assert prod_op.has_adjoint is True
 
     @pytest.mark.parametrize(
@@ -272,7 +272,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_decomposition=True`
         has `has_decomposition=True` as well."""
 
-        prod_op = prod(*factors, do_queue=None)
+        prod_op = prod(*factors)
         assert prod_op.has_decomposition is True
 
     @pytest.mark.parametrize(
@@ -291,7 +291,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
-        prod_op = prod(*factors, do_queue=None)
+        prod_op = prod(*factors)
         assert prod_op.has_diagonalizing_gates is True
 
     @pytest.mark.parametrize(
@@ -306,14 +306,14 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
-        prod_op = prod(*factors, do_queue=None)
+        prod_op = prod(*factors)
         assert prod_op.has_diagonalizing_gates is True
 
     def test_has_diagonalizing_gates_false_via_factor(self):
         """Test that a product of operators of which one has
         `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
 
-        prod_op = prod(MyOp(3.1, 0), qml.PauliX(2), do_queue=None)
+        prod_op = prod(MyOp(3.1, 0), qml.PauliX(2))
         assert prod_op.has_diagonalizing_gates is False
 
     def test_qfunc_init(self):
@@ -354,11 +354,8 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.CNOT([0, 1])
 
         prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_op = prod_gen(1.1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            prod_op = prod_gen(1.1)
-
-        assert prod_op not in q  # do_queue worked
         assert prod_op.id == 123987  # id was set
         assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 

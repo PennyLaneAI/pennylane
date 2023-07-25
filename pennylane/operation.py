@@ -420,9 +420,6 @@ class Operator(abc.ABC):
         *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -451,8 +448,7 @@ class Operator(abc.ABC):
             # we request parameter-shift (or "analytic") differentiation.
             grad_method = "A"
 
-            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                               do_queue=None, id=None):
+            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
 
                 # checking the inputs --------------
 
@@ -474,11 +470,7 @@ class Operator(abc.ABC):
                 # The parent class expects all trainable parameters to be fed as positional
                 # arguments, and all wires acted on fed as a keyword argument.
                 # The id keyword argument allows users to give their instance a custom name.
-                # The do_queue keyword argument specifies whether or not
-                # the operator is queued when created in a tape context.
-                # Note that do_queue is deprecated. In the future, please use
-                # qml.QueuingManager.stop_recording().
-                super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+                super().__init__(angle, wires=all_wires, id=id)
 
             @property
             def num_params(self):
@@ -525,6 +517,31 @@ class Operator(abc.ABC):
     >>> a = np.array(3.14)
     >>> circuit(a)
     -0.9999987318946099
+
+    .. details::
+        :title: Serialization and Pytree format
+        :href: serialization
+
+        PennyLane operations are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
+
+        For most operators, this process will happen automatically without need for custom implementations.
+
+        Customization of this process must occur if:
+
+        * The data and hyperparameters are insufficient to reproduce the original operation via its initialization
+        * The hyperparameters contain a non-hashable component, such as a list or dictionary.
+
+        Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
+        perform preprocessing during initialization.
+
+        See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
+
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
 
     .. details::
         :title: Parameter broadcasting
@@ -705,7 +722,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`.Operator.matrix` and :func:`qml.matrix`
+        .. seealso:: :meth:`.Operator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -808,7 +825,7 @@ class Operator(abc.ABC):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Operator.eigvals` and :func:`~.eigvals`
+        .. seealso:: :meth:`Operator.eigvals() <.eigvals>` and :func:`qml.eigvals() <pennylane.eigvals>`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -973,7 +990,7 @@ class Operator(abc.ABC):
         param_string = ",\n".join(_format(p) for p in params)
         return f"{op_label}\n({param_string})"
 
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
+    def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
@@ -1026,15 +1043,7 @@ class Operator(abc.ABC):
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
-        if do_queue is not None:
-            do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. Instead of setting "
-                "it to False, use qml.queuing.QueuingManager.stop_recording()"
-            )
-            warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-        if do_queue or do_queue is None:
-            self.queue()
+        self.queue()
 
     def _check_batching(self, params):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1406,7 +1415,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        qscript = qml.tape.make_qscript(self.decomposition)()
+        qscript = qml.tape.QuantumScript(self.decomposition())
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1495,6 +1504,71 @@ class Operator(abc.ABC):
             return qml.pow(self, z=other)
         return NotImplemented
 
+    def _flatten(self):
+        """Serialize the operation into trainable and non-trainable components.
+
+        Returns:
+            data, metadata: The trainable and non-trainable components.
+
+        See ``Operator._unflatten``.
+
+        The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
+        will be the operator ``RX(1, wires=0)``.
+
+        The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> qml.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
+        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        ``_flatten`` methods.
+
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op._flatten()
+        ((U2(3.4, 4.5, wires=['a']),),
+        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+
+        """
+        hashable_hyperparameters = tuple(
+            (key, value) for key, value in self.hyperparameters.items()
+        )
+        return self.data, (self.wires, hashable_hyperparameters)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        """Recreate an operation from its serialized format.
+
+        Args:
+            data: the trainable component of the operation
+            metadata: the non-trainable component of the operation.
+
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten()
+        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> type(op)._unflatten(*op._flatten())
+        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+
+        """
+        hyperparameters_dict = dict(metadata[1])
+        return cls(*data, wires=metadata[0], **hyperparameters_dict)
+
 
 # =============================================================================
 # Base Operation class
@@ -1526,9 +1600,6 @@ class Operation(Operator):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This argument is deprecated,
-            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1659,17 +1730,8 @@ class Operation(Operator):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    @property
-    def base_name(self):
-        """Holdover from when in-place inversion changed then name. To be removed."""
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self.__class__.__name__
-
-    def __init__(self, *params, wires=None, do_queue=None, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
@@ -1687,9 +1749,6 @@ class Channel(Operation, abc.ABC):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This argument is deprecated,
-            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1759,9 +1818,6 @@ class Observable(Operator):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This argument is deprecated,
-            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1836,6 +1892,8 @@ class Observable(Operator):
 
         for ob in obs:
             parameters = tuple(param.tobytes() for param in ob.parameters)
+            if isinstance(ob, qml.GellMann):
+                parameters += (ob.hyperparameters["index"],)
             tensor.add((ob.name, ob.wires, parameters))
 
         return tensor
@@ -1938,6 +1996,13 @@ class Tensor(Observable):
     return_type = None
     tensor = True
     has_matrix = True
+
+    def _flatten(self):
+        return tuple(self.obs), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         wires = [op.wires for op in args]
@@ -2569,9 +2634,6 @@ class CVOperation(CV, Operation):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context. This argument is deprecated,
-            instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -2695,9 +2757,6 @@ class CVObservable(CV, Observable):
        params (tuple[tensor_like]): trainable parameters
        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
            If not given, args[-1] is interpreted as wires.
-       do_queue (bool): indicates whether the operator should be
-           recorded when created in a tape context. This argument is deprecated,
-           instead of setting it to ``False`` use :meth:`~.queuing.QueuingManager.stop_recording`.
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
@@ -2745,6 +2804,9 @@ class StatePrep(Operation):
         Returns:
             array: A state vector for all wires in a circuit
         """
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return "|Ψ⟩"
 
 
 def operation_derivative(operation) -> np.ndarray:
@@ -2883,7 +2945,7 @@ def disable_new_opmath():
     True
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.disable_new_opmath()
+    >>> qml.operation.disable_new_opmath()
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.operation.Tensor'>
     """

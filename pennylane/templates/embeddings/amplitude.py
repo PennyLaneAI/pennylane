@@ -51,9 +51,6 @@ class AmplitudeEmbedding(Operation):
         wires (Any or Iterable[Any]): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
-        do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 
@@ -126,12 +123,12 @@ class AmplitudeEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, pad_with=None, normalize=False, do_queue=None, id=None):
+    def __init__(self, features, wires, pad_with=None, normalize=False, id=None):
         wires = Wires(wires)
         self.pad_with = pad_with
         self.normalize = normalize
         features = self._preprocess(features, wires, pad_with, normalize)
-        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, wires=wires, id=id)
 
     @property
     def num_params(self):

@@ -16,6 +16,9 @@ Contains the MERA template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
+from typing import Callable
+
+
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
@@ -93,7 +96,7 @@ def compute_indices(wires, n_block_wires):
                 + wires_list[list_len - n_elements_pre][0 : n_block_wires // 2]
             )
             wires_list = wires_list + new_list
-    return wires_list[::-1]
+    return tuple(tuple(l) for l in wires_list[::-1])
 
 
 class MERA(Operation):
@@ -172,14 +175,20 @@ class MERA(Operation):
     def num_params(self):
         return 1
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._hyperparameters = dict(metadata[1])
+        Operation.__init__(new_op, data, wires=metadata[0])
+        return new_op
+
     def __init__(
         self,
         wires,
         n_block_wires,
-        block,
+        block: Callable,
         n_params_block,
         template_weights=None,
-        do_queue=None,
         id=None,
     ):
         ind_gates = compute_indices(wires, n_block_wires)
@@ -188,7 +197,7 @@ class MERA(Operation):
         n_blocks = int(2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3)
 
         if shape == ():
-            template_weights = np.random.rand(n_params_block, int(n_blocks))
+            template_weights = np.random.rand(n_params_block, n_blocks)
 
         else:
             if shape[0] != n_blocks:
@@ -202,7 +211,7 @@ class MERA(Operation):
 
         self._hyperparameters = {"ind_gates": ind_gates, "block": block}
 
-        super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(
