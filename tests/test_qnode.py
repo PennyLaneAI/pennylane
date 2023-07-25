@@ -76,7 +76,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.probs(wires=0)
 
-        assert circuit.device.short_name == "default.qubit"
+        assert circuit.device.short_name == "default.qubit.autograd"
         assert circuit.gradient_fn == "backprop"
 
         circuit.interface = "torch"
@@ -537,7 +537,7 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit', interface='autograd', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
     @pytest.mark.autograd
@@ -1268,7 +1268,7 @@ class TestIntegration:
         with qml.queuing.AnnotatedQueue() as q:
             circuit()
 
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(circuit.tape.operations) == 1
 
 
@@ -1734,11 +1734,8 @@ class TestTapeExpansion:
 
             num_wires = 1
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RX(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RX(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(x):
@@ -1773,11 +1770,8 @@ class TestTapeExpansion:
             grad_method = "A"
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RX(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RX(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
         def circuit(x):
@@ -1818,11 +1812,8 @@ class TestTapeExpansion:
 
             grad_method = None
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):

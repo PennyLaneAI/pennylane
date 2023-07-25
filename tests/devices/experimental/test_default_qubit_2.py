@@ -29,6 +29,15 @@ def test_name():
     assert DefaultQubit2().name == "default.qubit.2"
 
 
+def test_shots():
+    """Test the shots property of DefaultQubit2."""
+    assert DefaultQubit2().shots == qml.measurements.Shots(None)
+    assert DefaultQubit2(shots=100).shots == qml.measurements.Shots(100)
+
+    with pytest.raises(AttributeError):
+        DefaultQubit2().shots = 10
+
+
 def test_no_jvp_functionality():
     """Test that jvp is not supported on DefaultQubit2."""
     dev = DefaultQubit2()

@@ -49,12 +49,13 @@ def _convert_to_interface(res, interface):
     return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
 
 
+# pylint: disable=protected-access
 def _get_device_shots(device) -> Shots:
-    if isinstance(device, qml.devices.experimental.Device):
-        return device.shots
-    if device.shot_vector:
-        return Shots(device._raw_shot_sequence)
-    return Shots(device.shots)
+    if isinstance(device, Device):
+        if device._shot_vector:
+            return Shots(device._raw_shot_sequence)
+        return Shots(device.shots)
+    return device.shots
 
 
 class QNode:
@@ -481,9 +482,7 @@ class QNode:
         self.gradient_kwargs = {}
         self._tape_cached = False
 
-        original_device = self.device
-        self._update_gradient_fn(shots=_get_device_shots(self.device))
-        self.device = original_device
+        self._update_gradient_fn()
         functools.update_wrapper(self, func)
         self._transform_program = qml.transforms.core.TransformProgram()
 
@@ -513,7 +512,7 @@ class QNode:
             )
 
         self._interface = INTERFACE_MAP[value]
-        self._update_gradient_fn(shots=_get_device_shots(self.device))
+        self._update_gradient_fn()
 
     @property
     def transform_program(self):
@@ -530,7 +529,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    def _update_gradient_fn(self, shots=Shots(None)):
+    def _update_gradient_fn(self, shots=None):
         if self.diff_method is None:
             self._interface = None
             self.gradient_fn = None
@@ -549,30 +548,31 @@ class QNode:
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
-            self.device, self.interface, self.diff_method, shots=shots
+            self._original_device, self.interface, self.diff_method, shots=shots
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
-    def _update_original_device(self, original_device, substituted_device):
+    def _update_original_device(self):
         # FIX: If the qnode swapped the device, increase the num_execution value on the original device.
         # In the long run, we should make sure that the user's device is the one
         # actually run so she has full control. This could be done by changing the class
         # of the user's device before and after executing the tape.
-        if substituted_device is not original_device:
+
+        if self.device is not self._original_device:
             if not self._tape_cached:
-                original_device._num_executions += 1  # pylint: disable=protected-access
+                self._original_device._num_executions += 1  # pylint: disable=protected-access
 
             # Update for state vector simulators that have the _pre_rotated_state attribute
-            if hasattr(original_device, "_pre_rotated_state"):
-                original_device._pre_rotated_state = substituted_device._pre_rotated_state
+            if hasattr(self._original_device, "_pre_rotated_state"):
+                self._original_device._pre_rotated_state = self.device._pre_rotated_state
 
             # Update for state vector simulators that have the _state attribute
-            if hasattr(original_device, "_state"):
-                original_device._state = substituted_device._state
+            if hasattr(self._original_device, "_state"):
+                self._original_device._state = self.device._state
 
     # pylint: disable=too-many-return-statements
     @staticmethod
-    def get_gradient_fn(device, interface, diff_method="best", shots=Shots(None)):
+    def get_gradient_fn(device, interface, diff_method="best", shots=None):
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
@@ -627,7 +627,7 @@ class QNode:
         )
 
     @staticmethod
-    def get_best_method(device, interface, shots=Shots(None)):
+    def get_best_method(device, interface, shots=None):
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
 
@@ -701,8 +701,9 @@ class QNode:
         return transform
 
     @staticmethod
-    def _validate_backprop_method(device, interface, shots=Shots(None)):
-        if shots or device.shots:
+    def _validate_backprop_method(device, interface, shots=None):
+        if shots is not None or _get_device_shots(device):
+            print(shots, _get_device_shots(device))
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
         if isinstance(device, qml.devices.experimental.Device):
@@ -717,6 +718,7 @@ class QNode:
 
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
+
         if backprop_interface is not None:
             # device supports backpropagation natively
 
@@ -741,12 +743,16 @@ class QNode:
 
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
-                new_device = qml.device(backprop_devices[mapped_interface], wires=device.wires)
-                new_device.expand_fn = device.expand_fn
-                new_device.batch_transform = device.batch_transform
-                if device._debugger:
-                    new_device._debugger = device._debugger
-                return "backprop", {}, new_device
+                expand_fn = device.expand_fn
+                batch_transform = device.batch_transform
+
+                device = qml.device(
+                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
+                )
+                device.expand_fn = expand_fn
+                device.batch_transform = batch_transform
+
+                return "backprop", {}, device
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
@@ -828,16 +834,19 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
-    def construct(self, args, kwargs, shots="unset"):  # pylint: disable=too-many-branches
+    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
-        shots = Shots(self.device.shots) if shots == "unset" else shots
+        if self._qfunc_uses_shots_arg:
+            shots = _get_device_shots(self._original_device)
+        else:
+            shots = kwargs.pop("shots", _get_device_shots(self._original_device))
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func, shots=shots)(*args, **kwargs)
+        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
@@ -907,23 +916,38 @@ class QNode:
         if old_interface == "auto":
             self.interface = "auto"
 
-    # pylint: disable=not-callable
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
-        original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
+        override_shots = False
         old_interface = self.interface
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
             self.device.tracker = self._original_device.tracker
 
-        if self._qfunc_uses_shots_arg:
-            override_shots = _get_device_shots(self.device)
-        else:
-            override_shots = Shots(kwargs.pop("shots", _get_device_shots(self.device)))
-            set_shots(self.device, override_shots)(self._update_gradient_fn)(shots=override_shots)
+        if not self._qfunc_uses_shots_arg:
+            # If shots specified in call but not in qfunc signature,
+            # interpret it as device shots value for this call.
+            override_shots = kwargs.get("shots", False)
+
+            if override_shots is not False:
+                # Since shots has changed, we need to update the preferred gradient function.
+                # This is because the gradient function chosen at initialization may
+                # no longer be applicable.
+
+                # store the initialization gradient function
+                original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
+
+                # pylint: disable=not-callable
+                # update the gradient function
+                set_shots(self._original_device, override_shots)(self._update_gradient_fn)(
+                    shots=override_shots
+                )
+
+            else:
+                kwargs["shots"] = _get_device_shots(self._original_device)
 
         # construct the tape
-        self.construct(args, kwargs, shots=override_shots)
+        self.construct(args, kwargs)
 
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (
@@ -970,11 +994,11 @@ class QNode:
                 else:
                     res = type(self.tape._qfunc_output)(res)
 
-            self._update_original_device(
-                original_device=original_grad_fn[2], substituted_device=self.device
-            )
+            if override_shots is not False:
+                # restore the initialization gradient function
+                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
-            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+            self._update_original_device()
 
             return res
         if "mode" in self.execute_kwargs:
@@ -1031,9 +1055,11 @@ class QNode:
             qfunc_output_type = type(self._qfunc_output)
             return qfunc_output_type(res)
 
-        self._update_original_device(original_grad_fn[2], self.device)
-        # restore the initialization gradient function
-        self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+        if override_shots is not False:
+            # restore the initialization gradient function
+            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+
+        self._update_original_device()
 
         if isinstance(self._qfunc_output, Sequence) or (
             self.tape.is_sampled and self.device._has_partitioned_shots()

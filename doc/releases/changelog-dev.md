@@ -76,6 +76,13 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* `qml.interfaces.set_shots` now has null behaviour for the experimental Device and accepts
+  a `Shots` object as well as `int`'s and tuples of `int`'s.
+
+* `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
+  property. This property is merely used to set defaults for a workflow, and does not directly influence the number of shots used in executions or derivatives.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
+
 <h3>Breaking changes 💔</h3>
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
@@ -108,12 +115,6 @@
   `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
-
-* `qml.interfaces.set_shots` now has null behaviour for the experimental Device and accepts
-  a `Shots` object as well as `int`'s and tuples of `int`'s.
-
-* `QNode.construct` now accepts a `shots` keyword argument, instead of excepting `shots` to be merged
-  into the `kwargs` dictinary.
 
 <h3>Deprecations 👋</h3>
 
