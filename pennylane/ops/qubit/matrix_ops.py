@@ -222,6 +222,11 @@ class QubitUnitary(Operation):
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return len(self.wires) < 3
+
     def adjoint(self):
         U = self.matrix()
         return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
