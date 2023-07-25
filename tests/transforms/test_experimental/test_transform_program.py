@@ -266,6 +266,9 @@ class TestTransformProgramCall:
         assert new_batch is batch
         assert postprocessing is null_postprocessing
 
+        obj = [1, 2, 3, "b"]
+        assert null_postprocessing(obj) is obj
+
     def test_informative_transforms_not_supported(self):
         """Test that a program with an informative raises a `NotImplementedError` on call."""
         my_transform = TransformContainer(first_valid_transform, is_informative=True)
