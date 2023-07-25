@@ -189,6 +189,10 @@
 * The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
   [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
+* When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
+  `qml.drawer.use_style` instead of `black_white`.
+  [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
