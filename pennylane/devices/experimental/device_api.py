@@ -144,9 +144,8 @@ class Device(abc.ABC):
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
 
-        Note that the device itself should **always** pull shots from the provided :class:`QuantumTape` at
-        :property:`~.QuantumTape.shots`, not from this property. This property is merely to provide consistency
-        with the old interface.
+        Note that the device itself should **always** pull shots from the provided :class:`~.QuantumTape` and its
+        :attr:`~.QuantumTape.shots`, not from this property. This property is used to provide a default at the start of a workflow.
 
         """
         return self._shots

@@ -58,7 +58,7 @@ class TestMinimalDevice:
         assert shots_dev.shots == qml.measurements.Shots(100)
 
         with pytest.raises(AttributeError):
-            self.dev.shots = 100
+            self.dev.shots = 100  # pylint: disable=attribute-defined-outside-init
 
     def test_tracker_set_on_initialization(self):
         """Test that a new tracker instance is initialized with the class."""
