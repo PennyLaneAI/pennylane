@@ -292,7 +292,6 @@ def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
 
     # Hadamard transform
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    t1 = time.time()
     term_mat.shape = (2,) * (2 * num_qubits)
     for idx in range(num_qubits):
         index = [slice(None)] * (2 * num_qubits)
@@ -305,7 +304,6 @@ def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
         term_mat[c] *= 1j
     term_mat /= shape[0]
     term_mat.shape = shape
-    t2 = time.time()
 
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
