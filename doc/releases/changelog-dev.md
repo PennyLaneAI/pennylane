@@ -150,6 +150,13 @@
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
+* The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
+  fix of the seed-setting behaviour.
+  Instead, the `sampler_rng` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally or to a NumPy pseudo-random number generator created via
+  `np.random.default_rng(seed)`.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
 <h3>Documentation 📝</h3>
 
 * The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
@@ -189,7 +196,7 @@
   an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
-  [(4107)](https://github.com/PennyLaneAI/pennylane/issues/4107)
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
 
 <h3>Contributors ✍️</h3>
 

@@ -40,6 +40,27 @@ def coordinate_sampler(indices, num_params, idx, rng=None):
 class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
 
+    def test_sampler_seed_deprecation(self):
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="spsa", sampler_seed=3)
+        def circuit(param):
+            qml.RX(param, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        warning = "The sampler_seed argument is deprecated."
+        with pytest.warns(UserWarning, match=warning):
+            qml.grad(circuit)(np.array(1.0))
+
+        @qml.qnode(dev, diff_method="spsa", sampler_rng=2, sampler_seed=3)
+        def circuit(param):
+            qml.RX(param, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        err = "Both arguments sampler_rng and sampler_seed were specified."
+        with pytest.raises(ValueError, match=err):
+            qml.grad(circuit)(np.array(1.0))
+
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
         dev = qml.device("default.qubit", wires=1)
