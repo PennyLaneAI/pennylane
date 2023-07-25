@@ -265,24 +265,19 @@ class DefaultQubit2(Device):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        if execution_config.gradient_method == "adjoint":
-            max_workers = self._get_max_workers(execution_config)
-            if max_workers is None:
-                res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
-            else:
-                vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-                with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                    exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
-                    res = tuple(circuit for circuit in exec_map)
+        max_workers = self._get_max_workers(execution_config)
+        if max_workers is None:
+            res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
+        else:
+            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
+                res = tuple(circuit for circuit in exec_map)
 
-                # reset _rng to mimic serial behavior
-                self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+            # reset _rng to mimic serial behavior
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
-            return res[0] if is_single_circuit else res
-
-        raise NotImplementedError(
-            f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
-        )
+        return res[0] if is_single_circuit else res
 
     def execute_and_compute_derivatives(
         self,
@@ -303,11 +298,6 @@ class DefaultQubit2(Device):
                 derivatives=len(circuits),
             )
             self.tracker.record()
-
-        if execution_config.gradient_method != "adjoint":
-            raise NotImplementedError(
-                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
-            )
 
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
@@ -366,11 +356,6 @@ class DefaultQubit2(Device):
             self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
-        if execution_config.gradient_method != "adjoint":
-            raise NotImplementedError(
-                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
-            )
-
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             res = tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
@@ -403,11 +388,6 @@ class DefaultQubit2(Device):
                 execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
             )
             self.tracker.record()
-
-        if execution_config.gradient_method != "adjoint":
-            raise NotImplementedError(
-                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
-            )
 
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
@@ -469,11 +449,6 @@ class DefaultQubit2(Device):
             self.tracker.update(vjp_batches=1, vjps=len(circuits))
             self.tracker.record()
 
-        if execution_config.gradient_method != "adjoint":
-            raise NotImplementedError(
-                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
-            )
-
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:
             res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
@@ -506,11 +481,6 @@ class DefaultQubit2(Device):
                 execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
             )
             self.tracker.record()
-
-        if execution_config.gradient_method != "adjoint":
-            raise NotImplementedError(
-                f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
-            )
 
         max_workers = self._get_max_workers(execution_config)
         if max_workers is None:

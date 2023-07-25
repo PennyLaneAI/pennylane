@@ -29,43 +29,6 @@ def test_name():
     assert DefaultQubit2().name == "default.qubit.2"
 
 
-def test_no_jvp_functionality():
-    """Test that jvp is not supported on DefaultQubit2."""
-    dev = DefaultQubit2()
-
-    assert not dev.supports_jvp(ExecutionConfig())
-
-    with pytest.raises(NotImplementedError):
-        dev.compute_jvp(qml.tape.QuantumScript(), (10, 10))
-
-    with pytest.raises(NotImplementedError):
-        dev.execute_and_compute_jvp(qml.tape.QuantumScript(), (10, 10))
-
-
-def test_no_vjp_functionality():
-    """Test that vjp is not supported on DefaultQubit2."""
-    dev = DefaultQubit2()
-
-    assert not dev.supports_vjp(ExecutionConfig())
-
-    with pytest.raises(NotImplementedError):
-        dev.compute_vjp(qml.tape.QuantumScript(), (10.0, 10.0))
-
-    with pytest.raises(NotImplementedError):
-        dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (10.0, 10.0))
-
-
-def test_no_device_derivatives():
-    """Test that DefaultQubit2 currently doesn't support device derivatives."""
-    dev = DefaultQubit2()
-
-    with pytest.raises(NotImplementedError):
-        dev.compute_derivatives(qml.tape.QuantumScript())
-
-    with pytest.raises(NotImplementedError):
-        dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
-
-
 def test_debugger_attribute():
     """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
     # pylint: disable=protected-access
