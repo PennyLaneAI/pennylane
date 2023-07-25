@@ -52,6 +52,7 @@ def _convert_to_interface(res, interface):
 
     return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
 
+
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 

@@ -103,6 +103,7 @@ class DefaultFormatter(Formatter):
 
 class SimpleFormatter(Formatter):
     """This formatter has a simplified layout and rules used for formatting PennyLane log messages."""
+
     indigo = "\x1b[38;4;45m"
     blue = "\x1b[38;4;44m"
     yellow = "\x1b[38;4;43m"
