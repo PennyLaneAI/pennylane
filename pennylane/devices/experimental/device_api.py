@@ -210,13 +210,13 @@ class Device(abc.ABC):
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
                     config = ExecutionConfig(gradient_method="adjoint")
-                    batch, fn, new_config = dev.preprocess(circuit, config)
+                    circuit_batch, postprocessing, new_config = dev.preprocess(circuit, config)
 
                     def execute_fn(tapes):
                         return dev.execute_and_compute_derivatives(tapes, config)
 
-                    results = jax_boundary(batch, dev, execute_fn, None, {})
-                    return fn(results)
+                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
+                    return postprocessing(results)
 
                 x = jax.numpy.array([1.0, 2.0, 3.0])
                 jax.grad(f)(x)
