@@ -204,6 +204,7 @@ class Device(abc.ABC):
             device provided derivatives and post processing derivatives.
 
             .. code-block:: python
+
                 from pennylane.interfaces.jax import execute as jax_boundary
 
                 def f(x):
