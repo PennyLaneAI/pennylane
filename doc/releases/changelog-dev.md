@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `HardwareHamiltonian`s can now be summed with `int` or `float`.
+  A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
+  [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
+
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
@@ -55,6 +59,10 @@
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
+* `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
+  more performant choices.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
+
 * The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
   new `QuantumScript` objects with the provided parameters.
   [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
@@ -65,11 +73,20 @@
 * The experimental device interface is integrated with the `QNode` for Jax jit.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
 
-* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.preprocess` that computes
+* Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
 
+* Readability improvements and stylistic changes to `pennylane/interfaces/jax_jit_tuple.py`
+  [(#4379)](https://github.com/PennyLaneAI/pennylane/pull/4379/)
+
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
 <h3>Breaking changes 💔</h3>
+
+* `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
@@ -164,6 +181,13 @@
 * `qml.transforms.merge_amplitude_embedding` now works correctly when the `AmplitudeEmbedding`s
   have a batch dimension.
   [(#4353)](https://github.com/PennyLaneAI/pennylane/pull/4353)
+
+* The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
+  [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
+
+* When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
+  `qml.drawer.use_style` instead of `black_white`.
+  [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
 
 * `qml.devices.qubit.preprocess.validate_and_expand_adjoint` now correctly updates the
   trainable parameters of the expanded tape.
