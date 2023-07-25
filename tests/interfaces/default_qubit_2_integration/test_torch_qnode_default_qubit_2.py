@@ -491,9 +491,9 @@ class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     differentiates it."""
 
-    def test_changing_shots(self, mocker, tol):
+    def test_changing_shots(self):
         """Test that changing shots works on execution"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = DefaultQubit2()
         a, b = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
@@ -501,32 +501,22 @@ class TestShotsIntegration:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
-
-        spy = mocker.spy(dev, "sample")
+            return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        res = circuit(a, b)
-        assert torch.allclose(res, -torch.cos(a) * torch.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        with pytest.raises(qml.DeviceError):
+            circuit(a, b)
 
         # execute with shots=100
         res = circuit(a, b, shots=100)
-        spy.assert_called_once()
-        assert spy.spy_return.shape == (100,)
-
-        # device state has been unaffected
-        assert dev.shots is None
-        res = circuit(a, b)
-        assert torch.allclose(res, -torch.cos(a) * torch.sin(b), atol=tol, rtol=0)
-        spy.assert_called_once()  # only same call as above
+        assert res.shape == (100, 2)
 
     # TODO: add this test after shot vectors addition
     @pytest.mark.xfail
     def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = DefaultQubit2()
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
@@ -548,11 +538,10 @@ class TestShotsIntegration:
         """Test that temporarily setting the shots works
         for gradient computations, even if the QNode has been re-evaluated
         with a different number of shots in the meantime."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
         weights = torch.tensor([0.543, -0.654], requires_grad=True)
         a, b = weights
 
-        @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
+        @qnode(DefaultQubit2(), interface="torch", diff_method=qml.gradients.param_shift)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -572,95 +561,30 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(dev, interface="torch")
+        @qnode(DefaultQubit2(), interface="torch")
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
+        cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
-
-        cost_fn(a, b)
+        assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
-        # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None)
+        # if we use the default shots value of None, backprop can now be used
+        cost_fn(a, b)
         assert spy.call_args[1]["gradient_fn"] == "backprop"
-
-        # original QNode settings are unaffected
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
-        cost_fn(a, b)
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
-
-
-class TestAdjoint:
-    """Specific integration tests for the adjoint method"""
-
-    def test_reuse_state(self, mocker):
-        """Tests that the Torch interface reuses the device state for adjoint differentiation"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, diff_method="adjoint", interface="torch")
-        def circ(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=(0, 1))
-            return qml.expval(qml.PauliZ(0))
-
-        expected_grad = lambda x: torch.tensor([-torch.sin(x[0]), torch.cos(x[1])])
-
-        spy = mocker.spy(dev, "adjoint_jacobian")
-
-        x1 = torch.tensor([1.0, 1.0], requires_grad=True)
-        res = circ(x1)
-        res.backward()
-
-        assert np.allclose(x1.grad[0], expected_grad(x1)[0])
-        assert circ.device.num_executions == 1
-        spy.assert_called_with(mocker.ANY, use_device_state=mocker.ANY)
-
-    def test_resuse_state_multiple_evals(self, mocker, tol):
-        """Tests that the Torch interface reuses the device state for adjoint differentiation,
-        even where there are intermediate evaluations."""
-        dev = qml.device("default.qubit", wires=2)
-
-        x_val = 0.543
-        y_val = -0.654
-        x = torch.tensor(x_val, requires_grad=True)
-        y = torch.tensor(y_val, requires_grad=True)
-
-        @qnode(dev, diff_method="adjoint", interface="torch")
-        def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        spy = mocker.spy(dev, "adjoint_jacobian")
-
-        res1 = circuit(x, y)
-        assert np.allclose(res1.detach(), np.cos(x_val), atol=tol, rtol=0)
-
-        # intermediate evaluation with different values
-        circuit(torch.tan(x), torch.cosh(y))
-
-        # the adjoint method will continue to compute the correct derivative
-        res1.backward()
-        assert np.allclose(x.grad.detach(), -np.sin(x_val), atol=tol, rtol=0)
-        assert dev.num_executions == 2
-        spy.assert_called_with(mocker.ANY, use_device_state=mocker.ANY)
 
 
 @pytest.mark.parametrize(
-    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
+    "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
@@ -1062,7 +986,7 @@ class TestQubitIntegration:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is torch.complex128
+            assert torch.is_complex(res)
             probs = torch.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1118,78 +1042,7 @@ class TestQubitIntegration:
         assert np.allclose(weights.grad.detach(), expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize(
-    "diff_method,kwargs",
-    [
-        ["finite-diff", {}],
-        ["spsa", {"num_directions": 100, "h": 0.05}],
-        ("parameter-shift", {}),
-        ("parameter-shift", {"force_order2": True}),
-    ],
-)
-class TestCV:
-    """Tests for CV integration"""
-
-    def test_first_order_observable(self, diff_method, kwargs, tol):
-        """Test variance of a first order CV observable"""
-        dev = qml.device("default.gaussian", wires=1)
-        if diff_method == "spsa":
-            tol = TOL_FOR_SPSA
-
-        r = torch.tensor(0.543, dtype=torch.float64, requires_grad=True)
-        phi = torch.tensor(-0.654, dtype=torch.float64, requires_grad=True)
-
-        @qnode(dev, interface="torch", diff_method=diff_method, **kwargs)
-        def circuit(r, phi):
-            qml.Squeezing(r, 0, wires=0)
-            qml.Rotation(phi, wires=0)
-            return qml.var(qml.QuadX(0))
-
-        res = circuit(r, phi)
-        expected = torch.exp(2 * r) * torch.sin(phi) ** 2 + torch.exp(-2 * r) * torch.cos(phi) ** 2
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-        # circuit jacobians
-        res.backward()
-        res = torch.tensor([r.grad, phi.grad])
-        expected = torch.tensor(
-            [
-                [
-                    2 * torch.exp(2 * r) * torch.sin(phi) ** 2
-                    - 2 * torch.exp(-2 * r) * torch.cos(phi) ** 2,
-                    2 * torch.sinh(2 * r) * torch.sin(2 * phi),
-                ]
-            ]
-        )
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_second_order_observable(self, diff_method, kwargs, tol):
-        """Test variance of a second order CV expectation value"""
-        dev = qml.device("default.gaussian", wires=1)
-        if diff_method == "spsa":
-            tol = TOL_FOR_SPSA
-
-        n = torch.tensor(0.12, dtype=torch.float64, requires_grad=True)
-        a = torch.tensor(0.765, dtype=torch.float64, requires_grad=True)
-
-        @qnode(dev, interface="torch", diff_method=diff_method, **kwargs)
-        def circuit(n, a):
-            qml.ThermalState(n, wires=0)
-            qml.Displacement(a, 0, wires=0)
-            return qml.var(qml.NumberOperator(0))
-
-        res = circuit(n, a)
-        expected = n**2 + n + torch.abs(a) ** 2 * (1 + 2 * n)
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-        # circuit jacobians
-        res.backward()
-        res = torch.tensor([n.grad, a.grad])
-        expected = torch.tensor([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-
-@pytest.mark.parametrize("dev_name,diff_method,grad_on_execution", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev,diff_method,grad_on_execution", qubit_device_and_diff_method)
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
     with the Torch interface"""
@@ -1218,7 +1071,6 @@ class TestTapeExpansion:
             PhaseShift(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "batch_execute")
         x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
         loss = circuit(x)
@@ -1276,7 +1128,6 @@ class TestTapeExpansion:
             PhaseShift(2 * y, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "batch_execute")
         x = torch.tensor(0.5, requires_grad=True)
         y = torch.tensor(0.7, requires_grad=False)
 
@@ -1373,7 +1224,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
-        self, dev, diff_method, grad_on_execution, max_diff, mocker
+        self, dev, diff_method, grad_on_execution, max_diff
     ):
         """Test that the Hamiltonian is expanded if there
         are non-commuting groups and the number of shots is finite
@@ -1392,7 +1243,6 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(
@@ -1421,9 +1271,11 @@ class TestTapeExpansion:
             d[1] + w[1]
         )
         assert torch.allclose(res, expected, atol=tol)
-        spy.assert_called()
 
         # test gradients
+        if diff_method in ["finite-diff", "spsa"]:
+            pytest.skip(f"{diff_method} not compatible")
+
         res.backward()
         grad = (w.grad, c.grad)
 
@@ -1589,7 +1441,7 @@ qubit_device_and_diff_method_and_grad_on_execution = [
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method,grad_on_execution", qubit_device_and_diff_method_and_grad_on_execution
+    "dev,diff_method,grad_on_execution", qubit_device_and_diff_method_and_grad_on_execution
 )
 @pytest.mark.parametrize("shots", [None, 10000])
 class TestReturn:
