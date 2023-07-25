@@ -5,7 +5,6 @@ PennyLanes's log support ties into the native Python logger, which allows extens
 
 The current structure defines some useful utility classes to allow ease-of-control with visibility and reporting of logs across the package.
 
-
 The package-wide logging controls are specific in the `log_config.toml` file (alternatively in the `log_config.yaml`), and control the logger levels, the log handlers, the formatters used, and even which parts of the package ecosystem should enable logging, including external packages such as `jax`.
 
 ## Setting up logging supports
