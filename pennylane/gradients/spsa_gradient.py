@@ -72,7 +72,7 @@ def spsa_grad(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-    sampler_seed=None
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -308,16 +308,21 @@ def spsa_grad(
 
     if sampler_seed is not None:
         if sampler_rng is None:
-            warnings.warn((
-                "The sampler_seed argument is deprecated. Use the sampler_rng argument ",
-                "instead to pass a random number generator or a seed."
-            ), UserWarning)
+            warnings.warn(
+                (
+                    "The sampler_seed argument is deprecated. Use the sampler_rng argument ",
+                    "instead to pass a random number generator or a seed.",
+                ),
+                UserWarning,
+            )
             sampler_rng = sampler_seed
         else:
-            raise ValueError((
-                "Both arguments sampler_rng and sampler_seed were specified. ",
-                "Only specify one. Note that the sampler_seed argument is deprecated."
-            ))
+            raise ValueError(
+                (
+                    "Both arguments sampler_rng and sampler_seed were specified. ",
+                    "Only specify one. Note that the sampler_seed argument is deprecated.",
+                )
+            )
 
     sampler_rng = np.random.default_rng(sampler_rng)
 
@@ -402,7 +407,7 @@ def _spsa_grad_legacy(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-    sampler_seed=None
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -585,16 +590,21 @@ def _spsa_grad_legacy(
 
     if sampler_seed is not None:
         if sampler_rng is None:
-            warnings.warn((
-                "The sampler_seed argument is deprecated. Use the sampler_rng argument ",
-                "instead to pass a random number generator or a seed."
-            ), UserWarning)
+            warnings.warn(
+                (
+                    "The sampler_seed argument is deprecated. Use the sampler_rng argument ",
+                    "instead to pass a random number generator or a seed.",
+                ),
+                UserWarning,
+            )
             sampler_rng = sampler_seed
         else:
-            raise ValueError((
-                "Both arguments sampler_rng and sampler_seed were specified. ",
-                "Only specify one. Note that the sampler_seed argument is deprecated."
-            ))
+            raise ValueError(
+                (
+                    "Both arguments sampler_rng and sampler_seed were specified. ",
+                    "Only specify one. Note that the sampler_seed argument is deprecated.",
+                )
+            )
 
     sampler_rng = np.random.default_rng(sampler_rng)
     method_map = choose_grad_methods(diff_methods, argnum)
