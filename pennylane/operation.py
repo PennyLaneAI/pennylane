@@ -1415,7 +1415,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        qscript = qml.tape.make_qscript(self.decomposition)()
+        qscript = qml.tape.QuantumScript(self.decomposition())
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1536,10 +1536,8 @@ class Operator(abc.ABC):
         (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
 
         """
-        hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items()
-        )
-        return self.data, (self.wires, hashable_hyperparameters)
+        # Casting to tuple is essential to make metadata/hyperparameters hashable
+        return self.data, (self.wires, tuple(self.hyperparameters.items()))
 
     @classmethod
     def _unflatten(cls, data, metadata):

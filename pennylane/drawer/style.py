@@ -60,6 +60,8 @@ def _black_white():
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
     plt.rcParams["path.sketch"] = None
+    plt.rcParams["font.weight"] = "normal"
+    plt.rcParams["lines.linewidth"] = 1.5
 
 
 @_needs_mpl
@@ -158,6 +160,8 @@ _styles_map = {
     "default": _needs_mpl(lambda: plt.style.use("default")),
 }
 
+__current_style_fn = _black_white
+
 
 def available_styles():
     """Get available style specification strings.
@@ -169,7 +173,7 @@ def available_styles():
 
 
 def use_style(style: str):
-    """Set a style setting. Reset to default style using ``plt.style.use('default')``
+    """Set a style setting. Reset to default style using ``use_style('black_white')``
 
     Args:
         style (str): A style specification.
@@ -209,10 +213,30 @@ def use_style(style: str):
             :target: javascript:void(0);
 
     """
+    global __current_style_fn  # pylint:disable=global-statement
     if style in _styles_map:
+        __current_style_fn = _styles_map[style]
+    else:
+        raise TypeError(
+            f"style '{style}' provided to ``qml.drawer.use_style`` "
+            f"does not exist.  Available options are {available_styles()}"
+        )
+
+
+def _set_style(style: str = None):
+    """
+    Execute a style function to change the current rcParams.
+
+    Args:
+        style (Optional[str]): A style specification. If no style is provided,
+            the latest style set with ``use_style`` is used instead.
+    """
+    if not style:
+        __current_style_fn()
+    elif style in _styles_map:
         _styles_map[style]()
     else:
         raise TypeError(
-            f"style '{style}' provided to ``qml.drawer.use_style``"
-            f" does not exist.  Available options are {available_styles()}"
+            f"style '{style}' provided to ``_set_style`` "
+            f"does not exist.  Available options are {available_styles()}"
         )
