@@ -136,7 +136,7 @@ def pauli_decompose(
     # Hadamard transform
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
     term_mat = qml.math.reshape(term_mat, (2,) * (2 * num_qubits))
-    #term_mat.shape = (2,) * (2 * num_qubits)
+    # term_mat.shape = (2,) * (2 * num_qubits)
     for idx in range(num_qubits):
         index = [slice(None)] * (2 * num_qubits)
         slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
@@ -148,7 +148,7 @@ def pauli_decompose(
         term_mat[c] *= 1j
     term_mat /= shape[0]
     term_mat = qml.math.reshape(term_mat, shape)
-    #term_mat.shape = shape
+    # term_mat.shape = shape
 
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
