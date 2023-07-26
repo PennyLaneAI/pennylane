@@ -770,7 +770,10 @@ def add(*args, like=None, **kwargs):
     if like == "scipy":
         return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
 
-    if like == "torch":
+    arg_interfaces = {get_interface(args[0]), get_interface(args[1])}
+
+    # case of one torch tensor and one vanilla numpy array
+    if like == "torch" and len(arg_interfaces) == 2:
         # In autoray 0.6.5, np.add dispatches to torch instead of
         # numpy if one parameter is a torch tensor and the other is
         # a numpy array. torch.add raises an Exception if one of the
