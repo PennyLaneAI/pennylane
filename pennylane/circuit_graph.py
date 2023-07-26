@@ -296,16 +296,22 @@ class CircuitGraph:
             ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            set[Operator]: ancestors of the given operators
+            list[Operator]: ancestors of the given operators
         """
-        anc = set(
-            self._graph.get_node_data(n)
-            for n in set().union(
-                # rx.ancestors() returns node indexes instead of node-values
-                *(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops)
-            )
-        )
-        return anc - set(ops)
+        # anc = set(
+        #     self._graph.get_node_data(n)
+        #     for n in set().union(
+        #         # rx.ancestors() returns node indexes instead of node-values
+        #         *(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops)
+        #     )
+        # )
+        # return anc - set(ops)
+        # rx.ancestors() returns node indexes instead of node-values
+        all_indices = set(*(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops))
+        double_op_indices = set(self._indices[id(o)] for o in ops)
+        ancestor_indices = all_indices - double_op_indices
+
+        return list(self._graph.get_node_data(n) for n in ancestor_indices)
 
     def descendants(self, ops):
         """Descendants of a given set of operators.
@@ -314,16 +320,22 @@ class CircuitGraph:
             ops (Iterable[Operator]): set of operators in the circuit
 
         Returns:
-            set[Operator]: descendants of the given operators
+            list[Operator]: descendants of the given operators
         """
-        des = set(
-            self._graph.get_node_data(n)
-            for n in set().union(
-                # rx.descendants() returns node indexes instead of node-values
-                *(rx.descendants(self._graph, self._indices[id(o)]) for o in ops)
-            )
-        )
-        return des - set(ops)
+        # des = set(
+        #     self._graph.get_node_data(n)
+        #     for n in set().union(
+        #         # rx.descendants() returns node indexes instead of node-values
+        #         *(rx.descendants(self._graph, self._indices[id(o)]) for o in ops)
+        #     )
+        # )
+        # return des - set(ops)
+        # rx.descendants() returns node indexes instead of node-values
+        all_indices = set(*(rx.descendants(self._graph, self._indices[id(o)]) for o in ops))
+        double_op_indices = set(self._indices[id(o)] for o in ops)
+        ancestor_indices = all_indices - double_op_indices
+
+        return list(self._graph.get_node_data(n) for n in ancestor_indices)
 
     def _in_topological_order(self, ops):
         """Sorts a set of operators in the circuit in a topological order.
@@ -376,13 +388,21 @@ class CircuitGraph:
             b (Operator): final node
 
         Returns:
-            set[Operator]: nodes on all the directed paths between a and b
+            list[Operator]: nodes on all the directed paths between a and b
         """
         A = self.descendants([a])
-        A.add(a)
+        A.append(a)
         B = self.ancestors([b])
-        B.add(b)
-        return A & B
+        B.append(b)
+
+        nodes = []
+        for op1 in A:
+            for i, op2 in enumerate(B):
+                if op1 is op2:
+                    nodes.append(B.pop(i))
+                    break
+
+        return nodes
 
     @property
     def parametrized_layers(self):
