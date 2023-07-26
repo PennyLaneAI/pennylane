@@ -769,9 +769,8 @@ def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
     if like == "scipy":
         return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
-    try:
-        return np.add(*args, **kwargs)
-    except TypeError:
+
+    if like == "torch":
         # In autoray 0.6.5, np.add dispatches to torch instead of
         # numpy if one parameter is a torch tensor and the other is
         # a numpy array. torch.add raises an Exception if one of the
@@ -781,6 +780,8 @@ def add(*args, like=None, **kwargs):
         arg0 = np.asarray(args[0], device=dev, like=like)
         arg1 = np.asarray(args[1], device=dev, like=like)
         return np.add(arg0, arg1, *args[2:], **kwargs)
+
+    return np.add(*args, **kwargs)
 
 
 @multi_dispatch()
