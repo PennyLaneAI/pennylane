@@ -22,6 +22,7 @@ from typing import Union
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
@@ -135,22 +136,36 @@ def pauli_decompose(
         qml.math.stack([matrix[idx, indice] for idx, indice in enumerate(indices)]), complex
     )
 
-    # Hadamard transform
-    # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    term_mat = qml.math.reshape(term_mat, (2,) * (2 * num_qubits))
-    # term_mat.shape = (2,) * (2 * num_qubits)
+    # Perform Hadamard transformation on coloumns
+    hadamard_transform_mat = _walsh_hadamard_transform(term_mat.T)
+
+    # Account for the phases from Y
+    phase_mat = qml.math.ones(shape, dtype=complex).reshape((2,) * (2 * num_qubits))
     for idx in range(num_qubits):
         index = [slice(None)] * (2 * num_qubits)
-        slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
-        for sc, ic in zip(slices, indice):
-            index[idx + sc] = ic
-            ind.append(tuple(index))
-        a, b, c = ind  # pylint: disable=unbalanced-tuple-unpacking
-        term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
-        term_mat[c] *= 1j
-    term_mat /= shape[0]
-    term_mat = qml.math.reshape(term_mat, shape)
-    # term_mat.shape = shape
+        index[idx] = index[idx + num_qubits] = 1
+        phase_mat[tuple(index)] *= 1j
+    phase_mat = qml.math.reshape(phase_mat, shape)
+
+    # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
+    term_mat = (hadamard_transform_mat * phase_mat).T
+
+    # # Hadamard transform
+    # # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
+    # term_mat = qml.math.reshape(term_mat, (2,) * (2 * num_qubits))
+    # # term_mat.shape = (2,) * (2 * num_qubits)
+    # for idx in range(num_qubits):
+    #     index = [slice(None)] * (2 * num_qubits)
+    #     slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
+    #     for sc, ic in zip(slices, indice):
+    #         index[idx + sc] = ic
+    #         ind.append(tuple(index))
+    #     a, b, c = ind  # pylint: disable=unbalanced-tuple-unpacking
+    #     term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
+    #     term_mat[c] *= 1j
+    # term_mat /= shape[0]
+    # term_mat = qml.math.reshape(term_mat, shape)
+    # # term_mat.shape = shape
 
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
