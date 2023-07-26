@@ -83,6 +83,9 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* If no seed is specified on initialization of `DefaultQubit2`, the local random number generator will be
+  seeded from on the NumPy's global random number generator.
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.

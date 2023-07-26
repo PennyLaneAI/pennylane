@@ -46,7 +46,8 @@ class DefaultQubit2(Device):
     Args:
         seed (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
+            If no value is provided, a seed will be pulled from the NumPy's global
+            random number generator.
 
         max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
@@ -137,6 +138,7 @@ class DefaultQubit2(Device):
     def __init__(self, seed=None, max_workers=None) -> None:
         super().__init__()
         self._max_workers = max_workers
+        seed = seed or np.random.randint(0, high=10000000)
         self._rng = np.random.default_rng(seed)
         self._debugger = None
 
