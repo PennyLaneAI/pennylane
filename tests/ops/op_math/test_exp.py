@@ -25,7 +25,6 @@ from pennylane.operation import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
-from pennylane.ops.qubit.attributes import has_unitary_generator_types
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -44,8 +43,8 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 1
-        assert op.parameters == [[1], []]
-        assert op.data == [[1], []]
+        assert op.parameters == [1]
+        assert op.data == (1,)
 
         assert op.wires == qml.wires.Wires("a")
 
@@ -63,8 +62,8 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 1
-        assert op.parameters == [[coeff], []]
-        assert op.data == [[coeff], []]
+        assert op.parameters == [coeff]
+        assert op.data == (coeff,)
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
@@ -82,7 +81,7 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 2
-        assert op.data == [coeff, [base_coeff]]
+        assert op.data == (coeff, base_coeff)
 
         assert op.wires == qml.wires.Wires(5)
 
@@ -111,7 +110,15 @@ class TestProperties:
         base = qml.RX(phi, wires=0)
         op = Exp(base, coeff)
 
-        assert op.data == [[coeff], [phi]]
+        assert op.data == (coeff, phi)
+
+        new_phi = np.array(0.1234)
+        new_coeff = np.array(3.456)
+        op.data = (new_coeff, new_phi)
+
+        assert op.data == (new_coeff, new_phi)
+        assert op.base.data == (new_phi,)
+        assert op.scalar == new_coeff
 
     # pylint: disable=protected-access
     def test_queue_category_ops(self):
@@ -377,6 +384,11 @@ class TestMatrix:
 class TestDecomposition:
     """Test the decomposition of the `Exp` gate."""
 
+    # Order of `qml.ops.qubit.__all__` is not reliable, so
+    # must sort for consistent order in testing with multiple
+    # workers
+    all_qubit_operators = sorted(qml.ops.qubit.__all__)  # pylint: disable=no-member
+
     def test_sprod_decomposition(self):
         """Test that the exp of an SProd has a decomposition."""
         op = Exp(qml.s_prod(3, qml.PauliX(0)), 1j)
@@ -427,17 +439,28 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
-    @pytest.mark.parametrize("op_class", has_unitary_generator_types)
-    def test_generator_decomposition(self, op_class):
+    @pytest.mark.parametrize("op_name", all_qubit_operators)
+    def test_generator_decomposition(self, op_name):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
+        op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
+
+        if not op_class.has_generator:
+            pytest.skip("Operator does not have a generator.")
+
         if op_class in {qml.DoubleExcitationMinus, qml.DoubleExcitationPlus}:
             pytest.skip("qml.equal doesn't work for `SparseHamiltonian` generators.")
+
+        if op_class is qml.PCPhase:
+            pytest.skip(
+                "`PCPhase` decompositions not currently possible due to different signature."
+            )
 
         phi = 1.23
 
         wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
 
+        # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:
             op = op_class(phi, pauli_word="XYZ", wires=wires)
         else:
@@ -446,7 +469,16 @@ class TestDecomposition:
         exp = qml.evolve(op.generator(), coeff=-phi)
         dec = exp.decomposition()
         assert len(dec) == 1
-        assert qml.equal(op, dec[0])
+        if op_class in {qml.PhaseShift, qml.U1}:
+            # These operators have the same generator so when reconstructing from
+            # the generator, cannot predict which will be returned
+            assert (
+                isinstance(dec[0], (qml.PhaseShift, qml.U1))
+                and qml.math.isclose(dec[0].data[0], phi)
+                and dec[0].wires == op.wires
+            )
+        else:
+            assert qml.equal(op, dec[0])
 
     def test_trotter_is_used_if_num_steps_is_defined(self):
         """Test that the Suzuki-Trotter decomposition is used when ``num_steps`` is defined."""
@@ -555,6 +587,24 @@ class TestMiscMethods:
         """Test the __repr__ method when the base is a simple observable."""
         op = Exp(qml.PauliX(0), 3)
         assert repr(op) == "Exp(3 PauliX)"
+
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("exp_type", (Exp, Evolution))
+    def test_flatten_unflatten(self, exp_type):
+        """Tests the _unflatten and _flatten methods."""
+        base = qml.RX(1.2, wires=0)
+        op = exp_type(base, 2.5, num_steps=5)
+
+        data, metadata = op._flatten()
+        assert data[0] is base
+        assert data[1] == 2.5
+
+        assert metadata == (5,)
+
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(new_op, op)
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
@@ -933,3 +983,16 @@ class TestDifferentiation:
             op1.parameter_frequencies()
 
         assert op2.parameter_frequencies == [(4.0,)]
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of an Exp are considered trainable."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x, coeff):
+            Exp(qml.RX(x, 0), coeff)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(UserWarning):
+            circuit(np.array(2.0), np.array(0.5))
+        assert circuit.tape.trainable_params == [0, 1]

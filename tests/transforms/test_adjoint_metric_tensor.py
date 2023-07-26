@@ -14,6 +14,7 @@
 """
 Unit tests for the adjoint_metric_tensor function.
 """
+# pylint: disable=protected-access
 import pytest
 from pennylane import numpy as np
 import pennylane as qml
@@ -36,9 +37,19 @@ class TestApplyOperations:
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
 
+    def test_simple_operation_inv(self):
+        """Test that an operation is applied correctly when using invert=True
+        but does not alter the operation (in particular its inverse flag) that is used."""
+        op = qml.RX(self.x, wires=0)
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = qml.math.reshape(out, 4)
+        exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
+        assert np.allclose(out, exp)
+
     def test_operation_group(self):
         """Test that a group of operations with is applied correctly
-        but does not alter the operations (in particular their order) that are used."""
+        but does not alter the operations (in particular their order and
+        inverse flags) that are used."""
         op = [qml.adjoint(qml.RX(self.x, wires=0)), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
         out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
@@ -48,6 +59,26 @@ class TestApplyOperations:
                 1j * np.sin(self.x / 2) / np.sqrt(2),
                 1j * np.sin(self.x / 2) / np.sqrt(2),
                 np.cos(self.x / 2) / np.sqrt(2),
+            ]
+        )
+        assert np.allclose(out, exp)
+        assert qml.equal(op[0], qml.adjoint(qml.RX(self.x, wires=0)))
+        assert isinstance(op[1], qml.Hadamard)
+        assert isinstance(op[2], qml.CNOT)
+
+    def test_operation_group_inv(self):
+        """Test that a group of operations with is applied correctly when using invert=True
+        but does not alter the operations (in particular their order and
+        inverse flags) that are used."""
+        op = [qml.adjoint(qml.RX(self.x, wires=0)), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = qml.math.reshape(out, 4)
+        exp = np.array(
+            [
+                np.cos(self.x / 2) / np.sqrt(2),
+                np.cos(self.x / 2) / np.sqrt(2),
+                -1j * np.sin(self.x / 2) / np.sqrt(2),
+                -1j * np.sin(self.x / 2) / np.sqrt(2),
             ]
         )
         assert np.allclose(out, exp)
@@ -205,7 +236,7 @@ def fubini_ansatz1(params, wires=None):
 def fubini_ansatz2(params, wires=None):
     params0 = params[0]
     params1 = params[1]
-    qml.RX(fixed_pars[1], wires=0)
+    qml.RX(fixed_pars[1], wires=wires[0])
     qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.RY(params0, wires=0)
@@ -219,7 +250,7 @@ def fubini_ansatz3(params, wires=None):
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
-    qml.RX(fixed_pars[1], wires=0)
+    qml.RX(fixed_pars[1], wires=wires[0])
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -240,7 +271,7 @@ def fubini_ansatz4(params00, params_rest, wires=None):
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
-    qml.RY(fixed_pars[3], wires=0)
+    qml.RY(fixed_pars[3], wires=wires[0])
     qml.RY(fixed_pars[2], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -266,14 +297,14 @@ def fubini_ansatz7(params0, params1, wires=None):
 
 
 def fubini_ansatz8(x, wires=None):
-    qml.RX(fixed_pars[0], wires=0)
+    qml.RX(fixed_pars[0], wires=wires[0])
     qml.RX(x, wires=0)
 
 
 def fubini_ansatz9(params, wires=None):
     params0 = params[0]
     params1 = params[1]
-    qml.RX(fixed_pars[1], wires=[0])
+    qml.RX(fixed_pars[1], wires=[wires[0]])
     qml.RY(fixed_pars[3], wires=[0])
     qml.RZ(fixed_pars[2], wires=[0])
     qml.RX(fixed_pars[2], wires=[1])
@@ -298,6 +329,7 @@ def fubini_ansatz9(params, wires=None):
 
 
 def fubini_ansatz10(weights, wires=None):
+    # pylint: disable=unused-argument
     qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
 
 
@@ -405,9 +437,10 @@ class TestAdjointMetricTensorTape:
     """
 
     num_wires = 3
+    interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_tape_autograd(self, ansatz, params, interface):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor directly on a tape."""
@@ -457,8 +490,10 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*j_params)
         assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "torch"]
+
     @pytest.mark.torch
-    @pytest.mark.parametrize("interface", ["torch"])
+    @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_tape_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
@@ -483,8 +518,10 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "tf"]
+
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_tape_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor directly on a tape."""
@@ -501,14 +538,14 @@ class TestAdjointMetricTensorTape:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             circuit(*t_params)
             mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
 
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
@@ -519,10 +556,11 @@ class TestAdjointMetricTensorQNode:
     """
 
     num_wires = 3
+    interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_qnode_autograd(self, ansatz, params, interface):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
@@ -571,9 +609,11 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", ["torch"])
+    @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_qnode_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
@@ -597,9 +637,11 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_qnode_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor on a QNode."""
@@ -616,7 +658,7 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
@@ -625,8 +667,7 @@ class TestAdjointMetricTensorQNode:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_autograd_with_other_device(self, interface):
+    def test_autograd_with_other_device(self):
         """Test passing an extra device to the QNode wrapper."""
         ansatz = fubini_ansatz2
         params = fubini_params[2]
@@ -636,7 +677,7 @@ class TestAdjointMetricTensorQNode:
         dev = qml.device("default.qubit", wires=self.num_wires)
         dev2 = qml.device("default.qubit.autograd", wires=self.num_wires)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -672,15 +713,14 @@ class TestAdjointMetricTensorDifferentiability:
     num_wires = 3
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_autograd(self, ansatz, params, interface):
+    def test_autograd(self, ansatz, params):
         """Test that the derivative is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
         exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
-        dev = qml.device("default.qubit.autograd", wires=self.num_wires)
+        dev = qml.device("default.qubit", wires=self.num_wires)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -688,17 +728,13 @@ class TestAdjointMetricTensorDifferentiability:
 
         mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
 
-        if interface == "auto":
-            assert circuit.interface == "auto"
-
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
             assert qml.math.allclose(mt_jac, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_correct_output_qnode_jax(self, ansatz, params, interface):
+    def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the derivative is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""
 
@@ -709,9 +745,9 @@ class TestAdjointMetricTensorDifferentiability:
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
-        dev = qml.device("default.qubit.jax", wires=self.num_wires)
+        dev = qml.device("default.qubit", wires=self.num_wires)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="jax")
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -816,9 +852,9 @@ class TestErrors:
         H = qml.Hamiltonian([0.2, 0.9], [qml.PauliZ(0), qml.PauliY(0)])
 
         def ansatz(x, wires):
-            qml.RX(x, wires=0)
+            qml.RX(x, wires=wires[0])
 
         with pytest.warns(UserWarning, match="is deprecated,"):
             cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated"):
-            mt = qml.adjoint_metric_tensor(cost)
+            qml.adjoint_metric_tensor(cost)

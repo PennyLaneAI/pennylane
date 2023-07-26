@@ -28,7 +28,7 @@ from .general_shift_rules import (
     generate_multishifted_tapes,
     generate_shifted_tapes,
 )
-from .gradient_transform import grad_method_validation, gradient_analysis
+from .gradient_transform import gradient_analysis_and_validation
 from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 
@@ -179,14 +179,27 @@ def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     return add_unshifted, unshifted_coeff
 
 
-def _no_trainable_grad_new(tape):
+_no_trainable_hessian_warning = (
+    "Attempted to compute the Hessian of a tape with no trainable parameters. "
+    "If this is unintended, please mark trainable parameters in accordance with the "
+    "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+)
+
+
+def _no_trainable_hessian(tape):
+    warnings.warn(_no_trainable_hessian_warning)
     if len(tape.measurements) == 1:
         return [], lambda _: qml.math.zeros((0,))
 
     return [], lambda _: tuple(qml.math.zeros((0,)) for _ in tape.measurements)
 
 
-def _all_zero_grad_new(tape):
+def _no_trainable_hessian_legacy(tape):
+    warnings.warn(_no_trainable_hessian_warning)
+    return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
+
+
+def _all_zero_hessian(tape):
     num_params = len(tape.trainable_params)
 
     zeros_list = []
@@ -475,8 +488,9 @@ def _expval_hessian_param_shift_tuple(
     return hessian_tapes, processing_fn
 
 
-@hessian_transform
-def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
+def _param_shift_hessian_legacy(
+    tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
+):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters.
 
@@ -621,15 +635,6 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
                [0.        , 0.05998862]])
 
     """
-    if qml.active_return():
-        return _param_shift_hessian_tuple(
-            tape,
-            argnum=argnum,
-            diagonal_shifts=diagonal_shifts,
-            off_diagonal_shifts=off_diagonal_shifts,
-            f0=f0,
-        )
-
     # Perform input validation before generating tapes.
     if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
@@ -644,12 +649,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         )
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the hessian of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
+        return _no_trainable_hessian_legacy(tape)
     bool_argnum = _process_argnum(argnum, tape)
 
     compare_diag_to = qml.math.sum(qml.math.diag(bool_argnum))
@@ -669,12 +669,11 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             f"for which to compute at least one off-diagonal entry ({compare_offdiag_to})."
         )
 
-    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     # If argnum is given, the grad_method_validation may allow parameters with
     # finite-difference as method. If they are among the requested argnum, we catch this
     # further below (as no fallback function in analogy to `param_shift` is used currently).
     method = "analytic" if argnum is None else "best"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=qml.gradients.param_shift)
 
     for i, g in enumerate(diff_methods):
         if g == "0":
@@ -699,9 +698,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
     )
 
 
-def _param_shift_hessian_tuple(
-    tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
-):
+@hessian_transform
+def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
@@ -844,6 +842,14 @@ def _param_shift_hessian_tuple(
         ((array(0.), array(0.)), (array(0.), array(0.05998862)))
 
     """
+    if not qml.active_return():
+        return _param_shift_hessian_legacy(
+            tape,
+            argnum=argnum,
+            diagonal_shifts=diagonal_shifts,
+            off_diagonal_shifts=off_diagonal_shifts,
+            f0=f0,
+        )
 
     # Perform input validation before generating tapes.
     if any(isinstance(m, StateMP) for m in tape.measurements):
@@ -859,12 +865,7 @@ def _param_shift_hessian_tuple(
         )
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the hessian of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return _no_trainable_grad_new(tape)
+        return _no_trainable_hessian(tape)
 
     bool_argnum = _process_argnum(argnum, tape)
 
@@ -885,18 +886,17 @@ def _param_shift_hessian_tuple(
             f"for which to compute at least one off-diagonal entry ({compare_offdiag_to})."
         )
 
-    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     # If argnum is given, the grad_method_validation may allow parameters with
     # finite-difference as method. If they are among the requested argnum, we catch this
     # further below (as no fallback function in analogy to `param_shift` is used currently).
     method = "analytic" if argnum is None else "best"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=qml.gradients.param_shift)
 
     for i, g in enumerate(diff_methods):
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
     if qml.math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
-        return _all_zero_grad_new(tape)
+        return _all_zero_hessian(tape)
 
     # Find all argument indices that appear in at least one derivative that was requested
     choose_argnum = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]

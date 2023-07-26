@@ -46,6 +46,8 @@ class BasisState(StatePrep):
             array of integers from the set :math:`\{0, 1\}`, i.e.,
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -133,6 +135,8 @@ class QubitStateVector(StatePrep):
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -151,8 +155,8 @@ class QubitStateVector(StatePrep):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state, wires, do_queue=True, id=None):
-        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, state, wires, id=None):
+        super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
         if len(state.shape) == 1:
@@ -249,6 +253,8 @@ class QubitDensityMatrix(Operation):
     Args:
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     .. details::
         :title: Usage Details

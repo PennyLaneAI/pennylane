@@ -171,7 +171,7 @@ class TestOperations:
                 lambda self, x, **kwargs: call_history.extend(x + kwargs.get("rotations", [])),
             )
             m.setattr(QutritDevice, "analytic_probability", lambda *args: None)
-            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: [0])
             dev = mock_qutrit_device()
             dev.execute(tape)
 
@@ -228,7 +228,7 @@ class TestOperations:
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
-            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: [0])
             dev = mock_qutrit_device()
             dev.execute(tape, hash=tape.graph.hash)
 
@@ -1019,7 +1019,7 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
-        assert res[0].dtype == r_dtype
+        assert res[0][0].dtype == r_dtype
         assert res[1].dtype == r_dtype
 
     def test_result_empty_tape(self, mock_qutrit_device, tol):
@@ -1045,7 +1045,7 @@ class TestShotList:
         with pytest.raises(qml.DeviceError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=0.5)
 
-        with pytest.raises(ValueError, match="Unknown shot sequence"):
+        with pytest.raises(ValueError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
 
     shot_data = [
@@ -1087,10 +1087,18 @@ class TestShotList:
             return qml.probs(wires=[0, 1])
 
         res = circuit(0.1, 0.6)
-
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
+        print(res)
+        if isinstance(shot_list[0], tuple):
+            shots = shot_list[0][1]
+            assert isinstance(res, tuple)
+            assert len(res) == shots
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == len(shot_list)
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
@@ -1135,9 +1143,17 @@ class TestShotList:
 
         res = circuit(0.1, 0.6)
 
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
+        if isinstance(shot_list[0], tuple):
+            shots = shot_list[0][1]
+            assert isinstance(res, tuple)
+            assert len(res) == shots
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == len(shot_list)
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
@@ -1173,9 +1189,17 @@ class TestShotList:
 
         res = circuit(pnp.eye(9))
 
-        assert res.shape == expected_shape  # pylint: disable=no-member
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
+        if isinstance(shot_list[0], tuple):
+            shots = shot_list[0][1]
+            assert isinstance(res, tuple)
+            assert len(res) == shots
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == len(shot_list)
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition

@@ -18,7 +18,7 @@ This module contains the :class:`Device` abstract base class.
 import abc
 import types
 import warnings
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from collections.abc import Iterable, Sequence
 from functools import lru_cache
 
@@ -42,69 +42,6 @@ from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import WireError, Wires
-
-ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
-"""tuple[int, int]: Represents copies of a shot number."""
-
-
-def _process_shot_sequence(shot_list):
-    """Process the shot sequence, to determine the total
-    number of shots and the shot vector.
-
-    Args:
-        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
-
-    Returns:
-        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
-        of shots, as well as a list of shot tuples.
-
-    **Example**
-
-    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
-    >>> _process_shot_sequence(shot_list)
-    (57,
-     [ShotTuple(shots=3, copies=1),
-      ShotTuple(shots=1, copies=1),
-      ShotTuple(shots=2, copies=4),
-      ShotTuple(shots=6, copies=1),
-      ShotTuple(shots=1, copies=2),
-      ShotTuple(shots=5, copies=1),
-      ShotTuple(shots=12, copies=1),
-      ShotTuple(shots=10, copies=2)])
-
-    The total number of shots (57), and a sparse representation of the shot
-    sequence is returned, where tuples indicate the number of times a shot
-    integer is repeated.
-    """
-    if all(isinstance(s, int) for s in shot_list):
-        if len(set(shot_list)) == 1:
-            # All shots are identical, only require a single shot tuple
-            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
-        else:
-            # Iterate through the shots, and group consecutive identical shots
-            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
-            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
-
-    elif all(isinstance(s, (int, tuple)) for s in shot_list):
-        # shot list contains tuples; assume it is already in a sparse representation
-        shot_vector = [
-            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
-        ]
-
-    else:
-        raise ValueError(f"Unknown shot sequence format {shot_list}")
-
-    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
-    return total_shots, shot_vector
-
-
-def _get_num_copies(shot_vector):
-    """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
-    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
-        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
-    else:
-        len_shot_vec = len(shot_vector)
-    return len_shot_vec
 
 
 class DeviceError(Exception):
@@ -136,8 +73,10 @@ class Device(abc.ABC):
         self.shots = shots
 
         if analytic is not None:
-            msg = "The analytic argument has been replaced by shots=None. "
-            msg += "Please use shots=None instead of analytic=True."
+            msg = (
+                "The analytic argument has been replaced by shots=None. "
+                "Please use shots=None instead of analytic=True."
+            )
             raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
@@ -275,7 +214,8 @@ class Device(abc.ABC):
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
-            self._shots, self._shot_vector = _process_shot_sequence(shots)
+            shot_obj = qml.measurements.Shots(shots)
+            self._shots, self._shot_vector = shot_obj.total_shots, list(shot_obj.shot_vector)
             self._raw_shot_sequence = shots
 
         else:
@@ -285,7 +225,7 @@ class Device(abc.ABC):
 
     @property
     def shot_vector(self):
-        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        """list[~pennylane.measurements.ShotCopies]: Returns the shot vector, a sparse
         representation of the shot sequence used by the device
         when evaluating QNodes.
 
@@ -295,14 +235,14 @@ class Device(abc.ABC):
         >>> dev.shots
         57
         >>> dev.shot_vector
-        [ShotTuple(shots=3, copies=1),
-         ShotTuple(shots=1, copies=1),
-         ShotTuple(shots=2, copies=4),
-         ShotTuple(shots=6, copies=1),
-         ShotTuple(shots=1, copies=2),
-         ShotTuple(shots=5, copies=1),
-         ShotTuple(shots=12, copies=1),
-         ShotTuple(shots=10, copies=2)]
+        [ShotCopies(3 shots x 1),
+         ShotCopies(1 shots x 1),
+         ShotCopies(2 shots x 4),
+         ShotCopies(6 shots x 1),
+         ShotCopies(1 shots x 2),
+         ShotCopies(5 shots x 1),
+         ShotCopies(12 shots x 1),
+         ShotCopies(10 shots x 2)]
 
         The sparse representation of the shot
         sequence is returned, where tuples indicate the number of times a shot

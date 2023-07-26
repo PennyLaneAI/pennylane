@@ -115,7 +115,7 @@ class TestCircuitGraphHash:
     returntype6 = qml.state
 
     numeric_observable_queue = [
-        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
+        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
@@ -684,24 +684,3 @@ class TestQNodeCircuitHashDifferentHashIntegration:
         circuit_hash_2 = node2.qtape.graph.hash
 
         assert circuit_hash_1 != circuit_hash_2
-
-    @pytest.mark.usefixtures("skip_if_no_dask_support")
-    def test_compiled_program_was_stored(self):
-        """Test that QVM device stores the compiled program correctly"""
-        dev = qml.device("default.qubit", wires=3)
-
-        def circuit(params, wires):
-            qml.Hadamard(0)
-            qml.CNOT(wires=[0, 1])
-
-        obs = [qml.PauliZ(0) @ qml.PauliZ(1)]
-        obs_list = obs * 6
-
-        qnodes = qml.map(circuit, obs_list, dev)
-        qnodes([], parallel=True)
-
-        hashes = set()
-        for qnode in qnodes:
-            hashes.add(qnode.qtape.graph.hash)
-
-        assert len(hashes) == 1

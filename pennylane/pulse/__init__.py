@@ -68,7 +68,9 @@ Hardware Compatible Hamiltonians
     :toctree: api
 
     ~rydberg_interaction
-    ~drive
+    ~rydberg_drive
+    ~transmon_interaction
+    ~transmon_drive
 
 
 Creating a parametrized Hamiltonian
@@ -132,7 +134,9 @@ The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 >>> H1
-ParametrizedHamiltonian: terms=3
+  (2*(PauliX(wires=[0]) @ PauliX(wires=[1])))
++ (<lambda>(params_0, t)*(PauliY(wires=[0]) @ PauliY(wires=[1])))
++ (<lambda>(params_1, t)*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
 
 >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
 >>> H1(params, t=0.5)
@@ -259,5 +263,6 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 from .convenience_functions import constant, pwc, pwc_from_function, rect
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .hardware_hamiltonian import HardwareHamiltonian, drive
-from .rydberg import rydberg_interaction
+from .hardware_hamiltonian import HardwareHamiltonian, HardwarePulse, drive
+from .rydberg import rydberg_interaction, rydberg_drive
+from .transmon import transmon_interaction, transmon_drive

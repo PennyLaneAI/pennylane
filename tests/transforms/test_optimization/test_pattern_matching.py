@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``pattern_matching_optimization``.
+"""
+# pylint: disable=too-many-statements
 import pytest
 import pennylane as qml
 import pennylane.numpy as np
@@ -59,8 +62,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+        cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
 
         assert len(qnode.qtape.operations) == 8
         assert cnots_qnode == 4
@@ -104,8 +107,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+        cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
 
         assert len(qnode.qtape.operations) == 8
         assert cnots_qnode == 4
@@ -143,8 +146,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+        cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
 
         assert len(qnode.qtape.operations) == 8
         assert cnots_qnode == 4
@@ -181,8 +184,10 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        s_qnode = qml.specs(qnode)()["gate_types"]["S"]
-        s_adjoint_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["Adjoint(S)"]
+        s_qnode = qml.specs(qnode)()["resources"].gate_types["S"]
+        s_adjoint_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types[
+            "Adjoint(S)"
+        ]
 
         assert len(qnode.qtape.operations) == 8
         assert s_qnode == 5
@@ -224,8 +229,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        toffolis_qnode = qml.specs(qnode)()["gate_types"]["Toffoli"]
-        toffolis_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["Toffoli"]
+        toffolis_qnode = qml.specs(qnode)()["resources"].gate_types["Toffoli"]
+        toffolis_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["Toffoli"]
 
         assert len(qnode.qtape.operations) == 11
         assert toffolis_qnode == 2
@@ -268,11 +273,11 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        gate_qnode = qml.specs(qnode)()["gate_types"]
+        gate_qnode = qml.specs(qnode)()["resources"].gate_types
         swap_qnode = gate_qnode["SWAP"]
         cnot_qnode = gate_qnode["CNOT"]
 
-        gate_qnode_optimized = qml.specs(optimized_qnode)()["gate_types"]
+        gate_qnode_optimized = qml.specs(optimized_qnode)()["resources"].gate_types
         swap_optimized_qnode = gate_qnode_optimized["SWAP"]
         cnot_optimized_qnode = gate_qnode_optimized["CNOT"]
 
@@ -317,11 +322,11 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        gate_qnode = qml.specs(qnode)()["gate_types"]
+        gate_qnode = qml.specs(qnode)()["resources"].gate_types
         swap_qnode = gate_qnode["SWAP"]
         cnot_qnode = gate_qnode["CNOT"]
 
-        gate_qnode_optimized = qml.specs(optimized_qnode)()["gate_types"]
+        gate_qnode_optimized = qml.specs(optimized_qnode)()["resources"].gate_types
         swap_optimized_qnode = gate_qnode_optimized["SWAP"]
         cnot_optimized_qnode = gate_qnode_optimized["CNOT"]
 
@@ -366,11 +371,11 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        gate_qnode = qml.specs(qnode)()["gate_types"]
+        gate_qnode = qml.specs(qnode)()["resources"].gate_types
         cswap_qnode = gate_qnode["CSWAP"]
         cnot_qnode = gate_qnode["CNOT"]
 
-        gate_qnode_optimized = qml.specs(optimized_qnode)()["gate_types"]
+        gate_qnode_optimized = qml.specs(optimized_qnode)()["resources"].gate_types
         cswap_optimized_qnode = gate_qnode_optimized["CSWAP"]
         cnot_optimized_qnode = gate_qnode_optimized["CNOT"]
 
@@ -425,11 +430,11 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode(0.1, 0.2)
 
-        rx_qnode = qml.specs(qnode)(0.1, 0.2)["gate_types"]["RX"]
-        rx_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["gate_types"]["RX"]
+        rx_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types["RX"]
+        rx_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types["RX"]
 
-        rz_qnode = qml.specs(qnode)(0.1, 0.2)["gate_types"]["RZ"]
-        rz_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["gate_types"]["RZ"]
+        rz_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types["RZ"]
+        rz_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types["RZ"]
 
         assert len(qnode.qtape.operations) == 14
         assert rx_qnode == 2
@@ -480,8 +485,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+        cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
 
         assert len(qnode.qtape.operations) == 7
         assert cnots_qnode == 3
@@ -565,8 +570,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+        cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
 
         assert len(qnode.qtape.operations) == 51
         assert cnots_qnode == 28
@@ -688,8 +693,8 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+        cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
 
         assert len(qnode.qtape.operations) == 89
         assert cnots_qnode == 50

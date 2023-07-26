@@ -167,9 +167,7 @@ class UCCSD(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(
-        self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True, id=None
-    ):
+    def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, id=None):
         if (not s_wires) and (not d_wires):
             raise ValueError(
                 f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
@@ -194,7 +192,7 @@ class UCCSD(Operation):
 
         self._hyperparameters = {"init_state": init_state, "s_wires": s_wires, "d_wires": d_wires}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

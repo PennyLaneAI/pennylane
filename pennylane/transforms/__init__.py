@@ -79,8 +79,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.zyz_decomposition
-    ~transforms.xyx_decomposition
+    ~transforms.one_qubit_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
@@ -152,6 +151,13 @@ more tapes as well as a classical processing function.
     ~transforms.sign_expand
     ~transforms.sum_expand
 
+This transform accepts a single tape and returns a single tape:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.convert_to_numpy_parameters
+
 Decorators and utility functions
 --------------------------------
 
@@ -185,6 +191,16 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+
+Transforms core
+---------------
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.core.transform
+    ~transforms.core.transform_dispatcher
+
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -195,8 +211,12 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
+from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .decompositions import zyz_decomposition, xyx_decomposition, two_qubit_decomposition
+from .decompositions import (
+    one_qubit_decomposition,
+    two_qubit_decomposition,
+)
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
@@ -240,3 +260,4 @@ from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
+from .core import transform, TransformError

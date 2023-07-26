@@ -68,7 +68,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.autograd", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.qubit.autograd"
         assert dev.capabilities()["passthru_interface"] == "autograd"
 
@@ -175,7 +175,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement, tol):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         real data type for a simple circuit"""
         p = 0.543
@@ -201,7 +201,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype_broadcasted(self, r_dtype, measurement, tol):
+    def test_real_dtype_broadcasted(self, r_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         real data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
@@ -222,7 +222,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, measurement, tol):
+    def test_complex_dtype(self, c_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         complex data type for a simple circuit"""
         p = 0.543
@@ -239,7 +239,7 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
     @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
-    def test_complex_dtype_broadcasted(self, c_dtype, tol):
+    def test_complex_dtype_broadcasted(self, c_dtype):
         """Test that the default qubit plugin returns the correct
         complex data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
@@ -407,11 +407,14 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit.autograd", wires=3)
-        dev2 = qml.device("default.qubit.autograd", wires=3)
+        dev1 = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
+        circuit1 = qml.QNode(cost, dev1, diff_method="backprop", interface="autograd")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         res = circuit1(p)
 
@@ -638,7 +641,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf", "torch"])
-    def test_error_backprop_wrong_interface(self, interface, tol):
+    def test_error_backprop_wrong_interface(self, interface):
         """Tests that an error is raised if diff_method='backprop' but not using
         the Autograd interface"""
         dev = qml.device("default.qubit.autograd", wires=1)
@@ -705,55 +708,8 @@ class TestHighLevelIntegration:
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
-        dev = qml.device("default.qubit.autograd", wires=2)
 
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([0.1, 0.2], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights))
-
-        grad = qml.grad(cost)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self):
-        """Test that a broadcasted PassthruQNode default.qubit.autograd
-        works with QNodeCollections."""
-        dev = qml.device("default.qubit.autograd", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert res.shape == (3,)
-
-        grad = qml.jacobian(cost)(weights)
-        assert grad.shape == (3, 2, 3)
-
-
+# pylint: disable=protected-access
 @pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""

@@ -18,6 +18,26 @@ import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import pennylane as qml
+from pennylane.gradients.finite_difference import finite_diff
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the _flatten and _unflatten methods."""
+    H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
+    t = 0.1
+    op = qml.ApproxTimeEvolution(H, t, n=20)
+    data, metadata = op._flatten()
+    assert data[0] is H
+    assert data[1] == t
+    assert metadata == (20,)
+
+    # check metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert new_op is not op
 
 
 class TestDecomposition:
@@ -225,12 +245,12 @@ class TestInputs:
 
 # test data for gradient tests
 
-hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
+ham = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
 n = 2
 
 
 def circuit_template(time):
-    qml.ApproxTimeEvolution(hamiltonian, time, n)
+    qml.ApproxTimeEvolution(ham, time, n)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -364,6 +384,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
+# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",
@@ -397,7 +418,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
 
-    res = cost(coeffs, t)
+    cost(coeffs, t)
     grad = qml.grad(cost)(coeffs, t)
 
     assert len(grad) == 2
@@ -410,8 +431,6 @@ def test_trainable_hamiltonian(dev_name, diff_method):
 
     # compare to finite-differences
     tape = create_tape(coeffs, t)
-    g_tapes, fn = qml.gradients.finite_diff(tape, _expand=False, validate_params=False)
-    expected = fn(qml.execute(g_tapes, dev, None))[0]
-
-    assert np.allclose(grad[0], expected[0:1])
-    assert np.allclose(grad[1], expected[2])
+    g_tapes, fn = finite_diff(tape, _expand=False, validate_params=False)
+    expected = fn(qml.execute(g_tapes, dev, None))
+    assert np.allclose(qml.math.hstack(grad), qml.math.stack(expected))

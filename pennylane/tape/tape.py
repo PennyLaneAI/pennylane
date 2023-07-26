@@ -77,6 +77,35 @@ def _validate_computational_basis_sampling(measurements):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
+def rotations_and_diagonal_measurements(tape):
+    """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
+    if not tape._obs_sharing_wires:
+        return [], tape._measurements
+
+    with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        try:
+            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+        except (TypeError, ValueError) as e:
+            if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire.\n"
+                    "Try removing all probability, sample and counts measurements "
+                    "this will allow for splitting of execution and separate measurements "
+                    "for each non-commuting observable."
+                ) from e
+
+            raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
+
+        measurements = copy.copy(tape._measurements)
+
+        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+            new_m = tape.measurements[i].__class__(obs=o)
+            measurements[i] = new_m
+
+    return rotations, measurements
+
+
 # TODO: move this function to its own file and rename
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
@@ -149,37 +178,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
-    if tape._obs_sharing_wires:
-        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
-            try:
-                rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-                tape._obs_sharing_wires = diag_obs
-            except (TypeError, ValueError) as e:
-                if any(
-                    isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements
-                ):
-                    raise qml.QuantumFunctionError(
-                        "Only observables that are qubit-wise commuting "
-                        "Pauli words can be returned on the same wire.\n"
-                        "Try removing all probability, sample and counts measurements "
-                        "this will allow for splitting of execution and separate measurements "
-                        "for each non-commuting observable."
-                    ) from e
-
-                raise qml.QuantumFunctionError(
-                    _err_msg_for_some_meas_not_qwc(tape.measurements)
-                ) from e
-
-            tape._ops.extend(rotations)
-
-            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-                new_m = tape.measurements[i].__class__(obs=o)
-                tape._measurements[i] = new_m
-
+    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for queue, new_queue in [
         (tape._prep, new_prep),
-        (tape._ops, new_ops),
-        (tape._measurements, new_measurements),
+        (tape._ops + diagonalizing_gates, new_ops),
+        (diagonal_measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
@@ -195,7 +198,14 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_queue.append(obj)
                 continue
 
-            if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
+            elif isinstance(obj, qml.measurements.MeasurementProcess):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -214,7 +224,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -237,13 +247,24 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
-        name (str): a name given to the quantum tape
-        do_queue=True (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
 
     **Example**
+
+    Tapes can be constructed by directly providing operations, measurements, and state preparations:
+
+    >>> ops = [qml.S(0), qml.T(1)]
+    >>> measurements = [qml.state()]
+    >>> prep = [qml.BasisState([1,0], wires=0)]
+    >>> tape = qml.tape.QuantumTape(ops, measurements, prep=prep)
+    >>> tape.circuit
+    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+
+    They can also be populated into a recording tape via queuing.
 
     .. code-block:: python
 
@@ -253,6 +274,19 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             qml.CNOT(wires=[0, 'a'])
             qml.RX(0.133, wires='a')
             qml.expval(qml.PauliZ(wires=[0]))
+
+    A ``QuantumTape`` can also be constructed directly from an :class:`~.AnnotatedQueue`:
+
+    .. code-block:: python
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=0)
+            qml.CNOT(wires=[0, 'a'])
+            qml.RX(0.133, wires='a')
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        tape = qml.tape.QuantumTape.from_queue(q)
 
     Once constructed, the tape may act as a quantum circuit and information
     about the quantum circuit can be queried:
@@ -269,15 +303,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     <Wires = [0, 'a']>
     >>> tape.num_params
     3
-
-    Tapes can also be constructed by directly providing operations, measurements, and state preparations:
-
-    >>> ops = [qml.S(0), qml.T(1)]
-    >>> measurements = [qml.state()]
-    >>> prep = [qml.BasisState([1,0], wires=0)]
-    >>> tape = qml.tape.QuantumTape(ops, measurements, prep=prep)
-    >>> tape.circuit
-    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
 
     The existing circuit is overriden upon exiting a recording context.
 
@@ -322,13 +347,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     [0.56, 0.543, 0.133]
 
 
-    When using a tape with ``do_queue=False``, that tape will not be queued in a parent tape context.
+    To prevent the tape from being queued use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape(do_queue=False) as tape2:
-                qml.RX(0.123, wires=0)
+            with qml.QueuingManager.stop_recording():
+                with qml.tape.QuantumTape() as tape2:
+                    qml.RX(0.123, wires=0)
 
     Here, tape2 records the RX gate, but tape1 doesn't record tape2.
 
@@ -344,33 +370,31 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
-    ):
-        self.do_queue = do_queue
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        _update=True,
+    ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()
-        try:
-            if self.do_queue:
-                QueuingManager.append(self)
-            return AnnotatedQueue.__enter__(self)
-        except Exception as _:
-            QuantumTape._lock.release()
-            raise
+        QueuingManager.append(self)
+        QueuingManager.add_active_queue(self)
+        return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        try:
-            AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
-            # After other optimizations in #2963, #2986 and follow-up work, we should check whether
-            # calling `_process_queue` only if there is no `exception_type` saves time. This would
-            # be done via the following:
-            # if exception_type is None:
-            #    self._process_queue()
-            self._process_queue()
-        finally:
-            QuantumTape._lock.release()
+        QueuingManager.remove_active_queue()
+        QuantumTape._lock.release()
+        self._process_queue()
+
+    def adjoint(self):
+        adjoint_tape = super().adjoint()
+        QueuingManager.append(adjoint_tape)
+        return adjoint_tape
 
     # ========================================================
     # construction methods

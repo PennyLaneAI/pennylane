@@ -23,11 +23,11 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+
+from .shots import Shots
 
 # =============================================================================
 # ObservableReturnTypes types
@@ -152,7 +152,7 @@ class MeasurementProcess(ABC):
             if obs is not None:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
-            self._eigvals = np.array(eigvals)
+            self._eigvals = qml.math.asarray(eigvals)
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand receiving
@@ -190,16 +190,16 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device=None):
+    def _shape_legacy(self, device, shots: Shots) -> Tuple:  # pylint: disable=unused-arguments
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when:
+        Note that the output shape is dependent on the shots and device when:
 
         * The measurement type is either ``ProbabilityMP``, ``StateMP`` (from :func:`.state`) or
           ``SampleMP``;
-        * The shot vector was defined in the device.
+        * The shot vector was defined.
 
-        For example, assuming a device with ``shots=None``, expectation values
+        For example, assuming a circuit with ``shots=None``, expectation values
         and variances define ``shape=(1,)``, whereas probabilities in the qubit
         model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
         number of wires the measurement acts on.
@@ -211,28 +211,27 @@ class MeasurementProcess(ABC):
 
         Args:
             device (pennylane.Device): a PennyLane device to use for determining the shape
+            shots (~.Shots): object defining the number and batches of shots
 
         Returns:
-            tuple: the output shape
+            Tuple: the output shape
 
         Raises:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if qml.active_return():
-            return self._shape_new(device=device)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def _shape_new(self, device=None):
+    def shape(self, device, shots: Shots) -> Tuple:
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when:
+        Note that the output shape is dependent on the shots or device when:
 
         * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
           ``_Sample``;
-        * The shot vector was defined in the device.
+        * The shot vector was defined.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(,)``, whereas probabilities in the qubit
@@ -241,6 +240,7 @@ class MeasurementProcess(ABC):
 
         Args:
             device (pennylane.Device): a PennyLane device to use for determining the shape
+            shots (~.Shots): object defining the number and batches of shots
 
         Returns:
             tuple: the output shape
@@ -249,6 +249,8 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
+        if not qml.active_return():
+            return self._shape_legacy(device, shots)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )

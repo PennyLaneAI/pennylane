@@ -20,13 +20,16 @@ import abc
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.typing import Result, ResultBatch
 from pennylane import Tracker
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
+Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -34,12 +37,8 @@ class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
 
-    .. warning::
-
-        This interface is **experimental** and not yet integrated with the rest of PennyLane.
-
     Device drivers should be configured to run under :func:`~.enable_return`, the newer
-    return shape specification.
+    return shape specification, as the old return shape specification is deprecated.
 
     Only the ``execute`` method must be defined to construct a device driver.
 
@@ -84,6 +83,28 @@ class Device(abc.ABC):
         Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
         then the package requirements should specify the minimium PennyLane version required to work with the device.
 
+    .. details::
+        :title: The relationship between preprocessing and execution
+
+        The :meth:`~.preprocess` method is assumed to be run before any :meth:`~.execute` or differentiation method.
+        If an arbitrary, non-preprocessed circuit is provided, :meth:`~.execute` has no responsibility to perform any
+        validation or provide clearer error messages.
+
+        >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
+        >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
+        >>> dev = DefaultQubit2()
+        >>> dev.execute(circuit)
+        MatrixUndefinedError
+        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])
+        >>> config = ExecutionConfig(gradient_method="adjoint")
+        >>> dev.compute_derivatives(circuit, config)
+        ValueError: Operation Rot is not written in terms of a single parameter
+        >>> new_circuit, postprocessing, new_config = dev.preprocess(circuit, config)
+        >>> dev.compute_derivatives(new_circuit, new_config)
+        ((array(0.), array(-0.74570521), array(0.)),)
+
+        Any validation checks or error messages should occur in :meth:`~.preprocess` to avoid failures after expending
+        computation resources.
 
     .. details::
         :title: Execution Configuration
@@ -139,16 +160,16 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
 
             This function is tracked by machine learning interfaces and should be fully differentiable.
-            The ``pennylane.math`` module can be used to construct fully differntiable transformations.
+            The ``pennylane.math`` module can be used to construct fully differentiable transformations.
 
             Additional preprocessing independent of machine learning interfaces can be done inside of
-            the :meth:`~.execute` metod.
+            the :meth:`~.execute` method.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
@@ -156,9 +177,8 @@ class Device(abc.ABC):
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution.
 
-        Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
-            and a postprocessing function to be called after execution.
+            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
 
         Raises:
             Exception: An exception is raised if the input cannot be converted into a form supported by the device.
@@ -170,10 +190,40 @@ class Device(abc.ABC):
         * splitting circuits with batched parameters into multiple executions
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
+        * choosing a best gradient method and ``grad_on_execution`` value.
+
+        .. details::
+            :title: Post processing function and derivatives
+
+            Derivatives and jacobian products will be bound to the machine learning library before the postprocessing
+            function is called on results. Therefore the machine learning library will be responsible for combining the
+            device provided derivatives and post processing derivatives.
+
+            .. code-block:: python
+
+                from pennylane.interfaces.jax import execute as jax_boundary
+
+                def f(x):
+                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
+                    config = ExecutionConfig(gradient_method="adjoint")
+                    circuit_batch, postprocessing, new_config = dev.preprocess(circuit, config)
+
+                    def execute_fn(tapes):
+                        return dev.execute_and_compute_derivatives(tapes, config)
+
+                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
+                    return postprocessing(results)
+
+                x = jax.numpy.array([1.0, 2.0, 3.0])
+                jax.grad(f)(x)
+
+
+            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary`` function.
+            Only then is the classical postprocessing called on the result object.
 
         """
 
-        def blank_postprocessing_fn(res):
+        def blank_postprocessing_fn(res: ResultBatch) -> ResultBatch:
             """Identity postprocessing function created in Device preprocessing.
 
             Args:
@@ -185,15 +235,15 @@ class Device(abc.ABC):
             """
             return res
 
-        circuit_batch = [circuits] if isinstance(circuits, QuantumTape) else circuits
-        return circuit_batch, blank_postprocessing_fn
+        circuit_batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+        return circuit_batch, blank_postprocessing_fn, execution_config
 
     @abc.abstractmethod
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ):
+    ) -> Result_or_ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -266,7 +316,7 @@ class Device(abc.ABC):
 
     def supports_derivatives(
         self,
-        execution_config: ExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
@@ -341,12 +391,12 @@ class Device(abc.ABC):
 
         """
         if execution_config is None:
-            return self.compute_derivatives != Device.compute_derivatives
+            return type(self).compute_derivatives != Device.compute_derivatives
 
         if execution_config.gradient_method != "device" or execution_config.derivative_order != 1:
             return False
 
-        return self.compute_derivatives != Device.compute_derivatives
+        return type(self).compute_derivatives != Device.compute_derivatives
 
     def compute_derivatives(
         self,
@@ -466,7 +516,9 @@ class Device(abc.ABC):
         )
 
     def supports_jvp(
-        self, execution_config: ExecutionConfig, circuit: Optional[QuantumTape] = None
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -542,7 +594,9 @@ class Device(abc.ABC):
         )
 
     def supports_vjp(
-        self, execution_config: ExecutionConfig, circuit: Optional[QuantumTape] = None
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 

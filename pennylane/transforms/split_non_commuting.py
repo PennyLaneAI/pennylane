@@ -49,7 +49,7 @@ def split_non_commuting(tape):
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.split_non_commuting
         @qml.qnode(dev)
@@ -104,7 +104,10 @@ def split_non_commuting(tape):
     :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle, \langle \sigma_z^0\sigma_z^1 \rangle)`.
 
     >>> circuit0([np.pi/4, np.pi/4])
-    tensor([0.70710678, 0.5       , 0.        , 0.5       ], requires_grad=True)
+    (tensor(0.70710678, requires_grad=True),
+    tensor(0.5, requires_grad=True),
+    tensor(0., requires_grad=True),
+    tensor(0.5, requires_grad=True))
 
 
     .. details::
@@ -114,9 +117,8 @@ def split_non_commuting(tape):
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliY(0))
+            measurements = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))]
+            tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
@@ -129,22 +131,23 @@ def split_non_commuting(tape):
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-                qml.expval(qml.PauliX(0) @ qml.PauliX(1))
-                qml.expval(qml.PauliZ(0))
+            measurements = [
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+                qml.expval(qml.PauliZ(0)),
                 qml.expval(qml.PauliX(0))
+            ]
+            tape = qml.tape.QuantumTape(measurements=measurements)
 
             tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
         In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn`` makes sure that the final output is of the same shape and ordering:
 
-        >>> processing_fn(tapes)
-        tensor([tensor(expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])), dtype=object, requires_grad=True),
-            tensor(expval(PauliX(wires=[0]) @ PauliX(wires=[1])), dtype=object, requires_grad=True),
-            tensor(expval(PauliZ(wires=[0])), dtype=object, requires_grad=True),
-            tensor(expval(PauliX(wires=[0])), dtype=object, requires_grad=True)],
-        dtype=object, requires_grad=True)
+        >>> processing_fn([t.measurements for t in tapes])
+        (expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])),
+        expval(PauliX(wires=[0]) @ PauliX(wires=[1])),
+        expval(PauliZ(wires=[0])),
+        expval(PauliX(wires=[0])))
 
     """
 

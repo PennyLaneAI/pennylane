@@ -14,8 +14,8 @@
 """
 Unit tests for CommutationDAG
 """
-import pytest
 from collections import OrderedDict
+import pytest
 from pennylane.wires import Wires
 import pennylane.numpy as np
 import pennylane as qml
@@ -156,6 +156,7 @@ class TestCommutationDAG:
 
     def test_dag_pattern(self):
         "Test a the DAG and its attributes for a more complicated circuit."
+        # pylint: disable=protected-access
 
         def circuit():
             qml.CNOT(wires=[3, 0])

@@ -369,7 +369,6 @@ def pauli_decompose_fast_non_square(matrix, hide_identity=False, wire_order=None
 
     return pauli_sentence.hamiltonian(wire_order=wire_order) 
 
-@singledispatch
 def pauli_sentence(op):
     """Return the PauliSentence representation of an arithmetic operator or Hamiltonian.
 
@@ -382,68 +381,77 @@ def pauli_sentence(op):
     Returns:
         .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
+    if (ps := op._pauli_rep) is not None:  # pylint: disable=protected-access
+        return ps
+
+    return _pauli_sentence(op)
+
+
+@singledispatch
+def _pauli_sentence(op):
+    """Private function to dispatch"""
     raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: PauliX):
     return PauliSentence({PauliWord({op.wires[0]: X}): 1.0})
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: PauliY):
     return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0})
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: PauliZ):
     return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: Identity):  # pylint:disable=unused-argument
     return PauliSentence({PauliWord({}): 1.0})
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: Tensor):
     if not is_pauli_word(op):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    factors = (pauli_sentence(factor) for factor in op.obs)
+    factors = (_pauli_sentence(factor) for factor in op.obs)
     return reduce(lambda a, b: a * b, factors)
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: Prod):
-    factors = (pauli_sentence(factor) for factor in op)
+    factors = (_pauli_sentence(factor) for factor in op)
     return reduce(lambda a, b: a * b, factors)
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: SProd):
-    ps = pauli_sentence(op.base)
+    ps = _pauli_sentence(op.base)
     for pw, coeff in ps.items():
         ps[pw] = coeff * op.scalar
     return ps
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     summands = []
     for coeff, term in zip(*op.terms()):
-        ps = pauli_sentence(term)
+        ps = _pauli_sentence(term)
         for pw, sub_coeff in ps.items():
             ps[pw] = coeff * sub_coeff
         summands.append(ps)
 
-    return reduce(lambda a, b: a + b, summands)
+    return reduce(lambda a, b: a + b, summands) if len(summands) > 0 else PauliSentence()
 
 
-@pauli_sentence.register
+@_pauli_sentence.register
 def _(op: Sum):
-    summands = (pauli_sentence(summand) for summand in op)
+    summands = (_pauli_sentence(summand) for summand in op)
     return reduce(lambda a, b: a + b, summands)

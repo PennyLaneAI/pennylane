@@ -22,12 +22,7 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
-from pennylane.transforms import (
-    mitigate_with_zne,
-    poly_extrapolate,
-    richardson_extrapolate,
-    fold_global,
-)
+from pennylane.transforms import mitigate_with_zne, richardson_extrapolate, fold_global
 
 with qml.queuing.AnnotatedQueue() as q_tape:
     qml.BasisState([1], wires=0)
@@ -113,12 +108,55 @@ class TestMitigateWithZNE:
         for t in tapes:
             same_tape(t, tape)
 
+    def test_multi_returns(self):
+        """Tests if the expected shape is returned when mitigating a circuit with two returns"""
+        noise_strength = 0.05
+
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+
+        n_wires = 2
+        n_layers = 2
+
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s) for s in shapes]
+
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, richardson_extrapolate)
+        @qml.qnode(dev)
+        def mitigated_circuit(w1, w2):
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+        @qml.qnode(dev_noise_free)
+        def ideal_circuit(w1, w2):
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+        res_mitigated = mitigated_circuit(w1, w2)
+        res_ideal = ideal_circuit(w1, w2)
+
+        # check shapes
+        assert isinstance(res_mitigated, tuple)
+        assert len(res_mitigated) == 2
+        assert all(res.shape == () for res in res_mitigated)
+
+        assert isinstance(res_ideal, tuple)
+        assert len(res_ideal) == 2
+        assert all(res.shape == () for res in res_ideal)
+
+        res_mitigated = qml.math.stack(res_mitigated)
+        res_ideal = qml.math.stack(res_ideal)
+
+        assert res_mitigated.shape == res_ideal.shape
+        assert not np.allclose(res_mitigated, res_ideal)
+
     def test_reps_per_factor_not_1(self, mocker):
         """Tests if mitigation proceeds as expected when reps_per_factor is not 1 (default)"""
         scale_factors = [1, 2, -4]
         spy_fold = mocker.spy(self, "folding")
         spy_extrapolate = mocker.spy(self, "extrapolate")
-        tapes, fn = mitigate_with_zne(
+        _, fn = mitigate_with_zne(
             tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2
         )
         random_results = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
@@ -131,6 +169,7 @@ class TestMitigateWithZNE:
         fn(random_results)
 
         args = spy_extrapolate.call_args
+
         assert args[0][0] == scale_factors
         assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
 
@@ -162,7 +201,6 @@ class TestMitiqIntegration:
 
     def test_multiple_returns(self):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
-        from mitiq.zne.scaling import fold_global
         from mitiq.zne.inference import RichardsonFactory
 
         noise_strength = 0.05
@@ -191,12 +229,23 @@ class TestMitiqIntegration:
         res_mitigated = mitigated_circuit(w1, w2)
         res_ideal = ideal_circuit(w1, w2)
 
+        # check shapes
+        assert isinstance(res_mitigated, tuple)
+        assert len(res_mitigated) == 2
+        assert all(res.shape == () for res in res_mitigated)
+
+        assert isinstance(res_ideal, tuple)
+        assert len(res_ideal) == 2
+        assert all(res.shape == () for res in res_ideal)
+
+        res_mitigated = qml.math.stack(res_mitigated)
+        res_ideal = qml.math.stack(res_ideal)
+
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
 
     def test_single_return(self):
         """Tests if the expected shape is returned when mitigating a circuit with a single return"""
-        from mitiq.zne.scaling import fold_global
         from mitiq.zne.inference import RichardsonFactory
 
         noise_strength = 0.05
@@ -268,7 +317,6 @@ class TestMitiqIntegration:
     def test_integration(self):
         """Test if the error of the mitigated result is less than the error of the unmitigated
         result for a circuit with known expectation values"""
-        from mitiq.zne.scaling import fold_global
         from mitiq.zne.inference import RichardsonFactory
 
         noise_strength = 0.05
@@ -302,6 +350,15 @@ class TestMitiqIntegration:
         noisy_val = noisy_qnode(w1, w2)
         mitigated_val = mitigated_qnode(w1, w2)
 
+        for res in [exact_val, noisy_val, mitigated_val]:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            assert all(r.shape == () for r in res)
+
+        exact_val = qml.math.stack(exact_val)
+        noisy_val = qml.math.stack(noisy_val)
+        mitigated_val = qml.math.stack(mitigated_val)
+
         mitigated_err = np.abs(exact_val - mitigated_val)
         noisy_err = np.abs(exact_val - noisy_val)
 
@@ -313,7 +370,6 @@ class TestMitiqIntegration:
     )
     def test_grad(self):
         """Tests if the gradient is calculated successfully."""
-        from mitiq.zne.scaling import fold_global
         from mitiq.zne.inference import RichardsonFactory
 
         noise_strength = 0.05
@@ -346,39 +402,28 @@ def qfunc(theta):
     return qml.expval(1 * qml.PauliZ(0) + 2 * qml.PauliZ(1))
 
 
-n_wires = 2
+def qfunc_multi(theta):
+    qml.RY(theta[0], wires=0)
+    qml.RY(theta[1], wires=1)
+    return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
+
 
 # Describe noise
 noise_gate = qml.PhaseDamping
-noise_strength = 0.05
 
 # Load devices
-dev_ideal = qml.device("default.mixed", wires=n_wires)
-dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+dev_ideal = qml.device("default.mixed", wires=2)
+dev_noisy = qml.transforms.insert(noise_gate, 0.05)(dev_ideal)
 
 out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
 grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
 
+out_ideal_multi = np.array([np.sqrt(2) / 2, np.sqrt(3) / 2])
+grad_ideal_0_multi = np.array([[-np.sqrt(2) / 2, 0], [0, -0.5]])
+
 
 class TestDifferentiableZNE:
     """Testing differentiable ZNE"""
-
-    @pytest.mark.parametrize("lambda_", [1.0, 1.5, 1.7, 2.0, 2.5])
-    @pytest.mark.parametrize("num_ops", [4, 8, 9, 12, 16])
-    def test_correct_number_of_operators(self, lambda_, num_ops):
-        """Test the output corresponds to the right number of operators according to Sec. II A 1) in  https://arxiv.org/abs/2005.10921"""
-        x = 0.5
-        circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
-        assert len(circuit._ops) == num_ops
-
-        folded, _ = qml.transforms.fold_global(circuit, lambda_)
-
-        n, s = divmod(lambda_ - 1, 2)
-
-        s = int(round(s * num_ops / 2))
-
-        exp_total_new = num_ops * (2 * n + 1) + 2 * s
-        assert len(folded[0]._ops) == exp_total_new
 
     def test_global_fold_constant_result(self):
         """Ensuring that the folded circuits always yields the same results."""
@@ -402,14 +447,13 @@ class TestDifferentiableZNE:
             return qml.expval(qml.PauliZ(0))
 
         res = [
-            fold_global(circuit, scale_factor=scale_factor)(w1, w2)
-            for scale_factor in [1, 1.5, 2.0, 2.5, 3]
+            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1, 5)
         ]
-        # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
 
     def test_polyfit(self):
         """Testing the custom diffable _polyfit function"""
+        # pylint: disable=protected-access
         x = np.linspace(1, 4, 4)
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
@@ -433,18 +477,19 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         grad = qml.grad(mitigated_qnode)(theta)
         grad_ideal = qml.grad(qnode_ideal)(theta)
-        grad_noisy = qml.grad(qnode_noisy)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        qml.grad(qnode_noisy)(theta)
 
     @pytest.mark.jax
-    def test_diffability_jax(self):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_diffability_jax(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy)
-        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -460,18 +505,19 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         grad = jax.grad(mitigated_qnode)(theta)
         grad_ideal = jax.grad(qnode_ideal)(theta)
-        grad_noisy = jax.grad(qnode_noisy)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        jax.grad(qnode_noisy)(theta)
 
     @pytest.mark.jax
-    def test_diffability_jaxjit(self):
+    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    def test_diffability_jaxjit(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy)
-        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -487,17 +533,18 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         grad = jax.grad(mitigated_qnode)(theta)
         grad_ideal = jax.grad(qnode_ideal)(theta)
-        grad_noisy = jax.grad(qnode_noisy)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        jax.grad(qnode_noisy)(theta)
 
     @pytest.mark.torch
-    def test_diffability_torch(self):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_diffability_torch(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy)
-        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -520,12 +567,13 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.tf
-    def test_diffability_tf(self):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_diffability_tf(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy)
-        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -535,15 +583,156 @@ class TestDifferentiableZNE:
 
         theta = tf.Variable([np.pi / 4, np.pi / 4])
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape() as t:
             res = mitigated_qnode(theta)
 
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
 
-        grad = tape.gradient(res, theta)
-        with tf.GradientTape() as tape:
+        grad = t.gradient(res, theta)
+        with tf.GradientTape() as t:
             res_ideal = qnode_ideal(theta)
-        grad_ideal = tape.gradient(res_ideal, theta)
+        grad_ideal = t.gradient(res_ideal, theta)
 
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.autograd
+    def test_diffability_autograd_multi(self):
+        """Testing that the mitigated qnode can be differentiated and returns
+        the correct gradient in autograd for multiple measurements"""
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal)
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
+
+        res = qml.math.stack(mitigated_qnode(theta))
+        assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
+
+        grad = qml.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad_ideal = qml.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_diffability_jax_multi(self, interface):
+        """Testing that the mitigated qnode can be differentiated and returns
+        the correct gradient in jax for multiple measurements"""
+        import jax
+        import jax.numpy as jnp
+
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = jnp.array(
+            [np.pi / 4, np.pi / 6],
+        )
+
+        res = qml.math.stack(mitigated_qnode(theta))
+        assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
+
+        grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    def test_diffability_jaxjit_multi(self, interface):
+        """Testing that the mitigated qnode can be differentiated and
+        returns the correct gradient in jax-jit for multiple measurements"""
+        import jax
+        import jax.numpy as jnp
+
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = jax.jit(
+            mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(qnode_noisy)
+        )
+
+        theta = jnp.array(
+            [np.pi / 4, np.pi / 6],
+        )
+
+        res = qml.math.stack(mitigated_qnode(theta))
+        assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
+
+        grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_diffability_torch_multi(self, interface):
+        """Testing that the mitigated qnode can be differentiated and returns
+        the correct gradient in torch for multiple measurements"""
+        import torch
+
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
+
+        res = qml.math.stack(mitigated_qnode(theta))
+        assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
+
+        grad = torch.autograd.functional.jacobian(
+            lambda t: qml.math.stack(mitigated_qnode(t)), theta
+        )
+        grad_ideal = torch.autograd.functional.jacobian(
+            lambda t: qml.math.stack(qnode_ideal(t)), theta
+        )
+        assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.tf
+    def test_diffability_tf_multi(self):
+        """Testing that the mitigated qnode can be differentiated and returns
+        the correct gradient in tf for multiple measurements"""
+        import tensorflow as tf
+
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface="tf")
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface="tf")
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = tf.Variable([np.pi / 4, np.pi / 6])
+
+        with tf.GradientTape() as t:
+            res = qml.math.stack(mitigated_qnode(theta))
+
+        assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
+
+        grad = t.jacobian(res, theta)
+        with tf.GradientTape() as t:
+            res_ideal = qml.math.stack(qnode_ideal(theta))
+
+        grad_ideal = t.jacobian(res_ideal, theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)

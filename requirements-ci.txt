@@ -1,7 +1,9 @@
 numpy
 scipy
+cvxpy
+cvxopt
 networkx
-retworkx
+rustworkx
 autograd
 toml
 appdirs

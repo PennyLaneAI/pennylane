@@ -15,7 +15,9 @@
 Class and functions for activating, deactivating and checking the new return types system
 """
 # pylint: disable=global-statement
-__activated = False
+import warnings
+
+__activated = True
 
 
 def enable_return():
@@ -62,33 +64,11 @@ def enable_return():
     >>> qnode(0.5)
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
 
-    .. note::
-
-        This is an experimental feature and may not support every feature in PennyLane. The list of supported features
-        from PennyLane include:
-
-        * :func:`~.pennylane.execute`
-        * Gradient transforms
-
-          #. :func:`~.pennylane.gradients.param_shift`;
-          #. :func:`~.pennylane.gradients.finite_diff`;
-          #. :class:`~.pennylane.gradients.hessian_transform`;
-          #. :func:`~.pennylane.gradients.param_shift_hessian`.
-
-        * Interfaces
-
-          #. Autograd;
-          #. TensorFlow;
-          #. JAX (without jitting);
-
-        * PennyLane optimizers
-        * :meth:`~.pennylane.tape.QuantumTape.shape`
-
-    Note that this is an experimental feature and may not support every feature in PennyLane. See the ``Usage Details``
-    section for more details.
+    .. _return-autograd-tf-gotcha:
 
     .. details::
         :title: Usage Details
+        :href: return-autograd-tf-gotcha
 
         **Gotcha: Autograd and TensorFlow can only compute gradients of tensor-valued functions**
 
@@ -637,6 +617,13 @@ def enable_return():
         (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
     """
 
+    warnings.warn(
+        "The old return system is deprecated, and will be removed along with "
+        "`qml.enable_return()` in v0.33. Please consult the QNode returns page for guidance on "
+        "switching to the new return system: https://docs.pennylane.ai/en/stable/introduction/returns.html",
+        UserWarning,
+    )
+
     global __activated
     __activated = True
 
@@ -668,6 +655,14 @@ def disable_return():
     tensor([0.5       , 0.5       , 0.08014815, 0.96939564, 0.03060436, 0.93879128], requires_grad=True)
 
     """
+
+    warnings.warn(
+        "The old return system is deprecated, and will be removed along with "
+        "`qml.disable_return()` in v0.33. Please consult the QNode returns page for guidance on "
+        "switching to the new return system: https://docs.pennylane.ai/en/stable/introduction/returns.html",
+        UserWarning,
+    )
+
     global __activated
     __activated = False  # pragma: no cover
 
@@ -700,4 +695,5 @@ def active_return():
     >>> active_return()
     False
     """
+
     return __activated

@@ -676,7 +676,9 @@ class DefaultGaussian(Device):
     _observable_map = {
         "NumberOperator": photon_number,
         "X": homodyne(0),
+        "QuadX": homodyne(0),
         "P": homodyne(np.pi / 2),
+        "QuadP": homodyne(np.pi / 2),
         "QuadOperator": homodyne(None),
         "PolyXP": poly_quad_expectations,
         "FockStateProjector": fock_expectation,
@@ -833,9 +835,9 @@ class DefaultGaussian(Device):
         if len(wires) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")
 
-        if observable == "X":
+        if observable in {"X", "QuadX"}:
             phi = 0.0
-        elif observable == "P":
+        elif observable in {"P", "QuadP"}:
             phi = np.pi / 2
         elif observable == "QuadOperator":
             phi = par[0]
@@ -888,3 +890,17 @@ class DefaultGaussian(Device):
     @property
     def observables(self):
         return set(self._observable_map.keys())
+
+    # pylint: disable=arguments-differ
+    def execute(self, operations, observables):
+        if qml.active_return():
+            if len(observables) > 1:
+                raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+        return super().execute(operations, observables)
+
+    def batch_execute(self, circuits):
+        if not qml.active_return():
+            return super().batch_execute(circuits)
+        results = super().batch_execute(circuits)
+        results = [qml.math.squeeze(res) for res in results]
+        return results

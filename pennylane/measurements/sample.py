@@ -50,6 +50,14 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
 
+    .. note::
+
+        QNodes that return samples cannot, in general, be differentiated, since the derivative
+        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
+        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
+        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
+        observable ``obs``.
+
     **Example**
 
     .. code-block:: python3
@@ -92,13 +100,6 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
            [1, 1],
            [0, 0]])
 
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -149,16 +150,13 @@ class SampleMP(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    # pylint: disable=protected-access
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None:
+    def _shape_legacy(self, device, shots):
+        if not shots:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
+                "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        if device.shot_vector is not None:
+        if shots.has_partitioned_shots:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
                 # supports shot vectors
@@ -167,18 +165,21 @@ class SampleMP(SampleMeasurement):
                     "a device with a shot vector is not supported."
                 )
             return tuple(
-                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
+                (s.shots,) * s.copies if s.shots != 1 else tuple() * s.copies
+                for s in shots.shot_vector
             )
         len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
-        return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
+        return (1, shots.total_shots) if self.obs is not None else (1, shots.total_shots, len_wires)
 
-    def _shape_new(self, device=None):
-        if device is None:
+    def shape(self, device, shots):
+        if not qml.active_return():
+            return self._shape_legacy(device, shots)
+        if not shots:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
+                "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        num_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
+        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
         def _single_int_shape(shot_val, num_wires):
             # singleton dimensions, whether in shot val or num_wires are squeezed away
@@ -189,11 +190,15 @@ class SampleMP(SampleMeasurement):
                 inner_shape.append(num_wires)
             return tuple(inner_shape)
 
-        if device.shot_vector is None:
-            return _single_int_shape(device.shots, num_wires)
-        return tuple(
-            _single_int_shape(shot_val, num_wires) for shot_val in device._raw_shot_sequence
-        )
+        if not shots.has_partitioned_shots:
+            return _single_int_shape(shots.total_shots, len_wires)
+
+        shape = []
+        for s in shots.shot_vector:
+            for _ in range(s.copies):
+                shape.append(_single_int_shape(s.shots, len_wires))
+
+        return tuple(shape)
 
     def process_samples(
         self,
@@ -222,7 +227,7 @@ class SampleMP(SampleMeasurement):
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
-        if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * qml.math.squeeze(samples)
         else:

@@ -103,6 +103,10 @@ state preparation is typically used as the first operation.
     :figure: _static/templates/state_preparations/basis.png
 
 .. gallery-item::
+    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
+    :figure: _static/templates/state_preparations/basis_qutrit.png
+
+.. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
@@ -254,6 +258,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
     :figure: _static/templates/subroutines/flip_sign.png
+
+.. gallery-item::
+    :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
+    :figure: _static/templates/subroutines/qsvt.png
 
 .. raw:: html
 

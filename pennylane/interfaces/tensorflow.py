@@ -16,19 +16,28 @@ This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,too-many-branches
-from collections.abc import Sequence
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager import context
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
 from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.measurements import CountsMP
+from pennylane.measurements import CountsMP, Shots
+from pennylane.transforms import convert_to_numpy_parameters
 
 
-def _compute_vjp(dy, jacs):
+def _set_copy_and_unwrap_tape(t, a):
+    """Copy a given tape with operations and set parameters"""
+    tc = t.bind_new_parameters(a, list(range(len(a))))
+    return convert_to_numpy_parameters(tc)
+
+
+def set_parameters_on_copy_and_unwrap(tapes, params):
+    """Copy a set of tapes with operations and set parameters"""
+    return tuple(_set_copy_and_unwrap_tape(t, a) for t, a in zip(tapes, params))
+
+
+def _compute_vjp_legacy(dy, jacs):
     # compute the vector-Jacobian product dy @ jac
     # for a list of dy's and Jacobian matrices.
     vjps = []
@@ -44,23 +53,21 @@ def _compute_vjp(dy, jacs):
     return vjps
 
 
-def _compute_vjp_new(dy, jacs, multi_measurements, shots=None):
+def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
     # compute the vector-Jacobian product dy @ jac
     # for a list of dy's and Jacobian matrices.
     vjps = []
 
-    shot_vector = isinstance(shots, Sequence)
-
     for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
-        dy_ = dy_ if shot_vector else (dy_,)
-        jac_ = jac_ if shot_vector else (jac_,)
+        dy_ = dy_ if has_partitioned_shots else (dy_,)
+        jac_ = jac_ if has_partitioned_shots else (jac_,)
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):
             if multi:
-                shot_vjps.append(qml.gradients.compute_vjp_multi_new(d, j))
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
             else:
-                shot_vjps.append(qml.gradients.compute_vjp_single_new(d, j))
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
 
         vjp = qml.math.sum(qml.math.stack(shot_vjps), 0)
 
@@ -87,25 +94,25 @@ def _to_tensors(x):
     return tf.convert_to_tensor(x)
 
 
-def _res_restructured(res, tapes, shots=None):
+def _res_restructured(res, tapes, legacy_shots: Shots):
     """
     Reconstruct the nested tuple structure of the output of a list of tapes
     """
-    shot_vector = isinstance(shots, Sequence)
-    num_copies = _get_num_copies(shots) if shot_vector else 1
-
     start = 0
     res_nested = []
     for tape in tapes:
+        tape_shots = legacy_shots or tape.shots or Shots(1)
         shot_res_nested = []
         num_meas = len(tape.measurements)
 
-        for _ in range(num_copies):
+        for _ in range(tape_shots.num_copies):
             shot_res = tuple(res[start : start + num_meas])
             shot_res_nested.append(shot_res[0] if num_meas == 1 else shot_res)
             start += num_meas
 
-        res_nested.append(tuple(shot_res_nested) if shot_vector else shot_res_nested[0])
+        res_nested.append(
+            tuple(shot_res_nested) if tape_shots.has_partitioned_shots else shot_res_nested[0]
+        )
 
     return tuple(res_nested)
 
@@ -134,7 +141,9 @@ def _jac_restructured(jacs, tapes):
     return tuple(jacs_nested)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -164,17 +173,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     """
     # pylint: disable=unused-argument
 
-    if qml.active_return():
-        return _execute_new(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
-
     parameters = []
     params_unwrapped = []
 
@@ -190,9 +188,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    with qml.tape.Unwrap(*tapes):
-        # Forward pass: execute the tapes
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+    # Forward pass: execute the tapes
+    res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
     for i, tape in enumerate(tapes):
         # convert output to TensorFlow tensors
@@ -228,7 +226,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             if jacs:
                 # Jacobians were computed on execution
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
-                vjps = _compute_vjp(dy, jacs)
+                vjps = _compute_vjp_legacy(dy, jacs)
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -238,16 +236,16 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-                        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                                tapes,
-                                dy,
-                                gradient_fn,
-                                reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
-                                gradient_kwargs=gradient_kwargs,
-                            )
+                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            new_tapes,
+                            dy,
+                            gradient_fn,
+                            reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
+                            gradient_kwargs=gradient_kwargs,
+                        )
 
-                            vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                     else:
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -282,8 +280,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                        vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
+                    new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                    vjps = _compute_vjp_legacy(dy, gradient_fn(new_tapes, **gradient_kwargs))
 
             variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
@@ -293,7 +291,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*parameters)
 
 
-def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -319,10 +317,28 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if not qml.active_return():
+        return _execute_legacy(
+            tapes,
+            device,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n=_n,
+            max_diff=max_diff,
+        )
     # pylint: disable=unused-argument
 
     parameters = []
     params_unwrapped = []
+
+    if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
+        # assumes all tapes have the same shot vector
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+        vjp_shots = legacy_shots = None
+    else:
+        has_partitioned_shots = vjp_shots = device.shot_vector
+        legacy_shots = Shots(device.shot_vector or 1)
 
     for i, tape in enumerate(tapes):
         # store the trainable parameters
@@ -336,13 +352,9 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    with qml.tape.Unwrap(*tapes):
-        # Forward pass: execute the tapes
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
-
-    for i, r in enumerate(res):
-        # convert output to TensorFlow tensors
-        res[i] = _to_tensors(r)
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+    res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
+    res = tuple(_to_tensors(r) for r in res)  # convert output to TensorFlow tensors
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
@@ -354,12 +366,12 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
             # reconstruct the nested structure of dy
-            dy = _res_restructured(dy, tapes, shots=device.shot_vector)
+            dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
 
             if jacs:
                 # Jacobians were computed on execution
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
-                vjps = _compute_vjp_new(dy, jacs, multi_measurements, device.shot_vector)
+                vjps = _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots)
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -369,24 +381,24 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-                        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                                tapes,
-                                dy,
-                                gradient_fn,
-                                shots=device.shot_vector,
-                                reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
-                                gradient_kwargs=gradient_kwargs,
-                            )
+                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            new_tapes,
+                            dy,
+                            gradient_fn,
+                            shots=vjp_shots,
+                            reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
+                            gradient_kwargs=gradient_kwargs,
+                        )
 
-                            vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                     else:
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,
                             gradient_fn,
-                            shots=device.shot_vector,
+                            shots=vjp_shots,
                             reduction="extend",
                             gradient_kwargs=gradient_kwargs,
                         )
@@ -415,10 +427,10 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                        jac = gradient_fn(tapes, **gradient_kwargs)
+                    new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                    jac = gradient_fn(new_tapes, **gradient_kwargs)
 
-                    vjps = _compute_vjp_new(dy, jac, multi_measurements, device.shot_vector)
+                    vjps = _compute_vjp(dy, jac, multi_measurements, has_partitioned_shots)
 
             # filter out untrainable parameters if they happen to appear in the vjp
             vjps = [vjp for vjp in vjps if 0 not in qml.math.shape(vjp)]

@@ -356,7 +356,7 @@ class TestPassthruIntegration:
         dev2 = qml.device("default.mixed", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="jax")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", interface="jax")
 
         res = decorator(circuit1)(p_jax)
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
@@ -365,7 +365,7 @@ class TestPassthruIntegration:
         assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
-        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+        assert np.allclose(res, jax.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "op, wire_ids, exp_fn",
@@ -614,7 +614,6 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
@@ -636,7 +635,7 @@ class TestPassthruIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = circuit(x, y)
         expected = np.array(
@@ -646,16 +645,20 @@ class TestPassthruIntegration:
                 (1 - np.cos(x) * np.cos(y)) / 2,
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        assert np.allclose(qml.math.hstack(res), expected, atol=tol, rtol=0)
 
         res = jax.jacobian(circuit, (0, 1))(x, y)
+
         expected = np.array(
             [
                 [-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
                 [0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        assert np.allclose(qml.math.hstack([res[0][0], res[1][0]]), expected[0], atol=tol, rtol=0)
+        assert np.allclose(qml.math.hstack([res[0][1], res[1][1]]), expected[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("jacobian_fn", [jax.jacfwd, jax.jacrev])
     @pytest.mark.parametrize("decorator", decorators)
@@ -707,32 +710,6 @@ class TestHighLevelIntegration:
         weights = jnp.array(np.random.random(shape))
 
         grad = jax.grad(circuit)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed with JAX works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(
-                qml.templates.StronglyEntanglingLayers,
-                obs_list,
-                dev,
-                interface="jax",
-                diff_method="backprop",
-            )
-
-        assert qnodes.interface == "jax"
-
-        weights = jnp.array(
-            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
-        )
-
-        def cost(weights):
-            return jnp.sum(qnodes(weights))
-
-        grad = jax.grad(cost)(weights)
         assert grad.shape == weights.shape
 
     def test_vmap_channel_ops(self):

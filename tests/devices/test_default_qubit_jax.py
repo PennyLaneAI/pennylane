@@ -11,61 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Integration tests for the ``default.qubit.jax`` device.
+"""
 import pytest
-
-jax = pytest.importorskip("jax", minversion="0.2")
-jnp = jax.numpy
-import jaxlib
 import numpy as np
-from jax.config import config
 
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane.pulse import ParametrizedHamiltonian
 
-
-@pytest.mark.jax
-@pytest.mark.parametrize(
-    "version, package, should_raise",
-    [
-        ("0.4.4", jax, True),
-        ("0.4.3", jax, False),
-    ],
+jax = pytest.importorskip("jax", minversion="0.2")
+from pennylane.devices.default_qubit_jax import (  # pylint: disable=wrong-import-position
+    DefaultQubitJax,
 )
-def test_jax_version(version, package, should_raise, monkeypatch):
-    from pennylane.devices.default_qubit_jax import _validate_jax_version
 
-    with monkeypatch.context() as m:
-        m.setattr(package, "__version__", version)
-
-        if should_raise:
-            msg = "version of JAX is 0.4.4"
-
-            with pytest.raises(RuntimeError, match=msg):
-                _validate_jax_version()
-
-            dev = qml.device("default.qubit", wires=1)
-
-            with pytest.raises(RuntimeError, match=msg):
-
-                @qml.qnode(dev, interface="jax", diff_method="backprop")
-                def circuit():
-                    return None
-
-            with pytest.raises(RuntimeError, match=msg):
-                dev = qml.device("default.qubit.jax", wires=1)
-
-        else:
-            _validate_jax_version()
-
-            _ = qml.device("default.qubit.jax", wires=1)
-
-            dev = qml.device("default.qubit", wires=1)
-
-            @qml.qnode(dev, interface="jax")
-            def circuit():
-                return None
+jnp = jax.numpy
 
 
 @pytest.mark.jax
@@ -81,6 +42,7 @@ def test_analytic_deprecation():
         qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
 
 
+# pylint: disable=too-many-public-methods
 @pytest.mark.jax
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
@@ -121,7 +83,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.qubit.jax"
         assert dev.capabilities()["passthru_interface"] == "jax"
 
@@ -131,7 +93,7 @@ class TestQNodeIntegration:
     )
     def test_float_precision(self, jax_enable_x64, c_dtype, r_dtype):
         """Test that the plugin device uses the same float precision as the jax config."""
-        config.update("jax_enable_x64", jax_enable_x64)
+        jax.config.update("jax_enable_x64", jax_enable_x64)
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.state.dtype == c_dtype
         assert dev.state.real.dtype == r_dtype
@@ -332,7 +294,7 @@ class TestQNodeIntegration:
 
     def test_custom_shots_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit when using custom shot vector"""
-        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        dev = qml.device("default.qubit.jax", wires=1, shots=(3, 2))
         expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
@@ -342,7 +304,8 @@ class TestQNodeIntegration:
             return qml.probs(wires=0)
 
         result = circuit()
-        assert jnp.allclose(result, expected, atol=tol)
+        assert jnp.allclose(qml.math.hstack(result[0]), expected[0], atol=tol)
+        assert jnp.allclose(qml.math.hstack(result[1]), expected[1], atol=tol)
 
     @pytest.mark.skip("Shot lists are not supported with broadcasting yet")
     def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
@@ -462,7 +425,7 @@ class TestQNodeIntegration:
         "state_vector",
         [np.array([0.1 + 0.1j, 0.2 + 0.2j, 0, 0]), jnp.array([0.1 + 0.1j, 0.2 + 0.2j, 0, 0])],
     )
-    def test_qubit_state_vector_jax_not_normed(self, state_vector, tol):
+    def test_qubit_state_vector_jax_not_normed(self, state_vector):
         """Test that an error is raised when Qubit state vector is not normed works with a jax"""
         dev = qml.device("default.qubit.jax", wires=list(range(2)))
 
@@ -502,7 +465,7 @@ class TestQNodeIntegration:
             match="The number of shots has to be explicitly set on the device "
             "when using sample-based measurements.",
         ):
-            res = circuit()
+            circuit()
 
     def test_sampling_analytic_mode_with_counts(self):
         """Test that when sampling with counts and shots=None an error is raised."""
@@ -517,7 +480,7 @@ class TestQNodeIntegration:
             match="The number of shots has to be explicitly set on the device "
             "when using sample-based measurements.",
         ):
-            res = circuit()
+            circuit()
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests."""
@@ -598,6 +561,61 @@ class TestQNodeIntegration:
         @qml.qnode(dev)
         def true_circuit():
             qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_not_called()
+        spy2.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
+        method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi - phi[0]
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi_for_RX, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_called_once()
+        spy2.assert_not_called()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    def test_parametrized_evolution_matrix_complementary(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        but with ``complementary=True``, the `_apply_operation` method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi[-1] - phi
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H, return_intermediate=True, complementary=True)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi_for_RX, 0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit()
@@ -729,7 +747,7 @@ class TestPassthruIntegration:
 
         res = circuit(p)
 
-        x, y, z = p
+        x, y, _ = p
         expected = jnp.cos(y) ** 2 - jnp.sin(x) * jnp.sin(y) ** 2
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
@@ -980,7 +998,7 @@ class TestPassthruIntegration:
         assert jnp.allclose(res, expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["autograd", "tf", "torch"])
-    def test_error_backprop_wrong_interface(self, interface, tol):
+    def test_error_backprop_wrong_interface(self, interface):
         """Tests that an error is raised if diff_method='backprop' but not using
         the Jax interface"""
         dev = qml.device("default.qubit.jax", wires=1)
@@ -1017,9 +1035,6 @@ class TestHighLevelIntegration:
 
     def test_do_not_split_analytic_jax(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None using the jax device."""
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
-
         dev = qml.device("default.qubit.jax", wires=2)
         H = qml.Hamiltonian(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
@@ -1033,7 +1048,7 @@ class TestHighLevelIntegration:
         # evaluated one expval altogether
         assert spy.call_count == 1
 
-    def test_direct_eval_hamiltonian_broadcasted_error_jax(self, mocker):
+    def test_direct_eval_hamiltonian_broadcasted_error_jax(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with Jax."""
         dev = qml.device("default.qubit.jax", wires=2)
@@ -1043,8 +1058,6 @@ class TestHighLevelIntegration:
         def circuit():
             qml.RX(jnp.zeros(5), 0)
             return qml.expval(H)
-
-        spy = mocker.spy(dev, "expval")
 
         with pytest.raises(NotImplementedError, match="Hamiltonians for interface!=None"):
             circuit()
@@ -1065,53 +1078,8 @@ class TestHighLevelIntegration:
         grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape
 
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode using default.qubit.jax works with QNodeCollections."""
-        dev = qml.device("default.qubit.jax", wires=2)
 
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-
-        weights = jnp.array([0.1, 0.2])
-
-        def cost(weights):
-            return jnp.sum(jnp.array(qnodes(weights)))
-
-        grad = jax.grad(cost)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self):
-        """Test that a broadcasted PassthruQNode default.qubit.jax
-        works with QNodeCollections."""
-        dev = qml.device("default.qubit.jax", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-
-        assert qnodes.interface == "jax"
-
-        weights = jnp.array([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]])
-
-        def cost(weights):
-            return jnp.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert res.shape == (3,)
-
-        jac = jax.jacobian(cost)(weights)
-        assert jac.shape == (3, 2, 3)
-
-
+# pylint: disable=protected-access
 @pytest.mark.jax
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""

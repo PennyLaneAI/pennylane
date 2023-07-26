@@ -15,12 +15,15 @@
 
 import copy
 
+import autograd.numpy
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import ClassicalShadowMP
+from pennylane.measurements import ClassicalShadowMP, Shots
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
+
+# pylint: disable=dangerous-default-value, too-many-arguments, comparison-with-callable, no-member
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
@@ -113,6 +116,136 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
 wires_list = [1, 3]
 
 
+class TestProcessState:
+    """Unit tests for process_state_with_shots for the classical_shadow
+    and shadow_expval measurements"""
+
+    def test_shape_and_dtype(self):
+        """Test that the shape and dtype of the measurement is correct"""
+        mp = qml.classical_shadow(wires=[0, 1])
+        res = mp.process_state_with_shots(np.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+
+    def test_wire_order(self):
+        """Test that the wire order is respected"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+
+        mp = qml.classical_shadow(wires=[0, 1])
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000)
+
+        assert res.shape == (2, 1000, 2)
+        assert res.dtype == np.int8
+
+        # test that the first qubit samples are all 0s when the recipe is Z
+        assert np.all(res[0][res[1, ..., 0] == 2][:, 0] == 0)
+
+        # test that the second qubit samples contain 1s when the recipe is Z
+        assert np.any(res[0][res[1, ..., 1] == 2][:, 1] == 1)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=1000)
+
+        assert res.shape == (2, 1000, 2)
+        assert res.dtype == np.int8
+
+        # now test that the first qubit samples contain 1s when the recipe is Z
+        assert np.any(res[0][res[1, ..., 0] == 2][:, 0] == 1)
+
+        # now test that the second qubit samples are all 0s when the recipe is Z
+        assert np.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
+
+    def test_subset_wires(self):
+        """Test that the measurement is correct when only a subset of wires is measured"""
+        mp = qml.classical_shadow(wires=[0, 1])
+
+        # GHZ state
+        state = np.zeros((2, 2, 2))
+        state[np.array([0, 1]), np.array([0, 1]), np.array([0, 1])] = 1 / np.sqrt(2)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+
+        assert res.shape == (2, 100, 2)
+        assert res.dtype == np.int8
+
+        # test that the bits are either 0 and 1
+        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+
+        # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+
+    def test_same_rng(self):
+        """Test results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
+
+        mp1 = qml.classical_shadow(wires=[0, 1], seed=123)
+        mp2 = qml.classical_shadow(wires=[0, 1], seed=123)
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
+
+        # test recipes are the same but bits are different
+        assert np.all(res1[1] == res2[1])
+        assert np.any(res1[0] != res2[0])
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100, rng=456)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100, rng=456)
+
+        # now test everything is the same
+        assert np.all(res1[1] == res2[1])
+        assert np.all(res1[0] == res2[0])
+
+    def test_expval_shape_and_val(self):
+        """Test that shadow expval measurements work as expected"""
+        mp = qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)
+        res = mp.process_state_with_shots(
+            np.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=1000, rng=100
+        )
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+    def test_expval_wire_order(self):
+        """Test that shadow expval respects the wire order"""
+        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+
+        mp = qml.shadow_expval(qml.PauliZ(0), seed=200)
+        res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=3000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 1.0, atol=0.05)
+
+        res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=3000, rng=100)
+
+        assert res.shape == ()
+        assert np.allclose(res, 0.0, atol=0.05)
+
+    def test_expval_same_rng(self):
+        """Test expval results when the rng is the same"""
+        state = np.ones((2, 2)) / 2
+
+        mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+        mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=100)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=200)
+
+        # test results are different
+        assert res1 != res2
+
+        res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
+        res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000, rng=456)
+
+        # now test that results are the same
+        assert res1 == res2
+
+
 @pytest.mark.parametrize("wires", wires_list)
 class TestClassicalShadow:
     """Unit tests for classical_shadow measurement"""
@@ -131,15 +264,14 @@ class TestClassicalShadow:
     def test_measurement_process_shape(self, wires, shots, seed):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
+        shots_obj = Shots(shots)
         res = qml.classical_shadow(wires=range(wires), seed=seed)
-        assert res.shape(device=dev) == (1, 2, shots, wires)
+        assert res.shape(dev, shots_obj) == (2, shots, wires)
 
         # test an error is raised when device is None
-        msg = (
-            "The device argument is required to obtain the shape of a classical shadow measurement"
-        )
+        msg = "Shots must be specified to obtain the shape of a classical shadow measurement"
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
-            res.shape(device=None)
+            res.shape(dev, Shots(None))
 
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -150,7 +282,9 @@ class TestClassicalShadow:
         circuit.construct((), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.classical_shadow(wires=range(wires)).shape(device=circuit.device)
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(
+            circuit.device, Shots(shots)
+        )
 
         assert res.shape == expected_shape
 
@@ -192,7 +326,7 @@ class TestClassicalShadow:
 
         assert shadow.dtype == expected_dtype
 
-        bits, recipes = shadow
+        bits, recipes = shadow  # pylint: disable=unpacking-non-sequence
 
         # test allowed values of bits and recipes
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
@@ -271,14 +405,6 @@ class TestClassicalShadow:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit()
 
-    def test_seed_recipes_deprecated(self, wires):
-        """Test that using the ``seed_recipes`` argument is deprecated."""
-        with pytest.warns(
-            UserWarning,
-            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
-        ):
-            qml.classical_shadow(wires=wires, seed_recipes=False)
-
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -335,8 +461,7 @@ class TestExpvalMeasurement:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
-        assert res.shape() == (1,)
-        assert res.shape(dev) == (1,)
+        assert len(res.shape(dev, Shots(shots))) == 0
 
     def test_shape_matches(self):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -349,7 +474,7 @@ class TestExpvalMeasurement:
         circuit.construct((H,), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.shadow_expval(H).shape()
+        expected_shape = qml.shadow_expval(H).shape(circuit.device, Shots(shots))
 
         assert res.shape == expected_shape
 
@@ -360,7 +485,7 @@ class TestExpvalMeasurement:
         res = qml.shadow_expval(H, k=10)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)
+        assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
         assert copied_res.return_type == res.return_type
         assert qml.equal(copied_res.H, res.H)
         assert copied_res.k == res.k
@@ -374,7 +499,7 @@ class TestExpvalMeasurement:
 
         msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit(H, k=10)
+            _ = circuit(H, k=10)
 
     def test_multi_measurement_error(self):
         """Test that an error is raised when classical shadows is returned
@@ -389,7 +514,7 @@ class TestExpvalMeasurement:
 
         msg = "Classical shadows cannot be returned in combination with other return types"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit()
+            _ = circuit()
 
     def test_obs_not_queued(self):
         """Test that the observable passed to qml.shadow_expval is not queued"""
@@ -402,14 +527,6 @@ class TestExpvalMeasurement:
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], ShadowExpvalMP)
-
-    def test_seed_recipes_deprecated(self):
-        """Test that using the ``seed_recipes`` argument is deprecated."""
-        with pytest.warns(
-            UserWarning,
-            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
-        ):
-            qml.shadow_expval(H=qml.PauliX(0), seed_recipes=False)
 
 
 obs_hadamard = [
@@ -500,6 +617,7 @@ class TestExpvalForward:
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
 
+# pylint: disable=too-few-public-methods
 @pytest.mark.all_interfaces
 class TestExpvalForwardInterfaces:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -560,13 +678,15 @@ class TestExpvalBackward:
         shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="autograd")
         exact_circuit = strongly_entangling_circuit_exact(3, "autograd")
 
+        def cost_exact(x, obs):
+            return autograd.numpy.hstack(exact_circuit(x, obs))
+
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = np.random.uniform(
             0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
         )
-
         actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
-        expected = qml.jacobian(exact_circuit)(x, obs)
+        expected = qml.jacobian(cost_exact, argnum=0)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -614,7 +734,7 @@ class TestExpvalBackward:
         actual = tape.jacobian(out, x)
 
         with tf.GradientTape() as tape2:
-            out2 = exact_circuit(x, obs)
+            out2 = qml.math.hstack(exact_circuit(x, obs))
 
         expected = tape2.jacobian(out2, x)
 
@@ -638,6 +758,6 @@ class TestExpvalBackward:
         )
 
         actual = torch.autograd.functional.jacobian(lambda x: shadow_circuit(x, obs, k=10), x)
-        expected = torch.autograd.functional.jacobian(lambda x: exact_circuit(x, obs), x)
+        expected = torch.autograd.functional.jacobian(lambda x: tuple(exact_circuit(x, obs)), x)
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(actual, qml.math.stack(expected), atol=1e-1)
