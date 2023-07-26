@@ -145,10 +145,10 @@ def pauli_decompose(
         index = [slice(None)] * (2 * num_qubits)
         index[idx] = index[idx + num_qubits] = 1
         phase_mat[tuple(index)] *= 1j
-    phase_mat = qml.math.reshape(phase_mat, shape)
+    phase_mat = qml.math.convert_like(qml.math.reshape(phase_mat, shape), matrix)
 
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    term_mat = (hadamard_transform_mat * phase_mat).T
+    term_mat = qml.math.transpose(qml.math.multiply(hadamard_transform_mat, phase_mat))
 
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
@@ -168,13 +168,17 @@ def pauli_decompose(
                 terms[0].append(coefficient)
                 terms[1].append(observables)
 
+    coeffs = qml.math.convert_like(terms[0], matrix)
+    if hasattr(matrix, "requires_grad"):
+        coeffs.requires_grad = matrix.requires_grad
+
     if pauli:
         return PauliSentence(
             {PauliWord({w: o for o, w in obs_n_wires}): coeff for coeff, obs_n_wires in zip(*terms)}
         )
 
     obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in terms[1]]
-    return Hamiltonian(terms[0], obs)
+    return Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):
