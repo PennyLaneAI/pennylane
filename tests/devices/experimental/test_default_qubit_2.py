@@ -1036,7 +1036,7 @@ class TestAdjointDifferentiation:
     def test_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit2(max_workers=max_workers)
-        x = qml.numpy.array(np.pi / 7)
+        x = np.array(np.pi / 7)
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         multi_meas = qml.tape.QuantumScript(
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
@@ -1051,12 +1051,13 @@ class TestAdjointDifferentiation:
     def test_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
         dev = DefaultQubit2(max_workers=max_workers)
-        x = qml.numpy.array(np.pi / 7)
+        x = np.array(np.pi / 7)
         expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         multi_meas = qml.tape.QuantumScript(
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
+
         circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
         actual_grad = dev.compute_derivatives(circuits, self.ec)
 
