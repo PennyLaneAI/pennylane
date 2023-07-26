@@ -525,7 +525,7 @@ class CircuitGraph:
         Returns:
             bool: returns ``True`` if a path exists
         """
-        if a == b:
+        if a is b:
             return True
 
         return (
