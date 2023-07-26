@@ -783,13 +783,14 @@ def _create_variance_proc_fn(
     """
 
     def processing_fn(results):
+        print("\n in variance processing_fn : ", results)
         f0 = results[0]
 
         has_partitioned_shots = shots.has_partitioned_shots
 
         # analytic derivative of <A>
         pdA = pdA_fn(results[int(not pdA_fn.first_result_unshifted) : tape_boundary])
-
+        print("pdA: ", pdA)
         # analytic derivative of <A^2>
         pdA2 = _get_pdA2(
             results[tape_boundary:],
@@ -799,7 +800,7 @@ def _create_variance_proc_fn(
             var_indices,
             has_partitioned_shots,
         )
-
+        print("pdA2: ", pdA2)
         # The logic follows:
         # variances (var_mask==True): return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp
         # plain expectations (var_mask==False): return d<A>/dp
@@ -817,7 +818,9 @@ def _create_variance_proc_fn(
 
             return tuple(final_res)
 
-        return _single_variance_gradient(tape, var_mask, pdA2, f0, pdA)
+        out = _single_variance_gradient(tape, var_mask, pdA2, f0, pdA)
+        print(out, "\n")
+        return out
 
     return processing_fn
 

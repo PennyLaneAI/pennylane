@@ -549,7 +549,7 @@ def execute(
     if new_device_interface:
 
         def device_execution_with_config(tapes):
-            tapes = tuple(expand_fn(t) for t in tapes)
+            print("in device execution with config")
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             return device.execute(tapes, execution_config=config)
 
@@ -634,13 +634,21 @@ def execute(
         # a gradient transform
         vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
         if max_diff == 2:
+            print("has maxdiff of 2")
             interface_boundary = _get_interface_boundary(
                 mapped_interface, tapes, _grad_on_execution
             )
-            execute_fn = partial(
+            differentiable_execute_fn = partial(
                 interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn, device=device
             )
-            vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
+            vjp_fn = TransformDerivatives(
+                differentiable_execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs
+            )
+
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     interface_boundary = _get_interface_boundary(mapped_interface, tapes, _grad_on_execution)
     res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn, device=device)

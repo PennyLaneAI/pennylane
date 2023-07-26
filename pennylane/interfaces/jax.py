@@ -393,10 +393,6 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # Set the trainable parameters
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
     has_partitioned_shots = tapes[0].shots.has_partitioned_shots
@@ -411,7 +407,10 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
-        return vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
+        res, jvps = vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
+        print(res)
+        print(jvps)
+        return res, jvps
 
     return _to_jax(execute_wrapper(parameters))
 

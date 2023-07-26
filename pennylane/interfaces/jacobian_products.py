@@ -173,6 +173,8 @@ class TransformDerivatives(DerivativeExecutor):
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
             tapes, tangents, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
+        print("in execute_and_compute_jvp")
+        print("sending off ", jvp_tapes)
 
         full_batch = tapes + tuple(jvp_tapes)
 
@@ -180,8 +182,10 @@ class TransformDerivatives(DerivativeExecutor):
 
         results = full_results[:num_result_tapes]
         jvp_results = full_results[num_result_tapes:]
+        print("\n jvp_results: ", jvp_results)
+        print("jvp processing_fn: ", jvp_processing_fn)
         jvps = jvp_processing_fn(jvp_results)
-
+        print("post processed: ", jvps, "\n")
         return tuple(results), tuple(jvps)
 
     def compute_jvp(self, tapes, tangents):
@@ -210,6 +214,7 @@ class TransformDerivatives(DerivativeExecutor):
         return tuple(results), tuple(vjps)
 
     def compute_vjp(self, tapes, dy):
+        print("in compute_vjp: ", self._inner_execute)
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )

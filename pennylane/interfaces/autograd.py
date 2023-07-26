@@ -296,10 +296,6 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
-    for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     # pylint misidentifies autograd.builtins as a dict
     # pylint: disable=no-member
@@ -337,6 +333,8 @@ def _execute(
     - ``tapes`` is a *required* argument
 
     """
+    print("\n in autograd _execute wth : ", execute_fn)
+    print(vjp_fn, "\n")
     return execute_fn(tapes)
 
 
@@ -375,12 +373,10 @@ def vjp(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
-        vjps = vjp_fn.compute_vjp(tapes, dy)
+        print("in autograd grad_fn with : ", vjp_fn)
 
         # not sure what this post processing is for
-        return tuple(
-            qml.math.to_numpy(v, max_depth=3) if isinstance(v, ArrayBox) else v for v in vjps
-        )
+        return vjp_fn.compute_vjp(tapes, dy)
 
     return grad_fn
 
