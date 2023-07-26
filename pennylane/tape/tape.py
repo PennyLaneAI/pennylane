@@ -198,7 +198,14 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_queue.append(obj)
                 continue
 
-            if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
+            elif isinstance(obj, qml.measurements.MeasurementProcess):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()

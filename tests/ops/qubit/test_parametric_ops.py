@@ -3091,7 +3091,7 @@ class TestPauliRot:
 
     def test_PauliRot_matrix_broadcast_word(self, tol):
         """Test that the PauliRot matrix is correct for broadcasted words."""
-        angles = np.array([0.2, 0.1, 0.7, 0.3, 0.2])
+        angle = 0.7
         words = ("IX", "ZI", "YY", "XX", "YZ")
         ops = [
             qml.Identity(0) @ qml.PauliX(1),
@@ -3100,8 +3100,8 @@ class TestPauliRot:
             qml.PauliX(0) @ qml.PauliX(1),
             qml.PauliY(0) @ qml.PauliZ(1),
         ]
-        expected = [expm(-0.5j * angle * qml.matrix(op)) for op, angle in zip(ops, angles)]
-        res = qml.PauliRot.compute_matrix(angles, words)
+        expected = [expm(-0.5j * angle * qml.matrix(op)) for op in ops]
+        res = qml.PauliRot.compute_matrix(angle, words)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
