@@ -623,6 +623,36 @@ class TestQNodeIntegration:
         spy2.assert_called_once()
         assert qml.math.allclose(res, true_circuit(), atol=1e-6)
 
+    @pytest.mark.parametrize("device_wires", [1, 3])
+    def test_parametrized_evolution_broadcasted_state(self, mocker, device_wires):
+        """Test that when executing a ParametrizedEvolution on a broadcasted state,
+        the `_apply_operation` method is used."""
+        dev = qml.device("default.qubit.jax", wires=device_wires)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = 0.4
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.RX(jnp.array([0.3, 0.2]), 0)
+            qml.evolve(H)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(jnp.array([0.3, 0.2]), 0)
+            qml.RX(phi_for_RX, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_not_called()
+        spy2.assert_called()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
 
 @pytest.mark.jax
 class TestPassthruIntegration:
