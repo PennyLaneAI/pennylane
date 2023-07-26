@@ -1394,7 +1394,11 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The Hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "h": H_FOR_SPSA}
+            gradient_kwargs = {
+                "sampler_seed": SEED_FOR_SPSA,
+                "h": H_FOR_SPSA,
+                "num_directions": 20
+            }
             tol = TOL_FOR_SPSA
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")

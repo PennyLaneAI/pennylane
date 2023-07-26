@@ -1443,7 +1443,7 @@ class TestTapeExpansion:
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "spsa":
             gradient_kwargs = dict(
-                h=H_FOR_SPSA, sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=10
+                h=H_FOR_SPSA, sampler_rng=np.random.default_rng(SEED_FOR_SPSA), num_directions=20
             )
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":
