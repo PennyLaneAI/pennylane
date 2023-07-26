@@ -1000,7 +1000,7 @@ class TestAdjointDifferentiation:
     def test_single_circuit(self, max_workers):
         """Tests a basic example with a single circuit."""
         dev = DefaultQubit2(max_workers=max_workers)
-        x = qml.numpy.array(np.pi / 7)
+        x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         qs = validate_and_expand_adjoint(qs)
         qs.trainable_params = [0]
@@ -1020,9 +1020,11 @@ class TestAdjointDifferentiation:
     def test_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
         dev = DefaultQubit2(max_workers=max_workers)
-        x = qml.numpy.array(np.pi / 7)
+        x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         qs = validate_and_expand_adjoint(qs)
+        qs.trainable_params = [0]
+
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives([qs], self.ec)
         assert isinstance(actual_grad, tuple)
@@ -1043,6 +1045,9 @@ class TestAdjointDifferentiation:
         multi_meas = qml.tape.QuantumScript(
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
+        single_meas.trainable_params = [0]
+        multi_meas.trainable_params = [0]
+
         expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
         actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
         assert np.isclose(actual_grad[0], expected_grad[0])
