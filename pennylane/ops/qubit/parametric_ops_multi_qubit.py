@@ -229,15 +229,41 @@ class PauliRot(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
         id (str or None): String representing the operation (optional)
 
+    .. note::
+
+        This operation supports broadcasting of the ``pauli_word`` hyperparameter, which is an
+        experimental feature. Broadcasting over hyperparameters is generically not supported in
+        PennyLane and may change behaviour in the future.
+        When broadcasting both the rotation angle and the ``pauli_word`` hyperparameter, they
+        are taken to be broadcasted *simultaneously* (think Python's ``zip``) and need to have
+        the same dimension.
+
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=1)
     >>> @qml.qnode(dev)
-    ... def example_circuit():
-    ...     qml.PauliRot(0.5, 'X',  wires=0)
+    ... def circuit(angle, word="X"):
+    ...     qml.RX(0.2, 0)
+    ...     qml.PauliRot(angle, word,  wires=0)
     ...     return qml.expval(qml.PauliZ(0))
-    >>> print(example_circuit())
-    0.8775825618903724
+    >>> print(circuit(0.5))
+    0.7648421872844883
+
+    Using broadcasting of the rotation angle:
+
+    >>> angles = np.array([1.4, -2.2, 0.6])
+    >>> print(circuit(angles))
+    [ 0.16996714 -0.58850112  0.82533561]
+
+    Broadcasting over different Pauli words instead:
+
+    >>> print(circuit(0.5, ("X", "Y", "Z")))
+    [0.76484219 0.86008934 0.98006658]
+
+    Broadcasting the angle and Pauli word simultaneously:
+
+    >>> print(circuit(angles, ("X", "Y", "Z")))
+    [-0.02919952 -0.57677028  0.98006658]
     """
     num_wires = AnyWires
     num_params = 1
@@ -260,21 +286,10 @@ class PauliRot(Operation):
 
     def __init__(self, theta, pauli_word, wires=None, id=None):
         super().__init__(theta, wires=wires, id=id)
+        pauli_word = pauli_word if isinstance(pauli_word, str) else tuple(pauli_word)
         self.hyperparameters["pauli_word"] = pauli_word
 
-        if not PauliRot._check_pauli_word(pauli_word):
-            raise ValueError(
-                f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
-                "Allowed characters are I, X, Y and Z"
-            )
-
-        num_wires = 1 if isinstance(wires, int) else len(wires)
-
-        if not len(pauli_word) == num_wires:
-            raise ValueError(
-                f"The given Pauli word has length {len(pauli_word)}, length "
-                f"{num_wires} was expected for wires {wires}"
-            )
+        self._check_word_batching(pauli_word)
 
     def __repr__(self):
         return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
@@ -325,9 +340,54 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
+    def _check_word_batching(self, pauli_word):
+        """Check that the broadcasting/batching of a Pauli word is valid and
+        consistent with potential broadcasting of a ``PauliRot`` instance.
+        
+        Side Effects:
+            sets the `_batch_size` property.
+        
+        Raises:
+            ValueError: if the batch size of ``pauli_word`` and the stored batch size do 
+            not match or if ``pauli_word`` is invalid.
+        """
+        num_wires = len(self.wires)
+        if isinstance(pauli_word, str):
+            # Single string, no broadcasting
+            if not PauliRot._check_pauli_word(pauli_word):
+                raise ValueError(
+                    f"The given Pauli word '{pauli_word}' contains characters that are not "
+                    "allowed. Allowed characters are I, X, Y and Z"
+                )
+            if not (_len := len(pauli_word)) == num_wires:
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
+        else:
+            # Iterable of strings, broadcasting
+            if self._batch_size and self._batch_size != len(pauli_word):
+                raise ValueError(
+                    "When broadcasting the rotation angle and the Pauli word, the broadcasting "
+                    f"dimensions have to match, but got {self._batch_size} and {len(pauli_word)}."
+                )
+
+            if not PauliRot._check_pauli_word("".join(pauli_word)):
+                raise ValueError(
+                    f"The given Pauli word '{pauli_word}' contains characters that are not "
+                    "allowed. Allowed characters are I, X, Y and Z"
+                )
+            if not all((_len := len(w)) == num_wires for w in pauli_word):
+                raise ValueError(
+                    f"The given Pauli word has length {_len}, length "
+                    f"{num_wires} was expected for wires {self.wires}"
+                )
+            self._batch_size = len(pauli_word)
+
     @staticmethod
     def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        r"""Representation of the operator as a canonical matrix in the computational basis
+        (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
@@ -336,8 +396,15 @@ class PauliRot(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
-            pauli_word (str): string representation of Pauli word
+            theta (tensor_like or float): rotation angle. Can be broadcasted by providing a
+                ``tensor_like`` instead of a single ``float``.
+                Broadcasting ``theta`` and ``pauli_word`` simultaneously requires them to
+                have the same length.
+            pauli_word (list[str] or str): string representation of the Pauli word about which to
+                rotate. Can be broadcasted by providing a ``list`` of strings instead of a single
+                ``str``.
+                Broadcasting ``theta`` and ``pauli_word`` simultaneously requires them to
+                have the same length.
 
         Returns:
             tensor_like: canonical matrix
@@ -347,7 +414,29 @@ class PauliRot(Operation):
         >>> qml.PauliRot.compute_matrix(0.5, 'X')
         [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
          [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+
+        .. note::
+
+            This matrix method supports broadcasting of the ``pauli_word`` hyperparameter, which is
+            an experimental feature. Broadcasting over hyperparameters is generically not supported
+            in PennyLane and may change behaviour in the future.
+            When broadcasting both the rotation angle and the ``pauli_word`` hyperparameter, they
+            are taken to be broadcasted *simultaneously* (think Python's ``zip``) and need to have
+            the same dimension.
         """
+        if not isinstance(pauli_word, str):
+            if qml.math.ndim(theta) == 0:
+                return qml.math.stack([PauliRot.compute_matrix(theta, word) for word in pauli_word])
+            if not len(theta) == len(pauli_word):
+                raise ValueError(
+                    "When broadcasting the rotation angle and the Pauli word, the broadcasting "
+                    f"dimensions have to match, but got {len(theta)} and {len(pauli_word)}."
+                )
+
+            return qml.math.stack(
+                [PauliRot.compute_matrix(t, word) for t, word in zip(theta, pauli_word)]
+            )
+
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
