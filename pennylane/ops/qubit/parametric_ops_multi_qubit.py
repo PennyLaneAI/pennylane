@@ -342,7 +342,14 @@ class PauliRot(Operation):
 
     def _check_word_batching(self, pauli_word):
         """Check that the broadcasting/batching of a Pauli word is valid and
-        consistent with potential broadcasting of a ``PauliRot`` instance."""
+        consistent with potential broadcasting of a ``PauliRot`` instance.
+        
+        Side Effects:
+            sets the `_batch_size` property.
+        
+        Raises:
+            ValueError: if the pauli_word and theta batch sizes do not match or the pauli word is invalid.
+        """
         invalid_word_msg = (
             f"The given Pauli word '{pauli_word}' contains characters that are not "
             "allowed. Allowed characters are I, X, Y and Z"
