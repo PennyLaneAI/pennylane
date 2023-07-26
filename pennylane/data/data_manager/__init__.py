@@ -117,6 +117,56 @@ def load(  # pylint: disable=too-many-arguments
 
     Returns:
         list[:class:`~pennylane.data.Dataset`]
+
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_datasets`.
+
+    **Example**
+
+    The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
+
+    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
+    >>> print(H2datasets)
+    [<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
+
+    We can load datasets for multiple parameter values by providing a list of values instead of a single value.
+    To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
+
+    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
+    >>> print(H2datasets)
+    [<Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'bondlength', ...]>,
+     <Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'bondlength', ...]>,
+     <Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+     <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
+
+    When we only want to download portions of a large dataset, we can specify
+    the desired properties  (referred to as 'attributes'). For example, we
+    can download or load only the molecule and energy of a dataset as
+    follows:
+
+    >>> part = qml.data.load(
+    ...     "qchem",
+    ...     molname="H2",
+    ...     basis="STO-3G",
+    ...     bondlength=1.1, 
+    ...     attributes=["molecule", "fci_energy"])[0]
+    >>> part.molecule
+    <Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
+
+    To determine what attributes are available, please see :func:`~.list_attributes`.
+
+    The loaded data items are fully compatible with PennyLane. We can
+    therefore use them directly in a PennyLane circuits as follows:
+
+    >>> H2data = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
+    >>> dev = qml.device("default.qubit",wires=4)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+    ...     for op in H2data.vqe_gates:
+    ...         qml.apply(op)
+    ...     return qml.expval(H2data.hamiltonian)
+    >>> print(circuit())
+    -1.0791430411076344
     """
     params = format_params(**params)
 
@@ -152,28 +202,26 @@ def list_datasets() -> dict:
     Return:
         dict: Nested dictionary representing the directory structure of the hosted datasets.
 
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.load`.
+
     **Example:**
 
     Note that the results of calling this function may differ from this example as more datasets
     are added. For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
-    .. code-block :: pycon
+    >>> available_data = qml.data.list_datasets()
+    >>> available_data.keys()
+    dict_keys(["qspin", "qchem"])
+    >>> available_data["qchem"].keys()
+    dict_keys(["H2", "LiH", ...])
+    >>> available_data['qchem']['H2'].keys()
+    dict_keys(["6-31G", "STO-3G"])
+    >>> print(available_data['qchem']['H2']['STO-3G'])
+    ["0.5", "0.54", "0.62", "0.66", ...]
 
-        >>> qml.data.list_datasets()
-        {'qchem': {'H2': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
-                          'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
-                   'HeH+': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
-                            'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
-                   'LiH': {'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
-                   'OH-': {'STO-3G': ['0.5', '0.54', '0.58', ... '0.94', '0.98', '1.02']}},
-        'qspin': {'Heisenberg': {'closed': {'chain': ['1x16', '1x4', '1x8'],
-                                            'rectangular': ['2x2', '2x4', '2x8', '4x4']},
-                                 'open': {'chain': ['1x16', '1x4', '1x8'],
-                                        'rectangular': ['2x2', '2x4', '2x8', '4x4']}},
-                  'Ising': {'closed': {'chain': ['1x16', '1x4', '1x8'],
-                                        'rectangular': ['2x2', '2x4', '2x8', '4x4']},
-                            'open': {'chain': ['1x16', '1x4', '1x8'],
-                                    'rectangular': ['2x2', '2x4', '2x8', '4x4']}}}}
+    Note that this example limits the results of the function calls for
+    clarity and that as more data becomes available, the results of these
+    function calls will change.
     """
 
     def remove_paths(foldermap):
@@ -197,6 +245,18 @@ def list_attributes(data_name):
 
     Returns:
         list (str): A list of accepted attributes for a given data name
+
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_datasets`, :func:`~.load`.
+
+    **Example**
+
+    >>> qml.data.list_attributes(data_name="qchem")
+    ['molname',
+     'basis',
+     'bondlength',
+     ...
+     'vqe_params',
+     'vqe_energy']
     """
     data_struct = _get_data_struct()
     if data_name not in data_struct:
@@ -249,6 +309,8 @@ def load_interactive():
         :class:`~pennylane.data.Dataset`
 
     **Example**
+
+    .. seealso:: :func:`~.load`, :func:`~.list_attributes`, :func:`~.list_datasets`.
 
     .. code-block :: pycon
 
