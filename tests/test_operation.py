@@ -275,6 +275,7 @@ class TestOperatorConstruction:
     def test_eq_warning(self):
         """Test that a warning is raised when two operators are compared for equality
         using `==`."""
+
         class DummyOp(qml.operation.Operator):
             num_wires = 1
 
@@ -286,6 +287,7 @@ class TestOperatorConstruction:
 
     def test_hash_warning(self):
         """Test that a warning is raised when an operator's hash is used."""
+
         class DummyOp(qml.operation.Operator):
             num_wires = 1
 
