@@ -19,8 +19,6 @@ from itertools import product
 from operator import matmul
 from typing import Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
