@@ -27,7 +27,7 @@ from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, S
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
-
+# pylint: disable=too-many-branches
 def pauli_decompose(
     matrix,
     hide_identity=False,

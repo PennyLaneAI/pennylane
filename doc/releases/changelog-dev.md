@@ -83,6 +83,9 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* `qml.pauli_decompose` can now handle any non-Hermitian and non-square matrices.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
@@ -197,6 +200,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
