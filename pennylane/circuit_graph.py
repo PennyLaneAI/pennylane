@@ -307,7 +307,7 @@ class CircuitGraph:
         # )
         # return anc - set(ops)
         # rx.ancestors() returns node indexes instead of node-values
-        all_indices = set(*(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops))
+        all_indices = set().union(*(rx.ancestors(self._graph, self._indices[id(o)]) for o in ops))
         double_op_indices = set(self._indices[id(o)] for o in ops)
         ancestor_indices = all_indices - double_op_indices
 
@@ -331,7 +331,7 @@ class CircuitGraph:
         # )
         # return des - set(ops)
         # rx.descendants() returns node indexes instead of node-values
-        all_indices = set(*(rx.descendants(self._graph, self._indices[id(o)]) for o in ops))
+        all_indices = set().union(*(rx.descendants(self._graph, self._indices[id(o)]) for o in ops))
         double_op_indices = set(self._indices[id(o)] for o in ops)
         ancestor_indices = all_indices - double_op_indices
 
@@ -395,14 +395,7 @@ class CircuitGraph:
         B = self.ancestors([b])
         B.append(b)
 
-        nodes = []
-        for op1 in A:
-            for i, op2 in enumerate(B):
-                if op1 is op2:
-                    nodes.append(B.pop(i))
-                    break
-
-        return nodes
+        return [B.pop(i) for op1 in A for i, op2 in enumerate(B) if op1 is op2]
 
     @property
     def parametrized_layers(self):
@@ -425,7 +418,8 @@ class CircuitGraph:
 
                 # check if any of the dependents are in the
                 # currently assembled layer
-                if set(current.ops) & sub:
+                # if set(current.ops) & sub:
+                if any(o1 is o2 for o1 in current.ops for o2 in sub):
                     # operator depends on current layer, start a new layer
                     current = Layer([], [])
                     layers.append(current)
