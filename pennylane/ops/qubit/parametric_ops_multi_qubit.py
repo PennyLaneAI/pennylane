@@ -343,12 +343,12 @@ class PauliRot(Operation):
     def _check_word_batching(self, pauli_word):
         """Check that the broadcasting/batching of a Pauli word is valid and
         consistent with potential broadcasting of a ``PauliRot`` instance.
-        
+
         Side Effects:
             sets the `_batch_size` property.
-        
+
         Raises:
-            ValueError: if the batch size of ``pauli_word`` and the stored batch size do 
+            ValueError: if the batch size of ``pauli_word`` and the stored batch size do
             not match or if ``pauli_word`` is invalid.
         """
         num_wires = len(self.wires)
