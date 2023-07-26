@@ -38,11 +38,8 @@ from .utils import (
     simplify,
 )
 
-from .pauli_interface import pauli_word_prefactor
-
 from .conversion import (
     pauli_decompose,
-    pauli_decompose_fast,
     pauli_sentence,
 )
 

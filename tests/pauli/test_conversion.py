@@ -31,7 +31,14 @@ test_hamiltonians = [
 test_general_matrix = [
     np.array([[2.5, -0.5, 1.0], [-0.5, 2.5, -1j]]),
     np.array(np.diag([0, 0, 0, 0, 1])),
-    np.array([[-2, -2 + 1j, -2, -2, -1], [-2 - 1j, 0, 0, -1, -1j], [-2, 0, -2, -1, 2], [-2, -1, -1, 0, 2j]]),
+    np.array(
+        [
+            [-2, -2 + 1j, -2, -2, -1],
+            [-2 - 1j, 0, 0, -1, -1j],
+            [-2, 0, -2, -1, 2],
+            [-2, -1, -1, 0, 2j],
+        ]
+    ),
 ]
 
 
@@ -118,31 +125,40 @@ class TestDecomposition:
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_general_matrix)
-    def test_observable_types(self, hamiltonian, hide_identity):
+    @pytest.mark.parametrize("matrix", test_general_matrix)
+    def test_observable_types(self, matrix, hide_identity):
         """Tests that the matrix decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
+        shape = matrix.shape
+        num_qubits = int(np.ceil(np.log2(max(shape))))
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity, padding=True).terms()
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose(
+            matrix, hide_identity, padding=True
+        ).terms()
         assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
 
-        linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
-        assert np.allclose(hamiltonian, linear_comb)
+        linear_comb = sum(
+            [
+                decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
+                for i, o in enumerate(decomposed_obs)
+            ]
+        )
+        assert np.allclose(matrix, linear_comb[: shape[0], : shape[1]])
 
         if not hide_identity:
-            n = int(np.log2(len(hamiltonian)))
             tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-            assert all(len(tensor.obs) == n for tensor in tensors)
+            assert all(len(tensor.obs) == num_qubits for tensor in tensors)
 
-    @pytest.mark.parametrize("hamiltonian", test_general_matrix)
-    def test_to_paulisentence(self, hamiltonian):
+    @pytest.mark.parametrize("matrix", test_general_matrix)
+    def test_to_paulisentence(self, matrix):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
-        ps = qml.pauli_decompose(hamiltonian, pauli=True, padding=True)
-        num_qubits = int(np.log2(len(hamiltonian)))
+        shape = matrix.shape
+        ps = qml.pauli_decompose(matrix, pauli=True, padding=True)
+        num_qubits = int(np.ceil(np.log2(max(shape))))
 
         assert isinstance(ps, qml.pauli.PauliSentence)
-        assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
+        assert np.allclose(matrix, ps.to_mat(range(num_qubits))[: shape[0], : shape[1]])
 
     def test_wire_order(self):
         wire_order1 = ["a", 0]

@@ -24,17 +24,21 @@ import numpy as np
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
-from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, mat_map, op_map
+from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
 
 def pauli_decompose(
-    matrix, hide_identity=False, wire_order=None, pauli=False, padding=False,
+    matrix,
+    hide_identity=False,
+    wire_order=None,
+    pauli=False,
+    padding=False,
 ) -> Union[Hamiltonian, PauliSentence]:
     r"""Decomposes a matrix into a linear combination of Pauli operators.
 
     Args:
-        matrix (array[complex]): any matrix of dimension :math:`2^n\times 2^n`. 
+        matrix (array[complex]): any matrix of dimension :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
@@ -103,11 +107,13 @@ def pauli_decompose(
         if shape[0] != shape[1] or shape[0] != 2**num_qubits:
             padd_diffs = np.abs(np.array(shape) - 2**num_qubits)
             padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
-            matrix = np.pad(matrix, padding, mode='constant', constant_values=0)
+            matrix = np.pad(matrix, padding, mode="constant", constant_values=0)
 
     shape = matrix.shape
     if shape[0] != shape[1]:
-        raise ValueError(f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices.")
+        raise ValueError(
+            f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
+        )
 
     num_qubits = int(np.log2(shape[0]))
     if shape[0] != 2**num_qubits:
@@ -148,7 +154,7 @@ def pauli_decompose(
     for pauli_rep in product("IXYZ", repeat=num_qubits):
         bit_array = np.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
-        
+
         if not np.allclose(coefficient, 0):
             observables = (
                 [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
@@ -159,15 +165,10 @@ def pauli_decompose(
                 terms[0].append(coefficient)
                 terms[1].append(observables)
 
-    pauli_sentence = PauliSentence(
-            {
-                PauliWord({w: o for o, w in obs_n_wires}): coeff
-                for coeff, obs_n_wires in zip(*terms)
-            }
-    )
-
     if pauli:
-        return pauli_sentence
+        return PauliSentence(
+            {PauliWord({w: o for o, w in obs_n_wires}): coeff for coeff, obs_n_wires in zip(*terms)}
+        )
 
     obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in terms[1]]
     return Hamiltonian(terms[0], obs)
