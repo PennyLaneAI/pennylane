@@ -23,7 +23,7 @@ from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, cast_like, get_interface, requires_grad
+from .utils import cast, cast_like, convert_like, get_interface, requires_grad
 
 
 # pylint:disable=redefined-outer-name
@@ -772,9 +772,15 @@ def add(*args, like=None, **kwargs):
     try:
         return np.add(*args, **kwargs)
     except TypeError:
-        # catch arg1 = torch, arg2=numpy error
-        # works fine with opposite order
-        return np.add(args[1], args[0], *args[2:], **kwargs)
+        # In autoray 0.6.5, np.add dispatches to torch instead of
+        # numpy if one parameter is a torch tensor and the other is
+        # a numpy array. torch.add raises an Exception if one of the
+        # arguments is a numpy array, so here we cast both arguments
+        # to be tensors.
+        dev = getattr(args[0], "device", None) or getattr(args[1], "device")
+        arg0 = np.asarray(args[0], device=dev, like=like)
+        arg1 = np.asarray(args[1], device=dev, like=like)
+        return np.add(arg0, arg1, *args[2:], **kwargs)
 
 
 @multi_dispatch()
