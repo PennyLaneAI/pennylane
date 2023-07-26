@@ -131,7 +131,9 @@ def pauli_decompose(
     indices = [qml.math.array(range(shape[0]))]
     for idx in range(shape[0] - 1):
         indices.append(qml.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
-    term_mat = qml.math.stack([matrix[idx, indice] for idx, indice in enumerate(indices)])
+    term_mat = qml.math.cast(
+        qml.math.stack([matrix[idx, indice] for idx, indice in enumerate(indices)]), complex
+    )
 
     # Hadamard transform
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
