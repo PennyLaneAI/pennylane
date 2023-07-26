@@ -23,7 +23,7 @@ from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, cast_like, convert_like, get_interface, requires_grad
+from .utils import cast, cast_like, get_interface, requires_grad
 
 
 # pylint:disable=redefined-outer-name
