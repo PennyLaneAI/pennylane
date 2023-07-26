@@ -21,6 +21,7 @@ from typing import Union
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
@@ -103,20 +104,20 @@ def pauli_decompose(
     """
     # Pad with zeros to make the matrix shape equal and a power of two.
     if padding:
-        shape = matrix.shape
-        num_qubits = int(np.ceil(np.log2(max(shape))))
+        shape = qml.math.shape(matrix)
+        num_qubits = int(qml.math.ceil(qml.math.log2(qml.math.max(shape))))
         if shape[0] != shape[1] or shape[0] != 2**num_qubits:
-            padd_diffs = np.abs(np.array(shape) - 2**num_qubits)
+            padd_diffs = qml.math.abs(qml.math.array(shape) - 2**num_qubits)
             padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
-            matrix = np.pad(matrix, padding, mode="constant", constant_values=0)
+            matrix = qml.math.pad(matrix, padding, mode="constant", constant_values=0)
 
-    shape = matrix.shape
+    shape = qml.math.shape(matrix)
     if shape[0] != shape[1]:
         raise ValueError(
             f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices."
         )
 
-    num_qubits = int(np.log2(shape[0]))
+    num_qubits = int(qml.math.log2(shape[0]))
     if shape[0] != 2**num_qubits:
         raise ValueError(f"Dimension of the matrix should be a power of 2, got {shape}")
 
@@ -129,8 +130,8 @@ def pauli_decompose(
         wire_order = range(num_qubits)
 
     # Permute by XORing
-    term_mat = np.zeros(shape, dtype=complex)
-    indices = np.array(range(shape[0]))
+    term_mat = qml.math.zeros(shape, dtype=complex)
+    indices = qml.math.array(range(shape[0]))
     for idx in range(shape[0]):
         term_mat[idx, :] = matrix[idx, indices]
         indices ^= (idx + 1) ^ (idx)
@@ -153,10 +154,12 @@ def pauli_decompose(
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
     for pauli_rep in product("IXYZ", repeat=num_qubits):
-        bit_array = np.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
+        bit_array = qml.math.array(
+            [[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int
+        ).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
-        if not np.allclose(coefficient, 0):
+        if not qml.math.allclose(coefficient, 0):
             observables = (
                 [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
                 if hide_identity and not all(t == I for t in pauli_rep)
