@@ -144,7 +144,7 @@ def pauli_decompose(
         for sc, ic in zip(slices, indice):
             index[idx + sc] = ic
             ind.append(tuple(index))
-        a, b, c = ind
+        a, b, c = ind  # pylint: disable=unbalanced-tuple-unpacking
         term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
         term_mat[c] *= 1j
     term_mat /= shape[0]
