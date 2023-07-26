@@ -150,23 +150,6 @@ def pauli_decompose(
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
     term_mat = (hadamard_transform_mat * phase_mat).T
 
-    # # Hadamard transform
-    # # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    # term_mat = qml.math.reshape(term_mat, (2,) * (2 * num_qubits))
-    # # term_mat.shape = (2,) * (2 * num_qubits)
-    # for idx in range(num_qubits):
-    #     index = [slice(None)] * (2 * num_qubits)
-    #     slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
-    #     for sc, ic in zip(slices, indice):
-    #         index[idx + sc] = ic
-    #         ind.append(tuple(index))
-    #     a, b, c = ind  # pylint: disable=unbalanced-tuple-unpacking
-    #     term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
-    #     term_mat[c] *= 1j
-    # term_mat /= shape[0]
-    # term_mat = qml.math.reshape(term_mat, shape)
-    # # term_mat.shape = shape
-
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
     for pauli_rep in product("IXYZ", repeat=num_qubits):
