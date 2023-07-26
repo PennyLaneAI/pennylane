@@ -32,21 +32,31 @@ test_hamiltonians = [
 class TestDecomposition:
     """Tests the pauli_decompose function"""
 
-    @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
+    @pytest.mark.parametrize("hamiltonian", [np.ones((4, 2)), np.ones((2, 4))])
     def test_wrong_shape(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
             ValueError,
-            match="The matrix should have shape",
+            match="The matrix should be square",
         ):
             qml.pauli_decompose(hamiltonian)
 
-    def test_not_hermitian(self):
-        """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
-        equal to its own conjugate transpose"""
-        with pytest.raises(ValueError, match="The matrix is not Hermitian"):
-            qml.pauli_decompose(np.array([[1, 2], [3, 4]]))
+    @pytest.mark.parametrize("hamiltonian", [np.ones((5, 5)), np.ones((3, 3))])
+    def test_wrong_shape(self, hamiltonian):
+        """Tests that an exception is raised if the Hamiltonian does not have
+        the correct shape"""
+        with pytest.raises(
+            ValueError,
+            match="Dimension of the matrix should be a power of 2",
+        ):
+            qml.pauli_decompose(hamiltonian)
+
+    # def test_not_hermitian(self):
+    #     """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
+    #     equal to its own conjugate transpose"""
+    #     with pytest.raises(ValueError, match="The matrix is not Hermitian"):
+    #         qml.pauli_decompose(np.array([[1, 2], [3, 4]]))
 
     def test_hide_identity_true(self):
         """Tests that there are no Identity observables in the tensor products
@@ -128,89 +138,15 @@ class TestDecomposition:
         )
 
         with pytest.raises(
-            ValueError, match="number of wires 1 is not compatible with number of qubits 2"
+            ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
             h = qml.pauli_decompose(hamiltonian, wire_order=wire_order)
 
         with pytest.raises(
-            ValueError, match="number of wires 1 is not compatible with number of qubits 2"
+            ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
             ps = qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
 
-class TestDecomposition:
-    """Tests the pauli_decompose function"""
-
-    @pytest.mark.parametrize("hamiltonian", [np.ones((4, 2)), np.ones((2, 4))])
-    def test_wrong_shape(self, hamiltonian):
-        """Tests that an exception is raised if the Hamiltonian does not have
-        the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="Matrix should be square,",
-        ):
-            qml.pauli_decompose_fast(hamiltonian)
-
-    @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((5, 5))])
-    def test_wrong_shape(self, hamiltonian):
-        """Tests that an exception is raised if the Hamiltonian does not have
-        the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="Dimension of the matrix should be a power of 2",
-        ):
-            qml.pauli_decompose_fast(hamiltonian)
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types(self, hamiltonian):
-        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose_fast(hamiltonian).terms()
-        assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_result_length(self, hamiltonian):
-        """Tests that tensors are composed of a number of terms equal to the number
-        of qubits."""
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose_fast(hamiltonian).terms()
-        n = int(np.log2(len(hamiltonian)))
-
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_decomposition(self, hamiltonian):
-        """Tests that pauli_decompose successfully decomposes Hamiltonians into a
-        linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose_fast(hamiltonian).terms()
-        wire_order = range(int(np.log2(len(hamiltonian))))
-        print(decomposed_coeff, decomposed_obs)
-        linear_comb = sum([decomposed_coeff[i] * qml.matrix(o, wire_order=wire_order) for i, o in enumerate(decomposed_obs)])
-        assert np.allclose(hamiltonian, linear_comb)
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_to_paulisentence(self, hamiltonian):
-        """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
-        ps = qml.pauli_decompose_fast(hamiltonian, pauli=True)
-        num_qubits = int(np.log2(len(hamiltonian)))
-
-        assert isinstance(ps, qml.pauli.PauliSentence)
-        assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
-
-    def test_wire_order(self):
-        wire_order1 = ["a", 0]
-        wire_order2 = ["auxiliary", "working"]
-        hamiltonian = np.array(
-            [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]
-        )
-
-        for wire_order in (wire_order1, wire_order2):
-            h = qml.pauli_decompose_fast(hamiltonian, wire_order=wire_order)
-            ps = qml.pauli_decompose_fast(hamiltonian, pauli=True, wire_order=wire_order)
-
-            assert ps.wires == set(wire_order)
-            assert h.wires.toset() == set(wire_order)
 
 class TestPauliSentence:
     """Test the pauli_sentence function."""

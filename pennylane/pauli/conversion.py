@@ -30,17 +30,18 @@ from .utils import is_pauli_word
 
 
 def pauli_decompose(
-    H, hide_identity=False, wire_order=None, pauli=False
+    matrix, hide_identity=False, wire_order=None, pauli=False, padding=False,
 ) -> Union[Hamiltonian, PauliSentence]:
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+    r"""Decomposes a matrix into a linear combination of Pauli operators.
 
     Args:
-        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
+        matrix (array[complex]): any matrix of dimension :math:`2^n\times 2^n`. 
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a PauliSentence instance if ``True``.
+        padding (bool): makes it compatible with rectangular matrices by padding them with zeros
 
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
@@ -96,52 +97,80 @@ def pauli_decompose(
     + -0.5 * Z(a) @ X(b)
     + -0.5 * Z(a) @ Y(b)
     """
-    n = int(np.log2(len(H)))
-    N = 2**n
+    # Pad with zeros to make the matrix shape equal and a power of two.
+    if padding:
+        shape = matrix.shape
+        num_qubits = int(np.ceil(np.log2(max(shape))))
+        if shape[0] != shape[1]:
+            padd_diffs = np.abs(np.array(shape) - 2**num_qubits)
+            padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
+            matrix = np.pad(matrix, padding, mode='constant', constant_values=0)
 
-    if wire_order is not None and len(wire_order) != n:
+    shape = matrix.shape
+    if shape[0] != shape[1]:
+        raise ValueError(f"The matrix should be square, got {shape}. Use 'padding=True' for rectangular matrices.")
+
+    num_qubits = int(np.log2(shape[0]))
+    if shape[0] != 2**num_qubits:
+        raise ValueError(f"Dimension of the matrix should be a power of 2, got {shape}")
+
+    if wire_order is not None and len(wire_order) != num_qubits:
         raise ValueError(
-            f"number of wires {len(wire_order)} is not compatible with number of qubits {n}"
+            f"number of wires {len(wire_order)} is not compatible with the number of qubits {num_qubits}"
         )
 
     if wire_order is None:
-        wire_order = range(n)
+        wire_order = range(num_qubits)
 
-    if H.shape != (N, N):
-        raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
+    # Permute by XORing
+    term_mat = np.zeros(shape, dtype=complex)
+    indices = np.array(range(shape[0]))
+    for idx in range(shape[0]):
+        term_mat[idx, :] = matrix[idx, indices]
+        indices ^= (idx + 1) ^ (idx)
 
-    if not np.allclose(H, H.conj().T):
-        raise ValueError("The matrix is not Hermitian")
+    # Hadamard transform
+    # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
+    term_mat.shape = (2,) * (2 * num_qubits)
+    for idx in range(num_qubits):
+        index = [slice(None)] * (2 * num_qubits)
+        slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
+        for sc, ic in zip(slices, indice):
+            index[idx + sc] = ic
+            ind.append(tuple(index))
+        a, b, c = ind
+        term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
+        term_mat[c] *= 1j
+    term_mat /= shape[0]
+    term_mat.shape = shape
 
-    obs_lst = []
-    coeffs = []
-
-    for term in product([I, X, Y, Z], repeat=n):
-        matrices = [mat_map[i] for i in term]
-        coeff = np.trace(reduce(np.kron, matrices) @ H) / N
-        coeff = np.real_if_close(coeff).item()
-
-        if not np.allclose(coeff, 0):
-            obs_term = (
-                [(o, w) for w, o in zip(wire_order, term) if o != I]
-                if hide_identity and not all(t == I for t in term)
-                else [(o, w) for w, o in zip(wire_order, term)]
+    # Convert to Hamiltonian and PauliSentence
+    terms = ([], [])
+    for pauli_rep in product("IXYZ", repeat=num_qubits):
+        bit_array = np.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
+        coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
+        
+        if not np.allclose(coefficient, 0):
+            observables = (
+                [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+                if hide_identity and not all(t == I for t in pauli_rep)
+                else [(o, w) for w, o in zip(wire_order, pauli_rep)]
             )
+            if observables:
+                terms[0].append(coefficient)
+                terms[1].append(observables)
 
-            if obs_term:
-                coeffs.append(coeff)
-                obs_lst.append(obs_term)
-
-    if pauli:
-        return PauliSentence(
+    pauli_sentence = PauliSentence(
             {
                 PauliWord({w: o for o, w in obs_n_wires}): coeff
-                for coeff, obs_n_wires in zip(coeffs, obs_lst)
+                for coeff, obs_n_wires in zip(*terms)
             }
-        )
+    )
 
-    obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs_lst]
-    return Hamiltonian(coeffs, obs)
+    if pauli:
+        return pauli_sentence
+
+    return pauli_sentence.hamiltonian(wire_order=wire_order)
 
 
 def pauli_decompose_fast(matrix, pauli=False, wire_order=None):
@@ -218,10 +247,13 @@ def pauli_decompose_fast(matrix, pauli=False, wire_order=None):
     if shape[0] != 2**num_qubits:
         raise ValueError(f"Dimension of the matrix should be a power of 2, got {shape}")
 
-    if wire_order is None or len(wire_order) != num_qubits:
-        wire_map = {wire: wire for wire in range(num_qubits)}
-    else:
-        wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+    if wire_order is not None and len(wire_order) != num_qubits:
+        raise ValueError(
+            f"number of wires {len(wire_order)} is not compatible with the number of qubits {num_qubits}"
+        )
+
+    if wire_order is None:
+        wire_order = range(num_qubits)
 
     # Permute by XORing
     term_mat = np.zeros(shape, dtype=complex)
@@ -259,29 +291,33 @@ def pauli_decompose_fast(matrix, pauli=False, wire_order=None):
 
     return qml.Hamiltonian(*terms)
 
-def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
+def pauli_decompose_fast_non_square(matrix, hide_identity=False, wire_order=None, pauli=False, non_square=False):
     r"""Decomposes any matrix into a linear combination of Pauli operators."""
 
     # Pad with zeros to make the matrix shape equal and a power of two.
-    shape = matrix.shape
-    num_qubits = int(np.ceil(np.log2(max(shape))))
-    if shape[0] != shape[1]:
-        padd_diffs = np.abs(np.array(shape) - 2**num_qubits)
-        padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
-        matrix = np.pad(matrix, padding, mode='constant', constant_values=0)
+    if non_square:
+        shape = matrix.shape
+        num_qubits = int(np.ceil(np.log2(max(shape))))
+        if shape[0] != shape[1]:
+            padd_diffs = np.abs(np.array(shape) - 2**num_qubits)
+            padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
+            matrix = np.pad(matrix, padding, mode='constant', constant_values=0)
 
     shape = matrix.shape
     if shape[0] != shape[1]:
-        raise ValueError(f"Matrix should be square, got {shape}")
+        raise ValueError(f"Matrix should be square, got {shape}. Use 'non_square=True' for rectangular matrices.")
 
     num_qubits = int(np.log2(shape[0]))
     if shape[0] != 2**num_qubits:
         raise ValueError(f"Dimension of the matrix should be a power of 2, got {shape}")
 
-    if wire_order is None or len(wire_order) != num_qubits:
-        wire_map = {wire: wire for wire in range(num_qubits)}
-    else:
-        wire_map = {wire: idx for idx, wire in enumerate(wire_order)}
+    if wire_order is not None and len(wire_order) != num_qubits:
+        raise ValueError(
+            f"number of wires {len(wire_order)} is not compatible with the number of qubits {num_qubits}"
+        )
+
+    if wire_order is None:
+        wire_order = range(num_qubits)
 
     # Permute by XORing
     term_mat = np.zeros(shape, dtype=complex)
@@ -292,7 +328,6 @@ def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
 
     # Hadamard transform
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    t1 = time.time()
     term_mat.shape = (2,) * (2 * num_qubits)
     for idx in range(num_qubits):
         index = [slice(None)] * (2 * num_qubits)
@@ -305,21 +340,34 @@ def pauli_decompose_fast_non_square(matrix, pauli=False, wire_order=None):
         term_mat[c] *= 1j
     term_mat /= shape[0]
     term_mat.shape = shape
-    t2 = time.time()
 
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
     for pauli_rep in product("IXYZ", repeat=num_qubits):
         bit_array = np.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
-        if coefficient:
-            terms[0].append(coefficient)
-            terms[1].append(qml.pauli.string_to_pauli_word("".join(pauli_rep), wire_map=wire_map))
+        
+        if not np.allclose(coefficient, 0):
+            observables = (
+                [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+                if hide_identity and not all(t == I for t in pauli_rep)
+                else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+            )
+            if observables:
+                terms[0].append(coefficient)
+                terms[1].append(observables)
+
+    pauli_sentence = PauliSentence(
+            {
+                PauliWord({w: o for o, w in obs_n_wires}): coeff
+                for coeff, obs_n_wires in zip(*terms)
+            }
+    )
 
     if pauli:
-        return qml.pauli.pauli_sentence(qml.Hamiltonian(*terms))
+        return pauli_sentence
 
-    return qml.Hamiltonian(*terms)
+    return pauli_sentence.hamiltonian(wire_order=wire_order) 
 
 @singledispatch
 def pauli_sentence(op):
