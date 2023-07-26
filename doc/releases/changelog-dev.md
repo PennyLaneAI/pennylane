@@ -158,6 +158,10 @@
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
   [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
 
+* The documentation for `pennylane.devices.experimental.Device` is improved to clarify
+  some aspects of its use.
+  [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
+
 <h3>Bug fixes 🐛</h3>
   
 * Stop `metric_tensor` from accidentally catching errors that stem from
