@@ -128,15 +128,15 @@ def pauli_decompose(
         wire_order = range(num_qubits)
 
     # Permute by XORing
-    term_mat = qml.math.zeros(shape, dtype=complex)
-    indices = qml.math.array(range(shape[0]))
-    for idx in range(shape[0]):
-        term_mat[idx, :] = matrix[idx, indices]
-        indices ^= (idx + 1) ^ (idx)
+    indices = [qml.math.array(range(shape[0]))]
+    for idx in range(shape[0] - 1):
+        indices.append(qml.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
+    term_mat = qml.math.stack([matrix[idx, indice] for idx, indice in enumerate(indices)])
 
     # Hadamard transform
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    term_mat.shape = (2,) * (2 * num_qubits)
+    term_mat = qml.math.reshape(term_mat, (2,) * (2 * num_qubits))
+    #term_mat.shape = (2,) * (2 * num_qubits)
     for idx in range(num_qubits):
         index = [slice(None)] * (2 * num_qubits)
         slices, indice, ind = [0, 0, num_qubits], [0, 1, 1], []
@@ -147,7 +147,8 @@ def pauli_decompose(
         term_mat[a], term_mat[b] = (term_mat[a] + term_mat[b], term_mat[a] - term_mat[b])
         term_mat[c] *= 1j
     term_mat /= shape[0]
-    term_mat.shape = shape
+    term_mat = qml.math.reshape(term_mat, shape)
+    #term_mat.shape = shape
 
     # Convert to Hamiltonian and PauliSentence
     terms = ([], [])
