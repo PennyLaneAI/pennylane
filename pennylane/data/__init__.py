@@ -56,7 +56,7 @@ In addition, various dataset types are provided
     DatasetMolecule
     DatasetSparseArray
     DatasetJSON
-    DatsetTuple
+    DatasetTuple
 
 Datasets
 --------

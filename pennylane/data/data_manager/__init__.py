@@ -147,7 +147,7 @@ def load(  # pylint: disable=too-many-arguments
     ...     "qchem",
     ...     molname="H2",
     ...     basis="STO-3G",
-    ...     bondlength=1.1, 
+    ...     bondlength=1.1,
     ...     attributes=["molecule", "fci_energy"])[0]
     >>> part.molecule
     <Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
