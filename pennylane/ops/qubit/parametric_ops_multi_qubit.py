@@ -343,15 +343,15 @@ class PauliRot(Operation):
     def _check_word_batching(self, pauli_word):
         """Check that the broadcasting/batching of a Pauli word is valid and
         consistent with potential broadcasting of a ``PauliRot`` instance."""
-        invalid_word_msg = (
-            f"The given Pauli word '{pauli_word}' contains characters that are not "
-            "allowed. Allowed characters are I, X, Y and Z"
-        )
+        invalid_word_msg = ()
         num_wires = len(self.wires)
         if isinstance(pauli_word, str):
             # Single string, no broadcasting
             if not PauliRot._check_pauli_word(pauli_word):
-                raise ValueError(invalid_word_msg)
+                raise ValueError(
+                    f"The given Pauli word '{pauli_word}' contains characters that are not "
+                    "allowed. Allowed characters are I, X, Y and Z"
+                )
             if not (_len := len(pauli_word)) == num_wires:
                 raise ValueError(
                     f"The given Pauli word has length {_len}, length "
@@ -366,7 +366,10 @@ class PauliRot(Operation):
                 )
 
             if not PauliRot._check_pauli_word("".join(pauli_word)):
-                raise ValueError(invalid_word_msg)
+                raise ValueError(
+                    f"The given Pauli word '{pauli_word}' contains characters that are not "
+                    "allowed. Allowed characters are I, X, Y and Z"
+                )
             if not all((_len := len(w)) == num_wires for w in pauli_word):
                 raise ValueError(
                     f"The given Pauli word has length {_len}, length "
@@ -376,7 +379,8 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        r"""Representation of the operator as a canonical matrix in the computational basis
+        (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
@@ -385,8 +389,15 @@ class PauliRot(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
-            pauli_word (str): string representation of Pauli word
+            theta (tensor_like or float): rotation angle. Can be broadcasted by providing a
+                ``tensor_like`` instead of a single ``float``.
+                Broadcasting ``theta`` and ``pauli_word`` simultaneously requires them to
+                have the same length.
+            pauli_word (list[str] or str): string representation of the Pauli word about which to
+                rotate. Can be broadcasted by providing a ``list`` of strings instead of a single
+                ``str``.
+                Broadcasting ``theta`` and ``pauli_word`` simultaneously requires them to
+                have the same length.
 
         Returns:
             tensor_like: canonical matrix
@@ -396,6 +407,15 @@ class PauliRot(Operation):
         >>> qml.PauliRot.compute_matrix(0.5, 'X')
         [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
          [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+
+        .. note::
+
+            This matrix method supports broadcasting of the ``pauli_word`` hyperparameter, which is
+            an experimental feature. Broadcasting over hyperparameters is generically not supported
+            in PennyLane and may change behaviour in the future.
+            When broadcasting both the rotation angle and the ``pauli_word`` hyperparameter, they
+            are taken to be broadcasted *simultaneously* (think Python's ``zip``) and need to have
+            the same dimension.
         """
         if not isinstance(pauli_word, str):
             if qml.math.ndim(theta) == 0:
