@@ -9,6 +9,6 @@ toml
 appdirs
 semantic_version
 dask[delayed]
-autoray
+autoray==0.6.3
 matplotlib
 requests
