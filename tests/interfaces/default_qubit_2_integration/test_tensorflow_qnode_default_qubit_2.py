@@ -1533,13 +1533,12 @@ class TestAutograph:
         expected = tf.cos(x / 2) ** 2 * tf.cos(y / 2) ** 2
         assert np.allclose(loss, expected, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="tf.function does not support adding the shots kwarg")
     def test_autograph_dimension(self, decorator, interface):
         """Test sampling works as expected"""
 
         @decorator
         @qnode(DefaultQubit2(), diff_method="parameter-shift", interface=interface)
-        def circuit():
+        def circuit(**_):
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))

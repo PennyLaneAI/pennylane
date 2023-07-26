@@ -56,7 +56,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -79,7 +79,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, b):
+        def circuit(a, b, **_):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -106,7 +106,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -130,7 +130,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
             return qml.probs(wires=[0, 1])
@@ -154,7 +154,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, b):
+        def circuit(a, b, **_):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
@@ -182,7 +182,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
@@ -207,7 +207,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, max_diff=1, **gradient_kwargs)
-        def circuit(x, y):
+        def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -232,7 +232,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.RY(a[2], wires=0)
@@ -256,7 +256,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
@@ -279,7 +279,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, b):
+        def circuit(a, b, **_):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
@@ -306,7 +306,7 @@ class TestReturnWithShotVectors:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a):
+        def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
@@ -347,7 +347,7 @@ class TestReturnShotVectorHessian:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
-        def circuit(x, y):
+        def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -393,7 +393,7 @@ class TestReturnShotVectorIntegration:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(x, y):
+        def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -427,7 +427,7 @@ class TestReturnShotVectorIntegration:
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(x, y):
+        def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
