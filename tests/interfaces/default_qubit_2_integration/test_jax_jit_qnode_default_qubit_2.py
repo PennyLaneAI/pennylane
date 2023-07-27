@@ -1381,10 +1381,10 @@ class TestTapeExpansion:
             assert np.allclose(grad2_w_c, expected, atol=tol)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_finite_shots(
+    def test_hamiltonian_finite_shots(
         self, dev, diff_method, grad_on_execution, interface, max_diff, mocker
     ):
-        """Test that the Hamiltonian is expanded if there
+        """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
