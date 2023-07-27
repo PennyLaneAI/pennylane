@@ -248,7 +248,7 @@ def _draw_qnode(
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or getattr(qnode.device, "wires", None)
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -543,7 +543,7 @@ def _draw_mpl_qnode(
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or getattr(qnode.device, "wires", None)
 
         return tape_mpl(
             qnode.qtape,
