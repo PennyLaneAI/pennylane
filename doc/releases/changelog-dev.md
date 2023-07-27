@@ -74,8 +74,9 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
-* The experimental device interface is integrated with the `QNode` for Jax jit.
+* The experimental device interface is integrated with the `QNode` for jax-jit and torch.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
 
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.

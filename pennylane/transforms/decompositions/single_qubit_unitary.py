@@ -38,6 +38,7 @@ def _convert_to_su2(U, return_global_phase=False):
         :math:`SU(2)` equivalent and the second, the global phase.
     """
     # Compute the determinants
+    U = qml.math.cast(U, "complex128")
     dets = math.linalg.det(U)
 
     exp_angles = math.cast_like(math.angle(dets), 1j) / 2
