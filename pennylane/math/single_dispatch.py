@@ -757,19 +757,19 @@ ar.register_function(
 # Re-define the grad of eigh to avoid numerical instability due to degenerate eigenvalues
 
 
-def safe_reciprocal(x):
-    eps = 1e-20
-    return x / (x * x + eps)
-
-
-def grad_eigh(ans, x, UPLO="L"):
+def _grad_eigh(ans, x, UPLO="L"):
     """Gradient for eigenvalues and vectors of a symmetric matrix."""
     np = _i("qml").math
+
+    def safe_reciprocal(x):
+        eps = 1e-20
+        return x / (x * x + eps)
 
     def T(x):
         return np.swapaxes(x, -1, -2)
 
-    _dot = partial(np.einsum, "...ij,...jk->...ik")
+    def dot(x, y):
+        return np.einsum("...ij,...jk->...ik", x, y)
 
     N = x.shape[-1]
     w, v = ans  # Eigenvalues, eigenvectors.
@@ -779,7 +779,7 @@ def grad_eigh(ans, x, UPLO="L"):
         wg, vg = g  # Gradient w.r.t. eigenvalues, eigenvectors.
 
         # Eigenvalue part
-        vjp_temp = _dot(vc * wg[..., None, :], T(v))
+        vjp_temp = dot(vc * wg[..., None, :], T(v))
 
         # Add eigenvector part only if non-zero backward signal is present.
         # This can avoid NaN results for degenerate cases if the function depends
@@ -787,7 +787,7 @@ def grad_eigh(ans, x, UPLO="L"):
         if np.any(vg):
             off_diag = np.convert_like(np.ones((N, N)) - np.eye(N), w)
             F = off_diag * safe_reciprocal(w[..., None, :] - w[..., :, None] + np.eye(N))
-            vjp_temp += _dot(_dot(vc, F * _dot(T(v), vg)), T(v))
+            vjp_temp += dot(dot(vc, F * dot(T(v), vg)), T(v))
 
         # eigh always uses only the lower or the upper part of the matrix
         # we also have to make sure broadcasting works
@@ -806,39 +806,51 @@ def grad_eigh(ans, x, UPLO="L"):
     return vjp
 
 
-_i("autograd").extend.defvjp(_i("autograd").numpy.linalg.eigh, grad_eigh)
+try:
+    _i("autograd").extend.defvjp(_i("autograd").numpy.linalg.eigh, _grad_eigh)
+except ModuleNotFoundError:
+    # autograd not installed
+    pass
 
 
-@_i("jax").custom_vjp
-def _eigh_jax(x):
-    return _i("jax").numpy.linalg.eigh(x)
+try:
+
+    @_i("jax").custom_vjp
+    def _eigh_jax(x):
+        return _i("jax").numpy.linalg.eigh(x)
+
+    def _eigh_jax_fwd(x):
+        out = _eigh_jax(x)
+        return out, (out, x)
+
+    def _eigh_jax_bwd(res, g):
+        out, x = res
+        return (_grad_eigh(out, x)(g),)
+
+    _eigh_jax.defvjp(_eigh_jax_fwd, _eigh_jax_bwd)
+    ar.register_function("jax", "linalg.eigh", _eigh_jax)
+
+except ModuleNotFoundError:
+    # jax not installed
+    pass
 
 
-def _eigh_jax_fwd(x):
-    out = _eigh_jax(x)
-    return out, (out, x)
+try:
 
+    class _TorchEigh(_i("torch").autograd.Function):
+        @staticmethod
+        def forward(ctx, x):
+            out = _i("torch").linalg.eigh(x)
+            ctx.save_for_backward(*out, x)
+            return out
 
-def _eigh_jax_bwd(res, g):
-    out, x = res
-    return (grad_eigh(out, x)(g),)
+        @staticmethod
+        def backward(ctx, *g):
+            *out, x = ctx.saved_tensors
+            return _grad_eigh(out, x)(g)
 
+    ar.register_function("torch", "linalg.eigh", _TorchEigh.apply)
 
-_eigh_jax.defvjp(_eigh_jax_fwd, _eigh_jax_bwd)
-ar.register_function("jax", "linalg.eigh", _eigh_jax)
-
-
-class _TorchEigh(_i("torch").autograd.Function):
-    @staticmethod
-    def forward(ctx, x):
-        out = _i("torch").linalg.eigh(x)
-        ctx.save_for_backward(*out, x)
-        return out
-
-    @staticmethod
-    def backward(ctx, *g):
-        *out, x = ctx.saved_tensors
-        return grad_eigh(out, x)(g)
-
-
-ar.register_function("torch", "linalg.eigh", _TorchEigh.apply)
+except ModuleNotFoundError:
+    # torch not installed
+    pass
