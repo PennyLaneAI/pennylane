@@ -152,7 +152,7 @@ PARAMETRIZED_MEASUREMENTS = [
         H=qml.Hamiltonian(
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         ),
-        k=3
+        k=3,
     ),
     ExpectationMP(eigvals=[1, -1]),
     ExpectationMP(eigvals=[1, 2]),
