@@ -65,8 +65,8 @@ Pending deprecations
   >>> {qml.PauliZ(0), qml.PauliZ(0)}
   {PauliZ(wires=[0]), PauliZ(wires=[0])}
 
-  - Added in v0.31
-  - Behaviour will change in v0.32
+  - Added in v0.32
+  - Behaviour will change in v0.33
 
 * The public methods of ``DefaultQubit`` are pending changes to
   follow the new device API, as used in ``DefaultQubit2``.

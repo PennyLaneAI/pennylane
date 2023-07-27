@@ -158,8 +158,8 @@
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
-* Added warning to documentation of `Operator.__eq__` and `Operator.__hash__` to reflect upcoming changes
-  to operator equality and hashing.
+* Added a warning to the documentation of `Operator.__eq__` and `Operator.__hash__` to reflect upcoming
+  changes to operator equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
 
 <h3>Documentation 📝</h3>
