@@ -127,8 +127,8 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.expval(qml.PauliX(1)),
     qml.probs(wires=1),
     qml.probs(wires=0),
-    qml.probs(qml.PauliZ(0)),
-    qml.probs(qml.PauliZ(1)),
+    qml.probs(op=qml.PauliZ(0)),
+    qml.probs(op=qml.PauliZ(1)),
     qml.state(),
     qml.vn_entropy(wires=0),
     qml.vn_entropy(wires=0, log_base=np.e),
@@ -151,7 +151,8 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.shadow_expval(
         H=qml.Hamiltonian(
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-        )
+        ),
+        k=3
     ),
     ExpectationMP(eigvals=[1, -1]),
     ExpectationMP(eigvals=[1, 2]),
