@@ -242,8 +242,9 @@ class TestGradient:
         return -qml.math.sin(x)
 
     @pytest.mark.autograd
-    def test_single_wire_autograd(self, tol):
-        x = np.array(0.456)
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_single_wire_autograd(self, x, tol):
+        x = np.array(x)
         res = self.cost_fn_single(x)
         grad = qml.grad(self.cost_fn_single)(x)
 
@@ -251,8 +252,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.jax
-    def test_single_wire_jax(self, tol):
-        x = jnp.array(0.456)
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_single_wire_jax(self, x, tol):
+        x = jnp.array(x)
         res = self.cost_fn_single(x)
         grad = jax.grad(self.cost_fn_single)(x)
 
@@ -260,8 +262,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.torch
-    def test_single_wire_torch(self, tol):
-        x = torch.from_numpy(np.array(0.456)).requires_grad_()
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_single_wire_torch(self, x, tol):
+        x = torch.from_numpy(np.array(x)).requires_grad_()
         res = self.cost_fn_single(x)
         res.backward()
         grad = x.grad
@@ -270,8 +273,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.tf
-    def test_single_wire_tf(self, tol):
-        x = tf.Variable(0.456, trainable=True)
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_single_wire_tf(self, x, tol):
+        x = tf.Variable(x, trainable=True)
 
         with tf.GradientTape() as tape:
             res = self.cost_fn_single(x)
@@ -282,8 +286,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.autograd
-    def test_multi_wire_autograd(self, tol):
-        x = np.array(0.456)
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_multi_wire_autograd(self, x, tol):
+        x = np.array(x)
         res = self.cost_fn_multi(x)
         grad = qml.grad(self.cost_fn_multi)(x)
 
@@ -291,8 +296,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.jax
-    def test_multi_wire_jax(self, tol):
-        x = jnp.array(0.456)
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_multi_wire_jax(self, x, tol):
+        x = jnp.array(x)
         res = self.cost_fn_multi(x)
         grad = jax.grad(self.cost_fn_multi)(x)
 
@@ -300,8 +306,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.torch
-    def test_multi_wire_torch(self, tol):
-        x = torch.from_numpy(np.array(0.456)).requires_grad_()
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_multi_wire_torch(self, x, tol):
+        x = torch.from_numpy(np.array(x)).requires_grad_()
         res = self.cost_fn_multi(x)
         res.backward()
         grad = x.grad
@@ -310,8 +317,9 @@ class TestGradient:
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
     @pytest.mark.tf
-    def test_multi_wire_tf(self, tol):
-        x = tf.Variable(0.456, trainable=True)
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_multi_wire_tf(self, x, tol):
+        x = tf.Variable(x, trainable=True)
 
         with tf.GradientTape() as tape:
             res = self.cost_fn_multi(x)
