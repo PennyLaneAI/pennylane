@@ -1560,11 +1560,11 @@ class Operator(abc.ABC):
             return qml.pow(self, z=other)
         return NotImplemented
 
-    def __eq__(self, other):
-        return qml.equal(self, other)
+    # def __eq__(self, other):
+    #     return qml.equal(self, other)
 
-    def __hash__(self):
-        return self.hash
+    # def __hash__(self):
+    #     return self.hash
 
     def _flatten(self):
         """Serialize the operation into trainable and non-trainable components.
