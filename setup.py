@@ -28,7 +28,7 @@ requirements = [
     "toml",
     "appdirs",
     "semantic-version>=2.7",
-    "autoray>=0.3.1",
+    "autoray>=0.3.1,<=0.6.3",
     "cachetools",
     "pennylane-lightning>=0.31",
     "requests",
