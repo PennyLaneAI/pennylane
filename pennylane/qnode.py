@@ -962,9 +962,11 @@ class QNode:
         if qml.active_return():
             if "mode" in self.execute_kwargs:
                 self.execute_kwargs.pop("mode")
+
+            batch, post_processing = self.transform_program([self.tape])
             # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
-                [self.tape],
+                batch,
                 device=self.device,
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
@@ -972,6 +974,7 @@ class QNode:
                 override_shots=override_shots,
                 **self.execute_kwargs,
             )
+            res = post_processing(res)
 
             res = res[0]
 
@@ -1013,8 +1016,10 @@ class QNode:
                 grad_on_execution = "best"
             self.execute_kwargs["grad_on_execution"] = grad_on_execution
         # pylint: disable=unexpected-keyword-arg
+
+        batch, postprocessing = self.transform_program([self.tape])
         res = qml.execute(
-            [self.tape],
+            batch,
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
@@ -1022,6 +1027,7 @@ class QNode:
             override_shots=override_shots,
             **self.execute_kwargs,
         )
+        res = postprocessing(res)
 
         if old_interface == "auto":
             self.interface = "auto"
