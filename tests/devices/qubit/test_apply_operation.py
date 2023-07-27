@@ -168,7 +168,7 @@ class TestTwoQubitStateSpecialCases:
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
         phase = qml.math.asarray(-2.3, like=ml_framework)
-        shift = np.exp(qml.math.multiply(1j, phase))
+        shift = qml.math.exp(1j * qml.math.cast(phase, np.complex128))
 
         new_state = method(qml.PhaseShift(phase, wire), initial_state)
 
