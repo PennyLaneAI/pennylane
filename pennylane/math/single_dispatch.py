@@ -814,10 +814,11 @@ except ModuleNotFoundError:
 
 
 try:
+    jax = _i("jax")
 
-    @_i("jax").custom_vjp
+    @jax.custom_vjp
     def _eigh_jax(x):
-        return _i("jax").numpy.linalg.eigh(x)
+        return jax.numpy.linalg.eigh(x)
 
     def _eigh_jax_fwd(x):
         out = _eigh_jax(x)
