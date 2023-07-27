@@ -230,6 +230,8 @@ class SampleMP(SampleMeasurement):
         if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * qml.math.squeeze(samples)
+            if samples.shape == ():
+                samples = samples.reshape((1,))
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.

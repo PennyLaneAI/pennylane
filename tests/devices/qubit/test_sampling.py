@@ -419,6 +419,15 @@ class TestMeasureSamples:
             assert res.shape == ()
             assert res == 0
 
+    def test_measure_with_samples_one_shot_one_wire(self):
+        """Tests that measure_with_samples works with a single shot."""
+        state = qml.math.array([0, 1])
+        shots = qml.measurements.Shots(1)
+        mp = qml.expval(qml.PauliZ(0))
+        result = measure_with_samples(mp, state, shots=shots)
+        assert result.shape == ()
+        assert result == -1.0
+
 
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
