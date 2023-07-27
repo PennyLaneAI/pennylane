@@ -93,7 +93,7 @@ class TestTransformProgramDunders:
     """Test the dunder methods."""
 
     def test_bool(self):
-        """Check that a transform program is falsy if empty and truthy is not."""
+        """Check that a transform program is falsy if empty and truthy if not."""
         empty_prog = TransformProgram()
         assert not empty_prog
 
@@ -281,7 +281,7 @@ class TestTransformProgramCall:
             prog(batch)
 
     def test_cotransform_support_notimplemented(self):
-        """Test that a transform with a cotransfrom raises a not implemented error."""
+        """Test that a transform with a cotransform raises a not implemented error."""
 
         my_transform = TransformContainer(
             first_valid_transform, classical_cotransform=lambda res: res

@@ -29,7 +29,7 @@ BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
 def _batch_postprocessing(
     results: ResultBatch, individual_fns: List[PostProcessingFn], slices: List[slice]
 ) -> ResultBatch:
-    """Broadcast individual post processing functions onto the their respective tapes.
+    """Broadcast individual post processing functions onto their respective tapes.
 
     Args:
         results (ResultBatch): The numeric outcome from executing a batch of :class:`~.QuantumTape`
