@@ -89,7 +89,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
-        reset (Optional[bool]): Whether to reset the wire after measurement.
+        reset (bool): Whether to reset the wire after measurement.
 
     Returns:
         MidMeasureMP: measurement process instance
@@ -105,7 +105,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, id=measurement_id)
+    mp = MidMeasureMP(wires=wire, reset=reset, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -123,10 +123,9 @@ class MidMeasureMP(MeasurementProcess):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        reset (Optional[bool]): Whether to reset the wire after measurement.
-        measurement_ids (Optional[List[str]]): custom label given to a measurement instance, can be useful for some
-            applications where the instance has to be identified
-        processing_fn (Optional[Callable]): A lazily transformation applied to the measurement values.
+        reset (bool): Whether to reset the wire after measurement.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
     """
 
     def __init__(
