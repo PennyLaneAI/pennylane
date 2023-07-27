@@ -133,11 +133,14 @@ def pauli_decompose(
     for idx in range(shape[0] - 1):
         indices.append(qml.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
     term_mat = qml.math.cast(
-        qml.math.stack([matrix[idx, indice] for idx, indice in enumerate(indices)]), complex
+        qml.math.stack(
+            [qml.math.gather(matrix[idx], indice) for idx, indice in enumerate(indices)]
+        ),
+        complex,
     )
 
     # Perform Hadamard transformation on coloumns
-    hadamard_transform_mat = _walsh_hadamard_transform(term_mat.T)
+    hadamard_transform_mat = _walsh_hadamard_transform(qml.math.transpose(term_mat))
 
     # Account for the phases from Y
     phase_mat = qml.math.ones(shape, dtype=complex).reshape((2,) * (2 * num_qubits))
@@ -151,7 +154,7 @@ def pauli_decompose(
     term_mat = qml.math.transpose(qml.math.multiply(hadamard_transform_mat, phase_mat))
 
     # Convert to Hamiltonian and PauliSentence
-    terms = ([], [])
+    coeffs, obs = [], []
     for pauli_rep in product("IXYZ", repeat=num_qubits):
         bit_array = qml.math.array(
             [[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int
@@ -165,19 +168,22 @@ def pauli_decompose(
                 else [(o, w) for w, o in zip(wire_order, pauli_rep)]
             )
             if observables:
-                terms[0].append(coefficient)
-                terms[1].append(observables)
+                coeffs.append(coefficient)
+                obs.append(observables)
 
-    coeffs = qml.math.convert_like(terms[0], matrix)
+    coeffs = qml.math.convert_like(coeffs, matrix)
     if hasattr(matrix, "requires_grad"):
         coeffs.requires_grad = matrix.requires_grad
 
     if pauli:
         return PauliSentence(
-            {PauliWord({w: o for o, w in obs_n_wires}): coeff for coeff, obs_n_wires in zip(*terms)}
+            {
+                PauliWord({w: o for o, w in obs_n_wires}): coeff
+                for coeff, obs_n_wires in zip(coeffs, obs)
+            }
         )
 
-    obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in terms[1]]
+    obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs]
     return Hamiltonian(coeffs, obs)
 
 
