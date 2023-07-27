@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
+  and return a new batch of circuits and a single post processing function.
+  [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
@@ -207,6 +211,7 @@ Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
