@@ -329,10 +329,9 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
         has_partitioned_shots = vjp_shots = device.shot_vector
         legacy_shots = Shots(device.shot_vector or 1)
 
-    for i, tape in enumerate(tapes):
+    for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
