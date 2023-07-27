@@ -308,16 +308,20 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
     """
 
     parameters = []
+    params_unwrapped = []
 
-    for i, tape in enumerate(tapes):
+    for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
-    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
-    res = execute_fn(unwrapped_tapes)
+        params_unwrapped.append(
+            [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
+        )
+
+    res = execute_fn(tapes)
     res = tuple(_to_tensors(r) for r in res)  # convert output to TensorFlow tensors
 
     @tf.custom_gradient
@@ -328,6 +332,10 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
 
             # reconstruct the nested structure of dy
             dy = _res_restructured(dy, tapes, legacy_shots=None)
+
+            if not context.executing_eagerly():
+                tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+
             vjps = vjp_fn.compute_vjp(tapes, dy)
 
             # filter out untrainable parameters if they happen to appear in the vjp

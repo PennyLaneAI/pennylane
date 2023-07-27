@@ -36,7 +36,7 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
-from .jacobian_products import TransformDerivatives, DeviceDerivatives
+from .jacobian_products import TransformDerivatives, DeviceDerivatives, OldDeviceDerivatives
 
 device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
@@ -170,7 +170,7 @@ def _get_interface_boundary(interface: str, tapes, grad_on_execution):
 
     try:
         if interface == "autograd":
-            from .autograd import execute as _execute
+            from .autograd import autograd_boundary as _execute
 
         elif interface == "tf":
             import tensorflow as tf
@@ -549,7 +549,6 @@ def execute(
     if new_device_interface:
 
         def device_execution_with_config(tapes):
-            print("in device execution with config")
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             return device.execute(tapes, execution_config=config)
 
@@ -588,28 +587,18 @@ def execute(
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
 
+        vjp_fn = OldDeviceDerivatives(device, gradient_kwargs, override_shots=override_shots)
+
         # grad on execution or best was chosen
         if grad_on_execution is True or grad_on_execution == "best":
-            # replace the forward execution function to return
-            # both results and gradients
-            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
-            gradient_fn = None
+            execute_fn = vjp_fn
+
             _grad_on_execution = True
 
         else:
             # disable caching on the forward pass
             # use qml.interfaces so that mocker can spy on it during testing
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
-
-            # replace the backward gradient computation
-            # use qml.interfaces so that mocker can spy on it during testing
-            gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            gradient_fn = qml.interfaces.cache_execute(
-                gradient_fn_with_shots,
-                cache,
-                pass_kwargs=True,
-                return_tuple=False,
-            )
 
             # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
             # can not be reused from the device if `grad_on_execution is False`.
@@ -634,17 +623,15 @@ def execute(
         # a gradient transform
         vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
         if max_diff == 2:
-            print("has maxdiff of 2")
-            interface_boundary = _get_interface_boundary(
+            inner_interface_boundary = _get_interface_boundary(
                 mapped_interface, tapes, _grad_on_execution
             )
             differentiable_execute_fn = partial(
-                interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn, device=device
+                inner_interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn, device=device
             )
             vjp_fn = TransformDerivatives(
                 differentiable_execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs
             )
-
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)

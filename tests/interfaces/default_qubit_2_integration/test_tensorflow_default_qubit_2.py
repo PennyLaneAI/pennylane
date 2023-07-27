@@ -24,88 +24,6 @@ pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
 
-# pylint: disable=too-few-public-methods
-class TestCaching:
-    """Tests for caching behaviour"""
-
-    @pytest.mark.parametrize("num_params", [2, 3])
-    def test_caching_param_shift_hessian(self, num_params):
-        """Test that, when using parameter-shift transform,
-        caching reduces the number of evaluations to their optimum
-        when computing Hessians."""
-        dev = DefaultQubit2()
-        params = tf.Variable(tf.range(1, num_params + 1) / 10)
-
-        N = num_params
-
-        def cost(x, cache):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
-
-                for i in range(2, num_params):
-                    qml.RZ(x[i], wires=[i % 2])
-
-                qml.CNOT(wires=[0, 1])
-                qml.var(qml.prod(qml.PauliZ(0), qml.PauliX(1)))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            return qml.execute(
-                [tape], dev, gradient_fn=qml.gradients.param_shift, cache=cache, max_diff=2
-            )[0]
-
-        # No caching: number of executions is not ideal
-        with qml.Tracker(dev) as tracker:
-            with tf.GradientTape() as jac_tape:
-                with tf.GradientTape() as grad_tape:
-                    res = cost(params, cache=False)
-                grad = grad_tape.gradient(res, params)
-            hess1 = jac_tape.jacobian(grad, params)
-
-        if num_params == 2:
-            # compare to theoretical result
-            x, y, *_ = params
-            expected = tf.convert_to_tensor(
-                [
-                    [2 * tf.cos(2 * x) * tf.sin(y) ** 2, tf.sin(2 * x) * tf.sin(2 * y)],
-                    [tf.sin(2 * x) * tf.sin(2 * y), -2 * tf.cos(x) ** 2 * tf.cos(2 * y)],
-                ]
-            )
-            assert np.allclose(expected, hess1)
-
-        expected_runs = 1  # forward pass
-
-        # Jacobian of an involutory observable:
-        # ------------------------------------
-        #
-        # 2 * N execs: evaluate the analytic derivative of <A>
-        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
-        num_shifted_evals = 2 * N
-        runs_for_jacobian = num_shifted_evals + 1
-        expected_runs += runs_for_jacobian
-
-        # Each tape used to compute the Jacobian is then shifted again
-        expected_runs += runs_for_jacobian * num_shifted_evals
-        assert tracker.totals["executions"] == expected_runs
-
-        # Use caching: number of executions is ideal
-
-        with qml.Tracker(dev) as tracker2:
-            with tf.GradientTape() as jac_tape:
-                with tf.GradientTape() as grad_tape:
-                    res = cost(params, cache=True)
-                grad = grad_tape.gradient(res, params)
-            hess2 = jac_tape.jacobian(grad, params)
-        assert np.allclose(hess1, hess2)
-
-        expected_runs_ideal = 1  # forward pass
-        expected_runs_ideal += 2 * N  # Jacobian
-        expected_runs_ideal += N + 1  # Hessian diagonal
-        expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
-        assert tracker2.totals["executions"] == expected_runs_ideal
-        assert expected_runs_ideal < expected_runs
-
-
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
@@ -760,3 +678,85 @@ class TestHamiltonianWorkflows:
         jac = qml.math.hstack(tape.jacobian(res, [weights, coeffs1, coeffs2]), like="tensorflow")
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
+
+
+# pylint: disable=too-few-public-methods
+class TestCaching:
+    """Tests for caching behaviour"""
+
+    @pytest.mark.parametrize("num_params", [2, 3])
+    def test_caching_param_shift_hessian(self, num_params):
+        """Test that, when using parameter-shift transform,
+        caching reduces the number of evaluations to their optimum
+        when computing Hessians."""
+        dev = DefaultQubit2()
+        params = tf.Variable(tf.range(1, num_params + 1) / 10)
+
+        N = num_params
+
+        def cost(x, cache):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+
+                for i in range(2, num_params):
+                    qml.RZ(x[i], wires=[i % 2])
+
+                qml.CNOT(wires=[0, 1])
+                qml.var(qml.prod(qml.PauliZ(0), qml.PauliX(1)))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return qml.execute(
+                [tape], dev, gradient_fn=qml.gradients.param_shift, cache=cache, max_diff=2
+            )[0]
+
+        # No caching: number of executions is not ideal
+        with qml.Tracker(dev) as tracker:
+            with tf.GradientTape() as jac_tape:
+                with tf.GradientTape() as grad_tape:
+                    res = cost(params, cache=False)
+                grad = grad_tape.gradient(res, params)
+            hess1 = jac_tape.jacobian(grad, params)
+
+        if num_params == 2:
+            # compare to theoretical result
+            x, y, *_ = params
+            expected = tf.convert_to_tensor(
+                [
+                    [2 * tf.cos(2 * x) * tf.sin(y) ** 2, tf.sin(2 * x) * tf.sin(2 * y)],
+                    [tf.sin(2 * x) * tf.sin(2 * y), -2 * tf.cos(x) ** 2 * tf.cos(2 * y)],
+                ]
+            )
+            assert np.allclose(expected, hess1)
+
+        expected_runs = 1  # forward pass
+
+        # Jacobian of an involutory observable:
+        # ------------------------------------
+        #
+        # 2 * N execs: evaluate the analytic derivative of <A>
+        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
+        num_shifted_evals = 2 * N
+        runs_for_jacobian = num_shifted_evals + 1
+        expected_runs += runs_for_jacobian
+
+        # Each tape used to compute the Jacobian is then shifted again
+        expected_runs += runs_for_jacobian * num_shifted_evals
+        assert tracker.totals["executions"] == expected_runs
+
+        # Use caching: number of executions is ideal
+
+        with qml.Tracker(dev) as tracker2:
+            with tf.GradientTape() as jac_tape:
+                with tf.GradientTape() as grad_tape:
+                    res = cost(params, cache=True)
+                grad = grad_tape.gradient(res, params)
+            hess2 = jac_tape.jacobian(grad, params)
+        assert np.allclose(hess1, hess2)
+
+        expected_runs_ideal = 1  # forward pass
+        expected_runs_ideal += 2 * N  # Jacobian
+        expected_runs_ideal += N + 1  # Hessian diagonal
+        expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
+        assert tracker2.totals["executions"] == expected_runs_ideal
+        assert expected_runs_ideal < expected_runs

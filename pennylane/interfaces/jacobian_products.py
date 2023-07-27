@@ -21,6 +21,8 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch, TensorLike
 
+from .set_shots import set_shots
+
 Batch = Tuple[QuantumScript]
 
 
@@ -173,8 +175,6 @@ class TransformDerivatives(DerivativeExecutor):
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
             tapes, tangents, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
-        print("in execute_and_compute_jvp")
-        print("sending off ", jvp_tapes)
 
         full_batch = tapes + tuple(jvp_tapes)
 
@@ -182,10 +182,7 @@ class TransformDerivatives(DerivativeExecutor):
 
         results = full_results[:num_result_tapes]
         jvp_results = full_results[num_result_tapes:]
-        print("\n jvp_results: ", jvp_results)
-        print("jvp processing_fn: ", jvp_processing_fn)
         jvps = jvp_processing_fn(jvp_results)
-        print("post processed: ", jvps, "\n")
         return tuple(results), tuple(jvps)
 
     def compute_jvp(self, tapes, tangents):
@@ -214,7 +211,6 @@ class TransformDerivatives(DerivativeExecutor):
         return tuple(results), tuple(vjps)
 
     def compute_vjp(self, tapes, dy):
-        print("in compute_vjp: ", self._inner_execute)
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
@@ -222,6 +218,62 @@ class TransformDerivatives(DerivativeExecutor):
         vjp_results = self._inner_execute(vjp_tapes)
 
         return tuple(processing_fn(vjp_results))
+
+
+class OldDeviceDerivatives(DerivativeExecutor):
+    def __init__(self, device, gradient_kwargs, override_shots):
+        self._device = device
+        self._gradient_kwargs = gradient_kwargs
+        self._override_shots = override_shots
+        self._jacobian_cache = {}
+        self._results_cache = {}
+
+    def __call__(self, tapes):
+        tapes = tuple(tapes)
+        if tapes not in self._jacobian_cache:
+            unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            results, jacs = set_shots(self._device, self._override_shots)(
+                self._device.execute_and_gradients
+            )(unwrapped_tapes, **self._gradient_kwargs)
+            results = tuple(results)
+            jacs = tuple(jacs)
+            self._results_cache[tapes] = results
+            self._jacobian_cache[tapes] = jacs
+        return self._results_cache[tapes]
+
+    def compute_jvp(self, tapes, tangents):
+        return None
+
+    def execute_and_compute_jvp(self, tapes, tangents):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+
+        if tapes not in self._jacobian_cache:
+            results, jacs = set_shots(self._device, self._override_shots)(
+                self._device.execute_and_gradients
+            )(tapes, **self._gradient_kwargs)
+            results = tuple(results)
+            jacs = tuple(jacs)
+            self._jacobian_cache[tapes] = jacs
+            self._results_cache[tapes] = results
+
+        jvps = _compute_jvps(self._jacobian_cache[tapes], tangents, multi_measurements)
+        return self._results_cache[tapes], jvps
+
+    def execute_and_compute_vjp(self, tapes, dy) -> Tuple[ResultBatch, Tuple]:
+        return None
+
+    def compute_vjp(self, tapes, dy):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        multi_measurements = (len(t.measurements) > 1 for t in tapes)
+
+        if tapes not in self._jacobian_cache:
+            jacs = set_shots(self._device, self._override_shots)(self._device.gradients)(
+                tapes, **self._gradient_kwargs
+            )
+            self._jacobian_cache[tapes] = jacs
+
+        return _compute_vjps(dy, self._jacobian_cache[tapes], multi_measurements)
 
 
 class DeviceDerivatives(DerivativeExecutor):

@@ -269,7 +269,7 @@ autograd.extend.defvjp(__execute_legacy, _vjp_legacy, argnums=[0])
 #################
 
 
-def execute(tapes, execute_fn, vjp_fn, device=None):
+def autograd_boundary(tapes, execute_fn, vjp_fn, device=None):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
@@ -333,8 +333,6 @@ def _execute(
     - ``tapes`` is a *required* argument
 
     """
-    print("\n in autograd _execute wth : ", execute_fn)
-    print(vjp_fn, "\n")
     return execute_fn(tapes)
 
 
@@ -373,7 +371,6 @@ def vjp(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
-        print("in autograd grad_fn with : ", vjp_fn)
 
         # not sure what this post processing is for
         return vjp_fn.compute_vjp(tapes, dy)
