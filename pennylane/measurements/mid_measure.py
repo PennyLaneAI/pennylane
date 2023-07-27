@@ -108,7 +108,13 @@ def measure(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
-    return MidMeasureMP(wires=wire, reset=reset, postselect=postselect)
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())[:8]
+    mp = MidMeasureMP(wires=wire, reset=reset, id=measurement_id)
+    return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+T = TypeVar("T")
 
 
 class MidMeasureMP(MeasurementProcess):
@@ -122,13 +128,9 @@ class MidMeasureMP(MeasurementProcess):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        reset (Optional[bool]): Whether to reset the wire after measurement.
-        postselect (Optional[int]): The measured computational basis state on which to
-            optionally postselect the circuit. Must be ``0`` or ``1`` if postselection
-            is requested.
-        measurement_ids (Optional[List[str]]): custom label given to a measurement instance, can be useful for some
-            applications where the instance has to be identified
-        processing_fn (Optional[Callable]): A lazily transformation applied to the measurement values.
+        reset (bool): Whether to reset the wire after measurement.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
     """
 
     def __init__(

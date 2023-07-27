@@ -145,6 +145,11 @@ def defer_measurements(tape: QuantumTape):
         else:
             apply(op)
 
+    for m in tape.measurements:
+        if m.mid_measure:
+            m.obs.wires = Wires([new_wires[m_id] for m_id in m.obs.measurement_ids])
+        apply(m)
+
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
