@@ -831,7 +831,6 @@ ar.register_function("jax", "linalg.eigh", _eigh_jax)
 class _TorchEigh(_i("torch").autograd.Function):
     @staticmethod
     def forward(ctx, x):
-        print("here")
         out = _i("torch").linalg.eigh(x)
         ctx.save_for_backward(*out, x)
         return out
