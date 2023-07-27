@@ -107,7 +107,11 @@ def pauli_decompose(
         num_qubits = int(qml.math.ceil(qml.math.log2(qml.math.max(shape))))
         if shape[0] != shape[1] or shape[0] != 2**num_qubits:
             padd_diffs = qml.math.abs(qml.math.array(shape) - 2**num_qubits)
-            padding = ((0, padd_diffs[0]), (0, padd_diffs[1]))
+            padding = (
+                ((0, padd_diffs[0]), (0, padd_diffs[1]))
+                if qml.math.get_interface(matrix) != "torch"
+                else ((padd_diffs[0], 0), (padd_diffs[1], 0))
+            )
             matrix = qml.math.pad(matrix, padding, mode="constant", constant_values=0)
 
     shape = qml.math.shape(matrix)
@@ -138,6 +142,8 @@ def pauli_decompose(
         ),
         complex,
     )
+    for idx, indice in enumerate(indices):
+        print(idx, indice, qml.math.gather(matrix[idx], indice))
 
     # Perform Hadamard transformation on coloumns
     hadamard_transform_mat = _walsh_hadamard_transform(qml.math.transpose(term_mat))

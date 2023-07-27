@@ -46,7 +46,7 @@ class TestDecomposition:
     """Tests the pauli_decompose function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((4, 2)), np.ones((2, 4))])
-    def test_wrong_shape(self, hamiltonian):
+    def test_wrong_shape_non_square(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
@@ -56,7 +56,7 @@ class TestDecomposition:
             qml.pauli_decompose(hamiltonian)
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((5, 5)), np.ones((3, 3))])
-    def test_wrong_shape(self, hamiltonian):
+    def test_wrong_shape_non_power_two(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
