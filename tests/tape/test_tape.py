@@ -1696,10 +1696,9 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are simply references
-        assert copied_tape.operations == tape.operations
-        assert copied_tape.observables == tape.observables
-        assert copied_tape.measurements == tape.measurements
-        assert copied_tape.operations[0] is tape.operations[0]
+        assert all(o1 is o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
+        assert all(o1 is o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
+        assert all(m1 is m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
 
         # operation data is also a reference
         assert copied_tape.operations[0].wires is tape.operations[0].wires
@@ -1729,10 +1728,9 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are not references; they are unique objects
-        assert copied_tape.operations != tape.operations
-        assert copied_tape.observables != tape.observables
-        assert copied_tape.measurements != tape.measurements
-        assert copied_tape.operations[0] is not tape.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
 
         # however, the underlying operation data *is still shared*
         assert copied_tape.operations[0].wires is tape.operations[0].wires
@@ -1758,10 +1756,9 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are not references
-        assert copied_tape.operations != tape.operations
-        assert copied_tape.observables != tape.observables
-        assert copied_tape.measurements != tape.measurements
-        assert copied_tape.operations[0] is not tape.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
 
         # check that the output dim is identical
         assert tape.output_dim == copied_tape.output_dim
