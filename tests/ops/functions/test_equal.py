@@ -154,6 +154,29 @@ PARAMETRIZED_MEASUREMENTS = [
         ),
         k=3,
     ),
+    qml.shadow_expval(
+        H=[
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+            )
+        ],
+        k=2,
+    ),
+    qml.shadow_expval(
+        H=[
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+            )
+        ]
+    ),
+    qml.shadow_expval(
+        H=[
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+            )
+        ],
+        k=3,
+    ),
     ExpectationMP(eigvals=[1, -1]),
     ExpectationMP(eigvals=[1, 2]),
 ]
