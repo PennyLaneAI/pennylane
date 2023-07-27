@@ -85,7 +85,7 @@ def defer_measurements(tape):
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
     """
-    measured_wires = {}
+    new_wires = {}
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -93,25 +93,33 @@ def defer_measurements(tape):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
-    for op in tape:
-        op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
-        if len(op_wires_measured) > 0:
-            raise ValueError(
-                f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
-            )
-
+    # Current wire in which pre-measurement state will be saved
+    new_wire_latest = tape.num_wires
+    for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            measured_wires[op.id] = op.wires[0]
+            new_wires[op.id] = new_wire_latest
+            qml.CNOT([op.wires[0], new_wire_latest])
+
+            if op.reset:
+                qml.CNOT([new_wire_latest, op.wires[0]])
+            op.value.wires = op.value.wires + Wires(new_wire_latest)
+
+            new_wire_latest += 1
 
         elif op.__class__.__name__ == "Conditional":
-            _add_control_gate(op, measured_wires)
+            _add_control_gate(op, new_wires)
         else:
             apply(op)
 
+    for m in tape.measurements:
+        if m.mid_measure:
+            m.obs.wires = Wires([new_wires[m_id] for m_id in m.obs.measurement_ids])
+        apply(m)
 
-def _add_control_gate(op, measured_wires):
+
+def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    control = [control_wires[m_id] for m_id in op.meas_val.measurement_ids]
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             ctrl(
