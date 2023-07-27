@@ -39,7 +39,7 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Tensor
+from pennylane.operation import Observable, Operation, Tensor, Operator
 from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import WireError, Wires
@@ -573,34 +573,54 @@ class Device(abc.ABC):
         """
         self.custom_expand_fn = types.MethodType(fn, self)
 
-    def _tape_op_expand(self, tape, depth, stop_at):
+    def _local_tape_expand(self, tape, depth, stop_at):
         """Function to recursively expand the operations in a circuit"""
         if depth == 0:
             return tape
 
-        prep = []
-        ops = []
+        new_prep = []
+        new_ops = []
+        new_measurements = []
 
-        for queue, new_queue in [(tape._prep, prep), (tape._ops, ops)]:
+        for queue, new_queue in [
+            (tape._prep, new_prep),
+            (tape._ops, new_ops),
+            (tape.measurements, new_measurements),
+        ]:
             for obj in queue:
                 if stop_at(obj):
                     new_queue.append(obj)
                     continue
 
-                if obj.has_decomposition:
-                    with QueuingManager.stop_recording():
-                        obj = QuantumScript(obj.decomposition(), _update=False)
-                else:
-                    new_queue.append(obj)
-                    continue
+                if isinstance(obj, Operator):
+                    if obj.has_decomposition:
+                        with QueuingManager.stop_recording():
+                            obj = QuantumScript(obj.decomposition(), _update=False)
+                    else:
+                        new_queue.append(obj)
+                        continue
 
-                expanded_tape = self._tape_op_expand(obj, depth=depth - 1, stop_at=stop_at)
+                # recursively expand out the newly created tape
+                expanded_tape = self._local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
 
-                prep.extend(expanded_tape._prep)
-                ops.extend(expanded_tape._ops)
+                new_prep.extend(expanded_tape._prep)
+                new_ops.extend(expanded_tape._ops)
+                new_measurements.extend(expanded_tape._measurements)
 
+        # preserves inheritance structure
         # if tape is a QuantumTape, returned object will be a quantum tape
-        new_tape = tape.__class__(ops, [], prep, _update=False)
+        new_tape = tape.__class__(
+            new_ops, new_measurements, new_prep, shots=tape.shots, _update=False
+        )
+
+        # Update circuit info
+        new_tape.wires = copy.copy(tape.wires)
+        new_tape.num_wires = tape.num_wires
+        new_tape.is_sampled = tape.is_sampled
+        new_tape.all_sampled = tape.all_sampled
+        new_tape._batch_size = tape.batch_size
+        new_tape._output_dim = tape.output_dim
+        new_tape._qfunc_output = tape._qfunc_output
         return new_tape
 
     def default_expand_fn(self, circuit, max_expansion=10):
@@ -644,62 +664,15 @@ class Device(abc.ABC):
         # if ops_not_supported or obs_on_same_wire:
         #     circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
-        prep, new_prep = (copy.copy(circuit._prep), [])
-        ops, new_ops = (copy.copy(circuit._ops), [])
-        measurements = circuit.measurements
-
-        # expand measurements if we are measuring
         if obs_on_same_wire:
-            from pennylane.tape.tape import (
-                _validate_computational_basis_sampling,
-                rotations_and_diagonal_measurements,
+            circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
+
+        elif ops_not_supported:
+            circuit = self._local_tape_expand(
+                circuit, depth=max_expansion, stop_at=self.stopping_condition
             )
 
-            _validate_computational_basis_sampling(measurements)
-            diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(
-                circuit
-            )
-
-            ops += diagonalizing_gates
-            measurements = diagonal_measurements
-
-        if ops_not_supported:
-            for queue, new_queue in [(prep, new_prep), (ops, new_ops)]:
-                for obj in queue:
-                    if self.stopping_condition(obj):
-                        new_queue.append(obj)
-                        continue
-
-                    if obj.has_decomposition:
-                        with QueuingManager.stop_recording():
-                            obj = QuantumScript(obj.decomposition(), _update=False)
-                    else:
-                        new_queue.append(obj)
-                        continue
-
-                    expanded_tape = self._tape_op_expand(
-                        obj, stop_at=self.stopping_condition, depth=max_expansion - 1
-                    )
-
-                    new_prep.extend(expanded_tape._prep)
-                    new_ops.extend(expanded_tape._ops)
-
-            ops = new_ops
-            prep = new_prep
-
-        # preserves inheritance structure
-        # if tape is a QuantumTape, returned object will be a quantum tape
-        new_tape = circuit.__class__(ops, measurements, prep, shots=circuit.shots, _update=False)
-
-        # Update circuit info
-        new_tape.wires = copy.copy(circuit.wires)
-        new_tape.num_wires = circuit.num_wires
-        new_tape.is_sampled = circuit.is_sampled
-        new_tape.all_sampled = circuit.all_sampled
-        new_tape._batch_size = circuit.batch_size
-        new_tape._output_dim = circuit.output_dim
-        new_tape._qfunc_output = circuit._qfunc_output
-        return new_tape
+        return circuit
 
     def expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
