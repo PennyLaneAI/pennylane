@@ -27,7 +27,7 @@ BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
 
 
 def _batch_postprocessing(
-    results: ResultBatch, individual_fns: List[PostProcessingFn], batch_slices: List[slice]
+    results: ResultBatch, individual_fns: List[PostProcessingFn], slices: List[slice]
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto the their respective tapes.
 
@@ -37,7 +37,7 @@ def _batch_postprocessing(
     Keyword Args:
         individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
            corresponding to only a single :class:`~.QuantumTape`.
-        batch_slices (List[slice]): the indices
+        slices (List[slice]): the indices for the results that correspond to each individual post processing function.
 
     >>> results = (1.0, 2.0, 3.0, 4.0)
     >>> def postprocessing1(results):
@@ -52,13 +52,7 @@ def _batch_postprocessing(
     (3.0, 3.5, 8.0)
 
     """
-
-    new_results = []
-    for slice_selection, post_processing_fn in zip(batch_slices, individual_fns):
-        selected_results = results[slice_selection]
-        new_results.append(post_processing_fn(selected_results))
-
-    return tuple(new_results)
+    return tuple(fn(results[sl]) for fn, sl in zip(individual_fns, slices))
 
 
 def _apply_postprocessing_stack(
@@ -224,7 +218,7 @@ class TransformProgram:
 
             execution_tapes = []
             fns = []
-            batch_slices = []
+            slices = []
 
             start = 0
             for tape in tapes:
@@ -232,12 +226,10 @@ class TransformProgram:
                 execution_tapes.extend(new_tapes)
                 fns.append(fn)
                 end = start + len(new_tapes)
-                batch_slices.append(slice(start, end))
+                slices.append(slice(start, end))
                 start = end
 
-            batch_postprocessing = partial(
-                _batch_postprocessing, individual_fns=fns, batch_slices=batch_slices
-            )
+            batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns, slices=slices)
             batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
 
             processing_fns_stack.append(batch_postprocessing)

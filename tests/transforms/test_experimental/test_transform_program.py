@@ -334,7 +334,7 @@ class TestTransformProgramCall:
         assert postprocessing0.func is _batch_postprocessing
         assert postprocessing0.args == tuple()
         assert postprocessing0.keywords["individual_fns"] == [single_null_postprocessing]
-        assert postprocessing0.keywords["batch_slices"] == [slice(0, 1)]
+        assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         results = (2.0,)
         assert fn(results) == (2.0,)
@@ -376,7 +376,7 @@ class TestTransformProgramCall:
         assert postprocessing0.keywords["individual_fns"] == [
             add_one,
         ]
-        assert postprocessing0.keywords["batch_slices"] == [slice(0, 1)]
+        assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
@@ -384,7 +384,7 @@ class TestTransformProgramCall:
         assert postprocessing1.keywords["individual_fns"] == [
             scale_two,
         ]
-        assert postprocessing1.keywords["batch_slices"] == [slice(0, 1)]
+        assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
         expected = (3.0,)  # 2.0 *1.0 + 1.0
@@ -408,7 +408,7 @@ class TestTransformProgramCall:
         assert postprocessing0.keywords["individual_fns"] == [
             scale_two,
         ]
-        assert postprocessing0.keywords["batch_slices"] == [slice(0, 1)]
+        assert postprocessing0.keywords["slices"] == [slice(0, 1)]
 
         postprocessing1 = fn.keywords["postprocessing_stack"][1]
         assert postprocessing1.func is _batch_postprocessing
@@ -416,7 +416,7 @@ class TestTransformProgramCall:
         assert postprocessing1.keywords["individual_fns"] == [
             add_one,
         ]
-        assert postprocessing1.keywords["batch_slices"] == [slice(0, 1)]
+        assert postprocessing1.keywords["slices"] == [slice(0, 1)]
 
         results = (1.0,)
         expected = (4.0,)  # (1.0 + 1.0) * 2.0
@@ -426,6 +426,7 @@ class TestTransformProgramCall:
         """Tests postprocessing when the input is a batch and the transform outputs different sizes of batches
         for each input tape.
         """
+
         # note this does not work for partitioned shots
         def sum_measurements(results: ResultBatch) -> Result:
             return sum(results)
@@ -466,7 +467,7 @@ class TestTransformProgramCall:
             sum_measurements,
             sum_measurements,
         ]
-        assert fn_stack[0].keywords["batch_slices"] == [slice(0, 2), slice(2, 5), slice(5, 10)]
+        assert fn_stack[0].keywords["slices"] == [slice(0, 2), slice(2, 5), slice(5, 10)]
 
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
