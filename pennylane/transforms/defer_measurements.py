@@ -102,7 +102,6 @@ def defer_measurements(tape):
 
             if op.reset:
                 qml.CNOT([new_wire_latest, op.wires[0]])
-            op.value.wires = op.value.wires + Wires(new_wire_latest)
 
             new_wire_latest += 1
 
@@ -110,11 +109,6 @@ def defer_measurements(tape):
             _add_control_gate(op, new_wires)
         else:
             apply(op)
-
-    for m in tape.measurements:
-        if m.mid_measure:
-            m.obs.wires = Wires([new_wires[m_id] for m_id in m.obs.measurement_ids])
-        apply(m)
 
 
 def _add_control_gate(op, control_wires):
