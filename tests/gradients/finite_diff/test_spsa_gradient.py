@@ -61,7 +61,7 @@ class TestSpsaGradient:
         with pytest.raises(ValueError, match=err):
             qml.grad(circuit_raise)(np.array(1.0))
 
-        qml.enable_return()
+        qml.disable_return()
 
         with pytest.warns(UserWarning, match=warning):
             qml.grad(circuit_warn)(np.array(1.0))
@@ -69,7 +69,7 @@ class TestSpsaGradient:
         with pytest.raises(ValueError, match=err):
             qml.grad(circuit_raise)(np.array(1.0))
 
-        qml.disable_return()
+        qml.enable_return()
 
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
