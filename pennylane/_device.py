@@ -650,9 +650,15 @@ class Device(abc.ABC):
 
         # expand measurements if we are measuring
         if obs_on_same_wire:
-            from pennylane.tape.tape import _validate_computational_basis_sampling, rotations_and_diagonal_measurements
+            from pennylane.tape.tape import (
+                _validate_computational_basis_sampling,
+                rotations_and_diagonal_measurements,
+            )
+
             _validate_computational_basis_sampling(measurements)
-            diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(circuit)
+            diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(
+                circuit
+            )
 
             ops += diagonalizing_gates
             measurements = diagonal_measurements
@@ -671,7 +677,9 @@ class Device(abc.ABC):
                         new_queue.append(obj)
                         continue
 
-                    expanded_tape = self._tape_op_expand(obj, stop_at=self.stopping_condition, depth=max_expansion-1)
+                    expanded_tape = self._tape_op_expand(
+                        obj, stop_at=self.stopping_condition, depth=max_expansion - 1
+                    )
 
                     new_prep.extend(expanded_tape._prep)
                     new_ops.extend(expanded_tape._ops)
