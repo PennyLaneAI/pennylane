@@ -88,6 +88,9 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* PennyLane no longer directly relies on `Operator.__eq__`.
+  [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
