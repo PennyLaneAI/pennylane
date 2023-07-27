@@ -671,7 +671,6 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     tapes = []
     ids = []
     # Exclude the backwards cone of layer_i from the backwards cone of layer_j
-    # ops_between_cgens = [op for op in layer_j.pre_ops if op not in layer_i.pre_ops]
     ops_between_cgens = [
         op1 for op1 in layer_j.pre_ops if not any(op1 is op2 for op2 in layer_i.pre_ops)
     ]
