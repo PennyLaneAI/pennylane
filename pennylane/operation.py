@@ -719,7 +719,7 @@ class Operator(abc.ABC):
     def __eq__(self, other):
         """Equality dunder method to compare two operators.
 
-        This method is called when the ``==`` is used to compare two operators.
+        This method is called when ``==`` is used to compare two operators.
 
         .. warning::
 
@@ -731,16 +731,15 @@ class Operator(abc.ABC):
         Returns:
             bool: ``True`` if operators are equal, ``False`` otherwise
         """
-        # warnings.warn(
-        #     "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
-        #     "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
-        #     "qml.equal(op1, op2). To continue using operator equality in its current state, "
-        #     "use 'op1 is op2'.",
-        #     UserWarning,
-        # )
+        warnings.warn(
+            "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
+            "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
+            "qml.equal(op1, op2). To continue using operator equality in its current state, "
+            "use 'op1 is op2'.",
+            UserWarning,
+        )
 
-        # return super().__eq__(other)
-        return qml.equal(self, other)
+        return super().__eq__(other)
 
     # pylint: disable=useless-super-delegation
     def __hash__(self):
@@ -759,17 +758,16 @@ class Operator(abc.ABC):
         Returns:
             int: hash of the operator
         """
-        # warnings.warn(
-        #     "The behaviour of operator hashing will be updated soon. Currently, each operator "
-        #     "instance has a unique hash. Soon, an operator's hash will be determined by the "
-        #     "combined hash of the name, wires, parameters and hyperparameters of the operator. "
-        #     "To continue using operator hashing in its current state, wrap the operator inside "
-        #     "a qml.queuing.WrappedObj instance.",
-        #     UserWarning,
-        # )
+        warnings.warn(
+            "The behaviour of operator hashing will be updated soon. Currently, each operator "
+            "instance has a unique hash. Soon, an operator's hash will be determined by the "
+            "combined hash of the name, wires, parameters and hyperparameters of the operator. "
+            "To continue using operator hashing in its current state, wrap the operator inside "
+            "a qml.queuing.WrappedObj instance.",
+            UserWarning,
+        )
 
-        # return super().__hash__()
-        return self.hash
+        return super().__hash__()
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
