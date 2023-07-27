@@ -598,7 +598,7 @@ def execute(
         else:
             # disable caching on the forward pass
             # use qml.interfaces so that mocker can spy on it during testing
-            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+            execute_fn = inner_execute
 
             # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
             # can not be reused from the device if `grad_on_execution is False`.
