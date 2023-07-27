@@ -242,7 +242,6 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 
-    @wraps(fn)
     def wrapper(tapes: Sequence[QuantumTape], **kwargs):
         if not pass_kwargs:
             kwargs = {}
@@ -563,7 +562,6 @@ def execute(
             return batch_execute(tapes)
 
         execute_fn = qml.interfaces.cache_execute(inner_execute, cache, return_tuple=False)
-
     _grad_on_execution = False
 
     if config.use_device_gradient:
@@ -632,6 +630,7 @@ def execute(
             vjp_fn = TransformDerivatives(
                 differentiable_execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs
             )
+
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)

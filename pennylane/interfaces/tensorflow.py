@@ -260,7 +260,7 @@ def _execute_legacy(
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
                         vjps = processing_fn(
-                            _execute_legacy(
+                            execute(
                                 vjp_tapes,
                                 device,
                                 execute_fn,
@@ -296,32 +296,53 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (pennylane.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
             compute the gradients during the backwards pass.
-        vjp_fn
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
 
     Returns:
-        tuple[tuple[tf.Tensor]]: A nested list of tape results. Each element in
+        list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
 
     parameters = []
     params_unwrapped = []
 
-    for tape in tapes:
+    if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
+        # assumes all tapes have the same shot vector
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+        vjp_shots = legacy_shots = None
+    else:
+        has_partitioned_shots = vjp_shots = device.shot_vector
+        legacy_shots = Shots(device.shot_vector or 1)
+
+    for i, tape in enumerate(tapes):
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
+        # store all unwrapped parameters
         params_unwrapped.append(
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    res = execute_fn(tapes)
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+    res = execute_fn(unwrapped_tapes)
     res = tuple(_to_tensors(r) for r in res)  # convert output to TensorFlow tensors
 
     @tf.custom_gradient
@@ -331,15 +352,17 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
             parameter values and output gradient dy"""
 
             # reconstruct the nested structure of dy
-            dy = _res_restructured(dy, tapes, legacy_shots=None)
+            dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
 
-            if not context.executing_eagerly():
-                tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+            vjps = vjp_fn.compute_vjp(new_tapes, dy)
 
-            vjps = vjp_fn.compute_vjp(tapes, dy)
-
-            # filter out untrainable parameters if they happen to appear in the vjp
-            vjps = tuple(vjp for vjp in vjps if 0 not in qml.math.shape(vjp))
+            if isinstance(vjps, tuple):
+                extended_vjps = []
+                for vjp in vjps:
+                    if vjp is not None and 0 not in qml.math.shape(vjp):
+                        extended_vjps.extend(qml.math.unstack(vjp))
+                vjps = tuple(extended_vjps)
 
             variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps

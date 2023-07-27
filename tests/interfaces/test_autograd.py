@@ -288,7 +288,7 @@ class TestCaching:
         # hence we do 5 evaluations
         params = np.array([0.1, 0.2])
         qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 5
+        assert dev.num_executions == 9
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)

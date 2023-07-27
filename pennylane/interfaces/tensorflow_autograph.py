@@ -74,7 +74,6 @@ def _execute_legacy(
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-
     all_params = []
     parameters = []
     lens = []
@@ -255,56 +254,22 @@ def _execute_legacy(
     return _execute(*all_params)
 
 
-def execute(
-    tapes,
-    device,
-    execute_fn,
-    gradient_fn,
-    gradient_kwargs,
-    _n=1,
-    max_diff=2,
-    grad_on_execution=None,
-):
+def execute(tapes, execute_fn, vjp_fn, device=None):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.Device): Device to use to execute the batch of tapes.
-            If the device does not provide a ``batch_execute`` method,
-            by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
             compute the gradients during the backwards pass.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
-            determining the gradients of tapes
-        gradient_fn (callable): the gradient function to use to compute quantum gradients
-        _n (int): a positive integer used to track nesting of derivatives, for example
-            if the nth-order derivative is requested.
-        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
-            the maximum number of derivatives to support. Increasing this value allows
-            for higher order derivatives to be extracted, at the cost of additional
-            (classical) computational overhead during the backwards pass.
-        grad_on_execution (bool): Whether the gradients should be computed on execution or not.
+        vjp_fn
 
     Returns:
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if not qml.active_return():
-        mode = "forward" if grad_on_execution else "backward"
-
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-            mode=mode,
-        )
-
+    raise NotImplementedError("tensorflow autograph")
     all_params = []
     parameters = []
     lens = []
@@ -324,7 +289,6 @@ def execute(
     for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
         all_params += params
@@ -404,6 +368,13 @@ def execute(
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
             dy = list(dy[: total_measurements * num_shot_copies])
 
+            vjps = vjp_fn.compute_vjp(tapes, dy)
+            vjps = tf.numpy_function(
+                func=_backward,
+                inp=dy + list(jacs) + multi_measurements,
+                Tout=[tf.float64] * len(parameters),
+            )
+
             if grad_on_execution:
                 # Jacobians were computed on the forward pass (grad_on_execution=True)
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
@@ -417,12 +388,6 @@ def execute(
                     jacs = _jac_restructured(jacs, tapes)
 
                     return _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots)
-
-                vjps = tf.numpy_function(
-                    func=_backward,
-                    inp=dy + list(jacs) + multi_measurements,
-                    Tout=[tf.float64] * len(parameters),
-                )
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
