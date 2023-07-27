@@ -22,14 +22,16 @@ import pennylane as qml
 from pennylane import qnode
 from pennylane.devices.experimental import DefaultQubit2
 
+device_seed = 42
+
 device_and_diff_method = [
-    [DefaultQubit2(), "backprop", True],
-    [DefaultQubit2(), "finite-diff", False],
-    [DefaultQubit2(), "parameter-shift", False],
-    [DefaultQubit2(), "adjoint", True],
-    [DefaultQubit2(), "adjoint", False],
-    [DefaultQubit2(), "spsa", False],
-    [DefaultQubit2(), "hadamard", False],
+    [DefaultQubit2(seed=device_seed), "backprop", True],
+    [DefaultQubit2(seed=device_seed), "finite-diff", False],
+    [DefaultQubit2(seed=device_seed), "parameter-shift", False],
+    [DefaultQubit2(seed=device_seed), "adjoint", True],
+    [DefaultQubit2(seed=device_seed), "adjoint", False],
+    [DefaultQubit2(seed=device_seed), "spsa", False],
+    [DefaultQubit2(seed=device_seed), "hadamard", False],
 ]
 
 interface_and_device_and_diff_method = [
