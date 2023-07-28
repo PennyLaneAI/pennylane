@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, List, Callable
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -56,12 +56,13 @@ def measure(wires, reset=False):  # TODO: Change name to mid_measure
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Mid circuit measurements can be manipulated using the following dunder methods
-    ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``, ``>=``, ``<``, ``>``.
-    With other mid-circuit measurements or scalars.
+    ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
+    ``>=``, ``<``, ``>``. With other mid-circuit measurements or scalars.
 
-    Note:
-        python ``not``, ``and``, ``or``, do not work since these do not have dunder methods. Instead use
-        ``~``, ``&``, ``|``.
+    .. Note ::
+
+        Python ``not``, ``and``, ``or``, do not work since these do not have dunder methods.
+        Instead use ``~``, ``&``, ``|``.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
@@ -81,15 +82,16 @@ def measure(wires, reset=False):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    MidMeasureMP(wires=wire, reset=reset, id=measurement_id)
-    return MeasurementValue([measurement_id], processing_fn=lambda v: v)
-
-
-T = TypeVar("T")
+    return MidMeasureMP(
+        wires=wire, reset=reset, measurement_ids=[measurement_id], processing_fn=lambda v: v
+    )
 
 
 class MidMeasureMP(MeasurementProcess):
     """Mid-circuit measurement.
+
+    This class additionally stores information about unknown measurement outcomes in the qubit model.
+    Measurements on a single qubit in the computational basis are assumed.
 
     Please refer to :func:`measure` for detailed documentation.
 
@@ -97,15 +99,22 @@ class MidMeasureMP(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         reset (bool): Whether to reset the wire after measurement.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
+        measurement_ids (list[str]): custom label given to a measurement instance, can be useful for some
+            applications where the instance has to be identified
+        processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
     def __init__(
-        self, wires: Optional[Wires] = None, reset: bool = False, id: Optional[str] = None
+        self,
+        wires: Wires,
+        reset: bool = False,
+        measurement_ids: List[str] = None,
+        processing_fn: Callable = None,
     ):
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
         self.reset = reset
+        self.measurement_ids = measurement_ids
+        self.processing_fn = processing_fn
 
     @property
     def return_type(self):
@@ -119,34 +128,15 @@ class MidMeasureMP(MeasurementProcess):
     def _queue_category(self):
         return "_ops"
 
-
-class MeasurementValueError(ValueError):
-    """Error raised when an unknown measurement value is being used."""
-
-
-class MeasurementValue(Generic[T]):
-    """A class representing unknown measurement outcomes in the qubit model.
-
-    Measurements on a single qubit in the computational basis are assumed.
-
-    Args:
-        measurement_ids (list[str]): The id of the measurement that this object depends on.
-        processing_fn (callable): A lazily transformation applied to the measurement values.
-    """
-
-    def __init__(self, measurement_ids, processing_fn):
-        self.measurement_ids = measurement_ids
-        self.processing_fn = processing_fn
-
     def _items(self):
-        """A generator representing all the possible outcomes of the MeasurementValue."""
+        """A generator representing all the possible outcomes of the measurement value."""
         for i in range(2 ** len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             yield branch, self.processing_fn(*branch)
 
     @property
     def branches(self):
-        """A dictionary representing all possible outcomes of the MeasurementValue."""
+        """A dictionary representing all possible outcomes of the measurement value."""
         ret_dict = {}
         for i in range(2 ** len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
@@ -155,10 +145,10 @@ class MeasurementValue(Generic[T]):
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
-        if isinstance(other, MeasurementValue):
+        if isinstance(other, MidMeasureMP):
             # pylint: disable=protected-access
             return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
-        # if `other` is not a MeasurementValue then apply it to each branch
+        # if `other` is not a measurement value then apply it to each branch
         return self._apply(lambda v: base_bin(v, other))
 
     def __invert__(self):
@@ -216,14 +206,19 @@ class MeasurementValue(Generic[T]):
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
-        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
+        with qml.queuing.QueuingManager.stop_recording():
+            new_mp = MidMeasureMP(
+                self.wires, self.measurement_ids, lambda *x: fn(self.processing_fn(*x))
+            )
+        return new_mp
 
-    def _merge(self, other: "MeasurementValue"):
+    def _merge(self, other: "MidMeasureMP"):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
         merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
         merged_measurement_ids.sort()
+        merged_wires = Wires.all_wires([self.wires, other.wires])
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
@@ -239,7 +234,9 @@ class MeasurementValue(Generic[T]):
 
             return out_1, out_2
 
-        return MeasurementValue(merged_measurement_ids, merged_fn)
+        with qml.queuing.QueuingManager.stop_recording():
+            new_mp = MidMeasureMP(merged_wires, merged_measurement_ids, merged_fn)
+        return new_mp
 
     def __getitem__(self, i):
         branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
@@ -256,3 +253,7 @@ class MeasurementValue(Generic[T]):
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
             )
         return "\n".join(lines)
+
+
+class MeasurementValueError(ValueError):
+    """Error raised when an unknown measurement value is being used."""
