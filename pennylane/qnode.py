@@ -762,7 +762,9 @@ class QNode:
         # cannot be done here since we don't yet know the composition of the circuit.
 
         if isinstance(device, qml.devices.experimental.Device):
-            config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+            config = qml.devices.experimental.ExecutionConfig(
+                gradient_method="adjoint", use_device_gradient=True
+            )
             if device.supports_derivatives(config):
                 return "adjoint", {}, device
             raise ValueError(f"The {device} device does not support adjoint differentiation.")
