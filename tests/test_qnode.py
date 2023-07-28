@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 
+from functools import partial
 from typing import Callable, Tuple
 
 import numpy as np
@@ -1545,6 +1546,8 @@ class TestTransformProgramIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
+        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
+
         assert qml.math.allclose(circuit(0.1), -1)
 
         with circuit.device.tracker as tracker:
@@ -1552,29 +1555,32 @@ class TestTransformProgramIntegration:
 
         assert tracker.totals["executions"] == 1
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert tracker.history["resources"][0].gate_types["RX"] == 1
+        assert tracker.history["resources"][0].gate_types["RX"] == 0
 
     def tet_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
 
         dev = qml.device("default.qubit", wires=2)
 
-        def always2(results: qml.typing.ResultBatch) -> qml.typing.Result:
-            return 2.0
-
         @qml.transforms.core.transform
-        def result_just_2(
-            tape: qml.tape.QuantumTape,
+        def pin_result(
+            tape: qml.tape.QuantumTape, requested_result
         ) -> (Tuple[qml.tape.QuantumTape], PostProcessingFn):
-            return (tape,), always2
+            def postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
+                return requested_result
 
-        @result_just_2
+            return (tape,), postprocessing
+
+        @partial(pin_result, requested_result=3.0)
         @qml.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert qml.math.allclose(circuit(0.1), 2.0)
+        assert circuit.transform_program[0].transform == pin_result.transform
+        assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
+
+        assert qml.math.allclose(circuit(0.1), 3.0)
 
 
 class TestNewDeviceIntegration:
