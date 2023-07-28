@@ -331,11 +331,11 @@ class TestTransformDispatcher:
         ):
             transform(first_valid_transform, expand_transform=multiple_args_expand_transform)
 
-    def test_cotransform_not_callable(self):
+    def test_cotransform_not_implemented(self):
         """Test that a co-transform must be a callable."""
 
         with pytest.raises(
-            TransformError, match="The classical co-transform must be a valid Python function."
+            NotImplementedError, match="Classical cotransforms are not yet integrated."
         ):
             transform(first_valid_transform, classical_cotransform=non_callable)
 

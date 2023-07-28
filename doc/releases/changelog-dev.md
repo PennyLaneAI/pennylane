@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
+  and return a new batch of circuits and a single post processing function.
+  [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
@@ -59,6 +63,10 @@
 * The experimental device interface is integrated with the `QNode` for Jax.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
 
+* `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
+  more performant choices.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
+
 * The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
   new `QuantumScript` objects with the provided parameters.
   [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
@@ -66,8 +74,9 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
-* The experimental device interface is integrated with the `QNode` for Jax jit.
+* The experimental device interface is integrated with the `QNode` for jax-jit and torch.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
 
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
@@ -80,6 +89,9 @@
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
 <h3>Breaking changes 💔</h3>
+
+* `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
   setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
@@ -151,6 +163,10 @@
 * `qml.ApproxTimeEvolution.compute_decomposition()` now has a code example.
   [(#4354)](https://github.com/PennyLaneAI/pennylane/pull/4354)
 
+* The documentation for `pennylane.devices.experimental.Device` is improved to clarify
+  some aspects of its use.
+  [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
+
 <h3>Bug fixes 🐛</h3>
   
 * Stop `metric_tensor` from accidentally catching errors that stem from
@@ -178,6 +194,14 @@
 * The `jordan_wigner` function is modified to work with Hamiltonians built with an active space.
   [(#4372)](https://github.com/PennyLaneAI/pennylane/pull/4372)
 
+* When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
+  `qml.drawer.use_style` instead of `black_white`.
+  [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
+
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
+  trainable parameters of the expanded tape.
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -188,6 +212,7 @@ Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,

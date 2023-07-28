@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.devices.experimental import DefaultQubit2
 
 qubit_device_and_diff_method = [
@@ -186,12 +185,13 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return QuantumScript(
-                    [qml.Rot(lam, theta, -lam, wires=wires), qml.PhaseShift(phi + lam, wires=wires)]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
@@ -865,10 +865,8 @@ class TestQubitIntegration:
         """Test that the gradient of chained QNodes works without error"""
 
         class Template(qml.templates.StronglyEntanglingLayers):
-            def expand(self):
-                return QuantumScript(
-                    [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
-                )
+            def decomposition(self):
+                return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1284,8 +1282,8 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
-                return QuantumScript([qml.RY(3 * self.data[0], wires=self.wires)])
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(
             dev,
@@ -1383,10 +1381,10 @@ class TestTapeExpansion:
             assert np.allclose(grad2_w_c, expected, atol=tol)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_finite_shots(
+    def test_hamiltonian_finite_shots(
         self, dev, diff_method, grad_on_execution, interface, max_diff, mocker
     ):
-        """Test that the Hamiltonian is expanded if there
+        """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
@@ -1722,7 +1720,7 @@ class TestJIT:
         res = jax.jit(circ)(p, U)
         assert np.allclose(res, -np.cos(p), atol=tol, rtol=0)
 
-        jac_fn = jax.jit(jax.grad(circ, argnums=(0)))
+        jac_fn = jax.jit(jax.grad(circ, argnums=0))
         res = jac_fn(p, U)
         assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
 

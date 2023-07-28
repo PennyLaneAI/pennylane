@@ -416,7 +416,7 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
 
@@ -425,7 +425,7 @@ class TestQNode:
                     qml.PhaseShift(phi + lam, wires=wires)
 
                 tape = QuantumScript.from_queue(q_tape)
-                return tape
+                return tape.operations
 
         dev = qml.device(dev_name, wires=1)
         a = np.array(0.1, requires_grad=False)
@@ -741,11 +741,8 @@ class TestQubitIntegration:
         dev = qml.device(dev_name, wires=2)
 
         class Template(qml.templates.StronglyEntanglingLayers):
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit1(weights):
@@ -1340,11 +1337,11 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
+            def decomposition(self):
                 with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
                 tape = QuantumScript.from_queue(q)
-                return tape
+                return tape.operations
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)
         def circuit(x, y):

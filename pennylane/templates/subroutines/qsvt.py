@@ -329,17 +329,20 @@ class QSVT(Operation):
         UA_adj = copy.copy(UA)
 
         for idx, op in enumerate(projectors[:-1]):
-            qml.apply(op)
+            if qml.QueuingManager.recording():
+                qml.apply(op)
             op_list.append(op)
 
             if idx % 2 == 0:
-                qml.apply(UA)
+                if qml.QueuingManager.recording():
+                    qml.apply(UA)
                 op_list.append(UA)
 
             else:
                 op_list.append(adjoint(UA_adj))
 
-        qml.apply(projectors[-1])
+        if qml.QueuingManager.recording():
+            qml.apply(projectors[-1])
         op_list.append(projectors[-1])
 
         return op_list
