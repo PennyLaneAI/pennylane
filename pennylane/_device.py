@@ -588,7 +588,7 @@ class Device(abc.ABC):
             (tape.measurements, new_measurements),
         ]:
             for obj in queue:
-                if stop_at(obj):
+                if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
                     new_queue.append(obj)
                     continue
 
@@ -647,7 +647,6 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-
         if max_expansion == 0:
             return circuit
 
@@ -661,9 +660,6 @@ class Device(abc.ABC):
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
-        # if ops_not_supported or obs_on_same_wire:
-        #     circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
-
         if obs_on_same_wire:
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
@@ -671,6 +667,7 @@ class Device(abc.ABC):
             circuit = self._local_tape_expand(
                 circuit, depth=max_expansion, stop_at=self.stopping_condition
             )
+            circuit._update()
 
         return circuit
 

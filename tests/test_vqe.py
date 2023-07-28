@@ -924,8 +924,19 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H1), qml.expval(H1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            circuit()
+        res = circuit()
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1)
+
+        assert res[0] == circuit1()
+        assert res[1] == circuit1()
+
+
+        # with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+        #     circuit()
 
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
