@@ -92,6 +92,9 @@
   seeded from on the NumPy's global random number generator.
   [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
 
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
