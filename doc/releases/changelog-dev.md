@@ -13,6 +13,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
+  and return a new batch of circuits and a single post processing function.
+  [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
@@ -70,8 +74,9 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
-* The experimental device interface is integrated with the `QNode` for Jax jit.
+* The experimental device interface is integrated with the `QNode` for jax-jit and torch.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
 
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
@@ -197,6 +202,10 @@
   `qml.drawer.use_style` instead of `black_white`.
   [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
 
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
+  trainable parameters of the expanded tape.
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -207,6 +216,7 @@ Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
