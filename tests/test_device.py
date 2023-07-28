@@ -424,7 +424,16 @@ class TestInternalFunctions:
             node_gauss(0.015, 0.02, 0.005)
         assert dev_gauss.num_executions == num_evals_gauss
 
-    def test_device_default_expand_ops(self, mock_device_with_paulis_hamiltonian_and_methods):
+    @pytest.mark.parametrize(
+        "depth, expanded_ops",
+        [
+            (0, [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]),
+            (10, [qml.PauliX(wires=0), qml.PauliX(wires=1)]),
+        ],
+    )
+    def test_device_default_expand_ops(
+        self, depth, expanded_ops, mock_device_with_paulis_hamiltonian_and_methods
+    ):
         """Test that the default expand method can selectively expand operations
         without expanding measurements."""
 
@@ -433,9 +442,12 @@ class TestInternalFunctions:
         circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
         dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
-        expanded_tape = dev.default_expand_fn(circuit)
+        expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
 
-        for op, expected_op in zip(expanded_tape._ops, [qml.PauliX(wires=0), qml.PauliX(wires=1)]):
+        for op, expected_op in zip(
+            expanded_tape._ops,
+            expanded_ops,  # pylint: disable=protected-access
+        ):
             assert qml.equal(op, expected_op)
 
         for mp, expected_mp in zip(expanded_tape.measurements, measurements):
