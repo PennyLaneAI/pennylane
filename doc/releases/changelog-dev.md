@@ -88,6 +88,9 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
@@ -197,6 +200,10 @@
 * When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
   `qml.drawer.use_style` instead of `black_white`.
   [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
+
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
+  trainable parameters of the expanded tape.
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
 <h3>Contributors ✍️</h3>
 
