@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Optional, List, Callable
+from typing import Generic, TypeVar, Optional, List, Callable
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -124,8 +124,7 @@ class MidMeasureMP(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         reset (bool): Whether to reset the wire after measurement.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
+        id (str): Custom label given to a measurement instance.
     """
 
     def __init__(
