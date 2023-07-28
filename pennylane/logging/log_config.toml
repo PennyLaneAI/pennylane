@@ -56,7 +56,7 @@ stream = "ext://sys.stdout"
 class = "logging.handlers.RotatingFileHandler"
 formatter = "local_standard"
 level = "DEBUG"
-filename ='qml_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
+filename = "qml_debug.log" # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
 maxBytes = 16777216 # 16MB per file before splitting
 backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
 
@@ -73,7 +73,7 @@ filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
 
 [loggers]
 
-# Control JAX logging 
+# Control JAX logging
 [loggers.jax]
 handlers = ["qml_debug_stream",]
 level = "DEBUG"

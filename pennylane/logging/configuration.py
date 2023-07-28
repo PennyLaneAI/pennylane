@@ -1,0 +1,82 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains support methods for configuring the logging functionality.
+"""
+import logging
+import logging.config
+import os
+from importlib import import_module
+from importlib.util import find_spec
+
+has_toml = False
+toml_libs = ["tomllib", "tomli", "tomlkit"]
+for pkg in toml_libs:
+    spec = find_spec(pkg)
+    if spec:
+        tomllib = import_module(pkg)
+        has_toml = True
+        break
+
+# Define absolute path to this file in source tree
+_path = os.path.dirname(__file__)
+
+# Define a more verbose mode for the messages. Not currently controlled by internal log configurations.
+TRACE = logging.DEBUG // 2
+
+
+def _configure_logging(config_file):
+    """
+    This method allows custom logging configuration throughout PennyLane.
+    All configurations are read through config_file `toml` files.
+    """
+    if not has_toml:
+        raise ImportError(
+            "A TOML parser is required to enable PennyLane logging defaults. "
+            "You can install tomli via `pip install tomli`, "
+            "install tomlkit via `pip install tomlkit`, "
+            "or use Python 3.11 which natively offers the tomllib library."
+        )
+
+    with open(os.path.join(_path, config_file), "rb") as f:
+        pl_config = tomllib.load(f)
+        logging.config.dictConfig(pl_config)
+
+    def trace(self, message, *args, **kws):
+        """Enable a more verbose mode than DEBUG. Used to enable inspection of function definitions in log messages."""
+
+        # Due to limitations in how the logging module exposes support for custom levels, accessing the private method `_log` has no alternative.
+        # pylint: disable=protected-access
+        self._log(TRACE, message, args, **kws)
+
+    logging.addLevelName(TRACE, "TRACE")
+    logging.TRACE = TRACE
+    lc = logging.getLoggerClass()
+    lc.trace = trace
+
+
+def enable_logging():
+    """
+    This method allows top selectively enable logging throughout PennyLane.
+    All configurations are read through the `log_config.toml` files, selectively controlled via the `use_yaml` argument.
+    """
+    _configure_logging("log_config.toml")
+
+
+def config_path():
+    """
+    This method returns the full absolute path to the configuration file.
+    """
+    path = os.path.join(_path, "log_config.toml")
+    return path
