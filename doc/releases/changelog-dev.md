@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing.
   A `ProcessPoolExecutor` executes tapes asynchronously
   using a pool of at most `max_workers` processes. If `max_workers` is `None`
   or not given, only the current process executes tapes. If you experience any
@@ -54,7 +54,7 @@
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * The `qchem` functions `primitive_norm` and `contracted_norm` are modified to be compatible with
-  higher versions of scipy. The private function `_fac2` for computing double factorials is added. 
+  higher versions of scipy. The private function `_fac2` for computing double factorials is added.
   [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
 
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
@@ -87,6 +87,9 @@
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
+* Provide users access to logging configuration file path and improve logging configuration structure.
+  [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 
 <h3>Breaking changes 💔</h3>
 
@@ -126,8 +129,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
-  List input to define the fermionic operator is also deprecated; the fermionic 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead.
+  List input to define the fermionic operator is also deprecated; the fermionic
   operators in the ``qml.fermi`` module should be used instead.
   [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
 
@@ -135,11 +138,11 @@
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX``
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
 
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes
   are deprecated. Use ``convert_to_numpy_parameters`` instead.
   [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
@@ -168,7 +171,7 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
-  
+
 * Stop `metric_tensor` from accidentally catching errors that stem from
   flawed wires assignments in the original circuit, leading to recursion errors
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
@@ -207,6 +210,7 @@
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Amintor Dusko
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
