@@ -1507,16 +1507,17 @@ class TestRandomSeed:
 
         assert not qml.math.allclose(first_nums, second_nums)
 
-        def test_rng_as_seed(self):
-            """Test that a PRNG can be passed as a seed."""
-            rng1 = np.random.default_rng(42)
-            first_num = rng1.random()
-        
-            rng = np.random.default_rng(42)
-            dev = DefaultQubit2(seed=rng)
-            second_num = dev._rng.random()  # pylint: disable=protected-access
-        
-            assert qml.math.allclose(first_num, second_num)
+    def test_rng_as_seed(self):
+        """Test that a PRNG can be passed as a seed."""
+        rng1 = np.random.default_rng(42)
+        first_num = rng1.random()
+
+        rng = np.random.default_rng(42)
+        dev = DefaultQubit2(seed=rng)
+        second_num = dev._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(first_num, second_num)
+
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
