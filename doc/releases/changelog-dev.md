@@ -205,6 +205,10 @@
   trainable parameters of the expanded tape.
   [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
+* `qml.default_expand_fn` now selectively expands operations or measurements allowing more 
+  operations to be executed in circuits when measuring non-qwc Hamiltonians.
+  [(#4401)](https://github.com/PennyLaneAI/pennylane/pull/4401)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -219,4 +223,5 @@ Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
+Jay Soni,
 David Wierichs,

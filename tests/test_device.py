@@ -25,6 +25,7 @@ from pennylane import Device, DeviceError
 from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
+mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
 
 # pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
 
@@ -135,6 +136,26 @@ def mock_device_with_paulis_and_methods(monkeypatch):
         m.setattr(Device, "_capabilities", mock_device_capabilities)
         m.setattr(Device, "operations", mock_device_paulis)
         m.setattr(Device, "observables", mock_device_paulis)
+        m.setattr(Device, "short_name", "MockDevice")
+        m.setattr(Device, "expval", lambda self, x, y, z: 0)
+        m.setattr(Device, "var", lambda self, x, y, z: 0)
+        m.setattr(Device, "sample", lambda self, x, y, z: 0)
+        m.setattr(Device, "apply", lambda self, x, y, z: None)
+
+        def get_device(wires=1):
+            return Device(wires=wires)
+
+        yield get_device
+
+
+@pytest.fixture(scope="function")
+def mock_device_with_paulis_hamiltonian_and_methods(monkeypatch):
+    """A function to create a mock device with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "_capabilities", mock_device_capabilities)
+        m.setattr(Device, "operations", mock_device_paulis)
+        m.setattr(Device, "observables", mock_device_paulis_and_hamiltonian)
         m.setattr(Device, "short_name", "MockDevice")
         m.setattr(Device, "expval", lambda self, x, y, z: 0)
         m.setattr(Device, "var", lambda self, x, y, z: 0)
@@ -402,6 +423,23 @@ class TestInternalFunctions:
         for _ in range(num_evals_gauss):
             node_gauss(0.015, 0.02, 0.005)
         assert dev_gauss.num_executions == num_evals_gauss
+
+    def test_device_default_expand_ops(self, mock_device_with_paulis_hamiltonian_and_methods):
+        """Test that the default expand method can selectively expand operations
+        without expanding measurements."""
+
+        ops = [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.expval(2 * qml.PauliX(0) @ qml.PauliY(1))]
+        circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
+        expanded_tape = dev.default_expand_fn(circuit)
+
+        for op, expected_op in zip(expanded_tape._ops, [qml.PauliX(wires=0), qml.PauliX(wires=1)]):
+            assert qml.equal(op, expected_op)
+
+        for mp, expected_mp in zip(expanded_tape.measurements, measurements):
+            assert qml.equal(mp, expected_mp)
 
     wires_to_try = [
         (1, Wires([0])),

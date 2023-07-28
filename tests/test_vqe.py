@@ -911,7 +911,7 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit2()
 
-    def test_error_multiple_expvals_same_wire(self):
+    def test_multiple_expvals_same_wires(self):
         """Tests that more than one Hamiltonian expval can be evaluated."""
 
         coeffs = [1.0, 1.0, 1.0]
@@ -933,10 +933,6 @@ class TestNewVQE:
 
         assert res[0] == circuit1()
         assert res[1] == circuit1()
-
-
-        # with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-        #     circuit()
 
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
