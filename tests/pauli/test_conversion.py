@@ -161,6 +161,7 @@ class TestDecomposition:
         assert np.allclose(matrix, ps.to_mat(range(num_qubits))[: shape[0], : shape[1]])
 
     def test_wire_order(self):
+        """ test wire order is working as inteded """
         wire_order1 = ["a", 0]
         wire_order2 = ["auxiliary", "working"]
         hamiltonian = np.array(
@@ -175,6 +176,8 @@ class TestDecomposition:
             assert h.wires.toset() == set(wire_order)
 
     def test_wire_error(self):
+        """ test incorrect wire order throws error """
+
         wire_order = [0]
         hamiltonian = np.array(
             [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]

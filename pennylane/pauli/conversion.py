@@ -142,8 +142,6 @@ def pauli_decompose(
         ),
         complex,
     )
-    for idx, indice in enumerate(indices):
-        print(idx, indice, qml.math.gather(matrix[idx], indice))
 
     # Perform Hadamard transformation on coloumns
     hadamard_transform_mat = _walsh_hadamard_transform(qml.math.transpose(term_mat))
@@ -177,9 +175,7 @@ def pauli_decompose(
                 coeffs.append(coefficient)
                 obs.append(observables)
 
-    coeffs = qml.math.convert_like(coeffs, matrix)
-    if hasattr(matrix, "requires_grad"):
-        coeffs.requires_grad = matrix.requires_grad
+    coeffs = qml.math.stack(coeffs)
 
     if pauli:
         return PauliSentence(
