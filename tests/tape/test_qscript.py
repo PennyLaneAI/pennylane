@@ -482,10 +482,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are simply references
-        assert copied_qs.operations == qs.operations
-        assert copied_qs.observables == qs.observables
-        assert copied_qs.measurements == qs.measurements
-        assert copied_qs.operations[0] is qs.operations[0]
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # operation data is also a reference
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -520,10 +519,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references; they are unique objects
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
-        assert copied_qs.operations[0] is not qs.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -550,10 +548,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
-        assert copied_qs.operations[0] is not qs.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
         assert copied_qs.shots is qs.shots
 
         # check that the output dim is identical
