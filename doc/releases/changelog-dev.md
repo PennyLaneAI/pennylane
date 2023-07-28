@@ -88,6 +88,13 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
+  seeded from on the NumPy's global random number generator.
+  [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
+
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+  
 * Provide users access to the logging configuration file path and improve the logging configuration structure.
   [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 

@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
+from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
 
 
 class TestCurrentlyUnsupportedCases:
@@ -77,6 +77,17 @@ class TestBasicCircuit:
         assert isinstance(result, tuple)
         assert len(result) == 2
 
+        assert np.allclose(result[0], -np.sin(phi))
+        assert np.allclose(result[1], np.cos(phi))
+
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+
+        assert np.allclose(state, np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]))
+        assert not is_state_batched
+
+        assert isinstance(result, tuple)
+        assert len(result) == 2
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
@@ -190,6 +201,24 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
         assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
 
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
+        assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
+
     def test_broadcasted_op_state(self):
         """Test that simulate works for state measurements
         when an operation has broadcasted parameters"""
@@ -201,6 +230,20 @@ class TestBroadcasting:
         qs = qml.tape.QuantumScript(ops, measurements)
         res = simulate(qs)
 
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x))
+        assert np.allclose(res[1], -np.cos(x))
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x))
@@ -227,6 +270,28 @@ class TestBroadcasting:
             res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
         )
 
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(
+            res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]), atol=0.05
+        )
+        assert np.allclose(
+            res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
+        )
+
     def test_broadcasted_op_sample(self):
         """Test that simulate works for sample measurements
         when an operation has broadcasted parameters"""
@@ -238,6 +303,20 @@ class TestBroadcasting:
         qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
 
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x), atol=0.05)
+        assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x), atol=0.05)
