@@ -73,6 +73,7 @@ def enable_logging():
     """
     _configure_logging("log_config.toml")
 
+
 def config_path():
     """
     This method returns the full absolute path to the configuration file.
