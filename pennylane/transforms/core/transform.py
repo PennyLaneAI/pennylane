@@ -156,7 +156,7 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
         )
 
-    if not ret[0] in (
+    if ret[0] not in (
         Sequence[qml.tape.QuantumTape],
         List[qml.tape.QuantumTape],
         Tuple[qml.tape.QuantumTape],
@@ -166,7 +166,7 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape]"
         )
 
-    if ret[1] != Callable:
+    if not isinstance(ret[1], Callable):
         raise TransformError(
             "The second return of a transform must be a callable: <built-in function callable>"
         )

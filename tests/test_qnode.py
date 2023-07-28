@@ -15,9 +15,12 @@
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 
+from typing import Callable, Tuple
+
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
+
 
 import pennylane as qml
 from pennylane import QNode
@@ -32,6 +35,8 @@ def dummyfunc():
     """dummy func."""
     return None
 
+
+PostProcessingFn = Callable[[qml.typing.ResultBatch], qml.typing.Result]
 
 # pylint: disable=too-many-public-methods
 class TestValidation:
@@ -1267,7 +1272,7 @@ class TestIntegration:
         with qml.queuing.AnnotatedQueue() as q:
             circuit()
 
-        assert q.queue == []
+        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(circuit.tape.operations) == 1
 
 
@@ -1519,7 +1524,57 @@ class CustomDevice(experimental.Device):
 
 
 class TestTransformProgramIntegration:
-    pass
+    def test_transform_program_modifies_circuit(self):
+        """Test qnode integration with a transform that turns the circuit into just a pauli x."""
+        dev = qml.device("default.qubit", wires=1)
+
+        def null_postprocessing(results):
+            return results[0]
+
+        @qml.transforms.core.transform
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> (Tuple[qml.tape.QuantumTape], PostProcessingFn):
+            return (
+                qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
+            ), null_postprocessing
+
+        @just_pauli_x_out
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.allclose(circuit(0.1), -1)
+
+        with circuit.device.tracker as tracker:
+            circuit(0.1)
+
+        assert tracker.totals["executions"] == 1
+        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
+        assert tracker.history["resources"][0].gate_types["RX"] == 1
+
+    def tet_transform_program_modifies_results(self):
+        """Test integration with a transform that modifies the result output."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        def always2(results: qml.typing.ResultBatch) -> qml.typing.Result:
+            return 2.0
+
+        @qml.transforms.core.transform
+        def result_just_2(
+            tape: qml.tape.QuantumTape,
+        ) -> (Tuple[qml.tape.QuantumTape], PostProcessingFn):
+            return (tape,), always2
+
+        @result_just_2
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.allclose(circuit(0.1), 2.0)
 
 
 class TestNewDeviceIntegration:
