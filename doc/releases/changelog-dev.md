@@ -60,8 +60,11 @@
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
-* The experimental device interface is integrated with the `QNode` for Jax.
+* The experimental device interface is integrated with the `QNode` for jax, jax-jit, tensorflow and torch.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
+  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
+  [(#4393)](https://github.com/PennyLaneAI/pennylane/pull/4393)
 
 * `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
   more performant choices.
@@ -73,11 +76,6 @@
 
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
-
-* The experimental device interface is integrated with the `QNode` for jax-jit, tensorflow and torch.
-  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
-  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
-  [(#4393)](https://github.com/PennyLaneAI/pennylane/pull/4393)
 
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
