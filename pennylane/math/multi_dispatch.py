@@ -764,7 +764,7 @@ def unwrap(values, max_depth=None):
     return [convert(val) for val in values]
 
 
-@multi_dispatch(argnum=[0])
+@multi_dispatch(argnum=[0, 1])
 def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
     if like == "scipy":
@@ -784,7 +784,7 @@ def add(*args, like=None, **kwargs):
         arg1 = np.asarray(args[1], device=dev, like=like)
         return np.add(arg0, arg1, *args[2:], **kwargs)
 
-    return np.add(*args, **kwargs)
+    return np.add(*args, **kwargs, like=like)
 
 
 @multi_dispatch()
