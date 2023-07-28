@@ -17,7 +17,7 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MidMeasureMP
 from pennylane.operation import AnyWires, Operation
 from pennylane.tape import make_qscript
 
@@ -40,7 +40,7 @@ class Conditional(Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (MeasurementValue): the measurement outcome value to consider
+        expr (MidMeasureMP): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
@@ -50,7 +50,7 @@ class Conditional(Operation):
 
     def __init__(
         self,
-        expr: MeasurementValue[bool],
+        expr: MidMeasureMP,
         then_op: Type[Operation],
         id=None,
     ):
@@ -67,7 +67,7 @@ def cond(condition, true_fn, false_fn=None):
     :func:`defer_measurements` transform.
 
     Args:
-        condition (.MeasurementValue[bool]): a conditional expression involving a mid-circuit
+        condition (.MidMeasureMP): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`)
         true_fn (callable): The quantum function of PennyLane operation to
             apply if ``condition`` is ``True``
@@ -111,11 +111,8 @@ def cond(condition, true_fn, false_fn=None):
 
     .. warning::
 
-        The following are not supported as the ``condition`` argument:
-
-        * Expressions that contain multiple measurement values;
-        * Expressions with boolean logic flow using operators like ``and``,
-          ``or`` and ``not``.
+        Expressions with boolean logic flow using operators like ``and``,
+        ``or`` and ``not`` are not supported as the ``condition`` argument.
 
         While such statements may not result in errors, they may result in
         incorrect behaviour.

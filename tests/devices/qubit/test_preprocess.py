@@ -30,7 +30,7 @@ from pennylane.devices.qubit.preprocess import (
     validate_measurements,
 )
 from pennylane.devices.experimental import ExecutionConfig
-from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
 
@@ -224,7 +224,7 @@ class TestExpandFnTransformations:
     # pylint: disable=no-member
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
-        mv = MeasurementValue(["test_id"], processing_fn=lambda v: v)
+        mv = MidMeasureMP(0, ["test_id"], processing_fn=lambda v: v)
         ops = [
             qml.Hadamard(0),
             MidMeasureMP(wires=[0], id="test_id"),
