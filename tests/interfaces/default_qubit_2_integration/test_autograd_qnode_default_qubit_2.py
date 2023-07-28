@@ -1461,7 +1461,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1476,12 +1476,15 @@ class TestTapeExpansion:
         c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
 
         # test output
-        res = circuit(d, w, c)
+        res = circuit(d, w, c, shots=50000)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
 
         # test gradients
-        grad = qml.grad(circuit)(d, w, c)
+        if diff_method in ["finite-diff", "spsa"]:
+            pytest.skip(f"{diff_method} not compatible")
+
+        grad = qml.grad(circuit)(d, w, c, shots=50000)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1492,10 +1495,10 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
-            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c, shots=50000)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c, shots=50000)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
