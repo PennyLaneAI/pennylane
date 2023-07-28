@@ -174,11 +174,14 @@ def _get_interface_boundary(interface: str, grad_on_execution):
         from .tensorflow import execute as _execute
     elif interface == "tensorflow-autograph":
         from .tensorflow_autograph import execute as _execute
+
         _execute = partial(_execute, grad_on_execution=grad_on_execution)
     elif interface == "torch":
         from .torch import execute as _execute
     elif interface == "jax":
-        from .jax import execute as _execute
+        from .jax_jit_tuple import execute as _execute
+
+        # from .jax import execute as _execute
     elif interface == "jax-jit":
         from .jax_jit_tuple import execute as _execute
     else:
@@ -569,7 +572,7 @@ def execute(
         # must be new device if this is specified as true
         _grad_on_execution = config.grad_on_execution
 
-        vjp_fn = DeviceDerivatives(device, config)
+        vjp_fn = DeviceDerivatives(device, config, use_pure_callback=(interface == "jax-jit"))
 
         if config.grad_on_execution:
             execute_fn = vjp_fn
@@ -616,7 +619,7 @@ def execute(
         # a gradient transform
         vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
         if max_diff == 2:
-            inner_interface_boundary = _get_interface_boundary(mapped_interface)
+            inner_interface_boundary = _get_interface_boundary(mapped_interface, _grad_on_execution)
             differentiable_execute_fn = partial(
                 inner_interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn
             )
@@ -631,10 +634,11 @@ def execute(
 
     if interface == "tf":
         import tensorflow as tf
+
         if not tf.executing_eagerly() or "autograph" in interface:
             interface = "tensorflow-autograph"
 
-    interface_boundary = _get_interface_boundary(mapped_interface)
+    interface_boundary = _get_interface_boundary(mapped_interface, _grad_on_execution)
     res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn)
     return batch_fn(res)
 

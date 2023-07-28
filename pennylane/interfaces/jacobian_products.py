@@ -131,7 +131,7 @@ class DerivativeExecutor(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def compute_jacobian(self, tapes) -> Tuple:
+    def compute_jacobian(self, tapes, use_pure_callback=False) -> Tuple:
         raise NotImplementedError
 
 
@@ -222,12 +222,12 @@ class TransformDerivatives(DerivativeExecutor):
 
         return tuple(processing_fn(vjp_results))
 
-    def compute_jacobian(self, tapes):
+    def compute_jacobian(self, tapes, use_pure_callback=False):
         jacobians = []
         for new_t in tapes:
             jac_tapes, res_processing_fn = self._gradient_transform(new_t, **self._gradient_kwargs)
             jacs_results = self._inner_execute(jac_tapes)
-            jacs = res_processing_fn(jacs)
+            jacs = res_processing_fn(jacs_results)
             jacobians.append(jacs)
         return tuple(jacobians)
 
@@ -287,10 +287,16 @@ class OldDeviceDerivatives(DerivativeExecutor):
 
         return _compute_vjps(dy, self._jacobian_cache[tapes], multi_measurements)
 
-    def compute_jacobian(self, tapes):
+    def compute_jacobian(self, tapes, use_pure_callback=False):
         tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        return set_shots(self._device, self._override_shots)(self._device.gradients)(
-            tapes, **self._gradient_kwargs
+        if not use_pure_callback:
+            return set_shots(self._device, self._override_shots)(self._device.gradients)(
+                tapes, **self._gradient_kwargs
+            )
+        from .pure_callback import _old_device_jac_via_callback
+
+        return set_shots(self._device, self._override_shots)(_old_device_jac_via_callback)(
+            tapes, self._device, self._gradient_kwargs
         )
 
 
@@ -333,22 +339,32 @@ class DeviceDerivatives(DerivativeExecutor):
     def __repr__(self):
         return f"Device derivatives({self._device})"
 
-    def __init__(self, device, execution_config):
+    def __init__(self, device, execution_config, use_pure_callback=False):
         self._device = device
         self._execution_config = execution_config
         self._jacobian_cache = {}
         self._results_cache = {}
+        self._use_pure_callback = use_pure_callback
 
     def __call__(self, tapes):
-        tapes = tuple(tapes)
-        if tapes not in self._jacobian_cache:
-            unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-            results, jacs = self._device.execute_and_compute_derivatives(
-                unwrapped_tapes, self._execution_config
-            )
-            self._results_cache[tapes] = results
-            self._jacobian_cache[tapes] = jacs
-        return self._results_cache[tapes]
+        if not self._use_pure_callback:
+            tapes = tuple(tapes)
+            if tapes not in self._jacobian_cache:
+                unwrapped_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in tapes
+                )
+                results, jacs = self._device.execute_and_compute_derivatives(
+                    unwrapped_tapes, self._execution_config
+                )
+                self._results_cache[tapes] = results
+                self._jacobian_cache[tapes] = jacs
+            return self._results_cache[tapes]
+
+        from .pure_callback import _new_device_execute_and_jac
+
+        res, jacs = _new_device_execute_and_jac(tapes, self._device, self._execution_config)
+        self._jacobian_cache[tapes] = jacs
+        return res
 
     def execute_and_compute_jvp(self, tapes, tangents):
         tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
@@ -397,10 +413,15 @@ class DeviceDerivatives(DerivativeExecutor):
         return _compute_vjps(dy, self._jacobian_cache[tapes], multi_measurements)
 
     def compute_jacobian(self, tapes):
-        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        if not self._use_pure_callback:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
 
-        if tapes not in self._jacobian_cache:
-            jacs = self._device.compute_derivatives(tapes, self._execution_config)
-            self._jacobian_cache[tapes] = jacs
+            if tuple(tapes) not in self._jacobian_cache:
+                jacs = self._device.compute_derivatives(tapes, self._execution_config)
+                self._jacobian_cache[tapes] = jacs
 
-        return self._jacobian_cache[tapes]
+            return self._jacobian_cache[tapes]
+
+        from .pure_callback import _new_device_jac_via_callback
+
+        return _new_device_jac_via_callback(tapes, self._device, self._execution_config)

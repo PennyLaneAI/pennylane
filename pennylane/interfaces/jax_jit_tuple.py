@@ -32,6 +32,17 @@ dtype = jnp.float64
 Zero = jax.custom_derivatives.SymbolicZero
 
 
+def _compute_jvps(jacs, tangents, multi_measurements):
+    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
+    jvps = []
+    for i, multi in enumerate(multi_measurements):
+        compute_func = (
+            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
+        )
+        jvps.append(compute_func(tangents[i], jacs[i]))
+    return tuple(jvps)
+
+
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.bind_new_parameters(a, list(range(len(a))))
@@ -185,7 +196,7 @@ def _execute_bwd(
                 idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
             )
 
-        jacobians = vjp_fn.compute_jacobians(tapes)
+        jacobians = vjp_fn.compute_jacobian(tapes)
 
         tangents_trainable = tuple(
             tuple(t for t in tangent if not isinstance(t, Zero)) for tangent in tangents[0]

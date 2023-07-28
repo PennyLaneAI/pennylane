@@ -164,7 +164,6 @@ def compute_jvp_single(tangent, jac):
     if jac is None:
         return None
 
-    print("\n inside compute_jvp_single", jac, tangent)
     single_param = not isinstance(jac, tuple)
     if (single_param and jac.shape == (0,)) or (not single_param and len(jac) == 0):
         # No trainable parameters
@@ -325,10 +324,8 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
-        print("results: ", results)
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        print("jac: ", jac)
         _jvp_fn = compute_jvp_multi if multi_m else compute_jvp_single
 
         # Jacobian without shot vectors
@@ -430,19 +427,15 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
         jvps = []
         start = 0
 
-        print("\n results at start of processing_fn: ", results)
         for t_idx in range(len(tapes)):
             # extract the correct results from the flat list
             res_len = reshape_info[t_idx]
             res_t = results[start : start + res_len]
             start += res_len
 
-            print("res_t: ", res_t)
-
             # postprocess results to compute the JVP
             jvp_ = processing_fns[t_idx](res_t)
 
-            print("jvp_; ", jvp_)
             if jvp_ is None:
                 if reduction == "append":
                     jvps.append(None)
@@ -453,7 +446,6 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
             elif callable(reduction):
                 reduction(jvps, jvp_)
 
-        print("jvps inside processing fn: ", jvps)
         return tuple(jvps)
 
     return gradient_tapes, processing_fn
