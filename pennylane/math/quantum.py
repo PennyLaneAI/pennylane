@@ -863,7 +863,7 @@ def sqrt_matrix(density_matrix):
         (tensor_like): Square root of the density matrix.
     """
     evs, vecs = qml.math.linalg.eigh(density_matrix)
-    evs = np.real(evs)
+    evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
     if not is_abstract(evs):
         evs = qml.math.cast_like(evs, vecs)
@@ -874,7 +874,7 @@ def sqrt_matrix(density_matrix):
         sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * qml.math.eye(shape[-1])
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
-    return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
+    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ np.conj(np.transpose(vecs))
 
 
 def _compute_fidelity(density_matrix0, density_matrix1):
@@ -891,7 +891,7 @@ def _compute_fidelity(density_matrix0, density_matrix1):
 
     # extract eigenvalues
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)
-    evs = np.real(evs)
+    evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
 
     trace = (qml.math.sum(qml.math.sqrt(evs), -1)) ** 2

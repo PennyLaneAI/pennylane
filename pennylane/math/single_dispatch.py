@@ -757,7 +757,7 @@ ar.register_function(
 # Re-define the grad of eigh to avoid numerical instability due to degenerate eigenvalues
 
 
-def _grad_eigh(ans, x, UPLO="L"):
+def _grad_eigh(ans, x):
     """Gradient for eigenvalues and vectors of a symmetric matrix."""
     np = _i("qml").math
 
@@ -771,12 +771,16 @@ def _grad_eigh(ans, x, UPLO="L"):
     def dot(x, y):
         return np.einsum("...ij,...jk->...ik", x, y)
 
-    N = x.shape[-1]
-    w, v = ans  # Eigenvalues, eigenvectors.
-    vc = np.conj(v)
-
     def vjp(g):
+        N = x.shape[-1]
+        w, v = ans  # Eigenvalues, eigenvectors.
+        vc = np.conj(v)
+
         wg, vg = g  # Gradient w.r.t. eigenvalues, eigenvectors.
+
+        # pytorch uses a different convention for the eigenvectors
+        if np.get_interface(v) == "torch":
+            v, vc = vc, v
 
         # Eigenvalue part
         vjp_temp = dot(vc * wg[..., None, :], T(v))
@@ -784,7 +788,7 @@ def _grad_eigh(ans, x, UPLO="L"):
         # Add eigenvector part only if non-zero backward signal is present.
         # This can avoid NaN results for degenerate cases if the function depends
         # on the eigenvalues only.
-        if np.any(vg):
+        if np.is_abstract(vg) or np.any(vg):
             off_diag = np.convert_like(np.ones((N, N)) - np.eye(N), w)
             F = off_diag * safe_reciprocal(w[..., None, :] - w[..., :, None] + np.eye(N))
             vjp_temp += dot(dot(vc, F * dot(T(v), vg)), T(v))
@@ -794,10 +798,7 @@ def _grad_eigh(ans, x, UPLO="L"):
         reps = np.array(x.shape)
         reps[-2:] = 1
 
-        if UPLO == "L":
-            tri = np.tile(np.tril(np.ones(N), -1), reps)
-        elif UPLO == "U":
-            tri = np.tile(np.triu(np.ones(N), 1), reps)
+        tri = np.tile(np.tril(np.ones(N), -1), reps)
 
         return (
             np.real(vjp_temp) * np.eye(vjp_temp.shape[-1]) + (vjp_temp + np.conj(T(vjp_temp))) * tri
