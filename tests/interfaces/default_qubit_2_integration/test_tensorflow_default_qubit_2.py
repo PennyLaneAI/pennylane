@@ -540,7 +540,9 @@ class TestHigherOrderDerivatives:
                 [tf.sin(2 * x) * tf.sin(2 * y), -2 * tf.cos(x) ** 2 * tf.cos(2 * y)],
             ]
         )
-        assert np.allclose(hess, expected, atol=tol, rtol=0)
+        print(hess)
+        print(expected)
+        assert qml.math.allclose(hess, expected, atol=tol, rtol=0)
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order

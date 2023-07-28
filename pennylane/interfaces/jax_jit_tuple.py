@@ -110,7 +110,7 @@ def _filter_zeros_tangents(tangents):
     return non_zeros_tangents
 
 
-def execute(tapes, execute_fn, vjp_fn, device=None):
+def execute(tapes, execute_fn, vjp_fn):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -154,7 +154,6 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
         tapes,
         execute_fn,
         vjp_fn,
-        device,
     )
 
 
@@ -163,21 +162,38 @@ def _execute_bwd(
     tapes,
     execute_fn,
     vjp_fn,
-    device,
 ):
     @jax.custom_jvp
     def execute_wrapper(params):
         new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
         return execute_fn(new_tapes)
 
+    # execute_wrapper_jvp merely registered, not used.
+    # pylint: disable=unused-variable
     @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
+        """Calculate the jvp in such a way that we can bind it to jax.
+
+        Closure Variables:
+            tapes, device, gradient_fn, gradient_kwargs, execute_fn, _n, max_diff
+        """
+        params = primals[0]
+
+        # Select the trainable params. Non-trainable params contribute a 0 gradient.
         for tangent, tape in zip(tangents[0], tapes):
             tape.trainable_params = tuple(
                 idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
             )
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
-        res, jvps = vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
-        return res, jvps
+
+        jacobians = vjp_fn.compute_jacobians(tapes)
+
+        tangents_trainable = tuple(
+            tuple(t for t in tangent if not isinstance(t, Zero)) for tangent in tangents[0]
+        )
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+        jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
+
+        results = execute_fn(params)
+        return results, jvps
 
     return execute_wrapper(parameters)

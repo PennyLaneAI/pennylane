@@ -167,26 +167,22 @@ def _preprocess_expand_fn(
     return device_expansion_function
 
 
-def _get_interface_boundary(interface: str, tapes, grad_on_execution):
+def _get_interface_boundary(interface: str, grad_on_execution):
     if interface == "autograd":
         from .autograd import autograd_boundary as _execute
-
     elif interface == "tf":
-        import tensorflow as tf
-
-        if not tf.executing_eagerly() or "autograph" in interface:
-            from .tensorflow_autograph import execute as _execute
-
-            _execute = partial(_execute, grad_on_execution=grad_on_execution)
-
-        else:
-            from .tensorflow import execute as _execute
-
+        from .tensorflow import execute as _execute
+    elif interface == "tensorflow-autograph":
+        from .tensorflow_autograph import execute as _execute
+        _execute = partial(_execute, grad_on_execution=grad_on_execution)
     elif interface == "torch":
         from .torch import execute as _execute
-
     elif interface == "jax":
-        _execute = _get_jax_execute_fn(interface, tapes)
+        from .jax import execute as _execute
+    elif interface == "jax-jit":
+        from .jax_jit_tuple import execute as _execute
+    else:
+        raise ValueError("Unsupported interface")
 
     return _execute
 
@@ -479,6 +475,10 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    if interface == "jax":
+        from .jax import get_jax_interface_name
+
+        interface = get_jax_interface_name(tapes)
 
     new_device_interface = isinstance(device, qml.devices.experimental.Device)
     if gradient_fn is None or isinstance(gradient_fn, str):
@@ -539,30 +539,30 @@ def execute(
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing
     if new_device_interface:
-        interface_jax = interface
-        if interface == "jax":
-            from .jax import get_jax_interface_name
-
-            interface_jax = get_jax_interface_name(tapes)
-        if interface_jax == "jax-jit":
+        if interface == "jax-jit":
             execute_fn = make_pure_callback(device, config)
         else:
 
             def device_execution_with_config(tapes):
                 tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-                return device.execute(tapes, execution_config=config)
+                cached_dev_ex = qml.interfaces.cache_execute(
+                    device.execute, cache=cache, return_tuple=False, pass_kwargs=True
+                )
+                return cached_dev_ex(tapes, execution_config=config)
 
-            execute_fn = qml.interfaces.cache_execute(
-                device_execution_with_config, cache, return_tuple=False
-            )
+            execute_fn = device_execution_with_config
     else:
 
         def inner_execute(tapes):
             tapes = tuple(expand_fn(t) for t in tapes)
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-            return batch_execute(tapes)
 
-        execute_fn = qml.interfaces.cache_execute(inner_execute, cache, return_tuple=False)
+            batch_execute = set_shots(device, override_shots)(device.batch_execute)
+
+            cached_dev_ex = qml.interfaces.cache_execute(batch_execute, cache, return_tuple=False)
+            return cached_dev_ex(tapes)
+
+        execute_fn = inner_execute
     _grad_on_execution = False
 
     if config.use_device_gradient:
@@ -601,13 +601,7 @@ def execute(
 
             # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
             # can not be reused from the device if `grad_on_execution is False`.
-
-            interface_jax = interface
-            if interface == "jax":
-                from .jax import get_jax_interface_name
-
-                interface_jax = get_jax_interface_name(tapes)
-            if interface_jax == "jax-jit":
+            if interface == "jax-jit":
                 use_device_state = gradient_kwargs.get("use_device_state", None)
                 if use_device_state:
                     gradient_kwargs["use_device_state"] = False
@@ -622,11 +616,9 @@ def execute(
         # a gradient transform
         vjp_fn = TransformDerivatives(execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs)
         if max_diff == 2:
-            inner_interface_boundary = _get_interface_boundary(
-                mapped_interface, tapes, _grad_on_execution
-            )
+            inner_interface_boundary = _get_interface_boundary(mapped_interface)
             differentiable_execute_fn = partial(
-                inner_interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn, device=device
+                inner_interface_boundary, execute_fn=execute_fn, vjp_fn=vjp_fn
             )
             vjp_fn = TransformDerivatives(
                 differentiable_execute_fn, gradient_fn, gradient_kwargs=gradient_kwargs
@@ -637,8 +629,13 @@ def execute(
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    interface_boundary = _get_interface_boundary(mapped_interface, tapes, _grad_on_execution)
-    res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn, device=device)
+    if interface == "tf":
+        import tensorflow as tf
+        if not tf.executing_eagerly() or "autograph" in interface:
+            interface = "tensorflow-autograph"
+
+    interface_boundary = _get_interface_boundary(mapped_interface)
+    res = interface_boundary(tapes, execute_fn, vjp_fn=vjp_fn)
     return batch_fn(res)
 
 

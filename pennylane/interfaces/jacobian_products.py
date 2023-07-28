@@ -130,6 +130,10 @@ class DerivativeExecutor(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def compute_jacobian(self, tapes) -> Tuple:
+        raise NotImplementedError
+
 
 class TransformDerivatives(DerivativeExecutor):
     """Compute vjp and jvps via a gradient transform.
@@ -218,6 +222,15 @@ class TransformDerivatives(DerivativeExecutor):
 
         return tuple(processing_fn(vjp_results))
 
+    def compute_jacobian(self, tapes):
+        jacobians = []
+        for new_t in tapes:
+            jac_tapes, res_processing_fn = self._gradient_transform(new_t, **self._gradient_kwargs)
+            jacs_results = self._inner_execute(jac_tapes)
+            jacs = res_processing_fn(jacs)
+            jacobians.append(jacs)
+        return tuple(jacobians)
+
 
 class OldDeviceDerivatives(DerivativeExecutor):
     def __init__(self, device, gradient_kwargs, override_shots):
@@ -273,6 +286,12 @@ class OldDeviceDerivatives(DerivativeExecutor):
             self._jacobian_cache[tapes] = jacs
 
         return _compute_vjps(dy, self._jacobian_cache[tapes], multi_measurements)
+
+    def compute_jacobian(self, tapes):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return set_shots(self._device, self._override_shots)(self._device.gradients)(
+            tapes, **self._gradient_kwargs
+        )
 
 
 class DeviceDerivatives(DerivativeExecutor):
@@ -376,3 +395,12 @@ class DeviceDerivatives(DerivativeExecutor):
             self._jacobian_cache[tapes] = jacs
 
         return _compute_vjps(dy, self._jacobian_cache[tapes], multi_measurements)
+
+    def compute_jacobian(self, tapes):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+
+        if tapes not in self._jacobian_cache:
+            jacs = self._device.compute_derivatives(tapes, self._execution_config)
+            self._jacobian_cache[tapes] = jacs
+
+        return self._jacobian_cache[tapes]

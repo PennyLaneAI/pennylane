@@ -369,7 +369,7 @@ def _execute_fwd_legacy(
     return res
 
 
-def execute(tapes, execute_fn, vjp_fn, device=None):
+def execute(tapes, execute_fn, vjp_fn):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
