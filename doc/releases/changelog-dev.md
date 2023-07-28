@@ -91,6 +91,13 @@
 * PennyLane no longer directly relies on `Operator.__eq__`.
   [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
 
+* If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
+  seeded from on the NumPy's global random number generator.
+  [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
+
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
@@ -158,7 +165,7 @@
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
-* Added a warning to the documentation of `Operator.__eq__` and `Operator.__hash__` to reflect upcoming
+* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
   changes to operator equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
 
@@ -204,6 +211,10 @@
 * When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
   `qml.drawer.use_style` instead of `black_white`.
   [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
+
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
+  trainable parameters of the expanded tape.
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
 <h3>Contributors ✍️</h3>
 
