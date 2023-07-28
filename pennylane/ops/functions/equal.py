@@ -381,9 +381,9 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwarg
     wires_match = op1.wires == op2.wires
 
     if isinstance(op1.H, Operator) and isinstance(op2.H, Operator):
-        H_match = qml.equal(op1.H, op2.H)
+        H_match = equal(op1.H, op2.H)
     elif isinstance(op1.H, Iterable) and isinstance(op2.H, Iterable):
-        H_match = all(qml.equal(o1, o2) for o1, o2 in zip(op1.H, op2.H))
+        H_match = all(equal(o1, o2) for o1, o2 in zip(op1.H, op2.H))
     else:
         return False
 
