@@ -54,6 +54,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {1}
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = {1}
 
         calculated_val = adjoint_jacobian(qs_valid)
 
@@ -82,6 +83,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {1, 2, 3}
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = {1, 2, 3}
 
         calculated_val = adjoint_jacobian(qs_valid)
 
@@ -117,6 +119,7 @@ class TestAdjointJacobian:
         qs = QuantumScript(ops, measurements)
         qs.trainable_params = set(range(1, 1 + op.num_params))
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = set(range(1, 1 + op.num_params))
 
         tapes, fn = qml.gradients.finite_diff(qs)
         results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
@@ -190,6 +193,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {1, 2, 3}
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = {1, 2, 3}
 
         grad_D = adjoint_jacobian(qs_valid)
         tapes, fn = qml.gradients.finite_diff(qs)
@@ -216,8 +220,9 @@ class TestAdjointJacobian:
             [prep_op],
         )
 
-        qs.trainable_params = {1, 2, 3}
+        qs.trainable_params = {2, 3, 4}
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = {2, 3, 4}
 
         grad_D = adjoint_jacobian(qs_valid)
         tapes, fn = qml.gradients.finite_diff(qs)
@@ -245,6 +250,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {0, 1, 2}
         qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid.trainable_params = {0, 1, 2}
 
         res = adjoint_jacobian(qs_valid)
 
