@@ -1300,14 +1300,24 @@ class TestRandomSeed:
         """Test that if the seed is None, it is uncorrelated with the global rng."""
         np.random.seed(42)
         dev = DefaultQubit2(seed=None)
-        first_num = dev._rng.random()  # pylint: disable=protected-access
+        first_nums = dev._rng.random(10)  # pylint: disable=protected-access
 
         np.random.seed(42)
         dev2 = DefaultQubit2(seed=None)
-        second_num = dev2._rng.random()  # pylint: disable=protected-access
+        second_nums = dev2._rng.random(10)  # pylint: disable=protected-access
 
-        assert not qml.math.allclose(first_num, second_num)
+        assert not qml.math.allclose(first_nums, second_nums)
 
+def test_rng_as_seed(self):
+    """Test that a PRNG can be passed as a seed."""
+    rng1 = np.random.default_rng(42)
+    first_num = rng1.random()
+
+    rng = np.random.default_rng(42)
+    dev = DefaultQubit2(seed=rng)
+    second_num = dev._rng.random()  # pylint: disable=protected-access
+
+    assert qml.math.allclose(first_num, second_num)
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
