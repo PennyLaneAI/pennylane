@@ -36,7 +36,7 @@ _path = os.path.dirname(__file__)
 TRACE = logging.DEBUG // 2
 
 
-def configure_logging(config_file):
+def _configure_logging(config_file):
     """
     This method allows custom logging configuration throughout PennyLane.
     All configurations are read through config_file `toml` files.
@@ -71,4 +71,11 @@ def enable_logging():
     This method allows top selectively enable logging throughout PennyLane.
     All configurations are read through the `log_config.toml` files, selectively controlled via the `use_yaml` argument.
     """
-    configure_logging("log_config.toml")
+    _configure_logging("log_config.toml")
+
+def config_path():
+    """
+    This method returns the full absolute path to the configuration file.
+    """
+    path = os.path.join(_path, "log_config.toml")
+    return path
