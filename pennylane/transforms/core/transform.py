@@ -14,7 +14,7 @@
 """
 This module contains the transform function to make your custom transforms compatible with qfunc and QNodes.
 """
-from typing import get_type_hints, Sequence, Callable, List, Tuple
+from typing import get_type_hints, Sequence, List, Tuple, Callable
 import pennylane as qml
 from .transform_dispatcher import TransformDispatcher, TransformError
 
@@ -166,7 +166,7 @@ def _transform_signature_check(signature):
             "pennylane.tape.tape.QuantumTape]"
         )
 
-    if not isinstance(ret[1], Callable):
+    if ret[1] != Callable:
         raise TransformError(
             "The second return of a transform must be a callable: <built-in function callable>"
         )

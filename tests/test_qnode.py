@@ -37,8 +37,6 @@ def dummyfunc():
     return None
 
 
-PostProcessingFn = Callable[[qml.typing.ResultBatch], qml.typing.Result]
-
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
@@ -1535,7 +1533,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def just_pauli_x_out(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], PostProcessingFn):
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1565,7 +1563,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def pin_result(
             tape: qml.tape.QuantumTape, requested_result
-        ) -> (Tuple[qml.tape.QuantumTape], PostProcessingFn):
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
             def postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
                 return requested_result
 
