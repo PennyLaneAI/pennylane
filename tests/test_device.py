@@ -445,8 +445,8 @@ class TestInternalFunctions:
         expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
 
         for op, expected_op in zip(
-            expanded_tape._ops,
-            expanded_ops,  # pylint: disable=protected-access
+            expanded_tape._ops,  # pylint: disable=protected-access
+            expanded_ops,
         ):
             assert qml.equal(op, expected_op)
 
