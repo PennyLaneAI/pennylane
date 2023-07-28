@@ -285,6 +285,20 @@ class TestOperatorConstruction:
         with pytest.warns(UserWarning, match="The behaviour of operator equality"):
             _ = op1 == op2
 
+    def test_eq_correctness(self):
+        """Test that using `==` on two equivalent operators is True when both operators
+        are the same object and False otherwise."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+
+        op1 = DummyOp(0)
+        op2 = DummyOp(0)
+
+        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
+            assert op1 == op1
+            assert not op1 == op2
+
     def test_hash_warning(self):
         """Test that a warning is raised when an operator's hash is used."""
 
@@ -295,6 +309,20 @@ class TestOperatorConstruction:
 
         with pytest.warns(UserWarning, match="The behaviour of operator hashing"):
             _ = hash(op)
+
+    def test_hash_correctness(self):
+        """Test that the hash of two equivalent operators is the same when both operators
+        are the same object and different otherwise."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+
+        op1 = DummyOp(0)
+        op2 = DummyOp(0)
+
+        with pytest.warns(UserWarning, match="The behaviour of operator hash"):
+            assert len({op1, op1}) == 1
+            assert len({op1, op2}) == 2
 
 
 class TestPytreeMethods:
