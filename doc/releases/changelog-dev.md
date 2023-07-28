@@ -165,6 +165,10 @@
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
+* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
+  changes to operator equality and hashing.
+  [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+
 <h3>Documentation 📝</h3>
 
 * The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
