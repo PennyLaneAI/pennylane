@@ -22,7 +22,7 @@ from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumTape
 
 from .apply_operation import apply_operation
-from .initialize_state import create_initial_state
+from .simulate import get_final_state
 
 # pylint: disable=protected-access, too-many-branches
 
@@ -34,21 +34,7 @@ def _dot_product_real(bra, ket, num_wires):
     return qml.math.real(qml.math.sum(qml.math.conj(bra) * ket, axis=sum_axes))
 
 
-def _get_output_ket(tape):
-    """Helper function to get the output state of a tape"""
-
-    # Initialization of state
-    prep_operation = tape[0] if isinstance(tape[0], qml.operation.StatePrep) else None
-    ket = create_initial_state(
-        wires=tape.wires, prep_operation=prep_operation
-    )  #  ket(0) if prep_operation is None, else
-    for op in tape.operations[bool(prep_operation) :]:
-        ket = apply_operation(op, ket)
-
-    return ket
-
-
-def adjoint_jacobian(tape: QuantumTape):
+def adjoint_jacobian(tape: QuantumTape, state=None):
     """Implements the adjoint method outlined in
     `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -67,6 +53,8 @@ def adjoint_jacobian(tape: QuantumTape):
 
     Args:
         tape (.QuantumTape): circuit that the function takes the gradient of
+        state (TensorLike): the final state of the circuit; if not provided,
+            the final state will be computed by executing the tape
 
     Returns:
         array or tuple[array]: the derivative of the tape with respect to trainable parameters.
@@ -77,7 +65,7 @@ def adjoint_jacobian(tape: QuantumTape):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = _get_output_ket(tape)
+    ket = state if state is not None else get_final_state(tape)[0]
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -119,7 +107,7 @@ def adjoint_jacobian(tape: QuantumTape):
     return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
 
-def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number]):
+def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     """The jacobian vector product used in forward mode calculation of derivatives.
 
     Implements the adjoint method outlined in
@@ -141,6 +129,8 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number]):
     Args:
         tape (.QuantumTape): circuit that the function takes the gradient of
         tangents (Tuple[Number]): gradient vector for input parameters.
+        state (TensorLike): the final state of the circuit; if not provided,
+            the final state will be computed by executing the tape
 
     Returns:
         Tuple[Number]: gradient vector for output parameters
@@ -150,7 +140,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number]):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = _get_output_ket(tape)
+    ket = state if state is not None else get_final_state(tape)[0]
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
@@ -191,7 +181,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number]):
     return tuple(np.array(t) for t in tangents_out)
 
 
-def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number]):
+def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     """The vector jacobian product used in reverse-mode differentiation.
 
     Implements the adjoint method outlined in
@@ -213,6 +203,8 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number]):
     Args:
         tape (.QuantumTape): circuit that the function takes the gradient of
         cotangents (Tuple[Number]): gradient vector for output parameters
+        state (TensorLike): the final state of the circuit; if not provided,
+            the final state will be computed by executing the tape
 
     Returns:
         Tuple[Number]: gradient vector for input parameters
@@ -222,7 +214,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number]):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    ket = _get_output_ket(tape)
+    ket = state if state is not None else get_final_state(tape)[0]
 
     obs = qml.dot(cotangents, tape.observables)
     bra = apply_operation(obs, ket)
