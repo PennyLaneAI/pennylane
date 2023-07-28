@@ -16,7 +16,7 @@ ANSI_CODES = {
 
 
 class ColorScheme(NamedTuple):
-    """Utility class to contain level-controlled color-codes for log-level messages."""
+    """Utility class to contain level-controlled color-codes for log messages."""
 
     use_rgb: bool
     debug: str
@@ -67,17 +67,17 @@ class DefaultFormatter(Formatter):
     fmt_str = '[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::"%(message)s"'
 
     # 0x000000 Background
-    text_bg = (0, 0, 0)
+    _text_bg = (0, 0, 0)
 
     cmap = ColorScheme(
         debug=(220, 238, 200),  # Grey 1
-        debug_bg=text_bg,
+        debug_bg=_text_bg,
         info=(80, 125, 125),  # Blue
-        info_bg=text_bg,
+        info_bg=_text_bg,
         warning=(208, 167, 133),  # Orange
-        warning_bg=text_bg,
+        warning_bg=_text_bg,
         error=(208, 133, 133),  # Red 1
-        error_bg=text_bg,
+        error_bg=_text_bg,
         critical=(135, 53, 53),  # Red 2
         critical_bg=(210, 210, 210),  # Grey 2
         use_rgb=True,

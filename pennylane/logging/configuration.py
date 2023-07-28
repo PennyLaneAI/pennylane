@@ -36,22 +36,8 @@ _path = os.path.dirname(__file__)
 TRACE = logging.DEBUG // 2
 
 
-def _configure_logging(config_file):
-    """
-    This method allows custom logging configuration throughout PennyLane.
-    All configurations are read through config_file `toml` files.
-    """
-    if not has_toml:
-        raise ImportError(
-            "A TOML parser is required to enable PennyLane logging defaults. "
-            "You can install tomli via `pip install tomli`, "
-            "install tomlkit via `pip install tomlkit`, "
-            "or use Python 3.11 which natively offers the tomllib library."
-        )
-
-    with open(os.path.join(_path, config_file), "rb") as f:
-        pl_config = tomllib.load(f)
-        logging.config.dictConfig(pl_config)
+def _add_trace_level():
+    "Wrapper to define custom TRACE level for PennyLane logging"
 
     def trace(self, message, *args, **kws):
         """Enable a more verbose mode than DEBUG. Used to enable inspection of function definitions in log messages."""
@@ -66,11 +52,29 @@ def _configure_logging(config_file):
     lc.trace = trace
 
 
+def _configure_logging(config_file):
+    """
+    This method allows custom logging configuration throughout PennyLane.
+    All configurations are read through config_file `toml` files.
+    """
+    if not has_toml:
+        raise ImportError(
+            "A TOML parser is required to enable PennyLane logging defaults. "
+            "You can install tomli via `pip install tomli`, "
+            "install tomlkit via `pip install tomlkit`, "
+            "or use Python 3.11 which natively offers the tomllib library."
+        )
+    with open(os.path.join(_path, config_file), "rb") as f:
+        pl_config = tomllib.load(f)
+        logging.config.dictConfig(pl_config)
+
+
 def enable_logging():
     """
     This method allows top selectively enable logging throughout PennyLane.
     All configurations are read through the `log_config.toml` files, selectively controlled via the `use_yaml` argument.
     """
+    _add_trace_level()
     _configure_logging("log_config.toml")
 
 

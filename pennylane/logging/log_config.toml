@@ -88,14 +88,14 @@ propagate = false
 # Control logging across pennylane
 [loggers.pennylane]
 handlers = ["qml_debug_stream",]
-level = "DEBUG" # Set to 1 for highest verbosity
+level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
 # Control logging specifically in the pennylane.qnode module
 # Note the required parenthesis to overcome TOML nesting issues
 [loggers."pennylane.qnode"]
 handlers = ["qml_debug_stream",]
-level = "DEBUG" # Set to 1 for highest verbosity
+level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
 ###############################################################################
