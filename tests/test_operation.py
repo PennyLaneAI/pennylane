@@ -297,7 +297,7 @@ class TestOperatorConstruction:
 
         with pytest.warns(UserWarning, match="The behaviour of operator equality"):
             assert op1 == op1  # pylint: disable=comparison-with-itself
-            assert not op1 != op2
+            assert op1 != op2
 
     def test_hash_warning(self):
         """Test that a warning is raised when an operator's hash is used."""
