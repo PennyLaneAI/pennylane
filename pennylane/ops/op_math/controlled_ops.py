@@ -149,6 +149,8 @@ class ControlledQubitUnitary(ControlledOp):
         if not super().has_decomposition:
             return False
         with qml.QueuingManager.stop_recording():
+            # we know this is using try-except as logical control, but are favouring
+            # certainty in it being correct over explicitness in an edge case.
             try:
                 self.decomposition()
             except qml.operation.DecompositionUndefinedError:

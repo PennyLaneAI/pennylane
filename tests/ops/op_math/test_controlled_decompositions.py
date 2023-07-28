@@ -673,3 +673,11 @@ def test_ControlledQubitUnitary_has_decomposition_correct():
     assert not op.has_decomposition
     with pytest.raises(qml.operation.DecompositionUndefinedError):
         op.decomposition()
+
+
+def test_ControlledQubitUnitary_has_decomposition_super_False(mocker):
+    """Test that has_decomposition returns False if super() returns False"""
+    spy = mocker.spy(qml.QueuingManager, "stop_recording")
+    op = qml.ControlledQubitUnitary(np.diag((1.0,) * 8), wires=[2, 3, 4], control_wires=[0, 1])
+    assert not op.has_decomposition
+    spy.assert_not_called()
