@@ -126,7 +126,6 @@ def validate_and_expand_adjoint(
 
     prep = circuit._prep[:1]
 
-    trainable_params = []
     for k in circuit.trainable_params:
         if hasattr(circuit._par_info[k]["op"], "return_type"):
             warnings.warn(
@@ -138,8 +137,6 @@ def validate_and_expand_adjoint(
                 "to silence this warning.",
                 UserWarning,
             )
-        else:
-            trainable_params.append(k)
 
     # Check validity of measurements
     measurements = []
@@ -158,8 +155,6 @@ def validate_and_expand_adjoint(
         measurements.append(m)
 
     expanded_tape = qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
-    expanded_tape.trainable_params = trainable_params
-
     return expanded_tape
 
 
