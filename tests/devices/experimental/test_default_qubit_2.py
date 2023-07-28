@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit 2."""
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel, no-member
 
 import pytest
 
@@ -1456,7 +1456,7 @@ class TestRandomSeed:
             [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
         ],
     )
-    def test_global_seed(self, measurements, max_workers):
+    def test_global_seed_and_device_seed(self, measurements, max_workers):
         """Test that a global seed does not affect the result of devices
         provided with a seed"""
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
@@ -1476,6 +1476,47 @@ class TestRandomSeed:
             result1, result2 = [result1], [result2]
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+
+    def test_global_seed_no_device_seed_by_default(self):
+        """Test that the global numpy seed initializes the rng if device seed is none."""
+        np.random.seed(42)
+        dev = DefaultQubit2()
+        first_num = dev._rng.random()  # pylint: disable=protected-access
+
+        np.random.seed(42)
+        dev2 = DefaultQubit2()
+        second_num = dev2._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(first_num, second_num)
+
+        np.random.seed(42)
+        dev2 = DefaultQubit2(seed="global")
+        third_num = dev2._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(third_num, first_num)
+
+    def test_None_seed_not_using_global_rng(self):
+        """Test that if the seed is None, it is uncorrelated with the global rng."""
+        np.random.seed(42)
+        dev = DefaultQubit2(seed=None)
+        first_nums = dev._rng.random(10)  # pylint: disable=protected-access
+
+        np.random.seed(42)
+        dev2 = DefaultQubit2(seed=None)
+        second_nums = dev2._rng.random(10)  # pylint: disable=protected-access
+
+        assert not qml.math.allclose(first_nums, second_nums)
+
+    def test_rng_as_seed(self):
+        """Test that a PRNG can be passed as a seed."""
+        rng1 = np.random.default_rng(42)
+        first_num = rng1.random()
+
+        rng = np.random.default_rng(42)
+        dev = DefaultQubit2(seed=rng)
+        second_num = dev._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(first_num, second_num)
 
 
 class TestHamiltonianSamples:
