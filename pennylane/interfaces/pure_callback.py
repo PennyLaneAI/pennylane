@@ -1,0 +1,66 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import jax
+from jax import numpy as jnp
+
+import pennylane as qml
+
+dtype = jnp.float64
+
+
+def _numeric_type_to_dtype(numeric_type):
+    """Auxiliary function for converting from Python numeric types to JAX
+    dtypes based on the precision defined for the interface."""
+
+    single_precision = dtype is jnp.float32
+    if numeric_type is int:
+        return jnp.int32 if single_precision else jnp.int64
+
+    if numeric_type is float:
+        return jnp.float32 if single_precision else jnp.float64
+
+    # numeric_type is complex
+    return jnp.complex64 if single_precision else jnp.complex128
+
+
+def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
+    """Auxiliary function for creating the shape and dtype object structure
+    given a tape."""
+
+    shape = tape.shape(device)
+    if len(tape.measurements) == 1:
+        tape_dtype = _numeric_type_to_dtype(tape.numeric_type)
+        return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
+
+    tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
+    return tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype))
+
+
+def make_pure_callback(device, config):
+    def pure_callback_execution(tapes):
+        shape_dtype_structs = tuple(_create_shape_dtype_struct(t, device) for t in tapes)
+
+        parameters = tuple(tuple(t.get_parameters(trainable_only=False)) for t in tapes)
+
+        def callback_fn(params):
+            new_tapes = tuple(
+                t.bind_new_parameters(p, list(range(len(p)))) for t, p in zip(tapes, params)
+            )
+            new_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in new_tapes)
+            return device.execute(new_tapes, execution_config=config)
+
+        return jax.pure_callback(callback_fn, shape_dtype_structs, parameters)
+
+    return pure_callback_execution

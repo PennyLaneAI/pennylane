@@ -356,7 +356,6 @@ class ExecuteTapes(torch.autograd.Function):
         # split tensor into separate entries
         unpacked_vjps = []
         for vjp_slice in vjps:
-
             if vjp_slice is not None and np.squeeze(vjp_slice).shape != (0,):
                 unpacked_vjps.extend(vjp_slice)
         vjps = tuple(unpacked_vjps)

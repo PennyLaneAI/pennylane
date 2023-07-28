@@ -37,6 +37,7 @@ from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
 from .jacobian_products import TransformDerivatives, DeviceDerivatives, OldDeviceDerivatives
+from .pure_callback import make_pure_callback
 
 device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
@@ -167,33 +168,25 @@ def _preprocess_expand_fn(
 
 
 def _get_interface_boundary(interface: str, tapes, grad_on_execution):
+    if interface == "autograd":
+        from .autograd import autograd_boundary as _execute
 
-    try:
-        if interface == "autograd":
-            from .autograd import autograd_boundary as _execute
+    elif interface == "tf":
+        import tensorflow as tf
 
-        elif interface == "tf":
-            import tensorflow as tf
+        if not tf.executing_eagerly() or "autograph" in interface:
+            from .tensorflow_autograph import execute as _execute
 
-            if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
+            _execute = partial(_execute, grad_on_execution=grad_on_execution)
 
-                _execute = partial(_execute, grad_on_execution=grad_on_execution)
+        else:
+            from .tensorflow import execute as _execute
 
-            else:
-                from .tensorflow import execute as _execute
+    elif interface == "torch":
+        from .torch import execute as _execute
 
-        elif interface == "torch":
-            from .torch import execute as _execute
-
-        elif interface == "jax":
-            _execute = _get_jax_execute_fn(interface, tapes)
-
-    except ImportError as e:
-        raise qml.QuantumFunctionError(
-            f"{interface} not found. Please install the latest "
-            f"version of {interface} to enable the '{interface}' interface."
-        ) from e
+    elif interface == "jax":
+        _execute = _get_jax_execute_fn(interface, tapes)
 
     return _execute
 
@@ -546,14 +539,22 @@ def execute(
     # the default execution function is batch_execute
     # use qml.interfaces so that mocker can spy on it during testing
     if new_device_interface:
+        interface_jax = interface
+        if interface == "jax":
+            from .jax import get_jax_interface_name
 
-        def device_execution_with_config(tapes):
-            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-            return device.execute(tapes, execution_config=config)
+            interface_jax = get_jax_interface_name(tapes)
+        if interface_jax == "jax-jit":
+            execute_fn = make_pure_callback(device, config)
+        else:
 
-        execute_fn = qml.interfaces.cache_execute(
-            device_execution_with_config, cache, return_tuple=False
-        )
+            def device_execution_with_config(tapes):
+                tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+                return device.execute(tapes, execution_config=config)
+
+            execute_fn = qml.interfaces.cache_execute(
+                device_execution_with_config, cache, return_tuple=False
+            )
     else:
 
         def inner_execute(tapes):
@@ -856,29 +857,23 @@ def _execute_legacy(
         raise ValueError(
             f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
         ) from e
-    try:
-        if mapped_interface == "autograd":
-            from .autograd import _execute_legacy as _execute
-        elif mapped_interface == "tf":
-            import tensorflow as tf
+    if mapped_interface == "autograd":
+        from .autograd import _execute_legacy as _execute
+    elif mapped_interface == "tf":
+        import tensorflow as tf
 
-            if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import _execute_legacy as _execute
+        if not tf.executing_eagerly() or "autograph" in interface:
+            from .tensorflow_autograph import _execute_legacy as _execute
 
-                _grad_on_execution = _mode == "forward"
+            _grad_on_execution = _mode == "forward"
 
-                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
-            else:
-                from .tensorflow import _execute_legacy as _execute
-        elif mapped_interface == "torch":
-            from .torch import _execute_legacy as _execute
-        else:  # is jax
-            _execute = _get_jax_execute_fn(interface, tapes)
-    except ImportError as e:
-        raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
-        ) from e
+            _execute = partial(_execute, grad_on_execution=_grad_on_execution)
+        else:
+            from .tensorflow import _execute_legacy as _execute
+    elif mapped_interface == "torch":
+        from .torch import _execute_legacy as _execute
+    else:  # is jax
+        _execute = _get_jax_execute_fn(interface, tapes)
 
     res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 

@@ -23,7 +23,7 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces.jax import _compute_jvps
+
 from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
 from pennylane.transforms import convert_to_numpy_parameters
 
@@ -110,7 +110,7 @@ def _filter_zeros_tangents(tangents):
     return non_zeros_tangents
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(tapes, execute_fn, vjp_fn, device=None):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -149,301 +149,35 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
-    if gradient_fn is None:
-        return _execute_fwd(
-            parameters,
-            tapes=tapes,
-            device=device,
-            execute_fn=execute_fn,
-            gradient_kwargs=gradient_kwargs,
-            _n=_n,
-        )
-
     return _execute_bwd(
         parameters,
-        tapes=tapes,
-        device=device,
-        execute_fn=execute_fn,
-        gradient_fn=gradient_fn,
-        gradient_kwargs=gradient_kwargs,
-        _n=_n,
-        max_diff=max_diff,
+        tapes,
+        execute_fn,
+        vjp_fn,
+        device,
     )
 
 
 def _execute_bwd(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
-    _n=1,
-    max_diff=2,
-):  # pylint: disable=dangerous-default-value,unused-argument
-    is_experimental_device = isinstance(device, qml.devices.experimental.Device)
-
+    parameters,
+    tapes,
+    execute_fn,
+    vjp_fn,
+    device,
+):
     @jax.custom_jvp
     def execute_wrapper(params):
-        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
-
-        def wrapper(p):
-            """Compute the forward pass."""
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
-            res, _ = execute_fn(new_tapes, **gradient_kwargs)
-            res = tuple(res)
-
-            # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
-            # the shape without the vmap dimensions, while the function here will be
-            # executed with objects containing the vmap dimensions. So res[i].ndim
-            # will have an extra dimension for every `jax.vmap` wrapping this execution.
-            #
-            # The execute_fn will return an object with shape `(n_observables, batches)`
-            # but the default behaviour for `jax.pure_callback` is to add the extra
-            # dimension at the beginning, so `(batches, n_observables)`. So in here
-            # we detect with the heuristic above if we are executing under vmap and we
-            # swap the order in that case.
-            res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
-            return res
-
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
-        return res
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
+        return execute_fn(new_tapes)
 
     @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
-        # pylint: disable=unused-variable
-        params = primals[0]
+        for tangent, tape in zip(tangents[0], tapes):
+            tape.trainable_params = tuple(
+                idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
+            )
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
+        res, jvps = vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
+        return res, jvps
 
-        # Select the trainable params. Non-trainable params contribute a 0 gradient.
-        trainable_parameters = [
-            [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
-            for tangent in tangents[0]
-        ]
-
-        for trainable_params, tape in zip(trainable_parameters, tapes):
-            tape.trainable_params = trainable_params
-
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-
-        # Execution: execute the function first (execution on the device does not happen)
-        evaluation_results = execute_wrapper(params)
-
-        # Backward: branch off based on the gradient function is a device method.
-        if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            # Gradient function is a gradient transform
-            if _n == max_diff:
-                jacobians_from_callback = _grad_transform_jac_via_callback(params, device)
-
-                if len(tapes) == 1:
-                    jacobians_from_callback = [jacobians_from_callback]
-
-                tangents_trainable = _filter_zeros_tangents(tangents[0])
-
-                jvps = _compute_jvps(
-                    jacobians_from_callback, tangents_trainable, multi_measurements
-                )
-
-            else:
-                new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
-                all_jacs = []
-                for new_t in new_tapes:
-                    jvp_tapes, res_processing_fn = gradient_fn(
-                        new_t,
-                        shots=new_t.shots if is_experimental_device else device.shots,
-                        **gradient_kwargs
-                    )
-                    jacs = execute(
-                        jvp_tapes,
-                        device,
-                        execute_fn,
-                        gradient_fn,
-                        gradient_kwargs,
-                        _n=_n + 1,
-                        max_diff=max_diff,
-                    )
-                    jacs = res_processing_fn(jacs)
-                    all_jacs.append(jacs)
-
-                tangents_trainable = _filter_zeros_tangents(tangents[0])
-
-                jvps = _compute_jvps(all_jacs, tangents_trainable, multi_measurements)
-        else:
-            # Gradient function is a device method
-            res_from_callback = _device_method_jac_via_callback(params, device)
-
-            if len(tapes) == 1:
-                res_from_callback = [res_from_callback]
-
-            tangents_trainable = _filter_zeros_tangents(tangents[0])
-
-            jvps = _compute_jvps(res_from_callback, tangents_trainable, multi_measurements)
-
-        return evaluation_results, jvps
-
-    def _grad_transform_jac_via_callback(params, device):
-        """Perform a callback to compute the jacobian of tapes using a gradient transform (e.g., parameter-shift or
-        finite differences grad transform).
-
-        Note: we are not using the batch_jvp pipeline and rather split the steps of unwrapping tapes and the JVP
-        computation because:
-
-        1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects
-        are converted to NumPy, something that raises an error;
-
-        2. Passing in the tangents as an argument to the wrapper function called by the jax.pure_callback raises an
-        error (as of jax and jaxlib 0.3.25):
-        ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while
-        taking gradients.
-
-        Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
-        tangent.
-        """
-
-        def wrapper(params):
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-            all_jacs = []
-            for new_t in new_tapes:
-                jvp_tapes, res_processing_fn = gradient_fn(
-                    new_t,
-                    shots=new_t.shots if is_experimental_device else device.shots,
-                    **gradient_kwargs
-                )
-                jacs = execute_fn(jvp_tapes)[0]
-                jacs = res_processing_fn(jacs)
-                all_jacs.append(jacs)
-
-            if len(all_jacs) == 1:
-                return all_jacs[0]
-
-            return all_jacs
-
-        expected_shapes = _jac_shape_dtype_tuple(tapes, device)
-        res = jax.pure_callback(wrapper, expected_shapes, params)
-        return res
-
-    def _device_method_jac_via_callback(params, device):
-        """Perform a callback to compute the jacobian of tapes using a device method (e.g., adjoint).
-
-        Note: we are not using the batch_jvp pipeline and rather split the steps of unwrapping tapes and the JVP
-        computation because:
-
-        1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects
-        are converted to NumPy, something that raises an error;
-
-        2. Passing in the tangents as an argument to the wrapper function called by the jax.pure_callback raises an
-        error (as of jax and jaxlib 0.3.25):
-        ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while
-        taking gradients.
-
-        Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
-        tangent.
-        """
-
-        def wrapper(params):
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-            return gradient_fn(new_tapes, **gradient_kwargs)
-
-        shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
-        return jax.pure_callback(wrapper, shape_dtype_structs, params)
-
-    return execute_wrapper(params)
-
-
-# The execute function in forward mode
-def _execute_fwd(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_kwargs=None,
-    _n=1,
-):  # pylint: disable=dangerous-default-value,unused-argument
-    """The auxiliary execute function for cases when the user requested
-    jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
-    provided. This function does not allow multiple derivatives. It currently does not support shot vectors
-    because adjoint jacobian for default qubit does not support it."""
-
-    # pylint: disable=unused-variable
-    @jax.custom_jvp
-    def execute_wrapper(params):
-        def wrapper(p):
-            """Compute the forward pass."""
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
-            res, jacs = execute_fn(new_tapes, **gradient_kwargs)
-            return res, jacs
-
-        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
-
-        jac_shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
-        res, jacs = jax.pure_callback(
-            wrapper, (shape_dtype_structs, jac_shape_dtype_structs), params
-        )
-        return res, jacs
-
-    @partial(execute_wrapper.defjvp, symbolic_zeros=True)
-    def execute_wrapper_jvp(primals, tangents):
-        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        original_shape = _jac_shape_dtype_tuple(tapes, device)
-
-        # Get the original trainable parameters and the trainable parameters from symbolic zeros
-        original_trainable_parameters = [tape.trainable_params for tape in tapes]
-        new_trainable_parameters = [
-            [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
-            for tangent in tangents[0]
-        ]
-
-        switch_trainable = [False for _ in range(len(tapes))]
-
-        # Update the trainable params for the forward execution
-        for i, (new_trainable_params, tape) in enumerate(zip(new_trainable_parameters, tapes)):
-            if tape.trainable_params != new_trainable_params:
-                tape.trainable_params = new_trainable_params
-                switch_trainable[i] = True
-
-        # Forward execution with the right trainable parameters
-        res, jacs = execute_wrapper(primals[0])
-
-        jacs_ = [jacs] if len(tapes) == 1 else jacs
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-
-        updated_jacs = []
-
-        # Add zeros in the jacobians if the trainable params were switched
-        for i, (switch, multi_measurement) in enumerate(zip(switch_trainable, multi_measurements)):
-            if switch:
-                intermediate_jacs = []
-
-                # Adapt the shape of the empty jacobian given the measurement shape
-                shape_dtype = original_shape if len(tapes) == 1 else original_shape[i]
-                if isinstance(shape_dtype, tuple):
-                    shape_dtype = shape_dtype[0]
-
-                # Multi measurement
-                if multi_measurement:
-                    jac_empty = tuple(
-                        jnp.zeros(shape=tensor.shape, dtype=tensor.dtype) for tensor in shape_dtype
-                    )
-                # Single measurement
-                else:
-                    jac_empty = jnp.zeros(shape_dtype.shape, shape_dtype.dtype)
-
-                for j, original_trainable_params in enumerate(original_trainable_parameters[i]):
-                    if original_trainable_params in new_trainable_parameters[i]:
-                        intermediate_jacs.append(jacs_[i])
-                    else:
-                        intermediate_jacs.append(jac_empty)
-                updated_jacs.append(tuple(intermediate_jacs))
-            else:
-                updated_jacs.append(jacs_[i])
-
-        updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
-
-        # Get the jvps
-        tangents = _filter_zeros_tangents(tangents[0])
-        jvps = _compute_jvps(jacs_, tangents, multi_measurements)
-
-        return (res, updated_jacs), (jvps, updated_jacs)
-
-    res, _jacs = execute_wrapper(params)
-
-    return res
+    return execute_wrapper(parameters)

@@ -169,7 +169,6 @@ class TransformDerivatives(DerivativeExecutor):
         self._gradient_kwargs = gradient_kwargs or {}
 
     def execute_and_compute_jvp(self, tapes, tangents):
-
         num_result_tapes = len(tapes)
 
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(

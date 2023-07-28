@@ -408,8 +408,6 @@ def execute(tapes, execute_fn, vjp_fn, device=None):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
         res, jvps = vjp_fn.execute_and_compute_jvp(new_tapes, tangents[0])
-        print(res)
-        print(jvps)
         return res, jvps
 
     return _to_jax(execute_wrapper(parameters))
