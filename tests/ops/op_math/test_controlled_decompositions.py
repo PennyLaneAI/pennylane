@@ -224,7 +224,7 @@ class TestControlledDecompositionZYZ:
         decomp = (
             op.expand().expand().circuit if test_expand else op.decomposition()[0].decomposition()
         )
-        expected = qml.ops.ctrl_decomp_zyz(base, (0,))
+        expected = qml.ops.ctrl_decomp_zyz(base, (0,))  # pylint:disable=no-member
         assert equal_list(decomp, expected)
 
     @pytest.mark.xfail
@@ -232,7 +232,7 @@ class TestControlledDecompositionZYZ:
     def test_zyz_decomp_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
         when other decompositions aren't available and control values are present."""
-
+        # pylint:disable=no-member
         base = qml.QubitUnitary(
             np.array(
                 [
@@ -663,3 +663,13 @@ class TestControlledBisectGeneral:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+
+def test_ControlledQubitUnitary_has_decomposition_correct():
+    """Test that ControlledQubitUnitary reports has_decomposition=False if it is False"""
+    U = qml.Toffoli(wires=[0, 1, 2]).matrix()
+    op = qml.ControlledQubitUnitary(U, wires=[1, 2, 3], control_wires=[0])
+
+    assert not op.has_decomposition
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        op.decomposition()

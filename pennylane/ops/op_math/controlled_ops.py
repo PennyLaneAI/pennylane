@@ -144,6 +144,17 @@ class ControlledQubitUnitary(ControlledOp):
             work_wires=self.work_wires,
         )
 
+    @property
+    def has_decomposition(self):
+        if not super().has_decomposition:
+            return False
+        with qml.QueuingManager.stop_recording():
+            try:
+                self.decomposition()
+            except qml.operation.DecompositionUndefinedError:
+                return False
+        return True
+
 
 class CY(ControlledOp):
     r"""CY(wires)
