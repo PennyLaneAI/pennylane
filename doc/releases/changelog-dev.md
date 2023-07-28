@@ -74,8 +74,9 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
-* The experimental device interface is integrated with the `QNode` for Jax jit.
+* The experimental device interface is integrated with the `QNode` for jax-jit and torch.
   [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
 
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
@@ -196,6 +197,10 @@
 * When a `style` option is not provided, `qml.draw_mpl` uses the current style set from
   `qml.drawer.use_style` instead of `black_white`.
   [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
+
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
+  trainable parameters of the expanded tape.
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
 <h3>Contributors ✍️</h3>
 
