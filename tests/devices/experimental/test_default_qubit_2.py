@@ -1278,7 +1278,7 @@ class TestRandomSeed:
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
-    def test_global_seed_no_device_seed(self):
+    def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is none."""
         np.random.seed(42)
         dev = DefaultQubit2()
@@ -1289,6 +1289,24 @@ class TestRandomSeed:
         second_num = dev2._rng.random()  # pylint: disable=protected-access
 
         assert qml.math.allclose(first_num, second_num)
+
+        np.random.seed(42)
+        dev2 = DefaultQubit2(seed="global")
+        third_num = dev2._rng.random()  # pylint: disable=protected-access
+
+        assert qml.math.allclose(third_num, first_num)
+
+    def test_None_seed_not_using_global_rng(self):
+        """Test that if the seed is None, it is uncorrelated with the global rng."""
+        np.random.seed(42)
+        dev = DefaultQubit2(seed=None)
+        first_num = dev._rng.random()  # pylint: disable=protected-access
+
+        np.random.seed(42)
+        dev2 = DefaultQubit2(seed=None)
+        second_num = dev2._rng.random()  # pylint: disable=protected-access
+
+        assert not qml.math.allclose(first_num, second_num)
 
 
 class TestHamiltonianSamples:
