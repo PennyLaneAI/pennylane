@@ -88,7 +88,7 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-* Provide users access to logging configuration file path and improve logging configuration structure.
+* Provide users access to the logging configuration file path and improve the logging configuration structure.
   [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 
 <h3>Breaking changes 💔</h3>
