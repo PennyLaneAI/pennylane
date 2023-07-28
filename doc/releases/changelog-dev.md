@@ -88,6 +88,9 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* PennyLane no longer directly relies on `Operator.__eq__`.
+  [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
+
 * If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
   seeded from on the NumPy's global random number generator.
   [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
