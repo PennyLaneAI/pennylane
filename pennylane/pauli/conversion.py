@@ -36,16 +36,18 @@ def pauli_decompose(
     pauli=False,
     padding=False,
 ) -> Union[Hamiltonian, PauliSentence]:
-    r"""Decomposes a matrix into a linear combination of Pauli operators.
+    r"""Decomposes a matrix into a linear combination of Pauli operators acting on `n` qubits.
 
     Args:
-        matrix (array[complex]): any matrix of dimension :math:`2^n\times 2^n`.
+        matrix (tensor[complex]): any matrix M, the keyword argument ``padding=True``
+            should be provided if the dimension of M is not :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a PauliSentence instance if ``True``.
-        padding (bool): makes it compatible with rectangular matrices by padding them with zeros
+        padding (bool): makes it compatible with rectangular matrices and square matrices
+            that are not of shape :math:`2^n\times 2^n` by padding them with zeros if ``True``.
 
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
@@ -104,7 +106,7 @@ def pauli_decompose(
         :title: Usage Details
         :href: usage-decompose-operation
 
-        For non-square matrices, we need to provide ``padding=True`` argument:
+        For non-square matrices, we need to provide ``padding=True`` keyword argument:
 
         >>> A = np.array([[-2, -2 + 1j]])
         >>> H = qml.pauli_decompose(A, padding=True)
