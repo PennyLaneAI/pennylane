@@ -53,8 +53,7 @@ def pauli_decompose(
 
     **Example:**
 
-    We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
-    matrix:
+    We can use this function to compute the Pauli operator decomposition of an arbitrary matrix:
 
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
@@ -100,6 +99,33 @@ def pauli_decompose(
     + 1.0 * Y(a) @ Y(b)
     + -0.5 * Z(a) @ X(b)
     + -0.5 * Z(a) @ Y(b)
+
+    .. details::
+        :title: Usage Details
+        :href: usage-decompose-operation
+
+        For non-square matrices, we need to provide ``padding=True`` argument:
+
+        >>> A = np.array([[-2, -2 + 1j]])
+        >>> H = qml.pauli_decompose(A, padding=True)
+        >>> print(H)
+          ((-1+0j)) [I0]
+        + ((-1+0.5j)) [X0]
+        + ((-1+0j)) [Z0]
+        + ((-0.5-1j)) [Y0]
+
+        We can also use the method within a differentiable workflow and obtain gradients:
+
+        >>> A = qml.numpy.array([[-2, -2 + 1j]], requires_grad=True)
+        >>> dev = qml.device("default.qubit", wires=1)
+        >>> @qml.qnode(dev)
+        ... def circuit(A):
+        ...    decomp = qml.pauli_decompose(A, padding=True)
+        ...    qml.RX(decomp.coeffs[2], 0)
+        ...    return qml.expval(qml.PauliZ(0))
+        >>> grad_numpy = qml.grad(circuit)(A)
+        tensor([[-2.+0.j, -2.+1.j]], requires_grad=True)
+
     """
     # Pad with zeros to make the matrix shape equal and a power of two.
     if padding:

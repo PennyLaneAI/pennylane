@@ -233,7 +233,7 @@ class TestDecomposition:
             loss = circuit(A)
         grad_tflow = tape.gradient(loss, A)
 
-        # Comparisions
+        # Comparisons - note: https://github.com/google/jax/issues/9110
         assert qml.math.allclose(grad_numpy, grad_jax)
         assert qml.math.allclose(grad_torch, grad_tflow)
         assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
