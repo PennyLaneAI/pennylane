@@ -20,7 +20,8 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math, wires
+from pennylane import math
+from pennylane.wires import Wires
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
 
@@ -200,7 +201,7 @@ class PauliWord(dict):
     @property
     def wires(self):
         """Track wires in a PauliWord."""
-        return set(self)
+        return Wires(set(self))
 
     def to_mat(self, wire_order, format="dense", coeff=1.0):
         """Returns the matrix representation.
@@ -218,12 +219,12 @@ class PauliWord(dict):
             ValueError: Can't get the matrix of an empty PauliWord.
         """
         if len(self) == 0:
-            if wire_order is None or wire_order == wires.Wires([]):
+            if wire_order is None or wire_order == Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliWord.")
             return (
                 np.diag([coeff] * 2 ** len(wire_order))
                 if format == "dense"
-                else coeff * sparse.eye(2 ** len(wire_order), format=format)
+                else coeff * sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
             )
 
         if format == "dense":
@@ -261,14 +262,14 @@ class PauliWord(dict):
                 indices[current_size : 2 * current_size] = indices[:current_size] + current_size
             current_size *= 2
         # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
-        matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype=np.complex128)
+        matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
         matrix.data, matrix.indices, matrix.indptr = data, indices, indptr
         return matrix
 
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
+            if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliWord.")
             return Identity(wires=wire_order)
 
@@ -281,7 +282,7 @@ class PauliWord(dict):
     def hamiltonian(self, wire_order=None):
         """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
         if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
+            if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
@@ -365,7 +366,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return set().union(*(pw.wires for pw in self.keys()))
+        return sum(pw.wires for pw in self.keys())
 
     def to_mat(self, wire_order, format="dense"):
         """Returns the matrix representation.
@@ -382,19 +383,19 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
 
-        def _pw_wires(w: Iterable) -> wires.Wires:
+        def _pw_wires(w: Iterable) -> Wires:
             """Return the native Wires instance for a list of wire labels.
             w represents the wires of the PauliWord being processed. In case
             the PauliWord is empty ({}), choose any arbitrary wire from the
             PauliSentence it is composed in.
             """
             if w:
-                return wires.Wires(w)
+                return w
 
-            return wires.Wires(list(self.wires)[0]) if len(self.wires) > 0 else wires.Wires([])
+            return Wires(self.wires[0]) if self.wires else Wires([])
 
         if len(self) == 0:
-            if wire_order is None or wire_order == wires.Wires([]):
+            if wire_order is None or wire_order == Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
             if format == "dense":
                 return np.eye(2 ** len(wire_order))
@@ -417,7 +418,7 @@ class PauliSentence(dict):
     def operation(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
+            if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliSentence.")
             return qml.s_prod(0, Identity(wires=wire_order))
 
@@ -431,7 +432,7 @@ class PauliSentence(dict):
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
         if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
+            if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
             return Hamiltonian([], [])
 
