@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices import DefaultQubit
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane import DeviceError
 
@@ -32,7 +33,7 @@ def test_analytic_deprecation():
         DeviceError,
         match=msg,
     ):
-        qml.device("default.qubit.autograd", wires=1, shots=1, analytic=True)
+        DefaultQubitAutograd(wires=1, shots=1, analytic=True)
 
 
 @pytest.mark.autograd
@@ -43,7 +44,7 @@ class TestQNodeIntegration:
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
@@ -66,7 +67,7 @@ class TestQNodeIntegration:
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
         assert dev.num_wires == 2
         assert dev.shots is None
         assert dev.short_name == "default.qubit.autograd"
@@ -77,7 +78,7 @@ class TestQNodeIntegration:
         result for a simple circuit."""
         p = np.array(0.543)
 
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(x):
@@ -94,7 +95,7 @@ class TestQNodeIntegration:
         result for a simple broadcasted circuit."""
         p = np.array([0.543, 0.21, 1.5])
 
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(x):
@@ -110,7 +111,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         state = dev.state
         expected = np.array([1, 0, 0, 0])
@@ -134,7 +135,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         broadcasted quantum function on the device"""
 
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         state = dev.state
         expected = np.array([1, 0, 0, 0])
@@ -180,7 +181,7 @@ class TestDtypePreserved:
         real data type for a simple circuit"""
         p = 0.543
 
-        dev = qml.device("default.qubit.autograd", wires=3)
+        dev = DefaultQubitAutograd(wires=3)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="backprop")
@@ -206,7 +207,7 @@ class TestDtypePreserved:
         real data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
 
-        dev = qml.device("default.qubit.autograd", wires=3)
+        dev = DefaultQubitAutograd(wires=3)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="backprop")
@@ -227,7 +228,7 @@ class TestDtypePreserved:
         complex data type for a simple circuit"""
         p = 0.543
 
-        dev = qml.device("default.qubit.autograd", wires=3)
+        dev = DefaultQubitAutograd(wires=3)
         dev.C_DTYPE = c_dtype
 
         @qml.qnode(dev, diff_method="backprop")
@@ -244,7 +245,7 @@ class TestDtypePreserved:
         complex data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
 
-        dev = qml.device("default.qubit.autograd", wires=3)
+        dev = DefaultQubitAutograd(wires=3)
         dev.C_DTYPE = c_dtype
 
         measurement = qml.state()
@@ -270,7 +271,7 @@ class TestPassthruIntegration:
         z = 0.75110998
         weights = np.array([x, y, z], requires_grad=True)
 
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(p):
@@ -306,7 +307,7 @@ class TestPassthruIntegration:
         z = np.array([0.75110998, 0.12512, 9.12])
         weights = np.array([x, y, z], requires_grad=True)
 
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(p):
@@ -341,7 +342,7 @@ class TestPassthruIntegration:
         y = 0.2162158
         z = 0.75110998
         p = np.array([x, y, z], requires_grad=True)
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(x):
@@ -369,7 +370,7 @@ class TestPassthruIntegration:
         y = np.array([0.2162158, 0.241, -0.51])
         z = np.array([0.75110998, 0.12512, 9.12])
         p = np.array([x, y, z], requires_grad=True)
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(x):
@@ -407,8 +408,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev1 = DefaultQubit(wires=3)
+        dev2 = DefaultQubit(wires=3)
 
         def cost(x):
             return qml.math.stack(circuit(x))
@@ -430,7 +431,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.autograd", wires=wires)
+        dev = DefaultQubitAutograd(wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a):
@@ -451,7 +452,7 @@ class TestPassthruIntegration:
 
     def test_state_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device state can be differentiated"""
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a):
@@ -473,7 +474,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a, b):
@@ -499,7 +500,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device probability can be differentiated"""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a, b):
@@ -526,7 +527,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a, b):
@@ -549,7 +550,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient_broadcasted(self, tol):
         """Tests that the gradient of the broadcasted qnode is correct"""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a, b):
@@ -576,7 +577,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(x):
@@ -593,7 +594,7 @@ class TestPassthruIntegration:
     def test_autograd_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the Autograd interface, using a variety of differentiation methods."""
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
         state = np.array(1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False)
 
         @qml.qnode(dev, diff_method=diff_method, interface="autograd")
@@ -644,7 +645,7 @@ class TestPassthruIntegration:
     def test_error_backprop_wrong_interface(self, interface):
         """Tests that an error is raised if diff_method='backprop' but not using
         the Autograd interface"""
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = DefaultQubitAutograd(wires=1)
 
         def circuit(x, w=None):
             qml.RZ(x, wires=w)
@@ -663,7 +664,7 @@ class TestHighLevelIntegration:
 
     def test_do_not_split_analytic_autograd(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None using the autograd device."""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
@@ -679,7 +680,7 @@ class TestHighLevelIntegration:
     def test_do_not_split_analytic_autograd_broadcasted(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None
         and broadcasting using the autograd device."""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
@@ -695,7 +696,7 @@ class TestHighLevelIntegration:
 
     def test_template_integration(self):
         """Test that a PassthruQNode default.qubit.autograd works with templates."""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = DefaultQubitAutograd(wires=2)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(weights):
@@ -718,7 +719,7 @@ class TestOps:
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = qml.device("default.qubit.autograd", wires=wires)
+        dev = DefaultQubitAutograd(wires=wires)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
@@ -764,7 +765,7 @@ class TestOpsBroadcasted:
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = qml.device("default.qubit.autograd", wires=wires)
+        dev = DefaultQubitAutograd(wires=wires)
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):

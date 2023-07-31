@@ -61,6 +61,7 @@ from gate_data import (
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane import numpy as pnp
+from pennylane.devices import DefaultQubit
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
 from pennylane.devices.default_qubit_torch import (  # pylint: disable=wrong-import-position
@@ -200,7 +201,7 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(DeviceError, match=msg):
-        qml.device("default.qubit.torch", wires=1, shots=1, analytic=True)
+        DefaultQubitTorch(wires=1, shots=1, analytic=True)
 
 
 #####################################################
@@ -211,7 +212,7 @@ def test_analytic_deprecation():
 def test_conj_helper_method():
     """Unittests the _conj helper method."""
 
-    dev = qml.device("default.qubit.torch", wires=1)
+    dev = DefaultQubitTorch(wires=1)
 
     x = qml.numpy.array(1.0 + 1j)
     conj_x = dev._conj(x)
@@ -1576,7 +1577,7 @@ class TestQNodeIntegration:
     def test_defines_correct_capabilities(self, torch_device):
         """Test that the device defines the right capabilities"""
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
@@ -1599,7 +1600,7 @@ class TestQNodeIntegration:
 
     def test_load_torch_device(self, torch_device):
         """Test that the torch device plugin loads correctly"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
         assert dev.num_wires == 2
         assert dev.shots is None
         assert dev.short_name == "default.qubit.torch"
@@ -1611,7 +1612,7 @@ class TestQNodeIntegration:
         result for a simple circuit using the old QNode."""
         p = torch.tensor(0.543, dtype=torch.float64, device=torch_device)
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -1628,7 +1629,7 @@ class TestQNodeIntegration:
         result for a simple circuit using the old QNode."""
         p = torch.tensor([0.543, 0.21, 2.41], dtype=torch.float64, device=torch_device)
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -1643,7 +1644,7 @@ class TestQNodeIntegration:
     def test_correct_state(self, torch_device, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         state = dev.state
         expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128, device=torch_device)
@@ -1670,7 +1671,7 @@ class TestQNodeIntegration:
     def test_correct_state_broadcasted(self, torch_device, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         state = dev.state
         expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128, device=torch_device)
@@ -1704,7 +1705,7 @@ class TestQNodeIntegration:
     def test_one_qubit_param_gates(self, torch_device, theta, op, func, init_state, tol):
         """Test the integration of the one-qubit single parameter rotations by passing
         a Torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
         state = init_state(1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
@@ -1724,7 +1725,7 @@ class TestQNodeIntegration:
     def test_two_qubit_param_gates(self, torch_device, theta, op, func, init_state, tol):
         """Test the integration of the two-qubit single parameter rotations by passing
         a Torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
         state = init_state(2, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
@@ -1746,7 +1747,7 @@ class TestQNodeIntegration:
     def test_four_qubit_param_gates(self, torch_device, theta, op, func, init_state, tol):
         """Test the integration of the four-qubit single parameter rotations by passing
         a Torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=4, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=4, torch_device=torch_device)
         state = init_state(4, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
@@ -1765,7 +1766,7 @@ class TestQNodeIntegration:
     def test_controlled_rotation_integration(self, torch_device, init_state, tol):
         """Test the integration of the two-qubit controlled rotation by passing
         a Torch data structure as a parameter"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         a = torch.tensor(1.7, device=torch_device)
         b = torch.tensor(1.3432, device=torch_device)
@@ -1798,7 +1799,7 @@ class TestPassthruIntegration:
         y = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True, device=torch_device)
         z = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True, device=torch_device)
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(p):
@@ -1843,7 +1844,7 @@ class TestPassthruIntegration:
             device=torch_device,
         )
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(p):
@@ -1886,7 +1887,7 @@ class TestPassthruIntegration:
         y = torch.tensor(0.2162158, dtype=torch.float64, requires_grad=True, device=torch_device)
         z = torch.tensor(0.75110998, dtype=torch.float64, requires_grad=True, device=torch_device)
         p = torch.tensor([x, y, z], requires_grad=True, device=torch_device)
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -1921,7 +1922,7 @@ class TestPassthruIntegration:
             device=torch_device,
             requires_grad=True,
         )
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -1961,8 +1962,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0))  # , qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit.torch", wires=3, torch_device=torch_device)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev1 = DefaultQubitTorch(wires=3, torch_device=torch_device)
+        dev2 = DefaultQubit(wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
@@ -1979,7 +1980,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     def test_state_differentiability(self, torch_device, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=wires, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=wires, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
@@ -1998,7 +1999,7 @@ class TestPassthruIntegration:
 
     def test_state_differentiability_broadcasted(self, torch_device, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
@@ -2018,7 +2019,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability(self, torch_device, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -2044,7 +2045,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability_broadcasted(self, torch_device, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -2075,7 +2076,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient(self, torch_device, tol):
         """Tests that the gradient of the qnode is correct"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -2099,7 +2100,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient_broadcasted(self, torch_device, tol):
         """Tests that the gradient of the qnode is correct"""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -2126,7 +2127,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, torch_device, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         x = torch.tensor(x, requires_grad=True)
 
@@ -2147,7 +2148,7 @@ class TestPassthruIntegration:
     def test_torch_interface_gradient(self, torch_device, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the PyTorch interface, using a variety of differentiation methods."""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         input_state = torch.tensor(1j * np.array([1, -1]) / math.sqrt(2), device=torch_device)
 
@@ -2207,7 +2208,7 @@ class TestPassthruIntegration:
     def test_error_backprop_wrong_interface(self, torch_device, interface):
         """Tests that an error is raised if diff_method='backprop' but not using
         the torch interface"""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, torch_device=torch_device)
 
         def circuit(x, w=None):
             qml.RZ(x, wires=w)
@@ -2229,7 +2230,7 @@ class TestSamples:
     def test_sample_observables(self, torch_device):
         """Test that the device allows for sampling from observables."""
         shots = 100
-        dev = qml.device("default.qubit.torch", wires=2, shots=shots, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=shots, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a):
@@ -2247,7 +2248,7 @@ class TestSamples:
 
     def test_estimating_marginal_probability(self, torch_device, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
@@ -2263,7 +2264,7 @@ class TestSamples:
 
     def test_estimating_full_probability(self, torch_device, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
@@ -2281,7 +2282,7 @@ class TestSamples:
     def test_estimating_expectation_values(self, torch_device):
         """Test that estimating expectation values using a finite number
         of shots produces a numeric tensor"""
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=3, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a, b):
@@ -2313,7 +2314,7 @@ class TestSamplesBroadcasted:
         """Test that the device allows for sampling from observables."""
         batch_size = len(a)
         shots = 100
-        dev = qml.device("default.qubit.torch", wires=2, shots=shots, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=shots, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a):
@@ -2332,7 +2333,7 @@ class TestSamplesBroadcasted:
     @pytest.mark.parametrize("batch_size", [2, 3])
     def test_estimating_marginal_probability_broadcasted(self, torch_device, batch_size, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
@@ -2351,7 +2352,7 @@ class TestSamplesBroadcasted:
     @pytest.mark.parametrize("batch_size", [2, 3])
     def test_estimating_full_probability_broadcasted(self, torch_device, batch_size, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
@@ -2376,7 +2377,7 @@ class TestSamplesBroadcasted:
         """Test that estimating expectation values using a finite number
         of shots produces a numeric tensor"""
         batch_size = len(a)
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=3, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a, b):
@@ -2402,7 +2403,7 @@ class TestHighLevelIntegration:
         """Test that when sampling with shots=None, dev uses 1000 shots and
         raises an error.
         """
-        dev = qml.device("default.qubit.torch", wires=1, shots=None, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, shots=None, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit():
@@ -2416,7 +2417,7 @@ class TestHighLevelIntegration:
 
     def test_sampling_analytic_mode_with_counts(self, torch_device):
         """Test that when sampling with counts and shots=None an error is raised."""
-        dev = qml.device("default.qubit.torch", wires=1, shots=None, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=1, shots=None, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit():
@@ -2473,7 +2474,7 @@ class TestCtrlOperator:
     )
     def test_ctrl_r_operators(self, torch_device, ops, tol):
         """Test qml.ctrl using R-gate targets"""
-        dev = qml.device("default.qubit.torch", wires=2, shots=None, torch_device=torch_device)
+        dev = DefaultQubitTorch(wires=2, shots=None, torch_device=torch_device)
         par = torch.tensor([0.12345, 0.2468], dtype=torch.float64, device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")

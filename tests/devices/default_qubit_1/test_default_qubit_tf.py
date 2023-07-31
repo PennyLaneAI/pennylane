@@ -51,6 +51,7 @@ from gate_data import (
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import DeviceError
+from pennylane.devices import DefaultQubit
 
 tf = pytest.importorskip("tensorflow", minversion="2.0")
 from pennylane.devices.default_qubit_tf import (  # pylint: disable=wrong-import-position
@@ -155,7 +156,7 @@ def test_analytic_deprecation():
         DeviceError,
         match=msg,
     ):
-        qml.device("default.qubit.tf", wires=1, shots=1, analytic=True)
+        DefaultQubitTF(wires=1, shots=1, analytic=True)
 
 
 #####################################################
@@ -563,7 +564,7 @@ class TestApply:
 
     def test_do_not_split_analytic_tf(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None using the tf device."""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
@@ -930,7 +931,7 @@ class TestApplyBroadcasted:
     def test_direct_eval_hamiltonian_broadcasted_error_tf(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with TF."""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
@@ -1058,7 +1059,7 @@ class TestExpval:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
         dev.reset()
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
@@ -1082,7 +1083,7 @@ class TestExpval:
 
     def test_pauliz_identity(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
         dev.reset()
 
         obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
@@ -1106,7 +1107,7 @@ class TestExpval:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
         dev.reset()
@@ -1129,7 +1130,7 @@ class TestExpval:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
         dev.reset()
 
         _A = np.array(
@@ -1167,7 +1168,7 @@ class TestExpval:
 
     def test_hermitian_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
 
         A1 = np.array([[1, 2], [2, 4]])
 
@@ -1216,7 +1217,7 @@ class TestExpval:
 
     def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
 
@@ -1236,7 +1237,7 @@ class TestExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3, shots=None)
+        dev = DefaultQubitTF(wires=3, shots=None)
         Identity = np.array([[1, 0], [0, 1]])
         ham = np.kron(np.kron(Identity, Identity), A)
         obs = qml.Hermitian(ham, wires=[2, 1, 0])
@@ -1298,7 +1299,7 @@ class TestVar:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -1328,7 +1329,7 @@ class TestVar:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
         dev.reset()
@@ -1356,7 +1357,7 @@ class TestVar:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit.tf", wires=3)
+        dev = DefaultQubitTF(wires=3)
 
         _A = np.array(
             [
@@ -1429,7 +1430,7 @@ class TestQNodeIntegration:
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
@@ -1452,7 +1453,7 @@ class TestQNodeIntegration:
 
     def test_load_tensornet_tf_device(self):
         """Test that the tensor network plugin loads correctly"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         assert dev.num_wires == 2
         assert dev.shots is None
         assert dev.short_name == "default.qubit.tf"
@@ -1463,7 +1464,7 @@ class TestQNodeIntegration:
         result for a simple circuit using the old QNode."""
         p = tf.Variable(0.543)
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, interface="tf")
         def circuit(x):
@@ -1480,7 +1481,7 @@ class TestQNodeIntegration:
         result for a simple circuit with broadcasting using the old QNode."""
         p = tf.Variable([0.543, 0.21, 2.41])
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, interface="tf")
         def circuit(x):
@@ -1496,7 +1497,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         state = dev.state
         expected = np.array([1, 0, 0, 0])
@@ -1520,7 +1521,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         broadcasted quantum function on the device"""
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         state = dev.state
         expected = np.array([1, 0, 0, 0])
@@ -1550,7 +1551,7 @@ class TestQNodeIntegration:
     def test_one_qubit_param_gates(self, theta, op, func, init_state, tol):
         """Test the integration of the one-qubit single parameter rotations by passing
         a TF data structure as a parameter"""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
         @qml.qnode(dev, interface="tf")
@@ -1571,7 +1572,7 @@ class TestQNodeIntegration:
     def test_two_qubit_param_gates(self, theta, op, func, init_state, tol):
         """Test the integration of the two-qubit single parameter rotations by passing
         a TF data structure as a parameter"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         state = init_state(2)
 
         @qml.qnode(dev, interface="tf")
@@ -1592,7 +1593,7 @@ class TestQNodeIntegration:
     def test_four_qubit_param_gates(self, theta, op, func, init_state, tol):
         """Test the integration of the four-qubit single parameter rotations by passing
         a TF data structure as a parameter"""
-        dev = qml.device("default.qubit.tf", wires=4)
+        dev = DefaultQubitTF(wires=4)
         state = init_state(4)
 
         @qml.qnode(dev, interface="tf")
@@ -1611,7 +1612,7 @@ class TestQNodeIntegration:
     def test_controlled_rotation_integration(self, init_state, tol):
         """Test the integration of the two-qubit controlled rotation by passing
         a TF data structure as a parameter"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         a = 1.7
         b = 1.3432
         c = -0.654
@@ -1642,7 +1643,7 @@ class TestPassthruIntegration:
         y = tf.Variable(0.2162158)
         z = tf.Variable(0.75110998)
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(p):
@@ -1686,7 +1687,7 @@ class TestPassthruIntegration:
         y = tf.Variable([0.2162158, 0.241, -0.51])
         z = tf.Variable([0.75110998, 0.12512, 9.12])
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(p):
@@ -1732,7 +1733,7 @@ class TestPassthruIntegration:
         y = 0.2162158
         z = 0.75110998
         p = tf.Variable([x, y, z])
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
@@ -1760,7 +1761,7 @@ class TestPassthruIntegration:
         y = tf.Variable([0.218, 0.241, -0.51])
         z = tf.Variable([0.71, 0.152, 9.12])
         p = tf.Variable([x, y, z])
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
@@ -1795,8 +1796,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev1 = DefaultQubit(wires=3)
+        dev2 = DefaultQubit(wires=3)
 
         def cost(x):
             return qml.math.stack(circuit(x))
@@ -1818,7 +1819,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.tf", wires=wires)
+        dev = DefaultQubitTF(wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a):
@@ -1837,7 +1838,7 @@ class TestPassthruIntegration:
 
     def test_state_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device state can be differentiated"""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a):
@@ -1857,7 +1858,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
@@ -1884,7 +1885,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device probability can be differentiated"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
@@ -1913,7 +1914,7 @@ class TestPassthruIntegration:
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
         # pylint:disable=no-member
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
@@ -1947,7 +1948,7 @@ class TestPassthruIntegration:
     def test_backprop_gradient_broadcasted(self, tol):
         """Tests that the gradient of the broadcasted qnode is correct"""
         # pylint:disable=no-member
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a, b):
@@ -1983,7 +1984,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         shift = tf.constant(shift)
         x = tf.Variable(x)
@@ -2011,7 +2012,7 @@ class TestPassthruIntegration:
     def test_tf_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the TensorFlow interface, using a variety of differentiation methods."""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         @qml.qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(x, weights, w):
@@ -2067,7 +2068,7 @@ class TestPassthruIntegration:
     def test_error_backprop_wrong_interface(self, interface, tol):
         """Tests that an error is raised if diff_method='backprop' but not using
         the TF interface"""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = DefaultQubitTF(wires=1)
 
         def circuit(x, w=None):
             qml.RZ(x, wires=w)
@@ -2081,7 +2082,7 @@ class TestPassthruIntegration:
 
     def test_hermitian_backprop(self, tol):
         """Test that backprop with qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
 
         K = tf.linalg.diag([1, 2, 3, 4])
 
@@ -2103,7 +2104,7 @@ class TestSamples:
     def test_sample_observables(self):
         """Test that the device allows for sampling from observables."""
         shots = 100
-        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
+        dev = DefaultQubitTF(wires=2, shots=shots)
 
         @qml.qnode(dev, diff_method="best", interface="tf")
         def circuit(a):
@@ -2119,7 +2120,7 @@ class TestSamples:
 
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+        dev = DefaultQubitTF(wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
@@ -2135,7 +2136,7 @@ class TestSamples:
 
     def test_estimating_full_probability(self, tol):
         """Test that the probability of all wires is accurately estimated."""
-        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+        dev = DefaultQubitTF(wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
@@ -2153,7 +2154,7 @@ class TestSamples:
     def test_estimating_expectation_values(self, tol):
         """Test that estimating expectation values using a finite number
         of shots produces a numeric tensor"""
-        dev = qml.device("default.qubit.tf", wires=3, shots=1000)
+        dev = DefaultQubitTF(wires=3, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit(a, b):
@@ -2181,7 +2182,7 @@ class TestSamplesBroadcasted:
     def test_sample_observables_broadcasted(self):
         """Test that the device allows for broadcasted sampling from observables."""
         shots = 100
-        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
+        dev = DefaultQubitTF(wires=2, shots=shots)
 
         @qml.qnode(dev, diff_method="best", interface="tf")
         def circuit(a):
@@ -2198,7 +2199,7 @@ class TestSamplesBroadcasted:
     @pytest.mark.parametrize("batch_size", [2, 3])
     def test_estimating_marginal_probability_broadcasted(self, batch_size, tol):
         """Test that the broadcasted probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+        dev = DefaultQubitTF(wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
@@ -2217,7 +2218,7 @@ class TestSamplesBroadcasted:
     @pytest.mark.parametrize("batch_size", [2, 3])
     def test_estimating_full_probability_broadcasted(self, batch_size, tol):
         """Test that the broadcasted probability of all wires is accurately estimated."""
-        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+        dev = DefaultQubitTF(wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
@@ -2240,7 +2241,7 @@ class TestSamplesBroadcasted:
         """Test that estimating broadcasted expectation values using a finite number
         of shots produces a numeric tensor"""
         batch_size = len(a)
-        dev = qml.device("default.qubit.tf", wires=3, shots=None)
+        dev = DefaultQubitTF(wires=3, shots=None)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit(a, b):
@@ -2263,7 +2264,7 @@ def test_asarray_ragged_dtype_conversion(monkeypatch):
     the dtype argument was provided."""
     from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
-    dev = qml.device("default.qubit.tf", wires=2)
+    dev = DefaultQubitTF(wires=2)
 
     def mock_func(arr, dtype):
         raise InvalidArgumentError(
@@ -2282,7 +2283,7 @@ class TestGetBatchSize:
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
     def test_batch_size_None(self, shape):
         """Test that a ``batch_size=None`` is reported correctly."""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         tensor0 = np.ones(shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
 
@@ -2290,7 +2291,7 @@ class TestGetBatchSize:
     @pytest.mark.parametrize("batch_size", [1, 3])
     def test_batch_size_int(self, shape, batch_size):
         """Test that an integral ``batch_size`` is reported correctly."""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         full_shape = (batch_size,) + shape
         tensor0 = np.ones(full_shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
@@ -2298,14 +2299,14 @@ class TestGetBatchSize:
     def test_invalid_tensor(self):
         """Test that an error is raised if a tensor is provided that does not
         have a proper shape/ndim."""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         with pytest.raises(ValueError, match="Can't convert non-rectangular Python"):
             dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
 
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_no_error_abstract_tensor(self, jit_compile):
         """Test that no error is raised if an abstract tensor is provided"""
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = DefaultQubitTF(wires=2)
         signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
 
         @tf.function(jit_compile=jit_compile, input_signature=signature)
