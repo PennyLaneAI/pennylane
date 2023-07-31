@@ -149,7 +149,7 @@ def _device_method_jac_via_callback(
     """
 
     def wrapper(inner_params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, inner_params)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, inner_params, unwrap=False)
         return gradient_fn(new_tapes, **gradient_kwargs)
 
     shape_dtype_structs = tuple(_jac_shape_dtype_struct(t, device) for t in tapes)
@@ -179,7 +179,7 @@ def _grad_transform_jac_via_callback(
     """
 
     def wrapper(inner_params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, inner_params)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, inner_params, unwrap=False)
         all_jacs = []
         for new_t in new_tapes:
             jvp_tapes, res_processing_fn = gradient_fn(
@@ -304,7 +304,7 @@ def _execute_bwd(
 
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p, unwrap=False)
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
             res = tuple(res)
 
@@ -383,7 +383,7 @@ def _execute_fwd(
     def execute_wrapper(params):
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p, unwrap=False)
             return execute_fn(new_tapes, **gradient_kwargs)
 
         shape_dtype_structs = tuple(_create_shape_dtype_struct(t, device) for t in tapes)

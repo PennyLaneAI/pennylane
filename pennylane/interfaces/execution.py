@@ -214,7 +214,9 @@ def _preprocess_expand_fn(
     return device_expansion_function
 
 
-def _make_inner_execute(device, override_shots, cache, expand_fn, execution_config) -> Callable:
+def _make_inner_execute(
+    device, override_shots, cache, expand_fn=None, execution_config=None, numpy_only=True
+) -> Callable:
     """Construct the function that will be used inside of the ml framework registration."""
 
     if isinstance(device, qml.Device):
@@ -233,9 +235,11 @@ def _make_inner_execute(device, override_shots, cache, expand_fn, execution_conf
     )
 
     def inner_execute(tapes, **_):
-        new_tapes = tuple(expand_fn(t) for t in tapes)
-        numpy_only_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in new_tapes)
-        return cached_device_execution(numpy_only_tapes)
+        if expand_fn:
+            tapes = tuple(expand_fn(t) for t in tapes)
+        if numpy_only:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return cached_device_execution(tapes)
 
     return inner_execute
 
@@ -534,7 +538,6 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
-    new_device_interface = isinstance(device, qml.devices.experimental.Device)
     if gradient_fn is None:
         _gradient_method = None
     elif isinstance(gradient_fn, str):
@@ -555,6 +558,28 @@ def execute(
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
+    device_supports_interface_data = (
+        gradient_fn == "backprop"
+        or interface is None
+        or getattr(device, "short_name", None) == "default.mixed"
+        or "passthru_interface" in getattr(device, "capabilities", lambda: {})()
+    )
+
+    inner_execute = _make_inner_execute(
+        device,
+        override_shots,
+        cache,
+        expand_fn,
+        config,
+        numpy_only=not device_supports_interface_data,
+    )
+
+    # moved to its own explicit step so it will be easier to remove
+    def inner_execute_with_empty_jac(tapes, **_):
+        return (inner_execute(tapes), [])
+
+    execute_fn = inner_execute_with_empty_jac
+
     #### Executing the configured setup #####
 
     tapes, batch_fn, config = _batch_transform(
@@ -564,38 +589,8 @@ def execute(
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
-        device_supports_interface_data = (
-            new_device_interface
-            or config.interface is None
-            or gradient_fn == "backprop"
-            or device.short_name == "default.mixed"
-            or "passthru_interface" in device.capabilities()
-        )
-        if not device_supports_interface_data:
-            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-
-        if new_device_interface:
-            batch_execute = device.execute
-        else:
-            batch_execute = set_shots(device, override_shots)(device.batch_execute)
-
-        # use qml.interfaces so that mocker can spy on it during testing
-        cached_execute_fn = qml.interfaces.cache_execute(
-            batch_execute,
-            cache,
-            expand_fn=expand_fn,
-            return_tuple=False,
-            pass_kwargs=new_device_interface,
-        )
-        results = cached_execute_fn(tapes, execution_config=config)
+        results = inner_execute(tapes)
         return batch_fn(results)
-
-    inner_execute = _make_inner_execute(device, override_shots, cache, expand_fn, config)
-
-    def inner_execute_with_empty_jac(tapes, **_):
-        return (inner_execute(tapes), [])
-
-    execute_fn = inner_execute_with_empty_jac
 
     _grad_on_execution = False
 
@@ -612,7 +607,10 @@ def execute(
                     device: The device to execute on
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
-                return device.execute_and_compute_derivatives(internal_tapes, config)
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return device.execute_and_compute_derivatives(numpy_tapes, config)
 
             gradient_fn = None
 
@@ -625,7 +623,10 @@ def execute(
                     device: the device to execute on
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
-                return (device.execute(internal_tapes, config), tuple())
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return (device.execute(numpy_tapes, config), tuple())
 
             def gradient_fn(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
@@ -634,7 +635,10 @@ def execute(
                     device: the device to execute on
                     config: the ExecutionConfig that specifies how to take the derivative.
                 """
-                return device.compute_derivatives(internal_tapes, config)
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return device.compute_derivatives(numpy_tapes, config)
 
     elif gradient_fn == "device":
         # gradient function is a device method
@@ -652,25 +656,44 @@ def execute(
         if grad_on_execution is True or grad_on_execution == "best":
             # replace the forward execution function to return
             # both results and gradients
-            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
+            def device_execute_and_gradients(internal_tapes, **gradient_kwargs):
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return set_shots(device, override_shots)(device.execute_and_gradients)(
+                    numpy_tapes, **gradient_kwargs
+                )
+
+            execute_fn = device_execute_and_gradients
             gradient_fn = None
             _grad_on_execution = True
 
         else:
-            if new_device_interface:
-                batch_execute = device.execute
-            else:
-                batch_execute = set_shots(device, override_shots)(device.batch_execute)
-            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+            # need to override to have no cache
+            inner_execute = _make_inner_execute(device, override_shots, cache=None)
+
+            def inner_execute_with_empty_jac(tapes, **_):
+                return (inner_execute(tapes), [])
+
+            execute_fn = inner_execute_with_empty_jac
+
             # replace the backward gradient computation
             # use qml.interfaces so that mocker can spy on it during testing
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            gradient_fn = qml.interfaces.cache_execute(
+            cached_gradient_fn = qml.interfaces.cache_execute(
                 gradient_fn_with_shots,
                 cache,
                 pass_kwargs=True,
                 return_tuple=False,
             )
+
+            def device_gradient_fn(inner_tapes, **gradient_kwargs):
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
+                )
+                return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
+
+            gradient_fn = device_gradient_fn
 
             # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
             # can not be reused from the device if `grad_on_execution is False`.

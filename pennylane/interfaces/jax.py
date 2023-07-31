@@ -458,7 +458,7 @@ def _execute_bwd(
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             at_max_diff = _n == max_diff
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             _args = (
                 new_tapes,
                 tangents[0],
@@ -491,7 +491,7 @@ def _execute_bwd(
             # Execution: execute the function first
             res = execute_wrapper(primals[0])
             # Backward: Gradient function is a device method.
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0])
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             jacs = gradient_fn(new_tapes, **gradient_kwargs)
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
@@ -516,7 +516,7 @@ def _execute_fwd(
     # pylint: disable=unused-variable
     @jax.custom_jvp
     def execute_wrapper(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
         res, jacs = execute_fn(new_tapes, **gradient_kwargs)
         res = _to_jax(res)
 

@@ -350,7 +350,7 @@ def execute(
         params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped, unwrap=False)
         # Forward pass: execute the tapes
         res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -429,7 +429,9 @@ def execute(
 
                             dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
 
-                            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                            new_tapes = set_parameters_on_copy_and_unwrap(
+                                tapes, params_unwrapped, unwrap=False
+                            )
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 new_tapes,
                                 dy,
@@ -496,7 +498,9 @@ def execute(
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
 
-                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        new_tapes = set_parameters_on_copy_and_unwrap(
+                            tapes, params_unwrapped, unwrap=False
+                        )
                         jac = gradient_fn(new_tapes, **gradient_kwargs)
 
                         vjps = _compute_vjp(dy, jac, multi_measurements, has_partitioned_shots)
