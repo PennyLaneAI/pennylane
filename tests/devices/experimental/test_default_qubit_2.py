@@ -38,30 +38,6 @@ def test_shots():
         DefaultQubit2().shots = 10
 
 
-def test_no_jvp_functionality():
-    """Test that jvp is not supported on DefaultQubit2."""
-    dev = DefaultQubit2()
-
-    assert not dev.supports_jvp(ExecutionConfig())
-
-    with pytest.raises(NotImplementedError):
-        dev.compute_jvp(qml.tape.QuantumScript(), (10, 10))
-
-    with pytest.raises(NotImplementedError):
-        dev.execute_and_compute_jvp(qml.tape.QuantumScript(), (10, 10))
-
-
-def test_no_vjp_functionality():
-    """Test that vjp is not supported on DefaultQubit2."""
-    dev = DefaultQubit2()
-
-    assert not dev.supports_vjp(ExecutionConfig())
-
-    with pytest.raises(NotImplementedError):
-        dev.compute_vjp(qml.tape.QuantumScript(), (10.0, 10.0))
-
-    with pytest.raises(NotImplementedError):
-        dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (10.0, 10.0))
 
 
 def test_no_device_derivatives():
