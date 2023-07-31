@@ -310,8 +310,8 @@ def spsa_grad(
         if sampler_rng is None:
             warnings.warn(
                 (
-                    "The sampler_seed argument is deprecated. Use the sampler_rng argument ",
-                    "instead to pass a random number generator or a seed.",
+                    "The sampler_seed argument is deprecated. Use the sampler_rng argument "
+                    "instead to pass a random number generator or a seed."
                 ),
                 UserWarning,
             )
@@ -319,8 +319,8 @@ def spsa_grad(
         else:
             raise ValueError(
                 (
-                    "Both arguments sampler_rng and sampler_seed were specified. ",
-                    "Only specify one. Note that the sampler_seed argument is deprecated.",
+                    "Both arguments sampler_rng and sampler_seed were specified. "
+                    "Only specify one. Note that the sampler_seed argument is deprecated."
                 )
             )
 
@@ -592,8 +592,8 @@ def _spsa_grad_legacy(
         if sampler_rng is None:
             warnings.warn(
                 (
-                    "The sampler_seed argument is deprecated. Use the sampler_rng argument ",
-                    "instead to pass a random number generator or a seed.",
+                    "The sampler_seed argument is deprecated. Use the sampler_rng argument "
+                    "instead to pass a random number generator or a seed."
                 ),
                 UserWarning,
             )
@@ -601,8 +601,8 @@ def _spsa_grad_legacy(
         else:
             raise ValueError(
                 (
-                    "Both arguments sampler_rng and sampler_seed were specified. ",
-                    "Only specify one. Note that the sampler_seed argument is deprecated.",
+                    "Both arguments sampler_rng and sampler_seed were specified. "
+                    "Only specify one. Note that the sampler_seed argument is deprecated."
                 )
             )
 

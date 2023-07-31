@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import spsa_grad
+from pennylane.gradients.spsa_gradient import _spsa_grad_legacy
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
 
@@ -52,6 +53,9 @@ class TestSpsaGradient:
         with pytest.warns(UserWarning, match=warning):
             qml.grad(circuit_warn)(np.array(1.0))
 
+        with pytest.warns(UserWarning, match=warning):
+            _spsa_grad_legacy(circuit_warn, sampler_seed=3)(np.array(1.0))
+
         @qml.qnode(dev, diff_method="spsa", sampler_rng=2, sampler_seed=3)
         def circuit_raise(param):
             qml.RX(param, wires=0)
@@ -61,15 +65,8 @@ class TestSpsaGradient:
         with pytest.raises(ValueError, match=err):
             qml.grad(circuit_raise)(np.array(1.0))
 
-        qml.disable_return()
-
-        with pytest.warns(UserWarning, match=warning):
-            qml.grad(circuit_warn)(np.array(1.0))
-
         with pytest.raises(ValueError, match=err):
-            qml.grad(circuit_raise)(np.array(1.0))
-
-        qml.enable_return()
+            _spsa_grad_legacy(circuit_raise, sampler_rng=2, sampler_seed=3)(np.array(1.0))
 
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
