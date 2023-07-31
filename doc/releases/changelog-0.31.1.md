@@ -14,7 +14,7 @@
 <h3>Bug Fixes 🐛</h3>
 
 * Dataset URLs are now properly escaped when fetching from S3.
-  [(4412)](https://github.com/PennyLaneAI/pennylane/pull/4412)
+  [(#4412)](https://github.com/PennyLaneAI/pennylane/pull/4412)
 
 <h3>Contributors ✍️</h3>
 
