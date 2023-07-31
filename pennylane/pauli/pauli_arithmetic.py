@@ -215,7 +215,7 @@ class PauliWord(dict):
     @property
     def wires(self):
         """Track wires in a PauliWord."""
-        return Wires(set(self))
+        return Wires(self)
 
     def to_mat(self, wire_order=None, format="dense", coeff=1.0):
         """Returns the matrix representation.
@@ -226,12 +226,18 @@ class PauliWord(dict):
             coeff (float): Coefficient multiplying the resulting matrix.
 
         Returns:
-            (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauliword.
+            (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauli word.
 
         Raises:
             ValueError: Can't get the matrix of an empty PauliWord.
         """
-        wire_order = wire_order + self.wires if wire_order else self.wires
+        wire_order = self.wires if wire_order is None else Wires(wire_order)
+        if not wire_order.contains_wires(self.wires):
+            raise ValueError(
+                "Can't get the matrix for the specified wire order because it "
+                f"does not contain all the Pauli word's wires {self.wires}"
+            )
+
         if len(self) == 0:
             if not wire_order:
                 raise ValueError("Can't get the matrix of an empty PauliWord.")
@@ -380,7 +386,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return sum(pw.wires for pw in self.keys()) if self.keys() else Wires([])
+        return Wires(set().union(*(pw.wires for pw in self.keys())))
 
     def to_mat(self, wire_order=None, format="dense"):
         """Returns the matrix representation.
@@ -390,12 +396,17 @@ class PauliSentence(dict):
             format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
 
         Returns:
-            (Union[NumpyArray, ScipySparseArray]): Matrix representation of the PauliSentence.
+            (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauli sentence.
 
         Rasies:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
-        wire_order = wire_order + self.wires if wire_order else self.wires
+        wire_order = self.wires if wire_order is None else Wires(wire_order)
+        if not wire_order.contains_wires(self.wires):
+            raise ValueError(
+                "Can't get the matrix for the specified wire order because it "
+                f"does not contain all the Pauli sentence's wires {self.wires}"
+            )
 
         def _pw_wires(w: Iterable) -> Wires:
             """Return the native Wires instance for a list of wire labels.
@@ -403,7 +414,7 @@ class PauliSentence(dict):
             the PauliWord is empty ({}), choose any arbitrary wire from the
             PauliSentence it is composed in.
             """
-            return w or Wires(self.wires[0])
+            return w or Wires(self.wires[0]) if self.wires else self.wires
 
         if len(self) == 0:
             if not wire_order:
