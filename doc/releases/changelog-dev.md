@@ -83,8 +83,9 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-* `qml.interfaces.set_shots` now has null behaviour for the experimental Device and accepts
-  a `Shots` object as well as `int`'s and tuples of `int`'s.
+* `qml.interfaces.set_shots` can now accepts shots specified as a `qml.measurements.Shots` object.
+  If a `pennylane.devices.experimental.Device` is provided, the `set_shots` will no longer raise an error, but will simply return without doing anything.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
 * `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
   property. This property is merely used to set defaults for a workflow, and does not directly influence the number of shots used in executions or derivatives.
