@@ -214,6 +214,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return {
             attr_name: getattr(self, attr_name)
             for attr_name in self.info.get("identifiers", self.info.get("params", []))
+            if attr_name in self.bind
         }
 
     @property

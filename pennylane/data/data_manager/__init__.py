@@ -310,6 +310,7 @@ def load_interactive():
     if approve not in ["Y", "", "y"]:
         print("Aborting and not downloading!")
         return None
+
     return load(
         data_name, attributes=attributes, folder_path=dest_folder, force=force, **description
     )[0]

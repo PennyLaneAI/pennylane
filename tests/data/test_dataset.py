@@ -198,11 +198,24 @@ class TestDataset:
 
         assert ds.identifiers == expect
 
+    def test_identifiers_base_missing(self):
+        """Test that identifiers whose attribute is missing on the
+        dataset will not be in the returned dict."""
+        ds = Dataset(x="1", identifiers=("x", "y"))
+
+        assert ds.identifiers == {"x": "1"}
+
     def test_subclass_identifiers(self):
         """Test that dataset subclasses' identifiers can be set."""
         ds = MyDataset(x="1", y="2", description="abc")
 
         assert ds.identifiers == {"x": "1", "y": "2"}
+
+    def test_subclass_identifiers_missing(self):
+        """Test that dataset subclasses' identifiers can be set."""
+        ds = MyDataset(x="1", description="abc")
+
+        assert ds.identifiers == {"x": "1"}
 
     def test_attribute_info(self):
         """Test that attribute info can be set and accessed
