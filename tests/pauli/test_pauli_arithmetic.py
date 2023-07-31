@@ -99,7 +99,7 @@ class TestPauliWord:
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
         """Test that the wires are tracked correctly."""
-        assert pw.wires == wires
+        assert set(pw.wires) == wires
 
     tup_pw_str = (
         (pw1, "X(1) @ Y(2)"),
@@ -314,7 +314,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("ps, wires", tup_ps_wires)
     def test_wires(self, ps, wires):
         """Test the correct wires are given for the PauliSentence."""
-        assert ps.wires == wires
+        assert set(ps.wires) == wires
 
     @pytest.mark.parametrize("ps", (ps1, ps2, ps3, ps4))
     def test_copy(self, ps):
