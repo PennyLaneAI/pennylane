@@ -24,8 +24,9 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
+from pennylane.data.data_manager import DataPath, S3_URL
 
-# pylint:disable=protected-access
+# pylint:disable=protected-access,redefined-outer-name
 
 
 pytestmark = pytest.mark.data
@@ -79,12 +80,21 @@ def get_mock(url, timeout=1.0):
     return resp
 
 
+@pytest.fixture
+def mock_get_args():
+    """A Mock object that tracks the arguments passed to ``mock_requests_get``."""
+
+    return MagicMock()
+
+
 @pytest.fixture(autouse=True)
-def mock_requests_get(request, monkeypatch):
+def mock_requests_get(request, monkeypatch, mock_get_args):
     """Patches `requests.get()` in the data_manager module so that
     it returns mock JSON data for the foldermap and data struct."""
 
-    def mock_get(url, **kwargs):
+    def mock_get(url, *args, **kwargs):
+        mock_get_args(url, *args, **kwargs)
+
         mock_resp = MagicMock()
         if url == qml.data.data_manager.FOLDERMAP_URL:
             json_data = _folder_map
@@ -328,3 +338,41 @@ def test_download_dataset_partial(tmp_path, monkeypatch):
 
     assert local.x == 1
     assert not hasattr(local, "y")
+
+
+@patch("builtins.open")
+@pytest.mark.parametrize(
+    "datapath, escaped",
+    [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
+)
+def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
+    """Tests that _download_dataset escapes special characters in a URL when doing a full download."""
+
+    dest = MagicMock()
+    dest.exists.return_value = False
+
+    pennylane.data.data_manager._download_dataset(DataPath(datapath), dest=dest, attributes=None)
+
+    mock_get_args.assert_called_once()
+    assert mock_get_args.call_args[0] == (f"{S3_URL}/{escaped}",)
+
+
+@patch("pennylane.data.data_manager._download_partial")
+@pytest.mark.parametrize(
+    "datapath, escaped",
+    [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
+)
+def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, escaped):
+    """Tests that _download_dataset escapes special characters in a URL when doing a partial
+    download."""
+    dest = Path("dest")
+    attributes = ["attr"]
+    force = False
+
+    pennylane.data.data_manager._download_dataset(
+        DataPath(datapath), dest=dest, attributes=attributes, force=force
+    )
+
+    mock_download_partial.assert_called_once_with(
+        f"{S3_URL}/{escaped}", dest, attributes, overwrite=force
+    )
