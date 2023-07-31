@@ -403,7 +403,7 @@ class QNode:
                 func
                 if not logger.isEnabledFor(qml.logging.TRACE)
                 else "\n" + inspect.getsource(func),
-                device,
+                repr(device),
                 interface,
                 diff_method,
                 expansion_strategy,

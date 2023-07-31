@@ -446,8 +446,10 @@ def execute(
         logger.debug(
             """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
             tapes,
-            device,
-            gradient_fn,
+            repr(device),
+            gradient_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
             interface,
             grad_on_execution,
             gradient_kwargs,
@@ -455,7 +457,9 @@ def execute(
             cachesize,
             max_diff,
             override_shots,
-            expand_fn,
+            expand_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(expand_fn) + "\n",
             max_expansion,
             device_batch_transform,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),

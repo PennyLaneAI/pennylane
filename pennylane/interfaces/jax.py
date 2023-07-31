@@ -403,9 +403,13 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         logger.debug(
             "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
             tapes,
-            device,
-            execute_fn,
-            gradient_fn,
+            repr(device),
+            execute_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
             _n,
             max_diff,

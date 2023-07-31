@@ -372,9 +372,13 @@ def _execute(
             "Entry with args=(parameters=%s, tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
             parameters,
             tapes,
-            device,
-            execute_fn,
-            gradient_fn,
+            repr(device),
+            execute_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
             _n,
             max_diff,
@@ -432,9 +436,13 @@ def vjp(
             ans,
             parameters,
             tapes,
-            device,
-            execute_fn,
-            gradient_fn,
+            repr(device),
+            execute_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
             _n,
             max_diff,
