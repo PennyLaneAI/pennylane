@@ -2404,7 +2404,7 @@ class Tensor(Observable):
         return 0
 
     def sparse_matrix(
-        self, wires=None, format="csr"
+        self, wire_order=None, format="csr"
     ):  # pylint:disable=arguments-renamed, arguments-differ
         r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
@@ -2412,7 +2412,7 @@ class Tensor(Observable):
         consisting mostly of zero entries.
 
         Args:
-            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
             format: the output format for the sparse representation. All scipy sparse formats are accepted.
 
@@ -2449,7 +2449,7 @@ class Tensor(Observable):
         (8, 8)
         """
 
-        wires = self.wires if wires is None else Wires(wires)
+        wires = self.wires if wire_order is None else Wires(wire_order)
         list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
 
         for o in self.obs:

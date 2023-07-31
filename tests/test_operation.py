@@ -1856,7 +1856,7 @@ class TestTensor:
         when the custom wires swap the order."""
 
         t = qml.PauliX(0) @ qml.PauliZ(1)
-        s = t.sparse_matrix(wires=[1, 0])
+        s = t.sparse_matrix(wire_order=[1, 0])
 
         assert np.allclose(s.data, [1, 1, -1, -1])
         assert np.allclose(s.indices, [1, 0, 3, 2])
@@ -1867,7 +1867,7 @@ class TestTensor:
         when the custom wires add an extra wire with an implied identity operation."""
 
         t = qml.PauliX(0) @ qml.PauliZ(1)
-        s = t.sparse_matrix(wires=[0, 1, 2])
+        s = t.sparse_matrix(wire_order=[0, 1, 2])
 
         assert s.shape == (8, 8)
         assert np.allclose(s.data, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
