@@ -191,17 +191,15 @@ class TestQubitSum:
         dev = qml.device("default.qubit", wires=3)
         spy = mocker.spy(qml.QubitSum, "decomposition")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(input_state, wires=[0, 1, 2])
+        if expand:
+            ops = [
+                qml.QubitStateVector(input_state, wires=[0, 1, 2]),
+                *qml.QubitSum(wires=wires).expand(),
+            ]
+        else:
+            ops = [qml.QubitStateVector(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
 
-            if expand:
-                qml.QubitSum(wires=wires).expand()
-            else:
-                qml.QubitSum(wires=wires)
-
-            qml.state()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(ops, [qml.state()])
         result = dev.execute(tape)
         assert np.allclose(result, output_state)
 

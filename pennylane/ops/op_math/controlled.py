@@ -126,9 +126,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
-            Controlled(
-                op, control_wires=control, control_values=op_control_values, work_wires=work_wires
-            )
+            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
             for op in qscript.operations
         ]
 

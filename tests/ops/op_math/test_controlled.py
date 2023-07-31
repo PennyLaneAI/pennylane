@@ -1372,8 +1372,8 @@ def test_ctrl_sanity_check():
         qml.CRX(0.789, wires=[1, 0]),
         qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
         qml.CNOT(wires=[1, 2]),
-        qml.CY(wires=[1, 4]),
-        qml.CZ(wires=[1, 0]),
+        *qml.CY(wires=[1, 4]).decomposition(),
+        *qml.CZ(wires=[1, 0]).decomposition(),
     ]
     assert len(tape.operations) == 7
     for op1, op2 in zip(expanded_tape, expected):
@@ -1413,27 +1413,27 @@ def test_adjoint_of_ctrl():
 def test_nested_ctrl():
     """Test nested use of control"""
     with qml.queuing.AnnotatedQueue() as q_tape:
-        CCX = ctrl(ctrl(qml.PauliX, 7), 3)
-        CCX(wires=0)
+        CCS = ctrl(ctrl(qml.S, 7), 3)
+        CCS(wires=0)
     tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=2)
-    assert qml.equal(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
+    assert qml.equal(new_tape[0], Controlled(qml.ControlledPhaseShift(np.pi / 2, [7, 0]), [3]))
 
 
 def test_multi_ctrl():
     """Test control with a list of wires."""
     with qml.queuing.AnnotatedQueue() as q_tape:
-        CCX = ctrl(qml.PauliX, control=[3, 7])
-        CCX(wires=0)
+        CCS = ctrl(qml.S, control=[3, 7])
+        CCS(wires=0)
     tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=1)
-    assert qml.equal(new_tape[0], qml.MultiControlledX(wires=[3, 7, 0]))
+    assert qml.equal(new_tape[0], Controlled(qml.PhaseShift(np.pi / 2, 0), [3, 7]))
 
 
 def test_ctrl_with_qnode():
@@ -1814,8 +1814,8 @@ def test_ctrl_values_sanity_check():
         qml.CRX(0.789, wires=[1, 0]),
         qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
         qml.CNOT(wires=[1, 2]),
-        qml.CY(wires=[1, 4]),
-        qml.CZ(wires=[1, 0]),
+        *qml.CY(wires=[1, 4]).decomposition(),
+        *qml.CZ(wires=[1, 0]).decomposition(),
         qml.PauliX(wires=1),
     ]
     assert len(tape) == 9
@@ -1834,7 +1834,7 @@ def test_multi_ctrl_values(ctrl_values):
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
-        exp_op.append(qml.MultiControlledX(wires=[3, 7, 0]))
+        exp_op.append(Controlled(qml.PhaseShift(np.pi / 2, 0), [3, 7]))
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
@@ -1842,8 +1842,8 @@ def test_multi_ctrl_values(ctrl_values):
         return exp_op
 
     with qml.queuing.AnnotatedQueue() as q_tape:
-        CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_values)
-        CCX(wires=0)
+        CCS = ctrl(qml.S, control=[3, 7], control_values=ctrl_values)
+        CCS(wires=0)
     tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
