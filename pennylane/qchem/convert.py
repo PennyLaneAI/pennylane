@@ -354,3 +354,36 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
         return qml.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
 
     return qml.Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
+
+
+def _excitations(electrons, orbitals):
+    r"""Generate all possible single and double excitations from a Hartree-Fock reference state.
+
+    Args:
+        electrons (int): Number of electrons
+        orbitals (int) – Number of spin orbitals
+
+    Returns:
+        tuple(list, list): lists with the indices of the spin orbitals involved in the excitations
+
+    **Example**
+
+    >>> electrons = 2
+    >>> orbitals = 4
+    >>> _excitations(electrons, orbitals)
+    ([[[0, 2]], [[0, 3]], [[1, 2]], [[1, 3]]], [[0, 1, 2, 3]])
+    """
+    singles_p, singles_q = [], []
+    doubles_pq, doubles_rs = [], []
+
+    for i in range(electrons):
+        singles_p += [i]
+        doubles_pq += [[k, i] for k in range(i)]
+    for j in range(electrons, orbitals):
+        singles_q += [j]
+        doubles_rs += [[k, j] for k in range(electrons, j)]
+
+    singles = [[[p] + [q]] for p in singles_p for q in singles_q]
+    doubles = [pq + rs for pq in doubles_pq for rs in doubles_rs]
+
+    return singles, doubles
