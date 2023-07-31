@@ -446,7 +446,7 @@ def execute(
         logger.debug(
             """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
             tapes,
-            device.short_name,
+            device,
             gradient_fn,
             interface,
             grad_on_execution,

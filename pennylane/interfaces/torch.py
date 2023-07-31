@@ -37,7 +37,7 @@ def _compute_vjp(dy, jacs, device=None):
             "Entry with args=(dy=%s, jacs=%s, device=%s) called by=%s",
             dy,
             jacs,
-            device.short_name,
+            device,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
@@ -535,7 +535,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         logger.debug(
             "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
             tapes,
-            device.short_name,
+            device,
             execute_fn
             if not logger.isEnabledFor(qml.logging.TRACE)
             else "\n" + inspect.getsource(execute_fn) + "\n",
