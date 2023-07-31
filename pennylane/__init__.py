@@ -346,7 +346,7 @@ def device(name, *args, **kwargs):
 
         return dev
 
-    raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
+    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")
 
 
 def version():
