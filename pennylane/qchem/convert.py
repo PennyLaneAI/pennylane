@@ -433,7 +433,7 @@ def _excitated_states(electrons, orbitals, excitation):
             order_rs = len(range(d[1], electrons - 1))
             signs.append((-1) ** (order_pq + order_rs + 1))
 
-    states_str = ["".join([str(i) for i in item]) for item in states]
-    state_int = [int(bb[::-1], 2) for bb in states_str]
+    states_str = ["".join([str(i) for i in state]) for state in states]
+    state_int = [int(state[::-1], 2) for state in states_str]
 
     return np.array(state_int), np.array(signs)
