@@ -168,3 +168,16 @@ class TestDatasetOperator:
         assert op_in.data == op_out.data
         assert op_in.wires == op_out.wires
         assert repr(op_in) == repr(op_out)
+
+    def test_op_not_queued_on_deserialization(self):
+        """Tests that ops are not queued upon deserialization."""
+        d = qml.data.Dataset(op=qml.PauliX(0))
+        with qml.queuing.AnnotatedQueue() as q:
+            d.op
+
+        assert len(q) == 0
+
+        with qml.queuing.AnnotatedQueue() as q2:
+            qml.apply(d.op)
+
+        assert len(q2) == 1
