@@ -1263,7 +1263,6 @@ class TestTapeExpansion:
             interface="torch",
             **gradient_kwargs,
         )
-        @qnode(dev, **kwargs)
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
