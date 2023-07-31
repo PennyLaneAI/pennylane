@@ -295,12 +295,9 @@ def load_interactive():
 
     params = data_struct[data_name]["params"]
     for param in params:
-        try:
-            node = node[value]
-            value = _interactive_request_single(node, param)
-            description[param] = value
-        except TypeError as exc:
-            raise ValueError(param) from exc
+        node = node[value]
+        value = _interactive_request_single(node, param)
+        description[param] = value
 
     attributes = _interactive_request_attributes(data_struct[data_name]["attributes"])
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
