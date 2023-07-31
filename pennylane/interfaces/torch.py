@@ -467,17 +467,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
-    if not qml.active_return():
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
-    # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
         # set the trainable parameters

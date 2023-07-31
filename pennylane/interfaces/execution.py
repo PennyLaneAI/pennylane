@@ -88,6 +88,55 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
+def _get_ml_framework_boundary(interface, grad_on_execution, tapes):
+    """Imports and returns the function that binds derivatives of the required ml framework.
+
+    Args:
+        interface (str): The designated for the ml framework.
+        grad_on_execution (bool): whether or not the device derivatives are taken upon execution
+        tapes (Tuple[QuantumTape]): the batch of tapes to execute
+
+    Returns:
+        Callable
+
+    Raises:
+        pennylane.QuantumFunctionError if the required package is not installed.
+
+    """
+    mapped_interface = INTERFACE_MAP[interface]
+    try:
+        if mapped_interface == "autograd":
+            from .autograd import execute as ml_boundary
+
+        elif mapped_interface == "tf":
+            import tensorflow as tf
+
+            if not tf.executing_eagerly() or "autograph" in interface:
+                from .tensorflow_autograph import execute as ml_boundary
+
+                ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
+
+            else:
+                from .tensorflow import execute as ml_boundary
+
+        elif mapped_interface == "torch":
+            from .torch import execute as ml_boundary
+
+        elif interface == "jax-jit":
+            from .jax_jit_tuple import execute as ml_boundary
+        elif interface in {"jax", "jax-python", "JAX"}:
+            from .jax import execute as ml_boundary
+        else:
+            raise ImportError("Interface not identified.")
+
+    except ImportError as e:
+        raise qml.QuantumFunctionError(
+            f"{mapped_interface} not found. Please install the latest "
+            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+        ) from e
+    return ml_boundary
+
+
 def _batch_transform(
     tapes: Sequence[QuantumTape],
     device: device_type,
@@ -163,6 +212,32 @@ def _preprocess_expand_fn(
         return device.expand_fn(tape, max_expansion=max_expansion)
 
     return device_expansion_function
+
+
+def _make_inner_execute(device, override_shots, cache, expand_fn, execution_config) -> Callable:
+    """Construct the function that will be used inside of the ml framework registration."""
+
+    if isinstance(device, qml.Device):
+
+        def device_execution(tapes):
+            return set_shots(device, override_shots)(device.batch_execute)(tapes)
+
+    else:
+
+        def device_execution(tapes):
+            return device.execute(tapes, execution_config=execution_config)
+
+    # use qml.interfaces so that mocker can spy on it during testing
+    cached_device_execution = qml.interfaces.cache_execute(
+        device_execution, cache, return_tuple=False
+    )
+
+    def inner_execute(tapes, **_):
+        new_tapes = tuple(expand_fn(t) for t in tapes)
+        numpy_only_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in new_tapes)
+        return cached_device_execution(numpy_only_tapes)
+
+    return inner_execute
 
 
 def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
@@ -454,6 +529,10 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    if interface == "jax":
+        from .jax import get_jax_interface_name
+
+        interface = get_jax_interface_name(tapes)
 
     new_device_interface = isinstance(device, qml.devices.experimental.Device)
     if gradient_fn is None:
@@ -473,11 +552,6 @@ def execute(
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
-
-    if new_device_interface:
-        batch_execute = device.execute
-    else:
-        batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
@@ -500,6 +574,11 @@ def execute(
         if not device_supports_interface_data:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
 
+        if new_device_interface:
+            batch_execute = device.execute
+        else:
+            batch_execute = set_shots(device, override_shots)(device.batch_execute)
+
         # use qml.interfaces so that mocker can spy on it during testing
         cached_execute_fn = qml.interfaces.cache_execute(
             batch_execute,
@@ -511,18 +590,12 @@ def execute(
         results = cached_execute_fn(tapes, execution_config=config)
         return batch_fn(results)
 
-    # the default execution function is batch_execute
-    # use qml.interfaces so that mocker can spy on it during testing
-    if new_device_interface:
+    inner_execute = _make_inner_execute(device, override_shots, cache, expand_fn, config)
 
-        def device_execution_with_config(tapes):
-            return device.execute(tapes, execution_config=config)
+    def inner_execute_with_empty_jac(tapes, **_):
+        return (inner_execute(tapes), [])
 
-        execute_fn = qml.interfaces.cache_execute(
-            device_execution_with_config, cache, expand_fn=expand_fn
-        )
-    else:
-        execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    execute_fn = inner_execute_with_empty_jac
 
     _grad_on_execution = False
 
@@ -584,10 +657,11 @@ def execute(
             _grad_on_execution = True
 
         else:
-            # disable caching on the forward pass
-            # use qml.interfaces so that mocker can spy on it during testing
+            if new_device_interface:
+                batch_execute = device.execute
+            else:
+                batch_execute = set_shots(device, override_shots)(device.batch_execute)
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
-
             # replace the backward gradient computation
             # use qml.interfaces so that mocker can spy on it during testing
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
@@ -600,13 +674,7 @@ def execute(
 
             # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
             # can not be reused from the device if `grad_on_execution is False`.
-
-            interface_jax = interface
-            if interface == "jax":
-                from .jax import get_jax_interface_name
-
-                interface_jax = get_jax_interface_name(tapes)
-            if interface_jax == "jax-jit":
+            if interface == "jax-jit":
                 use_device_state = gradient_kwargs.get("use_device_state", None)
                 if use_device_state:
                     gradient_kwargs["use_device_state"] = False
@@ -617,36 +685,15 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    mapped_interface = INTERFACE_MAP[config.interface]
+    ml_boundary = _get_ml_framework_boundary(interface, _grad_on_execution, tapes)
     try:
-        if mapped_interface == "autograd":
-            from .autograd import execute as _execute
-
-        elif mapped_interface == "tf":
-            import tensorflow as tf
-
-            if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
-
-                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
-
-            else:
-                from .tensorflow import execute as _execute
-
-        elif mapped_interface == "torch":
-            from .torch import execute as _execute
-
-        elif mapped_interface == "jax":
-            _execute = _get_jax_execute_fn(interface, tapes)
-
-        res = _execute(
+        res = ml_boundary(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
         )
-
     except ImportError as e:
         raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+            f"{interface} not found. Please install the latest "
+            f"version of {interface} to enable the '{interface}' interface."
         ) from e
 
     return batch_fn(res)
@@ -869,20 +916,20 @@ def _execute_legacy(
         ) from e
     try:
         if mapped_interface == "autograd":
-            from .autograd import execute as _execute
+            from .autograd import _execute_legacy as _execute
         elif mapped_interface == "tf":
             import tensorflow as tf
 
             if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
+                from .tensorflow_autograph import _execute_legacy as _execute
 
                 _grad_on_execution = _mode == "forward"
 
                 _execute = partial(_execute, grad_on_execution=_grad_on_execution)
             else:
-                from .tensorflow import execute as _execute
+                from .tensorflow import _execute_legacy as _execute
         elif mapped_interface == "torch":
-            from .torch import execute as _execute
+            from .torch import _execute_legacy as _execute
         else:  # is jax
             _execute = _get_jax_execute_fn(interface, tapes)
     except ImportError as e:

@@ -291,19 +291,6 @@ def execute(
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if not qml.active_return():
-        mode = "forward" if grad_on_execution else "backward"
-
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-            mode=mode,
-        )
 
     all_params = []
     parameters = []
