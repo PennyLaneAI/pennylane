@@ -1014,10 +1014,14 @@ class QNode:
 
             # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
             if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-                if self.device._shot_vector:
+                has_partitioned_shots = (
+                    self.tape.shots.has_partitioned_shots
+                    if isinstance(self.device, qml.devices.experimental.Device)
+                    else self.device._shot_vector
+                )
+                if has_partitioned_shots:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
-
                 else:
                     res = type(self.tape._qfunc_output)(res)
 
