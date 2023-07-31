@@ -118,7 +118,7 @@ class TestDecomposition:
             h = qml.pauli_decompose(hamiltonian, wire_order=wire_order)
             ps = qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
 
-            assert ps.wires == set(wire_order)
+            assert set(ps.wires) == set(wire_order)
             assert h.wires.toset() == set(wire_order)
 
     def test_wire_error(self):
