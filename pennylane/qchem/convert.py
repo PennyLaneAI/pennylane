@@ -434,6 +434,6 @@ def _excitated_states(electrons, orbitals, excitation):
             signs.append((-1) ** (order_pq + order_rs + 1))
 
     states_str = ["".join([str(i) for i in state]) for state in states]
-    state_int = [int(state[::-1], 2) for state in states_str]
+    states_int = [int(state[::-1], 2) for state in states_str]
 
-    return np.array(state_int), np.array(signs)
+    return np.array(states_int), np.array(signs)
