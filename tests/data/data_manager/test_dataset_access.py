@@ -26,7 +26,7 @@ import pennylane.data.data_manager
 from pennylane.data import Dataset
 from pennylane.data.data_manager import DataPath, S3_URL
 
-# pylint:disable=protected-access
+# pylint:disable=protected-access,redefined-outer-name
 
 
 pytestmark = pytest.mark.data
