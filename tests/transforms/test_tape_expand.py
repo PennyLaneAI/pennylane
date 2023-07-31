@@ -14,7 +14,8 @@
 """
 Unit tests for tape expansion stopping criteria and expansion functions.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
+# pylint: disable=arguments-differ, arguments-renamed,
 import pytest
 import numpy as np
 import pennylane as qml
@@ -145,6 +146,7 @@ class TestExpandMultipar:
         """Test that a gate is decomposed correctly if it has
         generator[0]==None."""
 
+        # pylint: disable=invalid-overridden-method
         class _CRX(qml.CRX):
             @property
             def has_generator(self):
@@ -415,7 +417,7 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
     cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
     return [
         qml.AngleEmbedding(weights[0], wires=wires),
-        *[qml.apply(op) for op in cnot_broadcast],
+        *cnot_broadcast,
     ]
 
 
@@ -782,6 +784,7 @@ class TestCreateCustomDecompExpandFn:
         assert circuit.qtape.operations[0].name == "CNOT"
         assert dev.custom_expand_fn is None
 
+    # pylint: disable=cell-var-from-loop
     def test_custom_decomp_used_twice(self):
         """Test that creating a custom decomposition includes overwriting the
         correct method under the hood and produces expected results."""
