@@ -60,8 +60,11 @@
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
-* The experimental device interface is integrated with the `QNode` for Jax.
+* The experimental device interface is integrated with the `QNode` for jax, jax-jit, tensorflow and torch.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
+  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
+  [(#4393)](https://github.com/PennyLaneAI/pennylane/pull/4393)
 
 * `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
   more performant choices.
@@ -74,10 +77,6 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
-* The experimental device interface is integrated with the `QNode` for jax-jit and torch.
-  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
-  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
-
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
@@ -87,6 +86,16 @@
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
+* PennyLane no longer directly relies on `Operator.__eq__`.
+  [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
+
+* If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
+  seeded from on the NumPy's global random number generator.
+  [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
+
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
 <h3>Breaking changes 💔</h3>
 
@@ -155,12 +164,17 @@
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
+* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
+  changes to operator equality and hashing.
+  [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+  
 * The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
   Instead, the `sampler_rng` argument should be set, either to an integer value, which will be used
   to create a PRNG internally or to a NumPy pseudo-random number generator created via
   `np.random.default_rng(seed)`.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
 
 <h3>Documentation 📝</h3>
 
@@ -205,12 +219,15 @@
   `qml.drawer.use_style` instead of `black_white`.
   [(#4357)](https://github.com/PennyLaneAI/pennylane/pull/4357)
 
- * Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
+* `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
+  trainable parameters of the expanded tape.
+  [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
+
+* Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
   an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
-
 
 <h3>Contributors ✍️</h3>
 
