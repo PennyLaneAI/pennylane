@@ -360,8 +360,8 @@ def _excitations(electrons, orbitals):
     r"""Generate all possible single and double excitations from a Hartree-Fock reference state.
 
     Args:
-        electrons (int): Number of electrons
-        orbitals (int) – Number of spin orbitals
+        electrons (int): number of electrons
+        orbitals (int): number of spin orbitals
 
     Returns:
         tuple(list, list): lists with the indices of the spin orbitals involved in the excitations
@@ -387,3 +387,53 @@ def _excitations(electrons, orbitals):
     doubles = [pq + rs for pq in doubles_pq for rs in doubles_rs]
 
     return singles, doubles
+
+
+def _excitated_states(electrons, orbitals, excitation):
+    r"""Generate excited states from a Hartree-Fock reference state.
+
+    Args:
+        electrons (int): number of electrons
+        orbitals (int): number of spin orbitals
+        excitation (int): number of excited electrons
+
+    Returns:
+        tuple(list, list): lists of excited states and signs obtained by reordering of the creation operators
+
+    **Example**
+
+    >>> electrons = 2
+    >>> orbitals = 5
+    >>> excitation = 2
+    >>> _excitated_states(electrons, orbitals, excitation)
+    ([28, 26, 25], [ 1, -1,  1])
+    """
+    hf_state = [1] * electrons + [0] * (orbitals - electrons)
+
+    singles, doubles = _excitations(electrons, orbitals)
+
+    states, signs = [], []
+
+    if excitation == 1:
+        for s in singles:
+            state = hf_state.copy()
+            state[s[0]], state[s[1]] = state[s[1]], state[s[0]]
+            states += [state]
+            order = len(range(s[0], electrons - 1))
+            signs.append((-1) ** order)
+
+    if excitation == 2:
+        for d in doubles:
+            state = hf_state.copy()
+            state[d[0]], state[d[2]] = state[d[2]], state[d[0]]
+            state[d[1]], state[d[3]] = state[d[3]], state[d[1]]
+            states += [state]
+
+            order_pq = len(range(d[0], electrons - 1))
+            order_rs = len(range(d[1], electrons - 1))
+            signs.append((-1) ** (order_pq + order_rs + 1))
+
+    states_str = ["".join([str(i) for i in item]) for item in states]
+    state_int = [int(bb[::-1], 2) for bb in states_str]
+
+    return np.array(state_int), np.array(signs)
