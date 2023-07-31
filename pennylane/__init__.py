@@ -122,6 +122,7 @@ import pennylane.pulse
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+from pennylane.devices.experimental import DefaultQubit2
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

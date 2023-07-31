@@ -26,6 +26,7 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
+from pennylane._version import __version__
 from pennylane import DeviceError, Snapshot
 
 from . import Device
@@ -133,13 +134,15 @@ class DefaultQubit2(Device):
 
     """
 
+    pennylane_requires = __version__
+
     @property
     def name(self):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, shots=None, seed="global", max_workers=None) -> None:
-        super().__init__(shots=shots)
+    def __init__(self, wires=None, shots=None, seed="global", max_workers=None) -> None:
+        super().__init__(wires=wires, shots=shots)
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(seed)

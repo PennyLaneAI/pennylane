@@ -153,10 +153,11 @@ class Device(abc.ABC):
             self.tracker.record()
     """
 
-    def __init__(self, shots=None) -> None:
+    def __init__(self, wires=None, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
         self._shots = Shots(shots)
+        self._wires = wires
 
     @property
     def shots(self) -> Shots:
@@ -167,6 +168,11 @@ class Device(abc.ABC):
 
         """
         return self._shots
+
+    @property
+    def wires(self):
+        """The device wires. None means any wires can be used."""
+        return self._wires
 
     def preprocess(
         self,
