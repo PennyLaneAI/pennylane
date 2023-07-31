@@ -81,6 +81,20 @@ def _cached_arange(n):
     return np.arange(n)
 
 
+pauli_to_sparse_int = {I: 0, X: 1, Y: 1, Z: 0}  # (I, Z) and (X, Y) have the same sparsity
+
+
+def _ps_to_sparse_index(pauli_words, wires):
+    """Represent the Pauli words sparse structure in a matrix of shape n_words x n_wires."""
+    indices = np.zeros((len(pauli_words), len(wires)))
+    for i, pw in enumerate(pauli_words):
+        if not pw.wires:
+            continue
+        wire_idx = np.array(wires.indices(pw.wires))
+        indices[i, wire_idx] = [pauli_to_sparse_int[pw[w]] for w in pw.wires]
+    return indices
+
+
 _map_I = {
     I: (1, I),
     X: (1, X),
@@ -203,14 +217,13 @@ class PauliWord(dict):
         """Track wires in a PauliWord."""
         return Wires(set(self))
 
-    def to_mat(self, wire_order, format="dense", coeff=1.0):
+    def to_mat(self, wire_order=None, format="dense", coeff=1.0):
         """Returns the matrix representation.
 
         Keyword Args:
             wire_order (iterable or None): The order of qubits in the tensor product.
-            format (str): The format of the matrix ("dense" by default), if not a dense
-                matrix, then the format for the sparse representation of the matrix.
-            coeff (float): Coefficient multiplying the resulting sparse matrix.
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            coeff (float): Coefficient multiplying the resulting matrix.
 
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauliword.
@@ -218,8 +231,9 @@ class PauliWord(dict):
         Raises:
             ValueError: Can't get the matrix of an empty PauliWord.
         """
+        wire_order = wire_order + self.wires if wire_order else self.wires
         if len(self) == 0:
-            if wire_order is None or wire_order == Wires([]):
+            if not wire_order:
                 raise ValueError("Can't get the matrix of an empty PauliWord.")
             return (
                 np.diag([coeff] * 2 ** len(wire_order))
@@ -366,15 +380,14 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return sum(pw.wires for pw in self.keys())
+        return sum(pw.wires for pw in self.keys()) if self.keys() else Wires([])
 
-    def to_mat(self, wire_order, format="dense"):
+    def to_mat(self, wire_order=None, format="dense"):
         """Returns the matrix representation.
 
         Keyword Args:
             wire_order (iterable or None): The order of qubits in the tensor product.
-            format (str): The format of the matrix ("dense" by default), if not a dense
-                matrix, then the format for the sparse representation of the matrix.
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
 
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the PauliSentence.
@@ -382,6 +395,7 @@ class PauliSentence(dict):
         Rasies:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
+        wire_order = wire_order + self.wires if wire_order else self.wires
 
         def _pw_wires(w: Iterable) -> Wires:
             """Return the native Wires instance for a list of wire labels.
@@ -389,17 +403,17 @@ class PauliSentence(dict):
             the PauliWord is empty ({}), choose any arbitrary wire from the
             PauliSentence it is composed in.
             """
-            if w:
-                return w
-
-            return Wires(self.wires[0]) if self.wires else Wires([])
+            return w or Wires(self.wires[0])
 
         if len(self) == 0:
-            if wire_order is None or wire_order == Wires([]):
+            if not wire_order:
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
             if format == "dense":
                 return np.eye(2 ** len(wire_order))
-            return sparse.eye(2 ** len(wire_order), format=format)
+            return sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
+
+        if format != "dense":
+            return self._to_sparse_mat(wire_order)
 
         mats_and_wires_gen = (
             (
@@ -414,6 +428,38 @@ class PauliSentence(dict):
         )
 
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
+
+    def _to_sparse_mat(self, wire_order):
+        """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
+        that conform it."""
+        pauli_words = list(self.keys())
+        n_wires = len(wire_order)
+        matrix = sparse.csr_matrix((2**n_wires, 2**n_wires), dtype="complex128")
+        op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        _, unique_inds, unique_invs = np.unique(
+            op_sparse_idx, axis=0, return_index=True, return_inverse=True
+        )
+        pw_sparse_structures = unique_inds[unique_invs]
+
+        buffer_size = 2 ** max(0, 29 - n_wires - 5)
+        mats = []
+        for i, sparse_structure in enumerate(unique_inds):
+            idx = np.where(pw_sparse_structures == sparse_structure)[0]
+            mat = self._sum_same_structure_pws([pauli_words[i] for i in idx], wire_order)
+            mats.append(mat)
+
+            if (i + 1) % buffer_size == 0:
+                matrix += sum(mats)
+                mats = []
+
+        return matrix + sum(mats)
+
+    def _sum_same_structure_pws(self, pauli_words, wire_order):
+        """Sums Pauli words with the same sparse structure."""
+        mat = pauli_words[0].to_mat(wire_order, coeff=self[pauli_words[0]], format="csr")
+        for word in pauli_words[1:]:
+            mat.data += word.to_mat(wire_order, coeff=self[word], format="csr").data
+        return mat
 
     def operation(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
