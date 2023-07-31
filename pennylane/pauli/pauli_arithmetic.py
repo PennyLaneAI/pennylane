@@ -434,25 +434,30 @@ class PauliSentence(dict):
         that conform it."""
         pauli_words = list(self.keys())
         n_wires = len(wire_order)
-        matrix = sparse.csr_matrix((2**n_wires, 2**n_wires), dtype="complex128")
+        matrix_size = 2**n_wires
+        matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
         op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
         _, unique_inds, unique_invs = np.unique(
             op_sparse_idx, axis=0, return_index=True, return_inverse=True
         )
         pw_sparse_structures = unique_inds[unique_invs]
 
-        buffer_size = 2 ** max(0, 29 - n_wires - 5)
-        mats = []
-        for i, sparse_structure in enumerate(unique_inds):
+        buffer_size = 2 ** max(0, 31 - n_wires - 5)  # 1GB
+        mat_data = np.empty((matrix_size, buffer_size), dtype=np.complex128)
+        mat_indices = np.empty((matrix_size, buffer_size), dtype=np.int64)
+        i = 0
+        for sparse_structure in unique_inds:
             idx = np.where(pw_sparse_structures == sparse_structure)[0]
             mat = self._sum_same_structure_pws([pauli_words[i] for i in idx], wire_order)
-            mats.append(mat)
+            mat_data[:, i] = mat.data
+            mat_indices[:, i] = mat.indices
 
-            if (i + 1) % buffer_size == 0:
-                matrix += sum(mats)
-                mats = []
+            i += 1
+            if i == buffer_size:
+                matrix += self._sum_different_structure_pws(mat_indices, mat_data)
+                i = 0
 
-        return matrix + sum(mats)
+        return matrix + self._sum_different_structure_pws(mat_indices[:, :i], mat_data[:, :i])
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
@@ -460,6 +465,18 @@ class PauliSentence(dict):
         for word in pauli_words[1:]:
             mat.data += word.to_mat(wire_order, coeff=self[word], format="csr").data
         return mat
+
+    @staticmethod
+    def _sum_different_structure_pws(indices, data):
+        """Sums Pauli words with different parse structures."""
+        size = indices.shape[0]
+        idx = np.argsort(indices, axis=1)
+        matrix = sparse.csr_matrix((size, size), dtype="complex128")
+        matrix.indices = np.take_along_axis(indices, idx, axis=1).ravel()
+        matrix.data = np.take_along_axis(data, idx, axis=1).ravel()
+        matrix.indptr = _cached_arange(size + 1) * indices.shape[1]
+        matrix.eliminate_zeros()
+        return matrix
 
     def operation(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
