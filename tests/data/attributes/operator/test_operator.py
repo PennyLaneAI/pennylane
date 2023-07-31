@@ -173,7 +173,7 @@ class TestDatasetOperator:
         """Tests that ops are not queued upon deserialization."""
         d = qml.data.Dataset(op=qml.PauliX(0))
         with qml.queuing.AnnotatedQueue() as q:
-            d.op
+            _ = d.op
 
         assert len(q) == 0
 
