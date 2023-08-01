@@ -189,8 +189,11 @@
 
 <h3>Bug fixes 🐛</h3>
   
+* Replace deprecated `jax.ad` by `jax.interpreters.ad`.
+  [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
+
 * Stop `metric_tensor` from accidentally catching errors that stem from
-  flawed wires assignments in the original circuit, leading to recursion errors
+  flawed wires assignments in the original circuit, leading to recursion errors.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
@@ -221,6 +224,10 @@
 * `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
   trainable parameters of the expanded tape.
   [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
+
+* `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
+  not really have a decomposition.
+  [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
 
 <h3>Contributors ✍️</h3>
 

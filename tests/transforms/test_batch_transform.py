@@ -352,7 +352,6 @@ class TestBatchTransform:
         spy = mocker.spy(circuit.device, "batch_execute")
         circuit(x)
         tapes = spy.call_args[0][0]
-        print(spy.call_args)
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
