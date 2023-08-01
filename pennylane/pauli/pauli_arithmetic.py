@@ -254,7 +254,7 @@ class PauliWord(dict):
 
     def _to_sparse_mat(self, wire_order, coeff):
         """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
-        See pauli_word_sparse_matrix.md for the technical details of the implementation."""
+        See pauli_sparse_matrices.md for the technical details of the implementation."""
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
@@ -442,7 +442,7 @@ class PauliSentence(dict):
 
     def _to_sparse_mat(self, wire_order):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
-        that conform it."""
+        that conform it. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
         n_wires = len(wire_order)
         matrix_size = 2**n_wires
@@ -453,7 +453,7 @@ class PauliSentence(dict):
         )
         pw_sparse_structures = unique_inds[unique_invs]
 
-        buffer_size = 2 ** max(0, 31 - n_wires - 5)  # 1GB
+        buffer_size = 2 ** max(0, 31 - n_wires - 5)  # Buffer of 1GB memory
         mat_data = np.empty((matrix_size, buffer_size), dtype=np.complex128)
         mat_indices = np.empty((matrix_size, buffer_size), dtype=np.int64)
         i = 0
@@ -465,6 +465,7 @@ class PauliSentence(dict):
 
             i += 1
             if i == buffer_size:
+                # Add partial results in batches to control the memory usage
                 matrix += self._sum_different_structure_pws(mat_indices, mat_data)
                 i = 0
 
@@ -486,6 +487,7 @@ class PauliSentence(dict):
         matrix.indices = np.take_along_axis(indices, idx, axis=1).ravel()
         matrix.data = np.take_along_axis(data, idx, axis=1).ravel()
         matrix.indptr = _cached_arange(size + 1) * indices.shape[1]
+        matrix.data[np.abs(matrix.data) < 1e-8] = 0  # Faster than np.isclose(matrix.data, 0)
         matrix.eliminate_zeros()
         return matrix
 
