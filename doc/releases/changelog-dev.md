@@ -91,9 +91,6 @@
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
-* `qml.interfaces.set_shots` can now accept shots specified as a `qml.measurements.Shots` object.
-  If a `pennylane.devices.experimental.Device` is provided, the `set_shots` will no longer raise an error, but will simply return without doing anything.
-  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
 * `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
   property. This property is merely used to set defaults for a workflow, and does not directly
