@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Python-native logging can now be enabled with `qml.logging.enable_logging()`.
+  [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
+
 * `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing.
   A `ProcessPoolExecutor` executes tapes asynchronously
   using a pool of at most `max_workers` processes. If `max_workers` is `None`
@@ -223,13 +226,14 @@
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
-Amintor Dusko
+Amintor Dusko,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Lee James O'Riordan,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
