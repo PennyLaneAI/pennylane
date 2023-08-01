@@ -21,7 +21,7 @@ from pennylane import numpy as np
 from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit import sample_state, measure_with_samples
 
-two_qubit_state = np.array([[0, 1j], [-1, 0]]) / np.sqrt(2)
+two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
 APPROX_ATOL = 0.01
 
 

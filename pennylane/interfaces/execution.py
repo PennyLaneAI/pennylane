@@ -557,11 +557,13 @@ def execute(
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
-    device_supports_interface_data = (
-        gradient_fn == "backprop"
-        or interface is None
-        or getattr(device, "short_name", None) == "default.mixed"
-        or "passthru_interface" in getattr(device, "capabilities", lambda: {})()
+    # changing this set of conditions causes a bunch of tests to break.
+    no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
+    device_supports_interface_data = no_interface_boundary_required and (
+        interface is None
+        or gradient_fn == "backprop"
+        or device.short_name == "default.mixed"
+        or "passthru_interface" in device.capabilities()
     )
 
     inner_execute = _make_inner_execute(
@@ -586,7 +588,6 @@ def execute(
     )
 
     # Exiting early if we do not need to deal with an interface boundary
-    no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
         results = inner_execute(tapes)
         return batch_fn(results)
