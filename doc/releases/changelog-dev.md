@@ -97,6 +97,13 @@
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
+* Refactoring of `pennylane/interfaces`.  The `execute_fn` passed to the machine learning framework boundaries 
+  is now responsible for converting parameters to numpy. The gradients module can now handle tensorflow parameters,
+  but gradient tapes now retain the original dtype instead of converting to float64.  This may cause instability 
+  with finite diff and float32 parameters. The ml boundary functions are now uncoupled from their legacy
+  counterparts.
+  [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.

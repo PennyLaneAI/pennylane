@@ -88,14 +88,12 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
-def _get_ml_framework_boundary(interface, grad_on_execution, tapes):
+def _get_ml_framework_boundary(interface, grad_on_execution):
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
         interface (str): The designated for the ml framework.
         grad_on_execution (bool): whether or not the device derivatives are taken upon execution
-        tapes (Tuple[QuantumTape]): the batch of tapes to execute
-
     Returns:
         Callable
 
@@ -220,20 +218,25 @@ def _make_inner_execute(
     """Construct the function that will be used inside of the ml framework registration."""
 
     if isinstance(device, qml.Device):
-
         device_execution = set_shots(device, override_shots)(device.batch_execute)
 
     else:
-
-        def device_execution(tapes):
-            return device.execute(tapes, execution_config=execution_config)
+        device_execution = partial(device.execute, execution_config=execution_config)
 
     # use qml.interfaces so that mocker can spy on it during testing
     cached_device_execution = qml.interfaces.cache_execute(
         device_execution, cache, return_tuple=False
     )
 
-    def inner_execute(tapes, **_):
+    def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
+        """Execution that occurs within a machine learning framework boundary.
+
+        Closure Variables:
+            expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
+            numpy_only (bool): whether or not to convert the data to numpy or leave as is
+            cached_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+
+        """
         if expand_fn:
             tapes = tuple(expand_fn(t) for t in tapes)
         if numpy_only:
@@ -708,7 +711,7 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    ml_boundary = _get_ml_framework_boundary(interface, _grad_on_execution, tapes)
+    ml_boundary = _get_ml_framework_boundary(interface, _grad_on_execution)
     try:
         res = ml_boundary(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
