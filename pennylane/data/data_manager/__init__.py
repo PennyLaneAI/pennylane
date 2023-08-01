@@ -211,7 +211,7 @@ def load(  # pylint: disable=too-many-arguments
             if result.exception() is not None:
                 raise result.exception()
 
-    return [Dataset.open(Path(dest_path), "r") for dest_path in dest_paths]
+    return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
 
 
 def list_datasets() -> dict:

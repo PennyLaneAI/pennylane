@@ -226,10 +226,9 @@ class Dataset(MapperMixin, _DatasetTransform):
         filepath = Path(filepath).expanduser()
 
         if mode == "copy":
-            f_to_copy = h5py.File(filepath, "r")
-            f = hdf5.create_group()
-            hdf5.copy_all(f_to_copy, f)
-            f_to_copy.close()
+            with h5py.File(filepath, "r") as f_to_copy:
+                f = hdf5.create_group()
+                hdf5.copy_all(f_to_copy, f)
         else:
             f = h5py.File(filepath, mode)
 
