@@ -383,7 +383,7 @@ def _excitations(electrons, orbitals):
         singles_q += [j]
         doubles_rs += [[k, j] for k in range(electrons, j)]
 
-    singles = [[[p] + [q]] for p in singles_p for q in singles_q]
+    singles = [[p] + [q] for p in singles_p for q in singles_q]
     doubles = [pq + rs for pq in doubles_pq for rs in doubles_rs]
 
     return singles, doubles

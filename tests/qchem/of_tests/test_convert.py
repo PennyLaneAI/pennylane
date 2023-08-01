@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for converting observables obtained from external libraries to a
-PennyLane observable.
+Unit tests for functions needed for converting objects obtained from external libraries to a
+PennyLane object.
 """
 # pylint: disable=too-many-arguments,protected-access
 import os
@@ -813,3 +813,47 @@ def test_integration_mol_file_to_vqe_cost(
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
+
+
+@pytest.mark.parametrize(
+    ("electrons", "orbitals", "singles_ref", "doubles_ref"),
+    [
+        # trivial case
+        (2, 4, [[0, 2], [0, 3], [1, 2], [1, 3]], [[0, 1, 2, 3]]),
+    ],
+)
+def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
+    r"""Test if the _excitations function returns correct single and double excitations."""
+    singles, doubles = qchem.convert._excitations(electrons, orbitals)
+    assert singles == singles_ref
+    assert doubles == doubles_ref
+
+
+@pytest.mark.parametrize(
+    ("electrons", "orbitals", "excitation", "states_ref", "signs_ref"),
+    [
+        # reference data computed with pyscf:
+        # pyscf_addrs, pyscf_signs = tn_addrs_signs(orbitals, electrons, excitation)
+        # pyscf_state = pyscf.fci.cistring.addrs2str(orbitals, electrons, pyscf_addrs)
+        # pyscf_state, pyscf_signs
+        (
+            3,
+            8,
+            1,
+            np.array([14, 22, 38, 70, 134, 13, 21, 37, 69, 133, 11, 19, 35, 67, 131]),
+            np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1]),
+        ),
+        (
+            3,
+            6,
+            2,
+            np.array([28, 44, 52, 26, 42, 50, 25, 41, 49]),
+            np.array([1, 1, 1, -1, -1, -1, 1, 1, 1]),
+        ),
+    ],
+)
+def test_excitated_states(electrons, orbitals, excitation, states_ref, signs_ref):
+    r"""Test if the _excitated_states function returns correct states and signs."""
+    states, signs = qchem.convert._excitated_states(electrons, orbitals, excitation)
+    assert np.allclose(states, states_ref)
+    assert np.allclose(signs, signs_ref)
