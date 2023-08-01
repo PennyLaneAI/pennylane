@@ -418,3 +418,19 @@ class TestQNSPSAOptimizer:
         # blocking should stop params from updating from this minimum
         new_params, _ = opt.step_and_cost(qnode, params)
         assert np.allclose(new_params, params)
+
+
+def test_template_no_adjoint():
+    """Test that qnspsa iterates when the operations do not have a custom adjoint."""
+
+    num_qubits = 2
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=42)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    params = np.random.normal(0, np.pi, (2, 4))
+    opt = qml.QNSPSAOptimizer(stepsize=5e-2)
+    assert opt.step_and_cost(cost, params)  # just checking it runs without error
