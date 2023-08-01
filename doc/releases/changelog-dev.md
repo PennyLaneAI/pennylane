@@ -231,6 +231,10 @@
   trainable parameters of the expanded tape.
   [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
+* `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
+  not really have a decomposition.
+  [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
