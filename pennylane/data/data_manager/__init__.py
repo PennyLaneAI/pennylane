@@ -17,6 +17,7 @@ them.
 """
 
 import typing
+import urllib.parse
 from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from functools import lru_cache
 from pathlib import Path
@@ -76,7 +77,11 @@ def _download_dataset(
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
     only requested attributes."""
-    s3_path = f"{S3_URL}/{data_path}"
+
+    # URL-escape special characters like '+', '$', and '%' in the data path
+    url_safe_datapath = urllib.parse.quote(str(data_path))
+
+    s3_path = f"{S3_URL}/{url_safe_datapath}"
 
     if attributes is not None:
         _download_partial(s3_path, dest, attributes, overwrite=force)

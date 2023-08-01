@@ -141,7 +141,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
                     )
                 except KeyError as exc:
                     raise ValueError(
-                        f"molname '{exc.args[0]}' is not available. Available values are: {list(curr_level)}"
+                        f"{param_name} '{exc.args[0]}' is not available. Available values are: {list(curr_level)}"
                     ) from exc
 
             curr, todo = todo, curr
