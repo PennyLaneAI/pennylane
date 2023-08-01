@@ -181,6 +181,9 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
+
+* Allow sparse matrix calculation of `SProd`s containing a `Tensor`.
+  [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
