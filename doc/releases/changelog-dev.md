@@ -90,7 +90,7 @@
 <<<<<<< HEAD
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
 =======
-* `qml.interfaces.set_shots` can now accepts shots specified as a `qml.measurements.Shots` object.
+* `qml.interfaces.set_shots` can now accept shots specified as a `qml.measurements.Shots` object.
   If a `pennylane.devices.experimental.Device` is provided, the `set_shots` will no longer raise an error, but will simply return without doing anything.
 >>>>>>> 2e776ac7ba5a71dcbab599828607563c08794333
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
