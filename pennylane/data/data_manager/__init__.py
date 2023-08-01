@@ -133,10 +133,12 @@ def load(  # pylint: disable=too-many-arguments
 
     >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
     >>> print(H2datasets)
-    [<Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'bondlength', ...]>,
-     <Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'bondlength', ...]>,
-     <Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
-     <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
+    [<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+     <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+     <Dataset = molname: H2, basis: CC-PVDZ, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>, 
+     <Dataset = molname: H2, basis: CC-PVDZ, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+     <Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+     <Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
     When we only want to download portions of a large dataset, we can specify
     the desired properties  (referred to as 'attributes'). For example, we
@@ -155,7 +157,7 @@ def load(  # pylint: disable=too-many-arguments
     To determine what attributes are available, please see :func:`~.list_attributes`.
 
     The loaded data items are fully compatible with PennyLane. We can
-    therefore use them directly in a PennyLane circuits as follows:
+    therefore use them directly in a PennyLane circuit as follows:
 
     >>> H2data = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
     >>> dev = qml.device("default.qubit",wires=4)
@@ -215,7 +217,7 @@ def list_datasets() -> dict:
     >>> available_data["qchem"].keys()
     dict_keys(["H2", "LiH", ...])
     >>> available_data['qchem']['H2'].keys()
-    dict_keys(["6-31G", "STO-3G"])
+    dict_keys(["CC-PVDZ", "6-31G", "STO-3G"])
     >>> print(available_data['qchem']['H2']['STO-3G'])
     ["0.5", "0.54", "0.62", "0.66", ...]
 

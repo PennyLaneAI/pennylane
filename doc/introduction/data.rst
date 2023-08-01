@@ -39,10 +39,12 @@ To load all possible values, use the special value :const:`~pennylane.data.FULL`
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
 >>> print(H2datasets)
-[<Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'bondlength', ...]>,
- <Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'bondlength', ...]>,
- <Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
- <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
+[<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: CC-PVDZ, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: CC-PVDZ, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as 'attributes').
 For example, we can download or load only the molecule and energy of a dataset as follows:
@@ -66,7 +68,11 @@ To determine what attributes are available for a type of dataset, we can use the
 
 .. note::
 
-    ``"full"`` is the default value for ``attributes``, and it means that all available attributes for the Dataset will be downloaded.
+    The default values for attributes are as follows:
+    
+    - Molecules: ``basis`` is the smallest available basis, usually ``"STO-3G"``, and ``bondlength`` is the optimal bondlength for the molecule or an alternative if the optimal is not known.
+    
+    - Spin systems: ``periodicity`` is ``"open"``, ``lattice`` is ``"chain"``, and ``layout`` is ``1x4`` for ``chain`` systems and ``2x2`` for ``rectangular`` systems.
 
 Using Datasets in PennyLane
 ---------------------------

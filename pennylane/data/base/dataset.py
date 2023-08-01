@@ -99,8 +99,8 @@ def field(  # pylint: disable=too-many-arguments, unused-argument
             hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
             energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
 
-    The ``data_name`` keyword specifies a category or descriptive name for the dataset type, and the ``identifiers``
-    keyword to the class is used to specify fields that function as parameters, i.e they determine the behaviour
+    The ``data_name`` keyword argument specifies a category or descriptive name for the dataset type, and the ``identifiers``
+    keyword argument specifies fields that function as parameters, i.e., they determine the behaviour
     of the system.
 
     When a ``QuantumOscillator`` dataset is created, its attributes will have the documentation from the field
