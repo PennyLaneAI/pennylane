@@ -370,6 +370,22 @@ class TestDataset:
         assert ds_2.bind is not ds.bind
         assert ds.attrs == ds_2.attrs
 
+    @pytest.mark.parametrize(
+        "attributes_arg,attributes_expect",
+        [
+            (["x"], ["x", "y"]),
+            (["x", "y", "data"], ["x", "y", "data"]),
+            (["data"], ["x", "y", "data"]),
+        ],
+    )
+    def test_write_partial_always_copies_identifiers(self, attributes_arg, attributes_expect):
+        """Test that ``write`` will always copy attributes that are identifiers."""
+        ds = Dataset(x="a", y="b", data="Some data", identifiers=("x", "y"))
+        ds_2 = Dataset()
+
+        ds.write(ds_2, attributes=attributes_arg)
+        assert set(ds_2.list_attributes()) == set(attributes_expect)
+
     def test_init_subclass(self):
         """Test that __init_subclass__() does the following:
 

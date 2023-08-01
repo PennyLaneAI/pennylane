@@ -299,7 +299,9 @@ def load_interactive():
         value = _interactive_request_single(node, param)
         description[param] = value
 
-    attributes = _interactive_request_attributes(data_struct[data_name]["attributes"])
+    attributes = _interactive_request_attributes(
+        [attribute for attribute in data_struct[data_name]["attributes"] if attribute not in params]
+    )
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
     dest_folder = Path(
         input("Folder to download to? (Default is pwd, will download to /datasets subdirectory): ")

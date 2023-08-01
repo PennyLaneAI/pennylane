@@ -288,7 +288,7 @@ class Dataset(MapperMixin, _DatasetTransform):
                 values are "w-" (create, fail if file exists), "w" (create, overwrite existing),
                 and "a" (append existing, create if doesn't exist). Default is "w-".
             attributes: Optional list of attributes to copy. If None, all attributes
-                will be copied.
+                will be copied. Note that identifiers will always be copied.
             overwrite: Whether to overwrite attributes that already exist in this
                 dataset.
         """
@@ -301,6 +301,12 @@ class Dataset(MapperMixin, _DatasetTransform):
             dest.info.update(self.info)
 
         hdf5.copy_all(self.bind, dest.bind, *attributes, on_conflict=on_conflict)
+
+        missing_identifiers = [
+            identifier for identifier in self.identifiers if not hasattr(dest, identifier)
+        ]
+        if missing_identifiers:
+            hdf5.copy_all(self.bind, dest.bind, *missing_identifiers)
 
     def _init_bind(
         self, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
