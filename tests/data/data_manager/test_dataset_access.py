@@ -24,7 +24,7 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import DataPath, S3_URL
+from pennylane.data.data_manager import DataPath, S3_URL, _validate_attributes
 
 # pylint:disable=protected-access,redefined-outer-name
 
@@ -376,3 +376,26 @@ def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, e
     mock_download_partial.assert_called_once_with(
         f"{S3_URL}/{escaped}", dest, attributes, overwrite=force
     )
+
+
+@pytest.mark.parametrize(
+    "attributes,msg",
+    [
+        (
+            ["x", "y", "z", "foo"],
+            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['x', 'y', 'z'\]",
+        ),
+        (
+            ["x", "y", "z", "foo", "bar"],
+            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['x', 'y', 'z'\]",
+        ),
+    ],
+)
+def test_validate_attributes_except(attributes, msg):
+    """Test that ``_validate_attributes()`` raises a ValueError when passed
+    invalid attributes."""
+
+    data_struct = {"my_dataset": {"attributes": ["x", "y", "z"]}}
+
+    with pytest.raises(ValueError, match=msg):
+        _validate_attributes(data_struct, "my_dataset", attributes)

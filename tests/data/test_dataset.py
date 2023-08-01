@@ -198,11 +198,24 @@ class TestDataset:
 
         assert ds.identifiers == expect
 
+    def test_identifiers_base_missing(self):
+        """Test that identifiers whose attribute is missing on the
+        dataset will not be in the returned dict."""
+        ds = Dataset(x="1", identifiers=("x", "y"))
+
+        assert ds.identifiers == {"x": "1"}
+
     def test_subclass_identifiers(self):
         """Test that dataset subclasses' identifiers can be set."""
         ds = MyDataset(x="1", y="2", description="abc")
 
         assert ds.identifiers == {"x": "1", "y": "2"}
+
+    def test_subclass_identifiers_missing(self):
+        """Test that dataset subclasses' identifiers can be set."""
+        ds = MyDataset(x="1", description="abc")
+
+        assert ds.identifiers == {"x": "1"}
 
     def test_attribute_info(self):
         """Test that attribute info can be set and accessed
@@ -356,6 +369,23 @@ class TestDataset:
 
         assert ds_2.bind is not ds.bind
         assert ds.attrs == ds_2.attrs
+
+    @pytest.mark.parametrize(
+        "attributes_arg,attributes_expect",
+        [
+            (["x"], ["x", "y"]),
+            (["x", "y", "data"], ["x", "y", "data"]),
+            (["data"], ["x", "y", "data"]),
+        ],
+    )
+    def test_write_partial_always_copies_identifiers(self, attributes_arg, attributes_expect):
+        """Test that ``write`` will always copy attributes that are identifiers."""
+        ds = Dataset(x="a", y="b", data="Some data", identifiers=("x", "y"))
+        ds_2 = Dataset()
+
+        ds.write(ds_2, attributes=attributes_arg)
+        assert set(ds_2.list_attributes()) == set(attributes_expect)
+        assert ds_2.identifiers == ds.identifiers
 
     def test_init_subclass(self):
         """Test that __init_subclass__() does the following:
