@@ -97,6 +97,23 @@ def _download_dataset(
         f.write(resp.content)
 
 
+def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.Iterable[str]):
+    """Checks that ``attributes`` contains only valid attributes for the given
+    ``data_name``. If any attributes do not exist, raise a ValueError."""
+    invalid_attributes = [
+        attr for attr in attributes if attr not in data_struct[data_name]["attributes"]
+    ]
+    if not invalid_attributes:
+        return
+
+    if len(invalid_attributes) == 1:
+        values_err = f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
+    else:
+        values_err = f"{invalid_attributes} are invalid attributes for '{data_name}'"
+
+    raise ValueError(f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}")
+
+
 def load(  # pylint: disable=too-many-arguments
     data_name: str,
     attributes: Optional[typing.Iterable[str]] = None,
@@ -186,13 +203,17 @@ def load(  # pylint: disable=too-many-arguments
     >>> print(circuit())
     -1.0791430411076344
     """
+    foldermap = _get_foldermap()
+    data_struct = _get_data_struct()
+
     params = format_params(**params)
+
+    if attributes:
+        _validate_attributes(data_struct, data_name, attributes)
 
     folder_path = Path(folder_path)
     if cache_dir and not Path(cache_dir).is_absolute():
         cache_dir = folder_path / cache_dir
-
-    foldermap = _get_foldermap()
 
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
 
