@@ -490,12 +490,12 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]])
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-2)
+    >>> wf_cisd = cisd_state(myci, tol=1e-1)
     >>> print(wf_cisd)
-    {(1, 1): -0.9486830343747924, (2, 2): -0.31622855704290276}
+    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
 
     """
 
@@ -660,13 +660,12 @@ def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]])
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-2)
+    >>> wf_cisd = cisd_state(myci, tol=1e-1)
     >>> print(wf_cisd)
-    {(1, 1): -0.9486830343747924, (2, 2): -0.31622855704290276}
-
+    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
 
     if hftype == "uhf":
@@ -691,7 +690,7 @@ def wfdict_to_statevector(wf_dict, norbs):
         
     Returns:
         statevector (list): normalized statevector of length 2^(number_of_spinorbitals), standard in Pennylane
-        
+
     """
 
     statevector = np.zeros(2**(2*norbs), dtype=complex)
