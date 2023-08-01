@@ -428,7 +428,7 @@ class TestInternalFunctions:
         "depth, expanded_ops",
         [
             (0, [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]),
-            (10, [qml.PauliX(wires=0), qml.PauliX(wires=1)]),
+            (1, [qml.PauliX(wires=0), qml.PauliX(wires=1)]),
         ],
     )
     def test_device_default_expand_ops(
