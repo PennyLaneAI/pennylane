@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane.wires import Wires
 from pennylane.operation import Tensor, active_new_opmath
 from pennylane.pauli import pauli_sentence
+from itertools import product 
 
 
 def _process_wires(wires, n_wires=None):
@@ -530,14 +531,14 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
 
     # a -> a
     # for alpha excitations, beta configs (cols) are unchanged
-    c1a_configs, c1a_signs = _excitated_states(norb, nelec_a, 1)
+    c1a_configs, c1a_signs = _excitated_states(nelec_a, norb, 1)
     row.extend(c1a_configs)
     col.extend([ref_b] * size_a)
     coeff.extend(c1a * c1a_signs)
 
     # b -> b
     # for beta excitations, alpha configs (rows) are unchanged
-    c1b_configs, c1b_signs = _excitated_states(norb, nelec_b, 1)
+    c1b_configs, c1b_signs = _excitated_states(nelec_b, norb, 1)
     row.extend(c1b_configs)
     col.extend([ref_a] * size_b)
     coeff.extend(c1b * c1b_signs)
@@ -548,21 +549,21 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
 
     ## aa -> aa
     # for alpha excitations, beta configs (cols) are unchanged
-    c2aa_configs, c2aa_signs = _excitated_states(norb, nelec_a, 2)
+    c2aa_configs, c2aa_signs = _excitated_states(nelec_a, norb, 2)
     row.extend(c2aa_configs)
     col.extend([ref_b] * size_aa)
     coeff.extend(c2aa * c2aa_signs)
 
     ## ab -> ab
     # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
-    rowvals, colvals = np.array(list(product(c1a_configs, c1b_configs))).T
+    rowvals, colvals = np.array( list(product(c1a_configs, c1b_configs)), dtype=int ).T.numpy()
     row.extend(rowvals)
     col.extend(colvals)
-    coeff.extend(c2ab * np.kron(c1a_signs, c1b_signs))
+    coeff.extend( c2ab * np.kron(c1a_signs, c1b_signs).numpy() )
 
     ## bb -> bb
     # for beta excitations, alpha configs (rows) are unchanged
-    c2bb_configs, c2bb_signs = _excitated_states(norb, nelec_b, 2)
+    c2bb_configs, c2bb_signs = _excitated_states(nelec_b, norb, 2)
     row.extend([ref_a] * size_bb)
     row.extend(c2bb_configs)
     coeff.extend(c2bb * c2bb_signs)
@@ -600,7 +601,11 @@ def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
     -   The wrapper re-directs wavefunction construction to the appropriate method
         depending on whether the restricted CISD or unrestricted CISD was used.
 
-    -
+    -   The (private) method converts the CISD object's attribute `.ci`, which stores the 
+        Slater determinant coefficients, into the `wf_dict` described above. Optionally,
+        if multiple states were computed with PySCF CISD, an excited state's wavefunction
+        can be obtained by passing `state = K`, where :math:`K` points to the :math:`K`'th 
+        excited state.  
 
     Args:
         cisd_solver (PySCF CISD or UCISD Class instance): the class object representing
@@ -625,7 +630,7 @@ def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,1.4)]])
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]])
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
     >>> wf_cisd = cisd_state(myci, tol=1e-2)
