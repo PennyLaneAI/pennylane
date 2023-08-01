@@ -35,9 +35,7 @@ from pennylane.wires import Wires
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):
     """Compute the transmon drive term for given amplitude, phase and frequency."""
-    return amp * (
-        np.sin(phase + freq * t) * qml.PauliY(wire)
-    )
+    return amp * (np.sin(phase + freq * t) * qml.PauliY(wire))
 
 
 class TestTransmonDrive:
