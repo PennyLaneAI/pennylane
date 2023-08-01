@@ -223,6 +223,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         Returns:
             Dataset object from file
         """
+        filepath = Path(filepath).expanduser()
 
         if mode == "copy":
             with h5py.File(filepath, "r") as f_to_copy:
