@@ -352,6 +352,7 @@ class TestBatchTransform:
         spy = mocker.spy(circuit.device, "batch_execute")
         circuit(x)
         tapes = spy.call_args[0][0]
+        print(spy.call_args)
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
@@ -625,6 +626,8 @@ class TestBatchTransformGradients:
         jax"""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
@@ -643,7 +646,8 @@ class TestBatchTransformGradients:
         grad = jax.grad(cost, argnums=[0, 1])(x, weights)
         expected = qml.grad(self.expval)(x_np, weights_np)
         assert len(grad) == len(expected)
-        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+        for g, e in zip(grad, expected):
+            assert qml.math.allclose(g, e)
 
     def test_batch_transforms_qnode(self, diff_method, mocker):
         """Test that batch transforms can be applied to a QNode

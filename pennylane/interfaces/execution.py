@@ -221,8 +221,7 @@ def _make_inner_execute(
 
     if isinstance(device, qml.Device):
 
-        def device_execution(tapes):
-            return set_shots(device, override_shots)(device.batch_execute)(tapes)
+        device_execution = set_shots(device, override_shots)(device.batch_execute)
 
     else:
 
@@ -363,7 +362,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         else:
             # execute all unique tapes that do not exist in the cache
             # convert to list as new device interface returns a tuple
-            res = list(fn(execution_tapes.values(), **kwargs))
+            res = list(fn(tuple(execution_tapes.values()), **kwargs))
 
         final_res = []
 
