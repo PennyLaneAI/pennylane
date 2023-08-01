@@ -182,8 +182,11 @@
 
 <h3>Bug fixes 🐛</h3>
   
+* Replace deprecated `jax.ad` by `jax.interpreters.ad`.
+  [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
+
 * Stop `metric_tensor` from accidentally catching errors that stem from
-  flawed wires assignments in the original circuit, leading to recursion errors
+  flawed wires assignments in the original circuit, leading to recursion errors.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
@@ -218,6 +221,10 @@
 * `qml.default_expand_fn` now selectively expands operations or measurements allowing more 
   operations to be executed in circuits when measuring non-qwc Hamiltonians.
   [(#4401)](https://github.com/PennyLaneAI/pennylane/pull/4401)
+
+* `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
+  not really have a decomposition.
+  [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
 
 <h3>Contributors ✍️</h3>
 
