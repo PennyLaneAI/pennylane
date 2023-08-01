@@ -183,6 +183,7 @@
 <h3>Bug fixes 🐛</h3>
   
 * Replace `op.adjoint` with `qml.adjoint` in `QNSPSAOptimizer`.
+  [(#4421)](https://github.com/PennyLaneAI/pennylane/pull/4421)
 
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
