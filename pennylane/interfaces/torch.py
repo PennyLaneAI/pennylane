@@ -152,7 +152,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
                     vjps = processing_fn(
-                        execute(
+                        _execute_legacy(
                             vjp_tapes,
                             ctx.device,
                             ctx.execute_fn,
