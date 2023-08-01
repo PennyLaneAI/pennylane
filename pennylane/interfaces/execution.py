@@ -329,7 +329,10 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
                 #   warn the user in case of finite shots with cached results
                 finite_shots = False
 
-                closure = inspect.getclosurevars(fn).nonlocals
+                if not isinstance(fn, partial):
+                    closure = inspect.getclosurevars(fn).nonlocals
+                else:
+                    closure = {}
                 if "original_fn" in closure:  # deal with expand_fn wrapper above
                     closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
 
