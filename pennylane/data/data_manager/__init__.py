@@ -133,6 +133,17 @@ def load(  # pylint: disable=too-many-arguments
     >>> print(H2datasets)
     [<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
+.. note::
+
+    If not otherwise specified, ``qml.data.load`` will download the
+    default parameter value specified by the dataset.
+    
+    The default values for attributes are as follows:
+
+    - Molecules: ``basis`` is the smallest available basis, usually ``"STO-3G"``, and ``bondlength`` is the optimal bondlength for the molecule or an alternative if the optimal is not known.
+
+    - Spin systems: ``periodicity`` is ``"open"``, ``lattice`` is ``"chain"``, and ``layout`` is ``1x4`` for ``chain`` systems and ``2x2`` for ``rectangular`` systems.
+
     We can load datasets for multiple parameter values by providing a list of values instead of a single value.
     To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
 
