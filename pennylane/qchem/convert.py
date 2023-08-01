@@ -680,29 +680,19 @@ def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
     return wf
 
 def wfdict_to_statevector(wf_dict, norbs):
-    '''
-    Intermediate converter between Overlapper's wavefunction_dict format
-    and Pennylane's 2^n statevector.
+    r"""Final converter between wf_dict format and Pennylane's statevector.
 
-    Parameters
-    ----------
-
-    wf_dict : Overlapper wf_dict format
-        Dictionary with keys (int_a,int_b) being integers whose binary representation
-        shows states occupied by alpha and beta electrons; and values being the CI
-        coefficients. 
+    Args:
+        wf_dict (wf_dict format): dictionary with keys (int_a,int_b) being integers whose binary representation
+            shows the Fock occupation vector for alpha and beta electrons; and values being the CI
+            coefficients. 
         
-        For example, int_a = 3 --> bin(3) = "0b11" -> [1100] means the 
-        alpha electrons occuppy the lowest two orbitals. If int_b = 3 also,
-        then the total state can be written [2200], or [11110000] if showing
-        spin-orbitals explicitly.
-
-    Returns
-    -------
-    list
-        normalized statevector of length 2^(number_of_spinorbitals), just as in Pennylane
-
-    '''
+        norbs (int): number of molecular orbitals in the system
+        
+    Returns:
+        statevector (list): normalized statevector of length 2^(number_of_spinorbitals), standard in Pennylane
+        
+    """
 
     statevector = np.zeros(2**(2*norbs), dtype=complex)
 
