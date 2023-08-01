@@ -77,6 +77,43 @@ def field(  # pylint: disable=too-many-arguments, unused-argument
         py_type: Type annotation or string describing this object's type. If not
             provided, the annotation on the class will be used
         kwargs: Extra arguments to ``AttributeInfo``
+
+    Returns:
+        Field:
+
+    .. seealso:: :class:`~.Dataset`, :func:`~.data.attribute`
+
+    **Example**
+
+    The datasets declarative API allows us to create subclasses
+    of :class:`Dataset` that define the required attributes, or 'fields', and
+    their associated type and documentation:
+
+    .. code-block:: python
+
+        class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", identifiers=["mass", "force_constant"]):
+            \"""Dataset describing a quantum oscillator.\"""
+
+            mass: float = qml.data.field(doc = "The mass of the particle")
+            force_constant: float = qml.data.field(doc = "The force constant of the oscillator")
+            hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
+            energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
+
+    The ``data_name`` keyword argument specifies a category or descriptive name for the dataset type, and the ``identifiers``
+    keyword argument specifies fields that function as parameters, i.e., they determine the behaviour
+    of the system.
+
+    When a ``QuantumOscillator`` dataset is created, its attributes will have the documentation from the field
+    definition:
+
+    >>> dataset = QuantumOscillator(
+    ...     mass=1,
+    ...     force_constant=0.5,
+    ...     hamiltonian=qml.PauliX(0),
+    ...     energy_levels=np.array([0.1, 0.2])
+    ... )
+    >>> dataset.attr_info["mass"]["doc"]
+    'The mass of the particle'
     """
 
     return Field(
