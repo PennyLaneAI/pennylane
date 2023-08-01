@@ -23,7 +23,7 @@ from pennylane.measurements import Shots
 
 
 def test_shots_new_device_interface():
-    """Test that calling set shots on something in new new device interface leaves it
+    """Test that calling set_shots on a device implementing the new interface leaves it
     untouched.
     """
     dev = qml.devices.experimental.DefaultQubit2()
