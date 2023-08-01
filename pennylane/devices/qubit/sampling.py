@@ -216,7 +216,6 @@ def sample_state(
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
-        print(probs)
         samples = rng.choice(basis_states, shots, p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
