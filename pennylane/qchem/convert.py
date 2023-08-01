@@ -469,10 +469,13 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
         coefficients.
     """
 
+    mol = cisd_solver.mol
+
     norb = mol.nao
     nelec = mol.nelectron
     nelec_a = int((nelec + mol.spin) / 2)
     nelec_b = int((nelec - mol.spin) / 2)
+
     nocc_a, nocc_b = nelec_a, nelec_b
     nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
 
@@ -640,3 +643,47 @@ def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
         exit()
 
     return wf
+
+def wfdict_to_statevector(wf_dict, norbs):
+    '''
+    Intermediate converter between Overlapper's wavefunction_dict format
+    and Pennylane's 2^n statevector.
+
+    Parameters
+    ----------
+
+    wf_dict : Overlapper wf_dict format
+        Dictionary with keys (int_a,int_b) being integers whose binary representation
+        shows states occupied by alpha and beta electrons; and values being the CI
+        coefficients. 
+        
+        For example, int_a = 3 --> bin(3) = "0b11" -> [1100] means the 
+        alpha electrons occuppy the lowest two orbitals. If int_b = 3 also,
+        then the total state can be written [2200], or [11110000] if showing
+        spin-orbitals explicitly.
+
+    Returns
+    -------
+    list
+        normalized statevector of length 2^(number_of_spinorbitals), just as in Pennylane
+
+    '''
+
+    statevector = np.zeros(2**(2*norbs), dtype=complex)
+
+    for (int_a, int_b), coeff in wf_dict.items():
+        # convert to binary
+        bin_a, bin_b = bin(int_a)[2:], bin(int_b)[2:]
+        # and re-order (different PySCF vs Pennylane conventions)
+        bin_a, bin_b = bin_a[::-1], bin_b[::-1]
+        # interleave to get a spin-orbital form
+        bin_tot = "".join(i + j for i, j in zip(bin_a, bin_b))
+        # pad to get the total number of orbitals 
+        bin_tot_full = bin_tot + "0" * (2*norbs - len(bin_tot))
+        idx = int(bin_tot_full, 2)
+        statevector[idx] += coeff
+
+    # normalize 
+    statevector = statevector / np.sqrt( np.sum( statevector**2 ) )
+
+    return statevector
