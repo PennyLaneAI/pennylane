@@ -398,7 +398,7 @@ def _excitated_states(electrons, orbitals, excitation):
         excitation (int): number of excited electrons
 
     Returns:
-        tuple(list, list): lists of excited states and signs obtained by reordering of the creation operators
+        tuple(array, array): arrays of excited states and signs obtained by reordering of the creation operators
 
     **Example**
 
@@ -406,12 +406,10 @@ def _excitated_states(electrons, orbitals, excitation):
     >>> orbitals = 5
     >>> excitation = 2
     >>> _excitated_states(electrons, orbitals, excitation)
-    ([28, 26, 25], [ 1, -1,  1])
+    (array([28, 26, 25]), array([ 1, -1,  1]))
     """
     hf_state = qml.qchem.hf_state(electrons, orbitals)
-
     singles, doubles = _excitations(electrons, orbitals)
-
     states, signs = [], []
 
     if excitation == 1:
