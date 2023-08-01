@@ -408,7 +408,7 @@ def _excitated_states(electrons, orbitals, excitation):
     >>> _excitated_states(electrons, orbitals, excitation)
     ([28, 26, 25], [ 1, -1,  1])
     """
-    hf_state = [1] * electrons + [0] * (orbitals - electrons)
+    hf_state = qml.qchem.hf_state(electrons, orbitals)
 
     singles, doubles = _excitations(electrons, orbitals)
 
@@ -417,18 +417,15 @@ def _excitated_states(electrons, orbitals, excitation):
     if excitation == 1:
         for s in singles:
             state = hf_state.copy()
-            state[s[0]], state[s[1]] = state[s[1]], state[s[0]]
+            state[s] = state[s[::-1]]
             states += [state]
-            order = len(range(s[0], electrons - 1))
-            signs.append((-1) ** order)
+            signs.append((-1) ** len(range(s[0], electrons - 1)))
 
     if excitation == 2:
         for d in doubles:
             state = hf_state.copy()
-            state[d[0]], state[d[2]] = state[d[2]], state[d[0]]
-            state[d[1]], state[d[3]] = state[d[3]], state[d[1]]
+            state[d] = state[[d[2], d[3], d[0], d[1]]]
             states += [state]
-
             order_pq = len(range(d[0], electrons - 1))
             order_rs = len(range(d[1], electrons - 1))
             signs.append((-1) ** (order_pq + order_rs + 1))
@@ -436,4 +433,4 @@ def _excitated_states(electrons, orbitals, excitation):
     states_str = ["".join([str(i) for i in state]) for state in states]
     states_int = [int(state[::-1], 2) for state in states_str]
 
-    return np.array(states_int), np.array(signs)
+    return states_int, signs
