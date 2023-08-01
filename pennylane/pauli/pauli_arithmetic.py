@@ -443,7 +443,7 @@ class PauliSentence(dict):
     def _to_sparse_mat(self, wire_order):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
         that conform it."""
-        pauli_words = list(self.keys())
+        pauli_words = list(self)  # Ensure consistent ordering
         n_wires = len(wire_order)
         matrix_size = 2**n_wires
         matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
