@@ -186,13 +186,11 @@ class Dataset(MapperMixin, _DatasetTransform):
         Returns:
             Dataset object from file
         """
-        filepath = Path(filepath).expanduser()
 
         if mode == "copy":
-            f_to_copy = h5py.File(filepath, "r")
-            f = hdf5.create_group()
-            hdf5.copy_all(f_to_copy, f)
-            f_to_copy.close()
+            with h5py.File(filepath, "r") as f_to_copy:
+                f = hdf5.create_group()
+                hdf5.copy_all(f_to_copy, f)
         else:
             f = h5py.File(filepath, mode)
 
@@ -403,6 +401,8 @@ class Dataset(MapperMixin, _DatasetTransform):
     type_id = "dataset"
     """Type identifier for this dataset. Used internally to load datasets
     from other datasets."""
+
+    _open_dataset_files = {}
 
 
 Dataset.fields = MappingProxyType({})
