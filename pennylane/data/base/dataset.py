@@ -402,8 +402,6 @@ class Dataset(MapperMixin, _DatasetTransform):
     """Type identifier for this dataset. Used internally to load datasets
     from other datasets."""
 
-    _open_dataset_files = {}
-
 
 Dataset.fields = MappingProxyType({})
 
