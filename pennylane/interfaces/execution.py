@@ -562,8 +562,8 @@ def execute(
     device_supports_interface_data = no_interface_boundary_required and (
         interface is None
         or gradient_fn == "backprop"
-        or device.short_name == "default.mixed"
-        or "passthru_interface" in device.capabilities()
+        or getattr(device, "short_name", "") == "default.mixed"
+        or "passthru_interface" in getattr(device, "capabilities", lambda: {})()
     )
 
     inner_execute = _make_inner_execute(
@@ -948,7 +948,7 @@ def _execute_legacy(
 
                 _grad_on_execution = _mode == "forward"
 
-                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
+                _execute = partial(_execute, mode=_mode)
             else:
                 from .tensorflow import _execute_legacy as _execute
         elif mapped_interface == "torch":
