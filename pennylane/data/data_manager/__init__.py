@@ -106,7 +106,7 @@ def load(  # pylint: disable=too-many-arguments
     cache_dir: Optional[Path] = Path(".cache"),
     **params: Union[ParamArg, str, List[str]],
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a
+    r"""Downloads the data if it is not already present in the directory and returns it as a
     :class:`~pennylane.data.Dataset` object. For the full list of available datasets, please see the
     `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
