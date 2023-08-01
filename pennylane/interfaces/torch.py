@@ -486,7 +486,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 def _res_to_torch(r, ctx):
     """Convert results from unwrapped execution to torch."""
-    print(r)
     if isinstance(r, (list, tuple)):
         res = []
         for t in r:
