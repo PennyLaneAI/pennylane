@@ -31,20 +31,22 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
 >>> print(H2datasets)
-[<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+[<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 >>> H2data = H2datasets[0]
 
 We can load datasets for multiple parameter values by providing a list of values instead of a single value.
-To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
+To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string ``"full"``:
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
 >>> print(H2datasets)
-[<Dataset = description: qchem/H2/6-31G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
- <Dataset = description: qchem/H2/6-31G/1.1, attributes: ['molecule', 'hamiltonian', ...]>,
- <Dataset = description: qchem/H2/STO-3G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
- <Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+[<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: CC-PVDZ, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: CC-PVDZ, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+<Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
-When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
+When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as 'attributes').
 For example, we can download or load only the molecule and energy of a dataset as follows:
 
 >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
@@ -57,16 +59,20 @@ For example, we can download or load only the molecule and energy of a dataset a
 To determine what attributes are available for a type of dataset, we can use the function :func:`~pennylane.data.list_attributes`:
 
 >>> qml.data.list_attributes(data_name="qchem")
-["molecule",
-"hamiltonian",
-"sparse_hamiltonian",
-...
-"tapered_hamiltonian",
-"full"]
+['molname',
+ 'basis',
+ 'bondlength',
+ ...
+ 'vqe_params',
+ 'vqe_energy']
 
 .. note::
 
-    "full" is the default value for ``attributes``, and it means that all available attributes for the Dataset will be downloaded.
+    The default values for attributes are as follows:
+    
+    - Molecules: ``basis`` is the smallest available basis, usually ``"STO-3G"``, and ``bondlength`` is the optimal bondlength for the molecule or an alternative if the optimal is not known.
+    
+    - Spin systems: ``periodicity`` is ``"open"``, ``lattice`` is ``"chain"``, and ``layout`` is ``1x4`` for ``chain`` systems and ``2x2`` for ``rectangular`` systems.
 
 Using Datasets in PennyLane
 ---------------------------
@@ -151,19 +157,6 @@ array([-1.5, -0.5,  0.5,  1.5])
 Quantum Datasets Functions and Classes
 --------------------------------------
 
-Classes
-^^^^^^^
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.data.Dataset
-
-:html:`</div>`
-
-Functions
-^^^^^^^^^
-
 :html:`<div class="summary-table">`
 
 .. autosummary::
@@ -173,5 +166,6 @@ Functions
     ~pennylane.data.list_attributes
     ~pennylane.data.load
     ~pennylane.data.load_interactive
+    ~pennylane.data.Dataset
 
 :html:`</div>`
