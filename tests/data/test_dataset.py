@@ -385,6 +385,7 @@ class TestDataset:
 
         ds.write(ds_2, attributes=attributes_arg)
         assert set(ds_2.list_attributes()) == set(attributes_expect)
+        assert ds_2.identifiers == ds.identifiers
 
     def test_init_subclass(self):
         """Test that __init_subclass__() does the following:
