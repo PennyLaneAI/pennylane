@@ -107,31 +107,31 @@ def load(  # pylint: disable=too-many-arguments
     **params: Union[ParamArg, str, List[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
-        :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see
-        the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+    :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see
+    the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
-        Args:
-            data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
-            attributes (list[str]) : An optional list to specify individual data element that are required
-            folder_path (str) : Path to the directory used for saving datasets. Defaults to './datasets'
-            force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
-            num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
-            cache_dir (str): Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
-            params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
-                Note that these are not optional
+    Args:
+        data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
+        attributes (list[str]) : An optional list to specify individual data element that are required
+        folder_path (str) : Path to the directory used for saving datasets. Defaults to './datasets'
+        force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
+        num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
+        cache_dir (str): Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
+        params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
+            Note that these are not optional
 
-        Returns:
-            list[:class:`~pennylane.data.Dataset`]
+    Returns:
+        list[:class:`~pennylane.data.Dataset`]
 
-        .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_datasets`.
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_datasets`.
 
-        **Example**
+    **Example**
 
-        The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
+    The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
 
-        >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
-        >>> print(H2datasets)
-        [<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
+    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
+    >>> print(H2datasets)
+    [<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
     .. note::
 
@@ -144,47 +144,47 @@ def load(  # pylint: disable=too-many-arguments
 
         - Spin systems: ``periodicity`` is ``"open"``, ``lattice`` is ``"chain"``, and ``layout`` is ``1x4`` for ``chain`` systems and ``2x2`` for ``rectangular`` systems.
 
-        We can load datasets for multiple parameter values by providing a list of values instead of a single value.
-        To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
+    We can load datasets for multiple parameter values by providing a list of values instead of a single value.
+    To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
 
-        >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
-        >>> print(H2datasets)
-        [<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
-         <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
-         <Dataset = molname: H2, basis: CC-PVDZ, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
-         <Dataset = molname: H2, basis: CC-PVDZ, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
-         <Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
-         <Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
+    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
+    >>> print(H2datasets)
+    [<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+        <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+        <Dataset = molname: H2, basis: CC-PVDZ, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+        <Dataset = molname: H2, basis: CC-PVDZ, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
+        <Dataset = molname: H2, basis: 6-31G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
+        <Dataset = molname: H2, basis: 6-31G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
-        When we only want to download portions of a large dataset, we can specify
-        the desired properties  (referred to as 'attributes'). For example, we
-        can download or load only the molecule and energy of a dataset as
-        follows:
+    When we only want to download portions of a large dataset, we can specify
+    the desired properties  (referred to as 'attributes'). For example, we
+    can download or load only the molecule and energy of a dataset as
+    follows:
 
-        >>> part = qml.data.load(
-        ...     "qchem",
-        ...     molname="H2",
-        ...     basis="STO-3G",
-        ...     bondlength=1.1,
-        ...     attributes=["molecule", "fci_energy"])[0]
-        >>> part.molecule
-        <Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
+    >>> part = qml.data.load(
+    ...     "qchem",
+    ...     molname="H2",
+    ...     basis="STO-3G",
+    ...     bondlength=1.1,
+    ...     attributes=["molecule", "fci_energy"])[0]
+    >>> part.molecule
+    <Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
 
-        To determine what attributes are available, please see :func:`~.list_attributes`.
+    To determine what attributes are available, please see :func:`~.list_attributes`.
 
-        The loaded data items are fully compatible with PennyLane. We can
-        therefore use them directly in a PennyLane circuit as follows:
+    The loaded data items are fully compatible with PennyLane. We can
+    therefore use them directly in a PennyLane circuit as follows:
 
-        >>> H2data = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
-        >>> dev = qml.device("default.qubit",wires=4)
-        >>> @qml.qnode(dev)
-        ... def circuit():
-        ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
-        ...     for op in H2data.vqe_gates:
-        ...         qml.apply(op)
-        ...     return qml.expval(H2data.hamiltonian)
-        >>> print(circuit())
-        -1.0791430411076344
+    >>> H2data = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
+    >>> dev = qml.device("default.qubit",wires=4)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+    ...     for op in H2data.vqe_gates:
+    ...         qml.apply(op)
+    ...     return qml.expval(H2data.hamiltonian)
+    >>> print(circuit())
+    -1.0791430411076344
     """
     params = format_params(**params)
 
