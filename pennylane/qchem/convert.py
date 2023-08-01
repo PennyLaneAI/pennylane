@@ -453,22 +453,52 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
 
         \ket{\Psi_{CISD}} = c^{(0)} \ket{\text{HF}} + \sum_{i} c^{(1)}_{i} \ket{S_i} + \sum_{i} c^{(2)}_{i} \ket_{D_{i}}
 
-    where :math:`c^{(0,1,2)}` are the
+    where :math:`c^{(0,1,2)}` are the configuration interaction coefficients stored 
+    as the `.ci` attribute of PySCF's `UCISD` object, and :math:`\ket{S_i}, \ket{D_i}`
+    are the singly and doubly excited Slater determinants, respectively. 
 
-    Parameters
-    ----------
-    PySCF CISD solver
+    -   The first step is to partition the `.ci` attribute storing the CI coefficients into the :math:`c^{(0,1,2)}`
+        coefficients. To do this, the number of allowed single and double excitations is computed through combinatorics.
+        For example, the number of allowed single excitations of :math:`n_e` alpha electrons in :math:`N` orbitals is 
+        :math:`\binom{N}{n_e}`.
 
-    state
-        which state to do the conversion for, if multiple were solved for
+    -   The :func:`~._excited_states` function is then called to generate the configurations corresponding to allowed 
+        single and double excitations, as well as their corresponding signs from permuting the creation operators. These
+        configurations are again represented by integers whose binary form gives the Fock occupation vector.
 
-    Returns
-    -------
-    dict
-        Dictionary with keys (stra,strb) being binary strings representing
-        states occupied by alpha and beta electrons, and values being the CI
-        coefficients.
+    -   The configurations for alpha electrons (`row`) and beta electrons (`col`) are collected for all excitations,
+        and the corresponding coefficients are collected (`coeff`). These three arrays are then used to build the final
+        `wf_dict`, which is filtered to drop the smallest coefficients according to the `tol` argument. 
+
+    Args:
+        cisd_solver (PySCF UCISD Class instance): the class object representing
+            the UCISD calculation in PySCF. Must have already carried out the
+            calculation, e.g. by calling .kernel() or .run().
+
+        state (int): which state to do the conversion for, if several were solved for
+            when running UCISD. Default is 0 (the ground state).
+
+        tol (float): the tolerance to which the wavefunction is being built -- Slater
+            determinants with coefficients smaller than this are discarded. Default
+            is 1e-15 (all coefficients are included).
+
+    Returns:
+        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+
+    **Example**
+
+    >>> from pyscf import gto, scf, ci
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]])
+    >>> myhf = scf.UHF(mol).run()
+    >>> myci = ci.UCISD(myhf).run()
+    >>> wf_cisd = cisd_state(myci, tol=1e-2)
+    >>> print(wf_cisd)
+    {(1, 1): -0.9486830343747924, (2, 2): -0.31622855704290276}
+
     """
+
 
     mol = cisd_solver.mol
 
