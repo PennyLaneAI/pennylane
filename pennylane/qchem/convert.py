@@ -432,3 +432,211 @@ def _excitated_states(electrons, orbitals, excitation):
     states_int = [int(state[::-1], 2) for state in states_str]
 
     return states_int, signs
+
+
+def _ucisd_state(cisd_solver, state=0, tol=1e-15):
+    r"""Construct a wavefunction in the wf_dict format `{ (int_a, int_b): coeff}` from
+    PySCF's `UCISD` Solver object.
+
+    The format is described in detail in the docstring of :func:`~.cisd_state`. In short,
+    the wavefunction is returned as a Python `dict` object with the format
+    `{(int_a, int_b) : coeff}`, where the binary representation of integers `int_a, int_b`
+    gives the Fock occupation vector over the molecular orbitals of the alpha and beta
+    electrons, respectively and `coeff` is the value of the CI coefficient.
+
+    The wavefunction is constructed from the configuration interaction coefficients that are
+    computed by PySCF's `UCISD` object upon calling its `.run()` or `'kernel()` method. In that
+    computation, the wavefunction is assumed to have the form
+
+    .. math::
+
+        \ket{\Psi_{CISD}} = c^{(0)} \ket{\text{HF}} + \sum_{i} c^{(1)}_{i} \ket{S_i} + \sum_{i} c^{(2)}_{i} \ket_{D_{i}}
+
+    where :math:`c^{(0,1,2)}` are the
+
+    Parameters
+    ----------
+    PySCF CISD solver
+
+    state
+        which state to do the conversion for, if multiple were solved for
+
+    Returns
+    -------
+    dict
+        Dictionary with keys (stra,strb) being binary strings representing
+        states occupied by alpha and beta electrons, and values being the CI
+        coefficients.
+    """
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nelec_a = int((nelec + mol.spin) / 2)
+    nelec_b = int((nelec - mol.spin) / 2)
+    nocc_a, nocc_b = nelec_a, nelec_b
+    nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
+
+    ## extract the CI coeffs for the chosen state, if multiple were solved for by CISD
+    assert state in range(cisd_solver.nroots), (
+        f"State requested has not " f"been solved for. Re-run with larger nroots."
+    )
+    if cisd_solver.nroots > 1:
+        cisdvec = cisd_solver.ci[state]
+    else:
+        cisdvec = cisd_solver.ci
+
+    # get number of single/double excitations, to partition the cisdvec accordingly
+    # simple combinatorics (i.e. N orbitals choose n electrons ) gives the answer
+    size_a = nocc_a * nvir_a
+    size_b = nocc_b * nvir_b
+    size_aa = int(nocc_a * (nocc_a - 1) / 2) * int(nvir_a * (nvir_a - 1) / 2)
+    size_bb = int(nocc_b * (nocc_b - 1) / 2) * int(nvir_b * (nvir_b - 1) / 2)
+    size_ab = nocc_a * nocc_b * nvir_a * nvir_b
+
+    # cisdvec in PySCF stores excitation coefficients as a flat array [c0, c1a, c1b, c2aa, c2ab, c2bb]
+    sizes = [1, size_a, size_b, size_aa, size_ab, size_bb]
+    cumul = np.cumsum(sizes)
+    idxs = [0] + [slice(cumul[ii], cumul[ii + 1]) for ii in range(len(cumul) - 1)]
+
+    # quick check that the combinatorics is correct
+    assert np.sum(sizes) == len(cisdvec), (
+        f"Number of expected excitations {np.sum(sizes)} does not "
+        f"correspond to cisdvec size {len(cisdvec)}.\nCheck you combinatorics!"
+    )
+
+    # np.cumsum() up to an appropriate size_xx will give the appropriate cisdvec slice
+    c0, c1a, c1b, c2aa, c2ab, c2bb = [cisdvec[idx] for idx in idxs]
+
+    # with the coefficients c0/c1/c2, can build the wavefunction through helper functions
+    # use row to store integers representing the Fock vector of alpha electrons, and col for beta
+    row = []
+    col = []
+    coeff = []
+
+    ### Hartree-Fock coefficient ###
+    # HF vector given by bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
+    row.extend([ref_a])
+    col.extend([ref_b])
+    coeff.extend([c0])
+
+    ### Single excitations ###
+    # generate arrays of integers c1x_configs, whose binary form corresponds to
+    # allowed single excitations, and signs from acting with the excitation operator c^+ c on the HF reference
+
+    # a -> a
+    # for alpha excitations, beta configs (cols) are unchanged
+    c1a_configs, c1a_signs = _excitated_states(norb, nelec_a, 1)
+    row.extend(c1a_configs)
+    col.extend([ref_b] * size_a)
+    coeff.extend(c1a * c1a_signs)
+
+    # b -> b
+    # for beta excitations, alpha configs (rows) are unchanged
+    c1b_configs, c1b_signs = _excitated_states(norb, nelec_b, 1)
+    row.extend(c1b_configs)
+    col.extend([ref_a] * size_b)
+    coeff.extend(c1b * c1b_signs)
+
+    ### Double excitations ###
+    # generate arrays of integers c2xx_configs, whose binary form corresponds to
+    # allowed doubl excitations, and signs from acting with the excitation operator c^+ c c^+ c on the HF reference
+
+    ## aa -> aa
+    # for alpha excitations, beta configs (cols) are unchanged
+    c2aa_configs, c2aa_signs = _excitated_states(norb, nelec_a, 2)
+    row.extend(c2aa_configs)
+    col.extend([ref_b] * size_aa)
+    coeff.extend(c2aa * c2aa_signs)
+
+    ## ab -> ab
+    # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
+    rowvals, colvals = np.array(list(product(c1a_configs, c1b_configs))).T
+    row.extend(rowvals)
+    col.extend(colvals)
+    coeff.extend(c2ab * np.kron(c1a_signs, c1b_signs))
+
+    ## bb -> bb
+    # for beta excitations, alpha configs (rows) are unchanged
+    c2bb_configs, c2bb_signs = _excitated_states(norb, nelec_b, 2)
+    row.extend([ref_a] * size_bb)
+    row.extend(c2bb_configs)
+    coeff.extend(c2bb * c2bb_signs)
+
+    # zip into a Slater det dictionary of the form { (int_a, int_b): coeff }
+    # where binary form of int_a / int_b gives the Fock occupation vector for alpha/beta sectors
+    dict_fcimatr = dict(zip(list(zip(row, col)), coeff))
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
+
+
+def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
+    r"""Wrapper for constructing a wavefunction in the ``wf_dict`` format
+    ``{ (int_a, int_b): coeff}`` from PySCF's CISD class instance.
+
+    The ``wf_dict`` format is a condensed, unified format for representing
+    wavefunctions written as a sum of Slater determinants. Each entry in
+    the dictionary corresponds to a single Slater determinant with coefficient
+    ``coeff``: the determinant is represented using the integers ``int_a, int_b``,
+    chosen such that such that their binary representation (i.e. ``bin(int_a)``)
+    corresponds to strings representing the Fock molecular orbital occupation
+    vector for the alpha (spin-up) sector and beta (spin-down) sector.
+
+    For example, the Hartree-Fock state of the :math:`\text{H}_2` molecule in
+    the minimal basis with two electrons, split between the alpha and beta sector,
+    is written :math:`[1,0] x [1,0]` (high-energy orbitals on the right). In the
+    `wf_dict` format, it would correspond to integers (1, 1), since
+    `bin(1) = '0b1' -> [1,0]`. Note that the representation is reversed
+    (high-energy orbitals are on the left). The doubly excited state
+    :math:`[0,1] x [0,1]` would correspond to (2, 2), since `bin(2) = '0b10' -> [0,1]`.
+
+    -   The wrapper re-directs wavefunction construction to the appropriate method
+        depending on whether the restricted CISD or unrestricted CISD was used.
+
+    -
+
+    Args:
+        cisd_solver (PySCF CISD or UCISD Class instance): the class object representing
+            the CISD / UCISD calculation in PySCF. Must have already carried out the
+            calculation, e.g. by calling .kernel() or .run().
+
+        hftype (str): User specifies whether restricted or unrestricted CISD was performed.
+            The options are 'rhf' for restricted, and 'uhf' for unrestricted.
+
+        state (int): which state to do the conversion for, if several were solved for
+            when running CISD / UCISD. Default is 0 (the ground state).
+
+        tol (float): the tolerance to which the wavefunction is being built -- Slater
+            determinants with coefficients smaller than this are discarded. Default
+            is 1e-15 (all coefficients are included).
+
+    Returns:
+        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+
+    **Example**
+
+    >>> from pyscf import gto, scf, ci
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,1.4)]])
+    >>> myhf = scf.UHF(mol).run()
+    >>> myci = ci.UCISD(myhf).run()
+    >>> wf_cisd = cisd_state(myci, tol=1e-2)
+    >>> print(wf_cisd)
+    {(1, 1): -0.9486830343747924, (2, 2): -0.31622855704290276}
+
+    """
+
+    if hftype == "uhf":
+        wf = _ucisd_state(cisd_solver, state=state, tol=tol)
+    # elif hftype == 'rhf':
+    #     wf = _rcisd_state(cisd_solver, state=state, tol=tol)
+    else:
+        print(f"Unknown HF reference character. Exiting")
+        exit()
+
+    return wf
