@@ -44,8 +44,10 @@ def set_shots(device, shots):
     100
     """
     if isinstance(device, qml.devices.experimental.Device):
-        yield
-        return
+        raise ValueError(
+            "The new device interface is not compatible with `set_shots`."
+            "Set shots when calling the qnode or put the shots on the QuantumTape."
+        )
     if isinstance(shots, Shots):
         shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:

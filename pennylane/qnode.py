@@ -939,10 +939,12 @@ class QNode:
 
                 # pylint: disable=not-callable
                 # update the gradient function
-                set_shots(self._original_device, override_shots)(self._update_gradient_fn)(
-                    shots=override_shots
-                )
-
+                if isinstance(self._original_device, qml.Device):
+                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)(
+                        shots=override_shots
+                    )
+                else:
+                    self._update_gradient_fn(shots=override_shots)
             else:
                 kwargs["shots"] = _get_device_shots(self._original_device)
 

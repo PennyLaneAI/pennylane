@@ -15,6 +15,8 @@
 Tests for interfaces.set_shots
 """
 
+import pytest
+
 import pennylane as qml
 from pennylane.interfaces import set_shots
 from pennylane.measurements import Shots
@@ -25,8 +27,9 @@ def test_shots_new_device_interface():
     untouched.
     """
     dev = qml.devices.experimental.DefaultQubit2()
-    with set_shots(dev, 10):
-        assert dev.shots == Shots(None)
+    with pytest.raises(ValueError):
+        with set_shots(dev, 10):
+            pass
 
 
 def test_set_with_shots_class():
