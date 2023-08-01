@@ -390,14 +390,12 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
-        AmplitudeAndPhaseAndFreq(qml.math.cos, amplitude, phase, freq),
         AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq),
     ]
 
-    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
+    drive_y_term = sum(qml.PauliY(wire) for wire in wires)
 
-    observables = [drive_x_term, drive_y_term]
+    observables = [drive_y_term]
 
     pulses = [HardwarePulse(amplitude, phase, freq, wires)]
 
@@ -526,10 +524,10 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
 
                 num_callables = sum(is_callables)
 
-                # duplicate and package parameters according to how many coeffs are callable
-                reordered_params.extend([params[params_idx : params_idx + num_callables]] * 2)
+                # package parameters according to how many coeffs are callable
+                reordered_params.extend([params[params_idx : params_idx + num_callables]])
 
-                coeff_idx += 2
+                coeff_idx += 1
                 params_idx += num_callables
 
             else:
