@@ -19,8 +19,6 @@ from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
-import os
-import warnings
 import numpy as np
 
 from pennylane.tape import QuantumTape, QuantumScript
@@ -31,7 +29,11 @@ from pennylane import DeviceError, Snapshot
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate, get_final_state, measure_final_state
-from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
+from ..qubit.preprocess import (
+    preprocess,
+    validate_and_expand_adjoint,
+    validate_multiprocessing_workers,
+)
 from ..qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
@@ -169,7 +171,7 @@ class DefaultQubit2(Device):
         # do once device accepts finite shots
         if (
             execution_config.gradient_method == "backprop"
-            and self._get_max_workers(execution_config) is None
+            and execution_config.device_options.get("max_workers", self._max_workers) is None
         ):
             return True
 
@@ -210,6 +212,10 @@ class DefaultQubit2(Device):
             circuits = [circuits]
             is_single_circuit = True
 
+        if "max_workers" not in execution_config.device_options:  # prefer config over device value
+            execution_config.device_options["max_workers"] = self._max_workers
+        self._validate_multiprocessing(execution_config.device_options["max_workers"], circuits)
+
         batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
 
         if is_single_circuit:
@@ -238,17 +244,16 @@ class DefaultQubit2(Device):
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
-            self._validate_multiprocessing_circuits(circuits)
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
             _wrap_simulate = partial(simulate, debugger=None)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
-                results = tuple(circuit for circuit in exec_map)
+                results = tuple(exec_map)
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
@@ -269,14 +274,14 @@ class DefaultQubit2(Device):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
-                res = tuple(circuit for circuit in exec_map)
+                res = tuple(exec_map)
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
@@ -303,26 +308,22 @@ class DefaultQubit2(Device):
             )
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
                 _adjoint_jac_wrapper(c, rng=self._rng, debugger=self._debugger) for c in circuits
             )
-            results, jacs = tuple(zip(*results))
         else:
-            self._validate_multiprocessing_circuits(circuits)
-
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(executor.map(_adjoint_jac_wrapper, vanilla_circuits, seeds))
 
-            results, jacs = tuple(zip(*results))
-
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
+        results, jacs = tuple(zip(*results))
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
     def supports_jvp(
@@ -360,7 +361,7 @@ class DefaultQubit2(Device):
             self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             res = tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
         else:
@@ -393,16 +394,13 @@ class DefaultQubit2(Device):
             )
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
                 _adjoint_jvp_wrapper(c, t, rng=self._rng, debugger=self._debugger)
                 for c, t in zip(circuits, tangents)
             )
-            results, jvps = tuple(zip(*results))
         else:
-            self._validate_multiprocessing_circuits(circuits)
-
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
@@ -411,11 +409,10 @@ class DefaultQubit2(Device):
                     executor.map(_adjoint_jvp_wrapper, vanilla_circuits, tangents, seeds)
                 )
 
-            results, jvps = tuple(zip(*results))
-
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
+        results, jvps = tuple(zip(*results))
         return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
 
     def supports_vjp(
@@ -453,7 +450,7 @@ class DefaultQubit2(Device):
             self.tracker.update(vjp_batches=1, vjps=len(circuits))
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
         else:
@@ -486,16 +483,13 @@ class DefaultQubit2(Device):
             )
             self.tracker.record()
 
-        max_workers = self._get_max_workers(execution_config)
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
                 _adjoint_vjp_wrapper(c, t, rng=self._rng, debugger=self._debugger)
                 for c, t in zip(circuits, cotangents)
             )
-            results, vjps = tuple(zip(*results))
         else:
-            self._validate_multiprocessing_circuits(circuits)
-
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
@@ -504,33 +498,24 @@ class DefaultQubit2(Device):
                     executor.map(_adjoint_vjp_wrapper, vanilla_circuits, cotangents, seeds)
                 )
 
-            results, vjps = tuple(zip(*results))
-
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
+        results, vjps = tuple(zip(*results))
         return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
 
-    # pylint: disable=missing-function-docstring
-    def _get_max_workers(self, execution_config=None):
-        max_workers = None
-        if (
-            execution_config
-            and execution_config.device_options
-            and "max_workers" in execution_config.device_options
-        ):
-            max_workers = execution_config.device_options["max_workers"]
-        else:
-            max_workers = self._max_workers
-        _validate_multiprocessing_workers(max_workers)
-        return max_workers
-
-    def _validate_multiprocessing_circuits(self, circuits):
+    def _validate_multiprocessing(self, max_workers, circuits):
         """Make sure the tapes can be processed by a ProcessPoolExecutor instance.
 
         Args:
+            max_workers (Union[int]): Maximal number of multiprocessing workers
             circuits (QuantumTape_or_Batch): Quantum tapes
         """
+        if max_workers is None:
+            return
+
+        validate_multiprocessing_workers(max_workers)
+
         if self._debugger and self._debugger.active:
             raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
 
@@ -543,43 +528,6 @@ class DefaultQubit2(Device):
                 a ``Snapshot`` operation. Change the value of ``max_workers``
                 to ``None`` or execute the QuantumScript separately."""
             )
-
-
-def _validate_multiprocessing_workers(max_workers):
-    """Validates the number of workers for multiprocessing.
-
-    Checks that the CPU is not oversubscribed and warns user if it is,
-    making suggestions for the number of workers and/or the number of
-    threads per worker.
-
-    Args:
-        max_workers (int): Maximal number of multiprocessing workers
-    """
-    if max_workers is None:
-        return
-    threads_per_proc = os.cpu_count()  # all threads by default
-    varname = "OMP_NUM_THREADS"
-    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
-    for var in varnames:
-        if os.getenv(var):  # pragma: no cover
-            varname = var
-            threads_per_proc = int(os.getenv(var))
-            break
-    num_threads = threads_per_proc * max_workers
-    num_cpu = os.cpu_count()
-    num_threads_suggest = max(1, os.cpu_count() // max_workers)
-    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
-    if num_threads > num_cpu:
-        warnings.warn(
-            f"""The device requested {num_threads} threads ({max_workers} processes
-            times {threads_per_proc} threads per process), but the processor only has
-            {num_cpu} logical cores. The processor is likely oversubscribed, which may
-            lead to performance deterioration. Consider decreasing the number of processes,
-            setting the device or execution config argument `max_workers={num_workers_suggest}`
-            for example, or decreasing the number of threads per process by setting the
-            environment variable `{varname}={num_threads_suggest}`.""",
-            UserWarning,
-        )
 
 
 def _adjoint_jac_wrapper(c, rng=None, debugger=None):
