@@ -380,6 +380,8 @@ def execute(
             jacs = _flatten_nested_list(jacs)
             for i, jac in enumerate(jacs):
                 jacs[i] = tf.convert_to_tensor(jac)
+        else:
+            jacs = []
 
         return res + jacs + output_sizes
 

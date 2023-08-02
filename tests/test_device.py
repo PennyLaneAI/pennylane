@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
+# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -253,16 +253,16 @@ class TestDeviceSupportedLogic:
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
 
+    # pylint: disable=unnecessary-dunder-call
     def test_repr(self, mock_device_with_operations):
         """Tests the __repr__ function"""
         dev = mock_device_with_operations()
-        repr_string = dev.__repr__()
-        assert "<Device device (wires=1, shots=1000) at " in repr_string
+        assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
 
     def test_str(self, mock_device_with_operations):
         """Tests the __str__ function"""
         dev = mock_device_with_operations()
-        string = dev.__str__()
+        string = str(dev)
         assert "Short name: MockDevice" in string
         assert "Package: pennylane" in string
         assert "Plugin version: None" in string
@@ -810,7 +810,7 @@ class TestDeviceInit:
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""
 
-        with pytest.raises(DeviceError, match="Device does not exist"):
+        with pytest.raises(DeviceError, match="Device None does not exist"):
             qml.device("None", wires=0)
 
     def test_outdated_API(self, monkeypatch):
@@ -963,7 +963,7 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
     class SomeDevice(qml.Device):
         name = ""
         short_name = ""
@@ -972,10 +972,18 @@ class TestGrouping:
         author = ""
         operations = ""
         observables = ""
-        apply = lambda *args, **kwargs: 0
-        expval = lambda *args, **kwargs: 0
-        reset = lambda *args, **kwargs: 0
-        supports_observable = lambda *args, **kwargs: True
+
+        def apply(self, *args, **kwargs):
+            return 0
+
+        def expval(self, *args, **kwargs):
+            return 0
+
+        def reset(self, *args, **kwargs):
+            return 0
+
+        def supports_observable(self, *args, **kwargs):
+            return True
 
     # pylint: disable=attribute-defined-outside-init
     @pytest.mark.parametrize("use_grouping", (True, False))

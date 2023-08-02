@@ -127,6 +127,36 @@ class TestUnittestSplitNonCommuting:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type
 
+    def test_mixed_measurement_types(self):
+        """Test that mixing expval and var works correctly."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliZ(1))
+            qml.var(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        split, _ = split_non_commuting(tape)
+
+        assert len(split) == 2
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.expval(qml.PauliX(0))
+            qml.var(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        split, _ = split_non_commuting(tape)
+
+        assert len(split) == 2
+        assert qml.equal(split[0].measurements[0], qml.expval(qml.PauliX(0)))
+        assert qml.equal(split[0].measurements[1], qml.expval(qml.PauliZ(1)))
+        assert qml.equal(split[1].measurements[0], qml.var(qml.PauliZ(0)))
+
     def test_raise_not_supported(self):
         """Test that NotImplementedError is raised when probabilities or samples are called"""
         with qml.queuing.AnnotatedQueue() as q:
