@@ -2404,7 +2404,7 @@ class Tensor(Observable):
         return 0
 
     def sparse_matrix(
-        self, wires=None, wire_order=None, format="csr"
+        self, wire_order=None, wires=None, format="csr"
     ):  # pylint:disable=arguments-renamed, arguments-differ
         r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
