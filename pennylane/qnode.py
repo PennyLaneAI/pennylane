@@ -27,7 +27,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, make_qscript
 
 
@@ -47,6 +47,15 @@ def _convert_to_interface(res, interface):
         return {k: _convert_to_interface(v, interface) for k, v in res.items()}
 
     return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
+
+
+# pylint: disable=protected-access
+def _get_device_shots(device) -> Shots:
+    if isinstance(device, Device):
+        if device._shot_vector:
+            return Shots(device._raw_shot_sequence)
+        return Shots(device.shots)
+    return device.shots
 
 
 class QNode:
@@ -693,7 +702,7 @@ class QNode:
 
     @staticmethod
     def _validate_backprop_method(device, interface, shots=None):
-        if shots is not None or getattr(device, "shots", None) is not None:
+        if shots is not None or _get_device_shots(device):
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
         if isinstance(device, qml.devices.experimental.Device):
@@ -830,14 +839,10 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
-        if not self._qfunc_uses_shots_arg:
-            shots = kwargs.pop("shots", None)
+        if self._qfunc_uses_shots_arg:
+            shots = _get_device_shots(self._original_device)
         else:
-            shots = (
-                self._original_device._raw_shot_sequence
-                if self._original_device._shot_vector
-                else self._original_device.shots
-            )
+            shots = kwargs.pop("shots", _get_device_shots(self._original_device))
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -935,20 +940,14 @@ class QNode:
 
                 # pylint: disable=not-callable
                 # update the gradient function
-                if isinstance(self._original_device, Device):
-                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
-                else:
-                    self._update_gradient_fn(shots=override_shots)
-
-            else:
-                if isinstance(self._original_device, Device):
-                    kwargs["shots"] = (
-                        self._original_device._raw_shot_sequence
-                        if self._original_device._shot_vector
-                        else self._original_device.shots
+                if isinstance(self._original_device, qml.Device):
+                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)(
+                        shots=override_shots
                     )
                 else:
-                    kwargs["shots"] = None
+                    self._update_gradient_fn(shots=override_shots)
+            else:
+                kwargs["shots"] = _get_device_shots(self._original_device)
 
         # construct the tape
         self.construct(args, kwargs)
@@ -993,10 +992,14 @@ class QNode:
 
             # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
             if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-                if self.device._shot_vector:
+                has_partitioned_shots = (
+                    self.tape.shots.has_partitioned_shots
+                    if isinstance(self.device, qml.devices.experimental.Device)
+                    else self.device._shot_vector
+                )
+                if has_partitioned_shots:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
-
                 else:
                     res = type(self.tape._qfunc_output)(res)
 
