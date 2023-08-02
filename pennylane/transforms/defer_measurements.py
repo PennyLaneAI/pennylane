@@ -113,8 +113,8 @@ def defer_measurements(tape):
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [control_wires[m_id] for m_id in op.measurement_ids]
-    for branch, value in op._items():  # pylint: disable=protected-access
+    control = [control_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             ctrl(
                 lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
