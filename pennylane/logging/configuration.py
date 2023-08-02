@@ -60,10 +60,11 @@ def _configure_logging(config_file):
     """
     if not has_toml:
         raise ImportError(
-            "A TOML parser is required to enable PennyLane logging defaults. "
-            "You can install tomli via `pip install tomli`, "
-            "install tomlkit via `pip install tomlkit`, "
-            "or use Python 3.11 which natively offers the tomllib library."
+            "A TOML parser is required to enable PennyLane logging defaults."
+            "We support any of the following TOML parsers: [tomli, tomlkit, tomllib]"
+            "You can install either tomli via `pip install tomli`, "
+            "tomlkit via `pip install tomlkit`, or use Python 3.11 "
+            "or above which natively offers the tomllib library."
         )
     with open(os.path.join(_path, config_file), "rb") as f:
         pl_config = tomllib.load(f)
@@ -73,7 +74,7 @@ def _configure_logging(config_file):
 def enable_logging():
     """
     This method allows top selectively enable logging throughout PennyLane.
-    All configurations are read through the `log_config.toml` files, selectively controlled via the `use_yaml` argument.
+    All configurations are read through the `log_config.toml` file.
     """
     _add_trace_level()
     _configure_logging("log_config.toml")

@@ -1,3 +1,16 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """The PennyLane log-level formatters are defined here with default options, and ANSI-terminal color-codes."""
 import logging
 from logging import Formatter
@@ -5,7 +18,7 @@ from typing import NamedTuple, Tuple, Union
 
 # For color-code definitions see https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 # 24-bit mode support RGB color codes in 8bit-wide r;g;b format
-ANSI_CODES = {
+_ANSI_CODES = {
     "begin": "\x1b[",
     "end": "\x1b[0m",
     "foreground_rgb": "38;2;",
@@ -35,13 +48,13 @@ def build_code_rgb(rgb: Tuple[int, int, int], rgb_bg: Union[None, Tuple[int, int
     """
     Utility function to generate the appropriate ANSI RGB codes for a given set of foreground (font) and background colors.
     """
-    output = ANSI_CODES["begin"]
-    output += ANSI_CODES["foreground_rgb"]
+    output = _ANSI_CODES["begin"]
+    output += _ANSI_CODES["foreground_rgb"]
     output += ";".join([str(i) for i in rgb])
     output += "m"
     if rgb_bg:
-        output += ANSI_CODES["begin"]
-        output += ANSI_CODES["background_rgb"]
+        output += _ANSI_CODES["begin"]
+        output += _ANSI_CODES["background_rgb"]
         output += ";".join([str(i) for i in rgb_bg])
         output += "m"
     return output
@@ -84,15 +97,15 @@ class DefaultFormatter(Formatter):
     )
 
     FORMATS = {
-        logging.DEBUG: build_code_rgb(cmap.debug, cmap.debug_bg) + fmt_str + ANSI_CODES["end"],
-        logging.INFO: build_code_rgb(cmap.info, cmap.info_bg) + fmt_str + ANSI_CODES["end"],
+        logging.DEBUG: build_code_rgb(cmap.debug, cmap.debug_bg) + fmt_str + _ANSI_CODES["end"],
+        logging.INFO: build_code_rgb(cmap.info, cmap.info_bg) + fmt_str + _ANSI_CODES["end"],
         logging.WARNING: build_code_rgb(cmap.warning, cmap.warning_bg)
         + fmt_str
-        + ANSI_CODES["end"],
-        logging.ERROR: build_code_rgb(cmap.error, cmap.error_bg) + fmt_str + ANSI_CODES["end"],
+        + _ANSI_CODES["end"],
+        logging.ERROR: build_code_rgb(cmap.error, cmap.error_bg) + fmt_str + _ANSI_CODES["end"],
         logging.CRITICAL: build_code_rgb(cmap.critical, cmap.critical_bg)
         + fmt_str
-        + ANSI_CODES["end"],
+        + _ANSI_CODES["end"],
     }
 
     def format(self, record):
