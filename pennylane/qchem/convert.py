@@ -462,6 +462,7 @@ def _excited_configurations(electrons, orbitals, excitation):
 
     return states_int, signs
 
+
 def _rcisd_state(cisd_solver, tol=1e-15):
     r"""
 
@@ -484,8 +485,12 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     norb = mol.nao
     nelec = mol.nelectron
     nocc, nvir = nelec // 2, norb - nelec // 2
-    
-    c0, c1, c2 = cisdvec[0], cisdvec[1:nocc*nvir+1], cisdvec[nocc*nvir+1:].reshape(nocc,nocc,nvir,nvir)
+
+    c0, c1, c2 = (
+        cisdvec[0],
+        cisdvec[1 : nocc * nvir + 1],
+        cisdvec[nocc * nvir + 1 :].reshape(nocc, nocc, nvir, nvir),
+    )
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
     ref_a = int(2**nocc - 1)
@@ -495,9 +500,13 @@ def _rcisd_state(cisd_solver, tol=1e-15):
 
     # alpha -> alpha excitations
     c1a_configs, c1a_signs = _excited_configurations(nocc, norb, 1)
-    dict_fcimatr.update(dict(zip(list(zip(c1a_configs, [ref_b] * len(c1a_configs))), c1 * c1a_signs)))
+    dict_fcimatr.update(
+        dict(zip(list(zip(c1a_configs, [ref_b] * len(c1a_configs))), c1 * c1a_signs))
+    )
     # beta -> beta excitations
-    dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c1a_configs), c1a_configs)), c1 * c1a_signs)))
+    dict_fcimatr.update(
+        dict(zip(list(zip([ref_a] * len(c1a_configs), c1a_configs)), c1 * c1a_signs))
+    )
 
     # check if double excitations within one spin sector (aa->aa and bb->bb) are possible
     if nocc > 1 and nvir > 1:
@@ -509,14 +518,18 @@ def _rcisd_state(cisd_solver, tol=1e-15):
 
         # alpha, alpha -> alpha, alpha excitations
         c2aa_configs, c2aa_signs = _excited_configurations(nocc, norb, 2)
-        dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa * c2aa_signs)))
+        dict_fcimatr.update(
+            dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa * c2aa_signs))
+        )
         # beta, beta -> beta, beta excitations
-        dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa * c2aa_signs)))
+        dict_fcimatr.update(
+            dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa * c2aa_signs))
+        )
 
     # alpha, beta -> alpha, beta excitations
     # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
-    rowvals, colvals = np.array( list(product(c1a_configs, c1a_configs)), dtype=int ).T.numpy()
-    c2ab = (c2.transpose(0, 2, 1, 3).reshape(nocc*nvir, -1)).ravel()
+    rowvals, colvals = np.array(list(product(c1a_configs, c1a_configs)), dtype=int).T.numpy()
+    c2ab = (c2.transpose(0, 2, 1, 3).reshape(nocc * nvir, -1)).ravel()
     dict_fcimatr.update(
         dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1a_signs).numpy()))
     )
