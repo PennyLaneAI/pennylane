@@ -586,7 +586,7 @@ def cisd_state(cisd_solver, hftype, tol=1e-15):
         wf_dict = _ucisd_state(cisd_solver, tol=tol)
     else:
         raise ValueError(
-            "The supported hftype options are 'rhf' for restricted," " and 'uhf' for unrestricted."
+            "The supported hftype options are 'rhf' for restricted and 'uhf' for unrestricted."
         )
     wf = wfdict_to_statevector(wf_dict, cisd_solver.mol.nao)
 
