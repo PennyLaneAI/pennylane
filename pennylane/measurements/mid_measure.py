@@ -100,7 +100,9 @@ class MidMeasureMP(MeasurementProcess):
         processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
-    def __init__(self, wires: Wires, measurement_ids: List[str], processing_fn: Callable):
+    def __init__(
+        self, wires: Wires, measurement_ids: List[str] = None, processing_fn: Callable = None
+    ):
         super().__init__(wires=wires)
         self.measurement_ids = measurement_ids
         self.processing_fn = processing_fn
