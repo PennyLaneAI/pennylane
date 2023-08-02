@@ -36,7 +36,16 @@ def pauli_decompose(
     pauli=False,
     padding=False,
 ) -> Union[Hamiltonian, PauliSentence]:
-    r"""Decomposes a matrix into a linear combination of Pauli operators acting on `n` qubits.
+    r"""Decomposes a matrix into a linear combination of Pauli operators acting on :math:`n` qubits.
+
+    This method converts any matrix to a weighted sum of Pauli words using Bell-basis measurements
+    in :math:`O(n 4^n)`. The input matrix is first padded with zeros if its dimensions are not
+    :math:`2^n\times 2^n` and written as a quantum state in the computational basis following the
+    `channel-state duality <https://en.wikipedia.org/wiki/Channel-state_duality>`_.
+    A Bell basis transformation is then performed using the
+    `Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Hadamard_transform>`_, after which
+    coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
+    phase from each :func:`PauliY` term occuring in the word.
 
     Args:
         matrix (tensor[complex]): any matrix M, the keyword argument ``padding=True``
@@ -183,9 +192,10 @@ def pauli_decompose(
     phase_mat = qml.math.convert_like(qml.math.reshape(phase_mat, shape), matrix)
 
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
+    # https://quantumcomputing.stackexchange.com/questions/31788/how-to-write-the-iswap-unitary-as-a-linear-combination-of-tensor-products-betw/31790#31790
     term_mat = qml.math.transpose(qml.math.multiply(hadamard_transform_mat, phase_mat))
 
-    # Convert to Hamiltonian and PauliSentence
+    # Obtain the coefficients for each Pauli word.
     coeffs, obs = [], []
     for pauli_rep in product("IXYZ", repeat=num_qubits):
         bit_array = qml.math.array(
@@ -205,6 +215,7 @@ def pauli_decompose(
 
     coeffs = qml.math.stack(coeffs)
 
+    # Convert to Hamiltonian and PauliSentence
     if pauli:
         return PauliSentence(
             {
