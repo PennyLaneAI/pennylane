@@ -12,7 +12,7 @@
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
 
 * Transform Programs are now integrated with the `QNode`.
-  [(#4404)](https://github.com/PennyLaneAI/pennylane/pull)
+  [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
 
 ```
 def null_postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
