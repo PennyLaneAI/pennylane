@@ -57,7 +57,7 @@ def transmon_interaction(
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(b^\dagger_i b_j + b_j^\dagger b_i \right)
         + \sum_{q\in \text{wires}} \alpha_q b^\dagger_q b^\dagger_q b_q b_q
 
-    where :math:`[b^\dagger_p, b_q] = i \delta_{pq}` are creation and annihilation operators.
+    where :math:`[b_p, b_q^\dager] = \delta_{pq}` are creation and annihilation operators.
     The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math:`= \omega_q/ (2\pi)`,
     the second term their ``coupling`` :math:`= g_{ij}/(2\pi)` and the last the
     ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
@@ -278,7 +278,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     (see :func:`~.transmon_interaction`).
     The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
-    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2``, we have :math:`b:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future.
+        For ``d>2``, we have :math:`Y \mapsto i (\sigma^- - \sigma^+)`
+        with lowering and raising operators.
 
     .. note:: Due to convention in the respective fields, we omit the factor :math:`\frac{1}{2}` present in the related constructor :func:`~.rydberg_drive`
 
