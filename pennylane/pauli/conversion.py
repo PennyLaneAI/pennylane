@@ -45,10 +45,10 @@ def pauli_decompose(
     A Bell basis transformation is then performed using the
     `Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Hadamard_transform>`_, after which
     coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
-    phase from each :func:`PauliY` term occuring in the word.
+    phase from each ``PauliY`` term occuring in the word.
 
     Args:
-        matrix (tensor[complex]): any matrix M, the keyword argument ``padding=True``
+        matrix (tensor_like[complex]): any matrix M, the keyword argument ``padding=True``
             should be provided if the dimension of M is not :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
@@ -192,10 +192,10 @@ def pauli_decompose(
     phase_mat = qml.math.convert_like(qml.math.reshape(phase_mat, shape), matrix)
 
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
-    # https://quantumcomputing.stackexchange.com/questions/31788/how-to-write-the-iswap-unitary-as-a-linear-combination-of-tensor-products-betw/31790#31790
+    # https://quantumcomputing.stackexchange.com/a/31790
     term_mat = qml.math.transpose(qml.math.multiply(hadamard_transform_mat, phase_mat))
 
-    # Obtain the coefficients for each Pauli word.
+    # Obtain the coefficients for each Pauli word
     coeffs, obs = [], []
     for pauli_rep in product("IXYZ", repeat=num_qubits):
         bit_array = qml.math.array(
