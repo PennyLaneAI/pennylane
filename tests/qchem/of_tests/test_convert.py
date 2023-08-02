@@ -28,7 +28,7 @@ from pennylane.operation import disable_new_opmath, enable_new_opmath
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
+pyscf = pytest.importorskip("pyscf")
 
 pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
 pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
@@ -893,11 +893,9 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
 def test_ucisd_state(molecule, basis, tol, wf_ref):
     r"""Test the UCISD wavefunction constructor."""
 
-    from pyscf import gto, scf, ci
-
-    mol = gto.M(atom=molecule, basis=basis)
-    myhf = scf.UHF(mol).run()
-    myci = ci.UCISD(myhf).run()
+    mol = pyscf.gto.M(atom=molecule, basis=basis)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
 
     wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
 
