@@ -16,12 +16,13 @@ import pennylane as qml
 from pennylane.measurements import MidMeasureMP
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import apply
+from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
 
 
 @qfunc_transform
-def defer_measurements(tape):
+def defer_measurements(tape: QuantumTape, dev_wires: Wires = None):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -42,6 +43,13 @@ def defer_measurements(tape):
 
     .. note::
 
+        Devices that inherit `QubitDevice` must be initialized with an additional
+        wire for each mid-circuit measurement for `defer_measurements` to work. If
+        ths transform is used for executing on such a device, the `dev_wires` argument
+        must be specified.
+
+    .. note::
+
         This transform does not change the list of terminal measurements returned by
         the quantum function.
 
@@ -54,7 +62,8 @@ def defer_measurements(tape):
         post-measurement states are considered.
 
     Args:
-        qfunc (function): a quantum function
+        tape (.QuantumTape): a quantum tape
+        dev_wires (.Wires): wires of the device on which to execute the quantum tape
 
     **Example**
 
@@ -84,8 +93,9 @@ def defer_measurements(tape):
 
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
+
+    ######### TODO: ADD QUBIT REUSE AND RESET EXAMPLE ##############
     """
-    new_wires = {}
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -93,17 +103,27 @@ def defer_measurements(tape):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
-    # Current wire in which pre-measurement state will be saved
-    new_wire_latest = tape.num_wires
+    # Extra wires that were provided to a device for storing measurement states
+    extra_wires = Wires.unique_wires([dev_wires, tape.wires]) if dev_wires else None
+    # Current wire in which pre-measurement state will be saved if dev_wires not specified
+    cur_wire = 0
+    n_wires = tape.num_wires
+    new_wires = {}
+
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            new_wires[op.id] = new_wire_latest
-            qml.CNOT([op.wires[0], new_wire_latest])
+            if extra_wires and len(extra_wires) == cur_wire:
+                raise ValueError(
+                    "Too few wires found. Devices must have at least as many unused wires "
+                    "as the number of mid-circuit measurements in the circuit."
+                )
+            new_wires[op.id] = extra_wires[cur_wire] if dev_wires else cur_wire + n_wires
+            qml.CNOT([op.wires[0], new_wires[op.id]])
 
             if op.reset:
-                qml.CNOT([new_wire_latest, op.wires[0]])
+                qml.CNOT([new_wires[op.id], op.wires[0]])
 
-            new_wire_latest += 1
+            cur_wire += 1
 
         elif op.__class__.__name__ == "Conditional":
             _add_control_gate(op, new_wires)
