@@ -875,14 +875,14 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
             "d2h",
             4e-2,
             {
-                (1, 1): 0.9919704795977625, 
-                (2, 2): -0.048530356564387034, 
-                (2, 8): 0.0445233308500785, 
-                (4, 4): -0.05003594568491194, 
-                (8, 2): 0.04452333085007853, 
-                (8, 8): -0.05226230322043741, 
-                (16, 16): -0.0404759737476627, 
-                (32, 32): -0.0404759737476627
+                (1, 1): 0.9919704795977625,
+                (2, 2): -0.048530356564387034,
+                (2, 8): 0.0445233308500785,
+                (4, 4): -0.05003594568491194,
+                (8, 2): 0.04452333085007853,
+                (8, 8): -0.05226230322043741,
+                (16, 16): -0.0404759737476627,
+                (32, 32): -0.0404759737476627,
             },
         ),
     ],
@@ -977,6 +977,7 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
 
     # overall sign could be +/-1 different
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
 
 def test_cisd_state_error():
     r"""Test that an error is raised if a wrong/not-supported hftype symbol is entered."""
