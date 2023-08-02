@@ -201,7 +201,7 @@ class MidMeasureMP(MeasurementProcess):
             )
         return new_mp
 
-    def _merge(self, other: MidMeasureMP):
+    def _merge(self, other: "MidMeasureMP"):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
