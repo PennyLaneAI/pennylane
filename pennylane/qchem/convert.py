@@ -569,8 +569,8 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
     # b -> b
     # for beta excitations, alpha configs (rows) are unchanged
     c1b_configs, c1b_signs = _excitated_states(nelec_b, norb, 1)
-    row.extend(c1b_configs)
-    col.extend([ref_a] * size_b)
+    row.extend([ref_a] * size_b)
+    col.extend(c1b_configs)
     coeff.extend(c1b * c1b_signs)
 
     ### Double excitations ###
@@ -595,7 +595,7 @@ def _ucisd_state(cisd_solver, state=0, tol=1e-15):
     # for beta excitations, alpha configs (rows) are unchanged
     c2bb_configs, c2bb_signs = _excitated_states(nelec_b, norb, 2)
     row.extend([ref_a] * size_bb)
-    row.extend(c2bb_configs)
+    col.extend(c2bb_configs)
     coeff.extend(c2bb * c2bb_signs)
 
     # zip into a Slater det dictionary of the form { (int_a, int_b): coeff }
