@@ -247,7 +247,7 @@ As mentioned above, we have added execution function entry logging
 supports, including some supports for each target interface. We can
 examine this support for both internal and external packages, where we
 enable logs for JAX, which has support for Python-native log messages.
-To enable logging specifcally for JAX, we can modify the ``level``
+To enable logging specifically for JAX, we can modify the ``level``
 parameter for the ``[loggers.jax]`` entry in the ``log_config.toml``
 file as:
 
