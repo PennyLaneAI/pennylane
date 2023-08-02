@@ -971,3 +971,9 @@ def test_cisd_state(molecule, basis, hftype, wf_ref):
     wf_comp = qchem.convert.cisd_state(myci, hftype)
 
     assert np.allclose(abs(wf_comp), wf_ref)
+
+
+def test_cisd_state_error():
+    r"""Test that an error is raised if a wrong/not-supported hftype symbol is entered."""
+    with pytest.raises(ValueError, match="The supported hftype options are"):
+        _ = qchem.convert.cisd_state("myci", "hf")

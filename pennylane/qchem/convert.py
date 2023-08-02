@@ -530,7 +530,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
     # beta -> beta excitations
     c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
-    dict_fcimatr.update(dict(zip(list(zip(c1b_configs, [ref_a] * size_b)), c1b * c1b_signs)))
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b, c1b_configs)), c1b * c1b_signs)))
 
     # alpha, alpha -> alpha, alpha excitations
     c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
@@ -585,7 +585,9 @@ def cisd_state(cisd_solver, hftype, tol=1e-15):
     if hftype == "uhf":
         wf_dict = _ucisd_state(cisd_solver, tol=tol)
     else:
-        raise ValueError("Only restricted, 'rhf', and unrestricted, 'uhf', are supported.")
+        raise ValueError(
+            "The supported hftype options are 'rhf' for restricted," " and 'uhf' for unrestricted."
+        )
     wf = wfdict_to_statevector(wf_dict, cisd_solver.mol.nao)
 
     return wf
