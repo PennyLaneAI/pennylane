@@ -257,14 +257,19 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. math::
 
-        \Omega(t) \left(e^{i (\phi(t) + \nu t)} b_q + e^{-i (\phi(t) + \nu t)} b^\dagger_q\right)
+        \Omega(t) \sin\left(\phi(t) + \nu t\right) \sum_q Y_q
 
-    where :math:`[b^\dagger_p, b_q] = i \delta_{pq}` are creation and annihilation operators
-    and :math:`q` is the qubit label (``wires``).
+    where :math:`Y_q` are Pauli-Y operators on ``wires`` :math:`\{q\}`.
     The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega / (2\pi)`, :math:`\phi`
     and :math:`\nu / (2\pi)`, respectively, and can all be either fixed numbers (``float``) or depend on time
     (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
     in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
+
+    Together with the single qubit :math:`Z` terms in :func:`transmon_interaction`, driving with this term can generate single qubit
+    :math:`X` and :math:`Y` rotations by setting :math:`\phi` accordingly and driving on resonance
+    (see eqs. (79) - (92) in `1904.06560 <https://arxiv.org/abs/1904.06560>`_).
+    Further, it can generate entangling gates by driving at cross-resonance with a coupled qubit
+    (see eqs. (131) - (137) in `1904.06560 <https://arxiv.org/abs/1904.06560>`_). Such a coupling is described in :func:`transmon_interaction`.
 
     For realistic simulations, one may restrict the amplitude, phase and drive frequency parameters.
     For example, the authors in `2008.04302 <https://arxiv.org/abs/2008.04302>`_ impose the restrictions of
@@ -305,22 +310,22 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
-        def amp(A, t): return A * jnp.sin(jnp.pi*t) ** 2
-        def phase(phi0, t): return phi0 * (t - 0.5)
+        def amp(A, t): return A * jnp.exp(-t**2)
+        def phase(phi0, t): return phi0
         freq = 0
 
         H = qml.pulse.transmon_drive(amp, phase, freq, 0)
 
-        t = 0.5
-        A = 0.1
-        phi0 = 0.001
+        t = 0.
+        A = 1.
+        phi0 = jnp.pi/2
         params = [A, phi0]
 
-    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi_0 = 10^{-3}` we obtain
-    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x - i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
+    Evaluated at :math:`t = 0` with the parameters :math:`A = 1` and :math:`\phi_0 = 10^{-3}` we obtain
+    :math:`2 \pi A \exp(0) \sin(\pi/2 + 0) = 2 \pi \sigma^y`.
 
     >>> H(params, t)
-    (0.6283185307179586*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
+    6.283185307179586*(PauliY(wires=[0]))
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
@@ -369,14 +374,14 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     >>> fr0, fr1, fr2 = qubit_freqs
     >>> params = [max_amp0, fr0, max_amp1, fr1, max_amp2, fr2]
     >>> qnode(params)
-    Array(-1.44726531, dtype=float64)
+    Array(-1.57851962, dtype=float64)
     >>> jax.grad(qnode)(params)
-    [Array(23.29654346, dtype=float64),
-     Array(1.40236881, dtype=float64),
-     Array(7.79013035, dtype=float64),
-     Array(-4.33877283, dtype=float64),
-     Array(-27.53388596, dtype=float64),
-     Array(7.65313594, dtype=float64)]
+    [Array(-13.50193649, dtype=float64),
+     Array(3.1112141, dtype=float64),
+     Array(16.40286521, dtype=float64),
+     Array(-4.30485667, dtype=float64),
+     Array(4.75813949, dtype=float64),
+     Array(3.43272354, dtype=float64)]
 
     """
     if d != 2:
