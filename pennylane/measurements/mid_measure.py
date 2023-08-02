@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional, List, Callable
+from typing import Optional, List, Callable
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -95,17 +95,22 @@ class MidMeasureMP(MeasurementProcess):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        measurement_ids (list[str]): custom label given to a measurement instance, can be useful for some
+        measurement_ids (List[str]): custom label given to a measurement instance, can be useful for some
             applications where the instance has to be identified
-        processing_fn (callable): A lazily transformation applied to the measurement values.
+        processing_fn (Callable): A lazily transformation applied to the measurement values.
     """
 
     def __init__(
-        self, wires: Wires, measurement_ids: List[str] = None, processing_fn: Callable = None
+        self,
+        wires: Wires,
+        measurement_ids: Optional[List[str]] = None,
+        processing_fn: Optional[Callable] = None,
     ):
-        super().__init__(wires=wires)
-        self.measurement_ids = measurement_ids
-        self.processing_fn = processing_fn
+        super().__init__(wires=Wires(wires))
+        self.measurement_ids = measurement_ids or [str(uuid.uuid4())[:8]]
+        self.processing_fn = processing_fn if processing_fn is not None else lambda v: v
+        # id can be used to identify the mid-circuit measurement
+        self.id = self.measurement_ids[0]
 
     @property
     def return_type(self):

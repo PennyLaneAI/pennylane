@@ -101,7 +101,7 @@ def defer_measurements(tape):
             )
 
         if isinstance(op, MidMeasureMP):
-            measured_wires[op.measurement_ids[0]] = op.wires[0]
+            measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
             _add_control_gate(op, measured_wires)
