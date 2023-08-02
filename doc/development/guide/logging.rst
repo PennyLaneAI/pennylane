@@ -233,7 +233,7 @@ parent-child hierarchy, where a logging configuration set at a parent
 level will set all child levels with the same features. In this
 instance, we have configured JAX, PennyLane and our script to all log
 into the ``qml_debug_stream`` handler we defined earlier, and modified
-the child logger ``"pennylane.qnode"`` (parenthesis needed due to TOML
+the child logger ``"pennylane.qnode"`` (quotes needed due to TOML
 parsing limitations) to use a different logger, in this case
 ``qml_debug_stream_alt``. We are free to define the module/package
 log-level here (we opt for ``DEBUG`` for all), and to also use multiple
