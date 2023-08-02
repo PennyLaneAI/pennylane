@@ -87,6 +87,16 @@
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+
+* `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
+
+
+* `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
+  property. This property is merely used to set defaults for a workflow, and does not directly
+  influence the number of shots used in executions or derivatives.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
+
 * PennyLane no longer directly relies on `Operator.__eq__`.
   [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
 
@@ -188,7 +198,14 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
+
+* Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
+  `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
+  [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
+* Replace `op.adjoint` with `qml.adjoint` in `QNSPSAOptimizer`.
+  [(#4421)](https://github.com/PennyLaneAI/pennylane/pull/4421)
+
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
 
@@ -228,6 +245,10 @@
 * `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
   not really have a decomposition.
   [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
+
+* `qml.transforms.split_non_commuting` now correctly works on tapes containing both `expval`
+  and `var` measurements.
+  [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
 <h3>Contributors ✍️</h3>
 

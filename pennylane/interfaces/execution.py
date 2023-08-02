@@ -23,9 +23,7 @@ devices with autodifferentiation support.
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
 # pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
 
-import inspect
 import warnings
-from contextlib import _GeneratorContextManager
 from functools import wraps, partial
 from typing import Callable, Sequence, Optional, Union, Tuple
 
@@ -324,27 +322,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
-
-                # Introspect the set_shots decorator of the input function:
-                #   warn the user in case of finite shots with cached results
-                finite_shots = False
-
-                if not isinstance(fn, partial):
-                    closure = inspect.getclosurevars(fn).nonlocals
-                else:
-                    closure = {}
-                if "original_fn" in closure:  # deal with expand_fn wrapper above
-                    closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
-
-                # retrieve the captured context manager instance (for set_shots)
-                if "self" in closure and isinstance(closure["self"], _GeneratorContextManager):
-                    # retrieve the shots from the arguments or device instance
-                    if closure["self"].func.__name__ == "set_shots":
-                        dev, shots = closure["self"].args
-                        shots = dev.shots if shots is False else shots
-                        finite_shots = isinstance(shots, int)
-
-                if finite_shots and getattr(cache, "_persistent_cache", True):
+                if tape.shots and getattr(cache, "_persistent_cache", True):
                     warnings.warn(
                         "Cached execution with finite shots detected!\n"
                         "Note that samples as well as all noisy quantities computed via sampling "
