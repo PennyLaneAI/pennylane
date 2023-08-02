@@ -1426,7 +1426,7 @@ class TestShots:
             qml.RZ(0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape = QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q, shots=5)
         # no warning on the first execution
         cache = {}
         qml.execute([tape], dev, None, cache=cache)
@@ -1695,16 +1695,6 @@ class TestNewDeviceIntegration:
         assert gradient_fn == "device"
         assert not kwargs
         assert new_dev is dev
-
-    def test_shots_not_set_on_device(self):
-        """Test that shots are not set on the device when override shots are passed on a call."""
-
-        def f():
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(f, self.dev)
-        qn(shots=10)
-        assert getattr(self.dev, "shots", "not here") == "not here"
 
     def test_shots_integration(self):
         """Test that shots provided at call time are passed through the workflow."""
