@@ -15,7 +15,6 @@
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import logging
 import pytest
-import re
 
 import pennylane as qml
 import pennylane.logging as pl_logging
