@@ -20,15 +20,21 @@ import pennylane as qml
 import pennylane.logging as pl_logging
 
 
-# pylint: disable=too-many-public-methods
 @pytest.mark.logging
 class TestLogging:
     """Tests for logging integration"""
 
     pl_logging.enable_logging()
+    pl_logger = logging.root.manager.loggerDict["pennylane"]
+    plqn_logger = logging.root.manager.loggerDict["pennylane.qnode"]
 
-    def test_basic_functionality_dq(self, caplog):
+    # Ensure logs messages are propagated for pytest capture
+    pl_logger.propagate = True
+    plqn_logger.propagate = True
+
+    def test_basic_functionality_dq(self, caplog, monkeypatch):
         "Test logging of QNode forward pass"
+
         dev = qml.device("default.qubit", wires=2)
 
         # Single log entry, QNode creation
