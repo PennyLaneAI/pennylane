@@ -99,6 +99,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `MeasurementValue` has been removed. `qml.measure` will now return a `MidMeasureMP` object, which now
+  includes all of the functionality that was available with `MeasurementValue`.
+  [(#4408)](https://github.com/PennyLaneAI/pennylane/pull/4408)
+
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
