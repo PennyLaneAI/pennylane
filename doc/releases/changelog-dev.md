@@ -13,6 +13,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
+  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
+  should be used.
+  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
