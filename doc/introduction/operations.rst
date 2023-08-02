@@ -415,10 +415,10 @@ CV observables
     ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
-    ~pennylane.P
+    ~pennylane.QuadP
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
-    ~pennylane.X
+    ~pennylane.QuadX
 
 :html:`</div>`
 

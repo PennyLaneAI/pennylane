@@ -16,7 +16,6 @@
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 # pylint: disable=consider-using-generator, protected-access
 import os
-import warnings
 
 import numpy as np
 
@@ -811,8 +810,6 @@ def molecular_hamiltonian(
     alpha=None,
     coeff=None,
     args=None,
-    grouping_type=None,
-    grouping_method="rlf",
     load_data=False,
     convert_tol=1e012,
 ):  # pylint:disable=too-many-arguments
@@ -836,13 +833,6 @@ def molecular_hamiltonian(
     .. figure:: ../../_static/qchem/fig_mult_active_space.png
         :align: center
         :width: 90%
-
-    |
-
-    .. warning::
-
-        If this function is called with a :code:`grouping_type` while :code:`enable_new_opmath()` is active, then
-        an arithmetic operator will be returned and the grouping arguments will be ignored.
 
     |
 
@@ -876,9 +866,6 @@ def molecular_hamiltonian(
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         args (array[array[float]]): initial values of the differentiable parameters
-        grouping_type (str): method to group commuting observables
-        grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
-            for grouping
         load_data (bool): flag to load data from the basis-set-exchange library
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
@@ -911,22 +898,6 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
-
-    if grouping_type is not None:
-        if active_new_opmath():
-            warnings.warn(
-                "The 'grouping_type' and 'grouping_method' arguments are ignored when "
-                "'active_new_opmath() is True. Please disable it (via 'disable_new_opmath()') "
-                "in order to utilize the grouping functionality.",
-                UserWarning,
-            )
-
-        warnings.warn(
-            "The grouping functionality in molecular_hamiltonian is deprecated. "
-            "Please manually compute the groupings via: "
-            "qml.Hamiltonian(molecular_h.coeffs, molecular_h.ops, grouping_type=grouping_type, method=grouping_method)",
-            UserWarning,
-        )
 
     if method not in ["dhf", "pyscf"]:
         raise ValueError("Only 'dhf' and 'pyscf' backends are supported.")
@@ -987,7 +958,7 @@ def molecular_hamiltonian(
             )
         else:
             coeffs = qml.numpy.real(h.coeffs, requires_grad=requires_grad)
-            h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
+            h = qml.Hamiltonian(coeffs, h.ops)
 
         if wires:
             h = qml.map_wires(h, wires_map)

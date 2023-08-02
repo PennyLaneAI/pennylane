@@ -32,17 +32,10 @@ from pennylane.tape import QuantumScript
 class TestInitialization:
     """Test the non-update components of intialization."""
 
-    def test_name(self):
-        """Test the name property."""
-        name = "hello"
-        qs = QuantumScript(name=name)
-        assert qs.name == name
-
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript(_update=False)
-        assert qs.name is None
         assert qs._ops == []
         assert qs._prep == []
         assert qs._measurements == []
@@ -193,7 +186,7 @@ class TestUpdate:
         assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
         assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
 
@@ -231,7 +224,7 @@ class TestUpdate:
         assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
-        assert obs_id_0 == 0 and p_id_0 == 0
+        assert obs_id_0 == 5 and p_id_0 == 0
 
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in
@@ -427,23 +420,17 @@ class TestInfomationProperties:
         qs = QuantumScript()
         assert qs._specs is None
 
-        assert qs.specs["gate_sizes"] == defaultdict(int)
-        assert qs.specs["gate_types"] == defaultdict(int)
-
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
         assert qs.specs["resources"] == qml.resource.Resources(
             gate_types=gate_types, gate_sizes=gate_sizes
         )
 
-        assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
         assert qs.specs["num_diagonalizing_gates"] == 0
-        assert qs.specs["num_used_wires"] == 0
         assert qs.specs["num_trainable_params"] == 0
-        assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 9
+        assert len(qs.specs) == 4
 
         assert qs._specs is qs.specs
 
@@ -455,24 +442,18 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 9
+        assert len(specs) == 4
 
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-
-        assert specs["gate_sizes"] == gate_sizes
-        assert specs["gate_types"] == gate_types
 
         assert specs["resources"] == qml.resource.Resources(
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
 
-        assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
-        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
-        assert specs["depth"] == 3
 
 
 class TestScriptCopying:
@@ -491,10 +472,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are simply references
-        assert copied_qs.operations == qs.operations
-        assert copied_qs.observables == qs.observables
-        assert copied_qs.measurements == qs.measurements
-        assert copied_qs.operations[0] is qs.operations[0]
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # operation data is also a reference
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -537,10 +517,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references; they are unique objects
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
-        assert copied_qs.operations[0] is not qs.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -578,10 +557,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
-        assert copied_qs.operations[0] is not qs.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim

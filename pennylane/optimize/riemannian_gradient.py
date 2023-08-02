@@ -123,13 +123,13 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                     qml.expval(o)
             tapes_plus_total.extend(
                 [
-                    qml.tape.QuantumScript(*qml.queuing.process_queue(q), name=f"{p}_p")
+                    qml.tape.QuantumScript(*qml.queuing.process_queue(q))
                     for q, p in zip(queues_plus, lie_algebra_basis_names)
                 ]
             )
             tapes_min_total.extend(
                 [
-                    qml.tape.QuantumScript(*qml.queuing.process_queue(q), name=f"{p}_m")
+                    qml.tape.QuantumScript(*qml.queuing.process_queue(q))
                     for q, p in zip(queues_min, lie_algebra_basis_names)
                 ]
             )

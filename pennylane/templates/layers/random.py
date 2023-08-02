@@ -15,6 +15,8 @@ r"""
 Contains the RandomLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import warnings
+
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
@@ -52,7 +54,7 @@ class RandomLayers(Operation):
         wires (Iterable): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+        rotations (tuple[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
@@ -176,7 +178,6 @@ class RandomLayers(Operation):
         imprimitive=None,
         rotations=None,
         seed=42,
-        do_queue=None,
         id=None,
     ):
         shape = qml.math.shape(weights)
@@ -184,13 +185,13 @@ class RandomLayers(Operation):
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         self._hyperparameters = {
-            "ratio_imprimitive": ratio_imprim,
+            "ratio_imprim": ratio_imprim,
             "imprimitive": imprimitive or qml.CNOT,
-            "rotations": rotations or [qml.RX, qml.RY, qml.RZ],
+            "rotations": tuple(rotations) if rotations else (qml.RX, qml.RY, qml.RZ),
             "seed": seed,
         }
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -198,7 +199,7 @@ class RandomLayers(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, ratio_imprimitive, imprimitive, rotations, seed
+        weights, wires, ratio_imprim, imprimitive, rotations, seed, ratio_imprimitive=None
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -231,6 +232,13 @@ class RandomLayers(Operation):
          CNOT(wires=['b', 'a']),
          RX(tensor(1.4000), wires=['a'])]
         """
+        if ratio_imprimitive:
+            warnings.warn(
+                "In RandomLayers.compute_decomposition, ratio_imprim should be changed to `ratio_imprimitive` to match the "
+                "call signature of the operation.",
+                UserWarning,
+            )
+            ratio_imprim = ratio_imprimitive
         wires = qml.wires.Wires(wires)
         rng = np.random.default_rng(seed)
 
@@ -241,7 +249,7 @@ class RandomLayers(Operation):
         for l in range(n_layers):
             i = 0
             while i < shape[1]:
-                if rng.random() > ratio_imprimitive:
+                if rng.random() > ratio_imprim:
                     # apply a random rotation gate to a random wire
                     gate = rng.choice(rotations)
                     rnd_wire = wires.select_random(1, seed=rng)

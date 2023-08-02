@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
+# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
 import numpy as np
 import pytest
+
+import pennylane as qml
+from pennylane import qnode
 
 pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch", minversion="1.3")
-from torch.autograd.functional import jacobian
-from torch.autograd.functional import hessian
-
-import pennylane as qml
-from pennylane import QNode, qnode
-from pennylane.tape import QuantumTape
+jacobian = torch.autograd.functional.jacobian
+hessian = torch.autograd.functional.hessian
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", False],
@@ -100,7 +100,9 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=num_wires)
 
-        @qnode(dev, diff_method=diff_method, interface="autograd")
+        @qnode(
+            dev, diff_method=diff_method, interface="autograd", grad_on_execution=grad_on_execution
+        )
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -152,7 +154,7 @@ class TestQNode:
         circuit(p1=x, p3=z)
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  <Z>\n" "1: ──RY(0.06)───────────╰X─┤  <Z>"
+        expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  <Z>\n1: ──RY(0.06)───────────╰X─┤  <Z>"
 
         assert result == expected
 
@@ -223,7 +225,7 @@ class TestQNode:
 
     # TODO: fix this behavior with float: already present before return type.
     @pytest.mark.xfail
-    def test_jacobian_dtype(self, interface, dev_name, diff_method, grad_on_execution, tol):
+    def test_jacobian_dtype(self, interface, dev_name, diff_method, grad_on_execution):
         """Test calculating the jacobian with a different datatype"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
@@ -233,7 +235,9 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface=interface, diff_method=diff_method)
+        @qnode(
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+        )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -256,9 +260,7 @@ class TestQNode:
         assert a.grad.dtype is torch.float32
         assert b.grad.dtype is torch.float32
 
-    def test_jacobian_options(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker, tol
-    ):
+    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution, mocker):
         """Test setting jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
@@ -305,7 +307,9 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface=interface, diff_method=diff_method)
+        @qnode(
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+        )
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -362,7 +366,7 @@ class TestQNode:
         # the gradient transform has only been called once
         assert len(spy.call_args_list) == 1
 
-    def test_classical_processing(self, interface, dev_name, diff_method, grad_on_execution, tol):
+    def test_classical_processing(self, interface, dev_name, diff_method, grad_on_execution):
         """Test classical processing within the quantum tape"""
         a = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
@@ -396,9 +400,7 @@ class TestQNode:
         assert b.grad is None
         assert isinstance(c.grad, torch.Tensor)
 
-    def test_no_trainable_parameters(
-        self, interface, dev_name, diff_method, grad_on_execution, tol
-    ):
+    def test_no_trainable_parameters(self, interface, dev_name, diff_method, grad_on_execution):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         num_wires = 2
 
@@ -491,15 +493,13 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.Rot(lam, theta, -lam, wires=wires)
-                    qml.PhaseShift(phi + lam, wires=wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
-                return tape
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         num_wires = 1
 
@@ -569,7 +569,7 @@ class TestShotsIntegration:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = circuit(a, b, shots=100)
+        res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
@@ -581,9 +581,10 @@ class TestShotsIntegration:
 
     # TODO: add this test after shot vectors addition
     @pytest.mark.xfail
-    def test_gradient_integration(self, tol):
+    def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
+        # pylint: disable=unexpected-keyword-arg
         dev = qml.device("default.qubit", wires=2, shots=None)
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
@@ -628,7 +629,7 @@ class TestShotsIntegration:
         expected = torch.tensor([torch.sin(a) * torch.sin(b), -torch.cos(a) * torch.cos(b)])
         assert torch.allclose(weights.grad, expected, atol=tol, rtol=0)
 
-    def test_update_diff_method(self, mocker, tol):
+    def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
         dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
@@ -650,7 +651,7 @@ class TestShotsIntegration:
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None)
+        cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
         # original QNode settings are unaffected
@@ -708,7 +709,7 @@ class TestAdjoint:
         assert np.allclose(res1.detach(), np.cos(x_val), atol=tol, rtol=0)
 
         # intermediate evaluation with different values
-        res2 = circuit(torch.tan(x), torch.cosh(y))
+        circuit(torch.tan(x), torch.cosh(y))
 
         # the adjoint method will continue to compute the correct derivative
         res1.backward()
@@ -782,9 +783,7 @@ class TestQubitIntegration:
         assert np.allclose(jac[1][0], res_2, atol=tol, rtol=0)
         assert np.allclose(jac[1][1], res_3, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(
-        self, interface, dev_name, diff_method, grad_on_execution, monkeypatch, tol
-    ):
+    def test_ragged_differentiation(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if diff_method == "adjoint":
@@ -903,7 +902,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
-            **options
+            **options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -960,7 +959,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
-            **options
+            **options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1028,7 +1027,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
-            **options
+            **options,
         )
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -1109,6 +1108,7 @@ class TestQubitIntegration:
             grad_on_execution=grad_on_execution,
             max_diff=2,
             interface=interface,
+            **options,
         )
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1260,7 +1260,7 @@ class TestCV:
         def circuit(r, phi):
             qml.Squeezing(r, 0, wires=0)
             qml.Rotation(phi, wires=0)
-            return qml.var(qml.X(0))
+            return qml.var(qml.QuadX(0))
 
         res = circuit(r, phi)
         expected = torch.exp(2 * r) * torch.sin(phi) ** 2 + torch.exp(-2 * r) * torch.cos(phi) ** 2
@@ -1327,11 +1327,8 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(
             dev,
@@ -1349,8 +1346,6 @@ class TestTapeExpansion:
         x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
         loss = circuit(x)
-
-        tape = spy.call_args[0][0][0]
 
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         loss.backward()
@@ -1396,10 +1391,8 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
-                with qml.tape.QuantumTape() as tape:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                return tape
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(
             dev,
@@ -1541,7 +1534,7 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface="torch",
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
@@ -1667,7 +1660,7 @@ class TestSample:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == ()
 
-    def test_sample_combination(self, tol):
+    def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
@@ -1691,7 +1684,7 @@ class TestSample:
         assert isinstance(result[2], torch.Tensor)
         assert result[0].dtype is torch.int64
 
-    def test_single_wire_sample(self, tol):
+    def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
@@ -1707,7 +1700,7 @@ class TestSample:
         assert isinstance(result, torch.Tensor)
         assert np.array_equal(result.shape, (n_sample,))
 
-    def test_multi_wire_sample_regular_shape(self, tol):
+    def test_multi_wire_sample_regular_shape(self):
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
         n_sample = 10

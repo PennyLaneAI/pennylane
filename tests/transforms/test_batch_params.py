@@ -69,6 +69,33 @@ def test_simple_circuit_one_batch(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+def test_simple_circuit_with_prep(mocker):
+    """Test that batching works for a simple circuit with a state preparation"""
+    dev = qml.device("default.qubit", wires=3)
+
+    init_state = np.array([0, 0, 0, 0, 1, 0, 0, 0], requires_grad=False)
+
+    @qml.batch_params
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, x, weights):
+        qml.QubitStateVector(init_state, wires=[0, 1, 2])
+        qml.RX(x, wires=0)
+        qml.RY(0.2, wires=1)
+        qml.RZ(data, wires=1)
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 2])
+
+    batch_size = 5
+    data = np.random.random((batch_size,))
+    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, x, weights)
+    assert res.shape == (batch_size, 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+
 def test_basic_entangler_layers(mocker):
     """Test that batching works for BasicEngtanglerLayers"""
     dev = qml.device("default.qubit", wires=2)
@@ -173,6 +200,42 @@ def test_basis_state_preparation(mocker):
         qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
         return qml.probs(wires=[0, 1, 2, 3])
+
+    indiv_res = []
+    for state, weight in zip(data, weights):
+        indiv_res.append(circuit2(state, weight))
+    assert np.allclose(res, indiv_res)
+
+
+def test_qubit_state_prep(mocker):
+    """Test that batching works for QubitStateVector"""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.batch_params
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, weights):
+        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    batch_size = 3
+
+    # create a batched input statevector
+    data = np.random.random((batch_size, 2**3))
+    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = np.random.random((batch_size, 10, 3, 3))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2**3)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
 
     indiv_res = []
     for state, weight in zip(data, weights):
@@ -796,3 +859,35 @@ def test_no_batch_param_error():
     x = [0.2, 0.6, 3]
     with pytest.raises(ValueError, match="There are no operations to transform"):
         circuit(x)
+
+
+def test_unbatched_not_copied():
+    """Test that operators containing unbatched parameters are not copied"""
+
+    batch_size = 5
+    data = np.random.random((batch_size, 8))
+    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    x = np.array(0.4, requires_grad=False)
+
+    ops = [
+        qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True),
+        qml.RX(x, wires=0),
+        qml.RY(0.2, wires=1),
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2]),
+    ]
+    meas = [qml.probs(wires=[0, 2])]
+
+    tape = qml.tape.QuantumScript(ops, meas)
+    tape.trainable_params = [0, 3]
+
+    new_tapes = qml.batch_params(tape)[0]
+    assert len(new_tapes) == batch_size
+
+    for new_tape in new_tapes:
+        # same instance of RX and RY operators
+        assert new_tape.operations[1] is tape.operations[1]
+        assert new_tape.operations[2] is tape.operations[2]
+
+        # different instance of AmplitudeEmbedding and StronglyEntanglingLayers
+        assert new_tape.operations[0] is not tape.operations[0]
+        assert new_tape.operations[3] is not tape.operations[3]

@@ -42,7 +42,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=None, id=None, lazy=True):
+def prod(*ops, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -55,9 +55,6 @@ def prod(*ops, do_queue=None, id=None, lazy=True):
             Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -109,22 +106,20 @@ def prod(*ops, do_queue=None, id=None, lazy=True):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
-            return prod(*qs.operations[::-1], do_queue=do_queue, id=id, lazy=lazy)
+            return prod(*qs.operations[::-1], id=id, lazy=lazy)
 
         return wrapper
 
     if lazy:
-        return Prod(*ops, do_queue=do_queue, id=id)
+        return Prod(*ops, id=id)
 
     ops_simp = Prod(
         *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
-        do_queue=do_queue,
         id=id,
     )
 
-    if do_queue or do_queue is None:
-        for op in ops:
-            QueuingManager.remove(op)
+    for op in ops:
+        QueuingManager.remove(op)
 
     return ops_simp
 
@@ -137,9 +132,6 @@ class Prod(CompositeOp):
             together.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`

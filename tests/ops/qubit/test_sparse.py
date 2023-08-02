@@ -16,11 +16,8 @@ Unit tests for the SparseHamiltonian observable.
 """
 import pytest
 import numpy as np
-import scipy.sparse.coo
 from scipy.sparse import coo_matrix, csr_matrix
 import pennylane as qml
-from pennylane import DeviceError
-from pennylane.wires import Wires
 
 
 SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
@@ -191,6 +188,7 @@ class TestSparse:
     )
     def test_sparse_hamiltonian_expval(self, qubits, operations, hamiltonian, expected_output, tol):
         """Test that expectation values of sparse hamiltonians are properly calculated."""
+        # pylint: disable=too-many-arguments
 
         hamiltonian = csr_matrix(hamiltonian)
 
@@ -208,4 +206,4 @@ class TestSparse:
         dev = qml.device("default.qubit", wires=1, shots=1)
 
         with pytest.raises(AssertionError, match="SparseHamiltonian must be used with shots=None"):
-            dev.expval(qml.SparseHamiltonian(hamiltonian, [0]))[0]
+            dev.expval(qml.SparseHamiltonian(hamiltonian, [0]))

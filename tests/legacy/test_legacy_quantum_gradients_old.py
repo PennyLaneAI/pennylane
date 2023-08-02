@@ -52,7 +52,7 @@ def grad_fn_R(gaussian_dev):
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Rotation(y, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
@@ -63,7 +63,7 @@ def grad_fn_BS(gaussian_dev):
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Beamsplitter(y, 0, wires=[0, 1])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
@@ -73,7 +73,7 @@ def grad_fn_D(gaussian_dev):
     @qml.qnode(gaussian_dev)
     def circuit(r, phi):
         qml.Displacement(r, phi, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
@@ -84,7 +84,7 @@ def grad_fn_S(gaussian_dev):
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
         qml.Squeezing(y, 0.0, wires=[0])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     return autograd.grad(circuit)
 
@@ -228,7 +228,7 @@ class TestCVGradient:
         def qf(x, y):
             qml.Displacement(x, 0, wires=[0])
             qml.Squeezing(y, -1.3 * y, wires=[0])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
@@ -274,7 +274,7 @@ class TestCVGradient:
             qml.Displacement(x, 0, wires=[0])
             qml.Rotation(y, wires=[0])
             qml.Displacement(0, x, wires=[0])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         q = qml.QNode(circuit, gaussian_dev)
         q(*par)
@@ -308,7 +308,7 @@ class TestCVGradient:
         def circuit(x):
             qml.Displacement(x, 0, wires=0)
             qml.InterferometerUnitary(U, wires=[0, 1])
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         qnode = qml.QNode(circuit, gaussian_dev)
         qnode(x)

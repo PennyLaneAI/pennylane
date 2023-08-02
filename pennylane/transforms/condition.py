@@ -42,10 +42,6 @@ class Conditional(Operation):
     Args:
         expr (MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -56,12 +52,11 @@ class Conditional(Operation):
         self,
         expr: MeasurementValue[bool],
         then_op: Type[Operation],
-        do_queue=None,
         id=None,
     ):
         self.meas_val = expr
         self.then_op = then_op
-        super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
+        super().__init__(wires=then_op.wires, id=id)
 
 
 def cond(condition, true_fn, false_fn=None):

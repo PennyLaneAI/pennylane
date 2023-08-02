@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in quantum channels.
 """
+# pylint: disable=too-few-public-methods
 from itertools import product
 import pytest
 import numpy as np
@@ -332,7 +333,7 @@ class TestBitFlip:
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_bitflip(self, angle, tol):
+    def test_grad_bitflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -408,7 +409,7 @@ class TestPhaseFlip:
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_phaseflip(self, angle, tol):
+    def test_grad_phaseflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -485,7 +486,7 @@ class TestDepolarizingChannel:
         assert np.allclose(op(0.1, wires=0).kraus_matrices()[1], expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_depolarizing(self, angle, tol):
+    def test_grad_depolarizing(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -596,7 +597,7 @@ class TestResetError:
             channel.ResetError(1.0, 1.0, wires=0).kraus_matrices()
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_reset_error(self, angle, tol):
+    def test_grad_reset_error(self, angle):
         """Test that gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
@@ -719,13 +720,14 @@ class TestPauliError:
     )
     def test_wrong_parameters(self, operators, p, wires, error, message):
         """Test wrong parametrizations of PauliError"""
+        # pylint: disable=too-many-arguments
         with pytest.raises(error, match=message):
-            Ks = channel.PauliError(operators, p, wires=wires)
+            channel.PauliError(operators, p, wires=wires)
 
     def test_warning_many_qubits(self):
         """Test if warning is thrown when huge matrix"""
         with pytest.warns(UserWarning):
-            Ks = channel.PauliError("X" * 512, 0.5, wires=list(range(512)))
+            channel.PauliError("X" * 512, 0.5, wires=list(range(512)))
 
     def test_p_zero(self, tol):
         """Test resulting Kraus matrices for p=0"""
@@ -924,7 +926,9 @@ class TestThermalRelaxationError:
         ),
     )
     def test_t2_le_t1_arbitrary(self, pe, t1, t2, tg, tol):
-        """Test that various values of pe, t1, t2, and tg  for t2 <= t1 give correct Kraus matrices"""
+        """Test that various values of pe, t1, t2, and tg
+        for t2 <= t1 give correct Kraus matrices"""
+        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 
@@ -978,7 +982,9 @@ class TestThermalRelaxationError:
         ),
     )
     def test_t2_g_t1_arbitrary(self, pe, t1, t2, tg, tol):
-        """Test that various values of pe, t1, t2, and tg  for t2 > t1 give correct Kraus matrices"""
+        """Test that various values of pe, t1, t2, and tg
+        for t2 > t1 give correct Kraus matrices"""
+        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 
@@ -1007,22 +1013,22 @@ class TestThermalRelaxationError:
         e3 = 1 - p_reset / 2 + common_term / 2
         v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3**2 + 1**2)
 
-        expected_K0 = np.sqrt(e0) * v0.reshape(2, 2, order="F")
+        expected_K0 = np.sqrt(e0) * v0.reshape((2, 2), order="F")
         assert np.allclose(
             op(pe, t1, t2, tg, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0
         )
 
-        expected_K1 = np.sqrt(e1) * v1.reshape(2, 2, order="F")
+        expected_K1 = np.sqrt(e1) * v1.reshape((2, 2), order="F")
         assert np.allclose(
             op(pe, t1, t2, tg, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0
         )
 
-        expected_K2 = np.sqrt(e2) * v2.reshape(2, 2, order="F")
+        expected_K2 = np.sqrt(e2) * v2.reshape((2, 2), order="F")
         assert np.allclose(
             op(pe, t1, t2, tg, wires=0).kraus_matrices()[2], expected_K2, atol=tol, rtol=0
         )
 
-        expected_K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
+        expected_K3 = np.sqrt(e3) * v3.reshape((2, 2), order="F")
         assert np.allclose(
             op(pe, t1, t2, tg, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0
         )
@@ -1048,7 +1054,7 @@ class TestThermalRelaxationError:
             channel.ThermalRelaxationError(0.3, 100e-6, 100e-6, -20e-9, wires=0).kraus_matrices()
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_thermal_relaxation_error(self, angle, tol):
+    def test_grad_thermal_relaxation_error(self, angle):
         """Test that gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 

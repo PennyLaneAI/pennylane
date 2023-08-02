@@ -33,9 +33,6 @@ class Snapshot(Operation):
     Args:
         tag (str or None): An optional custom tag for the snapshot, used to index it
             in the snapshots dictionary.
-        do_queue (bool): indicates whether the operator should be recorded when created in
-            a tape context. This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
 
     **Example**
 
@@ -64,9 +61,9 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, tag=None, do_queue=None):
+    def __init__(self, tag=None):
         self.tag = tag
-        super().__init__(wires=[], do_queue=do_queue)
+        super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"

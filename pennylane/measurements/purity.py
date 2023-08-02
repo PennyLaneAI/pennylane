@@ -101,4 +101,5 @@ class PurityMP(StateMeasurement):
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.purity(state, indices=indices, c_dtype=state.dtype)

@@ -14,6 +14,7 @@
 """
 Unit tests for the qml.simplify function
 """
+# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -176,7 +177,7 @@ class TestSimplifyCallables:
         @qml.simplify
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
-            qml.PauliX(0) ** 2
+            _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
         x = jax.numpy.array(4 * jax.numpy.pi + 0.1)

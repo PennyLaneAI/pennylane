@@ -21,7 +21,6 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
-from pennylane.ops import Controlled
 from pennylane.operation import AnyWires
 
 # Dummy attribute

@@ -20,6 +20,24 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the _flatten and _unflatten methods."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
+    data, metadata = op._flatten()
+    assert data == tuple()
+    assert metadata[0] == wires
+    assert metadata[1] == (1, 1, 1)
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = op._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -143,9 +161,7 @@ def circuit_template(features):
 def circuit_decomposed(features):
     # convert tensor to list
     feats = list(qml.math.toarray(features))
-    for i in range(len(feats)):
-        if feats[i] == 1:
-            qml.PauliX(wires=i)
+    _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
 
@@ -195,7 +211,6 @@ class TestInterfaces:
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax
         import jax.numpy as jnp
 
         features = jnp.array([0, 1, 0])

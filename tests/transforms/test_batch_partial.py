@@ -14,6 +14,7 @@
 """
 Unit tests for the batch partial transform.
 """
+# pylint: disable=too-few-public-methods
 import re
 import pytest
 
@@ -626,8 +627,6 @@ def test_full_evaluation_error():
         qml.RY(y[..., 1], wires=1)
         return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
-    batch_size = 4
-
     # the partial arguments
     x = np.random.uniform(size=())
     y = np.random.uniform(size=2)
@@ -635,7 +634,7 @@ def test_full_evaluation_error():
     with pytest.raises(
         ValueError, match="Partial evaluation must leave at least one unevaluated parameter"
     ):
-        batched_partial_circuit = qml.batch_partial(circuit, x=x, y=y)
+        qml.batch_partial(circuit, x=x, y=y)
 
 
 def test_incomplete_evaluation_error():
@@ -650,19 +649,14 @@ def test_incomplete_evaluation_error():
         qml.RY(y[..., 1], wires=1)
         return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
-    batch_size = 4
-
     # the second partial argument as a function of the inputs
     y = np.random.uniform(size=2)
     fn = lambda y0: y + y0 * np.ones(2)
 
-    # values for the second argument
-    y0 = np.random.uniform(size=batch_size)
-
     with pytest.raises(
         ValueError, match="Callable argument requires all other arguments to QNode be provided"
     ):
-        batched_partial_circuit = qml.batch_partial(circuit, preprocess={"y": fn})
+        qml.batch_partial(circuit, preprocess={"y": fn})
 
 
 def test_kwargs_callable_error():
@@ -692,13 +686,13 @@ def test_kwargs_callable_error():
         ValueError,
         match="Arguments must not be passed as keyword arguments to callable within partial function",
     ):
-        res = batched_partial_circuit(y=y0)
+        batched_partial_circuit(y=y0)
 
     with pytest.raises(
         ValueError,
         match="Arguments must not be passed as keyword arguments to callable within partial function",
     ):
-        res = batched_partial_circuit(y0=y0)
+        batched_partial_circuit(y0=y0)
 
 
 def test_no_batchdim_error():
@@ -722,7 +716,7 @@ def test_no_batchdim_error():
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
     with pytest.raises(ValueError, match="Parameter with batch dimension must be provided"):
-        out = batched_partial_circuit(x=x)
+        batched_partial_circuit(x=x)
 
 
 def test_different_batchdim_error():
@@ -762,4 +756,4 @@ def test_different_batchdim_error():
     msg = "has incorrect batch dimension. Expecting first dimension of length 5."
     msg = re.escape(msg)
     with pytest.raises(ValueError, match=msg):
-        out = batched_partial_circuit(x=x, z=z)
+        batched_partial_circuit(x=x, z=z)

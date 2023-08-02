@@ -92,7 +92,6 @@ def _hadamard_grad(
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
-    >>> qml.enable_return()
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
@@ -146,7 +145,6 @@ def _hadamard_grad(
 
     If you use custom wires on your device, you need to pass an auxiliary wire.
 
-    >>> qml.enable_return()
     >>> dev_wires = ("a", "c")
     >>> dev = qml.device("default.qubit", wires=dev_wires)
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
@@ -198,18 +196,8 @@ def _hadamard_grad(
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    if device_wires and len(tape.wires) == len(device_wires):
-        raise qml.QuantumFunctionError("The device has no free wire for the auxiliary wire.")
-
-    # Get default for aux_wire
-    if aux_wire is None:
-        aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
-    elif aux_wire[0] in tape.wires:
-        raise qml.QuantumFunctionError("The auxiliary wire is already used.")
-    elif aux_wire[0] not in device_wires:
-        raise qml.QuantumFunctionError(
-            "The requested auxiliary wire does not exist on the used device."
-        )
+    # Validate or get default for aux_wire
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 

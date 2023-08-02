@@ -248,7 +248,7 @@ class TestDecomposition:
             qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
             return qml.state()
 
-        assert np.allclose([qml.math.fidelity(circuit(), exp_state)], [1.0], atol=1e-6)
+        assert np.allclose([qml.math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=1e-6)
 
 
 class TestInputs:

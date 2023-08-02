@@ -14,6 +14,7 @@
 """
 Unit tests for the SimplifiedTwoDesign template.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -68,7 +69,7 @@ class TestDecomposition:
         queue = op.expand().operations
 
         # test the device parameters
-        for l in range(n_layers):
+        for _ in range(n_layers):
             # only select the rotation gates
             ops = [gate for gate in queue if isinstance(gate, qml.RY)]
 

@@ -86,10 +86,6 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context.
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
         unitary_check (bool): check for unitarity of the given matrix
@@ -121,7 +117,7 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, do_queue=None, id=None, unitary_check=False
+        self, U, wires, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
@@ -151,7 +147,7 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
-        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(U, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -225,6 +221,11 @@ class QubitUnitary(Operation):
             return qml.transforms.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return len(self.wires) < 3
 
     def adjoint(self):
         U = self.matrix()
@@ -443,10 +444,6 @@ class BlockEncode(Operation):
     Args:
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     Raises:
@@ -507,7 +504,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, do_queue=None, id=None):
+    def __init__(self, A, wires, id=None):
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
             A = qml.math.reshape(A, [1, 1])
@@ -533,7 +530,7 @@ class BlockEncode(Operation):
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, id=id)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 

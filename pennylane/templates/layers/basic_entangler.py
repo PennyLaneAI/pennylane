@@ -125,7 +125,7 @@ class BasicEntanglerLayers(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires=None, rotation=None, do_queue=None, id=None):
+    def __init__(self, weights, wires=None, rotation=None, id=None):
         # convert weights to numpy array if weights is list otherwise keep unchanged
         interface = qml.math.get_interface(weights)
         weights = qml.math.asarray(weights, like=interface)
@@ -144,7 +144,7 @@ class BasicEntanglerLayers(Operation):
             )
 
         self._hyperparameters = {"rotation": rotation or qml.RX}
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

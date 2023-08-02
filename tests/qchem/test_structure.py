@@ -14,11 +14,12 @@
 """
 Unit tests for the functions of the structure module.
 """
+# pylint: disable=too-many-arguments
 import os
 import sys
-import pytest
 import functools as ft
 from unittest.mock import patch
+import pytest
 
 import pennylane as qml
 from pennylane import qchem
@@ -73,37 +74,33 @@ def test_reading_xyz_file(tmpdir):
         "electrons",
         "orbitals",
         "delta_sz",
-        "n_singles",
-        "n_doubles",
         "singles_exp",
         "doubles_exp",
     ),
     [
-        (1, 5, 0, 2, 0, [[0, 2], [0, 4]], []),
-        (1, 5, 1, 0, 0, [], []),
-        (1, 5, -1, 2, 0, [[0, 1], [0, 3]], []),
-        (2, 5, 0, 3, 2, [[0, 2], [0, 4], [1, 3]], [[0, 1, 2, 3], [0, 1, 3, 4]]),
-        (2, 5, 1, 2, 1, [[1, 2], [1, 4]], [[0, 1, 2, 4]]),
-        (2, 5, -1, 1, 0, [[0, 3]], []),
-        (2, 5, 2, 0, 0, [], []),
-        (3, 6, 1, 1, 0, [[1, 4]], []),
+        (1, 5, 0, [[0, 2], [0, 4]], []),
+        (1, 5, 1, [], []),
+        (1, 5, -1, [[0, 1], [0, 3]], []),
+        (2, 5, 0, [[0, 2], [0, 4], [1, 3]], [[0, 1, 2, 3], [0, 1, 3, 4]]),
+        (2, 5, 1, [[1, 2], [1, 4]], [[0, 1, 2, 4]]),
+        (2, 5, -1, [[0, 3]], []),
+        (2, 5, 2, [], []),
+        (3, 6, 1, [[1, 4]], []),
         (
             3,
             6,
             -1,
-            4,
-            4,
             [[0, 3], [0, 5], [2, 3], [2, 5]],
             [[0, 1, 3, 5], [0, 2, 3, 4], [0, 2, 4, 5], [1, 2, 3, 5]],
         ),
-        (3, 6, -2, 0, 1, [], [[0, 2, 3, 5]]),
-        (3, 4, 0, 1, 0, [[1, 3]], []),
-        (3, 4, 1, 0, 0, [], []),
-        (3, 4, -1, 2, 0, [[0, 3], [2, 3]], []),
-        (3, 4, 2, 0, 0, [], []),
+        (3, 6, -2, [], [[0, 2, 3, 5]]),
+        (3, 4, 0, [[1, 3]], []),
+        (3, 4, 1, [], []),
+        (3, 4, -1, [[0, 3], [2, 3]], []),
+        (3, 4, 2, [], []),
     ],
 )
-def test_excitations(electrons, orbitals, delta_sz, n_singles, n_doubles, singles_exp, doubles_exp):
+def test_excitations(electrons, orbitals, delta_sz, singles_exp, doubles_exp):
     r"""Test the correctness of the generated configurations"""
 
     singles, doubles = qchem.excitations(electrons, orbitals, delta_sz)
@@ -422,7 +419,7 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
         ("In=1S/H3N/h1H3/p+1", "InChI", "Specified identifier doesn't seem to match type"),
         ("14798039", "CAS", "Specified identifier doesn't seem to match type"),
         ("beh2+", "name", "Specified molecule does not exist in the PubChem Database"),
-        (0, "CID", "Provided CID \(or Identifier\) is None"),
+        (0, "CID", r"Provided CID \(or Identifier\) is None"),
     ],
 )
 def test_inconsistent_pubchem_mol_data(identifier, identifier_type, message_match):

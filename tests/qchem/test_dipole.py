@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the dipole.
 """
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -250,18 +251,17 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "charge", "core", "active"),
+    ("symbols", "geometry", "core", "active"),
     [
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
-            0,
             None,
             None,
         ),
     ],
 )
-def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
+def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""
     alpha = [
@@ -278,7 +278,7 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "charge", "core", "active", "d_ref"),
+    ("symbols", "geometry", "charge", "d_ref"),
     [
         (
             ["H", "H", "H"],
@@ -286,13 +286,11 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
             ),
             1,
-            None,
-            None,
             [0.95655073, 0.55522528, 0.0],  # x, y, z components of the dipole moment from PL-QChem
         ),
     ],
 )
-def test_expvalD(symbols, geometry, charge, core, active, d_ref):
+def test_expvalD(symbols, geometry, charge, d_ref):
     r"""Test that expval(D) is correct."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = []

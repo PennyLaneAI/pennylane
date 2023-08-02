@@ -12,19 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
+# pylint: disable=protected-access
 import functools
 import pytest
-import pennylane as qml
 import numpy as np
-from pennylane.ops.qubit.observables import _BasisStateProjector, _StateVectorProjector
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-)
+from gate_data import I, X, Y, Z, H
+import pennylane as qml
+from pennylane.ops.qubit.observables import _BasisStateProjector, _StateVectorProjector
 
 
 @pytest.fixture(autouse=True)
@@ -108,8 +103,8 @@ projector_sv = [qml.Projector(np.array([0.5, 0.5, 0.5, 0.5]), [0, 1])]
 class TestSimpleObservables:
     """Tests for simple single-qubit observables"""
 
-    @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
-    def test_diagonalization(self, obs, mat, eigs, tol):
+    @pytest.mark.parametrize("obs, _, eigs", OBSERVABLES)
+    def test_diagonalization(self, obs, _, eigs, tol):
         """Test the method transforms standard observables into the Z-gate."""
         ob = obs(wires=0)
         A = ob.matrix()
@@ -165,15 +160,15 @@ class TestSimpleObservables:
         """Test the static compute_diagonalizing_gates method for the PauliZ observable."""
         assert qml.PauliZ.compute_diagonalizing_gates(wires=1) == []
 
-    @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
-    def test_eigvals(self, obs, mat, eigs, tol):
+    @pytest.mark.parametrize("obs, _, eigs", OBSERVABLES)
+    def test_eigvals(self, obs, _, eigs, tol):
         """Test eigenvalues of standard observables are correct"""
         obs = obs(wires=0)
         res = obs.eigvals()
         assert np.allclose(res, eigs, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
-    def test_matrices(self, obs, mat, eigs, tol):
+    @pytest.mark.parametrize("obs, mat, _", OBSERVABLES)
+    def test_matrices(self, obs, mat, _, tol):
         """Test matrices of standard observables are correct"""
         obs = obs(wires=0)
         res = obs.matrix()
@@ -196,11 +191,11 @@ class TestHermitian:
 
     def test_hermitian_creation_exceptions(self):
         """Tests that the hermitian matrix method raises the proper errors."""
-        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        ham = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.Hermitian(H[1:], wires=0)
+            qml.Hermitian(ham[1:], wires=0)
 
         H1 = np.array([[1]]) / np.sqrt(2)
 
@@ -209,20 +204,20 @@ class TestHermitian:
             qml.Hermitian(H1, wires=[0])
 
         # test non-Hermitian matrix
-        H2 = H.copy()
+        H2 = ham.copy()
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0)
 
     def test_ragged_input_raises(self):
         """Tests that an error is raised if the input to Hermitian is ragged."""
-        H = [[1, 0], [0, 1, 2]]
+        ham = [[1, 0], [0, 1, 2]]
 
         with pytest.warns(
             np.VisibleDeprecationWarning, match="Creating an ndarray from ragged nested sequences"
         ):
             with pytest.raises(ValueError, match="must be a square matrix"):
-                qml.Hermitian(H, wires=0)
+                qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
@@ -313,6 +308,7 @@ class TestHermitian:
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
+        # pylint: disable=too-many-arguments
 
         # check calling `diagonalizing_gates` when `observable` is not in `_eigs` adds expected entry to `_eigs`
         spy = mocker.spy(np.linalg, "eigh")
@@ -406,8 +402,8 @@ class TestHermitian:
         assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
-    def test_hermitian_diagonalizing_gates_integration(self, observable, eigvals, eigvecs, tol):
+    @pytest.mark.parametrize("observable, eigvals, _", EIGVALS_TEST_DATA)
+    def test_hermitian_diagonalizing_gates_integration(self, observable, eigvals, _, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class
         diagonalizes the given observable."""
         tensor_obs = np.kron(observable, observable)
@@ -423,25 +419,25 @@ class TestHermitian:
 
     def test_hermitian_matrix(self, tol):
         """Test that the hermitian matrix method produces the correct output."""
-        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        out = qml.Hermitian(H, wires=0).matrix()
+        ham = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        out = qml.Hermitian(ham, wires=0).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
 
         # verify equivalent to input state
-        assert np.allclose(out, H, atol=tol, rtol=0)
+        assert np.allclose(out, ham, atol=tol, rtol=0)
 
     def test_hermitian_exceptions(self):
         """Tests that the hermitian matrix method raises the proper errors."""
-        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        ham = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.Hermitian(H[1:], wires=0).matrix()
+            qml.Hermitian(ham[1:], wires=0).matrix()
 
         # test non-Hermitian matrix
-        H2 = H.copy()
+        H2 = ham.copy()
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix()
@@ -708,9 +704,9 @@ def test_hermitian_labelling_w_cache():
     op = qml.Hermitian(X, wires=0)
 
     cache = {"matrices": [Z]}
-    op.label(cache=cache) == "𝓗(M1)"
+    assert op.label(cache=cache) == "𝓗(M1)"
     assert qml.math.allclose(cache["matrices"][1], X)
 
     cache = {"matrices": [Z, Y, X]}
-    op.label(cache=cache) == "𝓗(M2)"
+    assert op.label(cache=cache) == "𝓗(M2)"
     assert len(cache["matrices"]) == 3

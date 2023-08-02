@@ -19,6 +19,36 @@ import pytest
 import pennylane as qml
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the flatten and unflatten methods."""
+    u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
+
+    def v_circuit(params):
+        qml.RZ(params, wires=1)
+
+    v_wires = qml.wires.Wires((0, 1))
+    op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape)
+    data, metadata = op._flatten()
+
+    assert data == (0.1,)
+    assert metadata == (
+        ("v_function", v_circuit),
+        ("v_wires", v_wires),
+        ("u_tape", u_tape),
+    )
+
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.math.allclose(op.data, new_op.data)
+    assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
+    assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
+    for op1, op2 in zip(op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"]):
+        assert qml.equal(op1, op2)
+    assert new_op is not op
+
+
 class TestHilbertSchmidt:
     """Tests for the Hilbert-Schmidt template."""
 
@@ -103,6 +133,9 @@ class TestHilbertSchmidt:
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        # make sure it works in non-queuing situations too.
+        decomp = op.decomposition()
+
         tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=["a"]),
@@ -118,10 +151,11 @@ class TestHilbertSchmidt:
             qml.Hadamard(wires=["b"]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
-            assert i.name == j.name
-            assert i.data == j.data
-            assert i.wires == j.wires
+        for op1, op2 in zip(tape_dec.operations, expected_operations):
+            assert qml.equal(op1, op2)
+
+        for op1, op2 in zip(decomp, expected_operations):
+            assert qml.equal(op1, op2)
 
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""

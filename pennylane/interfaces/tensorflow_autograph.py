@@ -23,7 +23,6 @@ import tensorflow as tf
 
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
-from pennylane.transforms import convert_to_numpy_parameters
 
 from .tensorflow import (
     _compute_vjp,
@@ -31,19 +30,8 @@ from .tensorflow import (
     _jac_restructured,
     _res_restructured,
     _to_tensors,
+    set_parameters_on_copy_and_unwrap,
 )
-
-
-def _set_copy_and_unwrap_tape(t, a):
-    """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a, trainable_only=False)
-    return convert_to_numpy_parameters(tc)
-
-
-def set_parameters_on_copy_and_unwrap(tapes, params):
-    """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a) for t, a in zip(tapes, params))
 
 
 def _flatten_nested_list(x):
@@ -392,6 +380,8 @@ def execute(
             jacs = _flatten_nested_list(jacs)
             for i, jac in enumerate(jacs):
                 jacs[i] = tf.convert_to_tensor(jac)
+        else:
+            jacs = []
 
         return res + jacs + output_sizes
 

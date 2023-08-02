@@ -26,7 +26,6 @@ from pennylane import numpy as np
 
 from pennylane.wires import Wires
 
-from pennylane.transforms.decompositions import zyz_decomposition, xyx_decomposition
 from pennylane.transforms.decompositions import one_qubit_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
 from pennylane.transforms.decompositions.two_qubit_unitary import (
@@ -1328,25 +1327,3 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         jitted_matrix = jax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
-
-
-class TestDeprecation:
-    """Deprecation test class."""
-
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps_zyz)
-    def test_zyz_deprecation(self, U, expected_gate, expected_params):
-        """Test that a one-qubit matrix zyz is deprecated"""
-        with pytest.warns(
-            UserWarning,
-            match="The zyz_decomposition function is deprecated and will be removed soon.",
-        ):
-            zyz_decomposition(U, Wires("a"))
-
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
-    def test_xyx_deprecation(self, U, expected_gates, expected_params):
-        """Test that a one-qubit matrix xyx is deprecated"""
-        with pytest.warns(
-            UserWarning,
-            match="The xyx_decomposition function is deprecated and will be removed soon.",
-        ):
-            xyx_decomposition(U, Wires("a"))

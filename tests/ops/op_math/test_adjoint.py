@@ -421,19 +421,28 @@ class TestMiscMethods:
         assert isinstance(diag_gate, qml.RY)
         assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
 
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Test the flatten and unflatten methods."""
+
+        # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
+            pass
+
+        op = CustomOp(1.2, 2.3, wires=0)
+        adj_op = Adjoint(op)
+        data, metadata = adj_op._flatten()
+        assert len(data) == 1
+        assert data[0] is op
+
+        assert metadata == tuple()
+
+        new_op = type(adj_op)._unflatten(*adj_op._flatten())
+        assert qml.equal(adj_op, new_op)
+
 
 class TestAdjointOperation:
     """Test methods in the AdjointOperation mixin."""
-
-    @pytest.mark.parametrize(
-        "base, adjoint_base_name",
-        ((qml.PauliX(0), "Adjoint(PauliX)"), (qml.RX(1.2, wires=0), "Adjoint(RX)")),
-    )
-    def test_base_name(self, base, adjoint_base_name):
-        """Test the base_name property of AdjointOperation."""
-        op = Adjoint(base)
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert op.base_name == adjoint_base_name
 
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
@@ -545,20 +554,6 @@ class TestQueueing:
 
         assert len(q) == 1
         assert q.queue[0] == op
-
-    def test_do_queue_False(self):
-        """Test that when `do_queue` is specified, the operation is not queued."""
-        base = qml.PauliX(0)
-        do_queue_deprecation_warning = (
-            "The do_queue keyword argument is deprecated. "
-            "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-        )
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match=do_queue_deprecation_warning):
-                _ = Adjoint(base, do_queue=False)
-
-        assert len(q) == 0
 
 
 class TestMatrix:

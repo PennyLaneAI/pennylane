@@ -52,10 +52,6 @@ class Hermitian(Observable):
     Args:
         A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -68,7 +64,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A, wires, do_queue=None, id=None):
+    def __init__(self, A, wires, id=None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -83,7 +79,7 @@ class Hermitian(Observable):
 
             Hermitian._validate_input(A, expected_mx_shape)
 
-        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, id=id)
 
     @staticmethod
     def _validate_input(A, expected_mx_shape=None):
@@ -221,10 +217,6 @@ class SparseHamiltonian(Observable):
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires.
         wires (Sequence[int]): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -248,10 +240,10 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H, wires=None, do_queue=None, id=None):
+    def __init__(self, H, wires=None, id=None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
-        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(H, wires=wires, id=id)
         mat_len = 2 ** len(self.wires)
         if H.shape != (mat_len, mat_len):
             raise ValueError(
@@ -330,7 +322,7 @@ class SparseHamiltonian(Observable):
 
 
 class Projector(Observable):
-    r"""Projector(state, wires, do_queue=None, id=None)
+    r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
     The expectation of this observable returns the value
@@ -350,10 +342,6 @@ class Projector(Observable):
         state (tensor-like): Input state of shape ``(n,)`` for a basis-state projector, or ``(2**n,)``
             for a state-vector projector.
         wires (Iterable): wires that the projector acts on.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional).
 
     **Example**
@@ -443,14 +431,14 @@ class Projector(Observable):
 class _BasisStateProjector(Observable):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, do_queue=None, id=None):
+    def __init__(self, state, wires, id=None):
         wires = Wires(wires)
         state = list(qml.math.toarray(state))
 
         if not set(state).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
-        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state, wires=wires, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -568,11 +556,11 @@ class _BasisStateProjector(Observable):
 class _StateVectorProjector(Observable):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, do_queue=None, id=None):
+    def __init__(self, state, wires, id=None):
         wires = Wires(wires)
         state = list(qml.math.toarray(state))
 
-        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(state, wires=wires, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.

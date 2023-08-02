@@ -15,6 +15,7 @@
 This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
 """
 from collections.abc import Iterable
+import warnings
 
 has_mpl = True
 try:
@@ -590,6 +591,15 @@ class MPLDrawer:
         wires_all = wires_ctrl + wires_target
         min_wire = min(wires_all)
         max_wire = max(wires_all)
+
+        if len(wires_target) > 1:
+            min_target, max_target = min(wires_target), max(wires_target)
+            if any(min_target < w < max_target for w in wires_ctrl):
+                warnings.warn(
+                    "Some control indicators are hidden behind an operator. Consider re-ordering "
+                    "your circuit wires to ensure all control indicators are visible.",
+                    UserWarning,
+                )
 
         line = plt.Line2D((layer, layer), (min_wire, max_wire), **options)
         self._ax.add_line(line)

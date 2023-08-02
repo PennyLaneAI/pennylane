@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the batch inputs transform.
+Unit tests for the ``batch_inputs`` transform.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -54,6 +55,27 @@ def test_simple_circuit_one_batch():
 
     batch_size = 1
     inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
+    weights = np.random.uniform(-np.pi, np.pi, (2,))
+
+    res = circuit(inputs, weights)
+    assert res.shape == (batch_size,)
+
+
+def test_simple_circuit_with_prep():
+    """Test that batching works for a simple circuit with a state preparation"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=1)
+    @qml.qnode(dev)
+    def circuit(inputs, weights):
+        qml.QubitStateVector(np.array([0, 0, 1, 0]), wires=[0, 1])
+        qml.RX(inputs, wires=0)
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+    batch_size = 5
+    inputs = np.random.uniform(0, np.pi, (batch_size,), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     res = circuit(inputs, weights)
@@ -111,7 +133,7 @@ def test_value_error():
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     with pytest.raises(ValueError, match="Batch dimension for all gate arguments"):
-        res = circuit(input1, input2, weights)
+        circuit(input1, input2, weights)
 
 
 def test_batch_input_with_trainable_parameters_raises_error():
@@ -174,6 +196,46 @@ def test_mottonenstate_preparation(mocker):
     indiv_res = []
     for state in data:
         indiv_res.append(circuit2(state, weights))
+    assert np.allclose(res, indiv_res)
+
+
+def test_qubit_state_prep(mocker):
+    """Test that batching works for QubitStateVector"""
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.batch_input(argnum=0)
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, weights):
+        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    batch_size = 3
+
+    # create a batched input statevector
+    data = np.random.random((batch_size, 2**3), requires_grad=False)
+    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+
+    # weights is not batched
+    weights = np.random.random((10, 3, 3), requires_grad=True)
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2**3)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    indiv_res = []
+    for state in data:
+        indiv_res.append(circuit2(state, weights))
+
     assert np.allclose(res, indiv_res)
 
 
@@ -778,3 +840,31 @@ class TestDiffMulti:
             )
         )
         assert qml.math.allclose(grad, expected, atol=tol, rtol=0)
+
+
+def test_unbatched_not_copied():
+    """Test that operators containing unbatched parameters are not copied"""
+    batch_size = 5
+    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
+    weights = np.random.uniform(-np.pi, np.pi, (2,))
+
+    ops = [
+        qml.RY(weights[0], wires=0),
+        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y"),
+        qml.RY(weights[1], wires=1),
+    ]
+    meas = [qml.expval(qml.PauliZ(1))]
+
+    tape = qml.tape.QuantumScript(ops, meas)
+    tape.trainable_params = [0, 2]
+
+    new_tapes = qml.batch_input(argnum=1)(tape)[0]
+    assert len(new_tapes) == batch_size
+
+    for new_tape in new_tapes:
+        # same instance of RY operators
+        assert new_tape.operations[0] is tape.operations[0]
+        assert new_tape.operations[2] is tape.operations[2]
+
+        # different instance of AngleEmbedding
+        assert new_tape.operations[1] is not tape.operations[1]

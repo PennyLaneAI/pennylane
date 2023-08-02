@@ -132,7 +132,7 @@ class TestSnapshot:
             qml.Snapshot("very_important_state")
             qml.Beamsplitter(0.5, 0.7, wires=[0, 1])
             qml.Snapshot()
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         circuit()
         assert dev._debugger is None

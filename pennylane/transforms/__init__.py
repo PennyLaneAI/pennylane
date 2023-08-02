@@ -214,8 +214,6 @@ from .condition import cond, Conditional
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import (
-    zyz_decomposition,
-    xyx_decomposition,
     one_qubit_decomposition,
     two_qubit_decomposition,
 )

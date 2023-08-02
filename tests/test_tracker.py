@@ -179,7 +179,7 @@ dev_gaussian = qml.device("default.gaussian", wires=1)
 
 @qml.qnode(dev_gaussian)
 def circuit_gaussian():
-    return qml.expval(qml.X(0))
+    return qml.expval(qml.QuadX(0))
 
 
 @pytest.mark.xfail

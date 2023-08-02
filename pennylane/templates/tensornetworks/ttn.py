@@ -29,7 +29,7 @@ def compute_indices(wires, n_block_wires):
         n_block_wires (int): number of wires per block
 
     Returns:
-        layers (array): array of wire labels for each block
+        layers (tuple): array of wire labels for each block
     """
 
     n_wires = len(wires)
@@ -56,33 +56,20 @@ def compute_indices(wires, n_block_wires):
     n_wires = 2 ** (int(np.log2(len(wires) / n_block_wires))) * n_block_wires
     n_layers = int(np.log2(n_wires // n_block_wires)) + 1
 
-    layers = [
-        [
-            wires[i]
-            for i in range(
-                x + 2 ** (j - 1) * n_block_wires // 2 - n_block_wires // 2,
-                x + n_block_wires // 2 + 2 ** (j - 1) * n_block_wires // 2 - n_block_wires // 2,
-            )
-        ]
-        + [
-            wires[i]
-            for i in range(
-                x
-                + 2 ** (j - 1) * n_block_wires // 2
-                + 2 ** (j - 1) * n_block_wires // 2
-                - n_block_wires // 2,
-                x
-                + 2 ** (j - 1) * n_block_wires // 2
-                + n_block_wires // 2
-                + 2 ** (j - 1) * n_block_wires // 2
-                - n_block_wires // 2,
-            )
-        ]
-        for j in range(1, n_layers + 1)
-        for x in range(0, n_wires - n_block_wires // 2, 2 ** (j - 1) * n_block_wires)
-    ]
+    half_block_wires = n_block_wires // 2
 
-    return layers
+    block_wires = []
+    for layer in range(n_layers):
+        lower_shift = (2 ** (layer) - 1) * half_block_wires
+        upper_shift = (2 ** (layer + 1) - 1) * half_block_wires
+
+        step = 2**layer * n_block_wires
+        for block_offset in range(0, n_wires - half_block_wires, step):
+            wires1 = tuple(wires[block_offset + lower_shift + i] for i in range(half_block_wires))
+            wires2 = tuple(wires[block_offset + upper_shift + i] for i in range(half_block_wires))
+            block_wires.append(wires1 + wires2)
+
+    return tuple(block_wires)
 
 
 class TTN(Operation):
@@ -157,6 +144,13 @@ class TTN(Operation):
     def num_params(self):
         return 1
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._hyperparameters = dict(metadata[1])
+        Operation.__init__(new_op, data, wires=metadata[0])
+        return new_op
+
     def __init__(
         self,
         wires,
@@ -164,7 +158,6 @@ class TTN(Operation):
         block,
         n_params_block,
         template_weights=None,
-        do_queue=None,
         id=None,
     ):
         ind_gates = compute_indices(wires, n_block_wires)
@@ -187,7 +180,7 @@ class TTN(Operation):
 
         self._hyperparameters = {"ind_gates": ind_gates, "block": block}
 
-        super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(

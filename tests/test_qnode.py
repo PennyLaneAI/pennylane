@@ -636,6 +636,27 @@ class TestValidation:
 
         assert len(record) == 0
 
+    def test_not_giving_mode_kwarg_does_not_raise_warning(self):
+        """Test that not providing a value for mode does not raise a warning."""
+        with warnings.catch_warnings(record=True) as record:
+            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1))
+
+        assert len(record) == 0
+
+    def test_giving_mode_kwarg_raises_warning(self):
+        """Test that providing a value for mode raises a warning."""
+        with pytest.warns(UserWarning, match="The `mode` keyword argument is deprecated"):
+            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
+
+    def test_giving_mode_kwarg_raises_warning_old_return(self):
+        """Test that providing a value for mode raises a custom warning with disable_return."""
+        qml.disable_return()
+        with pytest.warns(
+            UserWarning, match="In the new return system, you should set the `grad_on_execution`"
+        ):
+            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
+        qml.enable_return()
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
@@ -1405,7 +1426,7 @@ class TestShots:
             qml.RZ(0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape = QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q, shots=5)
         # no warning on the first execution
         cache = {}
         qml.execute([tape], dev, None, cache=cache)
@@ -1675,16 +1696,6 @@ class TestNewDeviceIntegration:
         assert not kwargs
         assert new_dev is dev
 
-    def test_shots_not_set_on_device(self):
-        """Test that shots are not set on the device when override shots are passed on a call."""
-
-        def f():
-            return qml.expval(qml.PauliZ(0))
-
-        qn = QNode(f, self.dev)
-        qn(shots=10)
-        assert getattr(self.dev, "shots", "not here") == "not here"
-
     def test_shots_integration(self):
         """Test that shots provided at call time are passed through the workflow."""
 
@@ -1723,11 +1734,8 @@ class TestTapeExpansion:
 
             num_wires = 1
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RX(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RX(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(x):
@@ -1762,11 +1770,8 @@ class TestTapeExpansion:
             grad_method = "A"
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RX(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RX(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
         def circuit(x):
@@ -1807,11 +1812,8 @@ class TestTapeExpansion:
 
             grad_method = None
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):

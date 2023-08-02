@@ -55,7 +55,7 @@ class BasisStatePreparation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, basis_state, wires, do_queue=None, id=None):
+    def __init__(self, basis_state, wires, id=None):
         basis_state = qml.math.stack(basis_state)
 
         # check if the `basis_state` param is batched
@@ -86,7 +86,7 @@ class BasisStatePreparation(Operation):
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
         # The transform should be rewritten to support hyperparameters as well.
-        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(basis_state, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ

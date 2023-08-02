@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for differentiable quantum fidelity transform."""
-
+# pylint: disable=too-many-public-methods
 import pytest
 
 import pennylane as qml
@@ -162,19 +162,19 @@ class TestFidelityQnode:
     @pytest.mark.parametrize("wire", wires)
     def test_fidelity_qnodes_rx_pauliz(self, device, param, wire):
         """Test the fidelity between Rx and PauliZ circuits."""
-        dev = qml.device(device, wires=1)
+        dev = qml.device(device, wires=[wire])
 
         @qml.qnode(dev)
         def circuit0(x):
-            qml.RX(x, wires=0)
+            qml.RX(x, wires=wire)
             return qml.state()
 
         @qml.qnode(dev)
         def circuit1():
-            qml.PauliZ(wires=0)
+            qml.PauliZ(wires=wire)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[wire], wires1=[wire])((param))
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid)
 
@@ -200,6 +200,28 @@ class TestFidelityQnode:
         )
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_wire_labels(self, device, tol):
+        """Test that fidelity is correct with custom wire labels"""
+        param = np.array([0.678, 1.234])
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=wires[0])
+            qml.IsingXX(x, wires=wires)
+            return qml.state()
+
+        fid_circuit = qml.qinfo.fidelity(circuit, circuit, [wires[0]], [wires[1]])
+        actual = fid_circuit((param[0],), (param[1],))
+
+        expected = (
+            np.sin(param[0] / 2) * np.cos(param[1] / 2)
+            + np.sin(param[1] / 2) * np.cos(param[0] / 2)
+        ) ** 2
+        assert np.allclose(actual, expected, atol=tol)
 
     interfaces = ["auto", "autograd"]
 
@@ -472,8 +494,7 @@ class TestFidelityQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire, interface):
+    def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire):
         """Test the fidelity between Rx and PauliZ circuits with Jax jit."""
         import jax
 

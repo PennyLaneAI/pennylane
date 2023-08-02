@@ -11,10 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for utilities for optimization transforms.
+"""
+# pylint: disable=too-few-public-methods
 
 import pytest
 
-import pennylane as qml
+from utils import check_matrix_equivalence
 from pennylane.transforms.optimization.optimization_utils import (
     find_next_gate,
     _zyz_to_quat,
@@ -22,9 +26,8 @@ from pennylane.transforms.optimization.optimization_utils import (
     fuse_rot_angles,
 )
 
+import pennylane as qml
 from pennylane import numpy as np
-
-from utils import check_matrix_equivalence
 
 
 sample_op_list = [

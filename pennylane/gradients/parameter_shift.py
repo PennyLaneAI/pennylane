@@ -1487,11 +1487,9 @@ def param_shift(
             res = fn(results)
         except (ValueError, TypeError) as e:
             raise e.__class__(
-                "The processing function of the gradient transform ran into errors "
-                "while the new return type system was turned on. Make sure to "
-                "pass the device shots to the param_shift gradient transform "
-                "using the shots argument or disable the new return type "
-                "system by calling the qml.disable_return function."
+                "The processing function of the gradient transform ran into errors. "
+                "Make sure to pass the device shots to the param_shift gradient transform "
+                "using the shots argument."
             ) from e
         return res
 

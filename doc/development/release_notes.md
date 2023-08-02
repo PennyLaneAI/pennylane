@@ -3,7 +3,7 @@ Release notes
 
 This page contains the release notes for PennyLane.
 
-.. mdinclude:: ../releases/changelog-0.31.1.md
+.. mdinclude:: ../releases/changelog-dev.md
 
 .. mdinclude:: ../releases/changelog-0.31.0.md
 

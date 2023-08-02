@@ -19,9 +19,9 @@ executed by a device.
 
 import contextlib
 import copy
-from collections import Counter, defaultdict
-from typing import List, Union, Optional, Sequence
 import warnings
+from collections import Counter
+from typing import List, Union, Optional, Sequence
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -36,19 +36,11 @@ from pennylane.measurements import (
     VarianceMP,
     Shots,
 )
+from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
-
-
-def _warn_name():
-    warnings.warn(
-        "The ``name`` property and keyword argument of ``QuantumScript`` is deprecated and will be"
-        " removed in the next release. Going forward, please refrain from using them. This also affects"
-        " the ``QuantumTape`` and ``OperationRecorder`` classes.",
-        UserWarning,
-    )
 
 
 OPENQASM_GATES = {
@@ -102,7 +94,6 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
-        name (str): Deprecated way to give a name to the quantum script. Avoid using.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -182,22 +173,14 @@ class QuantumScript:
 
     """
 
-    do_queue = False
-    """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
-    True for its child Quantum Tape."""
-
     def __init__(
         self,
         ops=None,
         measurements=None,
         prep=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
-        name=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self._name = name
-        if name is not None:
-            _warn_name()
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -258,17 +241,6 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
-
-    @property
-    def name(self):
-        """Name of the quantum script. Raises deprecation warning.
-
-        Returns:
-
-            str or None: The name given to the quantum script upon creation (if any).
-        """
-        _warn_name()
-        return self._name
 
     @property
     def interface(self):
@@ -458,10 +430,12 @@ class QuantumScript:
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
+        n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
+                    for i, d in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
@@ -554,6 +528,11 @@ class QuantumScript:
 
     @data.setter
     def data(self, params):
+        warnings.warn(
+            "The tape.data setter is deprecated and will be removed in v0.33. "
+            "Please use tape.bind_new_parameters instead.",
+            UserWarning,
+        )
         self.set_parameters(params, trainable_only=False)
 
     @property
@@ -719,6 +698,12 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [4, 1, 6]
         """
+        warnings.warn(
+            "The method tape.set_parameters is deprecated and will be removed in v0.33. "
+            "Please use tape.bind_new_parameters instead.",
+            UserWarning,
+        )
+
         if trainable_only:
             iterator = zip(self.trainable_params, params)
             required_length = self.num_params
@@ -745,6 +730,64 @@ class QuantumScript:
 
         self._update_batch_size()
         self._update_output_dim()
+
+    def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
+        """Create a new tape with updated parameters.
+
+        This function takes a :class:`~.tape.QuantumScript` as input, and returns
+        a new ``QuantumScript`` containing the new parameters at the provided indices,
+        with the parameters at all other indices remaining the same.
+
+        Args:
+            params (Sequence[TensorLike]): New parameters to create the tape with. This
+                must have the same length as ``indices``.
+            indices (Sequence[int]): The parameter indices to update with the given parameters.
+                The index of a parameter is defined as its index in ``tape.get_parameters()``.
+
+        Returns:
+            .tape.QuantumScript: New tape with updated parameters
+        """
+        # pylint: disable=no-member
+
+        if len(params) != len(indices):
+            raise ValueError("Number of provided parameters does not match number of indices")
+
+        # determine the ops that need to be updated
+        op_indices = {}
+        for param_idx, idx in enumerate(sorted(indices)):
+            pinfo = self._par_info[idx]
+            op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
+
+            if op_idx not in op_indices:
+                op_indices[op_idx] = {}
+
+            op_indices[op_idx][p_idx] = param_idx
+
+        new_ops = self.circuit
+
+        for op_idx, p_indices in op_indices.items():
+            op = new_ops[op_idx]
+            data = op.data if isinstance(op, Operator) else op.obs.data
+
+            new_params = [params[p_indices[i]] if i in p_indices else d for i, d in enumerate(data)]
+
+            if isinstance(op, Operator):
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+            else:
+                new_obs = qml.ops.functions.bind_new_parameters(op.obs, new_params)
+                new_op = op.__class__(obs=new_obs)
+
+            new_ops[op_idx] = new_op
+
+        new_prep = new_ops[: len(self._prep)]
+        new_operations = new_ops[len(self._prep) : len(self.operations)]
+        new_measurements = new_ops[len(self.operations) :]
+
+        new_tape = self.__class__(new_operations, new_measurements, new_prep, shots=self.shots)
+        new_tape.trainable_params = self.trainable_params
+        new_tape._qfunc_output = self._qfunc_output
+
+        return new_tape
 
     # ========================================================
     # MEASUREMENT SHAPE
@@ -951,7 +994,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.shape(dev)
@@ -964,11 +1006,20 @@ class QuantumScript:
         if not qml.active_return():
             return self._shape_legacy(device)
 
-        shots = (
-            Shots(device._raw_shot_sequence)
-            if device.shot_vector is not None
-            else Shots(device.shots)
-        )
+        if isinstance(device, qml.devices.experimental.Device):
+            # MP.shape (called below) takes 2 arguments: `device` and `shots`.
+            # With the new device interface, shots are stored on tapes rather than the device
+            # As well, MP.shape needs the device largely to see the device wires, and this is
+            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
+            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            shots = self.shots
+            device = self
+        else:
+            shots = (
+                Shots(device._raw_shot_sequence)
+                if device.shot_vector is not None
+                else Shots(device.shots)
+            )
 
         if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
@@ -1034,7 +1085,6 @@ class QuantumScript:
 
         .. code-block:: pycon
 
-            >>> qml.enable_return()
             >>> dev = qml.device('default.qubit', wires=2)
             >>> qs = QuantumScript(measurements=[qml.state()])
             >>> qs.numeric_type
@@ -1159,20 +1209,9 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(
+        return self.__class__(
             ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
         )
-
-        if self.do_queue is not None:
-            do_queue_deprecation_warning = (
-                "The do_queue keyword argument is deprecated. "
-                "Instead of setting it to False, use qml.queuing.QueuingManager.stop_recording()"
-            )
-            warnings.warn(do_queue_deprecation_warning, UserWarning)
-
-        if self.do_queue or self.do_queue is None:
-            qml.QueuingManager.append(adj)
-        return adj
 
     def unwrap(self):
         """A context manager that unwraps a quantum script with tensor-like parameters
@@ -1197,6 +1236,12 @@ class QuantumScript:
         <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
         <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
         """
+
+        warnings.warn(
+            "The method tape.unwrap is deprecated and will be removed in PennyLane v0.33. "
+            "Please use qml.transforms.convert_to_numpy_parameters instead."
+        )
+
         return qml.tape.UnwrapTape(self)
 
     # ========================================================
@@ -1261,22 +1306,10 @@ class QuantumScript:
 
             self._specs = {
                 "resources": resources,
-                "gate_sizes": defaultdict(int),
-                "gate_types": defaultdict(int),
+                "num_observables": len(self.observables),
+                "num_diagonalizing_gates": len(self.diagonalizing_gates),
+                "num_trainable_params": self.num_params,
             }
-
-            for op in self.operations:
-                # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
-                self._specs["gate_sizes"][len(op.wires)] += 1
-                self._specs["gate_types"][op.name] += 1
-
-            self._specs["num_operations"] = resources.num_gates
-            self._specs["num_observables"] = len(self.observables)
-            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
-            self._specs["num_used_wires"] = self.num_wires
-            self._specs["num_trainable_params"] = self.num_params
-            self._specs["depth"] = resources.depth
-            self._specs = SpecsDict(self._specs)
 
         return self._specs
 
@@ -1407,30 +1440,6 @@ class QuantumScript:
     def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
-
-
-class SpecsDict(dict):
-    """A dictionary to track and warn about deprecated keys"""
-
-    old_to_new_key_map = {
-        "gate_types": "gate_types",
-        "gate_sizes": "gate_sizes",
-        "num_operations": "num_gates",
-        "num_used_wires": "num_wires",
-        "depth": "depth",
-    }
-
-    def __getitem__(self, item):
-        if item in self.old_to_new_key_map:
-            warnings.warn(
-                f"The {item} key is deprecated and will be removed in the next release. "
-                f'Going forward, please use: specs["resources"].{self.old_to_new_key_map[item]}'
-            )
-        return super().__getitem__(item)
-
-    def copy(self):
-        """Custom copy function to return a SpecsDict instead of a dict."""
-        return SpecsDict(self.items())
 
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):

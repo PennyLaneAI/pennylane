@@ -94,14 +94,14 @@ class ArbitraryUnitary(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, do_queue=None, id=None):
+    def __init__(self, weights, wires, id=None):
         shape = qml.math.shape(weights)
         if shape != (4 ** len(wires) - 1,):
             raise ValueError(
                 f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
             )
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

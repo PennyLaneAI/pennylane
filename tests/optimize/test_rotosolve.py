@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RotosolveOptimizer``.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import functools
 import pytest
 from scipy.optimize import shgo
@@ -83,14 +84,17 @@ def test_error_missing_frequency_info_single_par():
     for one of the function arguments."""
 
     opt = RotosolveOptimizer()
-    fun = lambda x: qml.math.sum(x)
+
+    def sum_named_arg(x):
+        return qml.math.sum(x)
+
     x = np.arange(4, requires_grad=True)
     nums_frequency = {"x": {(0,): 1, (1,): 1}}
     spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
     # For the first three entries either nums_frequency or spectra is provided
     with pytest.raises(ValueError, match=r"was provided for the entry \(3,\)"):
-        opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
+        opt.step(sum_named_arg, x, nums_frequency=nums_frequency, spectra=spectra)
 
 
 def test_error_no_trainable_args():
@@ -99,8 +103,6 @@ def test_error_no_trainable_args():
     opt = RotosolveOptimizer()
     fun = lambda x, y, z: 1.0
     x = np.arange(4, requires_grad=False)
-    y = np.arange(2, requires_grad=False)
-    z = [1.2, -0.4, -9.1]
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):
         opt.step(fun, x, nums_frequency=None, spectra=None)
@@ -188,16 +190,17 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
+    # pylint: disable=unused-argument
     def test_number_of_function_calls(
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
-        global num_calls
+        # pylint: disable=too-many-arguments
         num_calls = 0
 
         @functools.wraps(fun)
         def _fun(*args, **kwargs):
-            global num_calls
+            nonlocal num_calls
             num_calls += 1
             return fun(*args, **kwargs)
 
@@ -206,14 +209,14 @@ class TestWithClassicalFunction:
         # Make only the first argument trainable
         param = (np.array(param[0], requires_grad=True),) + param[1:]
         # Only one argument is marked as trainable -> Expect only the executions for that arg
-        new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
+        opt.step(_fun, *param, nums_frequency=nums_freq)
         exp_num_calls_single_trainable = sum(2 * num + 1 for num in nums_freq["x"].values())
         assert num_calls == exp_num_calls_single_trainable
         num_calls = 0
 
         # Parameters are now marked as trainable -> Expect full number of executions
         param = tuple(np.array(p, requires_grad=True) for p in param)
-        new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
+        opt.step(_fun, *param, nums_frequency=nums_freq)
         assert num_calls == exp_num_calls
 
     def test_single_step_convergence(

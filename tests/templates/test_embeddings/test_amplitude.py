@@ -355,7 +355,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
-        def circuit_decomposed(features):
+        def node_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
@@ -369,7 +369,7 @@ class TestInterfaces:
             return qml.state()
 
         res = circuit(features)
-        res2 = circuit_decomposed(features)
+        res2 = node_decomposed(features)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
@@ -378,7 +378,6 @@ class TestInterfaces:
     def test_jax(self, tol, features):
         """Tests jax tensors."""
 
-        import jax
         import jax.numpy as jnp
 
         features = jnp.array(features)
@@ -427,7 +426,7 @@ class TestInterfaces:
 
         @jax.jit
         @qml.qnode(dev)
-        def circuit_decomposed(features):
+        def node_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
@@ -442,7 +441,7 @@ class TestInterfaces:
             return qml.state()
 
         res = circuit(features)
-        res2 = circuit_decomposed(features)
+        res2 = node_decomposed(features)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
@@ -475,7 +474,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
-        def circuit_decomposed(features):
+        def node_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), tf.complex128
@@ -489,12 +488,12 @@ class TestInterfaces:
             return qml.state()
 
         res = circuit(features)
-        res2 = circuit_decomposed(features)
+        res2 = node_decomposed(features)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_error_when_batching(self, tol):
+    def test_tf_error_when_batching(self):
         """Tests batched tf tensors raising an error."""
 
         import tensorflow as tf
@@ -556,7 +555,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
-        def circuit_decomposed(features):
+        def node_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), torch.complex128
@@ -570,6 +569,6 @@ class TestInterfaces:
             return qml.state()
 
         res = circuit(features)
-        res2 = circuit_decomposed(features)
+        res2 = node_decomposed(features)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

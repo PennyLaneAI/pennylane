@@ -19,6 +19,7 @@ page in the developement guide.
 """
 # pylint: disable=protected-access,wrong-import-position
 
+import warnings
 import pytest
 
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -428,6 +429,28 @@ class TestCTRL:
         assert circle.width == 0.2
         assert circle.center == (0, 0)
         plt.close()
+
+    @pytest.mark.parametrize(
+        "control_wires,target_wires",
+        [
+            ((1,), (0, 2)),
+            ((0, 2), (1, 3)),
+            ((1, 3), (0, 2)),
+            ((0, 2, 4), (1, 3)),
+        ],
+    )
+    def test_ctrl_raises_warning_with_overlap(self, control_wires, target_wires):
+        """Tests that a warning is raised if some control indicators are not visible."""
+        drawer = MPLDrawer(1, 4)
+        with pytest.warns(UserWarning, match="control indicators are hidden behind an operator"):
+            drawer.ctrl(0, control_wires, target_wires)
+
+    @pytest.mark.parametrize("control_wires,target_wires", [((0,), (1, 2)), ((2,), (0, 1))])
+    def test_ctrl_no_warning_without_overlap(self, control_wires, target_wires):
+        drawer = MPLDrawer(1, 3)
+        with warnings.catch_warnings(record=True) as w:
+            drawer.ctrl(0, control_wires, target_wires)
+        assert len(w) == 0
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""

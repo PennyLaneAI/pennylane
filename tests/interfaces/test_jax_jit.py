@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-JIT interface"""
-import sys
+# pylint: disable=protected-access,too-few-public-methods
 import pytest
-
-pytestmark = pytest.mark.jax
-
-jax = pytest.importorskip("jax")
-config = pytest.importorskip("jax.config")
-config.config.update("jax_enable_x64", True)
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
+
+pytestmark = pytest.mark.jax
+
+jax = pytest.importorskip("jax")
+jax.config.update("jax_enable_x64", True)
 
 
 class TestJaxExecuteUnitTests:
@@ -51,7 +50,7 @@ class TestJaxExecuteUnitTests:
         ):
             qml.execute([tape], dev, interface="jax", gradient_fn=qml.gradients.param_shift)
 
-    def test_jacobian_options(self, mocker, tol):
+    def test_jacobian_options(self, mocker):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -74,7 +73,7 @@ class TestJaxExecuteUnitTests:
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
             )[0]
 
-        res = jax.grad(cost)(a, device=dev)
+        jax.grad(cost)(a, device=dev)
 
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
@@ -104,7 +103,7 @@ class TestJaxExecuteUnitTests:
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
-            res = jax.grad(cost)(a, device=dev)
+            jax.grad(cost)(a, device=dev)
 
     def test_unknown_interface(self):
         """Test that an error is raised if the interface is unknown"""
@@ -368,11 +367,11 @@ class TestCaching:
         # for the forward pass, and one for the backward pass.
         dev._num_executions = 0
         jac_fn = jax.grad(cost)
-        grad1 = jac_fn(params, cache=True)
+        jac_fn(params, cache=True)
         assert dev.num_executions == 2
 
 
-execute_kwargs = [
+execute_kwargs_integration = [
     {"gradient_fn": param_shift},
     {
         "gradient_fn": "device",
@@ -387,7 +386,7 @@ execute_kwargs = [
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_integration)
 class TestJaxExecuteIntegration:
     """Test the jax interface execute function
     integrates well for both forward and backward execution"""
@@ -477,8 +476,8 @@ class TestJaxExecuteIntegration:
             # number of provided parameters fails in the tape: (len(params) !=
             # required_length) and the tape produces incorrect results.
             tape._update()
-            tape.set_parameters([a, b])
-            return execute([tape], dev, **execute_kwargs)[0]
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return execute([new_tape], dev, **execute_kwargs)[0]
 
         jac_fn = jax.jit(jax.grad(cost))
         jac = jac_fn(a, b)
@@ -521,7 +520,7 @@ class TestJaxExecuteIntegration:
         for r, e in zip(results, expected_results):
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
-    def test_classical_processing_single_tape(self, execute_kwargs, tol):
+    def test_classical_processing_single_tape(self, execute_kwargs):
         """Test classical processing within the quantum tape for a single tape"""
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -542,7 +541,7 @@ class TestJaxExecuteIntegration:
         res = jax.jit(jax.grad(cost, argnums=(0, 1, 2)), static_argnums=3)(a, b, c, device=dev)
         assert len(res) == 3
 
-    def test_classical_processing_multiple_tapes(self, execute_kwargs, tol):
+    def test_classical_processing_multiple_tapes(self, execute_kwargs):
         """Test classical processing within the quantum tape for multiple
         tapes"""
         dev = qml.device("default.qubit", wires=2)
@@ -571,7 +570,7 @@ class TestJaxExecuteIntegration:
         res = jax.jit(jax.grad(cost_fn))(params)
         assert res.shape == (2,)
 
-    def test_multiple_tapes_output(self, execute_kwargs, tol):
+    def test_multiple_tapes_output(self, execute_kwargs):
         """Test the output types for the execution of multiple quantum tapes"""
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.3, 0.2])
@@ -633,12 +632,10 @@ class TestJaxExecuteIntegration:
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         def cost_fn(a, p, device):
             qscript = qml.tape.QuantumScript(
@@ -693,7 +690,7 @@ class TestJaxExecuteIntegration:
         assert res.shape == (3,)
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_integration)
 class TestVectorValuedJIT:
     """Test vector-valued returns for the JAX-JIT interface."""
 
@@ -712,8 +709,6 @@ class TestVectorValuedJIT:
 
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
-
-        idx = 0
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:

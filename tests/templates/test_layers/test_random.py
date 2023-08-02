@@ -14,10 +14,52 @@
 """
 Unit tests for the RandomLayers template.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
+
+
+def test_hyperparameters():
+    """Test that the hyperparmaeters are set as expected."""
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+
+    assert op.hyperparameters == {
+        "ratio_imprim": 0.3,
+        "imprimitive": qml.CNOT,
+        "rotations": (qml.RX, qml.RY, qml.RZ),
+        "seed": 42,
+    }
+
+    op2 = qml.RandomLayers(
+        weights, wires=(0, 1), ratio_imprim=1.0, imprimitive=qml.CZ, rotations=(qml.RX,), seed=None
+    )
+
+    assert op2.hyperparameters == {
+        "ratio_imprim": 1.0,
+        "imprimitive": qml.CZ,
+        "rotations": (qml.RX,),
+        "seed": None,
+    }
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the behavior of the flatten and unflatten methods."""
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+
+    data, metadata = op._flatten()
+
+    assert qml.math.allclose(data[0], weights)
+    # check metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(new_op, op)
+    assert new_op is not op
 
 
 class TestDecomposition:
@@ -32,11 +74,18 @@ class TestDecomposition:
         op3 = qml.RandomLayers(weights, wires=range(2), seed=42)
 
         queue1 = op1.expand().operations
+        decomp1 = op1.compute_decomposition(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
         queue2 = op2.expand().operations
+        decomp2 = op2.compute_decomposition(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
         queue3 = op3.expand().operations
+        decomp3 = op3.compute_decomposition(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
         assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
         assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
+
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue1, decomp1))
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue2, decomp2))
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue3, decomp3))
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
     def test_number_gates(self, n_layers, n_rots):
@@ -56,11 +105,19 @@ class TestDecomposition:
         weights = np.random.random(size=(1, n_rots))
 
         op = qml.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         gate_names = [gate.name for gate in queue]
         ratio_impr = gate_names.count("CNOT") / len(gate_names)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
+
+        with pytest.warns(UserWarning):
+            decomp = op.compute_decomposition(
+                *op.parameters, wires=op.wires, **op.hyperparameters, ratio_imprimitive=0.9
+            )
+            gate_names = [gate.name for gate in decomp]
+            ratio_impr = gate_names.count("CNOT") / len(gate_names)
+            assert np.isclose(ratio_impr, 0.9, atol=0.05)
 
     def test_random_wires(self):
         """Test that random wires are picked for the gates. This is done by

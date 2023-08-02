@@ -14,14 +14,18 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
-# pylint: disable= too-many-branches,
+import warnings
+
+# pylint: disable= too-many-branches, too-many-return-statements
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli.utils import simplify
+from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
+from pennylane.pauli.utils import simplify
 
 
-def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
+def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False):
     r"""Create a fermionic observable from molecular orbital integrals.
 
     Args:
@@ -29,9 +33,10 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         one (array[float]): the one-particle molecular orbital integrals
         two (array[float]): the two-particle molecular orbital integrals
         cutoff (float): cutoff value for discarding the negligible integrals
+        fs (bool): if True, a fermi sentence will be returned
 
     Returns:
-        tuple(array[float], list[int]): fermionic coefficients and operators
+        Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
 
     **Example**
 
@@ -40,6 +45,21 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     >>> coeffs, ops = fermionic_observable(constant, integral)
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
+
+    If the `fs` kwarg is `True`, a fermionic operator is returned.
+
+    >>> constant = np.array([1.0])
+    >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
+    >>> fermionic_observable(constant, integral, fs=True)
+    1.0 * I
+    + 0.5 * a⁺(0) a(0)
+    + -0.8270995 * a⁺(0) a(2)
+    + 0.5 * a⁺(1) a(1)
+    + -0.8270995 * a⁺(1) a(3)
+    + -0.8270995 * a⁺(2) a(0)
+    + 0.5 * a⁺(2) a(2)
+    + -0.8270995 * a⁺(3) a(1)
+    + 0.5 * a⁺(3) a(3)
     """
     coeffs = qml.math.array([])
 
@@ -76,6 +96,26 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     if indices_sort:
         indices_sort = qml.math.array(indices_sort)
 
+    if fs:
+        sentence = FermiSentence({FermiWord({}): constant[0]})
+        for c, o in zip(coeffs[indices_sort], sorted(operators)):
+            if len(o) == 2:
+                sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
+            if len(o) == 4:
+                sentence.update(
+                    {FermiWord({(0, o[0]): "+", (1, o[1]): "+", (2, o[2]): "-", (3, o[3]): "-"}): c}
+                )
+        sentence.simplify()
+
+        return sentence
+
+    warnings.warn(
+        "This function will return a fermionic operator by default in the next release. For details,"
+        " see the Fermionic Operators tutorial:"
+        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
+        " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
+    )
+
     return coeffs[indices_sort], sorted(operators)
 
 
@@ -87,7 +127,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
 
     Args:
-        o_ferm tuple(array[float], list[int]): fermionic operator
+        o_ferm Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
@@ -102,7 +142,22 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     ((-1+0j)) [Z0]
     + ((1+0j)) [I0]
 
-    If the new op-math is active, an arithmetic operator is returned instead.
+    The input can also be a fermionic operator.
+
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+      (-0.3j) [Y0 X1]
+    + (0.3j) [X0 Y1]
+    + (-0.775j) [Y1 X2]
+    + (0.775j) [X1 Y2]
+    + ((0.3+0j)) [Y0 Y1]
+    + ((0.3+0j)) [X0 X1]
+    + ((0.775+0j)) [Y1 Y2]
+    + ((0.775+0j)) [X1 X2]
+
+    If the new op-math is active, an arithmetic operator is returned.
 
     >>> qml.operation.enable_new_opmath()
     >>> coeffs = np.array([1.0, 1.0])
@@ -111,6 +166,35 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> print(qubit_observable(f))
     Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
     """
+    if isinstance(o_ferm, (FermiWord, FermiSentence)):
+        h = qml.jordan_wigner(o_ferm, ps=True)
+        h.simplify(tol=cutoff)
+
+        if active_new_opmath():
+            if not h.wires:
+                return h.operation(wire_order=[0])
+            return h.operation()
+
+        if not h.wires:
+            h = h.hamiltonian(wire_order=[0])
+            return qml.Hamiltonian(
+                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+            )
+
+        h = h.hamiltonian()
+
+        return simplify(
+            qml.Hamiltonian(
+                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+            )
+        )
+
+    warnings.warn(
+        "Tuple input for the qubit_observable function is deprecated; please use the fermionic"
+        " operators format. For details, see the Fermionic Operators tutorial:"
+        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+    )
+
     ops = []
     coeffs = qml.math.array([])
 
@@ -164,4 +248,9 @@ def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-br
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
+
+    warnings.warn(
+        "Use of qml.qchem.jordan_wigner is deprecated; please use qml.jordan_wigner instead."
+    )
+
     return qml.fermi.jordan_wigner(op, notation=notation)

@@ -833,7 +833,7 @@ class TestMetricTensor:
 
         error_msg = (
             "Some parameters specified in argnum are not in the "
-            "trainable parameters \[0, 1, 2, 3\] of the tape "
+            r"trainable parameters \[0, 1, 2, 3\] of the tape "
             "and will be ignored. This may be caused by attempting to "
             "differentiate with respect to parameters that are not marked "
             "as trainable."
@@ -1758,9 +1758,13 @@ def test_get_aux_wire_with_device_wires():
     tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "aux", "one"])
 
-    assert _get_aux_wire(0, tape, device_wires) == 0
-    assert _get_aux_wire("one", tape, device_wires) == "one"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
+    assert _get_aux_wire("aux", tape, device_wires) == "aux"
+    _match = "The requested auxiliary wire is already in use by the circuit."
+    with pytest.raises(qml.wires.WireError, match=_match):
+        _get_aux_wire("one", tape, device_wires)
+    with pytest.raises(qml.wires.WireError, match=_match):
+        _get_aux_wire(0, tape, device_wires)
 
 
 def test_get_aux_wire_with_unavailable_aux():
@@ -1771,5 +1775,5 @@ def test_get_aux_wire_with_unavailable_aux():
         qml.RX(x, wires="one")
     tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "one"])
-    with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
+    with pytest.raises(qml.wires.WireError, match="The requested auxiliary wire does not exist"):
         _get_aux_wire("two", tape, device_wires)

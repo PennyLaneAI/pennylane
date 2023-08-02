@@ -588,6 +588,24 @@ class TestMiscMethods:
         op = Exp(qml.PauliX(0), 3)
         assert repr(op) == "Exp(3 PauliX)"
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("exp_type", (Exp, Evolution))
+    def test_flatten_unflatten(self, exp_type):
+        """Tests the _unflatten and _flatten methods."""
+        base = qml.RX(1.2, wires=0)
+        op = exp_type(base, 2.5, num_steps=5)
+
+        data, metadata = op._flatten()
+        assert data[0] is base
+        assert data[1] == 2.5
+
+        assert metadata == (5,)
+
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(new_op, op)
+
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
         t = qml.PauliX(0) @ qml.PauliX(1)

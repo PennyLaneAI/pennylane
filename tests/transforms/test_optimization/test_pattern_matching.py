@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``pattern_matching_optimization``.
+"""
+# pylint: disable=too-many-statements
 import pytest
 import pennylane as qml
 import pennylane.numpy as np

@@ -88,6 +88,12 @@ def bind_new_parameters_fermionic_double_excitation(
 
 
 @bind_new_parameters.register
+def bind_new_parameters_angle_embedding(op: qml.AngleEmbedding, params: Sequence[TensorLike]):
+    rotation = op.hyperparameters["rotation"].basis
+    return qml.AngleEmbedding(params[0], wires=op.wires, rotation=rotation)
+
+
+@bind_new_parameters.register
 def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
     return qml.Identity(*params, wires=op.wires)
 

@@ -15,6 +15,7 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
+# pylint: disable=too-many-arguments
 import itertools
 
 import numpy as np
@@ -126,8 +127,8 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.expval(qml.PauliX(1)),
     qml.probs(wires=1),
     qml.probs(wires=0),
-    qml.probs(qml.PauliZ(0)),
-    qml.probs(qml.PauliZ(1)),
+    qml.probs(op=qml.PauliZ(0)),
+    qml.probs(op=qml.PauliZ(1)),
     qml.state(),
     qml.vn_entropy(wires=0),
     qml.vn_entropy(wires=0, log_base=np.e),
@@ -150,7 +151,31 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.shadow_expval(
         H=qml.Hamiltonian(
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-        )
+        ),
+        k=3,
+    ),
+    qml.shadow_expval(
+        H=[
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+            )
+        ],
+        k=2,
+    ),
+    qml.shadow_expval(
+        H=[
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+            )
+        ]
+    ),
+    qml.shadow_expval(
+        H=[
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+            )
+        ],
+        k=3,
     ),
     ExpectationMP(eigvals=[1, -1]),
     ExpectationMP(eigvals=[1, 2]),
@@ -582,8 +607,9 @@ class TestEqual:
         )
 
     @pytest.mark.all_interfaces
-    def test_equal_op_remaining(self):
+    def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
         """Test optional arguments are working"""
+        # pylint: disable=too-many-statements
         wire = 0
 
         import jax
@@ -1055,7 +1081,7 @@ class TestEqual:
             operation1 = op1(jax.numpy.array(x), wires=1)
             operation2 = op1(other_tensor, wires=1)
             if isinstance(other_tensor, tf.Variable):
-                with tf.GradientTape() as tape:
+                with tf.GradientTape():
                     assert qml.equal(
                         operation1, operation2, check_interface=False, check_trainability=True
                     )
@@ -1071,7 +1097,7 @@ class TestEqual:
 
         # TF and Autograd
         # ------------------
-        with tf.GradientTape() as tape:
+        with tf.GradientTape():
             assert qml.equal(
                 op1(tf_tensor, wires=wire),
                 op1(pl_tensor, wires=wire),
@@ -1081,7 +1107,7 @@ class TestEqual:
 
         # TF and Torch
         # ------------------
-        with tf.GradientTape() as tape:
+        with tf.GradientTape():
             assert qml.equal(
                 op1(tf_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -1104,9 +1130,9 @@ class TestEqual:
         op2 = qml.prod(op1, qml.RY(0.25, wires=1))
         assert not qml.equal(op1, op2)
 
-    def test_equal_with_unsupported_nested_operators_raises_error(self):
-        """Test that the equal method with two operators with the same arithmetic depth (>0) raises
-        an error unless there is a singledispatch function specifically comparing that operator type.
+    def test_equal_with_unsupported_nested_operators_returns_false(self):
+        """Test that the equal method with two operators with the same arithmetic depth (>0) returns
+        `False` unless there is a singledispatch function specifically comparing that operator type.
         """
 
         op1 = SymbolicOp(qml.PauliY(0))
@@ -1115,12 +1141,7 @@ class TestEqual:
         assert op1.arithmetic_depth == op2.arithmetic_depth
         assert op1.arithmetic_depth > 0
 
-        with pytest.raises(
-            NotImplementedError,
-            match="Comparison of operators with an arithmetic"
-            + " depth larger than 0 is not yet implemented.",
-        ):
-            qml.equal(op1, op2)
+        assert not qml.equal(op1, op2)
 
     # Measurements test cases
     @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
@@ -1247,23 +1268,22 @@ class TestObservablesComparisons:
         """Tests that comparing a Hamiltonian with an Operator that is not an Observable returns False"""
         op1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
         op2 = qml.RX(1.2, 0)
-        assert qml.equal(op1, op2) == False
-        assert qml.equal(op2, op1) == False
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
 
     def test_tensor_and_operation_not_equal(self):
         """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.RX(1.2, 0)
-        assert qml.equal(op1, op2) == False
-        assert qml.equal(op2, op1) == False
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
 
-    def test_tensor_and_unsupported_observable_not_implemented(self):
-        """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian raises a NotImplmenetedError"""
+    def test_tensor_and_unsupported_observable_returns_false(self):
+        """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
 
-        with pytest.raises(NotImplementedError, match="Comparison of"):
-            qml.equal(op1, op2)
+        assert not qml.equal(op1, op2)
 
     def test_unsupported_object_type_not_implemented(self):
         dev = qml.device("default.qubit", wires=1)
@@ -1298,16 +1318,15 @@ class TestSymbolicOpComparison:
 
         assert op1.arithmetic_depth == 1
         assert op2.arithmetic_depth == 2
-        assert qml.equal(op1, op2) == False
+        assert qml.equal(op1, op2) is False
 
-    def test_comparison_of_base_not_implemented_error(self):
-        """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented raises an error"""
+    def test_comparison_of_base_not_implemented_returns_false(self):
+        """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented returns False"""
         base = SymbolicOp(qml.RX(1.2, 0))
         op1 = Controlled(base, control_wires=2)
         op2 = Controlled(base, control_wires=2)
 
-        with pytest.raises(NotImplementedError, match="Unable to compare base operators "):
-            qml.equal(op1, op2)
+        assert not qml.equal(op1, op2)
 
     @pytest.mark.torch
     @pytest.mark.jax
@@ -1379,26 +1398,32 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2)
         assert not qml.equal(op1, op3)
 
-    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
-    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
-    def test_pow_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+    @pytest.mark.parametrize("bases_bases_match", BASES)
+    @pytest.mark.parametrize("params_params_match", PARAMS)
+    def test_pow_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the Pow class"""
+        base1, base2, bases_match = bases_bases_match
+        param1, param2, params_match = params_params_match
         op1 = qml.pow(base1, param1)
         op2 = qml.pow(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
-    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
-    def test_exp_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+    @pytest.mark.parametrize("bases_bases_match", BASES)
+    @pytest.mark.parametrize("params_params_match", PARAMS)
+    def test_exp_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the Exp class"""
+        base1, base2, bases_match = bases_bases_match
+        param1, param2, params_match = params_params_match
         op1 = qml.exp(base1, param1)
         op2 = qml.exp(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
-    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
-    def test_s_prod_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+    @pytest.mark.parametrize("bases_bases_match", BASES)
+    @pytest.mark.parametrize("params_params_match", PARAMS)
+    def test_s_prod_comparison(self, bases_bases_match, params_params_match):
         """Test that equal compares two objects of the SProd class"""
+        base1, base2, bases_match = bases_bases_match
+        param1, param2, params_match = params_params_match
         op1 = qml.s_prod(param1, base1)
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)

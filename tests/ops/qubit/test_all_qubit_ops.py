@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the available built-in discrete-variable quantum operations. Only tests over multiple
-types of operations should exist in this file. Type-specific tests should go in the more specific file.
+Unit tests for the available built-in discrete-variable quantum operations. Only tests over
+multiple types of operations should exist in this file. Type-specific tests should go in
+the more specific file.
 """
+# pylint: disable=too-few-public-methods
 import pytest
-import pennylane as qml
-
 from gate_data import I
+import pennylane as qml
 
 
 class TestOperations:

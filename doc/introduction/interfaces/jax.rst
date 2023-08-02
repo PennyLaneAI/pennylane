@@ -21,8 +21,6 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
       types in QNodes;
     * Multiple probability measurements need to have the same number of wires
       specified;
-    * Computing the jacobian of vector-valued QNodes is not supported
-      in ``mode="forward"``.
 
     However, when using ``diff_method="backprop"``, all QNode measurement statistics
     are supported.

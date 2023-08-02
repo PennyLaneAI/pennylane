@@ -40,28 +40,10 @@ jobs:
           extra-mypy-options: ""
           extra-isort-options: ""
 
-      - name: Check for new test files that need whitelisting
-        uses: dorny/paths-filter@v2
-        id: test_files_added
-        with:
-          list-files: shell
-          filters: |
-            testsAdded:
-              - added: 'tests/**/test_*.py'
-              - added: 'tests/test_*.py'
-
-      - name: Ensure new test files are whitelisted if there are any
-        if: steps.test_files_added.outputs.testsAdded == 'true'
-        run: ./.github/workflows/scripts/validate_new_tests.sh ${{ steps.test_files_added.outputs.testsAdded_files }}
-
-      - name: Read whitelisted test files that pass pylint
-        id: tests_to_lint
-        run: echo "testfiles=$(cat tests/tests_passing_pylint.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
-
-      - name: Run pylint for whitelisted tests
+      - name: Run pylint (tests)
         uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "${{ steps.tests_to_lint.outputs.testfiles }}"
+          python-root-list: "tests"
           use-pylint: True
           use-pycodestyle: false
           use-flake8: false
