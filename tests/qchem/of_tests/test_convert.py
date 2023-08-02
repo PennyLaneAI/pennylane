@@ -891,7 +891,7 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
     ],
 )
 def test_ucisd_state(molecule, basis, tol, wf_ref):
-    r"""Test the UCISD wavefunction constructor."""
+    r"""Test that _ucisd_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis)
     myhf = pyscf.scf.UHF(mol).run()
@@ -901,3 +901,40 @@ def test_ucisd_state(molecule, basis, tol, wf_ref):
 
     assert wf_cisd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("wf_dict", "n_orbitals", "statevector"),
+    [
+        (  # -0.99 |1100> + 0.11 |0011>
+            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159},
+            2,
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+    ],
+)
+def test_wfdict_to_statevector(wf_dict, n_orbitals, statevector):
+    r"""Test that wfdict_to_statevector returns the correct statevector."""
+
+    wf_comp = qchem.convert.wfdict_to_statevector(wf_dict, n_orbitals)
+
+    assert np.allclose(wf_comp, statevector)
