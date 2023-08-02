@@ -187,6 +187,10 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
+
+* Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
+  `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
+  [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
