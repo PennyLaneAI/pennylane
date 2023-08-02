@@ -28,7 +28,7 @@ from pennylane.operation import enable_new_opmath, disable_new_opmath
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
+pyscf = pytest.importorskip("pyscf")
 
 pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
 pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
@@ -859,43 +859,120 @@ def test_excitated_states(electrons, orbitals, excitation, states_ref, signs_ref
     assert np.allclose(signs, signs_ref)
 
 @pytest.mark.parametrize(
-    ("atom", "basis", "hftype", "state", "tol", "wf_ref"),
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
-        # reference data computed with pyscf -- identify the FCI matrix entries
-        # with the correct Fock occupation vector entries
-        # mycasci = mcscf.UCASCI(myhf, norbs, (nelec_a, nelec_b)).run()
-        # sparse_cascimatr = coo_matrix(mycasci.ci, shape=np.shape(cascivec), dtype=float)
-        # row, col, dat = sparse_cascimatr.row, sparse_cascimatr.col, sparse_cascimatr.data
-        # strs_row, strs_col = addrs2str(norbs, nelec_a, row), addrs2str(norbs, nelec_b, col)
-        # wf_ref = dict(zip(list(zip(strs_row, strs_col)), dat))
         (
-            [['H', (0, 0, 0)], ['H', (0,0,0.71)]],
-            'sto6g',
-            'uhf',
-            0,
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
             1e-1,
-            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+            {(1, 1): 0.9942969785398776, (2, 2): -0.10664669927602176},
         ),
         (
-            [['H', (0, 0, 0)], ['H', (0, 0, 0.71)]],
-            'cc-pvdz',
-            'uhf',
-            0,
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "cc-pvdz",
+            "d2h",
             4e-2,
-            {(1, 1): 0.9919704801055201, (2, 2): 0.04853035090478132, (2, 8): -0.04452332640264183, \
-                (4, 4): -0.05003594588609278, (8, 2): 0.044523334555907366, (8, 8): -0.05226230845395026}),
+            {
+                (1, 1): 0.9919704795977625, 
+                (2, 2): -0.048530356564387034, 
+                (2, 8): 0.0445233308500785, 
+                (4, 4): -0.05003594568491194, 
+                (8, 2): 0.04452333085007853, 
+                (8, 8): -0.05226230322043741, 
+                (16, 16): -0.0404759737476627, 
+                (32, 32): -0.0404759737476627
+            },
+        ),
     ],
 )
-def test_private_ucisd_state(atom, basis, hftype, state, tol, wf_ref):
-    r"""Test the UCISD wavefunction constructor."""
+def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _ucisd_state returns the correct wavefunction."""
 
-    from pyscf import gto, scf, ci
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
 
-    mol = gto.M(atom=atom, basis=basis)
-    myhf = scf.UHF(mol).run()
-    myci = ci.UCISD(myhf).run(state=state)
+    wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
 
-    wf_cisd = qchem.convert.cisd_state(myci, hftype=hftype, state=state, tol=tol)
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
 
-    assert { key: round(val, 4) for (key, val) in wf_cisd.items() } == \
-                        { key: round(val, 4) for (key, val) in wf_ref.items() }
+
+@pytest.mark.parametrize(
+    ("wf_dict", "n_orbitals", "wf_ref"),
+    [
+        (  # -0.99 |1100> + 0.11 |0011>
+            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179},
+            2,
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+    ],
+)
+def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
+    r"""Test that wfdict_to_statevector returns the correct statevector."""
+    wf_comp = qchem.convert.wfdict_to_statevector(wf_dict, n_orbitals)
+    assert np.allclose(wf_comp, wf_ref)
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "hftype", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            "uhf",
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+    ],
+)
+def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
+    r"""Test that cisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    wf_comp = qchem.convert.cisd_state(myci, hftype)
+
+    # overall sign could be +/-1 different
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
