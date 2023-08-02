@@ -408,7 +408,7 @@ def _excitations(electrons, orbitals):
     return singles, doubles
 
 
-def _excited_states(electrons, orbitals, excitation):
+def _excited_configurations(electrons, orbitals, excitation):
     r"""Generate excited states from a Hartree-Fock reference state.
 
     This function generates excited states in the form of binary strings or integers representing

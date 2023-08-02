@@ -852,8 +852,8 @@ def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
         ),
     ],
 )
-def test_excited_states(electrons, orbitals, excitation, states_ref, signs_ref):
-    r"""Test if the _excited_states function returns correct states and signs."""
-    states, signs = qchem.convert._excited_states(electrons, orbitals, excitation)
+def test_excited_configurations(electrons, orbitals, excitation, states_ref, signs_ref):
+    r"""Test if the _excited_configurations function returns correct states and signs."""
+    states, signs = qchem.convert._excited_configurations(electrons, orbitals, excitation)
     assert np.allclose(states, states_ref)
     assert np.allclose(signs, signs_ref)
