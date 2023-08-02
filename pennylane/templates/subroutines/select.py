@@ -38,17 +38,28 @@ class SELECT(Operation):
             use :meth:`~.queuing.QueuingManager.stop_recording`.
         id (str or None): String representing the operation (optional)
     """
-    def __init__(self, ops, control_wires, do_queue=None, id=None):
-        super().__init__(ops, control_wires, wires=None, do_queue=do_queue, id=id)
+
+    num_wires = qml.operation.AnyWires
+
+    def __init__(self, ops, control_wires, id=None):
+        if 2**len(control_wires)<len(ops):
+            raise ValueError(
+                f"Not enough control wires ({len(control_wires)}) for the desired number of "+
+                f"operations ({len(ops)}). At least {int(math.ceil(math.log2(len(ops))))} control "+
+                f"wires required."
+            )
+        
+        for op in ops:
+            qml.QueuingManager.remove(op)
+            
+        all_wires=sum([op.wires for op in ops])+control_wires
+        super().__init__(ops, control_wires, wires=all_wires, id=id)
 
     @staticmethod
-    def compute_decomposition(ops, wires):
-        # control_wires = wires
-
+    def compute_decomposition(ops, control_wires, wires):
         states = list(itertools.product([0,1],repeat=len(control_wires)))
-        decomp_ops= [
-            qml.ctrl(ops[index],control_wires, control_values)
-            for index, control_values
-            in enumerate(states)
-            ]
+        decomp_ops=[
+            qml.ctrl(op,control_wires,control_values=states[index]) for index, op in enumerate(ops)
+        ]
         return decomp_ops
+        # return None
