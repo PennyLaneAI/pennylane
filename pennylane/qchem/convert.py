@@ -462,7 +462,7 @@ def _excited_configurations(electrons, orbitals, excitation):
 
     return states_int, signs
 
-def _rcisd_state(cisd_solver, state=0, tol=1e-15):
+def _rcisd_state(cisd_solver, tol=1e-15):
     r"""
 
     Args:
@@ -488,7 +488,7 @@ def _rcisd_state(cisd_solver, state=0, tol=1e-15):
     c0, c1, c2 = cisdvec[0], cisdvec[1:nocc*nvir+1], cisdvec[nocc*nvir+1:].reshape(nocc,nocc,nvir,nvir)
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
-    ref_a = int(2**nelec - 1)
+    ref_a = int(2**nocc - 1)
     ref_b = ref_a
 
     dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
@@ -594,7 +594,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
     # beta -> beta excitations
     c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
-    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b), c1b_configs), c1b * c1b_signs)))
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b, c1b_configs)), c1b * c1b_signs)))
 
     # alpha, alpha -> alpha, alpha excitations
     c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
@@ -646,7 +646,9 @@ def cisd_state(cisd_solver, hftype, tol=1e-15):
     {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
 
-    if hftype == "uhf":
+    if hftype == "rhf":
+        wf_dict = _rcisd_state(cisd_solver, tol=tol)
+    elif hftype == "uhf":
         wf_dict = _ucisd_state(cisd_solver, tol=tol)
     else:
         raise ValueError("Only restricted, 'rhf', and unrestricted, 'uhf', are supported.")
