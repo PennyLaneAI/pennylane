@@ -200,13 +200,13 @@ formatters so that the consumed message fits the needs of the user.
    # Control JAX logging 
    [loggers.jax]
    handlers = ["qml_debug_stream",]
-   level = "DEBUG"
+   level = "WARN"
    propagate = false
 
    # Control logging in the executing Python script
    [loggers.__main__]
    handlers = ["qml_debug_stream",]
-   level = "DEBUG"
+   level = "INFO"
    propagate = false
 
    # Control logging across pennylane
@@ -261,8 +261,8 @@ file as:
 where ``handlers`` represents some arbitrary custom class we define to
 deal with the message, ``level`` the associated level we want that
 package to log at, and ``propagate`` tells the logger to keep the
-message at the given handler level, or throw it up to the parent logger
-interface — all these are adhering to the logging API. We convert the
+message at the given handler level, or also to throw it up to the parent logger
+interface — all of these are adhering to the logging API. We convert the
 highest supported log level from warning (less verbose) to debug (more
 verbose). We can at the same time change the PennyLane logging level to
 warnings and more severe, by making the following change:
@@ -293,15 +293,11 @@ process, and surrounding operations:
    num_wires = 2
    num_shots = None
 
-   # Let's create our circuit with randomness and compile it with jax.jit.
    @jax.jit
    def circuit(key, param):
-       # Notice how the device construction now happens within the jitted method.
-       # Also note the added '.jax' to the device path.
        logger.info(f"Creating {dev_name} device with {num_wires} wires and {num_shots} shots with {key} PNRG")
        dev = qml.device(dev_name, wires=num_wires, shots=num_shots, prng_key=key)
 
-       # Now we can create our qnode within the circuit function.
        @qml.qnode(dev, interface="jax", diff_method="backprop")
        def my_circuit():
            qml.RX(param, wires=0)
@@ -344,20 +340,15 @@ tie-into the execution pipeline for devices without backprop supports:
 
    qml.logging.enable_logging()
 
-   # Get logger for use herein
    logger = logging.getLogger(__name__)
    dev_name = "lightning.qubit"
    num_wires = 2
    num_shots = None
 
-   # Let's create our circuit with randomness and compile it with jax.jit.
    def circuit(param):
-       # Notice how the device construction now happens within the jitted method.
-       # Also note the added '.jax' to the device path.
        logger.info(f"Creating {dev_name} device with {num_wires} wires and {num_shots} shots")
        dev = qml.device(dev_name, wires=num_wires, shots=num_shots)
 
-       # Now we can create our qnode within the circuit function.
        @qml.qnode(dev, diff_method="adjoint")
        def my_circuit(param):
            qml.RX(param, wires=0)

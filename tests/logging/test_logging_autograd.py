@@ -32,7 +32,7 @@ class TestLogging:
     pl_logger.propagate = True
     plqn_logger.propagate = True
 
-    def test_basic_functionality_dq(self, caplog, monkeypatch):
+    def test_basic_functionality_dq(self, caplog):
         "Test logging of QNode forward pass"
 
         dev = qml.device("default.qubit", wires=2)
