@@ -818,7 +818,7 @@ def test_integration_mol_file_to_vqe_cost(
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "singles_ref", "doubles_ref"),
     [
-        # trivial case
+        # trivial case, e.g., H2/STO-3G
         (2, 4, [[0, 2], [0, 3], [1, 2], [1, 3]], [[0, 1, 2, 3]]),
     ],
 )
@@ -833,7 +833,7 @@ def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
     ("electrons", "orbitals", "excitation", "states_ref", "signs_ref"),
     [
         # reference data computed with pyscf:
-        # pyscf_addrs, pyscf_signs = tn_addrs_signs(orbitals, electrons, excitation)
+        # pyscf_addrs, pyscf_signs = pyscf.ci.cisd.tn_addrs_signs(orbitals, electrons, excitation)
         # pyscf_state = pyscf.fci.cistring.addrs2str(orbitals, electrons, pyscf_addrs)
         # pyscf_state, pyscf_signs
         (
@@ -852,9 +852,9 @@ def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
         ),
     ],
 )
-def test_excitated_states(electrons, orbitals, excitation, states_ref, signs_ref):
-    r"""Test if the _excitated_states function returns correct states and signs."""
-    states, signs = qchem.convert._excitated_states(electrons, orbitals, excitation)
+def test_excited_configurations(electrons, orbitals, excitation, states_ref, signs_ref):
+    r"""Test if the _excited_configurations function returns correct states and signs."""
+    states, signs = qchem.convert._excited_configurations(electrons, orbitals, excitation)
     assert np.allclose(states, states_ref)
     assert np.allclose(signs, signs_ref)
 
