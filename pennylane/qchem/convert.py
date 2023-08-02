@@ -434,7 +434,7 @@ def _excited_configurations(electrons, orbitals, excitation):
     >>> electrons = 2
     >>> orbitals = 5
     >>> excitation = 2
-    >>> _excitated_states(electrons, orbitals, excitation)
+    >>> _excited_configurations(electrons, orbitals, excitation)
     (array([28, 26, 25]), array([ 1, -1,  1]))
     """
     hf_state = qml.qchem.hf_state(electrons, orbitals)
@@ -461,6 +461,70 @@ def _excited_configurations(electrons, orbitals, excitation):
     states_int = [int(state[::-1], 2) for state in states_str]
 
     return states_int, signs
+
+def _rcisd_state(cisd_solver, state=0, tol=1e-15):
+    r"""
+
+    Args:
+        cisd_solver (PySCF UCISD Class instance): the class object representing
+            the CISD calculation in PySCF. Must have already carried out the
+            calculation, e.g. by calling .kernel() or .run().
+
+    Returns:
+        cisd_solver (PySCF UCISD Class instance): the class object representing
+            the CISD calculation in PySCF. Must have already carried out the
+            calculation, e.g. by calling .kernel() or .run().
+
+    **Example**
+
+    """
+    mol = cisd_solver.mol
+    cisdvec = cisd_solver.ci
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nocc, nvir = nelec // 2, norb - nelec // 2
+    
+    c0, c1, c2 = cisdvec[0], cisdvec[1:nocc*nvir+1], cisdvec[nocc*nvir+1:].reshape(nocc,nocc,nvir,nvir)
+
+    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nelec - 1)
+    ref_b = ref_a
+
+    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
+
+    # alpha -> alpha excitations
+    c1a_configs, c1a_signs = _excited_configurations(nocc, norb, 1)
+    dict_fcimatr.update(dict(zip(list(zip(c1a_configs, [ref_b] * len(c1a_configs))), c1 * c1a_signs)))
+    # beta -> beta excitations
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c1a_configs), c1a_configs)), c1 * c1a_signs)))
+
+    # check that double excitations within one spin sector are possible
+    if nocc > 1 and nvir > 1:
+        # get rid of excitations from same orbitals
+        c2_tr = c2 - c2.transpose(1, 0, 2, 3)
+        # select only unqiue excitations, via lower triangle of matrix
+        ooidx, vvidx = np.tril_indices(nocc, -1), np.tril_indices(nvir, -1)
+        c2aa = c2_tr[ooidx][:, vvidx[0], vvidx[1]]
+
+        # alpha, alpha -> alpha, alpha excitations
+        c2aa_configs, c2aa_signs = _excited_configurations(nocc, norb, 2)
+        dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa.ravel() * c2aa_signs)))
+        # beta, beta -> beta, beta excitations
+        dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa.ravel() * c2aa_signs)))
+
+    # alpha, beta -> alpha, beta excitations
+    # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
+    rowvals, colvals = np.array( list(product(c1a_configs, c1a_configs)), dtype=int ).T.numpy()
+    c2ab = c2.transpose(0, 2, 1, 3).reshape(nocc*nvir, -1)
+    dict_fcimatr.update(
+        dict(zip(list(zip(rowvals, colvals)), c2ab.ravel() * np.kron(c1a_signs, c1a_signs).numpy()))
+    )
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
 
 
 def _ucisd_state(cisd_solver, tol=1e-15):
@@ -530,7 +594,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
     # beta -> beta excitations
     c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
-    dict_fcimatr.update(dict(zip(list(zip(c1b_configs, [ref_a] * size_b)), c1b * c1b_signs)))
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b), c1b_configs), c1b * c1b_signs)))
 
     # alpha, alpha -> alpha, alpha excitations
     c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
