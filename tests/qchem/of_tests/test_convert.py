@@ -897,5 +897,5 @@ def test_private_ucisd_state(atom, basis, hftype, state, tol, wf_ref):
 
     wf_cisd = qchem.convert.cisd_state(myci, hftype=hftype, state=state, tol=tol)
 
-    assert { key: round(val, 4) for (key, val) in wf_cisd.items() } ==\
-           { key: round(val, 4) for (key, val) in wf_ref.items() }
+    assert { key: round(val, 4) for (key, val) in wf_cisd.items() } == \
+                        { key: round(val, 4) for (key, val) in wf_ref.items() }
