@@ -212,9 +212,9 @@ class DefaultQubit2(Device):
             circuits = [circuits]
             is_single_circuit = True
 
-        if "max_workers" not in execution_config.device_options:  # prefer config over device value
-            execution_config.device_options["max_workers"] = self._max_workers
-        self._validate_multiprocessing(execution_config.device_options["max_workers"], circuits)
+        # prefer config over device value
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        self._validate_multiprocessing(max_workers, circuits)
 
         batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
 
