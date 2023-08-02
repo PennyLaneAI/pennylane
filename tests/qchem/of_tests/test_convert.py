@@ -857,3 +857,41 @@ def test_excitated_states(electrons, orbitals, excitation, states_ref, signs_ref
     states, signs = qchem.convert._excitated_states(electrons, orbitals, excitation)
     assert np.allclose(states, states_ref)
     assert np.allclose(signs, signs_ref)
+
+from pyscf import gto
+@pytest.mark.parametrize(
+    ("mol", "hftype", "state", "tol", "wf_ref"),
+    [
+        # reference data computed with pyscf -- identify the FCI matrix entries
+        # with the correct Fock occupation vector entries
+        # mycasci = mcscf.CASCI(hf, ncas = orbitals, nelecas = electrons).run()
+        # print(mycasci.ci)
+        (
+            gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g'),
+            'uhf',
+            0,
+            1e-1,
+            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+        ),
+        # (
+        #     gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='cc-pvdz'),
+        #     'uhf',
+        #     0,
+        #     4e-2,
+        #     {(1, 1): 0.9919704779918753, (2, 2): 0.048530387857156514, (2, 8): 0.04452334895452825,\
+        #          (4, 4): -0.050035993275715764, (8, 2): -0.04452335710141664, (8, 8): -0.052262296228815036,\
+        #              (16, 16): -0.04045330124484208, (32, 32): -0.04045330124484209}
+        # ),
+    ],
+)
+def test_private_ucisd_state(mol, hftype, state, tol, wf_ref):
+    r"""Test the UCISD wavefunction constructor."""
+
+    from pyscf import scf, ci
+
+    myhf = scf.UHF(mol).run()
+    myci = ci.UCISD(myhf).run(state=state)
+
+    wf_cisd = qchem.convert.cisd_state(myci, hftype=hftype, state=state, tol=tol)
+
+    assert { key: round(val, 4) for (key, val) in wf_cisd.items() } == { key: round(val, 4) for (key, val) in wf_ref.items() }
