@@ -226,6 +226,10 @@
   not really have a decomposition.
   [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
 
+* `qml.transforms.split_non_commuting` now correctly works on tapes containing both `expval`
+  and `var` measurements.
+  [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional, List, Callable
+from typing import Optional, List, Callable
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -108,13 +108,15 @@ class MidMeasureMP(MeasurementProcess):
         self,
         wires: Wires,
         reset: bool = False,
-        measurement_ids: List[str] = None,
-        processing_fn: Callable = None,
+        measurement_ids: Optional[List[str]] = None,
+        processing_fn: Optional[Callable] = None,
     ):
-        super().__init__(wires=wires)
+        super().__init__(wires=Wires(wires))
         self.reset = reset
-        self.measurement_ids = measurement_ids
-        self.processing_fn = processing_fn
+        self.measurement_ids = measurement_ids or [str(uuid.uuid4())[:8]]
+        self.processing_fn = processing_fn if processing_fn is not None else lambda v: v
+        # id can be used to identify the mid-circuit measurement
+        self.id = self.measurement_ids[0]
 
     @property
     def return_type(self):

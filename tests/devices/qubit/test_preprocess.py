@@ -227,7 +227,7 @@ class TestExpandFnTransformations:
         mv = MidMeasureMP(0, ["test_id"], processing_fn=lambda v: v)
         ops = [
             qml.Hadamard(0),
-            MidMeasureMP(wires=[0], id="test_id"),
+            MidMeasureMP(wires=[0], measurement_ids=["test_id"]),
             qml.transforms.Conditional(mv, qml.RX(0.123, wires=1)),
         ]
         measurements = [qml.expval(qml.PauliZ(1))]
