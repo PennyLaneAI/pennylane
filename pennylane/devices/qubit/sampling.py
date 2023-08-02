@@ -16,7 +16,7 @@ from typing import List, Union
 
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian
+from pennylane.ops import Sum, Hamiltonian, SProd
 from pennylane.measurements import (
     SampleMeasurement,
     Shots,
@@ -48,13 +48,17 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
             mp_other_obs.append(i_mp)
         elif i_mp[1].obs is None:
             mp_no_obs.append(i_mp)
+        elif isinstance(i_mp[1].obs, (Sum, Hamiltonian, SProd)):
+            # Sums and Hamiltonians are treated as valid Pauli words, but
+            # aren't accepted in qml.pauli.group_observables
+            mp_other_obs.append(i_mp)
         elif qml.pauli.is_pauli_word(i_mp[1].obs):
             mp_pauli_obs.append(i_mp)
         else:
             mp_other_obs.append(i_mp)
 
     if mp_pauli_obs:
-        i_to_pauli_mp = {i: mp for i, mp in mp_pauli_obs}
+        i_to_pauli_mp = dict(mp_pauli_obs)
         pauli_obs = [i_mp[1].obs for i_mp in mp_pauli_obs]
         ob_groups, group_indices = qml.pauli.group_observables(
             pauli_obs, [i_mp[0] for i_mp in mp_pauli_obs]
@@ -269,13 +273,14 @@ def _measure_hamiltonian_with_samples(
     # if the measurement process involves a Hamiltonian, measure each
     # of the terms separately and sum
     def _sum_for_single_shot(s):
-        return sum(
-            c
-            * measure_with_samples(
-                [ExpectationMP(t)], state, s, is_state_batched=is_state_batched, rng=rng
-            )[0]
-            for c, t in zip(*mp.obs.terms())
+        results = measure_with_samples(
+            [ExpectationMP(t) for _, t in zip(*mp.obs.terms())],
+            state,
+            s,
+            is_state_batched=is_state_batched,
+            rng=rng,
         )
+        return sum(c * res for c, _, res in zip(*mp.obs.terms(), results))
 
     unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
     return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
@@ -287,12 +292,10 @@ def _measure_sum_with_samples(
     # if the measurement process involves a Sum, measure each
     # of the terms separately and sum
     def _sum_for_single_shot(s):
-        return sum(
-            measure_with_samples(
-                [ExpectationMP(t)], state, s, is_state_batched=is_state_batched, rng=rng
-            )[0]
-            for t in mp.obs
+        results = measure_with_samples(
+            [ExpectationMP(t) for t in mp.obs], state, s, is_state_batched=is_state_batched, rng=rng
         )
+        return sum(results)
 
     unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
     return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]

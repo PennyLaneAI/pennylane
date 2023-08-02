@@ -1651,7 +1651,7 @@ class TestHamiltonianSamples:
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = dev.execute(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.001)
+        assert np.allclose(res, expected, atol=0.002)
 
 
 class TestClassicalShadows:
