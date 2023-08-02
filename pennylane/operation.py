@@ -2412,14 +2412,14 @@ class Tensor(Observable):
         consisting mostly of zero entries.
 
         Args:
-            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
-            wire_order (Iterable): Same as ``wires`` to ensure compatibility with all the classes. Must only
-                provide one: either ``wires`` or ``wire_order``.
+            wires (Iterable): Same as ``wire_order`` to ensure compatibility with all the classes. Must only
+                provide one: either ``wire_order`` or ``wires``.
             format: the output format for the sparse representation. All scipy sparse formats are accepted.
 
         Raises:
-            ValueError: if both ``wires`` and ``wire_order`` are provided at the same time.
+            ValueError: if both ``wire_order`` and ``wires`` are provided at the same time.
 
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
