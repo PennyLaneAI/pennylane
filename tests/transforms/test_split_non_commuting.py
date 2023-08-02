@@ -130,26 +130,26 @@ class TestUnittestSplitNonCommuting:
     def test_mixed_measurement_types(self):
         """Test that mixing expval and var works correctly."""
 
-        with qml.queuing.AnnotatedQueue() as q1:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(0)
             qml.Hadamard(1)
             qml.expval(qml.PauliX(0))
             qml.expval(qml.PauliZ(1))
             qml.var(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q1)
+        tape = qml.tape.QuantumScript.from_queue(q)
         split, _ = split_non_commuting(tape)
 
         assert len(split) == 2
 
-        with qml.queuing.AnnotatedQueue() as q2:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(0)
             qml.Hadamard(1)
             qml.expval(qml.PauliX(0))
             qml.var(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q2)
+        tape = qml.tape.QuantumScript.from_queue(q)
         split, _ = split_non_commuting(tape)
 
         assert len(split) == 2
