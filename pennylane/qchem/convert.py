@@ -499,26 +499,26 @@ def _rcisd_state(cisd_solver, state=0, tol=1e-15):
     # beta -> beta excitations
     dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c1a_configs), c1a_configs)), c1 * c1a_signs)))
 
-    # check that double excitations within one spin sector are possible
+    # check if double excitations within one spin sector (aa->aa and bb->bb) are possible
     if nocc > 1 and nvir > 1:
-        # get rid of excitations from same orbitals
+        # get rid of excitations from identical orbitals, double-count the allowed ones
         c2_tr = c2 - c2.transpose(1, 0, 2, 3)
-        # select only unqiue excitations, via lower triangle of matrix
+        # select only unique excitations, via lower triangle of matrix (already double-counted)
         ooidx, vvidx = np.tril_indices(nocc, -1), np.tril_indices(nvir, -1)
-        c2aa = c2_tr[ooidx][:, vvidx[0], vvidx[1]]
+        c2aa = c2_tr[ooidx][:, vvidx[0], vvidx[1]].ravel()
 
         # alpha, alpha -> alpha, alpha excitations
         c2aa_configs, c2aa_signs = _excited_configurations(nocc, norb, 2)
-        dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa.ravel() * c2aa_signs)))
+        dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa * c2aa_signs)))
         # beta, beta -> beta, beta excitations
-        dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa.ravel() * c2aa_signs)))
+        dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa * c2aa_signs)))
 
     # alpha, beta -> alpha, beta excitations
     # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
     rowvals, colvals = np.array( list(product(c1a_configs, c1a_configs)), dtype=int ).T.numpy()
-    c2ab = c2.transpose(0, 2, 1, 3).reshape(nocc*nvir, -1)
+    c2ab = (c2.transpose(0, 2, 1, 3).reshape(nocc*nvir, -1)).ravel()
     dict_fcimatr.update(
-        dict(zip(list(zip(rowvals, colvals)), c2ab.ravel() * np.kron(c1a_signs, c1a_signs).numpy()))
+        dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1a_signs).numpy()))
     )
 
     # filter based on tolerance cutoff
