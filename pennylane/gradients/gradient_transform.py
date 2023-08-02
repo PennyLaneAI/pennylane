@@ -566,6 +566,9 @@ class gradient_transform(qml.batch_transform):
         ...     params = tape.get_parameters()  # list of floats
     """
 
+    def __repr__(self):
+        return f"<gradient_transform: {self.__name__}>"  # pylint: disable=no-member
+
     def __init__(
         self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
     ):
