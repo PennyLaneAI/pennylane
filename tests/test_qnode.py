@@ -1410,7 +1410,7 @@ class TestShots:
     # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1, shots=5)
 
         @qml.qnode(dev, cache={})
         def circuit(x):
