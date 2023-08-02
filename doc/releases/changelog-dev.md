@@ -60,8 +60,11 @@
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
-* The experimental device interface is integrated with the `QNode` for Jax.
+* The experimental device interface is integrated with the `QNode` for jax, jax-jit, tensorflow and torch.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
+  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
+  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
+  [(#4393)](https://github.com/PennyLaneAI/pennylane/pull/4393)
 
 * `tape_expand` now uses `Operator.decomposition` instead of `Operator.expand` in order to make
   more performant choices.
@@ -74,10 +77,6 @@
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli` or `MultiControlledX` instead of a `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
-* The experimental device interface is integrated with the `QNode` for jax-jit and torch.
-  [(#4352)](https://github.com/PennyLaneAI/pennylane/pull/4352)
-  [(#4392)](https://github.com/PennyLaneAI/pennylane/pull/4392)
-
 * Added functions `adjoint_jvp` and `adjoint_vjp` to `qml.devices.qubit.adjoint_jacobian` that computes
   the JVP and VJP of a tape using the adjoint method.
   [(#4358)](https://github.com/PennyLaneAI/pennylane/pull/4358)
@@ -87,6 +86,16 @@
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
+* PennyLane no longer directly relies on `Operator.__eq__`.
+  [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
+
+* If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
+  seeded from on the NumPy's global random number generator.
+  [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
+
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
 <h3>Breaking changes 💔</h3>
 
@@ -155,6 +164,10 @@
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
+* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
+  changes to operator equality and hashing.
+  [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+
 <h3>Documentation 📝</h3>
 
 * The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
@@ -168,9 +181,16 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
+
+* Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
+  `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
+  [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
+* Replace deprecated `jax.ad` by `jax.interpreters.ad`.
+  [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
+
 * Stop `metric_tensor` from accidentally catching errors that stem from
-  flawed wires assignments in the original circuit, leading to recursion errors
+  flawed wires assignments in the original circuit, leading to recursion errors.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
 * Raise a warning if control indicators are hidden when calling `qml.draw_mpl`
@@ -201,6 +221,10 @@
 * `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
   trainable parameters of the expanded tape.
   [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
+
+* `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
+  not really have a decomposition.
+  [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
 
 <h3>Contributors ✍️</h3>
 
