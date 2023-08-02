@@ -90,7 +90,8 @@ def _get_ml_framework_boundary(interface, grad_on_execution):
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
-        interface (str): The designated for the ml framework.
+        interface (str): The designated ml framework.
+
         grad_on_execution (bool): whether or not the device derivatives are taken upon execution
     Returns:
         Callable
