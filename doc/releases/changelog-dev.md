@@ -196,6 +196,9 @@
   `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
   [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
+* Replace `op.adjoint` with `qml.adjoint` in `QNSPSAOptimizer`.
+  [(#4421)](https://github.com/PennyLaneAI/pennylane/pull/4421)
+
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
 
