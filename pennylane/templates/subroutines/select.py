@@ -23,20 +23,36 @@ import itertools
 
 class SELECT(Operation):
     r"""
-    Applies specific input unitaries depending on the state of a set of control qubits.
+    Applies specific input operations depending on the state of
+    the designated control qubits.
 
     .. math:: SELECT|X\rangle \otimes |\psi\rangle = \X\rangle \otimes U_x |\psi\rangle
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
     Args:
-        ops list[Operator]: operations to apply
-        control_wires (Sequence[int]): the wires/qubits that control which operation is applied
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional).
-            This argument is deprecated, instead of setting it to ``False``
-            use :meth:`~.queuing.QueuingManager.stop_recording`.
+        ops (list[Operator]): operations to apply
+        control_wires (Sequence[int]): the wires controlling which operation is applied
         id (str or None): String representing the operation (optional)
+
+    .. note:: 
+        The position of the operation in the list determines which qubit state implements that operation.
+        For example, when the qubit register is in the state :math:`|00\rangle`, we will apply `ops[0]`. When the qubit register is
+        in the state :math:`|10>`, we will apply ops[2].
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit',wires=4)
+    >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+    >>> @qml.qnode(dev)
+    >>> def circuit():
+    >>>     qml.SELECT(ops,control_wires=[0,1])
+    >>>     return qml.state()
+    ...
+    >>> print(qml.draw(circuit,expansion_strategy='device')())
+    0: ─╭○─╭○─╭●─╭●────┤  State
+    1: ─├○─├●─├○─├●────┤  State
+    2: ─╰X─│──╰Y─├SWAP─┤  State
+    3: ────╰X────╰SWAP─┤  State
+
     """
 
     num_wires = qml.operation.AnyWires
@@ -51,7 +67,7 @@ class SELECT(Operation):
         
         for op in ops:
             qml.QueuingManager.remove(op)
-            
+
         all_wires=sum([op.wires for op in ops])+control_wires
         super().__init__(ops, control_wires, wires=all_wires, id=id)
 
@@ -62,4 +78,3 @@ class SELECT(Operation):
             qml.ctrl(op,control_wires,control_values=states[index]) for index, op in enumerate(ops)
         ]
         return decomp_ops
-        # return None
