@@ -97,11 +97,6 @@ def drawable_layers(ops, wire_map=None):
     # loop over operations
     for op in ops:
         is_mid_measure = is_conditional = False
-        if set(measured_wires.values()).intersection({wire_map[w] for w in op.wires}):
-            raise ValueError(
-                f"Cannot apply operations on {op.wires} as some wires have been measured already."
-            )
-
         if isinstance(op, MidMeasureMP):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
