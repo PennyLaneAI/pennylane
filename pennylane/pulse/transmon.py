@@ -265,7 +265,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
     in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
 
-    Together with the single qubit :math:`Z` terms in :func:`transmon_interaction`, driving with this term can generate single qubit
+    Together with the qubit :math:`Z` terms in :func:`transmon_interaction`, driving with this term can generate
     :math:`X` and :math:`Y` rotations by setting :math:`\phi` accordingly and driving on resonance
     (see eqs. (79) - (92) in `1904.06560 <https://arxiv.org/abs/1904.06560>`_).
     Further, it can generate entangling gates by driving at cross-resonance with a coupled qubit
