@@ -191,6 +191,10 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
+
+* Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
+  `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
+  [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
@@ -231,6 +235,10 @@
 * `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
   not really have a decomposition.
   [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
+
+* `qml.transforms.split_non_commuting` now correctly works on tapes containing both `expval`
+  and `var` measurements.
+  [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
 <h3>Contributors ✍️</h3>
 
