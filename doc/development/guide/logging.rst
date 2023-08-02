@@ -18,10 +18,7 @@ outputs to handlers pointing to the standard output.
 Adding logging supports during development
 ------------------------------------------
 
-To get started with adding logging to components of PennyLane, we must
-first define a logger per module that we intend to use with the logging
-infrastructure, and ensure all scoped log statements are using this
-logger. The first steps is to import and define a logger as:
+To add logging support to components of PennyLane, we must define a module logger and ensure all scoped log statements use that logger. A logger can be imported and defined with:
 
 .. code:: python
 
