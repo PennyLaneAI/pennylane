@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import disable_new_opmath, enable_new_opmath
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
@@ -860,7 +860,7 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
 
 
 @pytest.mark.parametrize(
-    ("atom", "basis", "hftype", "state", "tol", "wf_ref"),
+    ("molecule", "basis", "tol", "wf_ref"),
     [
         # reference data computed with pyscf -- identify the FCI matrix entries
         # with the correct Fock occupation vector entries
@@ -872,16 +872,12 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
         (
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "sto6g",
-            "uhf",
-            0,
             1e-1,
             {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159},
         ),
         (
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "cc-pvdz",
-            "uhf",
-            0,
             4e-2,
             {
                 (1, 1): 0.9919704801055201,
@@ -894,16 +890,16 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
         ),
     ],
 )
-def test_private_ucisd_state(atom, basis, hftype, state, tol, wf_ref):
+def test_ucisd_state(molecule, basis, tol, wf_ref):
     r"""Test the UCISD wavefunction constructor."""
 
     from pyscf import gto, scf, ci
 
-    mol = gto.M(atom=atom, basis=basis)
+    mol = gto.M(atom=molecule, basis=basis)
     myhf = scf.UHF(mol).run()
-    myci = ci.UCISD(myhf).run(state=state)
+    myci = ci.UCISD(myhf).run()
 
-    wf_cisd = qchem.convert.cisd_state(myci, hftype=hftype, state=state, tol=tol)
+    wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
 
     assert wf_cisd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))

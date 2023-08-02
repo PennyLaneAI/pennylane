@@ -15,14 +15,14 @@
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
 import warnings
+from itertools import product
 
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
 from pennylane.operation import Tensor, active_new_opmath
 from pennylane.pauli import pauli_sentence
-from itertools import product
+from pennylane.wires import Wires
 
 
 def _process_wires(wires, n_wires=None):
@@ -525,15 +525,15 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
 
     # alpha -> alpha excitations
-    c1a_configs, c1a_signs = _excitated_states(nelec_a, norb, 1)
+    c1a_configs, c1a_signs = _excited_configurations(nelec_a, norb, 1)
     dict_fcimatr.update(dict(zip(list(zip(c1a_configs, [ref_b] * size_a)), c1a * c1a_signs)))
 
     # beta -> beta excitations
-    c1b_configs, c1b_signs = _excitated_states(nelec_b, norb, 1)
+    c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
     dict_fcimatr.update(dict(zip(list(zip(c1b_configs, [ref_a] * size_b)), c1b * c1b_signs)))
 
     # alpha, alpha -> alpha, alpha excitations
-    c2aa_configs, c2aa_signs = _excitated_states(nelec_a, norb, 2)
+    c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
     dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * size_aa)), c2aa * c2aa_signs)))
 
     # alpha, beta -> alpha, beta excitations
@@ -543,7 +543,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     )
 
     # beta, beta -> beta, beta excitations
-    c2bb_configs, c2bb_signs = _excitated_states(nelec_b, norb, 2)
+    c2bb_configs, c2bb_signs = _excited_configurations(nelec_b, norb, 2)
     dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_bb, c2bb_configs)), c2bb * c2bb_signs)))
 
     # filter based on tolerance cutoff
@@ -552,7 +552,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
+def cisd_state(cisd_solver, hftype, tol=1e-15):
     r"""Construct a wavefunction from PySCF output.
 
     Args:
@@ -583,7 +583,7 @@ def cisd_state(cisd_solver, hftype, state=0, tol=1e-15):
     """
 
     if hftype == "uhf":
-        wf_dict = _ucisd_state(cisd_solver, state=state, tol=tol)
+        wf_dict = _ucisd_state(cisd_solver, tol=tol)
     else:
         raise ValueError("Only restricted, 'rhf', and unrestricted, 'uhf', are supported.")
     wf = wfdict_to_statevector(wf_dict, cisd_solver.mol.nao)
