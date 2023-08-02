@@ -216,7 +216,7 @@ formatters so that the consumed message fits the needs of the user.
    propagate = false
 
    # Control logging specifically in the pennylane.qnode module
-   # Note the required parenthesis to overcome TOML nesting issues
+   # Note the required quotes to overcome TOML nesting issues
    [loggers."pennylane.qnode"]
    handlers = ["qml_debug_stream_alt",]
    level = "DEBUG" # Set to 1 for highest verbosity
