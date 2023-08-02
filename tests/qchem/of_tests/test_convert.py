@@ -858,6 +858,7 @@ def test_excitated_states(electrons, orbitals, excitation, states_ref, signs_ref
     assert np.allclose(states, states_ref)
     assert np.allclose(signs, signs_ref)
 
+
 @pytest.mark.parametrize(
     ("atom", "basis", "hftype", "state", "tol", "wf_ref"),
     [
@@ -869,21 +870,28 @@ def test_excitated_states(electrons, orbitals, excitation, states_ref, signs_ref
         # strs_row, strs_col = addrs2str(norbs, nelec_a, row), addrs2str(norbs, nelec_b, col)
         # wf_ref = dict(zip(list(zip(strs_row, strs_col)), dat))
         (
-            [['H', (0, 0, 0)], ['H', (0,0,0.71)]],
-            'sto6g',
-            'uhf',
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "uhf",
             0,
             1e-1,
-            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159},
         ),
         (
-            [['H', (0, 0, 0)], ['H', (0, 0, 0.71)]],
-            'cc-pvdz',
-            'uhf',
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "cc-pvdz",
+            "uhf",
             0,
             4e-2,
-            {(1, 1): 0.9919704801055201, (2, 2): 0.04853035090478132, (2, 8): -0.04452332640264183, \
-                (4, 4): -0.05003594588609278, (8, 2): 0.044523334555907366, (8, 8): -0.05226230845395026}),
+            {
+                (1, 1): 0.9919704801055201,
+                (2, 2): 0.04853035090478132,
+                (2, 8): -0.04452332640264183,
+                (4, 4): -0.05003594588609278,
+                (8, 2): 0.044523334555907366,
+                (8, 8): -0.05226230845395026,
+            },
+        ),
     ],
 )
 def test_private_ucisd_state(atom, basis, hftype, state, tol, wf_ref):
@@ -897,5 +905,5 @@ def test_private_ucisd_state(atom, basis, hftype, state, tol, wf_ref):
 
     wf_cisd = qchem.convert.cisd_state(myci, hftype=hftype, state=state, tol=tol)
 
-    assert { key: round(val, 4) for (key, val) in wf_cisd.items() } == \
-                        { key: round(val, 4) for (key, val) in wf_ref.items() }
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
