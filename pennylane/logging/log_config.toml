@@ -59,6 +59,7 @@ level = "DEBUG"
 filename = "qml_debug.log" # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
 maxBytes = 16777216 # 16MB per file before splitting
 backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
+delay = true # Avoid file-creation unless used
 
 [handlers.local_filtered_detailed_stdout]
 class = "logging.StreamHandler"
@@ -87,7 +88,7 @@ propagate = false
 
 # Control logging across pennylane
 [loggers.pennylane]
-handlers = ["qml_debug_stream",]
+handlers = ["qml_debug_stream"]
 level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
