@@ -90,8 +90,8 @@ def _ps_to_sparse_index(pauli_words, wires):
     for i, pw in enumerate(pauli_words):
         if not pw.wires:
             continue
-        wire_idx = np.array(wires.indices(pw.wires))
-        indices[i, wire_idx] = [pauli_to_sparse_int[pw[w]] for w in pw.wires]
+        wire_indices = np.array(wires.indices(pw.wires))
+        indices[i, wire_indices] = [pauli_to_sparse_int[pw[w]] for w in pw.wires]
     return indices
 
 
@@ -388,12 +388,15 @@ class PauliSentence(dict):
         """Track wires of the PauliSentence."""
         return Wires(set().union(*(pw.wires for pw in self.keys())))
 
-    def to_mat(self, wire_order=None, format="dense"):
+    def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.
 
         Keyword Args:
             wire_order (iterable or None): The order of qubits in the tensor product.
             format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None): The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauli sentence.
@@ -424,7 +427,7 @@ class PauliSentence(dict):
             return sparse.eye(2 ** len(wire_order), format=format, dtype="complex128")
 
         if format != "dense":
-            return self._to_sparse_mat(wire_order)
+            return self._to_sparse_mat(wire_order, buffer_size=buffer_size)
 
         mats_and_wires_gen = (
             (
@@ -440,7 +443,7 @@ class PauliSentence(dict):
 
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
 
-    def _to_sparse_mat(self, wire_order):
+    def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
         that conform it. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
@@ -448,28 +451,34 @@ class PauliSentence(dict):
         matrix_size = 2**n_wires
         matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
         op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
-        _, unique_inds, unique_invs = np.unique(
+        _, unique_sparse_structures, unique_invs = np.unique(
             op_sparse_idx, axis=0, return_index=True, return_inverse=True
         )
-        pw_sparse_structures = unique_inds[unique_invs]
+        pw_sparse_structures = unique_sparse_structures[unique_invs]
 
-        buffer_size = 2 ** max(0, 31 - n_wires - 5)  # Buffer of 1GB memory
+        buffer_size = buffer_size or 2**30  # Default to 1GB of memory
+        # Convert bytes to number of matrices:
+        # complex128 (16) for each data entry and int64 (8) for each indices entry
+        buffer_size = max(1, buffer_size // ((16 + 8) * matrix_size))
         mat_data = np.empty((matrix_size, buffer_size), dtype=np.complex128)
         mat_indices = np.empty((matrix_size, buffer_size), dtype=np.int64)
-        i = 0
-        for sparse_structure in unique_inds:
-            idx = np.where(pw_sparse_structures == sparse_structure)[0]
-            mat = self._sum_same_structure_pws([pauli_words[i] for i in idx], wire_order)
-            mat_data[:, i] = mat.data
-            mat_indices[:, i] = mat.indices
+        n_matrices_in_buffer = 0
+        for sparse_structure in unique_sparse_structures:
+            indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
+            mat = self._sum_same_structure_pws([pauli_words[i] for i in indices], wire_order)
+            mat_data[:, n_matrices_in_buffer] = mat.data
+            mat_indices[:, n_matrices_in_buffer] = mat.indices
 
-            i += 1
-            if i == buffer_size:
+            n_matrices_in_buffer += 1
+            if n_matrices_in_buffer == buffer_size:
                 # Add partial results in batches to control the memory usage
                 matrix += self._sum_different_structure_pws(mat_indices, mat_data)
-                i = 0
+                n_matrices_in_buffer = 0
 
-        return matrix + self._sum_different_structure_pws(mat_indices[:, :i], mat_data[:, :i])
+        matrix += self._sum_different_structure_pws(
+            mat_indices[:, :n_matrices_in_buffer], mat_data[:, :n_matrices_in_buffer]
+        )
+        return matrix
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""

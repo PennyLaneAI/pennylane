@@ -469,6 +469,14 @@ class TestPauliSentence:
         assert sparse.issparse(sparse_mat)
         assert np.allclose(sparse_mat.toarray(), true_matrix)
 
+    @pytest.mark.parametrize("ps,wire_order,true_matrix", tup_ps_mat)
+    def test_to_mat_buffer(self, ps, wire_order, true_matrix):
+        """Test that the intermediate matrices are added correctly once the maximum buffer
+        size is reached."""
+        buffer_size = 2 ** len(wire_order) * 48  # Buffer size for 2 matrices
+        sparse_mat = ps.to_mat(wire_order, format="csr", buffer_size=buffer_size)
+        assert np.allclose(sparse_mat.toarray(), true_matrix)
+
     def test_simplify(self):
         """Test that simplify removes terms in the PauliSentence with
         coefficient less than the threshold"""
