@@ -1008,6 +1008,65 @@ def test_import_state_error():
             "sto6g",
             "d2h",
             1e-1,
+            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179},
+        ),
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "cc-pvdz",
+            "d2h",
+            4e-2,
+            {
+                (1, 1): 0.9919704795977625,
+                (2, 2): -0.048530356564386895,
+                (2, 8): 0.044523330850078625,
+                (4, 4): -0.050035945684911876,
+                (8, 2): 0.04452333085007864,
+                (8, 8): -0.052262303220437775,
+                (16, 16): -0.040475973747662694,
+                (32, 32): -0.040475973747662694,
+            },
+        ),
+        (
+            [["Be", (0, 0, 0)]],
+            "sto6g",
+            "d2h",
+            1e-3,
+            {
+                (3, 3): 0.9446343496981953,
+                (6, 5): 0.003359774446779245,
+                (10, 9): 0.003359774446779244,
+                (18, 17): 0.003359774446779245,
+                (5, 6): 0.003359774446779244,
+                (5, 5): -0.18938190575578503,
+                (9, 10): 0.003359774446779243,
+                (9, 9): -0.18938190575578523,
+                (17, 18): 0.003359774446779244,
+                (17, 17): -0.18938190575578503,
+            },
+        ),
+    ],
+)
+def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _rcisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.RHF(mol).run()
+    myci = pyscf.ci.CISD(myhf).run()
+
+    wf_cisd = qchem.convert._rcisd_state(myci, tol=tol)
+
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(np.array(list(wf_cisd.values())), np.array(list(wf_ref.values())))
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            1e-1,
             {(1, 1): 0.9942969030671576, (2, 2): -0.10664740292693174},
         ),
         (
