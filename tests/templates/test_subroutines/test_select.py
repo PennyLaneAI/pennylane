@@ -14,7 +14,7 @@
 """
 Tests for the UCCSD template.
 """
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
@@ -28,96 +28,104 @@ class TestDecomposition:
         ("ops", "control_wires", "expected_gates"),
         [
             (
-                [qml.PauliX(wires=0),qml.PauliY(wires=0)],
+                [qml.PauliX(wires=0), qml.PauliY(wires=0)],
                 [1],
                 [
-                    qml.ctrl(qml.PauliX(wires=0),control=1, control_values=0),
-                    qml.ctrl(qml.PauliY(wires=0),control=1)
+                    qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
+                    qml.ctrl(qml.PauliY(wires=0), control=1),
                 ],
             ),
         ],
     )
     def test_operation_result(self, ops, control_wires, expected_gates):
         """Test the correctness of the SELECT template output."""
-        dev = qml.device('default.qubit',wires=2)
+        dev = qml.device("default.qubit", wires=2)
+
         @qml.qnode(dev)
         def circuit1():
-            qml.SELECT(ops,control_wires)
+            qml.SELECT(ops, control_wires)
             return qml.state()
-        
+
         @qml.qnode(dev)
         def circuit2():
             for op in expected_gates:
                 qml.apply(op)
             return qml.state()
-        
+
         assert np.allclose(circuit1(), circuit2())
 
     @pytest.mark.parametrize(
         ("ops", "control_wires", "expected_gates"),
         [
             (
-                [qml.PauliX(wires=0),qml.PauliY(wires=0)],
+                [qml.PauliX(wires=0), qml.PauliY(wires=0)],
                 [1],
                 [
-                    qml.ctrl(qml.PauliX(wires=0),control=1, control_values=0),
-                    qml.ctrl(qml.PauliY(wires=0),control=1)
+                    qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
+                    qml.ctrl(qml.PauliY(wires=0), control=1),
                 ],
             ),
             (
-                [qml.RX(0.5, wires=0), qml.RY(0.7,wires=1)],
+                [qml.RX(0.5, wires=0), qml.RY(0.7, wires=1)],
                 [2],
                 [
-                    qml.ctrl(qml.RX(0.5, wires=0),control=2, control_values=0),
-                    qml.ctrl(qml.RY(0.7,wires=1),control=2)
-                ]
+                    qml.ctrl(qml.RX(0.5, wires=0), control=2, control_values=0),
+                    qml.ctrl(qml.RY(0.7, wires=1), control=2),
+                ],
             ),
             (
-                [qml.RX(0.5, wires=0), qml.RY(0.7,wires=1), qml.RZ(0.3,wires=1), qml.PauliX(wires=2)],
-                [3,4],
                 [
-                    qml.ctrl(qml.RX(0.5, wires=0),control=[3,4], control_values=[0,0]),
-                    qml.ctrl(qml.RY(0.7, wires=1),control=[3,4], control_values=[0,1]),
-                    qml.ctrl(qml.RZ(0.3, wires=1),control=[3,4], control_values=[1,0]),
-                    qml.ctrl(qml.PauliX(wires=2),control=[3,4], control_values=[1,1]),
-                ]
+                    qml.RX(0.5, wires=0),
+                    qml.RY(0.7, wires=1),
+                    qml.RZ(0.3, wires=1),
+                    qml.PauliX(wires=2),
+                ],
+                [3, 4],
+                [
+                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
+                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
+                    qml.ctrl(qml.RZ(0.3, wires=1), control=[3, 4], control_values=[1, 0]),
+                    qml.ctrl(qml.PauliX(wires=2), control=[3, 4], control_values=[1, 1]),
+                ],
             ),
         ],
     )
     def test_queued_ops(self, ops, control_wires, expected_gates):
         """Test the correctness of the SELECT template queued operations."""
         with qml.tape.OperationRecorder() as recorder:
-            qml.SELECT(ops,control_wires=control_wires)
-        
+            qml.SELECT(ops, control_wires=control_wires)
+
         select_ops = recorder.expand().operations
-        
+
         assert [op.name for op in select_ops] == [op.name for op in expected_gates]
         assert [op.wires for op in select_ops] == [op.wires for op in expected_gates]
 
+
 class TestErrorMessages:
     """Test that the correct errors are raised"""
+
     @pytest.mark.parametrize(
         ("ops", "control_wires", "msg_match"),
         [
             (
-                [qml.PauliX(wires=1),qml.PauliY(wires=0), qml.PauliZ(wires=0)],
-                [1,2],
-                "Control wires should be different from operation wires."
+                [qml.PauliX(wires=1), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
+                [1, 2],
+                "Control wires should be different from operation wires.",
             ),
             (
-                [qml.PauliX(wires=2)]*4,
-                [1,2,3],
-                "Control wires should be different from operation wires."
+                [qml.PauliX(wires=2)] * 4,
+                [1, 2, 3],
+                "Control wires should be different from operation wires.",
             ),
             (
-                [qml.PauliX(wires='a'),qml.PauliY(wires='b')],
-                ['a'],
-                "Control wires should be different from operation wires."
+                [qml.PauliX(wires="a"), qml.PauliY(wires="b")],
+                ["a"],
+                "Control wires should be different from operation wires.",
             ),
         ],
     )
     def test_control_wires_in_ops(self, ops, control_wires, msg_match):
-        """Test an error is raised when a control wire is in one of the ops"""  
+        """Test an error is raised when a control wire is in one of the ops"""
         with pytest.raises(ValueError, match=msg_match):
             qml.SELECT(ops, control_wires)
 
@@ -125,19 +133,19 @@ class TestErrorMessages:
         ("ops", "control_wires", "msg_match"),
         [
             (
-                [qml.PauliX(wires=0),qml.PauliY(wires=0), qml.PauliZ(wires=0)],
+                [qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required."
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
             ),
             (
-                [qml.PauliX(wires=0)]*10,
-                [1,2,3],
-                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires required."
+                [qml.PauliX(wires=0)] * 10,
+                [1, 2, 3],
+                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires required.",
             ),
             (
-                [qml.PauliX(wires='a'),qml.PauliY(wires='b'), qml.PauliZ(wires='c')],
+                [qml.PauliX(wires="a"), qml.PauliY(wires="b"), qml.PauliZ(wires="c")],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required."
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
             ),
         ],
     )
@@ -146,42 +154,59 @@ class TestErrorMessages:
         with pytest.raises(ValueError, match=msg_match):
             qml.SELECT(ops, control_wires)
 
+
 def select_rx_circuit(angles):
-    qml.SELECT([qml.RX(angles[0], wires=[1]), qml.RY(angles[1],wires=[1])], control_wires=0)
+    """Circuit that uses SELECT for tests."""
+    qml.SELECT([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control_wires=0)
     return qml.expval(qml.PauliZ(wires=1))
 
+
 def manual_rx_circuit(angles):
-    qml.ctrl(qml.RX(angles[0],wires=[1]),control=0, control_values=0)
-    qml.ctrl(qml.RY(angles[1],wires=[1]),control=0)
+    """Circuit that manually creates SELECT for tests."""
+    qml.ctrl(qml.RX(angles[0], wires=[1]), control=0, control_values=0)
+    qml.ctrl(qml.RY(angles[1], wires=[1]), control=0)
     return qml.expval(qml.PauliZ(wires=1))
+
 
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
     @pytest.mark.autograd
-    def test_autograd(self, tol):
+    def test_autograd(self):
         """Tests the autograd interface."""
-        dev = qml.device('default.qubit',wires=2)
-        @qml.qnode(dev)
-        def circuit1():
-            qml.SELECT([qml.QubitUnitary()], )
-            return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit_default = qml.QNode(manual_rx_circuit, dev)
+        circuit_select = qml.QNode(select_rx_circuit, dev)
+
+        input_default = [0.5, 0.2]
+        input_grad = pnp.array(input_default, requires_grad=True)
+
+        grad_fn = qml.grad(circuit_default)
+        grads = grad_fn(input_grad)
+
+        grad_fn2 = qml.grad(circuit_select)
+        grads2 = grad_fn2(input_grad)
+
+        assert np.allclose(grads, grads2)
 
     @pytest.mark.tf
     def test_tf(self):
         """Tests the tf interface."""
         import tensorflow as tf
 
-        dev = qml.device('default.qubit',wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-        circuit_default = qml.QNode(manual_rx_circuit,dev)
-        circuit_tf = qml.QNode(select_rx_circuit,dev)
+        circuit_default = qml.QNode(manual_rx_circuit, dev)
+        circuit_tf = qml.QNode(select_rx_circuit, dev)
 
-        input_default = [0.5,0.2]
+        input_default = [0.5, 0.2]
         input_tf = tf.Variable(input_default)
 
-        assert np.allclose(qml.matrix(circuit_default)(input_default), qml.matrix(circuit_tf)(input_tf))
+        assert np.allclose(
+            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_tf)(input_tf)
+        )
         assert qml.math.get_interface(qml.matrix(circuit_tf)(input_tf)) == "tensorflow"
 
         with tf.GradientTape() as tape:
@@ -198,16 +223,19 @@ class TestInterfaces:
     def test_torch(self):
         """Tests the torch interface."""
         import torch
-        dev = qml.device('default.qubit',wires=2)
 
-        circuit_default = qml.QNode(manual_rx_circuit,dev)
-        circuit_torch = qml.QNode(select_rx_circuit,dev)
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit_default = qml.QNode(manual_rx_circuit, dev)
+        circuit_torch = qml.QNode(select_rx_circuit, dev)
 
         # circuit1(np.array([[1,0],[0,1]],requires_grad=True))
-        input_default = [0.5,0.2]
+        input_default = [0.5, 0.2]
         input_torch = torch.tensor(input_default, requires_grad=True)
 
-        assert qml.math.allclose(qml.matrix(circuit_default)(input_default), qml.matrix(circuit_torch)(input_torch))
+        assert qml.math.allclose(
+            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_torch)(input_torch)
+        )
         assert qml.math.get_interface(qml.matrix(circuit_torch)(input_torch)) == "torch"
 
         res = circuit_default(input_torch)
@@ -226,15 +254,18 @@ class TestInterfaces:
         """Tests the jax interface."""
         import jax
         import jax.numpy as jnp
-        dev = qml.device('default.qubit',wires=2)
 
-        input_default = [0.5,0.2]
+        dev = qml.device("default.qubit", wires=2)
+
+        input_default = [0.5, 0.2]
         input_jax = jnp.array(input_default)
 
-        circuit_default = qml.QNode(manual_rx_circuit,dev)
-        circuit_jax = qml.QNode(select_rx_circuit,dev)
+        circuit_default = qml.QNode(manual_rx_circuit, dev)
+        circuit_jax = qml.QNode(select_rx_circuit, dev)
 
-        assert np.allclose(qml.matrix(circuit_default)(input_default), qml.matrix(circuit_jax)(input_jax))
+        assert np.allclose(
+            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_jax)(input_jax)
+        )
         assert qml.math.get_interface(qml.matrix(circuit_jax)(input_jax)) == "jax"
 
         grad_fn = jax.grad(circuit_default)
@@ -243,6 +274,4 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit_jax)
         grads2 = grad_fn2(input_jax)
 
-        assert np.allclose(grads,grads2)
-
-    
+        assert np.allclose(grads, grads2)

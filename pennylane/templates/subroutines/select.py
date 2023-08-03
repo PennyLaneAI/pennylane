@@ -16,10 +16,11 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 
+import itertools
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane import math
-import itertools
+
 
 class SELECT(Operation):
     r"""
@@ -33,7 +34,7 @@ class SELECT(Operation):
         control_wires (Sequence[int]): the wires controlling which operation is applied
         id (str or None): String representing the operation (optional)
 
-    .. note:: 
+    .. note::
         The position of the operation in the list determines which qubit state implements that operation.
         For example, when the qubit register is in the state :math:`|00\rangle`, we will apply ``ops[0]``. When the qubit register is
         in the state :math:`|10>`, we will apply ``ops[2]``.
@@ -59,28 +60,30 @@ class SELECT(Operation):
 
     def __init__(self, ops, control_wires, id=None):
         control_wires = qml.wires.Wires(control_wires)
-        if 2**len(control_wires)<len(ops):
+        if 2 ** len(control_wires) < len(ops):
             raise ValueError(
-                f"Not enough control wires ({len(control_wires)}) for the desired number of "+
-                f"operations ({len(ops)}). At least {int(math.ceil(math.log2(len(ops))))} control "+
-                f"wires required."
+                f"Not enough control wires ({len(control_wires)}) for the desired number of "
+                + f"operations ({len(ops)}). At least {int(math.ceil(math.log2(len(ops))))} control "
+                + "wires required."
             )
 
-        if any(control_wire in qml.wires.Wires.all_wires([op.wires for op in ops]) for control_wire in control_wires):
-            raise ValueError(
-                f"Control wires should be different from operation wires."
-            )
-        
+        if any(
+            control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
+            for control_wire in control_wires
+        ):
+            raise ValueError("Control wires should be different from operation wires.")
+
         for op in ops:
             qml.QueuingManager.remove(op)
 
-        all_wires=sum([op.wires for op in ops])+control_wires
+        all_wires = sum([op.wires for op in ops]) + control_wires
         super().__init__(ops, control_wires, wires=all_wires, id=id)
 
     @staticmethod
-    def compute_decomposition(ops, control_wires, wires):
-        states = list(itertools.product([0,1],repeat=len(control_wires)))
-        decomp_ops=[
-            qml.ctrl(op,control_wires,control_values=states[index]) for index, op in enumerate(ops)
+    def compute_decomposition(ops, control_wires, wires):  # pylint: disable=arguments-differ
+        states = list(itertools.product([0, 1], repeat=len(control_wires)))
+        decomp_ops = [
+            qml.ctrl(op, control_wires, control_values=states[index])
+            for index, op in enumerate(ops)
         ]
         return decomp_ops
