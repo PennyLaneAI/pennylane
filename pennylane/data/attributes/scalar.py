@@ -11,16 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
-"""
-This file exists to support backwards compatibility for datasets pickled with
-pennylane.ops.qubit.parametric_ops (i.e. from before the file splitting).
+"""Contains DatasetAttribute definition for scalars (numbers)."""
 
-All new parametric operators should go into the more precisely named files.
-"""
+from numbers import Number
 
-# pylint:disable=wildcard-import,unused-wildcard-import
+from pennylane.data.base.attribute import DatasetAttribute
+from pennylane.data.base.hdf5 import HDF5Array, HDF5Group
 
-from .parametric_ops_controlled import *
-from .parametric_ops_multi_qubit import *
-from .parametric_ops_single_qubit import *
+
+class DatasetScalar(DatasetAttribute[HDF5Array, Number, Number]):
+    """
+    Attribute type for numbers.
+    """
+
+    type_id = "scalar"
+
+    def hdf5_to_value(self, bind: HDF5Array) -> Number:
+        return bind[()]
+
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Number) -> HDF5Array:
+        bind_parent[key] = value
+
+        return bind_parent[key]

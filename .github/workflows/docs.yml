@@ -26,5 +26,5 @@ jobs:
     - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"
-        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install dill zstd"
+        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf && pip3 install aiohttp fsspec h5py"
         build-command: "sphinx-build -b html . _build -W --keep-going"
