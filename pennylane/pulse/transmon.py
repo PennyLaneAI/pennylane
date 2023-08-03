@@ -57,7 +57,7 @@ def transmon_interaction(
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(b^\dagger_i b_j + b_j^\dagger b_i \right)
         + \sum_{q\in \text{wires}} \alpha_q b^\dagger_q b^\dagger_q b_q b_q
 
-    where :math:`[b_p, b_q^\dager] = \delta_{pq}` are creation and annihilation operators.
+    where :math:`[b_p, b_q^\dagger] = \delta_{pq}` are creation and annihilation operators.
     The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math:`= \omega_q/ (2\pi)`,
     the second term their ``coupling`` :math:`= g_{ij}/(2\pi)` and the last the
     ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
@@ -269,7 +269,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`X` and :math:`Y` rotations by setting :math:`\phi` accordingly and driving on resonance
     (see eqs. (79) - (92) in `1904.06560 <https://arxiv.org/abs/1904.06560>`_).
     Further, it can generate entangling gates by driving at cross-resonance with a coupled qubit
-    (see eqs. (131) - (137) in `1904.06560 <https://arxiv.org/abs/1904.06560>`_). Such a coupling is described in :func:`transmon_interaction`.
+    (see eqs. (131) - (137) in `1904.06560 <https://arxiv.org/abs/1904.06560>`_).
+    Such a coupling is described in :func:`transmon_interaction`.
 
     For realistic simulations, one may restrict the amplitude, phase and drive frequency parameters.
     For example, the authors in `2008.04302 <https://arxiv.org/abs/2008.04302>`_ impose the restrictions of
@@ -280,7 +281,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. note:: Currently only supports ``d=2`` with qudit support planned in the future.
         For ``d>2``, we have :math:`Y \mapsto i (\sigma^- - \sigma^+)`
-        with lowering and raising operators.
+        with lowering and raising operators  :math:`\sigma_^{\mp}`.
 
     .. note:: Due to convention in the respective fields, we omit the factor :math:`\frac{1}{2}` present in the related constructor :func:`~.rydberg_drive`
 
