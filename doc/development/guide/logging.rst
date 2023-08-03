@@ -1,5 +1,5 @@
-Logging support in PennyLane
-============================
+Logging development guidelines
+==============================
 
 Enabling logging
 ----------------
