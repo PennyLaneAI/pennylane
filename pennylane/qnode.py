@@ -963,12 +963,14 @@ class QNode:
         if qml.active_return():
             if "mode" in self.execute_kwargs:
                 self.execute_kwargs.pop("mode")
+
             # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
-                [self.tape],
+                (self._tape,),
                 device=self.device,
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
+                transform_program=self.transform_program,
                 gradient_kwargs=self.gradient_kwargs,
                 override_shots=override_shots,
                 **self.execute_kwargs,
@@ -1018,11 +1020,13 @@ class QNode:
                 grad_on_execution = "best"
             self.execute_kwargs["grad_on_execution"] = grad_on_execution
         # pylint: disable=unexpected-keyword-arg
+
         res = qml.execute(
-            [self.tape],
+            (self._tape,),
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
+            transform_program=self._transform_program,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,
