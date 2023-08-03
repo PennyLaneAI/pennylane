@@ -578,13 +578,18 @@ def import_state(solver, method, tol=1e-15):
     >>> print(wf_cisd)
     {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
-
     if method == "ucisd":
         wf_dict = _ucisd_state(solver, tol=tol)
+    elif method == "rcisd":
+        wf_dict = _rcisd_state(solver, tol=tol)
+    elif method == "rccsd":
+        wf_dict = _rccsd_state(solver, tol=tol)
+    elif method == "uccsd":
+        wf_dict = _uccsd_state(solver, tol=tol)
     else:
         raise ValueError(
-            "The supported method options are 'rcisd' for restricted and 'ucisd' for unrestricted"
-            " CISD calculations."
+            "The supported method options are 'rcisd','ucisd', 'rccsd', and 'uccsd' for restricted"
+            " and unrestricted CISD and CCSD calculations."
         )
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
@@ -965,46 +970,3 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
     return dict_fcimatr
-
-
-def ccsd_state(ccsd_solver, hftype, tol=1e-15):
-    r"""Construct a wavefunction from PySCF CCSD output.
-
-    Args:
-        ccsd_solver (PySCF CCSD or UCCSD Class instance): the class object representing the
-         CCSD / UCCSD calculation in PySCF
-
-        hftype (str): keyword specifying whether restricted or unrestricted CCSD was performed.
-            The options are 'rhf' for restricted, and 'uhf' for unrestricted.
-
-        tol (float): the tolerance to which the wavefunction is being built -- Slater
-            determinants with coefficients smaller than this are discarded. Default
-            is 1e-15 (all coefficients are included).
-
-    Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
-
-    **Example**
-
-    >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
-    >>> myhf = scf.UHF(mol).run()
-    >>> mycc = ci.UCCSD(myhf).run()
-    >>> wf_ccsd = ccsd_state(mycc, tol=1e-1)
-    >>> print(wf_cisd)
-    [ 0.          0.          0.         -0.1066467   0.          0.          0.
-              0.          0.          0.          0.          0.          0.99429698
-                                                    0.          0.          0.        ]
-    """
-
-    if hftype == "rhf":
-        wf_dict = _rccsd_state(ccsd_solver, tol=tol)
-    elif hftype == "uhf":
-        wf_dict = _uccsd_state(ccsd_solver, tol=tol)
-    else:
-        raise ValueError("Only restricted, 'rhf', and unrestricted, 'uhf', are supported.")
-    wf = _wfdict_to_statevector(wf_dict, ccsd_solver.mol.nao)
-
-    return wf
