@@ -14,11 +14,15 @@
 """Unit tests for the QNode"""
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-from collections import defaultdict
+import copy
+
+from functools import partial
+from typing import Callable, Tuple
 
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
+
 
 import pennylane as qml
 from pennylane import QNode
@@ -1268,7 +1272,7 @@ class TestIntegration:
         with qml.queuing.AnnotatedQueue() as q:
             circuit()
 
-        assert q.queue == []
+        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(circuit.tape.operations) == 1
 
 
@@ -1406,7 +1410,7 @@ class TestShots:
     # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1, shots=5)
 
         @qml.qnode(dev, cache={})
         def circuit(x):
@@ -1508,67 +1512,173 @@ class TestShots:
         assert qn2.tape.shots.shot_vector == shot_vector
 
 
-@pytest.mark.xfail
-class TestSpecs:
-    """Tests for the qnode property specs"""
+class TestTransformProgramIntegration:
+    def test_transform_program_modifies_circuit(self):
+        """Test qnode integration with a transform that turns the circuit into just a pauli x."""
+        dev = qml.device("default.qubit", wires=1)
 
-    # pylint: disable=pointless-statement
-    def test_specs_error(self):
-        """Tests an error is raised if the tape is not constructed."""
+        def null_postprocessing(results):
+            return results[0]
 
-        dev = qml.device("default.qubit", wires=4)
+        @qml.transforms.core.transform
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            return (
+                qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
+            ), null_postprocessing
 
-        @qnode(dev)
-        def circuit():
+        @just_pauli_x_out
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match=r"The QNode specifications"):
-            circuit.specs  # pylint: disable=pointless-statement
+        assert circuit.transform_program[0].transform == just_pauli_x_out.transform
 
-    @pytest.mark.parametrize(
-        "diff_method, len_info", [("backprop", 10), ("parameter-shift", 12), ("adjoint", 11)]
-    )
-    def test_specs(self, diff_method, len_info):
-        """Tests the specs property with backprop, parameter-shift and adjoint diff_method"""
+        assert qml.math.allclose(circuit(0.1), -1)
 
-        dev = qml.device("default.qubit", wires=4)
+        with circuit.device.tracker as tracker:
+            circuit(0.1)
 
-        @qnode(dev, diff_method=diff_method)
-        def circuit(x, y):
-            qml.RX(x[0], wires=0)
-            qml.Toffoli(wires=(0, 1, 2))
-            qml.CRY(x[1], wires=(0, 1))
-            qml.Rot(x[2], x[3], y, wires=2)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+        assert tracker.totals["executions"] == 1
+        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
+        assert tracker.history["resources"][0].gate_types["RX"] == 0
 
-        x = pnp.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
-        y = pnp.array(0.1, requires_grad=False)
+    def tet_transform_program_modifies_results(self):
+        """Test integration with a transform that modifies the result output."""
 
-        _ = circuit(x, y)
+        dev = qml.device("default.qubit", wires=2)
 
-        info = circuit.specs
+        @qml.transforms.core.transform
+        def pin_result(
+            tape: qml.tape.QuantumTape, requested_result
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
+                return requested_result
 
-        assert len(info) == len_info
+            return (tape,), postprocessing
 
-        assert info["gate_sizes"] == defaultdict(int, {1: 2, 3: 1, 2: 1})
-        assert info["gate_types"] == defaultdict(int, {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1})
-        assert info["num_operations"] == 4
-        assert info["num_observables"] == 2
-        assert info["num_diagonalizing_gates"] == 1
-        assert info["num_used_wires"] == 3
-        assert info["depth"] == 3
-        assert info["num_device_wires"] == 4
+        @partial(pin_result, requested_result=3.0)
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
 
-        assert info["diff_method"] == diff_method
+        assert circuit.transform_program[0].transform == pin_result.transform
+        assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
 
-        if diff_method == "parameter-shift":
-            assert info["num_parameter_shift_executions"] == 7
+        assert qml.math.allclose(circuit(0.1), 3.0)
 
-        if diff_method != "backprop":
-            assert info["device_name"] == "default.qubit"
-            assert info["num_trainable_params"] == 4
-        else:
-            assert info["device_name"] == "default.qubit.autograd"
+    def test_transform_order_circuit_processing(self):
+        """Test that transforms are applied in the correct order in integration."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        def null_postprocessing(results):
+            return results[0]
+
+        @qml.transforms.core.transform
+        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+            return (
+                qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
+            ), null_postprocessing
+
+        @qml.transforms.core.transform
+        def repeat_operations(
+            tape: qml.tape.QuantumTape,
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            new_tape = qml.tape.QuantumScript(
+                tape.operations + copy.deepcopy(tape.operations), tape.measurements
+            )
+            return (new_tape,), null_postprocessing
+
+        @repeat_operations
+        @just_pauli_x_out
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit1(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        with circuit1.device.tracker as tracker:
+            assert qml.math.allclose(circuit1(0.1), 1.0)
+
+        assert tracker.history["resources"][0].gate_types["PauliX"] == 2
+
+        @just_pauli_x_out
+        @repeat_operations
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit2(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        with circuit2.device.tracker as tracker:
+            assert qml.math.allclose(circuit2(0.1), -1.0)
+
+        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
+
+    def test_transform_order_postprocessing(self):
+        """Test that transform postprocessing is called in the right order."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        def scale_by_factor(results, factor):
+            return results[0] * factor
+
+        def add_shift(results, shift):
+            return results[0] + shift
+
+        @qml.transforms.core.transform
+        def scale_output(
+            tape: qml.tape.QuantumTape, factor
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            return (tape,), partial(scale_by_factor, factor=factor)
+
+        @qml.transforms.core.transform
+        def shift_output(
+            tape: qml.tape.QuantumTape, shift
+        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            return (tape,), partial(add_shift, shift=shift)
+
+        @partial(shift_output, shift=1.0)
+        @partial(scale_output, factor=2.0)
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit1():
+            return qml.expval(qml.PauliZ(0))
+
+        # first add one, then scale by 2.0.  Outer postprocessing transforms are applied first
+        assert qml.math.allclose(circuit1(), 4.0)
+
+        @partial(scale_output, factor=2.0)
+        @partial(shift_output, shift=1.0)
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit2():
+            return qml.expval(qml.PauliZ(0))
+
+        # first scale by 2, then add one. Outer postprocessing transforms are applied first
+        assert qml.math.allclose(circuit2(), 3.0)
+
+    def test_scaling_shots_transform(self):
+        """Test a transform that scales the number of shots used in an execution."""
+
+        # note that this won't work with the old device interface :(
+        dev = qml.devices.experimental.DefaultQubit2()
+
+        def num_of_shots_from_sample(results):
+            return len(results[0])
+
+        @qml.transforms.core.transform
+        def use_n_shots(tape: qml.tape.QuantumTape, n) -> (Tuple[qml.tape.QuantumTape], Callable):
+            return (
+                qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
+            ), num_of_shots_from_sample
+
+        @partial(use_n_shots, n=100)
+        @qml.qnode(dev, interface=None, diff_method=None)
+        def circuit():
+            return qml.sample(wires=0)
+
+        assert circuit() == 100
 
 
 # pylint: disable=unused-argument
