@@ -616,7 +616,7 @@ class TestMiscMethods:
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
-        op = qml.ops.Exp(base, 3)
+        op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
         assert repr(op) == "Exp(3 S(wires=[0]) @ PauliX(wires=[0]))"
 
@@ -766,7 +766,7 @@ class TestIntegration:
         res = circuit(phi)
         assert qml.math.allclose(res, torch.cos(phi))
 
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         assert qml.math.allclose(phi.grad, -torch.sin(phi))
 
     @pytest.mark.autograd
@@ -841,7 +841,7 @@ class TestIntegration:
         expected = 0.5 * (torch.exp(x) + torch.exp(-x))
         assert qml.math.allclose(res, expected)
 
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         expected_grad = 0.5 * (torch.exp(x) - torch.exp(-x))
         assert qml.math.allclose(x.grad, expected_grad)
 
@@ -872,7 +872,7 @@ class TestIntegration:
         """Test Exp in a measurement with gradient and tensorflow."""
         import tensorflow as tf
 
-        x = tf.Variable(2.0)
+        x = tf.Variable(2.0, dtype=tf.float64)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -980,7 +980,7 @@ class TestDifferentiation:
         op2 = Evolution(base_op, 1)
 
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            op1.parameter_frequencies()
+            _ = op1.parameter_frequencies
 
         assert op2.parameter_frequencies == [(4.0,)]
 

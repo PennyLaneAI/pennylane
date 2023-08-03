@@ -965,7 +965,7 @@ class TestSimplify:
             qml.RX(1, 0) @ qml.RX(1, 1),
         )
         simplified_op = prod_op.simplify()
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -1016,7 +1016,7 @@ class TestSimplify:
             qml.s_prod(5, qml.PauliX(1)),
         )
         simplified_op = prod_op.simplify()
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires.toset() == s2.wires.toset()
@@ -1050,7 +1050,7 @@ class TestSimplify:
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert repr(s1) == repr(s2)
             assert s1.name == s2.name
@@ -1100,7 +1100,7 @@ class TestSimplify:
         final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -1116,7 +1116,7 @@ class TestSimplify:
             qml.S(wires=[1]),
         )
         simplified_op = prod_op.simplify()
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -1128,7 +1128,7 @@ class TestSimplify:
         prod_op = qml.prod(qml.S(0), qml.Barrier(0), qml.S(0)).simplify()
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(prod_op.operands, simplified_op.operands):
+        for s1, s2 in zip(prod_op.operands, simplified_op.operands):  # pylint:disable=no-member
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -1301,9 +1301,9 @@ class TestIntegration:
 
         results = my_circ()
 
-        assert sum(results.values()) == 20
-        assert 1 in results
-        assert -1 not in results
+        assert sum(results.values()) == 20  # pylint:disable=no-member
+        assert 1 in results  # pylint:disable=unsupported-membership-test
+        assert -1 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1321,7 +1321,7 @@ class TestIntegration:
         true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_op_in_measurement_process(self):
+    def test_non_hermitian_obs_not_supported(self):
         """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
@@ -1332,7 +1332,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
+        with pytest.raises(NotImplementedError):
             my_circ()
 
     def test_operation_integration(self):
@@ -1387,11 +1387,14 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit():
-            return qml.expval(qml.prod(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 1)))
+        def circuit(x, U):
+            qml.RX(x, 0)
+            return qml.expval(qml.prod(qml.Hermitian(U, 0), qml.PauliX(1)))
 
-        with pytest.warns(UserWarning):
-            circuit()
+        x = qnp.array(0.1, requires_grad=False)
+        U = qnp.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=True)
+
+        circuit(x, U)
         assert circuit.tape.trainable_params == [1]
 
 

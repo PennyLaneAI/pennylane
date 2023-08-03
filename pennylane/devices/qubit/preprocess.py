@@ -68,6 +68,8 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
+    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+        return False
 
     return op.has_matrix
 
