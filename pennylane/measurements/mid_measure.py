@@ -99,9 +99,9 @@ class MidMeasureMP(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         reset (bool): Whether to reset the wire after measurement.
-        measurement_ids (list[str]): custom label given to a measurement instance, can be useful for some
+        measurement_ids (List[str]): custom label given to a measurement instance, can be useful for some
             applications where the instance has to be identified
-        processing_fn (callable): A lazily transformation applied to the measurement values.
+        processing_fn (Callable): A lazily transformation applied to the measurement values.
     """
 
     def __init__(
@@ -211,6 +211,7 @@ class MidMeasureMP(MeasurementProcess):
         with qml.queuing.QueuingManager.stop_recording():
             new_mp = MidMeasureMP(
                 self.wires,
+                reset=False,
                 measurement_ids=self.measurement_ids,
                 processing_fn=lambda *x: fn(self.processing_fn(*x)),
             )
@@ -240,7 +241,10 @@ class MidMeasureMP(MeasurementProcess):
 
         with qml.queuing.QueuingManager.stop_recording():
             new_mp = MidMeasureMP(
-                merged_wires, measurement_ids=merged_measurement_ids, processing_fn=merged_fn
+                merged_wires,
+                reset=False,
+                measurement_ids=merged_measurement_ids,
+                processing_fn=merged_fn,
             )
         return new_mp
 
