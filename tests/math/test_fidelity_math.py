@@ -244,6 +244,7 @@ class TestGradient:
     @pytest.mark.autograd
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_single_wire_autograd(self, x, tol):
+        """Test gradients are correct for a single wire for autograd"""
         x = np.array(x)
         res = self.cost_fn_single(x)
         grad = qml.grad(self.cost_fn_single)(x)
@@ -254,6 +255,7 @@ class TestGradient:
     @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_single_wire_jax(self, x, tol):
+        """Test gradients are correct for a single wire for jax"""
         x = jnp.array(x)
         res = self.cost_fn_single(x)
         grad = jax.grad(self.cost_fn_single)(x)
@@ -261,9 +263,23 @@ class TestGradient:
         assert qml.math.allclose(res, self.expected_res(x), tol)
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_single_wire_jax_jit(self, x, tol):
+        """Test gradients are correct for a single wire for jax-jit"""
+        x = jnp.array(x)
+
+        jitted_cost = jax.jit(self.cost_fn_single)
+        res = jitted_cost(x)
+        grad = jax.grad(jitted_cost)(x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_single_wire_torch(self, x, tol):
+        """Test gradients are correct for a single wire for torch"""
         x = torch.from_numpy(np.array(x)).requires_grad_()
         res = self.cost_fn_single(x)
         res.backward()
@@ -275,6 +291,7 @@ class TestGradient:
     @pytest.mark.tf
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_single_wire_tf(self, x, tol):
+        """Test gradients are correct for a single wire for tf"""
         x = tf.Variable(x, trainable=True)
 
         with tf.GradientTape() as tape:
@@ -288,6 +305,7 @@ class TestGradient:
     @pytest.mark.autograd
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_multi_wire_autograd(self, x, tol):
+        """Test gradients are correct for multiple wires for autograd"""
         x = np.array(x)
         res = self.cost_fn_multi(x)
         grad = qml.grad(self.cost_fn_multi)(x)
@@ -298,6 +316,7 @@ class TestGradient:
     @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_multi_wire_jax(self, x, tol):
+        """Test gradients are correct for multiple wires for jax"""
         x = jnp.array(x)
         res = self.cost_fn_multi(x)
         grad = jax.grad(self.cost_fn_multi)(x)
@@ -305,9 +324,23 @@ class TestGradient:
         assert qml.math.allclose(res, self.expected_res(x), tol)
         assert qml.math.allclose(grad, self.expected_grad(x), tol)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
+    def test_multi_wire_jax_jit(self, x, tol):
+        """Test gradients are correct for multiple wires for jax-jit"""
+        x = jnp.array(x)
+
+        jitted_cost = jax.jit(self.cost_fn_multi)
+        res = jitted_cost(x)
+        grad = jax.grad(jitted_cost)(x)
+
+        assert qml.math.allclose(res, self.expected_res(x), tol)
+        assert qml.math.allclose(grad, self.expected_grad(x), tol)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_multi_wire_torch(self, x, tol):
+        """Test gradients are correct for multiple wires for torch"""
         x = torch.from_numpy(np.array(x)).requires_grad_()
         res = self.cost_fn_multi(x)
         res.backward()
@@ -319,6 +352,7 @@ class TestGradient:
     @pytest.mark.tf
     @pytest.mark.parametrize("x", [0.0, 0.456, np.pi / 2])
     def test_multi_wire_tf(self, x, tol):
+        """Test gradients are correct for a multiple wires for tf"""
         x = tf.Variable(x, trainable=True)
 
         with tf.GradientTape() as tape:

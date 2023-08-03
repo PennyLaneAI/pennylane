@@ -15,7 +15,6 @@
 
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
-from functools import partial
 
 import autoray as ar
 import numpy as np
@@ -759,27 +758,27 @@ ar.register_function(
 
 def _grad_eigh(ans, x):
     """Gradient for eigenvalues and vectors of a symmetric matrix."""
-    np = _i("qml").math
+    math = _i("qml").math
 
     def safe_reciprocal(x):
         eps = 1e-20
         return x / (x * x + eps)
 
     def T(x):
-        return np.swapaxes(x, -1, -2)
+        return math.swapaxes(x, -1, -2)
 
     def dot(x, y):
-        return np.einsum("...ij,...jk->...ik", x, y)
+        return math.einsum("...ij,...jk->...ik", x, y)
 
     def vjp(g):
         N = x.shape[-1]
         w, v = ans  # Eigenvalues, eigenvectors.
-        vc = np.conj(v)
+        vc = math.conj(v)
 
         wg, vg = g  # Gradient w.r.t. eigenvalues, eigenvectors.
 
         # pytorch uses a different convention for the eigenvectors
-        if np.get_interface(v) == "torch":
+        if math.get_interface(v) == "torch":
             v, vc = vc, v
 
         # Eigenvalue part
@@ -788,30 +787,27 @@ def _grad_eigh(ans, x):
         # Add eigenvector part only if non-zero backward signal is present.
         # This can avoid NaN results for degenerate cases if the function depends
         # on the eigenvalues only.
-        if np.is_abstract(vg) or np.any(vg):
-            off_diag = np.convert_like(np.ones((N, N)) - np.eye(N), w)
-            F = off_diag * safe_reciprocal(w[..., None, :] - w[..., :, None] + np.eye(N))
+        if math.is_abstract(vg) or math.any(vg):
+            off_diag = math.convert_like(math.ones((N, N)) - math.eye(N), w)
+            F = off_diag * safe_reciprocal(w[..., None, :] - w[..., :, None] + math.eye(N))
             vjp_temp += dot(dot(vc, F * dot(T(v), vg)), T(v))
 
         # eigh always uses only the lower or the upper part of the matrix
         # we also have to make sure broadcasting works
-        reps = np.array(x.shape)
+        reps = math.array(x.shape)
         reps[-2:] = 1
 
-        tri = np.tile(np.tril(np.ones(N), -1), reps)
+        tri = math.tile(math.tril(math.ones(N), -1), reps)
 
         return (
-            np.real(vjp_temp) * np.eye(vjp_temp.shape[-1]) + (vjp_temp + np.conj(T(vjp_temp))) * tri
+            math.real(vjp_temp) * math.eye(vjp_temp.shape[-1])
+            + (vjp_temp + math.conj(T(vjp_temp))) * tri
         )
 
     return vjp
 
 
-try:
-    _i("autograd").extend.defvjp(_i("autograd").numpy.linalg.eigh, _grad_eigh)
-except ModuleNotFoundError:
-    # autograd not installed
-    pass
+_i("autograd").extend.defvjp(_i("autograd").numpy.linalg.eigh, _grad_eigh)
 
 
 try:
@@ -842,12 +838,14 @@ try:
     class _TorchEigh(_i("torch").autograd.Function):
         @staticmethod
         def forward(ctx, x):
+            """Forward pass for eigh"""
             out = _i("torch").linalg.eigh(x)
             ctx.save_for_backward(*out, x)
             return out
 
         @staticmethod
         def backward(ctx, *g):
+            """Backward pass for eigh"""
             *out, x = ctx.saved_tensors
             return _grad_eigh(out, x)(g)
 
