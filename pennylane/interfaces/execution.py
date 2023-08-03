@@ -23,6 +23,7 @@ devices with autodifferentiation support.
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
 # pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
 
+import inspect
 import warnings
 from functools import wraps, partial
 from typing import Callable, Sequence, Optional, Union, Tuple

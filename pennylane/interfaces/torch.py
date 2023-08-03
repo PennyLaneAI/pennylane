@@ -16,8 +16,8 @@ This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
-import logging
 import inspect
+import logging
 
 import numpy as np
 import torch

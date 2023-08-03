@@ -88,7 +88,7 @@ propagate = false
 
 # Control logging across pennylane
 [loggers.pennylane]
-handlers = ["qml_debug_stream"]
+handlers = ["qml_debug_stream",]
 level = "DEBUG" # Set to TRACE for highest verbosity
 propagate = false
 
