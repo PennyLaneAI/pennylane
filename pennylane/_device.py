@@ -16,6 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
+import copy
 import types
 import warnings
 from collections import OrderedDict
@@ -38,10 +39,75 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Tensor, StatePrep
+
+from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrep
 from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
+from pennylane.queuing import QueuingManager
+
+
+def _local_tape_expand(tape, depth, stop_at):
+    """Expand all objects in a tape to a specific depth excluding measurements.
+    see `pennylane.tape.tape.expand_tape` for examples.
+
+    Args:
+        tape (QuantumTape): The tape to expand
+        depth (int): the depth the tape should be expanded
+        stop_at (Callable): A function which accepts a queue object,
+            and returns ``True`` if this object should *not* be expanded.
+            If not provided, all objects that support expansion will be expanded.
+
+    Returns:
+        QuantumTape: The expanded version of ``tape``.
+    """
+    # This function mimics `pennylane.tape.tape.expand_tape()`, but does not expand measurements and
+    # does not perform validation checks for non-commuting measurements on the same wires.
+    if depth == 0:
+        return tape
+
+    new_prep = []
+    new_ops = []
+    new_measurements = []
+
+    for queue, new_queue in [
+        (tape._prep, new_prep),
+        (tape._ops, new_ops),
+        (tape.measurements, new_measurements),
+    ]:
+        for obj in queue:
+            if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
+                new_queue.append(obj)
+                continue
+
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
+
+            # recursively expand out the newly created tape
+            expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
+
+            new_prep.extend(expanded_tape._prep)
+            new_ops.extend(expanded_tape._ops)
+            new_measurements.extend(expanded_tape._measurements)
+
+    # preserves inheritance structure
+    # if tape is a QuantumTape, returned object will be a quantum tape
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
+
+    # Update circuit info
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
+    new_tape._batch_size = tape.batch_size
+    new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
+    return new_tape
 
 
 class DeviceError(Exception):
@@ -596,6 +662,9 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
+        if max_expansion == 0:
+            return circuit
+
         expand_state_prep = any(isinstance(op, StatePrep) for op in circuit.operations[1:])
 
         if expand_state_prep:  # expand mid-circuit StatePrep operations
@@ -611,8 +680,14 @@ class Device(abc.ABC):
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
-        if ops_not_supported or obs_on_same_wire:
+        if obs_on_same_wire:
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
+
+        elif ops_not_supported:
+            circuit = _local_tape_expand(
+                circuit, depth=max_expansion, stop_at=self.stopping_condition
+            )
+            circuit._update()
 
         return circuit
 
