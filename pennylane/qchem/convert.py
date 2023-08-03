@@ -670,6 +670,70 @@ def cisd_state(cisd_solver, hftype, tol=1e-15):
     return wf
 
 
+def _uccsd_state(ccsd_solver, tol=1e-15):
+
+    mol = ccsd_solver.mol
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nelec_a = int((nelec + mol.spin) / 2)
+    nelec_b = int((nelec - mol.spin) / 2)
+
+    nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
+
+    t1a, t1b = ccsd_solver.t1
+    t2aa, t2ab, t2bb = ccsd_solver.t2 
+    # compute the disconnected part of double excitations, 
+
+    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
+
+    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [1.]))
+
+    # alpha -> alpha excitations
+    t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
+    dict_fcimatr.update(dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs)))
+
+    # beta -> beta excitations
+    t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs)))
+
+    # alpha, alpha -> alpha, alpha excitations
+    if nelec_a > 1 and nvir_a > 1:
+        t2aa_configs, t2aa_signs = _excited_configurations(nelec_a, norb, 2)
+        # select only unique excitations, via lower triangle of matrix
+        ooidx = np.tril_indices(nelec_a, -1)
+        vvidx = np.tril_indices(nvir_a, -1)
+        t2aa = t2aa[ooidx][:, vvidx[0], vvidx[1]]    
+        #TODO: add the (1/2) T_1^2!
+        dict_fcimatr.update(dict(zip(list(zip(t2aa_configs, [ref_b] * len(t2aa_configs))), t2aa.ravel() * t2aa_signs)))
+
+    if nelec_b > 1 and nvir_b > 1:
+        t2bb_configs, t2bb_signs = _excited_configurations(nelec_b, norb, 2)
+        # select only unique excitations, via lower triangle of matrix
+        ooidx = np.tril_indices(nelec_b, -1)
+        vvidx = np.tril_indices(nvir_b, -1)
+        t2bb = t2bb[ooidx][:, vvidx[0], vvidx[1]]    
+        #TODO: add the (1/2) T_1^2!
+        dict_fcimatr.update(dict(zip(list(zip([ref_a] * len(t2bb_configs), t2bb_configs)), t2bb.ravel() * t2bb_signs)))
+
+    # alpha, beta -> alpha, beta excitations
+    rowvals, colvals = np.array(list(product(t1a_configs, t1b_configs)), dtype=int).T.numpy()
+    #TODO: add the (1/2) T_1^2!
+    dict_fcimatr.update(
+        dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+    )
+
+    # renormalize, to get the HF coefficient (CC wavefunction not normalized)
+    norm = np.sqrt(np.sum(dict_fcimatr.values()**2))
+    dict_fcimatr = {key: value / norm for (key, value) in dict_fcimatr.items()}
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
+
 def wfdict_to_statevector(wf_dict, norbs):
     r"""Convert a wavefunction in sparce dictionary format to a Pennylane's statevector.
 
