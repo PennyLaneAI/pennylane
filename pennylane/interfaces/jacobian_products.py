@@ -168,7 +168,6 @@ class TransformDerivatives(JacobianProductCalculator):
         return tuple(processing_fn(vjp_results))
 
     def compute_jacobian(self, tapes):
-
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
             partial_gradient_fn, tapes

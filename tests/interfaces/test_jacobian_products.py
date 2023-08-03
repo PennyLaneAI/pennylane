@@ -88,3 +88,110 @@ class TestJacobianProductResults:
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         jac = jpc.compute_jacobian((tape,))
         assert qml.math.allclose(jac, -np.sin(x))
+
+    def test_execute_jvp_multi_params_multi_out(self, jpc):
+        """Test execute jvp with multiple parameters and multiple outputs"""
+        x = 0.62
+        y = 2.64
+        ops = [qml.RY(y, 0), qml.RX(x, 0)]
+        measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
+        tape1 = qml.tape.QuantumScript(ops, measurements)
+
+        phi = 0.623
+        ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+
+        tangents = (1.5, 2.5)
+        tangents2 = (0.6,)
+        res, jvp = jpc.execute_and_compute_jvp((tape1, tape2), (tangents, tangents2))
+
+        expected_res00 = 0.5 * np.array([1 + np.cos(x) * np.cos(y), 1 - np.cos(x) * np.cos(y)])
+        assert qml.math.allclose(res[0][0], expected_res00)
+
+        expected_res01 = np.cos(x) * np.cos(y)
+        assert qml.math.allclose(res[0][1], expected_res01)
+
+        assert qml.math.allclose(res[1][0], 0)
+        assert qml.math.allclose(res[1][1], np.cos(phi))
+
+        res0dx = 0.5 * np.array([-np.sin(x) * np.cos(y), np.sin(x) * np.cos(y)])
+        res0dy = 0.5 * np.array([-np.cos(x) * np.sin(y), np.cos(x) * np.sin(y)])
+        expected_jvp00 = 2.5 * res0dx + 1.5 * res0dy
+        assert qml.math.allclose(expected_jvp00, jvp[0][0])
+
+        expected_jvp01 = -2.5 * np.sin(x) * np.cos(y) - 1.5 * np.cos(x) * np.sin(y)
+        assert qml.math.allclose(expected_jvp01, jvp[0][1])
+
+        assert qml.math.allclose(jvp[1][0], 0)
+        assert qml.math.allclose(jvp[1][1], -0.6 * np.sin(phi))
+
+    def test_vjp_multi_params_multi_out(self, jpc):
+        """Test vjp with multiple parameters and multiple outputs."""
+
+        x = 0.62
+        y = 2.64
+        ops = [qml.RY(y, 0), qml.RX(x, 0)]
+        measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
+        tape1 = qml.tape.QuantumScript(ops, measurements)
+
+        phi = 0.623
+        ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+
+        dy = (np.array([0.25, 0.5]), 1.5)
+        dy2 = (0.7, 0.8)
+        vjps = jpc.compute_vjp((tape1, tape2), (dy, dy2))
+
+        dy = (
+            0.5 * 0.25 * np.cos(x) * -np.sin(y)
+            + 0.5 * 0.5 * np.cos(x) * np.sin(y)
+            + 1.5 * np.cos(x) * -np.sin(y)
+        )
+        assert qml.math.allclose(vjps[0][0], dy)
+
+        dx = (
+            0.5 * 0.25 * -np.sin(x) * np.cos(y)
+            + 0.5 * 0.5 * np.sin(x) * np.cos(y)
+            + 1.5 * -np.sin(x) * np.cos(y)
+        )
+        assert qml.math.allclose(vjps[0][1], dx)
+
+        assert qml.math.allclose(vjps[1], -0.8 * np.sin(phi))
+
+    def test_jac_multi_params_multi_out(self, jpc):
+        """Test jacobian with multiple parameters and multiple measurements."""
+
+        x = 0.62
+        y = 2.64
+        ops = [qml.RY(y, 0), qml.RX(x, 0)]
+        measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
+        tape1 = qml.tape.QuantumScript(ops, measurements)
+
+        phi = 0.623
+        ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+        tape2 = qml.tape.QuantumScript(ops2, measurements2)
+
+        jac = jpc.compute_jacobian((tape1, tape2))
+
+        # first tape, first measurement, first parameters (y)
+        expected = 0.5 * np.array([-np.cos(x) * np.sin(y), np.cos(x) * np.sin(y)])
+        assert qml.math.allclose(jac[0][0][0], expected)
+
+        # first tape, first measurement, second parameter (x)
+        expected = 0.5 * np.array([-np.sin(x) * np.cos(y), np.sin(x) * np.cos(y)])
+        assert qml.math.allclose(jac[0][0][1], expected)
+
+        # first tape, second measurement, first parameter(y)
+        expected = -np.cos(x) * np.sin(y)
+        assert qml.math.allclose(jac[0][1][0], expected)
+        # first tape, second measurement, second parameter (x)
+        expected = -np.sin(x) * np.cos(y)
+        assert qml.math.allclose(jac[0][1][1], expected)
+
+        # second tape, first measurement, only parameter
+        assert qml.math.allclose(jac[1][0], 0)
+        # second tape, second measurement, only parameter
+        assert qml.math.allclose(jac[1][1], -np.sin(phi))
