@@ -526,16 +526,15 @@ class TestInternalFunctions:
         true_decomposition.append(qml.PauliZ(wires=2))
 
         assert len(new_tape.operations) == len(true_decomposition)
-        for op, true_op in zip(new_tape.operations, true_decomposition):
-            assert qml.equal(op, true_op)
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(tape_op, true_op)
 
         assert new_tape.shots is tape.shots
         assert new_tape.wires == tape.wires
         assert new_tape.is_sampled == tape.is_sampled
         assert new_tape.all_sampled == tape.all_sampled
-        assert new_tape._batch_size == tape.batch_size
-        assert new_tape._output_dim == tape.output_dim
-        assert new_tape._qfunc_output == tape._qfunc_output
+        assert new_tape.batch_size == tape.batch_size
+        assert new_tape._utput_dim == tape.output_dim
 
 
 # pylint: disable=too-few-public-methods

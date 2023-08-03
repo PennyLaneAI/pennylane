@@ -1285,8 +1285,8 @@ class TestExpand:
         ]
 
         assert len(new_tape.operations) == len(true_decomposition)
-        for op, true_op in zip(new_tape.operations, true_decomposition):
-            assert qml.equal(op, true_op)
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(tape_op, true_op)
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
