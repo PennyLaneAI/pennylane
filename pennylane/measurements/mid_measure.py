@@ -210,7 +210,9 @@ class MidMeasureMP(MeasurementProcess):
         """Apply a post computation to this measurement"""
         with qml.queuing.QueuingManager.stop_recording():
             new_mp = MidMeasureMP(
-                self.wires, self.measurement_ids, lambda *x: fn(self.processing_fn(*x))
+                self.wires,
+                measurement_ids=self.measurement_ids,
+                processing_fn=lambda *x: fn(self.processing_fn(*x)),
             )
         return new_mp
 
@@ -237,7 +239,9 @@ class MidMeasureMP(MeasurementProcess):
             return out_1, out_2
 
         with qml.queuing.QueuingManager.stop_recording():
-            new_mp = MidMeasureMP(merged_wires, merged_measurement_ids, merged_fn)
+            new_mp = MidMeasureMP(
+                merged_wires, measurement_ids=merged_measurement_ids, processing_fn=merged_fn
+            )
         return new_mp
 
     def __getitem__(self, i):
