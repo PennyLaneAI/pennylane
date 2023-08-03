@@ -278,7 +278,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
-      additional_pip_packages: zstd dill
+      additional_pip_packages: h5py
 
 
   device-tests:

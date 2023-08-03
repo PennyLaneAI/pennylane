@@ -285,7 +285,7 @@ def enable_return():
         .. code-block:: python
 
             >>> jax.hessian(circuit)(params)
-            ~/anaconda3/lib/python3.8/site-packages/jax/_src/callback.py in pure_callback_jvp_rule(***failed resolving arguments***)
+            ~/anaconda3/lib/python3.9/site-packages/jax/_src/callback.py in pure_callback_jvp_rule(***failed resolving arguments***)
                  53 def pure_callback_jvp_rule(*args, **kwargs):
                  54   del args, kwargs
             ---> 55   raise ValueError(
