@@ -570,6 +570,9 @@ def import_state(solver, method, tol=1e-15):
         tol (float): the tolerance to which the wavefunction is being built -- Slater
             determinants with coefficients smaller than this tolerance are discarded.
 
+    Raises:
+        ValueError: if ``method`` is not supported
+
     Returns:
         statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
 
