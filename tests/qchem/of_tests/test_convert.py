@@ -975,7 +975,7 @@ def test_import_state(molecule, basis, symm, method, wf_ref):
 
     wf_comp = qchem.convert.import_state(myci, method)
 
-    # overall sign could be +/-1 different
+    # overall sign could be different in each PySCF run
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
 

@@ -410,16 +410,19 @@ def _excitations(electrons, orbitals):
 
 
 def _excited_configurations(electrons, orbitals, excitation):
-    r"""Generate excited states from a Hartree-Fock reference state.
+    r"""Generate excited configurations from a Hartree-Fock reference state.
 
-    This function generates excited states in the form of binary strings or integers representing
-    them, from a Hartree-Fock (HF) reference state. The HF state is assumed to be
-    :math:`|1 1 ...1 0 ... 0 0 \rangle` where the number of :math:`1` and :math:`0` elements
-    represents the number of occupied and unoccupied spin orbitals, respectively. The string
-    representation of the state is obtained by converting the occupation-number vector to a string,
-    e.g., ``111000`` represents :math:`|1 1 1 0 0 0 \rangle. The number representation of the state
-    is the integer corresonding to the binary number, e.g., ``111000`` is represented by
-    :math:`int('111000', 2) = 56`.
+    This function generates excited configurations in the form of integers representing a binary
+    string, e.g., :math:`|1 1 0 1 0 0 \rangle is represented by :math:`int('110100', 2) = 52`.
+
+    The excited configurations are generated from a Hartree-Fock (HF) reference state. The HF state
+    is assumed to have the form :math:`|1 1 ...1 0 ... 0 0 \rangle` where the number of :math:`1`
+    and :math:`0` elements are the number of occupied and unoccupied spin orbitals, respectively.
+    The string representation of the state is obtained by converting the occupation-number vector to
+    a string, e.g., ``111000`` to represent :math:`|1 1 1 0 0 0 \rangle.
+
+    Each excited configuration has a sign, :math:`+1` or :math:`-1`, that is obtained by reordering
+    the creation operators.
 
     Args:
         electrons (int): number of electrons
@@ -427,7 +430,8 @@ def _excited_configurations(electrons, orbitals, excitation):
         excitation (int): number of excited electrons
 
     Returns:
-        tuple(array, array): arrays of excited states and signs obtained by reordering of the creation operators
+        tuple(array, array): arrays of excited configurations and signs obtained by reordering the
+         creation operators
 
     **Example**
 
@@ -464,19 +468,18 @@ def _excited_configurations(electrons, orbitals, excitation):
 
 
 def _ucisd_state(cisd_solver, tol=1e-15):
-    r"""Construct a wavefunction from PySCF's `UCISD` Solver object.
+    r"""Construct a wavefunction from PySCF's `UCISD` solver object.
 
-    The wavefunction is represented as a dictionary where the keys are tuples representing a
-    configuration, which corresponds to a Slater determinant, and the values are the CI coefficient
-    corresponding to that Slater determinant. Each dictionary key is a tuple of two integers. The
-    binary representation of these integers correspond to a specific configuration, or Slater
-    determinant. The first number represents the configuration of alpha electrons and the second
-    number represents the beta electrons. For instance, the Hartree-Fock state
-    :math:`|1 1 0 0 \rangle` will be represented by the binary string `0011`. This string can be
-    splited to `01` and `01` for the alpha and beta electrons. The integer corresponding to `01` is
-    `1`. Then the dictionary representation of a state with `0.99` contribution of the Hartree-Fock
-    state and `0.01` contribution from the doubly-excited state will be
-    `{(1, 1): 0.99, (2, 2): 0.01}`.
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the that Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration such that the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011`. This string can be splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1`. Then the dictionary
+    representation of a state with `0.99` contribution of the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state will be `{(1, 1): 0.99, (2, 2): 0.01}`.
 
     Args:
         cisd_solver (PySCF UCISD Class instance): the class object representing the UCISD calculation in PySCF
@@ -485,7 +488,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
     Returns:
         dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations.
 
     **Example**
@@ -553,20 +556,17 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
 
 def import_state(solver, method, tol=1e-15):
-    r"""Construct a wavefunction from PySCF output.
+    r"""Convert an external wavefunction to a PennyLane state vector.
 
     Args:
         solver: external wavefunction object that will be converted
-        method (str): keyword specifying the method of calculation
+        method (str): keyword specifying the calculation method
 
         tol (float): the tolerance to which the wavefunction is being built -- Slater
-            determinants with coefficients smaller than this are discarded. Default
-            is 1e-15 (all coefficients are included).
+            determinants with coefficients smaller than this tolerance are discarded.
 
     Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+        statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
 
     **Example**
 
@@ -602,10 +602,9 @@ def _wfdict_to_statevector(wf_dict, norbs):
         norbs (int): number of molecular orbitals in the system
 
     Returns:
-        statevector (list): normalized statevector of length 2^(number_of_spinorbitals), standard in Pennylane
+        statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
 
     """
-
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
     for (int_a, int_b), coeff in wf_dict.items():
