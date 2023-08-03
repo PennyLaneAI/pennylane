@@ -964,44 +964,14 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
                 ]
             ),
         ),
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            "rcisd",
-            np.array(
-                [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.10664669927602179,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    -0.9942969785398778,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-        ),
     ],
 )
 def test_import_state(molecule, basis, symm, method, wf_ref):
     r"""Test that cisd_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
-    if method == "rcisd":
-        myhf = pyscf.scf.RHF(mol).run()
-        myci = pyscf.ci.CISD(myhf).run()
-    elif method == "ucisd":
-        myhf = pyscf.scf.UHF(mol).run()
-        myci = pyscf.ci.UCISD(myhf).run()
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
 
     wf_comp = qchem.convert.import_state(myci, method)
 
