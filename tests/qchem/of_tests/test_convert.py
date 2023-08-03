@@ -1067,6 +1067,7 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
     # overall sign could be +/-1 different
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
+
 @pytest.mark.parametrize(
     ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
@@ -1075,10 +1076,7 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
             "sto6g",
             "d2h",
             1e-1,
-            {
-                (1, 1): 0.9942969030671576, 
-                (2, 2): -0.10664740292693174
-            }
+            {(1, 1): 0.9942969030671576, (2, 2): -0.10664740292693174},
         ),
         (
             [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]],
@@ -1087,9 +1085,9 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
             1e-1,
             {
                 (7, 7): 0.8886970081919591,
-                (11, 11): -0.3058459002168582, 
-                (19, 19): -0.30584590021685887, 
-                (35, 35): -0.14507552387854625
+                (11, 11): -0.3058459002168582,
+                (19, 19): -0.30584590021685887,
+                (35, 35): -0.14507552387854625,
             },
         ),
     ],
@@ -1106,6 +1104,7 @@ def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
 
+
 @pytest.mark.parametrize(
     ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
@@ -1114,10 +1113,7 @@ def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
             "sto6g",
             "d2h",
             1e-1,
-            {
-                (1, 1): 0.9942969030671576, 
-                (2, 2): -0.10664740292693242
-            },
+            {(1, 1): 0.9942969030671576, (2, 2): -0.10664740292693242},
         ),
         (
             [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]],
@@ -1125,10 +1121,10 @@ def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
             "d2h",
             1e-1,
             {
-                (7, 7): 0.8886969878256522, 
-                (11, 11): -0.30584590248164206, 
-                (19, 19): -0.30584590248164145, 
-                (35, 35): -0.14507552651170982
+                (7, 7): 0.8886969878256522,
+                (11, 11): -0.30584590248164206,
+                (19, 19): -0.30584590248164145,
+                (35, 35): -0.14507552651170982,
             },
         ),
     ],
