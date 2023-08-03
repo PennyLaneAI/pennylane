@@ -119,7 +119,7 @@ class TransformDerivatives(JacobianProductCalculator):
     Args:
         inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
             turns the batch of circuits into results.
-        gradient_transform (TransformContainer): the gradient transform to use.
+        gradient_transform (qml.gradients.gradient_transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
 
     >>> inner_execute = qml.device('default.qubit').execute
