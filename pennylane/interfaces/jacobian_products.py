@@ -63,7 +63,6 @@ class JacobianProductCalculator(abc.ABC):
         (-0.14975012497024223, -0.39733866159012243)
 
         """
-        raise NotImplementedError
 
     @abc.abstractmethod
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
@@ -92,7 +91,6 @@ class JacobianProductCalculator(abc.ABC):
         2.5428610719336024
 
         """
-        raise NotImplementedError
 
     @abc.abstractmethod
     def compute_jacobian(self, tapes: Batch) -> Tuple:
