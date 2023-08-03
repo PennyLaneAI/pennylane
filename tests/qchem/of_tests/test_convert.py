@@ -1066,3 +1066,42 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
 
     # overall sign could be +/-1 different
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            1e-1,
+            {
+                (1, 1): 0.9942969785398776, 
+                (2, 2): -0.10664669927602176
+            }
+        ),
+        (
+            [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            1e-1,
+            {
+                (7, 7): 0.8886988662500364, 
+                (11, 11): -0.3058465396692694, 
+                (19, 19): -0.3058465396692695, 
+                (35, 35): -0.14507582719761614
+            },
+        ),
+    ],
+)
+def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _uccsd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    mycc = pyscf.cc.UCCSD(myhf).run()
+
+    wf_ccsd = qchem.convert._uccsd_state(mycc, tol=tol)
+
+    assert wf_ccsd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
