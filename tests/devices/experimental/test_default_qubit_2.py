@@ -29,6 +29,15 @@ def test_name():
     assert DefaultQubit2().name == "default.qubit.2"
 
 
+def test_shots():
+    """Test the shots property of DefaultQubit2."""
+    assert DefaultQubit2().shots == qml.measurements.Shots(None)
+    assert DefaultQubit2(shots=100).shots == qml.measurements.Shots(100)
+
+    with pytest.raises(AttributeError):
+        DefaultQubit2().shots = 10
+
+
 def test_debugger_attribute():
     """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
     # pylint: disable=protected-access
