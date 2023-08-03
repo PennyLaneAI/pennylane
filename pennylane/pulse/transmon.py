@@ -324,8 +324,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         phi0 = jnp.pi/2
         params = [A, phi0]
 
-    Evaluated at :math:`t = 0` with the parameters :math:`A = 1` and :math:`\phi_0 = 10^{-3}` we obtain
-    :math:`2 \pi A \exp(0) \sin(\pi/2 + 0) = 2 \pi \sigma^y`.
+    Evaluated at :math:`t = 0` with the parameters :math:`A = 1` and :math:`\phi_0 = \pi/2` we obtain
+    :math:`2 \pi A \exp(0) \sin(\pi/2 + 0)\sigma^y = 2 \pi \sigma^y`.
 
     >>> H(params, t)
     6.283185307179586*(PauliY(wires=[0]))
