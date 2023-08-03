@@ -44,6 +44,31 @@ array([False, False])
 * Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
 
+* Transform Programs are now integrated with the `QNode`.
+  [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
+
+```
+def null_postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
+    return results[0]
+
+@qml.transforms.core.transform
+def scale_shots(tape: qml.tape.QuantumTape, shot_scaling) -> (Tuple[qml.tape.QuantumTape], Callable):
+    new_shots = tape.shots.total_shots * shot_scaling
+    new_tape = qml.tape.QuantumScript(tape.operations, tape.measurements, shots=new_shots)
+    return (new_tape, ), null_postprocessing
+
+dev = qml.devices.experimental.DefaultQubit2()
+
+@partial(scale_shots, shot_scaling=2)
+@qml.qnode(dev, interface=None)
+def circuit():
+    return qml.sample(wires=0)
+
+```
+
+>>> circuit(shots=1)
+array([False, False])
+
 <h3>Improvements 🛠</h3>
 
 * Wires can now be reused after making a mid-circuit measurement on them.
