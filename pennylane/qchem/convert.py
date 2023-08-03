@@ -391,7 +391,7 @@ def _excitations(electrons, orbitals):
     >>> electrons = 2
     >>> orbitals = 4
     >>> _excitations(electrons, orbitals)
-    ([[[0, 2]], [[0, 3]], [[1, 2]], [[1, 3]]], [[0, 1, 2, 3]])
+    ([[0, 2], [0, 3], [1, 2], [1, 3]], [[0, 1, 2, 3]])
     """
     singles_p, singles_q = [], []
     doubles_pq, doubles_rs = [], []
@@ -441,6 +441,11 @@ def _excited_configurations(electrons, orbitals, excitation):
     >>> _excitated_states(electrons, orbitals, excitation)
     (array([28, 26, 25]), array([ 1, -1,  1]))
     """
+    if excitation not in [1, 2]:
+        raise ValueError(
+            "Only single (excitation = 1) and double (excitation = 2) excitations are supported."
+        )
+
     hf_state = qml.qchem.hf_state(electrons, orbitals)
     singles, doubles = _excitations(electrons, orbitals)
     states, signs = [], []
@@ -448,14 +453,14 @@ def _excited_configurations(electrons, orbitals, excitation):
     if excitation == 1:
         for s in singles:
             state = hf_state.copy()
-            state[s] = state[s[::-1]]
+            state[s] = state[[s[1], s[0]]]  # apply single excitation
             states += [state]
             signs.append((-1) ** len(range(s[0], electrons - 1)))
 
     if excitation == 2:
         for d in doubles:
             state = hf_state.copy()
-            state[d] = state[[d[2], d[3], d[0], d[1]]]
+            state[d] = state[[d[2], d[3], d[0], d[1]]]  # apply double excitation
             states += [state]
             order_pq = len(range(d[0], electrons - 1))
             order_rs = len(range(d[1], electrons - 1))
@@ -560,7 +565,7 @@ def import_state(solver, method, tol=1e-15):
 
     Args:
         solver: external wavefunction object that will be converted
-        method (str): keyword specifying the calculation method
+        method (str): keyword specifying the calculation method, possible option is 'ucisd'
 
         tol (float): the tolerance to which the wavefunction is being built -- Slater
             determinants with coefficients smaller than this tolerance are discarded.
@@ -583,8 +588,7 @@ def import_state(solver, method, tol=1e-15):
         wf_dict = _ucisd_state(solver, tol=tol)
     else:
         raise ValueError(
-            "The supported method options are 'rcisd' for restricted and 'ucisd' for unrestricted"
-            " CISD calculations."
+            "The supported method option is 'ucisd' for unrestricted CISD calculations."
         )
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
@@ -608,10 +612,12 @@ def _wfdict_to_statevector(wf_dict, norbs):
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
     for (int_a, int_b), coeff in wf_dict.items():
-        bin_a, bin_b = bin(int_a)[2:][::-1], bin(int_b)[2:][::-1]
+        bin_a = bin(int_a)[2:][::-1]
+        bin_b = bin(int_b)[2:][::-1]
+        bin_a += "0" * (norbs - len(bin_a))
+        bin_b += "0" * (norbs - len(bin_b))
         bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b))
-        bin_ab_full = bin_ab + "0" * (2 * norbs - len(bin_ab))
-        statevector[int(bin_ab_full, 2)] += coeff
+        statevector[int(bin_ab, 2)] += coeff
 
     statevector = statevector / np.sqrt(np.sum(statevector**2))
 

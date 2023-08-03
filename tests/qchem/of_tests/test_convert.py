@@ -903,24 +903,24 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
 @pytest.mark.parametrize(
     ("wf_dict", "n_orbitals", "wf_ref"),
     [
-        (  # -0.99 |1100> + 0.11 |0011>
-            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179},
+        (
+            {(1, 1): 0.87006284, (1, 2): 0.3866946, (2, 1): 0.29002095, (2, 2): 0.09667365},
             2,
             np.array(
                 [
                     0.0,
                     0.0,
                     0.0,
-                    0.1066467,
+                    0.09667365,
                     0.0,
                     0.0,
+                    0.29002095,
                     0.0,
                     0.0,
+                    0.3866946,
                     0.0,
                     0.0,
-                    0.0,
-                    0.0,
-                    -0.99429698,
+                    0.87006284,
                     0.0,
                     0.0,
                     0.0,
@@ -932,6 +932,8 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
 def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
     r"""Test that _wfdict_to_statevector returns the correct statevector."""
     wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
+    print(wf_comp)
+    print(wf_ref)
     assert np.allclose(wf_comp, wf_ref)
 
 
@@ -980,10 +982,17 @@ def test_import_state(molecule, basis, symm, method, wf_ref):
 
 
 def test_import_state_error():
-    r"""Test that an error is raised if a wrong/not-supported method symbol is entered."""
+    r"""Test that an error is raised by import_state if a wrong method symbol is entered."""
 
     myci = pyscf.ci.UCISD
     method = "wrongmethod"
 
-    with pytest.raises(ValueError, match="The supported method options are"):
+    with pytest.raises(ValueError, match="The supported method"):
         _ = qchem.convert.import_state(myci, method)
+
+
+@pytest.mark.parametrize(("excitation"), [-1, 0, 3])
+def test_excited_configurations_error(excitation):
+    r"""Test that an error is raised by _excited_configurations if a wrong excitation is entered."""
+    with pytest.raises(ValueError, match="excitations are supported"):
+        _ = qchem.convert._excited_configurations(2, 4, excitation)
