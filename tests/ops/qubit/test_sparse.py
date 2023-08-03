@@ -193,8 +193,10 @@ class TestSparse:
         hamiltonian = csr_matrix(hamiltonian)
 
         dev = qml.device("default.qubit", wires=qubits, shots=None)
-        dev.apply(operations)
-        expval = dev.expval(qml.SparseHamiltonian(hamiltonian, range(qubits)))[0]
+        qs = qml.tape.QuantumScript(
+            operations, [qml.expval((qml.SparseHamiltonian(hamiltonian, range(qubits))))]
+        )
+        expval = dev.execute(qs)
 
         assert np.allclose(expval, expected_output, atol=tol, rtol=0)
 
@@ -203,7 +205,10 @@ class TestSparse:
         shots is requested."""
         hamiltonian = csr_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
 
-        dev = qml.device("default.qubit", wires=1, shots=1)
+        dev = qml.device("default.qubit", wires=1)
+        qs = qml.tape.QuantumScript(
+            measurements=[qml.expval(qml.SparseHamiltonian(hamiltonian, [0]))], shots=1
+        )
 
-        with pytest.raises(AssertionError, match="SparseHamiltonian must be used with shots=None"):
-            dev.expval(qml.SparseHamiltonian(hamiltonian, [0]))
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            dev.execute(qs)
