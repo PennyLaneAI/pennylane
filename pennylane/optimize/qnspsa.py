@@ -408,7 +408,7 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        new_ops = op_forward + [op.adjoint() for op in reversed(op_inv)]
+        new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
         return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
 
     @staticmethod

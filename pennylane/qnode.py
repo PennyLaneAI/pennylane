@@ -27,7 +27,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, make_qscript
 
 # See https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
@@ -51,6 +51,15 @@ def _convert_to_interface(res, interface):
         return {k: _convert_to_interface(v, interface) for k, v in res.items()}
 
     return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
+
+
+# pylint: disable=protected-access
+def _get_device_shots(device) -> Shots:
+    if isinstance(device, Device):
+        if device._shot_vector:
+            return Shots(device._raw_shot_sequence)
+        return Shots(device.shots)
+    return device.shots
 
 
 class QNode:
@@ -716,7 +725,7 @@ class QNode:
 
     @staticmethod
     def _validate_backprop_method(device, interface, shots=None):
-        if shots is not None or getattr(device, "shots", None) is not None:
+        if shots is not None or _get_device_shots(device):
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
         if isinstance(device, qml.devices.experimental.Device):
@@ -853,14 +862,10 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
 
-        if not self._qfunc_uses_shots_arg:
-            shots = kwargs.pop("shots", None)
+        if self._qfunc_uses_shots_arg:
+            shots = _get_device_shots(self._original_device)
         else:
-            shots = (
-                self._original_device._raw_shot_sequence
-                if self._original_device._shot_vector
-                else self._original_device.shots
-            )
+            shots = kwargs.pop("shots", _get_device_shots(self._original_device))
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -958,20 +963,14 @@ class QNode:
 
                 # pylint: disable=not-callable
                 # update the gradient function
-                if isinstance(self._original_device, Device):
-                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
-                else:
-                    self._update_gradient_fn(shots=override_shots)
-
-            else:
-                if isinstance(self._original_device, Device):
-                    kwargs["shots"] = (
-                        self._original_device._raw_shot_sequence
-                        if self._original_device._shot_vector
-                        else self._original_device.shots
+                if isinstance(self._original_device, qml.Device):
+                    set_shots(self._original_device, override_shots)(self._update_gradient_fn)(
+                        shots=override_shots
                     )
                 else:
-                    kwargs["shots"] = None
+                    self._update_gradient_fn(shots=override_shots)
+            else:
+                kwargs["shots"] = _get_device_shots(self._original_device)
 
         # construct the tape
         self.construct(args, kwargs)
@@ -987,12 +986,14 @@ class QNode:
         if qml.active_return():
             if "mode" in self.execute_kwargs:
                 self.execute_kwargs.pop("mode")
+
             # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
-                [self.tape],
+                (self._tape,),
                 device=self.device,
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
+                transform_program=self.transform_program,
                 gradient_kwargs=self.gradient_kwargs,
                 override_shots=override_shots,
                 **self.execute_kwargs,
@@ -1042,11 +1043,13 @@ class QNode:
                 grad_on_execution = "best"
             self.execute_kwargs["grad_on_execution"] = grad_on_execution
         # pylint: disable=unexpected-keyword-arg
+
         res = qml.execute(
-            [self.tape],
+            (self._tape,),
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
+            transform_program=self._transform_program,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,
