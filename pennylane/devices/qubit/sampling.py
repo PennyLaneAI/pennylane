@@ -279,7 +279,7 @@ def _measure_hamiltonian_with_samples(
             is_state_batched=is_state_batched,
             rng=rng,
         )
-        return sum(c * res for c, res in zip(mp.obs.terms()[1], results))
+        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
     unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
     return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
