@@ -1689,6 +1689,33 @@ class TestClassicalShadows:
         assert res.shape == ()
         assert np.allclose(res, 1.0, atol=0.05)
 
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_multiple_shadow_measurements(self, n_qubits, max_workers):
+        """Test that multiple classical shadow measurements work as expected"""
+        dev = DefaultQubit2(max_workers=max_workers)
+
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        mps = [qml.classical_shadow(range(n_qubits)), qml.classical_shadow(range(n_qubits))]
+        qs = qml.tape.QuantumScript(ops, mps, shots=100)
+        res = dev.execute(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        for r in res:
+            assert r.shape == (2, 100, n_qubits)
+            assert r.dtype == np.int8
+
+            # test that the bits are either 0 and 1
+            assert np.all(np.logical_or(r[0] == 0, r[0] == 1))
+
+            # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+            assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
+
+        # check that the samples are different
+        assert not np.all(res[0] == res[1])
+
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_reconstruct_bell_state(self, max_workers):
         """Test that a bell state can be faithfully reconstructed"""
