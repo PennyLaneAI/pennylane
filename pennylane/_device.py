@@ -46,6 +46,69 @@ from pennylane.wires import WireError, Wires
 from pennylane.queuing import QueuingManager
 
 
+def _local_tape_expand(tape, depth, stop_at):
+    """Expand all objects in a tape to a specific depth excluding measurements.
+    see `pennylane.tape.tape.expand_tape` for examples.
+
+    Args:
+        tape (QuantumTape): The tape to expand
+        depth (int): the depth the tape should be expanded
+        stop_at (Callable): A function which accepts a queue object,
+            and returns ``True`` if this object should *not* be expanded.
+            If not provided, all objects that support expansion will be expanded.
+
+    Returns:
+        QuantumTape: The expanded version of ``tape``.
+    """
+    # This function mimics `pennylane.tape.tape.expand_tape()`, but does not expand measurements and
+    # does not perform validation checks for non-commuting measurements on the same wires.
+    if depth == 0:
+        return tape
+
+    new_prep = []
+    new_ops = []
+    new_measurements = []
+
+    for queue, new_queue in [
+        (tape._prep, new_prep),
+        (tape._ops, new_ops),
+        (tape.measurements, new_measurements),
+    ]:
+        for obj in queue:
+            if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
+                new_queue.append(obj)
+                continue
+
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
+
+            # recursively expand out the newly created tape
+            expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
+
+            new_prep.extend(expanded_tape._prep)
+            new_ops.extend(expanded_tape._ops)
+            new_measurements.extend(expanded_tape._measurements)
+
+    # preserves inheritance structure
+    # if tape is a QuantumTape, returned object will be a quantum tape
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
+
+    # Update circuit info
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
+    new_tape._batch_size = tape.batch_size
+    new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
+    return new_tape
+
+
 class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
@@ -573,56 +636,6 @@ class Device(abc.ABC):
         """
         self.custom_expand_fn = types.MethodType(fn, self)
 
-    def _local_tape_expand(self, tape, depth, stop_at):
-        """Function to recursively expand the operations in a circuit"""
-        if depth == 0:
-            return tape
-
-        new_prep = []
-        new_ops = []
-        new_measurements = []
-
-        for queue, new_queue in [
-            (tape._prep, new_prep),
-            (tape._ops, new_ops),
-            (tape.measurements, new_measurements),
-        ]:
-            for obj in queue:
-                if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
-                    new_queue.append(obj)
-                    continue
-
-                if isinstance(obj, Operator):
-                    if obj.has_decomposition:
-                        with QueuingManager.stop_recording():
-                            obj = QuantumScript(obj.decomposition(), _update=False)
-                    else:
-                        new_queue.append(obj)
-                        continue
-
-                # recursively expand out the newly created tape
-                expanded_tape = self._local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
-
-                new_prep.extend(expanded_tape._prep)
-                new_ops.extend(expanded_tape._ops)
-                new_measurements.extend(expanded_tape._measurements)
-
-        # preserves inheritance structure
-        # if tape is a QuantumTape, returned object will be a quantum tape
-        new_tape = tape.__class__(
-            new_ops, new_measurements, new_prep, shots=tape.shots, _update=False
-        )
-
-        # Update circuit info
-        new_tape.wires = copy.copy(tape.wires)
-        new_tape.num_wires = tape.num_wires
-        new_tape.is_sampled = tape.is_sampled
-        new_tape.all_sampled = tape.all_sampled
-        new_tape._batch_size = tape.batch_size
-        new_tape._output_dim = tape.output_dim
-        new_tape._qfunc_output = tape._qfunc_output
-        return new_tape
-
     def default_expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
         This method should be overwritten if custom expansion logic is
@@ -664,7 +677,7 @@ class Device(abc.ABC):
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
         elif ops_not_supported:
-            circuit = self._local_tape_expand(
+            circuit = _local_tape_expand(
                 circuit, depth=max_expansion, stop_at=self.stopping_condition
             )
             circuit._update()
