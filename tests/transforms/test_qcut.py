@@ -306,8 +306,8 @@ class TestTapeToGraph:
 
         assert len(nodes) == len(ops) + len(no_cut_tape.observables)
         for op, node in zip(ops, nodes[:-1]):
-            assert op == node[0]
-        assert no_cut_tape.observables[0] == nodes[-1][0].obs
+            assert op is node[0]
+        assert no_cut_tape.observables[0] is nodes[-1][0].obs
 
     def test_converted_graph_edges(self):
         """
@@ -337,7 +337,7 @@ class TestTapeToGraph:
         ]
 
         for edge, expected_edge in zip(edges, expected_edge_connections):
-            assert edge == expected_edge
+            assert edge == expected_edge  # CHANGE HERE
 
     def test_node_order_attribute(self):
         """
@@ -989,7 +989,7 @@ class TestFragmentGraph:
         ]
         edge_data = list(communication_graph.edges(data=True))
 
-        for edge, exp_edge in zip(edge_data, expected_edge_data):
+        for edge, exp_edge in zip(edge_data, expected_edge_data):  # CHANGE HERE
             assert edge[0] == exp_edge[0]
             assert edge[1] == exp_edge[1]
 
@@ -5037,7 +5037,7 @@ class TestKaHyPar:
         wire_cuts = [n for n in cut_graph.nodes if isinstance(n[0], qml.WireCut)]
 
         assert len(wire_cuts) == len(cut_edges)
-        assert list(cut_graph.pred[wire_cuts[0]]) == [(op0, id(op0))]
+        assert list(cut_graph.pred[wire_cuts[0]]) == [(op0, id(op0))]  # CHANGE HERE
         assert list(cut_graph.succ[wire_cuts[0]]) == [(op1, id(op1))]
         assert list(cut_graph.pred[wire_cuts[1]]) == [(op1, id(op1))]
         assert list(cut_graph.succ[wire_cuts[1]]) == [(op2, id(op2))]
