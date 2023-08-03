@@ -594,7 +594,7 @@ def cisd_state(cisd_solver, hftype, tol=1e-15):
 
 
 def wfdict_to_statevector(wf_dict, norbs):
-    r"""Convert a wavefunction in sparce dictionary format to a Pennylane's statevector.
+    r"""Convert a wavefunction in sparce dictionary format to a PennyLane statevector.
 
     Args:
         wf_dict (wf_dict format): dictionary with keys (int_a,int_b) being integers whose binary representation
@@ -611,12 +611,10 @@ def wfdict_to_statevector(wf_dict, norbs):
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
     for (int_a, int_b), coeff in wf_dict.items():
-        bin_a, bin_b = bin(int_a)[2:], bin(int_b)[2:]
-        bin_a, bin_b = bin_a[::-1], bin_b[::-1]
-        bin_tot = "".join(i + j for i, j in zip(bin_a, bin_b))
-        bin_tot_full = bin_tot + "0" * (2 * norbs - len(bin_tot))
-        idx = int(bin_tot_full, 2)
-        statevector[idx] += coeff
+        bin_a, bin_b = bin(int_a)[2:][::-1], bin(int_b)[2:][::-1]
+        bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b))
+        bin_ab_full = bin_ab + "0" * (2 * norbs - len(bin_ab))
+        statevector[int(bin_ab_full, 2)] += coeff
 
     statevector = statevector / np.sqrt(np.sum(statevector**2))
 
