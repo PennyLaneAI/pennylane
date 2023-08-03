@@ -110,7 +110,6 @@ class JacobianProductCalculator(abc.ABC):
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
 
         """
-        raise NotImplementedError
 
 
 class TransformDerivatives(JacobianProductCalculator):
