@@ -13,6 +13,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `JacobianProductCalculator` abstract base class and implementation `TransformDerivatives`
+  have been added to `pennylane.interfaces.jacobian_products`.
+
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)

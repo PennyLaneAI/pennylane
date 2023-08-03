@@ -117,7 +117,8 @@ class TransformDerivatives(JacobianProductCalculator):
     """Compute vjp, jvps, and jacobians via a gradient transform.
 
     Args:
-        next_executor (Executor): where to execute the gradient tapes.
+        inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
+            turns the batch of circuits into results.
         gradient_transform (TransformContainer): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
 
