@@ -48,7 +48,7 @@ class TestLogging:
         with caplog.at_level(logging.DEBUG):
 
             @qml.qnode(dev, diff_method=None)
-            def circuit():
+            def circuit():  # pylint: disable=unused-variable
                 qml.PauliX(wires=0)
                 return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
 
