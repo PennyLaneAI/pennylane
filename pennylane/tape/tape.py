@@ -20,7 +20,7 @@ from threading import RLock
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import DecompositionUndefinedError, Operator, StatePrep
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
@@ -225,6 +225,47 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
     new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
+
+    # Update circuit info
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
+    new_tape._batch_size = tape.batch_size
+    new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
+    return new_tape
+
+
+def expand_tape_state_prep(tape, skip_first=True):
+    """Expand all instances of StatePrep operations in the tape.
+
+    Args:
+        tape (QuantumTape): The tape to expand.
+        skip_first (Bool): If ``True``, will not expand a StatePrep operation if
+            it is the first operation in the tape.
+
+    Returns:
+        QuantumTape: The expanded version of ``tape``.
+
+    **Example**
+    ...
+    """
+    new_prep = []
+    new_ops = []
+
+    for i, op in enumerate(tape._prep + tape._ops):
+        if isinstance(op, StatePrep):
+            if i == 0 and skip_first:
+                new_prep.append(op)
+            else:
+                new_ops.extend(op.decomposition())
+        else:
+            new_ops.append(op)
+
+    # preserves inheritance structure
+    # if tape is a QuantumTape, returned object will be a quantum tape
+    new_tape = tape.__class__(new_ops, tape.measurements, new_prep, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)

@@ -38,9 +38,9 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Tensor
+from pennylane.operation import Observable, Operation, Tensor, StatePrep
 from pennylane.ops import Hamiltonian, Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 
 
@@ -595,6 +595,10 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
+        expand_state_prep = any(isinstance(op, StatePrep) for op in circuit.operations[1:])
+
+        if expand_state_prep:  # expand mid-circuit StatePrep operations
+            circuit = expand_tape_state_prep(circuit)
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
