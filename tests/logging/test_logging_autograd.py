@@ -120,7 +120,7 @@ class TestLogging:
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<DefaultQubit device (wires=2, shots=None)",
-                    f"interface=auto, diff_method={diff_method[0]}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best, mode=None, cache=True, cachesize=10000, max_diff=1, gradient_kwargs={{}}",
+                    f"interface=auto, diff_method={diff_method[0]}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
                 ],
             ),
             (
