@@ -59,7 +59,6 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
 
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        pauli_obs = [i_mp[1].obs for i_mp in mp_pauli_obs]
         ob_groups, group_indices = qml.pauli.group_observables(
             pauli_obs, [i_mp[0] for i_mp in mp_pauli_obs]
         )
@@ -163,7 +162,7 @@ def measure_with_samples(
     flat_indices = [_i for i in indices for _i in i]
 
     flat_res = tuple(
-        res for i, res in sorted(list(enumerate(flat_res)), key=lambda r: flat_indices[r[0]])
+        res for _, res in sorted(list(enumerate(flat_res)), key=lambda r: flat_indices[r[0]])
     )
 
     if shots.has_partitioned_shots:
