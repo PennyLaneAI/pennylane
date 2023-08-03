@@ -1076,8 +1076,8 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
             "d2h",
             1e-1,
             {
-                (1, 1): 0.9942969785398776, 
-                (2, 2): -0.10664669927602176
+                (1, 1): 0.9942969030671576, 
+                (2, 2): -0.10664740292693174
             }
         ),
         (
@@ -1086,10 +1086,10 @@ def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
             "d2h",
             1e-1,
             {
-                (7, 7): 0.8886988662500364, 
-                (11, 11): -0.3058465396692694, 
-                (19, 19): -0.3058465396692695, 
-                (35, 35): -0.14507582719761614
+                (7, 7): 0.8886970081919591,
+                (11, 11): -0.3058459002168582, 
+                (19, 19): -0.30584590021685887, 
+                (35, 35): -0.14507552387854625
             },
         ),
     ],
@@ -1105,3 +1105,116 @@ def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
 
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            1e-1,
+            {
+                (1, 1): 0.9942969030671576, 
+                (2, 2): -0.10664740292693242
+            },
+        ),
+        (
+            [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            1e-1,
+            {
+                (7, 7): 0.8886969878256522, 
+                (11, 11): -0.30584590248164206, 
+                (19, 19): -0.30584590248164145, 
+                (35, 35): -0.14507552651170982
+            },
+        ),
+    ],
+)
+def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _rccsd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.RHF(mol).run()
+    mycc = pyscf.cc.CCSD(myhf).run()
+
+    wf_ccsd = qchem.convert._rccsd_state(mycc, tol=tol)
+
+    assert wf_ccsd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "hftype", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            "uhf",
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            "rhf",
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.10664669927602179,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.9942969785398778,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+    ],
+)
+def test_ccsd_state(molecule, basis, symm, hftype, wf_ref):
+    r"""Test that ccsd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    if hftype == "rhf":
+        myhf = pyscf.scf.RHF(mol).run()
+        mycc = pyscf.cc.CCSD(myhf).run()
+    elif hftype == "uhf":
+        myhf = pyscf.scf.UHF(mol).run()
+        mycc = pyscf.cc.UCCSD(myhf).run()
+
+    wf_comp = qchem.convert.ccsd_state(mycc, hftype)
+
+    # overall sign could be +/-1 different
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
