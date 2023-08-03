@@ -930,19 +930,19 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
     ],
 )
 def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
-    r"""Test that wfdict_to_statevector returns the correct statevector."""
-    wf_comp = qchem.convert.wfdict_to_statevector(wf_dict, n_orbitals)
+    r"""Test that _wfdict_to_statevector returns the correct statevector."""
+    wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
     assert np.allclose(wf_comp, wf_ref)
 
 
 @pytest.mark.parametrize(
-    ("molecule", "basis", "symm", "hftype", "wf_ref"),
+    ("molecule", "basis", "symm", "method", "wf_ref"),
     [
         (
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "sto6g",
             "d2h",
-            "uhf",
+            "ucisd",
             np.array(
                 [
                     0.0,
@@ -966,24 +966,24 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
         ),
     ],
 )
-def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
+def test_import_state(molecule, basis, symm, method, wf_ref):
     r"""Test that cisd_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
     myhf = pyscf.scf.UHF(mol).run()
     myci = pyscf.ci.UCISD(myhf).run()
 
-    wf_comp = qchem.convert.cisd_state(myci, hftype)
+    wf_comp = qchem.convert.import_state(myci, method)
 
     # overall sign could be +/-1 different
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
 
-def test_cisd_state_error():
-    r"""Test that an error is raised if a wrong/not-supported hftype symbol is entered."""
+def test_import_state_error():
+    r"""Test that an error is raised if a wrong/not-supported method symbol is entered."""
 
     myci = pyscf.ci.UCISD
-    hftype = "wrongtype"
+    method = "wrongmethod"
 
-    with pytest.raises(ValueError, match="The supported hftype options are"):
-        _ = qchem.convert.cisd_state(myci, hftype)
+    with pytest.raises(ValueError, match="The supported method options are"):
+        _ = qchem.convert.import_state(myci, method)

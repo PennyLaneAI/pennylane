@@ -552,15 +552,12 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def cisd_state(cisd_solver, hftype, tol=1e-15):
+def import_state(solver, method, tol=1e-15):
     r"""Construct a wavefunction from PySCF output.
 
     Args:
-        cisd_solver (PySCF CISD or UCISD Class instance): the class object representing the
-         CISD / UCISD calculation in PySCF
-
-        hftype (str): keyword specifying whether restricted or unrestricted CISD was performed.
-            The options are 'rhf' for restricted, and 'uhf' for unrestricted.
+        solver: external wavefunction object that will be converted
+        method (str): keyword specifying the method of calculation
 
         tol (float): the tolerance to which the wavefunction is being built -- Slater
             determinants with coefficients smaller than this are discarded. Default
@@ -582,18 +579,19 @@ def cisd_state(cisd_solver, hftype, tol=1e-15):
     {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
 
-    if hftype == "uhf":
-        wf_dict = _ucisd_state(cisd_solver, tol=tol)
+    if method == "ucisd":
+        wf_dict = _ucisd_state(solver, tol=tol)
     else:
         raise ValueError(
-            "The supported hftype options are 'rhf' for restricted and 'uhf' for unrestricted."
+            "The supported method options are 'rcisd' for restricted and 'ucisd' for unrestricted"
+            " CISD calculations."
         )
-    wf = wfdict_to_statevector(wf_dict, cisd_solver.mol.nao)
+    wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf
 
 
-def wfdict_to_statevector(wf_dict, norbs):
+def _wfdict_to_statevector(wf_dict, norbs):
     r"""Convert a wavefunction in sparce dictionary format to a PennyLane statevector.
 
     Args:
