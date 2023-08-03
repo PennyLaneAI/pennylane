@@ -24,7 +24,7 @@ from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhase
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.ops.qubit.parametric_ops import (
+from pennylane.ops.qubit import (
     RX as old_loc_RX,
     ControlledPhaseShift as old_loc_ControlledPhaseShift,
     MultiRZ as old_loc_MultiRZ,
