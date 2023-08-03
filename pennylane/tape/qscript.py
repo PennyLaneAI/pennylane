@@ -221,6 +221,7 @@ class QuantumScript:
         fingerprint.extend(op.hash for op in self.operations)
         fingerprint.extend(m.hash for m in self.measurements)
         fingerprint.extend(self.trainable_params)
+        fingerprint.extend(self.shots)
         return hash(tuple(fingerprint))
 
     def __iter__(self):
