@@ -1,5 +1,6 @@
 ignore:
   - "pennylane/devices/tests/*"
+  - "pennylane/data/base/_lazy_modules.py"
 
 codecov:
   notify:
