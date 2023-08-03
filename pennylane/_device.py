@@ -578,6 +578,7 @@ class Device(abc.ABC):
 
         By default, this method expands the tape if:
 
+        - state preparation operations are called mid-circuit,
         - nested tapes are present,
         - any operations are not supported on the device, or
         - multiple observables are measured on the same wire.

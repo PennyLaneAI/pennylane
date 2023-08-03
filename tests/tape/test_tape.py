@@ -29,7 +29,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():
@@ -1244,6 +1244,49 @@ class TestExpand:
 
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
+
+    @pytest.mark.parametrize("skip_first", (True, False))
+    @pytest.mark.parametrize(
+        "op, decomp",
+        zip(
+            [
+                qml.BasisState([1, 0], wires=[0, 1]),
+                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+            ],
+            [
+                qml.BasisStatePreparation([1, 0], wires=[0, 1]),
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
+            ],
+        ),
+    )
+    def test_expansion_state_prep(self, skip_first, op, decomp):
+        """Test that StatePrep operations are expanded correctly without
+        expanding other operations in the tape.
+        """
+        ops = [
+            qml.PauliZ(wires=0),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisState([0], wires=1),
+            qml.QubitStateVector([0, 1], wires=0),
+        ]
+        tape = QuantumTape(ops=ops, measurements=[], prep=[op])
+        new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
+
+        true_decomposition = []
+        if skip_first:
+            true_decomposition.append(op)
+        else:
+            true_decomposition.append(decomp)
+        true_decomposition += [
+            qml.PauliZ(wires=0),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisStatePreparation([0], wires=[1]),
+            qml.MottonenStatePreparation([0, 1], wires=[0]),
+        ]
+
+        assert len(new_tape.operations) == len(true_decomposition)
+        for op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(op, true_op)
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
