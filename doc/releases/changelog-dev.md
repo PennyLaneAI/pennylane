@@ -14,6 +14,7 @@
   or not given, only the current process executes tapes. If you experience any
   issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
+  [(#4425)](https://github.com/PennyLaneAI/pennylane/pull/4425)
 
 * Transform Programs are now integrated with the `QNode`.
   [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
