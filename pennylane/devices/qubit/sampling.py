@@ -60,7 +60,7 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
         ob_groups, group_indices = qml.pauli.group_observables(
-            pauli_obs, [i_mp[0] for i_mp in mp_pauli_obs]
+            list(i_to_pauli_mp.values()), list(i_to_pauli_mp.keys())
         )
 
         mp_pauli_groups = []
