@@ -210,7 +210,9 @@ def sample_state(
     num_wires = len(wires_to_sample)
     basis_states = np.arange(2**num_wires)
 
-    probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
+    probs = qml.probs(wires=wires_to_sample).process_state(
+        state, state_wires, is_state_batched=is_state_batched
+    )
 
     if is_state_batched:
         # rng.choice doesn't support broadcasting
