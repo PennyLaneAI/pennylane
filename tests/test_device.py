@@ -534,7 +534,7 @@ class TestInternalFunctions:
         assert new_tape.is_sampled == tape.is_sampled
         assert new_tape.all_sampled == tape.all_sampled
         assert new_tape.batch_size == tape.batch_size
-        assert new_tape._utput_dim == tape.output_dim
+        assert new_tape.output_dim == tape.output_dim
 
 
 # pylint: disable=too-few-public-methods
