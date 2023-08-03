@@ -398,7 +398,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
-        AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq),
+        AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)
     ]
 
     drive_y_term = sum(qml.PauliY(wire) for wire in wires)
