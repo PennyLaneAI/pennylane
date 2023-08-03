@@ -410,16 +410,19 @@ def _excitations(electrons, orbitals):
 
 
 def _excited_configurations(electrons, orbitals, excitation):
-    r"""Generate excited states from a Hartree-Fock reference state.
+    r"""Generate excited configurations from a Hartree-Fock reference state.
 
-    This function generates excited states in the form of binary strings or integers representing
-    them, from a Hartree-Fock (HF) reference state. The HF state is assumed to be
-    :math:`|1 1 ...1 0 ... 0 0 \rangle` where the number of :math:`1` and :math:`0` elements
-    represents the number of occupied and unoccupied spin orbitals, respectively. The string
-    representation of the state is obtained by converting the occupation-number vector to a string,
-    e.g., ``111000`` represents :math:`|1 1 1 0 0 0 \rangle. The number representation of the state
-    is the integer corresonding to the binary number, e.g., ``111000`` is represented by
-    :math:`int('111000', 2) = 56`.
+    This function generates excited configurations in the form of integers representing a binary
+    string, e.g., :math:`|1 1 0 1 0 0 \rangle is represented by :math:`int('110100', 2) = 52`.
+
+    The excited configurations are generated from a Hartree-Fock (HF) reference state. The HF state
+    is assumed to have the form :math:`|1 1 ...1 0 ... 0 0 \rangle` where the number of :math:`1`
+    and :math:`0` elements are the number of occupied and unoccupied spin orbitals, respectively.
+    The string representation of the state is obtained by converting the occupation-number vector to
+    a string, e.g., ``111000`` to represent :math:`|1 1 1 0 0 0 \rangle.
+
+    Each excited configuration has a sign, :math:`+1` or :math:`-1`, that is obtained by reordering
+    the creation operators.
 
     Args:
         electrons (int): number of electrons
@@ -427,14 +430,15 @@ def _excited_configurations(electrons, orbitals, excitation):
         excitation (int): number of excited electrons
 
     Returns:
-        tuple(array, array): arrays of excited states and signs obtained by reordering of the creation operators
+        tuple(array, array): arrays of excited configurations and signs obtained by reordering the
+         creation operators
 
     **Example**
 
     >>> electrons = 2
     >>> orbitals = 5
     >>> excitation = 2
-    >>> _excited_configurations(electrons, orbitals, excitation)
+    >>> _excitated_states(electrons, orbitals, excitation)
     (array([28, 26, 25]), array([ 1, -1,  1]))
     """
     hf_state = qml.qchem.hf_state(electrons, orbitals)
@@ -461,6 +465,157 @@ def _excited_configurations(electrons, orbitals, excitation):
     states_int = [int(state[::-1], 2) for state in states_str]
 
     return states_int, signs
+
+
+def _ucisd_state(cisd_solver, tol=1e-15):
+    r"""Construct a wavefunction from PySCF's `UCISD` solver object.
+
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the that Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration such that the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011`. This string can be splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1`. Then the dictionary
+    representation of a state with `0.99` contribution of the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state will be `{(1, 1): 0.99, (2, 2): 0.01}`.
+
+    Args:
+        cisd_solver (PySCF UCISD Class instance): the class object representing the UCISD calculation in PySCF
+        tol (float):  the tolerance to which the wavefunction is being built -- Slater determinants
+         with coefficients smaller than this are discarded. Default is 1e-15 (all coefficients are included).
+
+    Returns:
+        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary representation corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+
+    **Example**
+
+    >>> from pyscf import gto, scf, ci
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+    >>> myhf = scf.UHF(mol).run()
+    >>> myci = ci.UCISD(myhf).run()
+    >>> wf_cisd = cisd_state(myci, tol=1e-1)
+    >>> print(wf_cisd)
+    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+    """
+    mol = cisd_solver.mol
+    cisdvec = cisd_solver.ci
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nelec_a = int((nelec + mol.spin) / 2)
+    nelec_b = int((nelec - mol.spin) / 2)
+
+    nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
+
+    size_a, size_b = nelec_a * nvir_a, nelec_b * nvir_b
+    size_aa = int(nelec_a * (nelec_a - 1) / 2) * int(nvir_a * (nvir_a - 1) / 2)
+    size_bb = int(nelec_b * (nelec_b - 1) / 2) * int(nvir_b * (nvir_b - 1) / 2)
+    size_ab = nelec_a * nelec_b * nvir_a * nvir_b
+
+    sizes = [1, size_a, size_b, size_aa, size_ab, size_bb]
+    cumul = np.cumsum(sizes)
+    idxs = [0] + [slice(cumul[ii], cumul[ii + 1]) for ii in range(len(cumul) - 1)]
+    c0, c1a, c1b, c2aa, c2ab, c2bb = [cisdvec[idx] for idx in idxs]
+
+    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
+
+    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
+
+    # alpha -> alpha excitations
+    c1a_configs, c1a_signs = _excited_configurations(nelec_a, norb, 1)
+    dict_fcimatr.update(dict(zip(list(zip(c1a_configs, [ref_b] * size_a)), c1a * c1a_signs)))
+
+    # beta -> beta excitations
+    c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b, c1b_configs)), c1b * c1b_signs)))
+
+    # alpha, alpha -> alpha, alpha excitations
+    c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
+    dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * size_aa)), c2aa * c2aa_signs)))
+
+    # alpha, beta -> alpha, beta excitations
+    rowvals, colvals = np.array(list(product(c1a_configs, c1b_configs)), dtype=int).T.numpy()
+    dict_fcimatr.update(
+        dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1b_signs).numpy()))
+    )
+
+    # beta, beta -> beta, beta excitations
+    c2bb_configs, c2bb_signs = _excited_configurations(nelec_b, norb, 2)
+    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_bb, c2bb_configs)), c2bb * c2bb_signs)))
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
+
+
+def import_state(solver, method, tol=1e-15):
+    r"""Convert an external wavefunction to a PennyLane state vector.
+
+    Args:
+        solver: external wavefunction object that will be converted
+        method (str): keyword specifying the calculation method
+
+        tol (float): the tolerance to which the wavefunction is being built -- Slater
+            determinants with coefficients smaller than this tolerance are discarded.
+
+    Returns:
+        statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
+
+    **Example**
+
+    >>> from pyscf import gto, scf, ci
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+    >>> myhf = scf.UHF(mol).run()
+    >>> myci = ci.UCISD(myhf).run()
+    >>> wf_cisd = cisd_state(myci, tol=1e-1)
+    >>> print(wf_cisd)
+    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+    """
+
+    if method == "ucisd":
+        wf_dict = _ucisd_state(solver, tol=tol)
+    else:
+        raise ValueError(
+            "The supported method options are 'rcisd' for restricted and 'ucisd' for unrestricted"
+            " CISD calculations."
+        )
+    wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
+
+    return wf
+
+
+def _wfdict_to_statevector(wf_dict, norbs):
+    r"""Convert a wavefunction in sparce dictionary format to a PennyLane statevector.
+
+    Args:
+        wf_dict (wf_dict format): dictionary with keys (int_a,int_b) being integers whose binary representation
+            shows the Fock occupation vector for alpha and beta electrons; and values being the CI
+            coefficients.
+
+        norbs (int): number of molecular orbitals in the system
+
+    Returns:
+        statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
+
+    """
+    statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
+
+    for (int_a, int_b), coeff in wf_dict.items():
+        bin_a, bin_b = bin(int_a)[2:][::-1], bin(int_b)[2:][::-1]
+        bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b))
+        bin_ab_full = bin_ab + "0" * (2 * norbs - len(bin_ab))
+        statevector[int(bin_ab_full, 2)] += coeff
+
+    statevector = statevector / np.sqrt(np.sum(statevector**2))
+
+    return statevector
 
 
 def _rcisd_state(cisd_solver, tol=1e-15):
@@ -538,136 +693,6 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
     return dict_fcimatr
-
-
-def _ucisd_state(cisd_solver, tol=1e-15):
-    r"""Construct a wavefunction from PySCF's `UCISD` Solver object.
-
-    The wavefunction is represented as a dictionary where the keys are tuples representing a
-    configuration, which corresponds to a Slater determinant, and the values are the CI coefficient
-    corresponding to that Slater determinant. Each dictionary key is a tuple of two integers. The
-    binary representation of these integers correspond to a specific configuration, or Slater
-    determinant. The first number represents the configuration of alpha electrons and the second
-    number represents the beta electrons. For instance, the Hartree-Fock state
-    :math:`|1 1 0 0 \rangle` will be represented by the binary string `0011`. This string can be
-    splited to `01` and `01` for the alpha and beta electrons. The integer corresponding to `01` is
-    `1`. Then the dictionary representation of a state with `0.99` contribution of the Hartree-Fock
-    state and `0.01` contribution from the doubly-excited state will be
-    `{(1, 1): 0.99, (2, 2): 0.01}`.
-
-    Args:
-        cisd_solver (PySCF UCISD Class instance): the class object representing the UCISD calculation in PySCF
-        tol (float):  the tolerance to which the wavefunction is being built -- Slater determinants
-         with coefficients smaller than this are discarded. Default is 1e-15 (all coefficients are included).
-
-    Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
-
-    **Example**
-
-    >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
-    >>> myhf = scf.UHF(mol).run()
-    >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-1)
-    >>> print(wf_cisd)
-    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
-    """
-    mol = cisd_solver.mol
-    cisdvec = cisd_solver.ci
-
-    norb = mol.nao
-    nelec = mol.nelectron
-    nelec_a = int((nelec + mol.spin) / 2)
-    nelec_b = int((nelec - mol.spin) / 2)
-
-    nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
-
-    size_a, size_b = nelec_a * nvir_a, nelec_b * nvir_b
-    size_aa = int(nelec_a * (nelec_a - 1) / 2) * int(nvir_a * (nvir_a - 1) / 2)
-    size_bb = int(nelec_b * (nelec_b - 1) / 2) * int(nvir_b * (nvir_b - 1) / 2)
-    size_ab = nelec_a * nelec_b * nvir_a * nvir_b
-
-    sizes = [1, size_a, size_b, size_aa, size_ab, size_bb]
-    cumul = np.cumsum(sizes)
-    idxs = [0] + [slice(cumul[ii], cumul[ii + 1]) for ii in range(len(cumul) - 1)]
-    c0, c1a, c1b, c2aa, c2ab, c2bb = [cisdvec[idx] for idx in idxs]
-
-    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
-    ref_a = int(2**nelec_a - 1)
-    ref_b = int(2**nelec_b - 1)
-
-    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
-
-    # alpha -> alpha excitations
-    c1a_configs, c1a_signs = _excited_configurations(nelec_a, norb, 1)
-    dict_fcimatr.update(dict(zip(list(zip(c1a_configs, [ref_b] * size_a)), c1a * c1a_signs)))
-
-    # beta -> beta excitations
-    c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
-    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b, c1b_configs)), c1b * c1b_signs)))
-
-    # alpha, alpha -> alpha, alpha excitations
-    c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
-    dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * size_aa)), c2aa * c2aa_signs)))
-
-    # alpha, beta -> alpha, beta excitations
-    rowvals, colvals = np.array(list(product(c1a_configs, c1b_configs)), dtype=int).T.numpy()
-    dict_fcimatr.update(
-        dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1b_signs).numpy()))
-    )
-
-    # beta, beta -> beta, beta excitations
-    c2bb_configs, c2bb_signs = _excited_configurations(nelec_b, norb, 2)
-    dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_bb, c2bb_configs)), c2bb * c2bb_signs)))
-
-    # filter based on tolerance cutoff
-    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
-
-    return dict_fcimatr
-
-
-def cisd_state(cisd_solver, hftype, tol=1e-15):
-    r"""Construct a wavefunction from PySCF output.
-
-    Args:
-        cisd_solver (PySCF CISD or UCISD Class instance): the class object representing the
-         CISD / UCISD calculation in PySCF
-
-        hftype (str): keyword specifying whether restricted or unrestricted CISD was performed.
-            The options are 'rhf' for restricted, and 'uhf' for unrestricted.
-
-        tol (float): the tolerance to which the wavefunction is being built -- Slater
-            determinants with coefficients smaller than this are discarded. Default
-            is 1e-15 (all coefficients are included).
-
-    Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
-
-    **Example**
-
-    >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
-    >>> myhf = scf.UHF(mol).run()
-    >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-1)
-    >>> print(wf_cisd)
-    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
-    """
-
-    if hftype == "rhf":
-        wf_dict = _rcisd_state(cisd_solver, tol=tol)
-    elif hftype == "uhf":
-        wf_dict = _ucisd_state(cisd_solver, tol=tol)
-    else:
-        raise ValueError("Only restricted, 'rhf', and unrestricted, 'uhf', are supported.")
-    wf = wfdict_to_statevector(wf_dict, cisd_solver.mol.nao)
-
-    return wf
 
 
 def _rccsd_state(ccsd_solver, tol=1e-15):
@@ -980,36 +1005,6 @@ def ccsd_state(ccsd_solver, hftype, tol=1e-15):
         wf_dict = _uccsd_state(ccsd_solver, tol=tol)
     else:
         raise ValueError("Only restricted, 'rhf', and unrestricted, 'uhf', are supported.")
-    wf = wfdict_to_statevector(wf_dict, ccsd_solver.mol.nao)
+    wf = _wfdict_to_statevector(wf_dict, ccsd_solver.mol.nao)
 
     return wf
-
-
-def wfdict_to_statevector(wf_dict, norbs):
-    r"""Convert a wavefunction in sparce dictionary format to a Pennylane's statevector.
-
-    Args:
-        wf_dict (wf_dict format): dictionary with keys (int_a,int_b) being integers whose binary representation
-            shows the Fock occupation vector for alpha and beta electrons; and values being the CI
-            coefficients.
-
-        norbs (int): number of molecular orbitals in the system
-
-    Returns:
-        statevector (list): normalized statevector of length 2^(number_of_spinorbitals), standard in Pennylane
-
-    """
-
-    statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
-
-    for (int_a, int_b), coeff in wf_dict.items():
-        bin_a, bin_b = bin(int_a)[2:], bin(int_b)[2:]
-        bin_a, bin_b = bin_a[::-1], bin_b[::-1]
-        bin_tot = "".join(i + j for i, j in zip(bin_a, bin_b))
-        bin_tot_full = bin_tot + "0" * (2 * norbs - len(bin_tot))
-        idx = int(bin_tot_full, 2)
-        statevector[idx] += coeff
-
-    statevector = statevector / np.sqrt(np.sum(statevector**2))
-
-    return statevector

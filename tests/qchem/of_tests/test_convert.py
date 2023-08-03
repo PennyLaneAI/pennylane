@@ -901,65 +901,6 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
 
 
 @pytest.mark.parametrize(
-    ("molecule", "basis", "symm", "tol", "wf_ref"),
-    [
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179},
-        ),
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "cc-pvdz",
-            "d2h",
-            4e-2,
-            {
-                (1, 1): 0.9919704795977625,
-                (2, 2): -0.048530356564386895,
-                (2, 8): 0.044523330850078625,
-                (4, 4): -0.050035945684911876,
-                (8, 2): 0.04452333085007864,
-                (8, 8): -0.052262303220437775,
-                (16, 16): -0.040475973747662694,
-                (32, 32): -0.040475973747662694,
-            },
-        ),
-        (
-            [["Be", (0, 0, 0)]],
-            "sto6g",
-            "d2h",
-            1e-3,
-            {
-                (3, 3): 0.9446343496981953,
-                (6, 5): 0.003359774446779245,
-                (10, 9): 0.003359774446779244,
-                (18, 17): 0.003359774446779245,
-                (5, 6): 0.003359774446779244,
-                (5, 5): -0.18938190575578503,
-                (9, 10): 0.003359774446779243,
-                (9, 9): -0.18938190575578523,
-                (17, 18): 0.003359774446779244,
-                (17, 17): -0.18938190575578503,
-            },
-        ),
-    ],
-)
-def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
-    r"""Test that _rcisd_state returns the correct wavefunction."""
-
-    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
-    myhf = pyscf.scf.RHF(mol).run()
-    myci = pyscf.ci.CISD(myhf).run()
-
-    wf_cisd = qchem.convert._rcisd_state(myci, tol=tol)
-
-    assert wf_cisd.keys() == wf_ref.keys()
-    assert np.allclose(np.array(list(wf_cisd.values())), np.array(list(wf_ref.values())))
-
-
-@pytest.mark.parametrize(
     ("wf_dict", "n_orbitals", "wf_ref"),
     [
         (  # -0.99 |1100> + 0.11 |0011>
@@ -989,19 +930,19 @@ def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
     ],
 )
 def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
-    r"""Test that wfdict_to_statevector returns the correct statevector."""
-    wf_comp = qchem.convert.wfdict_to_statevector(wf_dict, n_orbitals)
+    r"""Test that _wfdict_to_statevector returns the correct statevector."""
+    wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
     assert np.allclose(wf_comp, wf_ref)
 
 
 @pytest.mark.parametrize(
-    ("molecule", "basis", "symm", "hftype", "wf_ref"),
+    ("molecule", "basis", "symm", "method", "wf_ref"),
     [
         (
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "sto6g",
             "d2h",
-            "uhf",
+            "ucisd",
             np.array(
                 [
                     0.0,
@@ -1027,7 +968,7 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "sto6g",
             "d2h",
-            "rhf",
+            "rcisd",
             np.array(
                 [
                     0.0,
@@ -1051,21 +992,31 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
         ),
     ],
 )
-def test_cisd_state(molecule, basis, symm, hftype, wf_ref):
+def test_import_state(molecule, basis, symm, method, wf_ref):
     r"""Test that cisd_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
-    if hftype == "rhf":
+    if method == "rcisd":
         myhf = pyscf.scf.RHF(mol).run()
         myci = pyscf.ci.CISD(myhf).run()
-    elif hftype == "uhf":
+    elif method == "ucisd":
         myhf = pyscf.scf.UHF(mol).run()
         myci = pyscf.ci.UCISD(myhf).run()
 
-    wf_comp = qchem.convert.cisd_state(myci, hftype)
+    wf_comp = qchem.convert.import_state(myci, method)
 
-    # overall sign could be +/-1 different
+    # overall sign could be different in each PySCF run
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+
+def test_import_state_error():
+    r"""Test that an error is raised if a wrong/not-supported method symbol is entered."""
+
+    myci = pyscf.ci.UCISD
+    method = "wrongmethod"
+
+    with pytest.raises(ValueError, match="The supported method options are"):
+        _ = qchem.convert.import_state(myci, method)
 
 
 @pytest.mark.parametrize(
