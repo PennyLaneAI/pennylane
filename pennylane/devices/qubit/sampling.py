@@ -60,7 +60,7 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
         ob_groups, group_indices = qml.pauli.group_observables(
-            list(i_to_pauli_mp.values()), list(i_to_pauli_mp.keys())
+            [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
         )
 
         mp_pauli_groups = []
@@ -273,13 +273,13 @@ def _measure_hamiltonian_with_samples(
     # of the terms separately and sum
     def _sum_for_single_shot(s):
         results = measure_with_samples(
-            [ExpectationMP(t) for _, t in zip(*mp.obs.terms())],
+            [ExpectationMP(t) for t in mp.obs.terms()[1]],
             state,
             s,
             is_state_batched=is_state_batched,
             rng=rng,
         )
-        return sum(c * res for c, _, res in zip(*mp.obs.terms(), results))
+        return sum(c * res for c, res in zip(mp.obs.terms()[1], results))
 
     unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
     return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
