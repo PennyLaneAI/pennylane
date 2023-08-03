@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
-  `|0>` computational basis state after measurement.
+  $|0\rangle$ computational basis state after measurement.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
 
 * `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
