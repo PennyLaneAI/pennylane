@@ -10,6 +10,32 @@
   or not given, only the current process executes tapes. If you experience any
   issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
+  [(#4425)](https://github.com/PennyLaneAI/pennylane/pull/4425)
+
+* Transform Programs are now integrated with the `QNode`.
+  [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
+
+```
+def null_postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
+    return results[0]
+
+@qml.transforms.core.transform
+def scale_shots(tape: qml.tape.QuantumTape, shot_scaling) -> (Tuple[qml.tape.QuantumTape], Callable):
+    new_shots = tape.shots.total_shots * shot_scaling
+    new_tape = qml.tape.QuantumScript(tape.operations, tape.measurements, shots=new_shots)
+    return (new_tape, ), null_postprocessing
+
+dev = qml.devices.experimental.DefaultQubit2()
+
+@partial(scale_shots, shot_scaling=2)
+@qml.qnode(dev, interface=None)
+def circuit():
+    return qml.sample(wires=0)
+
+```
+
+>>> circuit(shots=1)
+array([False, False])
 
 <h3>Improvements 🛠</h3>
 
@@ -87,6 +113,16 @@
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
+
+* `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
+
+
+* `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
+  property. This property is merely used to set defaults for a workflow, and does not directly
+  influence the number of shots used in executions or derivatives.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
 * PennyLane no longer directly relies on `Operator.__eq__`.
   [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
@@ -182,7 +218,14 @@
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 <h3>Bug fixes 🐛</h3>
+
+* Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
+  `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
+  [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
   
+* Replace `op.adjoint` with `qml.adjoint` in `QNSPSAOptimizer`.
+  [(#4421)](https://github.com/PennyLaneAI/pennylane/pull/4421)
+
 * Replace deprecated `jax.ad` by `jax.interpreters.ad`.
   [(#4403)](https://github.com/PennyLaneAI/pennylane/pull/4403)
 
@@ -218,6 +261,14 @@
 * `qml.devices.qubit.preprocess.validate_and_expand_adjoint` no longer sets the
   trainable parameters of the expanded tape.
   [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
+
+* `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
+  not really have a decomposition.
+  [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
+
+* `qml.transforms.split_non_commuting` now correctly works on tapes containing both `expval`
+  and `var` measurements.
+  [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
 <h3>Contributors ✍️</h3>
 

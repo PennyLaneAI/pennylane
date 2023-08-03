@@ -20,6 +20,7 @@ import abc
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
+from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane import Tracker
@@ -152,9 +153,20 @@ class Device(abc.ABC):
             self.tracker.record()
     """
 
-    def __init__(self) -> None:
+    def __init__(self, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
+        self._shots = Shots(shots)
+
+    @property
+    def shots(self) -> Shots:
+        """Default shots for execution workflows containing this device.
+
+        Note that the device itself should **always** pull shots from the provided :class:`~.QuantumTape` and its
+        :attr:`~.QuantumTape.shots`, not from this property. This property is used to provide a default at the start of a workflow.
+
+        """
+        return self._shots
 
     def preprocess(
         self,
