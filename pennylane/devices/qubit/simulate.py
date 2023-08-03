@@ -109,30 +109,6 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
 
     return results
 
-    # if len(circuit.measurements) == 1:
-    #     return measure_with_samples(
-    #         circuit.measurements[0],
-    #         state,
-    #         shots=circuit.shots,
-    #         is_state_batched=is_state_batched,
-    #         rng=rng,
-    #     )
-
-    # rng = default_rng(rng)
-
-    # results = tuple(
-    #     measure_with_samples(
-    #         mp, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
-    #     )
-    #     for mp in circuit.measurements
-    # )
-
-    # if circuit.shots.has_partitioned_shots:
-    #     # shot vector case: move the shot vector axis before the measurement axis
-    #     results = tuple(zip(*results))
-
-    # return results
-
 
 def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result:
     """Simulate a single quantum script.
