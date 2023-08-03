@@ -26,7 +26,7 @@ class SELECT(Operation):
     Applies specific input operations depending on the state of
     the designated control qubits.
 
-    .. math:: SELECT|X\rangle \otimes |\psi\rangle = \X\rangle \otimes U_x |\psi\rangle
+    .. math:: SELECT|X\rangle \otimes |\psi\rangle = |X\rangle \otimes U_x |\psi\rangle
 
     Args:
         ops (list[Operator]): operations to apply
@@ -35,8 +35,8 @@ class SELECT(Operation):
 
     .. note:: 
         The position of the operation in the list determines which qubit state implements that operation.
-        For example, when the qubit register is in the state :math:`|00\rangle`, we will apply `ops[0]`. When the qubit register is
-        in the state :math:`|10>`, we will apply ops[2].
+        For example, when the qubit register is in the state :math:`|00\rangle`, we will apply ``ops[0]``. When the qubit register is
+        in the state :math:`|10>`, we will apply ``ops[2]``.
 
     **Example**
 
@@ -58,11 +58,17 @@ class SELECT(Operation):
     num_wires = qml.operation.AnyWires
 
     def __init__(self, ops, control_wires, id=None):
+        control_wires = qml.wires.Wires(control_wires)
         if 2**len(control_wires)<len(ops):
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "+
                 f"operations ({len(ops)}). At least {int(math.ceil(math.log2(len(ops))))} control "+
                 f"wires required."
+            )
+
+        if any(control_wire in qml.wires.Wires.all_wires([op.wires for op in ops]) for control_wire in control_wires):
+            raise ValueError(
+                f"Control wires should be different from operation wires."
             )
         
         for op in ops:
