@@ -590,7 +590,7 @@ def import_state(solver, tol=1e-15):
         import pyscf
     except ImportError as Error:
         raise ImportError(
-            "This feature requires pyscf. " "It can be installed with: pip install pyscf"
+            "This feature requires pyscf. It can be installed with: pip install pyscf"
         ) from Error
 
     if isinstance(solver, pyscf.ci.ucisd.UCISD):
