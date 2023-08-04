@@ -566,9 +566,7 @@ def import_state(solver, method, tol=1e-15):
     Args:
         solver: external wavefunction object that will be converted
         method (str): keyword specifying the calculation method, possible option is 'ucisd'
-
-        tol (float): the tolerance to which the wavefunction is being built -- Slater
-            determinants with coefficients smaller than this tolerance are discarded.
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Raises:
         ValueError: if ``method`` is not supported
@@ -599,14 +597,15 @@ def import_state(solver, method, tol=1e-15):
 
 
 def _wfdict_to_statevector(wf_dict, norbs):
-    r"""Convert a wavefunction in sparce dictionary format to a PennyLane statevector.
+    r"""Convert a wavefunction in sparse dictionary format to a PennyLane statevector.
+
+    In the sparse dictionary format, the keys (int_a, int_b) are integers whose binary
+    representation shows the Fock occupation vector for alpha and beta electrons and values are the
+    CI coefficients.
 
     Args:
-        wf_dict (wf_dict format): dictionary with keys (int_a,int_b) being integers whose binary representation
-            shows the Fock occupation vector for alpha and beta electrons; and values being the CI
-            coefficients.
-
-        norbs (int): number of molecular orbitals in the system
+        wf_dict (dict): the sparse dictionary format of a wavefunction
+        norbs (int): number of molecular orbitals
 
     Returns:
         statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
