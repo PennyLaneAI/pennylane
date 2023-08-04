@@ -18,7 +18,6 @@ from typing import Sequence, Callable
 from pennylane.ops.op_math import Adjoint
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.transforms import qfunc_transform
 from pennylane.transforms.core import transform
 
 from pennylane.ops.qubit.attributes import (
