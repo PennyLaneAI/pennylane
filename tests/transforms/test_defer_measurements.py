@@ -56,6 +56,20 @@ class TestQNode:
             assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
+    def test_reuse_wire_after_measurement(self):
+        """Test that wires can be reused after measurement."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            qml.Hadamard(0)
+            qml.measure(0)
+            qml.PauliZ(0)
+            return qml.expval(qml.PauliX(0))
+
+        _ = qnode()
+
     def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
         after a mid-circuit measurement yields the correct results and is
@@ -431,7 +445,7 @@ class TestConditionalOperations:
         assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], qml.measurements.MeasurementProcess)
-        assert tape.measurements[0].obs == H
+        assert qml.equal(tape.measurements[0].obs, H)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
@@ -606,6 +620,25 @@ class TestConditionalOperations:
             return qml.probs(wires=[0])
 
         assert np.allclose(normal_circuit(x, y), cond_qnode(x, y))
+
+    def test_cond_on_measured_wire(self):
+        """Test that applying a conditional operation on the same wire
+        that is measured works as expected."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            qml.Hadamard(0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(0)
+            return qml.density_matrix(0)
+
+        # Above circuit will cause wire 0 to go back to the |0> computational
+        # basis state. We can inspect the reduced density matrix to confirm this
+        # without inspecting the extra wires
+        expected_dmat = np.array([[1, 0], [0, 0]])
+        assert np.allclose(qnode(), expected_dmat)
 
 
 class TestExpressionConditionals:
@@ -900,6 +933,106 @@ class TestTemplates:
             assert np.allclose(op1.data, op2.data)
 
 
+class TestQubitReset:
+    """Tests for the qubit reset functionality of `qml.measure`."""
+
+    def test_correct_cnot_for_reset(self):
+        """Test that a CNOT is applied from the wire that stores the measurement
+        to the measured wire after the measurement."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def qnode1(x):
+            qml.Hadamard(0)
+            qml.CRX(x, [0, 1])
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2(x):
+            qml.Hadamard(0)
+            m0 = qml.measure(0, reset=True)
+            qml.cond(m0, qml.RX)(x, 1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(qnode1(0.123), qnode2(0.123))
+
+        expected_circuit = [
+            qml.Hadamard(0),
+            qml.CNOT([0, 2]),
+            qml.CNOT([2, 0]),
+            qml.ops.Controlled(qml.RX(0.123, 1), 2),
+            qml.expval(qml.PauliZ(1)),
+        ]
+
+        assert len(qnode2.qtape.circuit) == len(expected_circuit)
+        assert all(
+            qml.equal(actual, expected)
+            for actual, expected in zip(qnode2.qtape.circuit, expected_circuit)
+        )
+
+    def test_wire_is_reset(self):
+        """Test that a wire is reset to the |0> state without any local phases
+        after measurement if reset is requested."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode(x):
+            qml.Hadamard(0)
+            qml.PhaseShift(np.pi / 4, 0)
+            m = qml.measure(0, reset=True)
+            qml.cond(m, qml.RX)(x, 1)
+            return qml.density_matrix(wires=[0])
+
+        # Expected reduced density matrix on wire 0
+        expected_mat = np.array([[1, 0], [0, 0]])
+        assert np.allclose(qnode(0.123), expected_mat)
+
+    def test_multiple_measurements_mixed_reset(self):
+        """Test that a QNode with multiple mid-circuit measurements with
+        different resets is transformed correctly."""
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def qnode(p, x, y):
+            qml.Hadamard(0)
+            qml.PhaseShift(p, 0)
+            # Set measurement_ids so that the order of wires in combined
+            # measurement values is consistent
+            m0 = qml.measurements.MidMeasureMP(0, reset=True, measurement_ids=[0])
+            qml.cond(~m0, qml.RX)(x, 1)
+            m1 = qml.measurements.MidMeasureMP(1, reset=True, measurement_ids=[1])
+            qml.cond(m0 & m1, qml.Hadamard)(0)
+            m2 = qml.measurements.MidMeasureMP(0, measurement_ids=[2])
+            qml.cond(m1 | m2, qml.RY)(y, 2)
+            return qml.expval(qml.PauliZ(2))
+
+        _ = qnode(0.123, 0.456, 0.789)
+
+        expected_circuit = [
+            qml.Hadamard(0),
+            qml.PhaseShift(0.123, 0),
+            qml.CNOT([0, 3]),
+            qml.CNOT([3, 0]),
+            qml.ops.Controlled(qml.RX(0.456, 1), 3, [False]),
+            qml.CNOT([1, 4]),
+            qml.CNOT([4, 1]),
+            qml.ops.Controlled(qml.Hadamard(0), [3, 4]),
+            qml.CNOT([0, 5]),
+            qml.ops.Controlled(qml.RY(0.789, 2), [4, 5], [False, True]),
+            qml.ops.Controlled(qml.RY(0.789, 2), [4, 5], [True, False]),
+            qml.ops.Controlled(qml.RY(0.789, 2), [4, 5], [True, True]),
+            qml.expval(qml.PauliZ(2)),
+        ]
+
+        assert len(qnode.qtape.circuit) == len(expected_circuit)
+        assert all(
+            qml.equal(actual, expected)
+            for actual, expected in zip(qnode.qtape.circuit, expected_circuit)
+        )
+
+
 class TestDrawing:
     """Tests drawing circuits with mid-circuit measurements and conditional
     operations that have been transformed"""
@@ -907,6 +1040,8 @@ class TestDrawing:
     def test_drawing(self):
         """Test that drawing a func with mid-circuit measurements works and
         that controlled operations are drawn for conditional operations."""
+
+        # TODO: Update after drawing for mid-circuit measurements is updated.
 
         def qfunc():
             m_0 = qml.measure(0)
