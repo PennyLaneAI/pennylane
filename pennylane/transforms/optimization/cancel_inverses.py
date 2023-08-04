@@ -172,4 +172,11 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         continue
 
     new_tape = QuantumTape(operations, tape.measurements, shots=tape.shots)
-    return [new_tape], lambda x: x[0]
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
