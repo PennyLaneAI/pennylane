@@ -16,7 +16,7 @@ from typing import List, Union
 
 import numpy as np
 import pennylane as qml
-from pennylane.ops import Sum, Hamiltonian, SProd
+from pennylane.ops import Sum, Hamiltonian, SProd, Prod
 from pennylane.measurements import (
     SampleMeasurement,
     Shots,
@@ -39,23 +39,34 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     if len(mps) == 1:
         return [mps], [[0]]
 
+    # measurements with pauli-word observables
     mp_pauli_obs = []
+
+    # measurements with non pauli-word observables
     mp_other_obs = []
+    mp_other_obs_indices = []
+
+    # measurements with no observables
     mp_no_obs = []
+    mp_no_obs_indices = []
 
     for i, mp in enumerate(mps):
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
-            mp_other_obs.append((i, mp))
+            mp_other_obs.append([mp])
+            mp_other_obs_indices.append([i])
         elif mp.obs is None:
-            mp_no_obs.append((i, mp))
-        elif isinstance(mp.obs, (Sum, Hamiltonian, SProd)):
-            # Sums and Hamiltonians are treated as valid Pauli words, but
+            mp_no_obs.append(mp)
+            mp_no_obs_indices.append(i)
+        elif isinstance(mp.obs, (Sum, Hamiltonian, SProd, Prod)):
+            # Sum, Hamiltonian, SProd, and Prod are treated as valid Pauli words, but
             # aren't accepted in qml.pauli.group_observables
-            mp_other_obs.append((i, mp))
+            mp_other_obs.append([mp])
+            mp_other_obs_indices.append([i])
         elif qml.pauli.is_pauli_word(mp.obs):
             mp_pauli_obs.append((i, mp))
         else:
-            mp_other_obs.append((i, mp))
+            mp_other_obs.append([mp])
+            mp_other_obs_indices.append([i])
 
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
@@ -66,16 +77,15 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
         mp_pauli_groups = []
         for group, indices in zip(ob_groups, group_indices):
             mp_group = [i_to_pauli_mp[i].__class__(obs=ob) for ob, i in zip(group, indices)]
-
             mp_pauli_groups.append(mp_group)
     else:
         mp_pauli_groups, group_indices = [], []
 
-    mp_no_obs_indices = [[mp[0] for mp in mp_no_obs]] if mp_no_obs else []
-    mp_no_obs = [[mp[1] for mp in mp_no_obs]] if mp_no_obs else []
+    mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
+    mp_no_obs = [mp_no_obs] if mp_no_obs else []
 
-    all_mp_groups = mp_pauli_groups + mp_no_obs + [[mp[1]] for mp in mp_other_obs]
-    all_indices = group_indices + mp_no_obs_indices + [[mp[0]] for mp in mp_other_obs]
+    all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
+    all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
 
     return all_mp_groups, all_indices
 
@@ -109,8 +119,8 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (Union[~.measurements.SampleMeasurement, ~.measurements.ClassicalShadowMP, ~.measurements.ShadowExpvalMP]):
-            The sample measurement to perform
+        mp (List[Union[~.measurements.SampleMeasurement, ~.measurements.ClassicalShadowMP, ~.measurements.ShadowExpvalMP]]):
+            The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
@@ -119,54 +129,36 @@ def measure_with_samples(
             If no value is provided, a default RNG will be used.
 
     Returns:
-        TensorLike[Any]: Sample measurement results
+        List[TensorLike[Any]]: Sample measurement results
     """
     groups, indices = _group_measurements(mps)
 
     all_res = []
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Hamiltonian):
-            all_res.append(
-                [
-                    _measure_hamiltonian_with_samples(
-                        group[0], state, shots, is_state_batched=is_state_batched, rng=rng
-                    )
-                ]
-            )
-
+            measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
-            all_res.append(
-                [
-                    _measure_sum_with_samples(
-                        group[0], state, shots, is_state_batched=is_state_batched, rng=rng
-                    )
-                ]
-            )
-
+            measure_fn = _measure_sum_with_samples
         elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
-            all_res.append([_measure_classical_shadow(group[0], state, shots, rng=rng)])
-
+            measure_fn = _measure_classical_shadow
         else:
             # measure with the usual method (rotate into the measurement basis)
-            all_res.append(
-                _measure_with_samples_diagonalizing_gates(
-                    group, state, shots, is_state_batched=is_state_batched, rng=rng
-                )
-            )
+            measure_fn = _measure_with_samples_diagonalizing_gates
 
-    # reorder results
+        all_res.extend(measure_fn(group, state, shots, is_state_batched=is_state_batched, rng=rng))
 
-    flat_res = [r for res in all_res for r in res]
     flat_indices = [_i for i in indices for _i in i]
 
-    flat_res = tuple(
-        res for _, res in sorted(list(enumerate(flat_res)), key=lambda r: flat_indices[r[0]])
+    # reorder results
+    sorted_res = tuple(
+        res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
     )
 
+    # put the shot vector axis before the measurement axis
     if shots.has_partitioned_shots:
-        flat_res = tuple(zip(*flat_res))
+        sorted_res = tuple(zip(*sorted_res))
 
-    return flat_res
+    return sorted_res
 
 
 def _measure_with_samples_diagonalizing_gates(
@@ -236,7 +228,11 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: Union[ClassicalShadowMP, ShadowExpvalMP], state: np.ndarray, shots: Shots, rng=None
+    mp: List[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
 ):
     """
     Returns the result of a classical shadow measurement on the given state.
@@ -256,17 +252,27 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
     wires = qml.wires.Wires(range(len(state.shape)))
 
     if shots.has_partitioned_shots:
-        return tuple(mp.process_state_with_shots(state, wires, s, rng=rng) for s in shots)
+        return [tuple(mp.process_state_with_shots(state, wires, s, rng=rng) for s in shots)]
 
-    return mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)
+    return [mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)]
 
 
 def _measure_hamiltonian_with_samples(
-    mp: SampleMeasurement, state: np.ndarray, shots: Shots, is_state_batched: bool = False, rng=None
+    mp: List[SampleMeasurement],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
 ):
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
     # if the measurement process involves a Hamiltonian, measure each
     # of the terms separately and sum
     def _sum_for_single_shot(s):
@@ -280,12 +286,19 @@ def _measure_hamiltonian_with_samples(
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
     unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
-    return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
+    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
 def _measure_sum_with_samples(
-    mp: SampleMeasurement, state: np.ndarray, shots: Shots, is_state_batched: bool = False, rng=None
+    mp: List[SampleMeasurement],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
 ):
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
     # if the measurement process involves a Sum, measure each
     # of the terms separately and sum
     def _sum_for_single_shot(s):
@@ -295,7 +308,7 @@ def _measure_sum_with_samples(
         return sum(results)
 
     unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
-    return unsqueezed_results if shots.has_partitioned_shots else unsqueezed_results[0]
+    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
 def sample_state(

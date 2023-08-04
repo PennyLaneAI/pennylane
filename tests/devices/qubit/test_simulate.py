@@ -530,6 +530,8 @@ class TestSampleMeasurements:
                 qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1)])
             ),
             qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1))),
+            qml.expval(qml.s_prod(2.0, qml.PauliX(0))),
+            qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1))),
         ]
 
         qs = qml.tape.QuantumScript(ops, mps, shots=100)
@@ -541,8 +543,9 @@ class TestSampleMeasurements:
         assert len(result) == len(mps)
 
         # check that samples are reused when possible
-        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for Hamiltonian and Sum
-        assert spy.call_count == 8
+        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
+        # Hamiltonian and Sum, and 1 group each for SProd and Prod
+        assert spy.call_count == 10
 
     shots_data = [
         [10000, 10000],
