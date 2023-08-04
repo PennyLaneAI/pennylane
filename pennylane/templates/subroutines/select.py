@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the SELECT template.
+Contains the Select template.
 """
 # pylint: disable=too-many-arguments
 
@@ -22,12 +22,12 @@ from pennylane.operation import Operation
 from pennylane import math
 
 
-class SELECT(Operation):
+class Select(Operation):
     r"""
     Applies specific input operations depending on the state of
     the designated control qubits.
 
-    .. math:: SELECT|X\rangle \otimes |\psi\rangle = |X\rangle \otimes U_x |\psi\rangle
+    .. math:: Select|X\rangle \otimes |\psi\rangle = |X\rangle \otimes U_x |\psi\rangle
 
     Args:
         ops (list[Operator]): operations to apply
@@ -45,7 +45,7 @@ class SELECT(Operation):
     >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
-    >>>     qml.SELECT(ops,control_wires=[0,1])
+    >>>     qml.Select(ops,control_wires=[0,1])
     >>>     return qml.state()
     ...
     >>> print(qml.draw(circuit,expansion_strategy='device')())

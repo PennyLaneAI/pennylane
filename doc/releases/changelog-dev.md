@@ -37,7 +37,7 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
-* A new `qml.SELECT` operation is available. It applies specific input operations depending on the
+* A new `qml.Select` operation is available. It applies specific input operations depending on the
   state of the designated control qubits
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
 
@@ -45,7 +45,7 @@ array([False, False])
   >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
   >>> @qml.qnode(dev)
   >>> def circuit():
-  >>>     qml.SELECT(ops,control_wires=[0,1])
+  >>>     qml.Select(ops,control_wires=[0,1])
   >>>     return qml.state()
   ...
   >>> print(qml.draw(circuit,expansion_strategy='device')())

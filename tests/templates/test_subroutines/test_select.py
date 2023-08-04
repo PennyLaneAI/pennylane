@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the SELECT template.
+Tests for the Select template.
 """
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import pytest
@@ -38,12 +38,12 @@ class TestDecomposition:
         ],
     )
     def test_operation_result(self, ops, control_wires, expected_gates):
-        """Test the correctness of the SELECT template output."""
+        """Test the correctness of the Select template output."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit1():
-            qml.SELECT(ops, control_wires)
+            qml.Select(ops, control_wires)
             return qml.state()
 
         @qml.qnode(dev)
@@ -91,9 +91,9 @@ class TestDecomposition:
         ],
     )
     def test_queued_ops(self, ops, control_wires, expected_gates):
-        """Test the correctness of the SELECT template queued operations."""
+        """Test the correctness of the Select template queued operations."""
         with qml.tape.OperationRecorder() as recorder:
-            qml.SELECT(ops, control_wires=control_wires)
+            qml.Select(ops, control_wires=control_wires)
 
         select_ops = recorder.expand().operations
 
@@ -127,7 +127,7 @@ class TestErrorMessages:
     def test_control_wires_in_ops(self, ops, control_wires, msg_match):
         """Test an error is raised when a control wire is in one of the ops"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.SELECT(ops, control_wires)
+            qml.Select(ops, control_wires)
 
     @pytest.mark.parametrize(
         ("ops", "control_wires", "msg_match"),
@@ -152,17 +152,17 @@ class TestErrorMessages:
     def test_too_many_ops(self, ops, control_wires, msg_match):
         """Test that error is raised if more ops are requested than can fit in control wires"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.SELECT(ops, control_wires)
+            qml.Select(ops, control_wires)
 
 
 def select_rx_circuit(angles):
-    """Circuit that uses SELECT for tests."""
-    qml.SELECT([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control_wires=0)
+    """Circuit that uses Select for tests."""
+    qml.Select([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control_wires=0)
     return qml.expval(qml.PauliZ(wires=1))
 
 
 def manual_rx_circuit(angles):
-    """Circuit that manually creates SELECT for tests."""
+    """Circuit that manually creates Select for tests."""
     qml.ctrl(qml.RX(angles[0], wires=[1]), control=0, control_values=0)
     qml.ctrl(qml.RY(angles[1], wires=[1]), control=0)
     return qml.expval(qml.PauliZ(wires=1))

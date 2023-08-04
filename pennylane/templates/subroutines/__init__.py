@@ -34,4 +34,4 @@ from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
 from .qsvt import QSVT, qsvt
-from .select import SELECT
+from .select import Select
