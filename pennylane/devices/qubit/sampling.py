@@ -252,6 +252,8 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
+    # pylint: disable=unused-argument
+
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
