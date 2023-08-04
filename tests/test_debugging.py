@@ -24,9 +24,9 @@ class TestSnapshot:
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit(self, method):
+    def test_default_qubit1(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.devices.DefaultQubit(wires=2)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -187,32 +187,6 @@ class TestSnapshot:
 
         with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
             qml.snapshots(circuit)()
-
-    def test_unsupported_device(self):
-        """Test that an error is raised on unsupported devices."""
-        dev = qml.device("default.qubit", wires=2)
-        # remove attributes to simulate unsupported device
-        delattr(dev, "_debugger")
-        dev.operations.remove("Snapshot")
-
-        @qml.qnode(dev, interface=None)  # iterface=None prevents new device creation internally
-        def circuit():
-            qml.Snapshot()
-            qml.Hadamard(wires=0)
-            qml.Snapshot("very_important_state")
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            return qml.expval(qml.PauliX(0))
-
-        # can run the circuit
-        result = circuit()
-        assert result == 0
-
-        with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
-            qml.snapshots(circuit)()
-
-        # need to revert change to not affect other tests (since operations a static attribute)
-        dev.operations.add("Snapshot")
 
     def test_unsupported_device_new(self):
         """Test that an error is raised on unsupported devices."""

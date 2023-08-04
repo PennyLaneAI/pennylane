@@ -1146,7 +1146,7 @@ class TestExecution:
 
     def test_device_executions(self):
         """Test the number of times a qubit device is executed over a QNode's
-        lifetime is tracked by `num_executions`"""
+        lifetime is tracked by the device's tracker"""
 
         dev_1 = qml.device("default.qubit", wires=2)
 
@@ -1159,9 +1159,10 @@ class TestExecution:
         node_1 = qml.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
-        for _ in range(num_evals_1):
-            node_1(0.432, 0.12)
-        assert dev_1.num_executions == num_evals_1
+        with qml.Tracker(dev_1, persistent=True) as tracker1:
+            for _ in range(num_evals_1):
+                node_1(0.432, 0.12)
+        assert tracker1.totals["executions"] == num_evals_1
 
         # test a second instance of a default qubit device
         dev_2 = qml.device("default.qubit", wires=2)
@@ -1174,9 +1175,10 @@ class TestExecution:
         node_2 = qml.QNode(circuit_2, dev_2)
         num_evals_2 = 5
 
-        for _ in range(num_evals_2):
-            node_2(0.432)
-        assert dev_2.num_executions == num_evals_2
+        with qml.Tracker(dev_2) as tracker2:
+            for _ in range(num_evals_2):
+                node_2(0.432)
+        assert tracker2.totals["executions"] == num_evals_2
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(y):
@@ -1187,9 +1189,10 @@ class TestExecution:
         node_3 = qml.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
-        for _ in range(num_evals_3):
-            node_3(0.12)
-        assert dev_1.num_executions == num_evals_1 + num_evals_3
+        with tracker1:
+            for _ in range(num_evals_3):
+                node_3(0.12)
+        assert tracker1.totals["executions"] == num_evals_1 + num_evals_3
 
     # pylint: disable=protected-access
     def test_get_diagonalizing_gates(self, mock_qubit_device):
@@ -1207,7 +1210,7 @@ class TestExecutionBroadcasted:
 
     def test_device_executions(self):
         """Test the number of times a qubit device is executed over a QNode's
-        lifetime is tracked by `num_executions`"""
+        lifetime is tracked by the device's tracker."""
 
         dev_1 = qml.device("default.qubit", wires=2)
 
@@ -1220,14 +1223,13 @@ class TestExecutionBroadcasted:
         node_1 = qml.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
-        for _ in range(num_evals_1):
-            node_1(0.432, np.array([0.12, 0.5, 3.2]))
-        assert dev_1.num_executions == num_evals_1
+        with qml.Tracker(dev_1, persistent=True) as tracker1:
+            for _ in range(num_evals_1):
+                node_1(0.432, np.array([0.12, 0.5, 3.2]))
+        assert tracker1.totals["executions"] == num_evals_1
 
         # test a second instance of a default qubit device
         dev_2 = qml.device("default.qubit", wires=2)
-
-        assert dev_2.num_executions == 0
 
         def circuit_2(x, y):
             qml.RX(x, wires=[0])
@@ -1237,9 +1239,10 @@ class TestExecutionBroadcasted:
         node_2 = qml.QNode(circuit_2, dev_2)
         num_evals_2 = 5
 
-        for _ in range(num_evals_2):
-            node_2(np.array([0.432, 0.61, 8.2]), 0.12)
-        assert dev_2.num_executions == num_evals_2
+        with qml.Tracker(dev_2) as tracker2:
+            for _ in range(num_evals_2):
+                node_2(np.array([0.432, 0.61, 8.2]), 0.12)
+        assert tracker2.totals["executions"] == num_evals_2
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(x, y):
@@ -1250,9 +1253,10 @@ class TestExecutionBroadcasted:
         node_3 = qml.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
-        for _ in range(num_evals_3):
-            node_3(np.array([0.432, 0.2]), np.array([0.12, 1.214]))
-        assert dev_1.num_executions == num_evals_1 + num_evals_3
+        with tracker1:
+            for _ in range(num_evals_3):
+                node_3(np.array([0.432, 0.2]), np.array([0.12, 1.214]))
+        assert tracker1.totals["executions"] == num_evals_1 + num_evals_3
 
 
 class TestBatchExecution:
@@ -1407,6 +1411,7 @@ class TestResourcesTracker:
     def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""
         qs, shots, wires = qs_shots_wires
+        qs._shots = Shots(shots)
         dev = qml.device(dev_name, shots=shots, wires=wires)
 
         with qml.Tracker(dev) as tracker:
@@ -1416,21 +1421,20 @@ class TestResourcesTracker:
         assert tracker.history["resources"][0] == expected_resource
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("dev_name", devices)
-    def test_tracker_multi_execution(self, dev_name):
+    def test_tracker_multi_execution(self):
         """Test that the tracker accurately tracks resources for multi executions"""
-        qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
-        qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
+        qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])], shots=10)
+        qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], shots=10)
 
         exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
         exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
 
-        dev = qml.device(dev_name, shots=10, wires=[0, 1, 2])
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
         with qml.Tracker(dev) as tracker:
-            dev.batch_execute([qs1])
-            dev.batch_execute([qs1, qs2])
+            dev.execute([qs1])
+            dev.execute([qs1, qs2])
 
-        assert tracker.totals == {"batches": 2, "executions": 3, "shots": 30, "batch_len": 3}
+        assert tracker.totals == {"batches": 2, "executions": 3}
         assert len(tracker.history["resources"]) == 3  # 1 per qscript execution
 
         for tracked_r, expected_r in zip(
