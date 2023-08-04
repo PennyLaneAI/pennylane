@@ -25,7 +25,7 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        ("ops", "control_wires", "expected_gates"),
+        ("ops", "control_wires", "expected_gates", "n_wires"),
         [
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0)],
@@ -34,20 +34,53 @@ class TestDecomposition:
                     qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
                     qml.ctrl(qml.PauliY(wires=0), control=1),
                 ],
+                2,
+            ),
+            (
+                [qml.PauliX(wires=0), qml.Identity(wires=0), qml.PauliZ(wires=0)],
+                [1,2],
+                [
+                    qml.ctrl(qml.PauliX(wires=0), control=[1,2], control_values=[0,0]),
+                    qml.ctrl(qml.PauliZ(wires=0), control =[1,2], control_values=[1,0]),
+                ],
+                3,
+            ),
+            (
+                [qml.PauliX(wires=0), qml.Identity(wires=0), qml.Identity(wires=0), qml.RX(0.3,wires=0)],
+                [1,2],
+                [
+                    qml.ctrl(qml.PauliX(wires=0), control=[1,2], control_values=[0,0]),
+                    qml.ctrl(qml.RX(0.3,wires=0), control =[1,2], control_values=[1,1]),
+                ],
+                3,
+            ),
+            (
+                [qml.PauliX(wires='a'), qml.RX(0.7,wires='b')],
+                ['c',1],
+                [
+                    qml.ctrl(qml.PauliX(wires='a'), control=['c',1], control_values=[0,0]),
+                    qml.ctrl(qml.RX(0.7,wires='b'), control =['c',1], control_values=[0,1]),
+                ],
+                ['a','b','c',1],
             ),
         ],
     )
-    def test_operation_result(self, ops, control_wires, expected_gates):
+    def test_operation_result(self, ops, control_wires, expected_gates, n_wires):
         """Test the correctness of the Select template output."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit1():
+            for wire in control_wires:
+                qml.Hadamard(wires=wire)
+            
             qml.Select(ops, control_wires)
             return qml.state()
 
         @qml.qnode(dev)
         def circuit2():
+            for wire in control_wires:
+                qml.Hadamard(wires=wire)
             for op in expected_gates:
                 qml.apply(op)
             return qml.state()
