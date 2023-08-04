@@ -116,12 +116,13 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
-import pennylane.data
 import pennylane.pulse
 
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+
+import pennylane.data
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -346,7 +347,7 @@ def device(name, *args, **kwargs):
 
         return dev
 
-    raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
+    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")
 
 
 def version():
