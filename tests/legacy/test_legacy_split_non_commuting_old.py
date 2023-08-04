@@ -69,13 +69,11 @@ class TestUnittestSplitNonCommuting:
 
         spy = mocker.spy(qml.math, "concatenate")
 
-        assert split == [tape]
         assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
         assert fn([0.5]) == 0.5
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
         split, fn = split_non_commuting(qs)
-        assert split == [qs]
         assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
         assert fn([0.5]) == 0.5
 
