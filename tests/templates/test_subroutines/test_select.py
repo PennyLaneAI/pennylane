@@ -267,7 +267,6 @@ class TestInterfaces:
         circuit_default = qml.QNode(manual_rx_circuit, dev)
         circuit_torch = qml.QNode(select_rx_circuit, dev)
 
-        # circuit1(np.array([[1,0],[0,1]],requires_grad=True))
         input_default = [0.5, 0.2]
         input_torch = torch.tensor(input_default, requires_grad=True)
 
