@@ -714,6 +714,13 @@ class TestHashing:
         assert qs.hash == qs_add_4pi.hash
         assert qs.hash != qs_add_2pi.hash
 
+    def test_hash_shots(self):
+        """Test tha circuits with different shots have different hashes."""
+        qs1 = QuantumScript([qml.S(0)], [qml.sample(wires=0)], shots=10)
+        qs2 = QuantumScript([qml.T(0)], [qml.sample(wires=0)], shots=20)
+
+        assert qs1.hash != qs2.hash
+
 
 class TestQScriptDraw:
     """Test the script draw method."""

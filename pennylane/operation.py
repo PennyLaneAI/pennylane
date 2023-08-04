@@ -2404,7 +2404,7 @@ class Tensor(Observable):
         return 0
 
     def sparse_matrix(
-        self, wires=None, format="csr"
+        self, wire_order=None, wires=None, format="csr"
     ):  # pylint:disable=arguments-renamed, arguments-differ
         r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
@@ -2412,9 +2412,14 @@ class Tensor(Observable):
         consisting mostly of zero entries.
 
         Args:
-            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
+            wires (Iterable): Same as ``wire_order`` to ensure compatibility with all the classes. Must only
+                provide one: either ``wire_order`` or ``wires``.
             format: the output format for the sparse representation. All scipy sparse formats are accepted.
+
+        Raises:
+            ValueError: if both ``wire_order`` and ``wires`` are provided at the same time.
 
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
@@ -2435,7 +2440,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
-        >>> print(t.sparse_matrix(wires=[1, 0]))
+        >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1
         (2, 3)	-1
@@ -2444,11 +2449,17 @@ class Tensor(Observable):
         We can also enforce implicit identities by passing wire labels that
         are not present in the constituent operations:
 
-        >>> res = t.sparse_matrix(wires=[0, 1, 2])
+        >>> res = t.sparse_matrix(wire_order=[0, 1, 2])
         >>> print(res.shape)
         (8, 8)
         """
+        if wires is not None and wire_order is not None:
+            raise ValueError(
+                "Wire order has been specified twice. Provide only one of either "
+                "``wire_order`` or ``wires``, but not both."
+            )
 
+        wires = wires or wire_order
         wires = self.wires if wires is None else Wires(wires)
         list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
 

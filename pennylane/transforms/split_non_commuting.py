@@ -164,10 +164,10 @@ def split_non_commuting(tape):
     if len(groups) > 1:
         # make one tape per commuting group
         tapes = []
-        for group in groups:
+        for group, indices in zip(groups, group_coeffs):
             new_tape = tape.__class__(
                 tape._ops,
-                (m.__class__(obs=o) for m, o in zip(tape.measurements, group)),
+                (tape.measurements[i].__class__(obs=o) for o, i in zip(group, indices)),
                 tape._prep,
             )
 
