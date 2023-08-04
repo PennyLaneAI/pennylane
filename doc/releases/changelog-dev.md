@@ -41,6 +41,9 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+* Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
+  [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
+
 <h3>Improvements 🛠</h3>
 
 * Wires can now be reused after making a mid-circuit measurement on them.
@@ -287,6 +290,7 @@ array([False, False])
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
