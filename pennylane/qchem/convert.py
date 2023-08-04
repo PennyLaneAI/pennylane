@@ -593,10 +593,19 @@ def import_state(solver, tol=1e-15):
             "This feature requires pyscf. It can be installed with: pip install pyscf"
         ) from Error
 
-    if isinstance(solver, pyscf.ci.ucisd.UCISD):
+    if "RCISD" in str(solver.__str__):
+        wf_dict = _rcisd_state(solver, tol=tol)
+    elif "UCISD" in str(solver.__str__):
         wf_dict = _ucisd_state(solver, tol=tol)
+    elif "RCCSD" in str(solver.__str__):
+        wf_dict = _rccsd_state(solver, tol=tol)
+    elif "UCCSD" in str(solver.__str__):
+        wf_dict = _uccsd_state(solver, tol=tol)
     else:
-        raise ValueError("The supported option is 'ucisd' for unrestricted CISD calculations.")
+        raise ValueError(
+            "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"
+            " unrestricted configuration interaction and coupled cluster calculations."
+        )
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf

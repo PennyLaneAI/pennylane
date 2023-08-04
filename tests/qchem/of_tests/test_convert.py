@@ -958,14 +958,26 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
         ),
     ],
 )
-def test_import_state(molecule, basis, symm, wf_ref):
-    r"""Test that cisd_state returns the correct wavefunction."""
+@pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
+def test_import_state(molecule, basis, symm, method, wf_ref):
+    r"""Test that import_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
-    myhf = pyscf.scf.UHF(mol).run()
-    myci = pyscf.ci.UCISD(myhf).run()
 
-    wf_comp = qchem.convert.import_state(myci)
+    if method == "rcisd":
+        myhf = pyscf.scf.RHF(mol).run()
+        solver = pyscf.ci.cisd.RCISD(myhf).run()
+    elif method == "ucisd":
+        myhf = pyscf.scf.UHF(mol).run()
+        solver = pyscf.ci.ucisd.UCISD(myhf).run()
+    elif method == "rccsd":
+        myhf = pyscf.scf.RHF(mol).run()
+        solver = pyscf.cc.rccsd.RCCSD(myhf).run()
+    elif method == "uccsd":
+        myhf = pyscf.scf.UHF(mol).run()
+        solver = pyscf.cc.uccsd.UCCSD(myhf).run()
+
+    wf_comp = qchem.convert.import_state(solver)
 
     # overall sign could be different in each PySCF run
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
@@ -976,7 +988,7 @@ def test_import_state_error():
 
     myci = "wrongobject"
 
-    with pytest.raises(ValueError, match="The supported option"):
+    with pytest.raises(ValueError, match="The supported objects"):
         _ = qchem.convert.import_state(myci)
 
 
