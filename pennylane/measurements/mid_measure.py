@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires, reset=False):  # TODO: Change name to mid_measure
+def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name to mid_measure
     """Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -66,7 +66,7 @@ def measure(wires, reset=False):  # TODO: Change name to mid_measure
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
-        reset (bool): Whether to reset the wire after measurement.
+        reset (Optional[bool]): Whether to reset the wire after measurement.
 
     Returns:
         MidMeasureMP: measurement process instance
@@ -80,11 +80,7 @@ def measure(wires, reset=False):  # TODO: Change name to mid_measure
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
-    # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
-    return MidMeasureMP(
-        wires=wire, reset=reset, measurement_ids=[measurement_id], processing_fn=lambda v: v
-    )
+    return MidMeasureMP(wires=wire, reset=reset)
 
 
 class MidMeasureMP(MeasurementProcess):
@@ -98,25 +94,24 @@ class MidMeasureMP(MeasurementProcess):
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        reset (bool): Whether to reset the wire after measurement.
-        measurement_ids (List[str]): custom label given to a measurement instance, can be useful for some
+        reset (Optional[bool]): Whether to reset the wire after measurement.
+        measurement_ids (Optional[List[str]]): custom label given to a measurement instance, can be useful for some
             applications where the instance has to be identified
-        processing_fn (Callable): A lazily transformation applied to the measurement values.
+        processing_fn (Optional[Callable]): A lazily transformation applied to the measurement values.
     """
 
     def __init__(
         self,
         wires: Wires,
-        reset: bool = False,
+        reset: Optional[bool] = False,
         measurement_ids: Optional[List[str]] = None,
         processing_fn: Optional[Callable] = None,
     ):
-        super().__init__(wires=Wires(wires))
         self.reset = reset
+        # Create a UUID and a map between MP and MV to support serialization
         self.measurement_ids = measurement_ids or [str(uuid.uuid4())[:8]]
         self.processing_fn = processing_fn if processing_fn is not None else lambda v: v
-        # id can be used to identify the mid-circuit measurement
-        self.id = self.measurement_ids[0]
+        super().__init__(wires=Wires(wires), id=self.measurement_ids[0])
 
     @property
     def return_type(self):

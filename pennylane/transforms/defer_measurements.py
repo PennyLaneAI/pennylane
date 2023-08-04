@@ -22,7 +22,7 @@ from pennylane.wires import Wires
 
 
 @qfunc_transform
-def defer_measurements(tape: QuantumTape, dev_wires: Wires = None):
+def defer_measurements(tape: QuantumTape):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -63,7 +63,6 @@ def defer_measurements(tape: QuantumTape, dev_wires: Wires = None):
 
     Args:
         tape (.QuantumTape): a quantum tape
-        dev_wires (.Wires): wires of the device on which to execute the quantum tape
 
     **Example**
 
@@ -103,25 +102,17 @@ def defer_measurements(tape: QuantumTape, dev_wires: Wires = None):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
-    # Extra wires that were provided to a device for storing measurement states
-    extra_wires = Wires.unique_wires([dev_wires, tape.wires]) if dev_wires else None
     # Current wire in which pre-measurement state will be saved if dev_wires not specified
-    cur_wire = 0
-    n_wires = tape.num_wires
+    cur_wire = tape.num_wires
     new_wires = {}
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            if extra_wires and len(extra_wires) == cur_wire:
-                raise ValueError(
-                    "Too few wires found. Devices must have at least as many unused wires "
-                    "as the number of mid-circuit measurements in the circuit."
-                )
-            new_wires[op.id] = extra_wires[cur_wire] if dev_wires else cur_wire + n_wires
-            qml.CNOT([op.wires[0], new_wires[op.id]])
+            new_wires[op.id] = cur_wire
+            qml.CNOT([op.wires[0], cur_wire])
 
             if op.reset:
-                qml.CNOT([new_wires[op.id], op.wires[0]])
+                qml.CNOT([cur_wire, op.wires[0]])
 
             cur_wire += 1
 
