@@ -28,6 +28,7 @@ from pennylane.devices.qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
     validate_measurements,
+    validate_multiprocessing_workers,
 )
 from pennylane.devices.experimental import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, MeasurementValue
@@ -783,3 +784,8 @@ class TestPreprocess:
             qml.equal(o1, o2) for o1, o2 in zip(expanded_qs.measurements, expected_qs.measurements)
         )
         assert expanded_qs.trainable_params == expected_qs.trainable_params
+
+
+def test_validate_multiprocessing_workers_None():
+    """Test that validation does not fail when max_workers is None"""
+    validate_multiprocessing_workers(None)

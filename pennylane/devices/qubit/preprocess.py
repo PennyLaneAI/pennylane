@@ -16,6 +16,7 @@
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
 from dataclasses import replace
+import os
 from typing import Generator, Callable, Tuple, Union
 import warnings
 from functools import partial
@@ -100,6 +101,43 @@ def _operator_decomposition_gen(
 #######################
 
 
+def validate_multiprocessing_workers(max_workers):
+    """Validates the number of workers for multiprocessing.
+
+    Checks that the CPU is not oversubscribed and warns user if it is,
+    making suggestions for the number of workers and/or the number of
+    threads per worker.
+
+    Args:
+        max_workers (int): Maximal number of multiprocessing workers
+    """
+    if max_workers is None:
+        return
+    threads_per_proc = os.cpu_count()  # all threads by default
+    varname = "OMP_NUM_THREADS"
+    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+    for var in varnames:
+        if os.getenv(var):  # pragma: no cover
+            varname = var
+            threads_per_proc = int(os.getenv(var))
+            break
+    num_threads = threads_per_proc * max_workers
+    num_cpu = os.cpu_count()
+    num_threads_suggest = max(1, os.cpu_count() // max_workers)
+    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+    if num_threads > num_cpu:
+        warnings.warn(
+            f"""The device requested {num_threads} threads ({max_workers} processes
+            times {threads_per_proc} threads per process), but the processor only has
+            {num_cpu} logical cores. The processor is likely oversubscribed, which may
+            lead to performance deterioration. Consider decreasing the number of processes,
+            setting the device or execution config argument `max_workers={num_workers_suggest}`
+            for example, or decreasing the number of threads per process by setting the
+            environment variable `{varname}={num_threads_suggest}`.""",
+            UserWarning,
+        )
+
+
 def validate_and_expand_adjoint(
     circuit: qml.tape.QuantumTape,
 ) -> Union[qml.tape.QuantumTape, DeviceError]:  # pylint: disable=protected-access
@@ -156,8 +194,7 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
-    expanded_tape = qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
-    return expanded_tape
+    return qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
 
 
 def validate_measurements(

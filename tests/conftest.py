@@ -231,6 +231,9 @@ def pytest_collection_modifyitems(items, config):
         if "parameter_shift" in rel_path.parts:
             mark = getattr(pytest.mark, "param-shift")
             item.add_marker(mark)
+        if "data" in rel_path.parts:
+            mark = getattr(pytest.mark, "data")
+            item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
     for item in items:
@@ -240,6 +243,7 @@ def pytest_collection_modifyitems(items, config):
                 elem
                 in [
                     "autograd",
+                    "data",
                     "torch",
                     "tf",
                     "jax",
