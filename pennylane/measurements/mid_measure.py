@@ -92,9 +92,6 @@ def measure(
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
         reset (Optional[bool]): Whether to reset the wire after measurement.
-        postselect (Optional[int]): The measured computational basis state on which to
-            optionally postselect the circuit. Must be ``0`` or ``1`` if postselection
-            is requested.
 
     Returns:
         MidMeasureMP: measurement process instance
