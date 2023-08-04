@@ -2489,6 +2489,7 @@ pairs_of_ops = [
     (qml.S(0), qml.PauliX(0)),
     (qml.PauliX(0), qml.S(0)),
     (qml.PauliX(0), qml.PauliY(0)),
+    (qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliY(1))),
 ]
 
 

@@ -1511,6 +1511,13 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
+        if active_new_opmath():
+            if isinstance(other, Operator):
+                return self + qml.s_prod(-1, other)
+            if isinstance(other, TensorLike):
+                return self + (qml.math.multiply(-1, other))
+            return NotImplemented
+
         if isinstance(other, (Operator, TensorLike)):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
