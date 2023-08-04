@@ -16,18 +16,16 @@ Contains the Select template.
 """
 # pylint: disable=too-many-arguments
 
-import itertools
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane import math
 
 
 class Select(Operation):
-    r"""
-    Applies specific input operations depending on the state of
+    r"""Applies specific input operations depending on the state of
     the designated control qubits.
 
-    .. math:: Select|X\rangle \otimes |\psi\rangle = |X\rangle \otimes U_x |\psi\rangle
+    .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
 
     Args:
         ops (list[Operator]): operations to apply
@@ -83,7 +81,12 @@ class Select(Operation):
     def compute_decomposition(
         ops, control_wires, wires=None
     ):  # pylint: disable=arguments-differ, unused-argument
-        states = list(itertools.product([0, 1], repeat=len(control_wires)))
+        states = [
+            [int(i) for i in list(bitstring)]
+            for bitstring in [
+                format(i, f"0{len(control_wires)}b") for i in range(2 ** len(control_wires))
+            ]
+        ]
         decomp_ops = [
             qml.ctrl(op, control_wires, control_values=states[index])
             for index, op in enumerate(ops)
