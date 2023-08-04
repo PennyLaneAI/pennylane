@@ -901,37 +901,30 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
 
 
 @pytest.mark.parametrize(
-    ("wf_dict", "n_orbitals", "wf_ref"),
-    [
-        (  # -0.99 |1100> + 0.11 |0011>
-            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179},
+    ("wf_dict", "n_orbitals", "string_ref", "coeff_ref"),
+    [  # reference data were obtained manually
+        (  #  0.87006284 |1100> + 0.3866946 |1001> + 0.29002095 |0110> + 0.09667365 |0011>
+            {(1, 1): 0.87006284, (1, 2): 0.3866946, (2, 1): 0.29002095, (2, 2): 0.09667365},
             2,
-            np.array(
-                [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.1066467,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    -0.99429698,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
+            ["1100", "1001", "0110", "0011"],
+            [0.87006284, 0.3866946, 0.29002095, 0.09667365],
+        ),
+        (  # 0.80448616 |110000> + 0.53976564 |001100> + 0.22350293 |000011> + 0.10724511 |100100>
+            {(1, 1): 0.80448616, (2, 2): 0.53976564, (4, 4): 0.22350293, (1, 2): 0.10724511},
+            3,
+            ["110000", "001100", "000011", "100100"],
+            [0.80448616, 0.53976564, 0.22350293, 0.10724511],
         ),
     ],
 )
-def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
+def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
     r"""Test that _wfdict_to_statevector returns the correct statevector."""
+    wf_ref = np.zeros(2 ** (n_orbitals * 2))
+    idx_nonzero = [int(s, 2) for s in string_ref]
+    wf_ref[idx_nonzero] = coeff_ref
+
     wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
+
     assert np.allclose(wf_comp, wf_ref)
 
 
@@ -965,39 +958,47 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
         ),
     ],
 )
-@pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
-def test_import_state(molecule, basis, symm, method, wf_ref):
+def test_import_state(molecule, basis, symm, wf_ref):
     r"""Test that cisd_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
 
-    if method == "rcisd":
-        myhf = pyscf.scf.RHF(mol).run()
-        solver = pyscf.ci.CISD(myhf).run()
-    elif method == "ucisd":
-        myhf = pyscf.scf.UHF(mol).run()
-        solver = pyscf.ci.UCISD(myhf).run()
-    elif method == "rccsd":
-        myhf = pyscf.scf.RHF(mol).run()
-        solver = pyscf.cc.CCSD(myhf).run()
-    elif method == "uccsd":
-        myhf = pyscf.scf.UHF(mol).run()
-        solver = pyscf.cc.UCCSD(myhf).run()
-
-    wf_comp = qchem.convert.import_state(solver, method)
+    wf_comp = qchem.convert.import_state(myci)
 
     # overall sign could be different in each PySCF run
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
 
 def test_import_state_error():
-    r"""Test that an error is raised if a wrong/not-supported method symbol is entered."""
+    r"""Test that an error is raised by import_state if a wrong object is entered."""
 
-    myci = pyscf.ci.UCISD
-    method = "wrongmethod"
+    myci = "wrongobject"
 
-    with pytest.raises(ValueError, match="The supported method options are"):
-        _ = qchem.convert.import_state(myci, method)
+    with pytest.raises(ValueError, match="The supported option"):
+        _ = qchem.convert.import_state(myci)
+
+
+@pytest.mark.parametrize(("excitation"), [-1, 0, 3])
+def test_excited_configurations_error(excitation):
+    r"""Test that an error is raised by _excited_configurations if a wrong excitation is entered."""
+    with pytest.raises(ValueError, match="excitations are supported"):
+        _ = qchem.convert._excited_configurations(2, 4, excitation)
+
+
+def test_fail_import_pyscf(monkeypatch):
+    """Test if an ImportError is raised when pyscf is requested but not installed."""
+
+    mol = pyscf.gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, 0.71)]], basis="sto6g")
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyscf", None)
+
+        with pytest.raises(ImportError, match="This feature requires pyscf"):
+            qml.qchem.convert.import_state(myci)
 
 
 @pytest.mark.parametrize(

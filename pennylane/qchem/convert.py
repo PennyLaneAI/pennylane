@@ -391,7 +391,7 @@ def _excitations(electrons, orbitals):
     >>> electrons = 2
     >>> orbitals = 4
     >>> _excitations(electrons, orbitals)
-    ([[[0, 2]], [[0, 3]], [[1, 2]], [[1, 3]]], [[0, 1, 2, 3]])
+    ([[0, 2], [0, 3], [1, 2], [1, 3]], [[0, 1, 2, 3]])
     """
     singles_p, singles_q = [], []
     doubles_pq, doubles_rs = [], []
@@ -435,12 +435,17 @@ def _excited_configurations(electrons, orbitals, excitation):
 
     **Example**
 
-    >>> electrons = 2
+    >>> electrons = 3
     >>> orbitals = 5
     >>> excitation = 2
-    >>> _excitated_states(electrons, orbitals, excitation)
-    (array([28, 26, 25]), array([ 1, -1,  1]))
+    >>> _excited_configurations(electrons, orbitals, excitation)
+    ([28, 26, 25], [1, -1, 1])
     """
+    if excitation not in [1, 2]:
+        raise ValueError(
+            "Only single (excitation = 1) and double (excitation = 2) excitations are supported."
+        )
+
     hf_state = qml.qchem.hf_state(electrons, orbitals)
     singles, doubles = _excitations(electrons, orbitals)
     states, signs = [], []
@@ -448,14 +453,14 @@ def _excited_configurations(electrons, orbitals, excitation):
     if excitation == 1:
         for s in singles:
             state = hf_state.copy()
-            state[s] = state[s[::-1]]
+            state[s] = state[[s[1], s[0]]]  # apply single excitation
             states += [state]
             signs.append((-1) ** len(range(s[0], electrons - 1)))
 
     if excitation == 2:
         for d in doubles:
             state = hf_state.copy()
-            state[d] = state[[d[2], d[3], d[0], d[1]]]
+            state[d] = state[[d[2], d[3], d[0], d[1]]]  # apply double excitation
             states += [state]
             order_pq = len(range(d[0], electrons - 1))
             order_rs = len(range(d[1], electrons - 1))
@@ -497,7 +502,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-1)
+    >>> wf_cisd = _ucisd_state(myci, tol=1e-1)
     >>> print(wf_cisd)
     {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
@@ -555,15 +560,15 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def import_state(solver, method, tol=1e-15):
+def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a PennyLane state vector.
 
     Args:
         solver: external wavefunction object that will be converted
-        method (str): keyword specifying the calculation method
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
 
-        tol (float): the tolerance to which the wavefunction is being built -- Slater
-            determinants with coefficients smaller than this tolerance are discarded.
+    Raises:
+        ValueError: if ``method`` is not supported
 
     Returns:
         statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
@@ -574,49 +579,52 @@ def import_state(solver, method, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-1)
+    >>> wf_cisd = qml.qchem.convert.import_state(myci, tol=1e-1)
     >>> print(wf_cisd)
-    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+    [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
+      0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+      0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+     -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
     """
-    if method == "ucisd":
+    try:
+        import pyscf
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pyscf. It can be installed with: pip install pyscf"
+        ) from Error
+
+    if isinstance(solver, pyscf.ci.ucisd.UCISD):
         wf_dict = _ucisd_state(solver, tol=tol)
-    elif method == "rcisd":
-        wf_dict = _rcisd_state(solver, tol=tol)
-    elif method == "rccsd":
-        wf_dict = _rccsd_state(solver, tol=tol)
-    elif method == "uccsd":
-        wf_dict = _uccsd_state(solver, tol=tol)
     else:
-        raise ValueError(
-            "The supported method options are 'rcisd','ucisd', 'rccsd', and 'uccsd' for restricted"
-            " and unrestricted CISD and CCSD calculations."
-        )
+        raise ValueError("The supported option is 'ucisd' for unrestricted CISD calculations.")
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf
 
 
 def _wfdict_to_statevector(wf_dict, norbs):
-    r"""Convert a wavefunction in sparce dictionary format to a PennyLane statevector.
+    r"""Convert a wavefunction in sparse dictionary format to a PennyLane statevector.
+
+    In the sparse dictionary format, the keys (int_a, int_b) are integers whose binary
+    representation shows the Fock occupation vector for alpha and beta electrons and values are the
+    CI coefficients.
 
     Args:
-        wf_dict (wf_dict format): dictionary with keys (int_a,int_b) being integers whose binary representation
-            shows the Fock occupation vector for alpha and beta electrons; and values being the CI
-            coefficients.
-
-        norbs (int): number of molecular orbitals in the system
+        wf_dict (dict): the sparse dictionary format of a wavefunction
+        norbs (int): number of molecular orbitals
 
     Returns:
         statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
-
     """
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
     for (int_a, int_b), coeff in wf_dict.items():
-        bin_a, bin_b = bin(int_a)[2:][::-1], bin(int_b)[2:][::-1]
+        bin_a = bin(int_a)[2:][::-1]
+        bin_b = bin(int_b)[2:][::-1]
+        bin_a += "0" * (norbs - len(bin_a))
+        bin_b += "0" * (norbs - len(bin_b))
         bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b))
-        bin_ab_full = bin_ab + "0" * (2 * norbs - len(bin_ab))
-        statevector[int(bin_ab_full, 2)] += coeff
+        statevector[int(bin_ab, 2)] += coeff
 
     statevector = statevector / np.sqrt(np.sum(statevector**2))
 
