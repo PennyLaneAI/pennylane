@@ -579,9 +579,12 @@ def import_state(solver, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-1)
+    >>> wf_cisd = qml.qchem.convert.import_state(myci, tol=1e-1)
     >>> print(wf_cisd)
-    {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
+    [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
+      0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+      0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+     -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
     """
     try:
         import pyscf
