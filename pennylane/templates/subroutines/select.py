@@ -76,11 +76,13 @@ class SELECT(Operation):
         for op in ops:
             qml.QueuingManager.remove(op)
 
-        all_wires = sum([op.wires for op in ops]) + control_wires
+        all_wires = sum(op.wires for op in ops) + control_wires
         super().__init__(ops, control_wires, wires=all_wires, id=id)
 
     @staticmethod
-    def compute_decomposition(ops, control_wires, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        ops, control_wires, wires=None
+    ):  # pylint: disable=arguments-differ, unused-argument
         states = list(itertools.product([0, 1], repeat=len(control_wires)))
         decomp_ops = [
             qml.ctrl(op, control_wires, control_values=states[index])

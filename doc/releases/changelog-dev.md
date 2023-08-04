@@ -37,7 +37,22 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
-<h3>Improvements 🛠</h3>
+* A new `qml.SELECT` operation is available. It applies specific input operations depending on the
+  state of the designated control qubits
+  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+
+  >>> dev = qml.device('default.qubit',wires=4)
+  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  >>>     qml.SELECT(ops,control_wires=[0,1])
+  >>>     return qml.state()
+  ...
+  >>> print(qml.draw(circuit,expansion_strategy='device')())
+  0: ─╭○─╭○─╭●─╭●────┤  State
+  1: ─├○─├●─├○─├●────┤  State
+  2: ─╰X─│──╰Y─├SWAP─┤  State
+  3: ────╰X────╰SWAP─┤  State<h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
