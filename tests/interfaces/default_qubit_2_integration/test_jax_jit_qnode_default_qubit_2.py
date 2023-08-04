@@ -925,6 +925,7 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             gradient_kwargs["num_directions"] = 20
+            gradient_kwargs["h"] = H_FOR_SPSA
             tol = TOL_FOR_SPSA
 
         @qnode(
