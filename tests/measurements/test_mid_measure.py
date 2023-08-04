@@ -43,292 +43,336 @@ class TestMeasure:
             qml.measure(wires=[0, 1])
 
 
+@pytest.mark.parametrize("reset", [True, False])
 class TestMeasurementValueManipulation:
     """Test all the dunder methods associated with the MidMeasureMP class"""
 
-    def test_apply_function_to_measurement(self):
+    def test_apply_function_to_measurement(self, reset):
         """Test the general _apply method that can apply an arbitrary function to a measurement."""
 
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
 
         sin_of_m = m._apply(np.sin)  # pylint: disable=protected-access
         assert sin_of_m[0] == 0.0
         assert sin_of_m[1] == np.sin(1)
+        assert sin_of_m.reset is False
 
-    def test_and_with_bool(self):
+    def test_and_with_bool(self, reset):
         """Test the __add__ dunder method between MidMeasureMP and scalar."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_add = m & False
         assert not m_add[0]
         assert not m_add[1]
+        assert m_add.reset is False
 
-    def test_and_to_measurements(self):
+    def test_and_to_measurements(self, reset):
         """Test the __add__ dunder method between two MidMeasureMPs."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m0"], processing_fn=lambda v: v)
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m0"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
         sum_of_measurements = m0 & m1
         assert not sum_of_measurements[0]
         assert not sum_of_measurements[1]
         assert not sum_of_measurements[2]
         assert sum_of_measurements[3]
+        assert sum_of_measurements.reset is False
 
-    def test_or_with_bool(self):
+    def test_or_with_bool(self, reset):
         """Test the __or__ dunder method between MidMeasureMP and scalar."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_add = m | False
         assert not m_add[0]
         assert m_add[1]
+        assert m_add.reset is False
 
-    def test_or_to_measurements(self):
+    def test_or_to_measurements(self, reset):
         """Test the __or__ dunder method between two MidMeasureMPs."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m0"], processing_fn=lambda v: v)
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m0"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
         sum_of_measurements = m0 | m1
         assert not sum_of_measurements[0]
         assert sum_of_measurements[1]
         assert sum_of_measurements[2]
         assert sum_of_measurements[3]
+        assert sum_of_measurements.reset is False
 
-    def test_add_with_scalar(self):
+    def test_add_with_scalar(self, reset):
         """Test the __add__ dunder method between MidMeasureMP and scalar."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_add = m + 5
         assert m_add[0] == 5
         assert m_add[1] == 6
+        assert m_add.reset is False
 
-    def test_add_to_measurements(self):
+    def test_add_to_measurements(self, reset):
         """Test the __add__ dunder method between two MidMeasureMPs."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m0"], processing_fn=lambda v: v)
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m0"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
         sum_of_measurements = m0 + m1
         assert sum_of_measurements[0] == 0
         assert sum_of_measurements[1] == 1
         assert sum_of_measurements[2] == 1
         assert sum_of_measurements[3] == 2
+        assert sum_of_measurements.reset is False
 
-    def test_radd_with_scalar(self):
+    def test_radd_with_scalar(self, reset):
         """Test the __radd__ dunder method between a scalar and a MidMeasureMP."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_add = 5 + m
         assert m_add[0] == 5
         assert m_add[1] == 6
+        assert m_add.reset is False
 
-    def test_sub_with_scalar(self):
+    def test_sub_with_scalar(self, reset):
         """Test the __sub__ dunder method between MidMeasureMP and scalar."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_add = m - 5
         assert m_add[0] == -5
         assert m_add[1] == -4
+        assert m_add.reset is False
 
-    def test_sub_to_measurements(self):
+    def test_sub_to_measurements(self, reset):
         """Test the __sub__ dunder method between two MidMeasureMPs."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m0"], processing_fn=lambda v: v)
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m0"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
         sum_of_measurements = m0 - m1
         assert sum_of_measurements[0] == 0
         assert sum_of_measurements[1] == -1
         assert sum_of_measurements[2] == 1
         assert sum_of_measurements[3] == 0
+        assert sum_of_measurements.reset is False
 
-    def test_rsub_with_scalar(self):
+    def test_rsub_with_scalar(self, reset):
         """Test the __rsub__ dunder method between a scalar and a MidMeasureMP."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_add = 5 - m
         assert m_add[0] == 5
         assert m_add[1] == 4
+        assert m_add.reset is False
 
-    def test_mul_with_scalar(self):
+    def test_mul_with_scalar(self, reset):
         """Test the __mul__ dunder method between a MidMeasureMP and a scalar"""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_mul = m * 5
         assert m_mul[0] == 0
         assert m_mul[1] == 5
+        assert m_mul.reset is False
 
-    def test_mul_with_measurement(self):
+    def test_mul_with_measurement(self, reset):
         """Test the __mul__ dunder method between two MidMeasureMPs."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m0"], processing_fn=lambda v: v)
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m0"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
         mul_of_measurements = m0 * m1
         assert mul_of_measurements[0] == 0
         assert mul_of_measurements[1] == 0
         assert mul_of_measurements[2] == 0
         assert mul_of_measurements[3] == 1
+        assert mul_of_measurements.reset is False
 
-    def test_rmul_with_scalar(self):
+    def test_rmul_with_scalar(self, reset):
         """Test the __rmul__ dunder method between a scalar and a MidMeasureMP."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_mul = 5 * m
         assert m_mul[0] == 0
         assert m_mul[1] == 5
+        assert m_mul.reset is False
 
-    def test_truediv_with_scalar(self):
+    def test_truediv_with_scalar(self, reset):
         """Test the __truediv__ dunder method between a MidMeasureMP and a scalar"""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_mul = m / 5.0
         assert m_mul[0] == 0
         assert m_mul[1] == 1 / 5.0
+        assert m_mul.reset is False
 
-    def test_truediv_with_measurement(self):
+    def test_truediv_with_measurement(self, reset):
         """Test the __truediv__ dunder method between two MidMeasureMPs."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m0"], processing_fn=lambda v: v) + 3.0
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v) + 5.0
+        m0 = (
+            MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m0"], processing_fn=lambda v: v)
+            + 3.0
+        )
+        m1 = (
+            MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+            + 5.0
+        )
         mul_of_measurements = m0 / m1
         assert mul_of_measurements[0] == 3.0 / 5.0
         assert mul_of_measurements[1] == 3.0 / 6.0
         assert mul_of_measurements[2] == 4.0 / 5.0
         assert mul_of_measurements[3] == 4.0 / 6.0
+        assert mul_of_measurements.reset is False
 
-    def test_rtruediv_with_scalar(self):
+    def test_rtruediv_with_scalar(self, reset):
         """Test the __rtruediv__ dunder method between a scalar and a MidMeasureMP."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v) + 3.0
+        m = (
+            MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
+            + 3.0
+        )
         m_mul = 5 / m
         assert m_mul[0] == 5 / 3.0
         assert m_mul[1] == 5 / 4.0
+        assert m_mul.reset is False
 
-    def test_inversion(self):
+    def test_inversion(self, reset):
         """Test the __inv__ dunder method."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_inversion = ~m
         assert m_inversion[0] is True
         assert m_inversion[1] is False
+        assert m_inversion.reset is False
 
-    def test_lt(self):
+    def test_lt(self, reset):
         """Test the __lt__ dunder method between a MidMeasureMP and a float."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_inversion = m < 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
+        assert m_inversion.reset is False
 
-    def test_lt_with_other_measurement_value(self):
+    def test_lt_with_other_measurement_value(self, reset):
         """Test the __lt__ dunder method between two MidMeasureMPs"""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 < m2
         assert compared[0] is False
         assert compared[1] is True
         assert compared[2] is False
         assert compared[3] is False
+        assert compared.reset is False
 
-    def test_gt(self):
+    def test_gt(self, reset):
         """Test the __gt__ dunder method between a MidMeasureMP and a float."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
+        assert m_inversion.reset is False
 
-    def test_gt_with_other_measurement_value(self):
+    def test_gt_with_other_measurement_value(self, reset):
         """Test the __gt__ dunder method between two MidMeasureMPs."""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 > m2
         assert compared[0] is False
         assert compared[1] is False
         assert compared[2] is True
         assert compared[3] is False
+        assert compared.reset is False
 
-    def test_le(self):
+    def test_le(self, reset):
         """Test the __le__ dunder method between a MidMeasureMP and a float."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_inversion = m <= 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
+        assert m_inversion.reset is False
 
-    def test_le_with_other_measurement_value(self):
+    def test_le_with_other_measurement_value(self, reset):
         """Test the __le__ dunder method between two MidMeasureMPs"""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 <= m2
         assert compared[0] is True
         assert compared[1] is True
         assert compared[2] is False
         assert compared[3] is True
+        assert compared.reset is False
 
-    def test_ge(self):
+    def test_ge(self, reset):
         """Test the __ge__ dunder method between a MidMeasureMP and a flaot."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_inversion = m >= 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
+        assert m_inversion.reset is False
 
-    def test_ge_with_other_measurement_value(self):
+    def test_ge_with_other_measurement_value(self, reset):
         """Test the __ge__ dunder method between two MidMeasureMPs."""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 >= m2
         assert compared[0] is True
         assert compared[1] is False
         assert compared[2] is True
         assert compared[3] is True
+        assert compared.reset is False
 
-    def test_equality_with_scalar(self):
+    def test_equality_with_scalar(self, reset):
         """Test the __eq__ dunder method between a MidMeasureMP and an integer."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_eq = m == 0
         assert m_eq[0] is True  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] is False
+        assert m_eq.reset is False
 
-    def test_equality_with_scalar_opposite(self):
+    def test_equality_with_scalar_opposite(self, reset):
         """Test the __eq__ dunder method between a MidMeasureMP and an integer."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_eq = m == 1
         assert m_eq[0] is False
         assert m_eq[1] is True
+        assert m_eq.reset is False
 
-    def test_eq_with_other_measurement_value(self):
+    def test_eq_with_other_measurement_value(self, reset):
         """Test the __eq__ dunder method between two MidMeasureMPs."""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 == m2
         assert compared[0] is True
         assert compared[1] is False
         assert compared[2] is False
         assert compared[3] is True
+        assert compared.reset is False
 
-    def test_non_equality_with_scalar(self):
+    def test_non_equality_with_scalar(self, reset):
         """Test the __ne__ dunder method between a MidMeasureMP and an integer."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_eq = m != 0
         assert m_eq[0] is False  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] is True
+        assert m_eq.reset is False
 
-    def test_non_equality_with_scalar_opposite(self):
+    def test_non_equality_with_scalar_opposite(self, reset):
         """Test the __ne__ dunder method between a MidMeasureMP and an integer."""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         m_eq = m != 1
         assert m_eq[0] is True
         assert m_eq[1] is False
+        assert m_eq.reset is False
 
-    def test_non_eq_with_other_measurement_value(self):
+    def test_non_eq_with_other_measurement_value(self, reset):
         """Test the __ne__ dunder method between two MidMeasureMPs."""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 != m2
         assert compared[0] is False
         assert compared[1] is True
         assert compared[2] is True
         assert compared[3] is False
+        assert compared.reset is False
 
-    def test_merge_measurements_values_dependant_on_same_measurement(self):
+    def test_merge_measurements_values_dependant_on_same_measurement(self, reset):
         """Test that the _merge operation does not create more than 2 branches when combining two MidMeasureMPs
         that are based on the same measurement."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         combined = m0 + m1
         assert combined[0] == 0
         assert combined[1] == 2
+        assert combined.reset is False
 
-    def test_combine_measurement_value_with_non_measurement(self):
+    def test_combine_measurement_value_with_non_measurement(self, reset):
         """Test that we can use dunder methods to combine a MidMeasureMP with the underlying "primitive"
         of that measurement value."""
-        m0 = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m0 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         out = m0 + 10
         assert out[0] == 10
         assert out[1] == 11
+        assert out.reset is False
 
-    def test_branches_method(self):
+    def test_branches_method(self, reset):
         """Test the __eq__ dunder method between two MidMeasureMPs."""
-        m1 = MidMeasureMP(Wires(0), measurement_ids=["m1"], processing_fn=lambda v: v)
-        m2 = MidMeasureMP(Wires(0), measurement_ids=["m2"], processing_fn=lambda v: v)
+        m1 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m1"], processing_fn=lambda v: v)
+        m2 = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m2"], processing_fn=lambda v: v)
         compared = m1 == m2
         branches = compared.branches
         assert branches[(0, 0)] is True
@@ -336,16 +380,16 @@ class TestMeasurementValueManipulation:
         assert branches[(1, 0)] is False
         assert branches[(1, 1)] is True
 
-    def test_str(self):
+    def test_str(self, reset):
         """Test that the output of the __str__ dunder method is as expected"""
-        m = MidMeasureMP(Wires(0), measurement_ids=["m"], processing_fn=lambda v: v)
+        m = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["m"], processing_fn=lambda v: v)
         assert str(m) == "if m=0 => 0\nif m=1 => 1"
 
-    def test_complex_str(self):
+    def test_complex_str(self, reset):
         """Test that the output of the __str__ dunder method is as expected
         w.r.t a more complicated MidMeasureMP"""
-        a = MidMeasureMP(Wires(0), measurement_ids=["a"], processing_fn=lambda v: v)
-        b = MidMeasureMP(Wires(0), measurement_ids=["b"], processing_fn=lambda v: v)
+        a = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["a"], processing_fn=lambda v: v)
+        b = MidMeasureMP(Wires(0), reset=reset, measurement_ids=["b"], processing_fn=lambda v: v)
         assert (
             str(a + b)
             == """if a=0,b=0 => 0
