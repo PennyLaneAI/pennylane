@@ -211,7 +211,6 @@ class MidMeasureMP(MeasurementProcess):
         with qml.queuing.QueuingManager.stop_recording():
             new_mp = MidMeasureMP(
                 self.wires,
-                reset=False,
                 measurement_ids=self.measurement_ids,
                 processing_fn=lambda *x: fn(self.processing_fn(*x)),
             )
@@ -241,10 +240,7 @@ class MidMeasureMP(MeasurementProcess):
 
         with qml.queuing.QueuingManager.stop_recording():
             new_mp = MidMeasureMP(
-                merged_wires,
-                reset=False,
-                measurement_ids=merged_measurement_ids,
-                processing_fn=merged_fn,
+                merged_wires, measurement_ids=merged_measurement_ids, processing_fn=merged_fn
             )
         return new_mp
 
