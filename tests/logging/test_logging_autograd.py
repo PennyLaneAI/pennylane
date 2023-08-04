@@ -96,7 +96,7 @@ class TestLogging:
         "diff_method", [("parameter-shift", 12), ("backprop", 5), ("adjoint", 9)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method):
-        "Test logging of QNode with backprop gradients"
+        "Test logging of QNode with parameterised gradients"
         dev = qml.device("default.qubit", wires=2)
         params = qml.numpy.array(0.1234)
 
