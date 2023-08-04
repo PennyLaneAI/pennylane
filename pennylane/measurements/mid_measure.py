@@ -97,7 +97,7 @@ class MidMeasureMP(MeasurementProcess):
             This can only be specified if an observable was not provided.
         measurement_ids (List[str]): custom label given to a measurement instance, can be useful for some
             applications where the instance has to be identified
-        processing_fn (Callable): A lazily transformation applied to the measurement values.
+        processing_fn (Optional[Callable]): A lazily transformation applied to the measurement values.
         _is_value (Optional[bool]): Private argument to indicate if class is being used for conditioning
             to avoid queuing it.
     """
@@ -109,11 +109,10 @@ class MidMeasureMP(MeasurementProcess):
         processing_fn: Optional[Callable] = None,
         _is_value: Optional[bool] = False,
     ):
-        super().__init__(wires=Wires(wires))
+        # Create a UUID and a map between MP and MV to support serialization
         self.measurement_ids = measurement_ids or [str(uuid.uuid4())[:8]]
         self.processing_fn = processing_fn if processing_fn is not None else lambda v: v
-        # id can be used to identify the mid-circuit measurement
-        self.id = self.measurement_ids[0]
+        super().__init__(wires=Wires(wires), id=self.measurement_ids[0])
         self._is_value = _is_value
 
     @property
