@@ -103,7 +103,7 @@ def defer_measurements(tape: QuantumTape):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     # Current wire in which pre-measurement state will be saved if dev_wires not specified
-    cur_wire = tape.num_wires
+    cur_wire = max(tape.wires) + 1
     new_wires = {}
 
     for op in tape.circuit:
