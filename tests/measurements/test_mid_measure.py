@@ -42,6 +42,23 @@ class TestMeasure:
         ):
             qml.measure(wires=[0, 1])
 
+    def test_mp_as_value_not_queued(self):
+        """Test that a MidMeasureMP that is used as a measurement value does not
+        get queued."""
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            # pylint: disable=unused-variable, protected-access
+            cond1 = m0._apply(np.sin)
+            cond2 = m1._merge(m0)
+            cond3 = m0._merge(m1)._apply(np.sin)
+
+        qs = qml.tape.QuantumScript.from_queue(q)
+        assert len(qs.operations) == 2
+        assert len(qs.measurements) == 0
+        assert qs.operations[0] is m0
+        assert qs.operations[1] is m1
+
 
 @pytest.mark.parametrize("reset", [True, False])
 class TestMeasurementValueManipulation:
