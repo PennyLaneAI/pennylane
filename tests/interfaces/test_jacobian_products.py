@@ -26,7 +26,6 @@ dev = qml.devices.experimental.DefaultQubit2()
 
 
 def inner_execute_numpy(tapes):
-    tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
     return dev.execute(tapes)
 
 
@@ -195,3 +194,106 @@ class TestJacobianProductResults:
         assert qml.math.allclose(jac[1][0], 0)
         # second tape, second measurement, only parameter
         assert qml.math.allclose(jac[1][1], -np.sin(phi))
+
+
+class TestTransformsDifferentiability:
+    """Tests that the transforms are differentiable if the inner execution is differentiable.
+
+    Note that testing is only done for the method it must be compatible with.
+    """
+
+    @pytest.mark.jax
+    def test_execute_jvp_jax(self):
+        """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
+        import jax
+
+        jpc = param_shift_jpc
+
+        def f(x, tangents):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            return jpc.execute_and_compute_jvp((tape,), tangents)[1]
+
+        x = jax.numpy.array(0.1)
+        tangents = ((jax.numpy.array(0.5),),)
+
+        res = f(x, tangents=tangents)
+        assert qml.math.allclose(res, -tangents[0][0] * np.sin(x))
+
+        jit_res = jax.jit(f)(x, tangents=tangents)
+        assert qml.math.allclose(jit_res, -tangents[0][0] * np.sin(x))
+
+        grad = jax.grad(f)(x, tangents=tangents)
+        assert qml.math.allclose(grad, -tangents[0][0] * np.cos(x))
+
+        tangent_grad = jax.grad(f, argnums=1)(x, tangents)
+        assert qml.math.allclose(tangent_grad[0][0], -np.sin(x))
+
+    @pytest.mark.autograd
+    def test_vjp_autograd(self):
+        """Test that the derivative of compute_vjp can be taken with autograd."""
+
+        jpc = param_shift_jpc
+
+        def f(x, dy):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            vjp = jpc.compute_vjp((tape,), (dy,))
+            return vjp[0]
+
+        x = qml.numpy.array(0.1)
+        dy = qml.numpy.array(2.0)
+
+        res = f(x, dy)
+        assert qml.math.allclose(res, -dy * np.sin(x))
+
+        dx, ddy = qml.grad(f)(x, dy)
+        assert qml.math.allclose(dx, -dy * np.cos(x))
+        assert qml.math.allclose(ddy, -np.sin(x))
+
+    @pytest.mark.torch
+    def test_vjp_torch(self):
+        """Test that the derivative of compute_vjp can be taken with torch."""
+
+        import torch
+
+        jpc = param_shift_jpc
+
+        def f(x, dy):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            vjp = jpc.compute_vjp((tape,), (dy,))
+            return vjp[0]
+
+        x = torch.tensor(0.1, requires_grad=True)
+        dy = torch.tensor(2.0, requires_grad=True)
+
+        res = f(x, dy)
+        assert qml.math.allclose(res, -2.0 * np.sin(0.1))
+
+        res.backward()
+        assert qml.math.allclose(x.grad, -2.0 * np.cos(0.1))
+        assert qml.math.allclose(dy.grad, -np.sin(0.1))
+
+    @pytest.mark.tf
+    def test_vjp_tf(self):
+        """Test that the derivatives of compute_vjp can be taken with tensorflow."""
+
+        import tensorflow as tf
+
+        jpc = param_shift_jpc
+
+        def f(x, dy):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            vjp = jpc.compute_vjp((tape,), (dy,))
+            return vjp[0]
+
+        x = tf.Variable(0.6, dtype=tf.float64)
+        dy = tf.Variable(1.5, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = f(x, dy)
+
+        assert qml.math.allclose(res, -1.5 * np.sin(0.6))
+
+        dx, ddy = tape.gradient(res, (x, dy))
+
+        assert qml.math.allclose(dx, -1.5 * np.cos(0.6))
+        assert qml.math.allclose(ddy, -np.sin(0.6))
