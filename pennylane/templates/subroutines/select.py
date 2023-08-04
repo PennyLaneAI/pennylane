@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the QSVT template and qsvt wrapper function.
+Contains the SELECT template.
 """
 # pylint: disable=too-many-arguments
 
