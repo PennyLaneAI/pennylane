@@ -49,6 +49,17 @@ class TestMinimalDevice:
         """Test the default name is the name of the class"""
         assert self.dev.name == "MinimalDevice"
 
+    def test_shots(self):
+        """Test default behavior for shots."""
+
+        assert self.dev.shots == qml.measurements.Shots(None)
+
+        shots_dev = self.MinimalDevice(shots=100)
+        assert shots_dev.shots == qml.measurements.Shots(100)
+
+        with pytest.raises(AttributeError):
+            self.dev.shots = 100  # pylint: disable=attribute-defined-outside-init
+
     def test_tracker_set_on_initialization(self):
         """Test that a new tracker instance is initialized with the class."""
         assert isinstance(self.dev.tracker, qml.Tracker)
