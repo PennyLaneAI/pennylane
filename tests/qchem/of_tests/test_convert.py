@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for converting observables obtained from external libraries to a
-PennyLane observable.
+Unit tests for functions needed for converting objects obtained from external libraries to a
+PennyLane object.
 """
 # pylint: disable=too-many-arguments,protected-access
 import os
@@ -24,11 +24,11 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import disable_new_opmath, enable_new_opmath
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
+pyscf = pytest.importorskip("pyscf")
 
 pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
 pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
@@ -813,3 +813,189 @@ def test_integration_mol_file_to_vqe_cost(
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
+
+
+@pytest.mark.parametrize(
+    ("electrons", "orbitals", "singles_ref", "doubles_ref"),
+    [
+        # trivial case, e.g., H2/STO-3G
+        (2, 4, [[0, 2], [0, 3], [1, 2], [1, 3]], [[0, 1, 2, 3]]),
+    ],
+)
+def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
+    r"""Test if the _excitations function returns correct single and double excitations."""
+    singles, doubles = qchem.convert._excitations(electrons, orbitals)
+    assert singles == singles_ref
+    assert doubles == doubles_ref
+
+
+@pytest.mark.parametrize(
+    ("electrons", "orbitals", "excitation", "states_ref", "signs_ref"),
+    [
+        # reference data computed with pyscf:
+        # pyscf_addrs, pyscf_signs = pyscf.ci.cisd.tn_addrs_signs(orbitals, electrons, excitation)
+        # pyscf_state = pyscf.fci.cistring.addrs2str(orbitals, electrons, pyscf_addrs)
+        # pyscf_state, pyscf_signs
+        (
+            3,
+            8,
+            1,
+            np.array([14, 22, 38, 70, 134, 13, 21, 37, 69, 133, 11, 19, 35, 67, 131]),
+            np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1]),
+        ),
+        (
+            3,
+            6,
+            2,
+            np.array([28, 44, 52, 26, 42, 50, 25, 41, 49]),
+            np.array([1, 1, 1, -1, -1, -1, 1, 1, 1]),
+        ),
+    ],
+)
+def test_excited_configurations(electrons, orbitals, excitation, states_ref, signs_ref):
+    r"""Test if the _excited_configurations function returns correct states and signs."""
+    states, signs = qchem.convert._excited_configurations(electrons, orbitals, excitation)
+    assert np.allclose(states, states_ref)
+    assert np.allclose(signs, signs_ref)
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            1e-1,
+            {(1, 1): 0.9942969785398776, (2, 2): -0.10664669927602176},
+        ),
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "cc-pvdz",
+            "d2h",
+            4e-2,
+            {
+                (1, 1): 0.9919704795977625,
+                (2, 2): -0.048530356564387034,
+                (2, 8): 0.0445233308500785,
+                (4, 4): -0.05003594568491194,
+                (8, 2): 0.04452333085007853,
+                (8, 8): -0.05226230322043741,
+                (16, 16): -0.0404759737476627,
+                (32, 32): -0.0404759737476627,
+            },
+        ),
+    ],
+)
+def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _ucisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
+
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("wf_dict", "n_orbitals", "string_ref", "coeff_ref"),
+    [  # reference data were obtained manually
+        (  #  0.87006284 |1100> + 0.3866946 |1001> + 0.29002095 |0110> + 0.09667365 |0011>
+            {(1, 1): 0.87006284, (1, 2): 0.3866946, (2, 1): 0.29002095, (2, 2): 0.09667365},
+            2,
+            ["1100", "1001", "0110", "0011"],
+            [0.87006284, 0.3866946, 0.29002095, 0.09667365],
+        ),
+        (  # 0.80448616 |110000> + 0.53976564 |001100> + 0.22350293 |000011> + 0.10724511 |100100>
+            {(1, 1): 0.80448616, (2, 2): 0.53976564, (4, 4): 0.22350293, (1, 2): 0.10724511},
+            3,
+            ["110000", "001100", "000011", "100100"],
+            [0.80448616, 0.53976564, 0.22350293, 0.10724511],
+        ),
+    ],
+)
+def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
+    r"""Test that _wfdict_to_statevector returns the correct statevector."""
+    wf_ref = np.zeros(2 ** (n_orbitals * 2))
+    idx_nonzero = [int(s, 2) for s in string_ref]
+    wf_ref[idx_nonzero] = coeff_ref
+
+    wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
+
+    assert np.allclose(wf_comp, wf_ref)
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+    ],
+)
+def test_import_state(molecule, basis, symm, wf_ref):
+    r"""Test that cisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    wf_comp = qchem.convert.import_state(myci)
+
+    # overall sign could be different in each PySCF run
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+
+def test_import_state_error():
+    r"""Test that an error is raised by import_state if a wrong object is entered."""
+
+    myci = "wrongobject"
+
+    with pytest.raises(ValueError, match="The supported option"):
+        _ = qchem.convert.import_state(myci)
+
+
+@pytest.mark.parametrize(("excitation"), [-1, 0, 3])
+def test_excited_configurations_error(excitation):
+    r"""Test that an error is raised by _excited_configurations if a wrong excitation is entered."""
+    with pytest.raises(ValueError, match="excitations are supported"):
+        _ = qchem.convert._excited_configurations(2, 4, excitation)
+
+
+def test_fail_import_pyscf(monkeypatch):
+    """Test if an ImportError is raised when pyscf is requested but not installed."""
+
+    mol = pyscf.gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, 0.71)]], basis="sto6g")
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyscf", None)
+
+        with pytest.raises(ImportError, match="This feature requires pyscf"):
+            qml.qchem.convert.import_state(myci)
