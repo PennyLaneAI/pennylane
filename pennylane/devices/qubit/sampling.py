@@ -65,9 +65,7 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
 
         mp_pauli_groups = []
         for group, indices in zip(ob_groups, group_indices):
-            mp_group = []
-            for ob, i in zip(group, indices):
-                mp_group.append(i_to_pauli_mp[i].__class__(obs=ob))
+            mp_group = [i_to_pauli_mp[i].__class__(obs=ob) for ob, i in zip(group, indices)]
 
             mp_pauli_groups.append(mp_group)
     else:
