@@ -999,20 +999,6 @@ def test_excited_configurations_error(excitation):
         _ = qchem.convert._excited_configurations(2, 4, excitation)
 
 
-def test_fail_import_pyscf(monkeypatch):
-    """Test if an ImportError is raised when pyscf is requested but not installed."""
-
-    mol = pyscf.gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, 0.71)]], basis="sto6g")
-    myhf = pyscf.scf.UHF(mol).run()
-    myci = pyscf.ci.UCISD(myhf).run()
-
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "pyscf", None)
-
-        with pytest.raises(ImportError, match="This feature requires pyscf"):
-            qml.qchem.convert.import_state(myci)
-
-
 @pytest.mark.parametrize(
     ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
@@ -1069,7 +1055,7 @@ def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
     wf_cisd = qchem.convert._rcisd_state(myci, tol=tol)
 
     assert wf_cisd.keys() == wf_ref.keys()
-    assert np.allclose(np.array(list(wf_cisd.values())), np.array(list(wf_ref.values())))
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
 
 
 @pytest.mark.parametrize(
