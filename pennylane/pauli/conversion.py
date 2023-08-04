@@ -36,10 +36,10 @@ def pauli_decompose(
     pauli=False,
     padding=False,
 ) -> Union[Hamiltonian, PauliSentence]:
-    r"""Decomposes a matrix into a linear combination of Pauli operators acting on :math:`n` qubits.
+    r"""Decomposes a matrix into a linear combination of Pauli operators.
 
-    This method converts any matrix to a weighted sum of Pauli words using Bell-basis measurements
-    in :math:`O(n 4^n)`. The input matrix is first padded with zeros if its dimensions are not
+    This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
+    in time :math:`O(n 4^n)`. The input matrix is first padded with zeros if its dimensions are not
     :math:`2^n\times 2^n` and written as a quantum state in the computational basis following the
     `channel-state duality <https://en.wikipedia.org/wiki/Channel-state_duality>`_.
     A Bell basis transformation is then performed using the
@@ -55,7 +55,7 @@ def pauli_decompose(
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a PauliSentence instance if ``True``.
-        padding (bool): makes it compatible with rectangular matrices and square matrices
+        padding (bool): makes the function compatible with rectangular matrices and square matrices
             that are not of shape :math:`2^n\times 2^n` by padding them with zeros if ``True``.
 
     Returns:
@@ -115,7 +115,7 @@ def pauli_decompose(
         :title: Usage Details
         :href: usage-decompose-operation
 
-        For non-square matrices, we need to provide ``padding=True`` keyword argument:
+        For non-square matrices, we need to provide the ``padding=True`` keyword argument:
 
         >>> A = np.array([[-2, -2 + 1j]])
         >>> H = qml.pauli_decompose(A, padding=True)
