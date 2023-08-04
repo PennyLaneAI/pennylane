@@ -903,7 +903,7 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
 @pytest.mark.parametrize(
     ("wf_dict", "n_orbitals", "wf_ref"),
     [
-        (
+        (  #  0.87006284 |1100> + 0.3866946 |1001> + 0.29002095 |0110> + 0.09667365 |0011>
             {(1, 1): 0.87006284, (1, 2): 0.3866946, (2, 1): 0.29002095, (2, 2): 0.09667365},
             2,
             np.array(
