@@ -435,11 +435,11 @@ def _excited_configurations(electrons, orbitals, excitation):
 
     **Example**
 
-    >>> electrons = 2
+    >>> electrons = 3
     >>> orbitals = 5
     >>> excitation = 2
-    >>> _excitated_states(electrons, orbitals, excitation)
-    (array([28, 26, 25]), array([ 1, -1,  1]))
+    >>> _excited_configurations(electrons, orbitals, excitation)
+    ([28, 26, 25], [1, -1, 1])
     """
     if excitation not in [1, 2]:
         raise ValueError(
@@ -502,7 +502,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = cisd_state(myci, tol=1e-1)
+    >>> wf_cisd = _ucisd_state(myci, tol=1e-1)
     >>> print(wf_cisd)
     {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
@@ -560,12 +560,11 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def import_state(solver, method, tol=1e-15):
+def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a PennyLane state vector.
 
     Args:
         solver: external wavefunction object that will be converted
-        method (str): keyword specifying the calculation method, possible option is 'ucisd'
         tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Raises:
@@ -584,13 +583,17 @@ def import_state(solver, method, tol=1e-15):
     >>> print(wf_cisd)
     {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602159}
     """
+    try:
+        import pyscf
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pyscf. " "It can be installed with: pip install pyscf"
+        ) from Error
 
-    if method == "ucisd":
+    if isinstance(solver, pyscf.ci.ucisd.UCISD):
         wf_dict = _ucisd_state(solver, tol=tol)
     else:
-        raise ValueError(
-            "The supported method option is 'ucisd' for unrestricted CISD calculations."
-        )
+        raise ValueError("The supported option is 'ucisd' for unrestricted CISD calculations.")
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf
@@ -609,7 +612,6 @@ def _wfdict_to_statevector(wf_dict, norbs):
 
     Returns:
         statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
-
     """
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 

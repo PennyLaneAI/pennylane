@@ -929,13 +929,12 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
 
 
 @pytest.mark.parametrize(
-    ("molecule", "basis", "symm", "method", "wf_ref"),
+    ("molecule", "basis", "symm", "wf_ref"),
     [
         (
             [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
             "sto6g",
             "d2h",
-            "ucisd",
             np.array(
                 [
                     0.0,
@@ -959,27 +958,26 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
         ),
     ],
 )
-def test_import_state(molecule, basis, symm, method, wf_ref):
+def test_import_state(molecule, basis, symm, wf_ref):
     r"""Test that cisd_state returns the correct wavefunction."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
     myhf = pyscf.scf.UHF(mol).run()
     myci = pyscf.ci.UCISD(myhf).run()
 
-    wf_comp = qchem.convert.import_state(myci, method)
+    wf_comp = qchem.convert.import_state(myci)
 
     # overall sign could be different in each PySCF run
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
 
 def test_import_state_error():
-    r"""Test that an error is raised by import_state if a wrong method symbol is entered."""
+    r"""Test that an error is raised by import_state if a wrong object is entered."""
 
-    myci = pyscf.ci.UCISD
-    method = "wrongmethod"
+    myci = "wrongobject"
 
-    with pytest.raises(ValueError, match="The supported method"):
-        _ = qchem.convert.import_state(myci, method)
+    with pytest.raises(ValueError, match="The supported option"):
+        _ = qchem.convert.import_state(myci)
 
 
 @pytest.mark.parametrize(("excitation"), [-1, 0, 3])
@@ -987,3 +985,17 @@ def test_excited_configurations_error(excitation):
     r"""Test that an error is raised by _excited_configurations if a wrong excitation is entered."""
     with pytest.raises(ValueError, match="excitations are supported"):
         _ = qchem.convert._excited_configurations(2, 4, excitation)
+
+
+def test_fail_import_pyscf(monkeypatch):
+    """Test if an ImportError is raised when pyscf is requested but not installed."""
+
+    mol = pyscf.gto.M(atom=[["H", (0, 0, 0)], ["H", (0, 0, 0.71)]], basis="sto6g")
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyscf", None)
+
+        with pytest.raises(ImportError, match="This feature requires pyscf"):
+            qml.qchem.convert.import_state(myci)
