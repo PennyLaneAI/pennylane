@@ -76,7 +76,7 @@ class Select(Operation):
         for op in ops:
             qml.QueuingManager.remove(op)
 
-        all_wires = sum(op.wires for op in ops) + control_wires
+        all_wires = qml.wires.Wires.all_wires([op.wires for op in ops]) + control_wires
         super().__init__(ops, control_wires, wires=all_wires, id=id)
 
     @staticmethod
