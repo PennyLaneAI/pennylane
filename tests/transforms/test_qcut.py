@@ -5035,7 +5035,7 @@ class TestKaHyPar:
         cut_edges += [e for e in graph.edges if e[0].obj is op1 and e[1].obj is op2]
 
         cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
-        wire_cuts = [n for n in cut_graph.nodes if isinstance(n[0], qml.WireCut)]
+        wire_cuts = [n for n in cut_graph.nodes if isinstance(n.obj, qml.WireCut)]
 
         assert len(wire_cuts) == len(cut_edges)
         assert list(cut_graph.pred[wire_cuts[0]]) == [WrappedObj(op0)]
