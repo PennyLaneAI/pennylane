@@ -111,6 +111,9 @@ def defer_measurements(tape: QuantumTape):
             new_wires[op.id] = cur_wire
             qml.CNOT([op.wires[0], cur_wire])
 
+            if op.postselect is not None:
+                qml.Projector([op.postselect], wires=op.wires[0])
+
             if op.reset:
                 qml.CNOT([cur_wire, op.wires[0]])
 
