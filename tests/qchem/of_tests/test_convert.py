@@ -901,39 +901,30 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
 
 
 @pytest.mark.parametrize(
-    ("wf_dict", "n_orbitals", "wf_ref"),
-    [
+    ("wf_dict", "n_orbitals", "string_ref", "coeff_ref"),
+    [  # reference data were obtained manually
         (  #  0.87006284 |1100> + 0.3866946 |1001> + 0.29002095 |0110> + 0.09667365 |0011>
             {(1, 1): 0.87006284, (1, 2): 0.3866946, (2, 1): 0.29002095, (2, 2): 0.09667365},
             2,
-            np.array(
-                [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.09667365,
-                    0.0,
-                    0.0,
-                    0.29002095,
-                    0.0,
-                    0.0,
-                    0.3866946,
-                    0.0,
-                    0.0,
-                    0.87006284,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
+            ["1100", "1001", "0110", "0011"],
+            [0.87006284, 0.3866946, 0.29002095, 0.09667365],
+        ),
+        (  # 0.80448616 |110000> + 0.53976564 |001100> + 0.22350293 |000011> + 0.10724511 |100100>
+            {(1, 1): 0.80448616, (2, 2): 0.53976564, (4, 4): 0.22350293, (1, 2): 0.10724511},
+            3,
+            ["110000", "001100", "000011", "100100"],
+            [0.80448616, 0.53976564, 0.22350293, 0.10724511],
         ),
     ],
 )
-def test_wfdict_to_statevector(wf_dict, n_orbitals, wf_ref):
+def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
     r"""Test that _wfdict_to_statevector returns the correct statevector."""
+    wf_ref = np.zeros(2 ** (n_orbitals * 2))
+    idx_nonzero = [int(s, 2) for s in string_ref]
+    wf_ref[idx_nonzero] = coeff_ref
+
     wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
-    print(wf_comp)
-    print(wf_ref)
+
     assert np.allclose(wf_comp, wf_ref)
 
 
