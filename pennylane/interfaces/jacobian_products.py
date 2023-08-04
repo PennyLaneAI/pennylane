@@ -26,6 +26,36 @@ from pennylane.typing import ResultBatch, TensorLike
 Batch = Tuple[QuantumScript]
 
 
+def _compute_vjps(jacs, dy, multi_measurements, has_partitioned_shots):
+    """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
+    vjps = []
+    for i, multi in enumerate(multi_measurements):
+        dy_ = dy[i] if has_partitioned_shots else (dy[i],)
+        jac_ = jacs[i] if has_partitioned_shots else (jacs[i],)
+
+        shot_vjps = []
+        for d, j in zip(dy_, jac_):
+            if multi:
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
+            else:
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
+
+        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+
+    return tuple(vjps)
+
+
+def _compute_jvps(jacs, tangents, multi_measurements):
+    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
+    jvps = []
+    for i, multi in enumerate(multi_measurements):
+        compute_func = (
+            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
+        )
+        jvps.append(compute_func(tangents[i], jacs[i]))
+    return tuple(jvps)
+
+
 class JacobianProductCalculator(abc.ABC):
     """Provides methods for calculating the jvp and vjps for tapes and tangents/ cotangents."""
 
@@ -171,3 +201,59 @@ class TransformDerivatives(JacobianProductCalculator):
         )
         results = self._inner_execute(jac_tapes)
         return tuple(batch_post_processing(results))
+
+
+class ExperimentalDeviceDerivatives(JacobianProductCalculator):
+    """Calculate jacobian products via an experimental device.
+
+    Args:
+        device (pennylane.devices.experimental.Device):
+        execution_config (pennylane.devices.experimental.ExecutionConfig):
+
+    """
+
+    def __init__(self, device: qml.devices.experimental.Device, execution_config):
+        self._device = device
+        self._execution_config = execution_config
+        self._jacobian_cache = {}
+        self._results_cache = {}
+
+    def __call__(self, tapes: Batch):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        results, jac = self._device.execute_and_compute_derivatives(tapes, self._execution_config)
+        self._jacobian_cache[id(tapes)] = jac
+        self._results_cache[id(tapes)] = results
+        return results
+
+    def execute_and_compute_jvp(self, tapes: Batch, tangents):
+        if id(tapes) in self._results_cache:
+            results = self._results_cache[id(tapes)]
+            jacs = self._jacobian_cache[id(tapes)]
+        else:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            results, jacs = self._device.execute_and_compute_derivatives(
+                tapes, self._execution_config
+            )
+
+        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        jvps = _compute_jvps(jacs, tangents, multi_measurements)
+        return results, jvps
+
+    def compute_vjp(self, tapes, dy):
+        if id(tapes) in self._jacobian_cache:
+            jacs = self._jacobian_cache[id(tapes)]
+        else:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            jacs = self._device.compute_derivatives(tapes, self._execution_config)
+
+        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+        return _compute_vjps(
+            jacs, dy, multi_measurements, has_partitioned_shots=has_partitioned_shots
+        )
+
+    def compute_jacobian(self, tapes):
+        if id(tapes) in self._jacobian_cache:
+            return self._jacobian_cache[id(tapes)]
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return self._device.compute_derivatives(tapes, self._execution_config)
