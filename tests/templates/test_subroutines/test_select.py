@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the UCCSD template.
+Tests for the SELECT template.
 """
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import pytest
