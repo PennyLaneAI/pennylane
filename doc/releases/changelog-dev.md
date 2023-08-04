@@ -52,7 +52,9 @@ array([False, False])
   0: ─╭○─╭○─╭●─╭●────┤  State
   1: ─├○─├●─├○─├●────┤  State
   2: ─╰X─│──╰Y─├SWAP─┤  State
-  3: ────╰X────╰SWAP─┤  State<h3>Improvements 🛠</h3>
+  3: ────╰X────╰SWAP─┤  State
+  
+  <h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
