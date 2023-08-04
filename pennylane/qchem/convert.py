@@ -561,14 +561,14 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
 
 def import_state(solver, tol=1e-15):
-    r"""Convert an external wavefunction to a PennyLane state vector.
+    r"""Convert an external wavefunction to a state vector.
 
     Args:
         solver: external wavefunction object that will be converted
-        tol (float): the tolerance for discarding Slater determinants with small coefficients
+        tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
-        ValueError: if ``method`` is not supported
+        ValueError: if external object type is not supported
 
     Returns:
         statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
