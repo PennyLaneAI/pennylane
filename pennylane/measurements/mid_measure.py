@@ -89,7 +89,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
-        reset (bool): Whether to reset the wire after measurement.
+        reset (Optional[bool]): Whether to reset the wire after measurement.
 
     Returns:
         MidMeasureMP: measurement process instance
