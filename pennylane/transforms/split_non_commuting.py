@@ -15,6 +15,7 @@
 Contains the tape transform that splits non-commuting terms
 """
 # pylint: disable=protected-access
+from typing import Sequence, Callable
 from functools import reduce
 
 import numpy as np
@@ -22,11 +23,11 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, SampleMP
 
-from .batch_transform import batch_transform
+from pennylane.transforms.core import transform
 
 
-@batch_transform
-def split_non_commuting(tape):
+@transform
+def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
