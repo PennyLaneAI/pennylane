@@ -38,30 +38,35 @@ class TestDecomposition:
             ),
             (
                 [qml.PauliX(wires=0), qml.Identity(wires=0), qml.PauliZ(wires=0)],
-                [1,2],
+                [1, 2],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=[1,2], control_values=[0,0]),
-                    qml.ctrl(qml.PauliZ(wires=0), control =[1,2], control_values=[1,0]),
+                    qml.ctrl(qml.PauliX(wires=0), control=[1, 2], control_values=[0, 0]),
+                    qml.ctrl(qml.PauliZ(wires=0), control=[1, 2], control_values=[1, 0]),
                 ],
                 3,
             ),
             (
-                [qml.PauliX(wires=0), qml.Identity(wires=0), qml.Identity(wires=0), qml.RX(0.3,wires=0)],
-                [1,2],
                 [
-                    qml.ctrl(qml.PauliX(wires=0), control=[1,2], control_values=[0,0]),
-                    qml.ctrl(qml.RX(0.3,wires=0), control =[1,2], control_values=[1,1]),
+                    qml.PauliX(wires=0),
+                    qml.Identity(wires=0),
+                    qml.Identity(wires=0),
+                    qml.RX(0.3, wires=0),
+                ],
+                [1, 2],
+                [
+                    qml.ctrl(qml.PauliX(wires=0), control=[1, 2], control_values=[0, 0]),
+                    qml.ctrl(qml.RX(0.3, wires=0), control=[1, 2], control_values=[1, 1]),
                 ],
                 3,
             ),
             (
-                [qml.PauliX(wires='a'), qml.RX(0.7,wires='b')],
-                ['c',1],
+                [qml.PauliX(wires="a"), qml.RX(0.7, wires="b")],
+                ["c", 1],
                 [
-                    qml.ctrl(qml.PauliX(wires='a'), control=['c',1], control_values=[0,0]),
-                    qml.ctrl(qml.RX(0.7,wires='b'), control =['c',1], control_values=[0,1]),
+                    qml.ctrl(qml.PauliX(wires="a"), control=["c", 1], control_values=[0, 0]),
+                    qml.ctrl(qml.RX(0.7, wires="b"), control=["c", 1], control_values=[0, 1]),
                 ],
-                ['a','b','c',1],
+                ["a", "b", "c", 1],
             ),
         ],
     )
@@ -73,7 +78,7 @@ class TestDecomposition:
         def circuit1():
             for wire in control_wires:
                 qml.Hadamard(wires=wire)
-            
+
             qml.Select(ops, control_wires)
             return qml.state()
 
