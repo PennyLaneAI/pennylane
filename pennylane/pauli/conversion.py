@@ -45,7 +45,7 @@ def pauli_decompose(
     A Bell basis transformation is then performed using the
     `Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Hadamard_transform>`_, after which
     coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
-    phase from each ``PauliY`` term occuring in the word.
+    phase from each ``PauliY`` term occurring in the word.
 
     Args:
         matrix (tensor_like[complex]): any matrix M, the keyword argument ``padding=True``
