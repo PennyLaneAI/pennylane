@@ -39,6 +39,7 @@ array([False, False])
 
 * Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
+  [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
 
 <h3>Improvements 🛠</h3>
 
