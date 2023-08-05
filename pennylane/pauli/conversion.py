@@ -159,7 +159,9 @@ def pauli_decompose(
 
     num_qubits = int(qml.math.log2(shape[0]))
     if shape[0] != 2**num_qubits:
-        raise ValueError(f"Dimension of the matrix should be a power of 2, got {shape}")
+        raise ValueError(
+            f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
+        )
 
     if wire_order is not None and len(wire_order) != num_qubits:
         raise ValueError(
