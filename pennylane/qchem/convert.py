@@ -430,7 +430,7 @@ def _excited_configurations(electrons, orbitals, excitation):
         excitation (int): number of excited electrons
 
     Returns:
-        tuple(array, array): arrays of excited configurations and signs obtained by reordering the
+        tuple(list, list): lists of excited configurations and signs obtained by reordering the
          creation operators
 
     **Example**
@@ -572,7 +572,7 @@ def import_state(solver, tol=1e-15):
         ValueError: if external object type is not supported
 
     Returns:
-        statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
+        array: normalized state vector of length 2**len(number_of_spinorbitals)
 
     **Example**
 
@@ -617,7 +617,7 @@ def _wfdict_to_statevector(wf_dict, norbs):
         norbs (int): number of molecular orbitals
 
     Returns:
-        statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
+        array: normalized state vector of length 2^(number_of_spinorbitals)
     """
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
