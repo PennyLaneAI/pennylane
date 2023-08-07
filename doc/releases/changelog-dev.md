@@ -41,6 +41,26 @@ array([False, False])
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
 
+  The `qml.qchem.import_state` function can be used to import a `PySCF` solver object and return the
+  corresponding state vector.
+
+  ```pycon
+  >>> from pyscf import gto, scf, ci
+  >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+  >>> myhf = scf.UHF(mol).run()
+  >>> myci = ci.UCISD(myhf).run()
+  >>> wf_cisd = qml.qchem.import_state(myci, tol=1e-1)
+  >>> print(wf_cisd)
+  [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
+    0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+    0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+   -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
+  ```
+
+  The currently supported objects are RCISD, UCISD, RCCSD, and UCCSD which correspond to 
+  restricted (R) and unrestricted (U) configuration interaction (CI )and coupled cluster (CC) 
+  calculations with single and double (SD) excitations.
+
 <h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits

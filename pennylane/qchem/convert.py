@@ -580,7 +580,7 @@ def import_state(solver, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = qml.qchem.convert.import_state(myci, tol=1e-1)
+    >>> wf_cisd = qml.qchem.import_state(myci, tol=1e-1)
     >>> print(wf_cisd)
     [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
       0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
@@ -662,7 +662,7 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g', symm="d2h")
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.RHF(mol).run()
     >>> myci = ci.CISD(myhf).run()
     >>> wf_cisd = _rcisd_state(myci, tol=1e-1)
@@ -769,7 +769,7 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, cc
-    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symm="d2h")
+    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
     >>> myhf = scf.RHF(mol).run()
     >>> mycc = cc.CCSD(myhf).run()
     >>> wf_ccsd = _rccsd_state(mycc, tol=1e-1)
@@ -906,7 +906,7 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, cc
-    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symm="d2h")
+    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
     >>> myhf = scf.UHF(mol).run()
     >>> mycc = cc.UCCSD(myhf).run()
     >>> wf_ccsd = _uccsd_state(mycc, tol=1e-1)
