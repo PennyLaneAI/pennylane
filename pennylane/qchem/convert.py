@@ -587,13 +587,16 @@ def import_state(solver, tol=1e-15):
       0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
      -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
     """
-    if "RCISD" in str(solver.__str__):
+
+    method = str(solver.__str__)
+
+    if "CISD" in method and "UCISD" not in method:
         wf_dict = _rcisd_state(solver, tol=tol)
-    elif "UCISD" in str(solver.__str__):
+    elif "UCISD" in method:
         wf_dict = _ucisd_state(solver, tol=tol)
-    elif "RCCSD" in str(solver.__str__):
+    elif "CCSD" in method and "UCCSD" not in method:
         wf_dict = _rccsd_state(solver, tol=tol)
-    elif "UCCSD" in str(solver.__str__):
+    elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
     else:
         raise ValueError(
