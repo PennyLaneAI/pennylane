@@ -918,7 +918,7 @@ def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
     ],
 )
 def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
-    r"""Test that _wfdict_to_statevector returns the correct statevector."""
+    r"""Test that _wfdict_to_statevector returns the correct state vector."""
     wf_ref = np.zeros(2 ** (n_orbitals * 2))
     idx_nonzero = [int(s, 2) for s in string_ref]
     wf_ref[idx_nonzero] = coeff_ref
@@ -960,7 +960,7 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
 )
 @pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
 def test_import_state(molecule, basis, symm, method, wf_ref):
-    r"""Test that import_state returns the correct wavefunction."""
+    r"""Test that import_state returns the correct state vector."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
 
