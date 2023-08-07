@@ -476,25 +476,26 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     r"""Construct a wavefunction from PySCF's `UCISD` solver object.
 
     The generated wavefunction is a dictionary where the keys represent a configuration, which
-    corresponds to a Slater determinant, and the values are the CI coefficients of the that Slater
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
     determinant. Each dictionary key is a tuple of two integers. The binary representation of these
-    integers correspond to a specific configuration such that the first number represents the
+    integers correspond to a specific configuration: the first number represents the
     configuration of the alpha electrons and the second number represents the configuration of the
     beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
-    represented by the flipped binary string `0011`. This string can be splitted to `01` and `01` for
-    the alpha and beta electrons. The integer corresponding to `01` is `1`. Then the dictionary
-    representation of a state with `0.99` contribution of the Hartree-Fock state and `0.01`
-    contribution from the doubly-excited state will be `{(1, 1): 0.99, (2, 2): 0.01}`.
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    `{(1, 1): 0.99, (2, 2): 0.01}`.
 
     Args:
         cisd_solver (PySCF UCISD Class instance): the class object representing the UCISD calculation in PySCF
-        tol (float):  the tolerance to which the wavefunction is being built -- Slater determinants
-         with coefficients smaller than this are discarded. Default is 1e-15 (all coefficients are included).
+        tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
     **Example**
 
@@ -636,14 +637,27 @@ def _wfdict_to_statevector(wf_dict, norbs):
 def _rcisd_state(cisd_solver, tol=1e-15):
     r"""Construct a wavefunction from PySCF's `RCISD` solver object.
 
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    `{(1, 1): 0.99, (2, 2): 0.01}`.
+
     Args:
-        cisd_solver (PySCF CISD Class instance): the class object representing the CISD
-        calculation in PySCF
+        cisd_solver (PySCF CISD Class instance): the class object representing the CISD calculation in PySCF
+        tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
     **Example**
 
@@ -719,16 +733,17 @@ def _rcisd_state(cisd_solver, tol=1e-15):
 def _rccsd_state(ccsd_solver, tol=1e-15):
     r"""Construct a wavefunction from PySCF's `CCSD` Solver object.
 
-    The wavefunction is represented as a dictionary where the keys are tuples representing a
-    configuration, which corresponds to a Slater determinant, and the values are the CI coefficient
-    corresponding to that Slater determinant. Each dictionary key is a tuple of two integers. The
-    binary representation of these integers correspond to a specific configuration, or Slater
-    determinant. The first number represents the configuration of alpha electrons and the second
-    number represents the beta electrons. For instance, the Hartree-Fock state
-    :math:`|1 1 0 0 \rangle` will be represented by the binary string `0011`. This string can be
-    splited to `01` and `01` for the alpha and beta electrons. The integer corresponding to `01` is
-    `1`. Then the dictionary representation of a state with `0.99` contribution of the Hartree-Fock
-    state and `0.01` contribution from the doubly-excited state will be
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
     `{(1, 1): 0.99, (2, 2): 0.01}`.
 
     In the current version, the exponential ansatz :math:`\exp(\hat{T}_1 + \hat{T}_2) \ket{\text{HF}}`
@@ -744,13 +759,12 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
 
     Args:
         ccsd_solver (PySCF CCSD Class instance): the class object representing the CCSD calculation in PySCF
-        tol (float):  the tolerance to which the wavefunction is being built -- Slater determinants
-         with coefficients smaller than this are discarded. Default is 1e-15 (all coefficients are included).
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
         having binary represention corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
     **Example**
 
@@ -856,16 +870,17 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
 def _uccsd_state(ccsd_solver, tol=1e-15):
     r"""Construct a wavefunction from PySCF's `UCCSD` Solver object.
 
-    The wavefunction is represented as a dictionary where the keys are tuples representing a
-    configuration, which corresponds to a Slater determinant, and the values are the CI coefficient
-    corresponding to that Slater determinant. Each dictionary key is a tuple of two integers. The
-    binary representation of these integers correspond to a specific configuration, or Slater
-    determinant. The first number represents the configuration of alpha electrons and the second
-    number represents the beta electrons. For instance, the Hartree-Fock state
-    :math:`|1 1 0 0 \rangle` will be represented by the binary string `0011`. This string can be
-    splited to `01` and `01` for the alpha and beta electrons. The integer corresponding to `01` is
-    `1`. Then the dictionary representation of a state with `0.99` contribution of the Hartree-Fock
-    state and `0.01` contribution from the doubly-excited state will be
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
     `{(1, 1): 0.99, (2, 2): 0.01}`.
 
     In the current version, the exponential ansatz :math:`\exp(\hat{T}_1 + \hat{T}_2) \ket{\text{HF}}`
@@ -881,13 +896,12 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
 
     Args:
         ccsd_solver (PySCF UCCSD Class instance): the class object representing the UCCSD calculation in PySCF
-        tol (float):  the tolerance to which the wavefunction is being built -- Slater determinants
-        with coefficients smaller than this are discarded. Default is 1e-15 (all coefficients are included).
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
         having binary represention corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
     **Example**
 
