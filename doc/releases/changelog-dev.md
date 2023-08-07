@@ -37,7 +37,7 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
-* Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
+* Functions are available to obtain a state vector from `PySCF` solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
 
