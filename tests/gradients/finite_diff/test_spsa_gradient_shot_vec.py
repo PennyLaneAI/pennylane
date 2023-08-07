@@ -832,7 +832,7 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             sampler=coordinate_sampler,
             h=h_val,
-            num_directions=4,
+            num_directions=20,
             shots=many_shots_shot_vector,
             sampler_rng=rng,
         )
