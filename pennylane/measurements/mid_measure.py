@@ -132,19 +132,10 @@ class MidMeasureMP(MeasurementProcess):
     """
 
     def __init__(
-        self,
-        wires: Wires,
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        measurement_ids: Optional[List[str]] = None,
-        processing_fn: Optional[Callable] = None,
+        self, wires: Optional[Wires] = None, reset: Optional[bool] = False, id: Optional[str] = None
     ):
+        super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
-        self.postselect = postselect
-        # Create a UUID and a map between MP and MV to support serialization
-        self.measurement_ids = measurement_ids or [str(uuid.uuid4())[:8]]
-        self.processing_fn = processing_fn if processing_fn is not None else lambda v: v
-        super().__init__(wires=Wires(wires), id=self.measurement_ids[0])
 
     @property
     def return_type(self):
