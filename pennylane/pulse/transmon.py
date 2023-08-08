@@ -259,7 +259,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         \Omega(t) \sin\left(\phi(t) + \nu t\right) \sum_q Y_q
 
-    where :math:`Y_q` are Pauli-Y operators on ``wires`` :math:`\{q\}`.
+    where :math:`\{Y_q\}` are the Pauli-Y operators on ``wires`` :math:`\{q\}`.
     The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega / (2\pi)`, :math:`\phi`
     and :math:`\nu / (2\pi)`, respectively, and can all be either fixed numbers (``float``) or depend on time
     (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
