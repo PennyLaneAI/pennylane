@@ -98,8 +98,6 @@ class MidMeasureMP(MeasurementProcess):
         measurement_ids (List[str]): custom label given to a measurement instance, can be useful for some
             applications where the instance has to be identified
         processing_fn (Optional[Callable]): A lazily transformation applied to the measurement values.
-        _is_value (Optional[bool]): Private argument to indicate if class is being used for conditioning
-            to avoid queuing it.
     """
 
     def __init__(
@@ -107,13 +105,11 @@ class MidMeasureMP(MeasurementProcess):
         wires: Wires,
         measurement_ids: Optional[List[str]] = None,
         processing_fn: Optional[Callable] = None,
-        _is_value: Optional[bool] = False,
     ):
         # Create a UUID and a map between MP and MV to support serialization
         self.measurement_ids = measurement_ids or [str(uuid.uuid4())[:8]]
         self.processing_fn = processing_fn if processing_fn is not None else lambda v: v
         super().__init__(wires=Wires(wires), id=self.measurement_ids[0])
-        self._is_value = _is_value
 
     @property
     def return_type(self):
@@ -125,7 +121,7 @@ class MidMeasureMP(MeasurementProcess):
 
     @property
     def _queue_category(self):
-        return "_ops" if not self._is_value else None
+        return "_ops"
 
     def _items(self):
         """A generator representing all the possible outcomes of the measurement value."""
@@ -205,12 +201,12 @@ class MidMeasureMP(MeasurementProcess):
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
-        new_mp = MidMeasureMP(
-            self.wires,
-            measurement_ids=self.measurement_ids,
-            processing_fn=lambda *x: fn(self.processing_fn(*x)),
-            _is_value=True,
-        )
+        with qml.queuing.QueuingManager.stop_recording():
+            new_mp = MidMeasureMP(
+                self.wires,
+                measurement_ids=self.measurement_ids,
+                processing_fn=lambda *x: fn(self.processing_fn(*x)),
+            )
         return new_mp
 
     def _merge(self, other: "MidMeasureMP"):
@@ -235,12 +231,12 @@ class MidMeasureMP(MeasurementProcess):
 
             return out_1, out_2
 
-        new_mp = MidMeasureMP(
-            merged_wires,
-            measurement_ids=merged_measurement_ids,
-            processing_fn=merged_fn,
-            _is_value=True,
-        )
+        with qml.queuing.QueuingManager.stop_recording():
+            new_mp = MidMeasureMP(
+                merged_wires,
+                measurement_ids=merged_measurement_ids,
+                processing_fn=merged_fn,
+            )
         return new_mp
 
     def __getitem__(self, i):
