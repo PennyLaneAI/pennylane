@@ -640,7 +640,7 @@ shots, which leads to statistical errors.
 Below, in the section on the `General Parameter-Shift Rule` we show how the parameter shift rule can
 be efficiently extended to gates that have more complex generators.
 
-For a deeper understanding you can visit `Parameter-shift Rule <https://pen<nylane.ai/qml/glossary/parameter_shift>`_.
+For a deeper understanding you can visit `Parameter-shift Rule <https://pennylane.ai/qml/glossary/parameter_shift>`_.
 
 
 :html:`</div>`
