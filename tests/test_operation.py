@@ -1147,6 +1147,14 @@ class TestOperatorIntegration:
         neg_op = -qml.PauliX(0)
         assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
 
+    def test_sub_obs_from_op(self):
+        """Test that __sub__ returns an SProd to be consistent with other Operator dunders."""
+        op = qml.S(0) - qml.PauliX(1)
+        assert isinstance(op, Sum)
+        assert isinstance(op[1], SProd)
+        assert qml.equal(op[0], qml.S(0))
+        assert qml.equal(op[1], SProd(-1, qml.PauliX(1)))
+
     def test_mul_with_scalar(self):
         """Test the __mul__ dunder method with a scalar value."""
         sprod_op = 4 * qml.RX(1, 0)
