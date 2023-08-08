@@ -135,10 +135,10 @@ Pending deprecations
 * The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
-  to create a PRNG internally or to a NumPy pseudo-random number generator (PRNG) created via
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   ``np.random.default_rng(seed)``.
   The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
-  multiple times, for instance, during an optimization procedure.
+  multiple times, for instance during an optimization procedure.
 
   - Deprecated in v0.32
   - Will be removed in v0.33

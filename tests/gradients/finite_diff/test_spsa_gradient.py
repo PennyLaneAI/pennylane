@@ -42,6 +42,10 @@ class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
 
     def test_sampler_seed_deprecation(self):
+        """
+        Ensure that passing the sampler_seed kwarg results in a deprecation warning
+        and cannot be combined with the new sampler_rng kwarg.
+        """
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, diff_method="spsa", sampler_seed=3)
@@ -61,7 +65,7 @@ class TestSpsaGradient:
             qml.RX(param, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        err = "Both arguments sampler_rng and sampler_seed were specified."
+        err = "Both sampler_rng and sampler_seed were specified."
         with pytest.raises(ValueError, match=err):
             qml.grad(circuit_raise)(np.array(1.0))
 
