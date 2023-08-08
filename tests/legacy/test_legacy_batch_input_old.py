@@ -15,6 +15,7 @@
 Unit tests for the batch inputs transform.
 """
 import pytest
+from functools import partial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -24,7 +25,7 @@ def test_simple_circuit():
     """Test that batching works for a simple circuit"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=1)
+    @partial(qml.batch_input, argnum=1)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
         qml.RY(weights[0], wires=0)
@@ -44,7 +45,7 @@ def test_circuit_non_param_operator_before_batched_operator():
     """Test a circuit where a non-parametric operation is located before a batched operator."""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=0)
+    @partial(qml.batch_input, argnum=0)
     @qml.qnode(dev)
     def circuit(input):
         qml.CNOT(wires=[0, 1])
@@ -75,7 +76,7 @@ def test_value_error():
         def ndim_params(self):
             return self._ndim_params
 
-    @qml.batch_input(argnum=[0, 2])
+    @partial(qml.batch_input, argnum=[0, 2])
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(input1, input2, weights):
         Embedding(input1, wires=range(2), rotation="Y")
@@ -98,7 +99,7 @@ def test_batch_input_with_trainable_parameters_raises_error():
     """Test that using the batch_input method with trainable parameters raises a ValueError."""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=0)
+    @partial(qml.batch_input, argnum=0)
     @qml.qnode(dev)
     def circuit(input):
         qml.RY(input, wires=1)
@@ -123,7 +124,7 @@ def test_mottonenstate_preparation(mocker):
     """Test that batching works for MottonenStatePreparation"""
     dev = qml.device("default.qubit", wires=3)
 
-    @qml.batch_input(argnum=0)
+    @partial(qml.batch_input, argnum=0)
     @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
@@ -163,7 +164,7 @@ def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=0)
+    @partial(qml.batch_input, argnum=0)
     @qml.qnode(dev, diff_method=diff_method)
     def circuit(input, x):
         qml.RY(input, wires=1)

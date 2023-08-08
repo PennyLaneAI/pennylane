@@ -18,15 +18,15 @@ from typing import Callable, Sequence, Tuple, Union
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.core import transform
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
 
 
-@batch_transform
+@transform
 def batch_input(
-    tape: Union[QuantumTape, qml.QNode],
+    tape: QuantumTape,
     argnum: Union[Sequence[int], int],
-) -> Tuple[Sequence[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
 

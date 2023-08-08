@@ -57,8 +57,8 @@ class TransformDispatcher:
             obj, *targs = targs
 
         if isinstance(obj, (qml.tape.QuantumTape, qml.tape.QuantumScript)):
-            new_tape = copy.deepcopy(obj)
-            return self._transform(new_tape, *targs, **tkwargs)
+            # new_tape = copy.deepcopy(obj)
+            return self._transform(obj, *targs, **tkwargs)
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(
                 obj,
