@@ -286,6 +286,10 @@ class TestPauliSentence:
 
     hamiltonian_ps = (
         (
+            qml.Hamiltonian([], []),
+            PauliSentence(),
+        ),
+        (
             qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
             PauliSentence({PauliWord({0: "Z"}): 2}),
         ),
@@ -362,6 +366,12 @@ class TestPauliSentence:
     def test_operator(self, op, ps):
         """Test that PL arithmetic op is properly cast to a PauliSentence."""
         assert pauli_sentence(op) == ps
+
+    @pytest.mark.parametrize("op, ps", operator_ps)
+    def test_operator_private_ps(self, op, ps):
+        """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
+        relying on the saved op._pauli_rep attribute."""
+        assert qml.pauli.conversion._pauli_sentence(op) == ps  # pylint: disable=protected-access
 
     error_ps = (
         qml.Hadamard(wires=0),

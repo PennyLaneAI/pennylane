@@ -138,6 +138,9 @@ def pauli_decompose(
         tensor([[-2.+0.j, -2.+1.j]], requires_grad=True)
 
     """
+    # Ensuring original matrix is not manipulated and we support builtin types.
+    matrix = qml.math.convert_like(matrix, matrix)
+
     # Pad with zeros to make the matrix shape equal and a power of two.
     if padding:
         shape = qml.math.shape(matrix)
