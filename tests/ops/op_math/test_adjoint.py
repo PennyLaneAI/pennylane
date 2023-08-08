@@ -198,7 +198,7 @@ class TestProperties:
 
     def test_has_matrix_false(self):
         """Test has_matrix property carries over when base op does not define a matrix."""
-        base = qml.QubitStateVector([1, 0], wires=0)
+        base = qml.StatePrep([1, 0], wires=0)
         op = Adjoint(base)
 
         assert op.has_matrix is False
@@ -682,7 +682,7 @@ class TestEigvals:
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
-        base = qml.QubitStateVector([1, 0], wires=0)
+        base = qml.StatePrep([1, 0], wires=0)
 
         with pytest.raises(qml.operation.EigvalsUndefinedError):
             Adjoint(base).eigvals()

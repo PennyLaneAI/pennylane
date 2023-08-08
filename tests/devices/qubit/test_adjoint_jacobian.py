@@ -45,7 +45,7 @@ class TestAdjointJacobian:
     def test_pauli_rotation_gradient(self, G, theta, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
-        prep_op = qml.QubitStateVector(
+        prep_op = qml.StatePrep(
             np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
         qs = QuantumScript(
@@ -71,7 +71,7 @@ class TestAdjointJacobian:
         """Tests that the device gradient of an arbitrary Euler-angle-parameterized gate is
         correct."""
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
-        prep_op = qml.QubitStateVector(
+        prep_op = qml.StatePrep(
             np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
 
@@ -208,7 +208,7 @@ class TestAdjointJacobian:
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "prep_op", [qml.BasisState([1], wires=0), qml.QubitStateVector([0, 1], wires=0)]
+        "prep_op", [qml.BasisState([1], wires=0), qml.StatePrep([0, 1], wires=0)]
     )
     def test_state_prep(self, prep_op, tol):
         """Tests provides correct answer when provided state preparation operation."""

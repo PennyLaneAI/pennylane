@@ -191,7 +191,7 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep)
         res = simulate(qs)
@@ -256,7 +256,7 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)

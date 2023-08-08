@@ -260,8 +260,8 @@ unsupported_operations = [
     "SProd",
 ]
 non_commuting_operations = [
-    # State Prep
-    "QubitStateVector",
+    # InitialState
+    "StatePrep",
     "BasisState",
     # Templates
     "ArbitraryStatePreparation",

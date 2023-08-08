@@ -58,9 +58,9 @@ class TestInitializeState:
         state[0, 1, 0] = 0  # set to zero to make test below simple
         assert qml.math.allequal(state, np.zeros((2, 2, 2)))
 
-    def test_create_initial_state_with_QubitStateVector(self):
-        """Tests that create_initial_state works with the QubitStateVector operator."""
-        prep_op = qml.QubitStateVector(
+    def test_create_initial_state_with_StatePrep(self):
+        """Tests that create_initial_state works with the StatePrep operator."""
+        prep_op = qml.StatePrep(
             np.array([0, 1, 0, 0, 0, 0, 0, 1]) / np.sqrt(2), wires=[0, 1, 2]
         )
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
@@ -70,10 +70,10 @@ class TestInitializeState:
         state[1, 1, 1] = 0  # set to zero to make test below simple
         assert qml.math.allequal(state, np.zeros((2, 2, 2)))
 
-    def test_create_initial_state_with_QubitStateVector_broadcasted(self):
-        """Tests that create_initial_state works with a broadcasted QubitStateVector
+    def test_create_initial_state_with_StatePrep_broadcasted(self):
+        """Tests that create_initial_state works with a broadcasted StatePrep
         operator."""
-        prep_op = qml.QubitStateVector(
+        prep_op = qml.StatePrep(
             np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1]
         )
         state = create_initial_state([0, 1], prep_operation=prep_op)

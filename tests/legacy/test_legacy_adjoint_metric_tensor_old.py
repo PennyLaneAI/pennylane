@@ -59,7 +59,7 @@ class TestApplyOperations:
         """Test that a statevector preparation is applied correctly."""
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
-        op = qml.QubitStateVector(state, wires=self.device.wires)
+        op = qml.StatePrep(state, wires=self.device.wires)
         out = _apply_operations(None, op, self.device, invert=False)
         out = qml.math.reshape(out, 4)
         assert np.allclose(out, state)
@@ -69,7 +69,7 @@ class TestApplyOperations:
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
-        op = qml.QubitStateVector(state, wires=self.device.wires)
+        op = qml.StatePrep(state, wires=self.device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
             _apply_operations(None, op, self.device, invert=True)
 

@@ -39,7 +39,7 @@ def _apply_operations(state, op, device, invert=False):
             state = _apply_operations(state, _op, device, invert)
         return state
 
-    if isinstance(op, qml.QubitStateVector):
+    if isinstance(op, qml.StatePrep):
         if invert:
             raise ValueError("Can't invert state preparation.")
         device._apply_state_vector(op.parameters[0], op.wires)

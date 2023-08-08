@@ -86,21 +86,21 @@ class TestApplyOperations:
         assert isinstance(op[1], qml.Hadamard)
         assert isinstance(op[2], qml.CNOT)
 
-    def test_qubit_statevector(self):
+    def test_state_prep(self):
         """Test that a statevector preparation is applied correctly."""
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
-        op = qml.QubitStateVector(state, wires=self.device.wires)
+        op = qml.StatePrep(state, wires=self.device.wires)
         out = _apply_operations(None, op, self.device, invert=False)
         out = qml.math.reshape(out, 4)
         assert np.allclose(out, state)
 
-    def test_error_qubit_statevector(self):
+    def test_error_state_prep(self):
         """Test that an error is raised for a statevector preparation with invert=True."""
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
-        op = qml.QubitStateVector(state, wires=self.device.wires)
+        op = qml.StatePrep(state, wires=self.device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
             _apply_operations(None, op, self.device, invert=True)
 

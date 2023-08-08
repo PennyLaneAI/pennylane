@@ -78,7 +78,7 @@ def test_simple_circuit_with_prep(mocker):
     @qml.batch_params
     @qml.qnode(dev, interface="autograd")
     def circuit(data, x, weights):
-        qml.QubitStateVector(init_state, wires=[0, 1, 2])
+        qml.StatePrep(init_state, wires=[0, 1, 2])
         qml.RX(x, wires=0)
         qml.RY(0.2, wires=1)
         qml.RZ(data, wires=1)
@@ -208,13 +208,13 @@ def test_basis_state_preparation(mocker):
 
 
 def test_qubit_state_prep(mocker):
-    """Test that batching works for QubitStateVector"""
+    """Test that batching works for StatePrep"""
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
     @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
-        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.StatePrep(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 1, 2])
 
@@ -233,7 +233,7 @@ def test_qubit_state_prep(mocker):
     # check the results against individually executed circuits (no batching)
     @qml.qnode(dev)
     def circuit2(data, weights):
-        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.StatePrep(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 1, 2])
 

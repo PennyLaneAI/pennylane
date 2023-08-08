@@ -3005,3 +3005,9 @@ def active_new_opmath():
     True
     """
     return __use_new_opmath
+
+
+def __getattr__(name):
+    """To facilitate StatePrep rename"""
+    if name == "StatePrep":
+        return InitialState

@@ -542,7 +542,7 @@ class TestInternalFunctions:
         zip(
             [
                 qml.BasisState([0, 0], wires=[0, 1]),
-                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
             ],
             [
                 [],
