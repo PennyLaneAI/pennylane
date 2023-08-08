@@ -573,6 +573,7 @@ highly stochastic approximation of the true gradient.
 
 Specifically, in SPSA one samples a random perturbation vector :math:`\Delta \in \{-1, 1\}^p` which
 is used to shift the parameter into a random direction.
+
 .. math::  \partial_i C \approx \frac{C(\theta + \Delta) - C(\theta - \Delta)}{2\Delta_i}
 
 .. code-block:: python
@@ -609,7 +610,7 @@ the estimate provided by these methods will be biased. This means that, in the l
 many measurement shots, their expectation value  does not necessarily equal the true
 gradient.
 
-This problem is resolved by the parameter-shift rule [#Schuld]_. For simplicity, assume that the
+This problem is resolved by the parameter-shift rule. In this `paper <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.99.032331>`_ you will find more details. For simplicity, assume that the
 parametrized gates are Pauli rotations. In this case
 
 .. math::  \partial_j C = C(\theta + s e_j) - C(\theta - s e_j), \quad s = \pi / 4
@@ -618,7 +619,7 @@ where, again :math:`e_j` is the :math:`j`-th canonical unit vector. In fact this
 adapted for any set of gates with generators that have two eigenvalues.
 Note that parameter-shift rules can also be derived for higher order derivatives, for instance,
 to compute the Hessian (via :func:`~.pennylane.gradients.param_shift_hessian`) or the
-Fisher-information matrix (via :func:`~.pennylane.metric_tensor`) of the cost function [#Mari]_.
+Fisher-information matrix (via :func:`~.pennylane.metric_tensor`) of the cost function (More details in this `paper <https://link.aps.org/doi/10.1103/PhysRevA.103.012405>`_).
 
 
 .. code-block:: python
@@ -639,7 +640,7 @@ shots, which leads to statistical errors.
 Below, in the section on the `General Parameter-Shift Rule` we show how the parameter shift rule can
 be efficiently extended to gates that have more complex generators.
 
-For a deeper understanding you can visit `Parameter-shift Rule <https://pennylane.ai/qml/glossary/parameter_shift>`_.
+For a deeper understanding you can visit `Parameter-shift Rule <https://pen<nylane.ai/qml/glossary/parameter_shift>`_.
 
 
 :html:`</div>`
