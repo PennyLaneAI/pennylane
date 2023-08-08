@@ -423,12 +423,14 @@ class TestTransmonInteraction:
 
             H = qml.pulse.transmon_interaction(qubit_freq, connections, coupling, wires)
             assert H.wires == Wires(["a", "b", "c", "d", "e", "f"])
-    
-    def test_functional_form(self,):
-        Hd = transmon_drive(1., 1., 1., wires=[0])
-        expected = qml.s_prod(2*np.pi*np.sin(2*np.pi*1.+1), qml.PauliY(0))
 
-        assert qml.math.allclose(qml.matrix(Hd([], 1.)), qml.matrix(expected))
+    def test_functional_form(
+        self,
+    ):
+        Hd = transmon_drive(1.0, 1.0, 1.0, wires=[0])
+        expected = qml.s_prod(2 * np.pi * np.sin(2 * np.pi * 1.0 + 1), qml.PauliY(0))
+
+        assert qml.math.allclose(qml.matrix(Hd([], 1.0)), qml.matrix(expected))
 
 
 # For transmon settings test
