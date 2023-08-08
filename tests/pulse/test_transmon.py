@@ -424,9 +424,9 @@ class TestTransmonInteraction:
             H = qml.pulse.transmon_interaction(qubit_freq, connections, coupling, wires)
             assert H.wires == Wires(["a", "b", "c", "d", "e", "f"])
 
-    def test_functional_form(
-        self,
-    ):
+    def test_functional_form(self):
+        """Test that the matrices of the transmon drive and a manually constructed
+        operator with the same functional form are equal."""
         Hd = transmon_drive(1.0, 1.0, 1.0, wires=[0])
         expected = qml.s_prod(2 * np.pi * np.sin(2 * np.pi * 1.0 + 1), qml.PauliY(0))
 
