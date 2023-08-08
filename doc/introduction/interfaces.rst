@@ -559,7 +559,7 @@ being a linear function.
      there is evidence that finite differences can lead to a lower error in the gradient when the number
      of shots is low. Check `Fast gradient estimation for variational quantum algorithms <https://arxiv.org/abs/2210.06484>`_ for more information.
 
-
+ 
 :html:`</div>`
 
 .. toctree::
