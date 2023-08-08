@@ -260,7 +260,7 @@ def expand_tape_state_prep(tape, skip_first=True):
     )
     new_prep.extend(prep_decomp)
 
-    for i, op in enumerate(tape.operations[1:]):
+    for op in tape.operations[1:]:
         if isinstance(op, StatePrep):
             new_ops.extend(op.decomposition())
         else:
