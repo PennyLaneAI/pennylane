@@ -69,7 +69,6 @@ def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
         qml.apply(obj)
 
 
-@qml.batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     """Calculate the Riemannian gradient in the Lie algebra with the parameter shift rule
     (see :meth:`RiemannianGradientOptimizer.get_omegas`).
@@ -133,7 +132,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                     for q, p in zip(queues_min, lie_algebra_basis_names)
                 ]
             )
-    return tapes_plus_total + tapes_min_total, None
+    return tapes_plus_total + tapes_min_total
 
 
 class RiemannianGradientOptimizer:
@@ -366,7 +365,7 @@ class RiemannianGradientOptimizer:
             obs_groupings,
             self.lie_algebra_basis_names,
             self.nqubits,
-        )[0]
+        )
         circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
