@@ -250,16 +250,12 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
 
     if not all(_accepted_operator(op) for op in circuit.operations):
         try:
-            prep_op = circuit.operations[0]
-            new_prep = (
-                [prep_op]
-                if isinstance(prep_op, StatePrep)
-                else list(_operator_decomposition_gen(prep_op, _accepted_operator))
-            )
+            # don't decompose initial operations if its StatePrep
+            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrep) else []
 
             new_ops = [
                 final_op
-                for op in circuit.operations[1:]
+                for op in circuit.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
@@ -268,7 +264,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Operator decomposition may have entered an infinite loop."
             ) from e
         circuit = qml.tape.QuantumScript(
-            new_prep + new_ops, circuit.measurements, shots=circuit.shots
+            prep_op + new_ops, circuit.measurements, shots=circuit.shots
         )
 
     for observable in circuit.observables:
