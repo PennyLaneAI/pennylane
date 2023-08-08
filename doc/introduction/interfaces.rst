@@ -492,6 +492,74 @@ At the moment, it takes into account the following parameters:
 10. Not supported. "We just don't have the theory yet."
 11. Not implemented.
 
+Learn more about these methods
+------------------------------
+
+Backpropagation
+~~~~~~~~~~~~~~~~
+
+
+On a simulator, a parametrized quantum circuit is executed by a series of matrix multiplications. In
+this setting one can use standard automatic differentiation to compute the derivative. In machine
+learning this process is called backpropagation since one first computes the function value
+:math:`C(\theta)` and then propagates the derivative beginning from the end all the way through to
+the inputs :math:`\theta`.
+
+.. code-block:: python
+    @qml.qnode(dev, diff_method="backprop")
+    def cost(theta):
+        qfunc(theta)
+        return qml.expval(qml.PauliZ(1))
+
+    grad_fn = qml.grad(cost)
+    grad_fn(params)
+
+>>> array([ 0.35017549, -0.4912955 ])
+
+The advantage is that this method gives the exact gradient (up to machine precision) and its computational complexity is typically on the same order as evaluating the function itself. The disadvantage is that we can only use it on a simulator. Moreover, we can not use backpropagation with a finite number of shots on a simulator and for many qubits it requires a signific amount of memory.
+
+More information can be found in :doc:`quantum backpropagation <demos/tutorial_backprop>`.
+
+Finite Differences
+~~~~~~~~~~~~~~~~~~~
+
+The most straightforward way to compute an estimate of the gradient is called
+finite differences. Here we shift the parameter of interest by a small amount in the positive and
+negative directions to approximate the difference quotient of the cost function.
+
+.. math::  \partial_i C \approx \frac{C(\theta + \varepsilon e_i) - C(\theta - \varepsilon e_i)}{2\varepsilon}
+
+Here :math:`e_i` is the :math:`i`-th canonical unit vector.
+This is called the central finite difference method. Additionally, there are the forward and
+backward finite differences methods, where one only shifts in one direction and combines the
+result with :math:`C(\theta)`\ , which can be used for all parameters. This reduces the overall
+number of shifts to :math:`p+1` for :math:`p` parameters, as opposed to :math:`2p` for the central
+finite differences rule.
+
+.. code-block:: python
+    @qml.qnode(dev, diff_method="finite-diff")
+    def cost(theta):
+        qfunc(theta)
+        return qml.expval(qml.PauliZ(1))
+
+    grad_fn = qml.grad(cost)
+    grad_fn(params)
+
+>>> array([ 0.3501755 , -0.49129549])
+
+The result we obtain differs slightly from the previous one,
+which is a result of choosing a small, but finite :math:`\varepsilon` and the cost function not
+being a linear function.
+.. warning::
+
+     Note that this method is highly susceptible to noise, since we are trying to estimate the difference
+     between two numbers that are very close to each other. One might be tempted to simply use a greater
+     :math:`\varepsilon`, however this leads to a larger systematic error of the method. When one is able
+     to use a sufficiently large amount of shots, it is advisable to use the parameter-shift rule. However,
+     there is evidence that finite differences can lead to a lower error in the gradient when the number
+     of shots is low. Check `Fast gradient estimation for variational quantum algorithms <https://arxiv.org/abs/2210.06484>`_ for more information.
+
+
 :html:`</div>`
 
 .. toctree::
