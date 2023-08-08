@@ -16,6 +16,7 @@ Tests for the ``default.mixed`` device for the JAX interface
 """
 # pylint: disable=protected-access
 import pytest
+from functools import partial
 
 import numpy as np
 import pennylane as qml
@@ -670,7 +671,7 @@ class TestPassthruIntegration:
             # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
             pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
 
-        @qml.batch_params(all_operations=True)
+        @partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
             qml.RX(a, wires=0)
