@@ -100,7 +100,7 @@ class MidMeasureMP(MeasurementProcess):
     """
 
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=Wires(wires), id=id)
 
     @property
     def return_type(self):
