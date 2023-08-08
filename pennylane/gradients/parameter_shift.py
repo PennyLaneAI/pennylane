@@ -686,7 +686,7 @@ def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
         if involutory := set(var_indices) - set(non_involutory_indices):
-            if tape.has_partitioned_shots:
+            if tape.shots.has_partitioned_shots:
                 pdA2 = tuple(
                     _put_zeros_in_pdA2_involutory(tape, pdA2_shot_comp, involutory)
                     for pdA2_shot_comp in pdA2
@@ -789,7 +789,7 @@ def _create_variance_proc_fn(
         # variances (var_mask==True): return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp
         # plain expectations (var_mask==False): return d<A>/dp
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
-        if tape.has_partitioned_shots:
+        if tape.shots.has_partitioned_shots:
             final_res = []
             for idx_shot_comp in range(tape.shots.num_copies):
                 f0_comp = f0[idx_shot_comp]

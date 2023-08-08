@@ -94,14 +94,14 @@ def _to_tensors(x):
     return tf.convert_to_tensor(x)
 
 
-def _res_restructured(res, tapes, legacy_shots: Shots):
+def _res_restructured(res, tapes):
     """
     Reconstruct the nested tuple structure of the output of a list of tapes
     """
     start = 0
     res_nested = []
     for tape in tapes:
-        tape_shots = legacy_shots or tape.shots or Shots(1)
+        tape_shots = tape.shots or Shots(1)
         shot_res_nested = []
         num_meas = len(tape.measurements)
 
@@ -332,13 +332,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     parameters = []
     params_unwrapped = []
 
-    if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
-        # assumes all tapes have the same shot vector
-        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        vjp_shots = legacy_shots = None
-    else:
-        has_partitioned_shots = vjp_shots = device.shot_vector
-        legacy_shots = Shots(device.shot_vector or 1)
+    has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     for i, tape in enumerate(tapes):
         # store the trainable parameters
@@ -366,7 +360,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
             # reconstruct the nested structure of dy
-            dy = _res_restructured(dy, tapes, legacy_shots=legacy_shots)
+            dy = _res_restructured(dy, tapes)
 
             if jacs:
                 # Jacobians were computed on execution
@@ -386,7 +380,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                             new_tapes,
                             dy,
                             gradient_fn,
-                            shots=vjp_shots,
                             reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
                             gradient_kwargs=gradient_kwargs,
                         )
@@ -398,7 +391,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                             tapes,
                             dy,
                             gradient_fn,
-                            shots=vjp_shots,
                             reduction="extend",
                             gradient_kwargs=gradient_kwargs,
                         )
