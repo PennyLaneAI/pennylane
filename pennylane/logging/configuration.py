@@ -60,8 +60,8 @@ def _configure_logging(config_file):
     """
     if not has_toml:
         raise ImportError(
-            "A TOML parser is required to enable PennyLane logging defaults."
-            "We support any of the following TOML parsers: [tomli, tomlkit, tomllib]"
+            "A TOML parser is required to enable PennyLane logging defaults. "
+            "We support any of the following TOML parsers: [tomli, tomlkit, tomllib] "
             "You can install either tomli via `pip install tomli`, "
             "tomlkit via `pip install tomlkit`, or use Python 3.11 "
             "or above which natively offers the tomllib library."
