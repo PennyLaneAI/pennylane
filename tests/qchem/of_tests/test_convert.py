@@ -860,47 +860,6 @@ def test_excited_configurations(electrons, orbitals, excitation, states_ref, sig
 
 
 @pytest.mark.parametrize(
-    ("molecule", "basis", "symm", "tol", "wf_ref"),
-    [
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {(1, 1): 0.9942969785398776, (2, 2): -0.10664669927602176},
-        ),
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "cc-pvdz",
-            "d2h",
-            4e-2,
-            {
-                (1, 1): 0.9919704795977625,
-                (2, 2): -0.048530356564387034,
-                (2, 8): 0.0445233308500785,
-                (4, 4): -0.05003594568491194,
-                (8, 2): 0.04452333085007853,
-                (8, 8): -0.05226230322043741,
-                (16, 16): -0.0404759737476627,
-                (32, 32): -0.0404759737476627,
-            },
-        ),
-    ],
-)
-def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
-    r"""Test that _ucisd_state returns the correct wavefunction."""
-
-    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
-    myhf = pyscf.scf.UHF(mol).run()
-    myci = pyscf.ci.UCISD(myhf).run()
-
-    wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
-
-    assert wf_cisd.keys() == wf_ref.keys()
-    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
-
-
-@pytest.mark.parametrize(
     ("wf_dict", "n_orbitals", "string_ref", "coeff_ref"),
     [  # reference data were obtained manually
         (  #  0.87006284 |1100> + 0.3866946 |1001> + 0.29002095 |0110> + 0.09667365 |0011>
@@ -999,32 +958,53 @@ def test_excited_configurations_error(excitation):
         _ = qchem.convert._excited_configurations(2, 4, excitation)
 
 
+h2_molecule = [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]]
+h2_wf_sto6g = {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179}  # tol = 1e-1
+h2_wf_ccpvdz = {  # tol = 4e-2
+    (1, 1): 0.9919704795977625,
+    (2, 2): -0.048530356564386895,
+    (2, 8): 0.044523330850078625,
+    (4, 4): -0.050035945684911876,
+    (8, 2): 0.04452333085007864,
+    (8, 8): -0.052262303220437775,
+    (16, 16): -0.040475973747662694,
+    (32, 32): -0.040475973747662694,
+}
+
+li2_molecule = [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]]
+li2_wf_sto6g = {  # tol = 1e-1
+    (7, 7): 0.8886970081919591,
+    (11, 11): -0.3058459002168582,
+    (19, 19): -0.30584590021685887,
+    (35, 35): -0.14507552387854625,
+}
+
+
 @pytest.mark.parametrize(
     ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179},
-        ),
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "cc-pvdz",
-            "d2h",
-            4e-2,
-            {
-                (1, 1): 0.9919704795977625,
-                (2, 2): -0.048530356564386895,
-                (2, 8): 0.044523330850078625,
-                (4, 4): -0.050035945684911876,
-                (8, 2): 0.04452333085007864,
-                (8, 8): -0.052262303220437775,
-                (16, 16): -0.040475973747662694,
-                (32, 32): -0.040475973747662694,
-            },
-        ),
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (h2_molecule, "cc-pvdz", "d2h", 4e-2, h2_wf_ccpvdz),
+    ],
+)
+def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _ucisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
+
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (h2_molecule, "cc-pvdz", "d2h", 4e-2, h2_wf_ccpvdz),
         (
             [["Be", (0, 0, 0)]],
             "sto6g",
@@ -1061,25 +1041,8 @@ def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
 @pytest.mark.parametrize(
     ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {(1, 1): 0.9942969030671576, (2, 2): -0.10664740292693174},
-        ),
-        (
-            [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {
-                (7, 7): 0.8886970081919591,
-                (11, 11): -0.3058459002168582,
-                (19, 19): -0.30584590021685887,
-                (35, 35): -0.14507552387854625,
-            },
-        ),
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (li2_molecule, "sto6g", "d2h", 1e-1, li2_wf_sto6g),
     ],
 )
 def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
@@ -1098,25 +1061,8 @@ def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
 @pytest.mark.parametrize(
     ("molecule", "basis", "symm", "tol", "wf_ref"),
     [
-        (
-            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {(1, 1): 0.9942969030671576, (2, 2): -0.10664740292693242},
-        ),
-        (
-            [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]],
-            "sto6g",
-            "d2h",
-            1e-1,
-            {
-                (7, 7): 0.8886969878256522,
-                (11, 11): -0.30584590248164206,
-                (19, 19): -0.30584590248164145,
-                (35, 35): -0.14507552651170982,
-            },
-        ),
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (li2_molecule, "sto6g", "d2h", 1e-1, li2_wf_sto6g),
     ],
 )
 def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
