@@ -145,7 +145,7 @@ def defer_measurements(tape: QuantumTape):
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [control_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    control = [control_wires[m.id] for m in op.meas_val.measurements]
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             ctrl(
