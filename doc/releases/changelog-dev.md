@@ -37,6 +37,9 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+* Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
+  [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
+
 <h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
@@ -267,6 +270,10 @@ array([False, False])
   trainable parameters of the expanded tape.
   [(#4365)](https://github.com/PennyLaneAI/pennylane/pull/4365)
 
+* `qml.default_expand_fn` now selectively expands operations or measurements allowing more 
+  operations to be executed in circuits when measuring non-qwc Hamiltonians.
+  [(#4401)](https://github.com/PennyLaneAI/pennylane/pull/4401)
+
 * `qml.ControlledQubitUnitary` no longer reports `has_decomposition` as `True` when it does
   not really have a decomposition.
   [(#4407)](https://github.com/PennyLaneAI/pennylane/pull/4407)
@@ -280,6 +287,7 @@ array([False, False])
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
@@ -290,4 +298,5 @@ Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
+Jay Soni,
 David Wierichs,
