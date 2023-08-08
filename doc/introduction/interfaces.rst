@@ -506,6 +506,7 @@ learning this process is called backpropagation since one first computes the fun
 the inputs :math:`\theta`.
 
 .. code-block:: python
+
     @qml.qnode(dev, diff_method="backprop")
     def cost(theta):
         qfunc(theta)
@@ -537,6 +538,7 @@ number of shifts to :math:`p+1` for :math:`p` parameters, as opposed to :math:`2
 finite differences rule.
 
 .. code-block:: python
+
     @qml.qnode(dev, diff_method="finite-diff")
     def cost(theta):
         qfunc(theta)
@@ -550,6 +552,7 @@ finite differences rule.
 The result we obtain differs slightly from the previous one,
 which is a result of choosing a small, but finite :math:`\varepsilon` and the cost function not
 being a linear function.
+
 .. warning::
 
      Note that this method is highly susceptible to noise, since we are trying to estimate the difference
@@ -559,7 +562,7 @@ being a linear function.
      there is evidence that finite differences can lead to a lower error in the gradient when the number
      of shots is low. Check `Fast gradient estimation for variational quantum algorithms <https://arxiv.org/abs/2210.06484>`_ for more information.
 
- 
+
 :html:`</div>`
 
 .. toctree::
