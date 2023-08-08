@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional, List, Callable
+from typing import Generic, TypeVar, Optional
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -302,7 +302,3 @@ class MeasurementValue(Generic[T]):
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
             )
         return "\n".join(lines)
-
-
-class MeasurementValueError(ValueError):
-    """Error raised when an unknown measurement value is being used."""
