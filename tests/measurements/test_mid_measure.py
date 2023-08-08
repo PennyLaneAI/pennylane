@@ -19,13 +19,14 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
 def test_samples_computational_basis():
     """Test that samples_computational_basis is always false for mid circuit measurements."""
-    m = qml.measurements.MidMeasureMP(qml.wires.Wires(0))
+    m = qml.measurements.MidMeasureMP(Wires(0))
     assert not m.samples_computational_basis
 
 
@@ -41,10 +42,21 @@ class TestMeasure:
         ):
             qml.measure(wires=[0, 1])
 
+    def test_hash(self):
+        """Test that the hash for `MidMeasureMP` is defined correctly."""
+        m1 = MidMeasureMP(Wires(0), "m1")
+        m2 = MidMeasureMP(Wires(0), "m2")
+        m3 = MidMeasureMP(Wires(1), "m1")
+        m4 = MidMeasureMP(Wires(0), "m1")
 
-mp1 = MidMeasureMP(0, "m0")
-mp2 = MidMeasureMP(1, "m1")
-mp3 = MidMeasureMP(2, "m2")
+        assert m1.hash != m2.hash
+        assert m1.hash != m3.hash
+        assert m1.hash == m4.hash
+
+
+mp1 = MidMeasureMP(Wires(0), "m0")
+mp2 = MidMeasureMP(Wires(1), "m1")
+mp3 = MidMeasureMP(Wires(2), "m2")
 
 
 class TestMeasurementValueManipulation:

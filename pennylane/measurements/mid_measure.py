@@ -100,7 +100,7 @@ class MidMeasureMP(MeasurementProcess):
     """
 
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
-        super().__init__(wires=Wires(wires), id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def return_type(self):
@@ -143,20 +143,19 @@ class MeasurementValue(Generic[T]):
     def __init__(self, measurements, processing_fn):
         self.measurements = measurements
         self.processing_fn = processing_fn
-        self.measurement_ids = [m.id for m in measurements]
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
-        for i in range(2 ** len(self.measurement_ids)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        for i in range(2 ** len(self.measurements)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             yield branch, self.processing_fn(*branch)
 
     @property
     def branches(self):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
-        for i in range(2 ** len(self.measurement_ids)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        for i in range(2 ** len(self.measurements)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
@@ -229,31 +228,15 @@ class MeasurementValue(Generic[T]):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
-        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
-        merged_measurement_ids.sort()
-
-        merged_measurements = []
-        for item in self.measurements + other.measurements:
-            is_duplicate = False
-            for unique_item in merged_measurements:
-                if item is unique_item:
-                    is_duplicate = True
-
-            if not is_duplicate:
-                merged_measurements.append(item)
-
+        merged_measurements = list(set(self.measurements).union(set(other.measurements)))
         merged_measurements.sort(key=lambda m: m.id)
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
-            sub_args_1 = (
-                x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]
-            )
+            sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
             out_1 = self.processing_fn(*sub_args_1)
 
-            sub_args_2 = (
-                x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]
-            )
+            sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
             out_2 = other.processing_fn(*sub_args_2)
 
             return out_1, out_2
@@ -261,15 +244,15 @@ class MeasurementValue(Generic[T]):
         return MeasurementValue(merged_measurements, merged_fn)
 
     def __getitem__(self, i):
-        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
         return self.processing_fn(*branch)
 
     def __str__(self):
         lines = []
-        for i in range(2 ** (len(self.measurement_ids))):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        for i in range(2 ** (len(self.measurements))):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             id_branch_mapping = [
-                f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))
+                f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
             ]
             lines.append(
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
