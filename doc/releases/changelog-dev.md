@@ -139,6 +139,9 @@ array([False, False])
 * Updated `default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
+* Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
+  [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
