@@ -40,6 +40,9 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+* Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
+  [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
+
 <h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
@@ -285,6 +288,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Amintor Dusko,
+Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
