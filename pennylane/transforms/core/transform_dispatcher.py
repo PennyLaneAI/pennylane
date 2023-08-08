@@ -68,9 +68,18 @@ class TransformDispatcher:
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
-        raise TransformError(
-            "The object on which the transform is applied is not valid. It can only be a tape, a QNode or a qfunc."
-        )
+        # Input is not a QNode nor a quantum tape nor a device.
+        # Assume Python decorator syntax:
+        #
+        # result = some_transform(*transform_args)(qnode)(*qnode_args)
+
+        if obj is not None:
+            targs = (obj, *targs)
+
+        def wrapper(obj):
+            return self(obj, *targs, **tkwargs)
+
+        return wrapper
 
     @property
     def transform(self):
