@@ -133,7 +133,7 @@ array([False, False])
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
-* Updated `default_expand_fn()` to allow `StatePrep` operations to be applied in the middle of a circuit.
+* Updated `default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
 <h3>Breaking changes 💔</h3>

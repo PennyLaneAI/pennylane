@@ -241,7 +241,7 @@ def expand_tape_state_prep(tape, skip_first=True):
     """Expand all instances of StatePrep operations in the tape.
 
     Args:
-        tape (Union[QuantumTape, QuantumScript]): The tape to expand.
+        tape (QuantumScript): The tape to expand.
         skip_first (Bool): If ``True``, will not expand a StatePrep operation if
             it is the first operation in the tape.
 
@@ -254,12 +254,15 @@ def expand_tape_state_prep(tape, skip_first=True):
     new_prep = []
     new_ops = []
 
-    for i, op in enumerate(tape._prep + tape._ops):
+    first_op = tape.operations[0]
+    prep_decomp = (
+        [first_op] if isinstance(first_op, StatePrep) and skip_first else first_op.decomposition()
+    )
+    new_prep.extend(prep_decomp)
+
+    for i, op in enumerate(tape.operations[1:]):
         if isinstance(op, StatePrep):
-            if i == 0 and skip_first:
-                new_prep.append(op)
-            else:
-                new_ops.extend(op.decomposition())
+            new_ops.extend(op.decomposition())
         else:
             new_ops.append(op)
 
