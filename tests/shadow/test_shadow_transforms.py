@@ -19,7 +19,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.shadows.transforms import _replace_obs
 
 
