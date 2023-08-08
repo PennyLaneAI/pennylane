@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
+from pennylane.shadows.transforms import _replace_obs
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -96,6 +97,29 @@ def basic_entangler_circuit_exact_expval(n_wires, interface="autograd"):
         return [qml.expval(ob) for ob in obs]
 
     return circuit
+
+
+class TestReplaceObs:
+    """Test that the _replace_obs transform works as expected"""
+
+    def test_replace_tape(self):
+        """Test that the transform works for tapes"""
+        tape = qml.tape.QuantumScript([], [qml.classical_shadow(wires=0)])
+        new_tapes, _ = _replace_obs(tape, qml.probs, wires=0)
+
+        assert len(new_tapes) == 1
+        assert new_tapes[0].operations == []
+        assert len(new_tapes[0].observables) == 1
+        assert isinstance(new_tapes[0].observables[0], qml.measurements.ProbabilityMP)
+
+    def test_replace_qnode(self):
+        """Test that the transform works for QNodes"""
+        circuit = hadamard_circuit(2, shots=1000)
+        circuit = _replace_obs(circuit, qml.probs, wires=[0, 1])
+        res = circuit()
+
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (4,)
 
 
 @pytest.mark.autograd
@@ -307,22 +331,6 @@ class TestStateBackward:
 @pytest.mark.autograd
 class TestExpvalTransform:
     """Test that the expval transform is applied correctly"""
-
-    def test_hadamard_transform(self):
-        """
-        Test that the transform is correct for a circuit that prepares
-        the uniform superposition
-        """
-        obs = qml.PauliZ(0)
-        circuit = hadamard_circuit(3, shots=100000)
-        circuit = qml.shadows.shadow_expval(obs)(circuit)
-
-        tape = circuit.construct((), {})[0][0]
-
-        assert all(qml.equal(qml.Hadamard(i), tape.operations[i]) for i in range(3))
-        assert len(tape.observables) == 1
-        assert isinstance(tape.observables[0], ShadowExpvalMP)
-        assert tape.observables[0].H == obs
 
     def test_hadamard_forward(self):
         """Test that the expval estimation is correct for a uniform

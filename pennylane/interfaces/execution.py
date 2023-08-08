@@ -419,6 +419,7 @@ def execute(
             device,
             gradient_fn,
             interface=interface,
+            transform_program=transform_program,
             mode=mode,
             gradient_kwargs=gradient_kwargs,
             cache=cache,
