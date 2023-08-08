@@ -736,7 +736,7 @@ class Device(abc.ABC):
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
         supports_sum = self.supports_observable("Sum")
-        finite_shots = self.shots is not None or circuit.shots
+        finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables

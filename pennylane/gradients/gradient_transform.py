@@ -628,7 +628,6 @@ class gradient_transform(qml.batch_transform):
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
-                # TODO: should this be tkwargs["tape"].shots?
                 has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
                 return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
 

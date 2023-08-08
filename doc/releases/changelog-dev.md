@@ -160,6 +160,9 @@ array([False, False])
 * `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
+* The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
+  [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
