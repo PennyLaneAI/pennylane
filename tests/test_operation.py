@@ -2523,6 +2523,11 @@ class TestNewOpMath:
             assert op[1].scalar == -1
             assert qml.equal(op[1].base, op1)
 
+        def test_sub_with_unknown_not_supported(self):
+            """Test subtracting an unexpected type from an Operator."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                _ = qml.S(0) - "foo"
+
         def test_op_with_scalar(self):
             """Tests adding/subtracting ops with scalars."""
             x0 = qml.PauliX(0)
