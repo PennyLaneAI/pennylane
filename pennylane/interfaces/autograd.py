@@ -371,9 +371,10 @@ def vjp(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
-
-        # not sure what this post processing is for
-        return vjp_fn.compute_vjp(tapes, dy)
+        vjps = vjp_fn.compute_vjp(tapes, dy)
+        return tuple(
+            qml.math.to_numpy(v, max_depth=1) if isinstance(v, ArrayBox) else v for v in vjps
+        )
 
     return grad_fn
 
