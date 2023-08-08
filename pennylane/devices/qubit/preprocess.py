@@ -23,7 +23,7 @@ from functools import partial
 
 import pennylane as qml
 
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, StatePrep
 from pennylane.measurements import (
     MidMeasureMP,
     StateMeasurement,
@@ -248,14 +248,18 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
         circuit = qml.defer_measurements(circuit)
 
-    if len(circuit._prep) > 1:
-        raise DeviceError("DefaultQubit2 accepts at most one state prep operation.")
-
-    if not all(_accepted_operator(op) for op in circuit._ops):
+    if not all(_accepted_operator(op) for op in circuit.operations):
         try:
+            prep_op = circuit.operations[0]
+            new_prep = (
+                [prep_op]
+                if isinstance(prep_op, StatePrep)
+                else list(_operator_decomposition_gen(prep_op, _accepted_operator))
+            )
+
             new_ops = [
                 final_op
-                for op in circuit._ops
+                for op in circuit.operations[1:]
                 for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
@@ -264,7 +268,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Operator decomposition may have entered an infinite loop."
             ) from e
         circuit = qml.tape.QuantumScript(
-            new_ops, circuit.measurements, circuit._prep, shots=circuit.shots
+            new_prep + new_ops, circuit.measurements, shots=circuit.shots
         )
 
     for observable in circuit.observables:
