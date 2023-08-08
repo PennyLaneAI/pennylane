@@ -23,7 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -428,7 +428,7 @@ class Projector(Observable):
         return copied_op
 
 
-class _BasisStateProjector(Observable):
+class _BasisStateProjector(Observable, Operation):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
