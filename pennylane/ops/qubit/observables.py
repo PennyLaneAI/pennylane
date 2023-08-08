@@ -427,13 +427,25 @@ class Projector(Observable):
 
         return copied_op
 
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a :class:`~.Projector`. Circumbents the pickling
+        issues caused by its dynamic type:
+        >>> qml.Projector([1], wires=[0]) is qml.Projector
+        False
+        >>> isinstance(qml.Projector([1], wires=[0]), qml.Projector)
+        True
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+        """
+        state = self.data[0]
+        return (Projector, (state, self.wires), {"_id": self.id})
+
 
 class _BasisStateProjector(Observable):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state))
+        state = list(qml.math.toarray(state).astype(int))
 
         if not set(state).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")

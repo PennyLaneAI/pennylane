@@ -14,6 +14,7 @@
 """Unit tests for qubit observables."""
 # pylint: disable=protected-access
 import functools
+import pickle
 import pytest
 import numpy as np
 
@@ -517,6 +518,23 @@ class TestProjector:
         with pytest.raises(ValueError, match="Input state must be one-dimensional"):
             state = np.random.randint(2, size=(2, 4))
             qml.Projector(state, range(4))
+
+    def test_serialization(self):
+        """Tests that Projector is pickle-able."""
+        # Basis state projector
+        proj = qml.Projector([1], wires=[0], id="Andy")
+        serialization = pickle.dumps(proj)
+        new_proj = pickle.loads(serialization)
+        assert qml.equal(new_proj, proj)
+        assert new_proj.id == proj.id  # Ensure they are identical
+
+        # State vector projector
+        proj = qml.Projector([0, 1], wires=[0])
+        serialization = pickle.dumps(proj)
+        new_proj = pickle.loads(serialization)
+
+        assert qml.equal(new_proj, proj)
+        assert new_proj.id == proj.id  # Ensure they are identical
 
 
 class TestBasisStateProjector:

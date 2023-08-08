@@ -122,8 +122,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.mean(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, Projector) and len(self.obs.parameters[0]) == len(self.obs.wires):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx]
