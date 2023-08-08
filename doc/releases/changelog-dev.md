@@ -142,6 +142,9 @@ array([False, False])
 * Provide users access to the logging configuration file path and improve the logging configuration structure.
   [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
@@ -177,6 +180,9 @@ array([False, False])
   `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
+* The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 <h3>Deprecations 👋</h3>
 
@@ -292,6 +298,7 @@ Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
+Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
