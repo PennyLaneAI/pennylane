@@ -148,7 +148,7 @@ array([False, False])
 
 * `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
   their IDs.
-  [(#)]()
+  [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
