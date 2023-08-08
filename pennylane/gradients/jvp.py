@@ -180,7 +180,7 @@ def compute_jvp_single(tangent, jac):
         return qml.math.tensordot(jac, tangent, [[-1], [0]])
 
     tangent_ndims = [getattr(t, "ndim", 0) for t in tangent]
-    if isinstance(tangent, (tuple, list)) and any(getattr(t, "ndim", 0) > 0 for t in tangent):
+    if isinstance(tangent, (tuple, list)) and any(ndim > 0 for ndim in tangent_ndims):
         # At least one tangent entry is not a scalar, requiring us to flatten them and hstack
         tangent = [qml.math.flatten(t) for t in tangent]
         tangent_sizes = [t.shape[0] for t in tangent]
