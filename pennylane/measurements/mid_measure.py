@@ -92,6 +92,9 @@ def measure(
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
         reset (Optional[bool]): Whether to reset the wire after measurement.
+        postselect (Optional[int]): The measured computational basis state on which to
+            optionally postselect the circuit. Must be ``0`` or ``1`` if postselection
+            is requested.
 
     Returns:
         MidMeasureMP: measurement process instance
@@ -107,7 +110,7 @@ def measure(
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, reset=reset, id=measurement_id)
+    mp = MidMeasureMP(wires=wire, reset=reset, id=measurement_id, postelect=postselect)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -126,14 +129,22 @@ class MidMeasureMP(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         reset (bool): Whether to reset the wire after measurement.
+        postselect (Optional[int]): The measured computational basis state on which to
+            optionally postselect the circuit. Must be ``0`` or ``1`` if postselection
+            is requested.
         id (str): Custom label given to a measurement instance.
     """
 
     def __init__(
-        self, wires: Optional[Wires] = None, reset: Optional[bool] = False, id: Optional[str] = None
+        self,
+        wires: Optional[Wires] = None,
+        reset: Optional[bool] = False,
+        postselect: Optional[int] = None,
+        id: Optional[str] = None,
     ):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
+        self.postselect = postselect
 
     @property
     def return_type(self):
