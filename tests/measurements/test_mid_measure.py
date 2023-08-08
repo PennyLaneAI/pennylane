@@ -42,32 +42,21 @@ class TestMeasure:
         ):
             qml.measure(wires=[0, 1])
 
-    def test_mp_as_value_not_queued(self):
-        """Test that a MidMeasureMP that is used as a measurement value does not
-        get queued."""
-        with qml.queuing.AnnotatedQueue() as q:
-            m0 = qml.measure(0)
-            m1 = qml.measure(1)
-            # pylint: disable=unused-variable, protected-access
-            cond1 = m0._apply(np.sin)
-            cond2 = m1._merge(m0)
-            cond3 = m0._merge(m1)._apply(np.sin)
+    def test_hash(self):
+        """Test that the hash for `MidMeasureMP` is defined correctly."""
+        m1 = MidMeasureMP(Wires(0), "m1")
+        m2 = MidMeasureMP(Wires(0), "m2")
+        m3 = MidMeasureMP(Wires(1), "m1")
+        m4 = MidMeasureMP(Wires(0), "m1")
 
-        qs = qml.tape.QuantumScript.from_queue(q)
-        assert len(qs.operations) == 2
-        assert len(qs.measurements) == 0
-        assert qs.operations[0] is m0
-        assert qs.operations[1] is m1
+        assert m1.hash != m2.hash
+        assert m1.hash != m3.hash
+        assert m1.hash == m4.hash
 
 
-mp1 = MidMeasureMP(0, "m0")
-mp2 = MidMeasureMP(1, "m1")
-mp3 = MidMeasureMP(2, "m2")
-
-
-mp1 = MidMeasureMP(0, "m0")
-mp2 = MidMeasureMP(1, "m1")
-mp3 = MidMeasureMP(2, "m2")
+mp1 = MidMeasureMP(Wires(0), "m0")
+mp2 = MidMeasureMP(Wires(1), "m1")
+mp3 = MidMeasureMP(Wires(2), "m2")
 
 
 class TestMeasurementValueManipulation:
