@@ -149,9 +149,7 @@ class TestStateVector:
 
     def test_StatePrep_reordering_broadcasted(self):
         """Tests that wires get re-ordered as expected with broadcasting."""
-        qsv_op = qml.StatePrep(
-            np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1]
-        )
+        qsv_op = qml.StatePrep(np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
         expected = np.zeros((2,) * 5, dtype=np.complex128)
         expected[0, 0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2

@@ -526,9 +526,7 @@ class TestAdjointDiffTapeValidation:
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
     def test_valid_tape_no_expand(self, G):
         """Test that a tape that is valid doesn't raise errors and is not expanded"""
-        prep_op = qml.StatePrep(
-            pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
+        prep_op = qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
         qs = QuantumScript(
             ops=[G(np.pi, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
@@ -546,9 +544,7 @@ class TestAdjointDiffTapeValidation:
     def test_valid_tape_with_expansion(self, shots):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
         and is expanded"""
-        prep_op = qml.StatePrep(
-            pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
+        prep_op = qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
         qs = QuantumScript(
             ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],

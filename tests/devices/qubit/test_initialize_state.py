@@ -60,9 +60,7 @@ class TestInitializeState:
 
     def test_create_initial_state_with_StatePrep(self):
         """Tests that create_initial_state works with the StatePrep operator."""
-        prep_op = qml.StatePrep(
-            np.array([0, 1, 0, 0, 0, 0, 0, 1]) / np.sqrt(2), wires=[0, 1, 2]
-        )
+        prep_op = qml.StatePrep(np.array([0, 1, 0, 0, 0, 0, 0, 1]) / np.sqrt(2), wires=[0, 1, 2])
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
         assert state[0, 0, 1] == 1 / np.sqrt(2)
         assert state[1, 1, 1] == 1 / np.sqrt(2)
@@ -73,9 +71,7 @@ class TestInitializeState:
     def test_create_initial_state_with_StatePrep_broadcasted(self):
         """Tests that create_initial_state works with a broadcasted StatePrep
         operator."""
-        prep_op = qml.StatePrep(
-            np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1]
-        )
+        prep_op = qml.StatePrep(np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op)
         assert state[0, 0, 1] == 1
         assert state[1, 1, 1] == 1

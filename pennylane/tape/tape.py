@@ -256,7 +256,9 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     first_op = tape.operations[0]
     prep_decomp = (
-        [first_op] if isinstance(first_op, InitialState) and skip_first else first_op.decomposition()
+        [first_op]
+        if isinstance(first_op, InitialState) and skip_first
+        else first_op.decomposition()
     )
     new_prep.extend(prep_decomp)
 
