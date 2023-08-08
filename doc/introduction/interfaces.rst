@@ -563,6 +563,85 @@ being a linear function.
      of shots is low. Check `Fast gradient estimation for variational quantum algorithms <https://arxiv.org/abs/2210.06484>`_ for more information.
 
 
+Simultaneous Perturbation Stochastic Approximation (SPSA)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the number of parameters is large, with most methods one has to evaluate the cost function many times in order to
+compute the gradient. In such a scenario SPSA can be used to reduce the number of function
+evaluations to two. However, this comes at a cost. As the name suggests, the method only gives a
+highly stochastic approximation of the true gradient.
+
+Specifically, in SPSA one samples a random perturbation vector :math:`\Delta \in \{-1, 1\}^p` which
+is used to shift the parameter into a random direction.
+.. math::  \partial_i C \approx \frac{C(\theta + \Delta) - C(\theta - \Delta)}{2\Delta_i}
+
+.. code-block:: python
+
+    @qml.qnode(dev, diff_method="spsa")
+    def cost(theta):
+        qfunc(theta)
+        return qml.expval(qml.PauliZ(1))
+
+    grad_fn = qml.grad(cost)
+
+
+    # Compute a lot of samples to make sure the estimator converges
+    # to the exact value.
+
+    grad_estimates = np.array([grad_fn(params) for _ in range(500)])
+    print(f"Estimate using 5 samples:   {np.mean(grad_estimates[:5], axis=0)}")
+    print(f"Estimate using 50 samples:  {np.mean(grad_estimates[:50], axis=0)}")
+    print(f"Estimate using 500 samples: {np.mean(grad_estimates, axis=0)}")
+
+.. code-block::
+
+    Estimate using 5 samples:   [ 0.44843459 -0.56133059]
+    Estimate using 50 samples:  [ 0.36982731 -0.50530252]
+    Estimate using 500 samples: [ 0.35410585 -0.4940969 ]
+
+More information can be found in :doc:`Optimization using SPSA <demos/tutorial_spsa>`.
+
+Parameter-Shift Rule
+--------------------
+
+The previous two methods only deliver approximations of the gradient. More importantly, in general
+the estimate provided by these methods will be biased. This means that, in the limit of
+many measurement shots, their expectation value  does not necessarily equal the true
+gradient.
+
+This problem is resolved by the parameter-shift rule [#Schuld]_. For simplicity, assume that the
+parametrized gates are Pauli rotations. In this case
+
+.. math::  \partial_j C = C(\theta + s e_j) - C(\theta - s e_j), \quad s = \pi / 4
+
+where, again :math:`e_j` is the :math:`j`-th canonical unit vector. In fact this rule can be easily
+adapted for any set of gates with generators that have two eigenvalues.
+Note that parameter-shift rules can also be derived for higher order derivatives, for instance,
+to compute the Hessian (via :func:`~.pennylane.gradients.param_shift_hessian`) or the
+Fisher-information matrix (via :func:`~.pennylane.metric_tensor`) of the cost function [#Mari]_.
+
+
+.. code-block:: python
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def cost(theta):
+        qfunc(theta)
+        return qml.expval(qml.PauliZ(1))
+
+    grad_fn = qml.grad(cost)
+    grad_fn(params)
+
+>>> array([ 0.35017549, -0.4912955 ])
+
+Note how this gives the exact same result as the ``backprop`` method, i.e. it is exact. On quantum
+hardware, however, one would have to estimate the shifted cost function values with a finite number of
+shots, which leads to statistical errors.
+Below, in the section on the `General Parameter-Shift Rule` we show how the parameter shift rule can
+be efficiently extended to gates that have more complex generators.
+
+For a deeper understanding you can visit `Parameter-shift Rule <https://pennylane.ai/qml/glossary/parameter_shift>`_.
+
+
 :html:`</div>`
 
 .. toctree::
