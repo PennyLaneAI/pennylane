@@ -130,6 +130,7 @@ def _sketch():
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 100, 2)
 
+
 @_needs_mpl
 def _pennylane():
     """Apply the PennyLane style to matplotlib's configuration. This function
@@ -148,6 +149,7 @@ def _pennylane():
     plt.rcParams["font.family"] = ["Quicksand", "sans-serif"]
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 250, 1)
+
 
 @_needs_mpl
 def _sketch_dark():
