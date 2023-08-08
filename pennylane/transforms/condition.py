@@ -117,7 +117,6 @@ def cond(condition, true_fn, false_fn=None):
         While such statements may not result in errors, they may result in
         incorrect behaviour.
 
-
     .. details::
         :title: Usage Details
 

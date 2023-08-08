@@ -276,6 +276,18 @@ class MeasurementValue(Generic[T]):
 
         merged_measurements.sort(key=lambda m: m.id)
 
+        merged_measurements = []
+        for item in self.measurements + other.measurements:
+            is_duplicate = False
+            for unique_item in merged_measurements:
+                if item is unique_item:
+                    is_duplicate = True
+
+            if not is_duplicate:
+                merged_measurements.append(item)
+
+        merged_measurements.sort(key=lambda m: m.id)
+
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
             sub_args_1 = (
