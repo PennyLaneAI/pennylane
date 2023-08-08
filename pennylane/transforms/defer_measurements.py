@@ -43,10 +43,10 @@ def defer_measurements(tape: QuantumTape):
 
     .. note::
 
-        Devices that inherit `QubitDevice` must be initialized with an additional
-        wire for each mid-circuit measurement for `defer_measurements` to work. If
-        ths transform is used for executing on such a device, the `dev_wires` argument
-        must be specified.
+        Devices that inherit `QubitDevice` **must** be initialized with an additional
+        wire for each mid-circuit measurement for `defer_measurements` to transform
+        the quantum tape correctly. Such devices should also be initialized without
+        custom wire labels for correct behaviour.
 
     .. note::
 
@@ -93,7 +93,28 @@ def defer_measurements(tape: QuantumTape):
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
 
-    ######### TODO: ADD QUBIT REUSE AND RESET EXAMPLE ##############
+    Reusing and reseting measured wires will work as expected with the
+    ``defer_measurements`` transform:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def func(x, y):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            m_0 = qml.measure(1, reset=True)
+
+            qml.cond(m_0, qml.RY)(y, wires=0)
+            qml.RX(np.pi/4, wires=1)
+            return qml.probs(wires=[0, 1])
+
+    Executing this QNode:
+
+    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> func(*pars)
+    tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
     """
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
