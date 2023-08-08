@@ -500,7 +500,7 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g', symmetry='d2h')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
     >>> wf_cisd = _ucisd_state(myci, tol=1e-1)
@@ -665,7 +665,7 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g', symmetry='d2h')
     >>> myhf = scf.RHF(mol).run()
     >>> myci = ci.CISD(myhf).run()
     >>> wf_cisd = _rcisd_state(myci, tol=1e-1)
