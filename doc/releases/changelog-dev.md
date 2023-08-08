@@ -116,10 +116,8 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
-
 
 * `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
   property. This property is merely used to set defaults for a workflow, and does not directly
@@ -140,6 +138,10 @@ array([False, False])
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
+  their IDs.
+  [(#)]()
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
