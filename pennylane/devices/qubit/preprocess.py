@@ -23,7 +23,7 @@ from functools import partial
 
 import pennylane as qml
 
-from pennylane.operation import Tensor, StatePrep
+from pennylane.operation import Tensor, InitialState
 from pennylane.measurements import (
     MidMeasureMP,
     StateMeasurement,
@@ -250,8 +250,8 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
 
     if not all(_accepted_operator(op) for op in circuit.operations):
         try:
-            # don't decompose initial operations if its StatePrep
-            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrep) else []
+            # don't decompose initial operations if its InitialState
+            prep_op = [circuit[0]] if isinstance(circuit[0], InitialState) else []
 
             new_ops = [
                 final_op

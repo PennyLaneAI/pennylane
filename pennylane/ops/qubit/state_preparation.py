@@ -18,14 +18,14 @@ with preparing a certain state on the device.
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
 from pennylane import math
-from pennylane.operation import AnyWires, Operation, StatePrep
+from pennylane.operation import AnyWires, Operation, InitialState
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
 
-class BasisState(StatePrep):
+class BasisState(InitialState):
     r"""BasisState(n, wires)
     Prepares a single computational basis state.
 
@@ -115,7 +115,7 @@ class BasisState(StatePrep):
         return math.convert_like(ket, prep_vals)
 
 
-class QubitStateVector(StatePrep):
+class QubitStateVector(InitialState):
     r"""QubitStateVector(state, wires)
     Prepare subsystems using the given ket vector in the computational basis.
 

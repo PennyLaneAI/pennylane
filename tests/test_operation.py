@@ -25,7 +25,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
+from pennylane.operation import Operation, Operator, InitialState, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -2377,10 +2377,10 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
-class TestStatePrep:
-    """Test the StatePrep interface."""
+class TestInitialState:
+    """Test the InitialState interface."""
 
-    class DefaultPrep(StatePrep):
+    class DefaultPrep(InitialState):
         """A dummy class that assumes it was given a state vector."""
 
         # pylint:disable=unused-argument,too-few-public-methods
@@ -2388,15 +2388,15 @@ class TestStatePrep:
             return self.parameters[0]
 
     # pylint:disable=unused-argument,too-few-public-methods
-    def test_basic_stateprep(self):
-        """Tests a basic implementation of the StatePrep interface."""
+    def test_basic_initial_state(self):
+        """Tests a basic implementation of the InitialState interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrep):
+        class NoStatePrepOp(InitialState):
             """A class that is missing the state_vector implementation."""
 
             # pylint:disable=abstract-class-instantiated
@@ -2404,8 +2404,8 @@ class TestStatePrep:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
 
-    def test_StatePrep_label(self):
-        """Tests that StatePrep classes by default have a psi ket label"""
+    def test_InitialState_label(self):
+        """Tests that InitialState classes by default have a psi ket label"""
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 

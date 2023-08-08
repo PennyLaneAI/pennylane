@@ -1260,7 +1260,7 @@ class TestExpand:
         ),
     )
     def test_expansion_state_prep(self, skip_first, op, decomp):
-        """Test that StatePrep operations are expanded correctly without
+        """Test that InitialState operations are expanded correctly without
         expanding other operations in the tape.
         """
         ops = [

@@ -44,7 +44,7 @@ def get_final_state(circuit, debugger=None):
         circuit = qml.map_wires(circuit, wire_map)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrep):
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.InitialState):
         prep = circuit[0]
 
     state = create_initial_state(circuit.wires, prep)
