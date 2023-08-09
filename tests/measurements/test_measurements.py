@@ -124,7 +124,7 @@ def test_none_return_type():
     assert mp.return_type is None
 
 
-def test_eq_warning(self):
+def test_eq_warning():
     """Test that a warning is raised when two measurement processes are compared for
     equality using `==`."""
 
@@ -138,7 +138,7 @@ def test_eq_warning(self):
         _ = mp1 == mp2
 
 
-def test_eq_correctness(self):
+def test_eq_correctness():
     """Test that using `==` on two equivalent operators is True when both measurement
     processes are the same object and False otherwise."""
 
@@ -153,7 +153,7 @@ def test_eq_correctness(self):
         assert mp1 != mp2
 
 
-def test_hash_warning(self):
+def test_hash_warning():
     """Test that a warning is raised when a measurement process's hash is used."""
 
     class DummyMP(MeasurementProcess):
@@ -165,7 +165,7 @@ def test_hash_warning(self):
         _ = hash(mp)
 
 
-def test_hash_correctness(self):
+def test_hash_correctness():
     """Test that the hash of two equivalent measurement processes is the same when
     both are the same object and different otherwise."""
 
