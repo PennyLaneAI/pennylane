@@ -13,8 +13,10 @@
 # limitations under the License.
 """This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
+from typing import Sequence, Callable
+
 import pennylane as qml
-from .batch_transform import batch_transform
+from .core import transform
 
 
 def _split_operations(ops, num_tapes):
@@ -43,8 +45,8 @@ def _split_operations(ops, num_tapes):
     return new_ops
 
 
-@batch_transform
-def broadcast_expand(tape):
+@transform
+def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 
