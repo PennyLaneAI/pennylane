@@ -142,7 +142,7 @@ def defer_measurements(tape: QuantumTape):
         else:
             apply(op)
 
-    return tape._qfunc_output
+    return tape._qfunc_output  # pylint: disable=protected-access
 
 
 def _add_control_gate(op, control_wires):
