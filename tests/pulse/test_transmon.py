@@ -35,9 +35,7 @@ from pennylane.wires import Wires
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):
     """Compute the transmon drive term for given amplitude, phase and frequency."""
-    return amp * (
-        np.cos(phase + freq * t) * qml.PauliX(wire) - np.sin(phase + freq * t) * qml.PauliY(wire)
-    )
+    return amp * (np.sin(phase + freq * t) * qml.PauliY(wire))
 
 
 class TestTransmonDrive:
@@ -56,7 +54,7 @@ class TestTransmonDrive:
 
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([1, 2])
-        assert len(Hd.ops) == 2
+        assert len(Hd.ops) == 1
         assert Hd.pulses == [HardwarePulse(1, 2, 3, wires=[1, 2])]
 
     @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
@@ -73,7 +71,6 @@ class TestTransmonDrive:
             return amp_phase_freq(a, phase, fr, t, wire)
 
         assert H.coeffs[0].func.__name__ == "no_callable"
-        assert H.coeffs[1].func.__name__ == "no_callable"
         assert qml.math.allclose(qml.matrix(H([], t)), qml.matrix(expected(amp, phase, freq, t)))
 
     @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
@@ -93,7 +90,6 @@ class TestTransmonDrive:
         params = [p]
 
         assert H.coeffs[0].func.__name__ == "callable_amp"
-        assert H.coeffs[1].func.__name__ == "callable_amp"
         assert qml.math.allclose(
             qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
         )
@@ -116,7 +112,6 @@ class TestTransmonDrive:
         params = [p]
 
         assert H.coeffs[0].func.__name__ == "callable_phase"
-        assert H.coeffs[1].func.__name__ == "callable_phase"
         assert qml.math.allclose(
             qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
         )
@@ -138,7 +133,6 @@ class TestTransmonDrive:
         params = [p]
 
         assert H.coeffs[0].func.__name__ == "callable_freq"
-        assert H.coeffs[1].func.__name__ == "callable_freq"
         assert qml.math.allclose(
             qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
         )
@@ -161,7 +155,6 @@ class TestTransmonDrive:
         params = [p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_freq"
-        assert H.coeffs[1].func.__name__ == "callable_amp_and_freq"
         assert qml.math.allclose(
             qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
         )
@@ -185,7 +178,6 @@ class TestTransmonDrive:
         params = [p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_phase"
-        assert H.coeffs[1].func.__name__ == "callable_amp_and_phase"
         assert qml.math.allclose(
             qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
         )
@@ -209,7 +201,6 @@ class TestTransmonDrive:
         params = [p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_phase_and_freq"
-        assert H.coeffs[1].func.__name__ == "callable_phase_and_freq"
         assert qml.math.allclose(
             qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
         )
@@ -234,7 +225,6 @@ class TestTransmonDrive:
         params = [p0, p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_phase_and_freq"
-        assert H.coeffs[1].func.__name__ == "callable_amp_and_phase_and_freq"
         assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(params, t)))
 
     def test_multiple_drives(self):
@@ -253,15 +243,11 @@ class TestTransmonDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.dot([1.0, 1.0], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.dot([-1.0, -1.0], [qml.PauliY(1), qml.PauliY(2)]),
-            qml.dot([1.0, 1.0], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.dot([-1.0, -1.0], [qml.PauliY(0), qml.PauliY(3)]),
+            qml.dot([1.0, 1.0], [qml.PauliY(1), qml.PauliY(2)]),
+            qml.dot([1.0, 1.0], [qml.PauliY(0), qml.PauliY(3)]),
         ]
         coeffs_expected = [
-            AmplitudeAndPhaseAndFreq(np.cos, amp, phase0, freq0),
             AmplitudeAndPhaseAndFreq(np.sin, amp, phase0, freq0),
-            AmplitudeAndPhaseAndFreq(np.cos, 1, phase1, freq1),
             AmplitudeAndPhaseAndFreq(np.sin, 1, phase1, freq1),
         ]
         H_expected = HardwareHamiltonian(
@@ -271,12 +257,12 @@ class TestTransmonDrive:
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([0, 3, 1, 2])
         assert Hd.settings is None
-        assert len(Hd.ops) == 4  # 2 terms for amplitude/phase
+        assert len(Hd.ops) == 2  # 2 terms for amplitude/phase
 
         for coeff in Hd.coeffs:
             assert isinstance(coeff, AmplitudeAndPhaseAndFreq)
         assert Hd.coeffs[0].func.__name__ == "callable_amp"
-        assert Hd.coeffs[2].func.__name__ == "no_callable"
+        assert Hd.coeffs[1].func.__name__ == "no_callable"
 
         # pulses were added correctly
         assert Hd.pulses == [
@@ -437,6 +423,14 @@ class TestTransmonInteraction:
 
             H = qml.pulse.transmon_interaction(qubit_freq, connections, coupling, wires)
             assert H.wires == Wires(["a", "b", "c", "d", "e", "f"])
+
+    def test_functional_form(self):
+        """Test that the matrices of the transmon drive and a manually constructed
+        operator with the same functional form are equal."""
+        Hd = transmon_drive(1.0, 1.0, 1.0, wires=[0])
+        expected = qml.s_prod(2 * np.pi * np.sin(2 * np.pi * 1.0 + 1), qml.PauliY(0))
+
+        assert qml.math.allclose(qml.matrix(Hd([], 1.0)), qml.matrix(expected))
 
 
 # For transmon settings test

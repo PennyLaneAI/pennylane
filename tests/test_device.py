@@ -537,6 +537,55 @@ class TestInternalFunctions:
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
 
+    @pytest.mark.parametrize(
+        "op, decomp",
+        zip(
+            [
+                qml.BasisState([0, 0], wires=[0, 1]),
+                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+            ],
+            [
+                [],
+                [
+                    qml.RY(1.57079633, wires=[1]),
+                    qml.CNOT(wires=[0, 1]),
+                    qml.RY(1.57079633, wires=[1]),
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ],
+        ),
+    )
+    def test_default_expand_with_stateprep(self, op, decomp):
+        """Test the default expand function with StatePrep operations
+        integrates well."""
+        prep = [op]
+        ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
+
+        dev = qml.device("default.qubit", wires=3)
+        tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
+        new_tape = dev.default_expand_fn(tape)
+
+        true_decomposition = []
+        # prep op is not decomposed at start of circuit:
+        true_decomposition.append(op)
+        # AngleEmbedding decomp:
+        true_decomposition.append(qml.RZ(0.1, wires=[0]))
+        # prep op decomposed if its mid-circuit:
+        true_decomposition.extend(decomp)
+        # Z:
+        true_decomposition.append(qml.PauliZ(wires=2))
+
+        assert len(new_tape.operations) == len(true_decomposition)
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(tape_op, true_op)
+
+        assert new_tape.shots is tape.shots
+        assert new_tape.wires == tape.wires
+        assert new_tape.is_sampled == tape.is_sampled
+        assert new_tape.all_sampled == tape.all_sampled
+        assert new_tape.batch_size == tape.batch_size
+        assert new_tape.output_dim == tape.output_dim
+
 
 # pylint: disable=too-few-public-methods
 class TestClassmethods:
