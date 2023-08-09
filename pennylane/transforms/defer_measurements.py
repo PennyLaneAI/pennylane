@@ -127,7 +127,7 @@ def defer_measurements(tape: QuantumTape):
     cur_wire = max(tape.wires) + 1
     new_wires = {}
 
-    for op in tape.circuit:
+    for op in tape:
         if isinstance(op, MidMeasureMP):
             new_wires[op.id] = cur_wire
             qml.CNOT([op.wires[0], cur_wire])
