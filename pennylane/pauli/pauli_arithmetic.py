@@ -496,6 +496,8 @@ class PauliSentence(dict):
         matrix.indices = np.take_along_axis(indices, idx, axis=1).ravel()
         matrix.data = np.take_along_axis(data, idx, axis=1).ravel()
         matrix.indptr = _cached_arange(size + 1) * indices.shape[1]
+        
+        # remove zeros and things sufficiently close to zero
         matrix.data[np.abs(matrix.data) < 1e-8] = 0  # Faster than np.isclose(matrix.data, 0)
         matrix.eliminate_zeros()
         return matrix
