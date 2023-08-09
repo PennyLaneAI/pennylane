@@ -157,6 +157,12 @@ array([False, False])
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
+* Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
+  [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+
+* Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
+  [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
+
 * `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
