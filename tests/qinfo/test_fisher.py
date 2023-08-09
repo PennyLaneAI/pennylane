@@ -39,10 +39,12 @@ class TestMakeProbs:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        x = pnp.array([0.5])
+        x = pnp.array(0.5)
         new_qnode = _make_probs(qnode)
-        tape, _ = new_qnode.construct(x, {})
-        assert tape[0].observables[0].return_type == qml.measurements.Probability
+        res = new_qnode(x)
+
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (4,)
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_make_probs(self, shots):
