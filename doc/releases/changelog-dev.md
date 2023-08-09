@@ -37,8 +37,29 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
-* Functions added to convert wavefunctions obtained from `PySCF` to a state vector.
+* Functions are available to obtain a state vector from `PySCF` solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
+  [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
+
+  The `qml.qchem.import_state` function can be used to import a `PySCF` solver object and return the
+  corresponding state vector.
+
+  ```pycon
+  >>> from pyscf import gto, scf, ci
+  >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+  >>> myhf = scf.UHF(mol).run()
+  >>> myci = ci.UCISD(myhf).run()
+  >>> wf_cisd = qml.qchem.import_state(myci, tol=1e-1)
+  >>> print(wf_cisd)
+  [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
+    0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+    0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+   -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
+  ```
+
+  The currently supported objects are RCISD, UCISD, RCCSD, and UCCSD which correspond to 
+  restricted (R) and unrestricted (U) configuration interaction (CI )and coupled cluster (CC) 
+  calculations with single and double (SD) excitations.
 
 <h3>Improvements 🛠</h3>
 
@@ -136,6 +157,15 @@ array([False, False])
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
+* Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
+  [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+
+* Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
+  [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
+
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+
 <h3>Breaking changes 💔</h3>
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
@@ -171,6 +201,9 @@ array([False, False])
   `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
+* The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 <h3>Deprecations 👋</h3>
 
@@ -288,6 +321,7 @@ Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
+Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
