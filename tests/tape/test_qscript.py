@@ -906,13 +906,16 @@ measures = [
     (qml.var(qml.PauliZ(0)), ()),
     (qml.probs(wires=[0]), (2,)),
     (qml.probs(wires=[0, 1]), (4,)),
-    (qml.state(), (8,)),  # Assumes 3-qubit device
+    (qml.state(), (2,)),
     (qml.density_matrix(wires=[0, 1]), (4, 4)),
     (
         qml.sample(qml.PauliZ(0)),
         None,
     ),  # Shape is None because the expected shape is in the test case
-    (qml.sample(), None),  # Shape is None because the expected shape is in the test case
+    (
+        qml.sample(wires=[0, 1, 2]),
+        None,
+    ),  # Shape is None because the expected shape is in the test case
     (qml.mutual_info(wires0=[0], wires1=[1]), ()),
     (qml.vn_entropy(wires=[0, 1]), ()),
 ]
@@ -927,12 +930,6 @@ multi_measurements = [
         ((2,), (4,), (8,)),
     ),
 ]
-
-warnings_matches = {
-    State: "Requested state or density matrix with finite shots",
-    VnEntropy: "Requested Von Neumann entropy with finite shots",
-    MutualInfo: "Requested mutual information with finite shots",
-}
 
 
 class TestMeasurementProcess:
@@ -1030,7 +1027,7 @@ class TestOutputShape:
         b = np.array(0.2)
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [measurement])
+        qs = QuantumScript(ops, [measurement], shots=shots)
 
         shot_dim = len(shots) if isinstance(shots, tuple) else shots
         if expected_shape is None:
@@ -1051,10 +1048,8 @@ class TestOutputShape:
         shape of a QNode for a single measurement."""
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
-        if isinstance(shots, tuple) and isinstance(
-            measurement, (qml.measurements.MutualInfoMP, qml.measurements.VnEntropyMP)
-        ):
-            pytest.skip("Shot vectors and entropies not supported.")
+        if shots and isinstance(measurement, qml.measurements.StateMeasurement):
+            pytest.skip("State measurements with finite shots not supported.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
@@ -1062,15 +1057,10 @@ class TestOutputShape:
         b = np.array(0.2)
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [measurement])
+        qs = QuantumScript(ops, [measurement], shots=shots)
 
-        w_match = warnings_matches.get(measurement.return_type, None)
-        if shots is not None and w_match is not None:
-            with pytest.warns(UserWarning, match=w_match):
-                res = qml.execute([qs], dev, gradient_fn=None)[0]
-        else:
-            # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-            res = qml.execute([qs], dev, gradient_fn=None)[0]
+        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, gradient_fn=None)[0]
 
         if isinstance(shots, tuple):
             res_shape = tuple(r.shape for r in res)
@@ -1132,7 +1122,7 @@ class TestOutputShape:
         expectation value, variance and probability measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        qs = QuantumScript(measurements=measurements)
+        qs = QuantumScript(measurements=measurements, shots=shots)
 
         if measurements[0].return_type is qml.measurements.Sample:
             expected[1] = shots
@@ -1166,7 +1156,7 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, measurements)
+        qs = QuantumScript(ops, measurements, shots=shots)
 
         # Update expected as we're using a shotvector
         expected = tuple(expected for _ in shots)
@@ -1191,7 +1181,9 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)])
+        qs = QuantumScript(
+            ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
+        )
 
         expected = tuple(() if shots == 1 else (shots,) for _ in range(num_samples))
 
@@ -1229,7 +1221,7 @@ class TestOutputShape:
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
 
         assert tape.shape(dev) == expected_shape
@@ -1257,7 +1249,7 @@ class TestOutputShape:
             for _ in range(2):
                 qml.apply(measurement)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         expected = qml.execute([tape], dev, gradient_fn=None)[0]
         actual = tape.shape(dev)
 
@@ -1276,7 +1268,9 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)])
+        qs = QuantumScript(
+            ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
+        )
 
         expected = tuple(tuple(() if s == 1 else (s,) for _ in range(num_samples)) for s in shots)
 
@@ -1297,11 +1291,9 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
-        qs = QuantumScript(ops, [qml.sample()] * num_samples)
+        qs = QuantumScript(ops, [qml.sample()] * num_samples, shots=shots)
 
-        expected = tuple(
-            tuple((3,) if s == 1 else (s, 3) for _ in range(num_samples)) for s in shots
-        )
+        expected = tuple(tuple(() if s == 1 else (s,) for _ in range(num_samples)) for s in shots)
 
         res = qs.shape(dev)
         assert res == expected
@@ -1321,7 +1313,7 @@ class TestOutputShape:
             qml.RX(np.array([0.3, 0.4]), wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=(1, 2, 3))
         msg = "Parameter broadcasting when using a shot vector is not supported yet"
 
         with pytest.raises(NotImplementedError, match=msg):
@@ -1346,21 +1338,13 @@ class TestNumericType:
         """Test that most measurements output floating point values and that
         the tape output domain correctly identifies this."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
-        if isinstance(shots, tuple) and isinstance(
-            ret, (qml.measurements.MutualInfoMP, qml.measurements.VnEntropyMP)
-        ):
-            pytest.skip("Shot vectors and entropies not supported.")
+        if shots and isinstance(ret, (qml.measurements.MutualInfoMP, qml.measurements.VnEntropyMP)):
+            pytest.skip("Shots and entropies not supported.")
 
         a, b = 0.3, 0.2
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
-        qs = QuantumScript(ops, [ret])
-
-        w_match = warnings_matches.get(ret.return_type, None)
-        if shots is not None and w_match is not None:
-            with pytest.warns(UserWarning, match=w_match):
-                result = qml.execute([qs], dev, gradient_fn=None)[0]
-        else:
-            result = qml.execute([qs], dev, gradient_fn=None)[0]
+        qs = QuantumScript(ops, [ret], shots=shots)
+        result = qml.execute([qs], dev, gradient_fn=None)[0]
 
         if not isinstance(result, tuple):
             result = (result,)
@@ -1387,18 +1371,20 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert qs.numeric_type is complex
 
-    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
-    def test_sample_int_eigvals(self, ret):
+    @pytest.mark.parametrize(
+        "ret, dtype", [(qml.sample(), np.bool8), (qml.sample(qml.PauliZ(wires=0)), np.int64)]
+    )
+    def test_sample_int_eigvals(self, ret, dtype):
         """Test that the tape can correctly determine the output domain for a
         sampling measurement with a Hermitian observable with integer
         eigenvalues."""
         dev = qml.device("default.qubit", wires=3, shots=5)
-        qs = QuantumScript([qml.RY(0.4, 0)], [ret])
+        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
         # Double-check the domain of the QNode output
-        assert np.issubdtype(result.dtype, np.int64)
+        assert np.issubdtype(result.dtype, dtype)
         assert qs.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
@@ -1416,7 +1402,7 @@ class TestNumericType:
         )
         herm = np.outer(arr, arr)
 
-        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))])
+        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
@@ -1442,7 +1428,7 @@ class TestNumericType:
         a, b = 0, 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))]
-        qs = QuantumScript(ops, m)
+        qs = QuantumScript(ops, m, shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
