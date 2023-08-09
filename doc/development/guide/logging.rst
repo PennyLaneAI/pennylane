@@ -63,7 +63,7 @@ As with any package that targets many domains, Python’s logging is as
 extensible and flexible as it is a challenge to configure for all user needs 
 – ideally we define some good defaults that meet our development goals, 
 and only deviate from them if required. For further details and customization 
-options I will suggest reading the Python logging documentation
+options, consider reading the Python logging documentation
 `how-to <https://docs.python.org/3/howto/logging.html#python%20logging>`__
 and `“advanced”
 tutorial <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial>`__
