@@ -13,7 +13,7 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane import numpy as np

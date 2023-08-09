@@ -49,6 +49,7 @@ def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform without tape."""
+    circuit = circuit.copy()
     circuit._ops.pop(index)  # pylint:disable=protected-access
     return [circuit], lambda x: x
 
@@ -57,6 +58,7 @@ def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform with wrong hinting."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
@@ -97,6 +99,7 @@ def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid transform."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
@@ -106,6 +109,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
+    tape2 = tape.copy()
     tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
