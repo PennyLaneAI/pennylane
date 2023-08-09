@@ -71,7 +71,7 @@ level.
 
 PennyLane logging defaults are contained in a configuration file in the logging module titled 
 ``log_config.toml``, which is imported when logging is enabled. 
-The file path can be accessed with :code:`qml.logging.config_path()`. To change log-levels that are 
+The file path can be accessed with :func:`qml.logging.config_path()`. To change log-levels that are 
 reporting on a package or module-wide basis, it is possible to do so by 
 modifying the entries in the ``log_config.toml`` file, under the ``[loggers]``
 section. In addition, if we want to send the logs elsewhere, we can
