@@ -106,12 +106,12 @@ def test_pennylane_style():
     assert plt.rcParams["patch.facecolor"] == "#D5F0FD"
     assert plt.rcParams["patch.edgecolor"] == almost_black
     assert plt.rcParams["patch.linewidth"] == 2.0
-    assert plt.rcParams["patch.force_edgecolor"] # = True
+    assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
-    assert plt.rcParams["font.family"] = ["Quicksand", "sans-serif"]
-    assert plt.rcParams["font.weight"] = "bold"
-    assert plt.rcParams["path.sketch"] = (1, 250, 1)
+    assert plt.rcParams["font.family"] == ["Quicksand", "sans-serif"]
+    assert plt.rcParams["font.weight"] == "bold"
+    assert plt.rcParams["path.sketch"] == (1, 250, 1)
 
 
 def test_sketch_style_dark():
