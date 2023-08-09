@@ -183,7 +183,7 @@ class MeasurementValue(Generic[T]):
 
     @property
     def branches(self):
-        """A dictionary representing all possible outcomes of the measurement value."""
+        """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
         for i in range(2 ** len(self.measurements)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
@@ -192,10 +192,10 @@ class MeasurementValue(Generic[T]):
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
-        if isinstance(other, MidMeasureMP):
+        if isinstance(other, MeasurementValue):
             # pylint: disable=protected-access
             return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
-        # if `other` is not a measurement value then apply it to each branch
+        # if `other` is not a MeasurementValue then apply it to each branch
         return self._apply(lambda v: base_bin(v, other))
 
     def __invert__(self):
@@ -255,7 +255,7 @@ class MeasurementValue(Generic[T]):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
 
-    def _merge(self, other: "MidMeasureMP"):
+    def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
