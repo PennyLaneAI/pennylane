@@ -223,7 +223,6 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
     else:
         op_list = _commute_controlled_left(tape.operations)
 
-
     new_tape = QuantumTape(op_list, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):

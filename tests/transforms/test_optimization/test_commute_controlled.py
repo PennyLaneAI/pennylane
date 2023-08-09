@@ -231,7 +231,7 @@ class TestCommuteControlled:
 
         names_expected = ["CZ", "PauliZ", "CNOT", "PhaseShift", "CRZ", "S", "T", "PauliZ"]
         wires_expected = (
-                [Wires([0, 2]), Wires(2), Wires([0, 1]), Wires(2)] + [Wires([0, 1])] + [Wires(0)] * 3
+            [Wires([0, 2]), Wires(2), Wires([0, 1]), Wires(2)] + [Wires([0, 1])] + [Wires(0)] * 3
         )
 
         compare_operation_lists(ops, names_expected, wires_expected)
