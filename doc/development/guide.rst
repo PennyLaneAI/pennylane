@@ -41,7 +41,7 @@ of PennyLane, plugins, and devices.
     :link: guide/adr.html
 
 .. title-card::
-    :name: Logging development guidelines
+    :name: Logging guidelines
     :description: Defining how to develop using logging supports in PennyLane.
     :link: guide/logging.html
 
