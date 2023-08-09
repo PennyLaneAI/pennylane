@@ -59,7 +59,7 @@ execution pipeline.
 Customizing the logging configuration
 -------------------------------------
 
-As with any package that targets many domains, Python’s logging is as
+As with any package that targets many domains, Python's logging is as
 extensible and flexible as it is a challenge to configure for all user needs 
 – ideally we define some good defaults that meet our development goals, 
 and only deviate from them if required. For further details and customization 
@@ -70,7 +70,8 @@ tutorial <https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial
 level. 
 
 PennyLane logging defaults are contained in a configuration file in the logging module titled 
-``log_config.toml``, which is imported when logging is enabled. To change log-levels that are 
+``log_config.toml``, which is imported when logging is enabled. 
+The file path can be accessed with :code:`qml.logging.config_path()`. To change log-levels that are 
 reporting on a package or module-wide basis, it is possible to do so by 
 modifying the entries in the ``log_config.toml`` file, under the ``[loggers]``
 section. In addition, if we want to send the logs elsewhere, we can
