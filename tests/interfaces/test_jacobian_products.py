@@ -20,9 +20,17 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.interfaces.jacobian_products import JacobianProductCalculator, TransformDerivatives
+from pennylane.interfaces.jacobian_products import (
+    DeviceJacobianProducts,
+    ExperimentalDeviceDerivatives,
+    JacobianProductCalculator,
+    LegacyDeviceDerivatives,
+    TransformDerivatives,
+)
 
 dev = qml.devices.experimental.DefaultQubit2()
+dev_old = qml.devices.DefaultQubit(wires=5)
+adjoint_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
 
 def inner_execute_numpy(tapes):
@@ -34,8 +42,12 @@ param_shift_jpc = TransformDerivatives(inner_execute_numpy, qml.gradients.param_
 hadamard_grad_jpc = TransformDerivatives(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
+device_jacs = ExperimentalDeviceDerivatives(dev, adjoint_config)
+legacy_jacs = LegacyDeviceDerivatives(dev_old, {"method": "adjoint_jacobian"})
+device_jps = DeviceJacobianProducts(dev, execution_config=adjoint_config)
 
-jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
+transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
+jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_jacs, device_jps]
 
 
 # pylint: disable=too-few-public-methods
@@ -89,6 +101,9 @@ class TestJacobianProductResults:
         jac = jpc.compute_jacobian((tape,))
         assert qml.math.allclose(jac, -np.sin(x))
 
+
+@pytest.mark.parametrize("jpc", transform_jpc_matrix)
+class TestProbsOut:
     def test_execute_jvp_multi_params_multi_out(self, jpc):
         """Test execute jvp with multiple parameters and multiple outputs"""
         x = 0.62

@@ -255,7 +255,7 @@ class ExperimentalDeviceDerivatives(JacobianProductCalculator):
                 tapes, self._execution_config
             )
 
-        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        multi_measurements = (len(t.measurements) > 1 for t in tapes)
         jvps = _compute_jvps(jacs, tangents, multi_measurements)
         return results, jvps
 
@@ -266,7 +266,7 @@ class ExperimentalDeviceDerivatives(JacobianProductCalculator):
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             jacs = self._device.compute_derivatives(tapes, self._execution_config)
 
-        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        multi_measurements = (len(t.measurements) > 1 for t in tapes)
         has_partitioned_shots = tapes[0].shots.has_partitioned_shots
         return _compute_vjps(
             jacs, dy, multi_measurements, has_partitioned_shots=has_partitioned_shots
@@ -280,7 +280,14 @@ class ExperimentalDeviceDerivatives(JacobianProductCalculator):
 
 
 class DeviceJacobianProducts(JacobianProductCalculator):
-    """doc"""
+    """Device provided jacobian products.
+
+    Args:
+        device (pennylane.devices.experimental.Device)
+        execution_config (pennylane.devices.experimental.ExecutionConfig)
+
+
+    """
 
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device}, {self._execution_config}>"
@@ -301,18 +308,38 @@ class DeviceJacobianProducts(JacobianProductCalculator):
 
     def compute_jacobian(self, tapes: Batch):
         tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        return self._device.compute_jacobian(tapes, self._execution_config)
+        return self._device.compute_derivatives(tapes, self._execution_config)
 
 
 class LegacyDeviceDerivatives(JacobianProductCalculator):
-    """doc"""
+    """Compute Jacobian products using :class:`~.Device`
+
+    Args:
+        device (qml.Device): a device adhering to the historical interface
+        gradient_kwargs (Optional[dict]): keyword arguments for the gradient.
+
+    **Technical comments on caching:**
+
+    In order to store results and jacobian for the backward pass during the forward pass,
+    the ``_cache`` property is an ``LRUCache`` objects with a maximum size of 3. This keeps the cache small,
+    since we often wont use more than one, but still allows a little more room
+    if the cache isn't used immediately.
+
+    The entries are a tuple of the results and jacobains since the results are required by the ``execute_and_compute_jvp``
+    method.
+
+    Note that the the results and jacobains are cached based on the ``id`` of the tapes. This is done to separate the key
+    from potentially expensive (in the future) ``QuantumScript.__hash__``. This means that the batch of tapes must be the
+    same instance, not just something that looks the same but has a different location in memory.
+
+    """
 
     def __repr__(self):
         return f"<DeviceDerivatives: {self._device}, {self._gradient_kwargs}>"
 
-    def __init__(self, device: qml.Device, gradient_kwargs):
+    def __init__(self, device: qml.Device, gradient_kwargs: Optional[dict] = None):
         self._device = device
-        self._gradient_kwargs = gradient_kwargs
+        self._gradient_kwargs = gradient_kwargs or {}
         self._cache = LRUCache(maxsize=3)
 
     def __call__(self, tapes: Batch):
@@ -328,7 +355,7 @@ class LegacyDeviceDerivatives(JacobianProductCalculator):
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             results, jacs = self._device.execute_and_gradients(tapes, **self._gradient_kwargs)
 
-        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        multi_measurements = (len(t.measurements) > 1 for t in tapes)
         jvps = _compute_jvps(jacs, tangents, multi_measurements)
         return results, jvps
 
@@ -339,7 +366,7 @@ class LegacyDeviceDerivatives(JacobianProductCalculator):
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             jacs = self._device.gradients(tapes, **self._gradient_kwargs)
 
-        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        multi_measurements = (len(t.measurements) > 1 for t in tapes)
         has_partitioned_shots = tapes[0].shots.has_partitioned_shots
         return _compute_vjps(
             jacs, dy, multi_measurements, has_partitioned_shots=has_partitioned_shots
