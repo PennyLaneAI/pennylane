@@ -137,7 +137,7 @@ def _pennylane():
     modifies ``plt.rcParams``.
     """
     almost_black = "#151515"
-    plt.rcParams["figure.facecolor"] = "#FFF8E5"
+    plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["savefig.facecolor"] = "white"
     plt.rcParams["axes.facecolor"] = "#FFB5F1"
     plt.rcParams["patch.facecolor"] = "#D5F0FD"
