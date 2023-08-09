@@ -58,7 +58,16 @@ class Select(Operation):
 
     num_wires = qml.operation.AnyWires
 
+    def _flatten(self):
+        data = (self.ops)
+        return data, tuple()
+    
+    @classmethod
+    def _unflatten(cls, data, _) -> "Select":
+        return cls(*data)
+
     def __init__(self, ops, control_wires, id=None):
+        self.ops = ops
         control_wires = qml.wires.Wires(control_wires)
         if 2 ** len(control_wires) < len(ops):
             raise ValueError(
