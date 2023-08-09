@@ -86,7 +86,7 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
-def _get_ml_framework_boundary(interface, grad_on_execution):
+def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
@@ -121,12 +121,10 @@ def _get_ml_framework_boundary(interface, grad_on_execution):
 
         elif interface == "jax-jit":
             from .jax_jit_tuple import execute as ml_boundary
-        elif interface in {"jax", "jax-python", "JAX"}:
+        else:  #  interface in {"jax", "jax-python", "JAX"}:
             from .jax import execute as ml_boundary
-        else:
-            raise ImportError("Interface not identified.")
 
-    except ImportError as e:
+    except ImportError as e:  # pragma: no-cover
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
@@ -214,7 +212,16 @@ def _preprocess_expand_fn(
 def _make_inner_execute(
     device, override_shots, cache, expand_fn=None, execution_config=None, numpy_only=True
 ) -> Callable:
-    """Construct the function that will be used inside of the ml framework registration."""
+    """Construct the function that will execute the tapes inside the ml framework registration
+    for the 1st order derivatives.
+
+    Steps in between the ml framework execution and the device are:
+    - caching
+    - conversion to numpy
+    - device expansion (old device)
+
+    For higher order derivatives, the "inner execute" will be another ml framework execute.
+    """
 
     if isinstance(device, qml.Device):
         device_execution = set_shots(device, override_shots)(device.batch_execute)
@@ -520,7 +527,13 @@ def execute(
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
     if interface == "jax":
-        from .jax import get_jax_interface_name
+        try:
+            from .jax import get_jax_interface_name
+        except ImportError as e:  # pragma: no-cover
+            raise qml.QuantumFunctionError(
+                "jax not found. Please install the latest "
+                "version of jax to enable the 'jax' interface."
+            ) from e
 
         interface = get_jax_interface_name(tapes)
 
@@ -697,16 +710,10 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    ml_boundary = _get_ml_framework_boundary(interface, _grad_on_execution)
-    try:
-        res = ml_boundary(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
-    except ImportError as e:
-        raise qml.QuantumFunctionError(
-            f"{interface} not found. Please install the latest "
-            f"version of {interface} to enable the '{interface}' interface."
-        ) from e
+    ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
+    results = ml_boundary_execute(
+        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+    )
 
     results = batch_fn(results)
     return program_post_processing(results)

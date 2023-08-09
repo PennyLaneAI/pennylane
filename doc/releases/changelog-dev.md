@@ -173,6 +173,10 @@ array([False, False])
 
 <h3>Breaking changes 💔</h3>
 
+* Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
+  with float32 parameters may no longer give accurate results.
+  [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
+
 * `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
   their IDs.
   [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
