@@ -100,6 +100,7 @@ def test_pennylane_style():
 
     _set_style("pennylane")
 
+    almost_black = "#151515"  # less harsh than full black
     assert plt.rcParams["figure.facecolor"] == "white"
     assert plt.rcParams["savefig.facecolor"] == "white"
     assert plt.rcParams["axes.facecolor"] == "#FFB5F1"
