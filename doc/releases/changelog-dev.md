@@ -168,6 +168,9 @@ array([False, False])
 
 <h3>Breaking changes 💔</h3>
 
+* Support for Python 3.8 is dropped.
+  [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
+
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
 
