@@ -311,6 +311,9 @@ array([False, False])
   and `var` measurements.
   [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
+* Subtracting a `Prod` from another operator now works as expected.
+  [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
