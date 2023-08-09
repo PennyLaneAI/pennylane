@@ -59,9 +59,8 @@ class Select(Operation):
     num_wires = qml.operation.AnyWires
 
     def _flatten(self):
-        data = (self.ops)
-        return data, tuple()
-    
+        return tuple(self.ops), tuple()
+
     @classmethod
     def _unflatten(cls, data, _) -> "Select":
         return cls(*data)
