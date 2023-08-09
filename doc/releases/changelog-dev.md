@@ -244,7 +244,7 @@ array([False, False])
 
 * `MeasurementProcess.__eq__` and `MeasurementProcess.__hash__` will now raise warnings to reflect upcoming
   changes to measurement process equality and hashing.
-  [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+  [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
 <h3>Documentation 📝</h3>
 
