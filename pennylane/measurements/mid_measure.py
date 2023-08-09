@@ -63,20 +63,15 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
-        def func(x, y):
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
+        def func():
+            qml.PauliX(1)
             m_0 = qml.measure(1, reset=True)
-
-            qml.cond(m_0, qml.RY)(y, wires=0)
-            qml.RX(np.pi/4, wires=1)
-            return qml.probs(wires=[0, 1])
+            return qml.probs(wires=[1])
 
     Executing this QNode:
 
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
-    >>> func(*pars)
-    tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
+    >>> func()
+    tensor([1., 0.], requires_grad=True)
 
     Mid circuit measurements can be manipulated using the following dunder methods
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,

@@ -142,6 +142,8 @@ def defer_measurements(tape: QuantumTape):
         else:
             apply(op)
 
+    return tape._qfunc_output
+
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
