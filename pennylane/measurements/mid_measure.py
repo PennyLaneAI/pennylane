@@ -56,7 +56,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
-    to the :math:`|0\rangle` by setting reset=True.
+    to the :math:`\vert 0\rangle` by setting ``reset=True``.
 
     .. code-block:: python3
 
@@ -89,8 +89,8 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`|0\rangle` state
-            after measurement.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`\vert 0\rangle`
+            state after measurement.
 
     Returns:
         MidMeasureMP: measurement process instance
