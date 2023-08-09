@@ -31,7 +31,7 @@ from pennylane.devices.qubit.preprocess import (
     validate_multiprocessing_workers,
 )
 from pennylane.devices.experimental import ExecutionConfig
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
 
