@@ -137,10 +137,8 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
-
 
 * `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
   property. This property is merely used to set defaults for a workflow, and does not directly
@@ -157,10 +155,20 @@ array([False, False])
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
+* Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
+  [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+
+* Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
+  [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
+
 * `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
+  their IDs.
+  [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
@@ -302,6 +310,9 @@ array([False, False])
 * `qml.transforms.split_non_commuting` now correctly works on tapes containing both `expval`
   and `var` measurements.
   [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
+
+* Subtracting a `Prod` from another operator now works as expected.
+  [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
 
 <h3>Contributors ✍️</h3>
 

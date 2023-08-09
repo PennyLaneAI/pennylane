@@ -56,10 +56,12 @@ def measure(wires):  # TODO: Change name to mid_measure
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Mid circuit measurements can be manipulated using the following dunder methods
-    `+`, `-`, `*`, `/`, `~` (not), `&` (and), `|` (or), `==`, `<=`, `>=`, `<`, `>`. With other mid-circuit measurements or scalars.
+    ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
+    ``>=``, ``<``, ``>`` with other mid-circuit measurements or scalars.
 
     Note:
-        python `not`, `and`, `or`, do not work since these do not have dunder methods. Instead use `~`, `&`, `|`.
+        python ``not``, ``and``, ``or``, do not work since these do not have dunder
+        methods. Instead use ``~``, ``&``, ``|``.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
@@ -78,8 +80,8 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    MidMeasureMP(wires=wire, id=measurement_id)
-    return MeasurementValue([measurement_id], processing_fn=lambda v: v)
+    mp = MidMeasureMP(wires=wire, id=measurement_id)
+    return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
 T = TypeVar("T")
@@ -112,6 +114,17 @@ class MidMeasureMP(MeasurementProcess):
     def _queue_category(self):
         return "_ops"
 
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (
+            self.__class__.__name__,
+            tuple(self.wires.tolist()),
+            self.id,
+        )
+
+        return hash(fingerprint)
+
 
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
@@ -123,26 +136,26 @@ class MeasurementValue(Generic[T]):
     Measurements on a single qubit in the computational basis are assumed.
 
     Args:
-        measurement_ids (list[str]): The id of the measurement that this object depends on.
+        measurements (list[.MidMeasureMP]): The measurement(s) that this object depends on.
         processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
-    def __init__(self, measurement_ids, processing_fn):
-        self.measurement_ids = measurement_ids
+    def __init__(self, measurements, processing_fn):
+        self.measurements = measurements
         self.processing_fn = processing_fn
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
-        for i in range(2 ** len(self.measurement_ids)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        for i in range(2 ** len(self.measurements)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             yield branch, self.processing_fn(*branch)
 
     @property
     def branches(self):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
-        for i in range(2 ** len(self.measurement_ids)):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        for i in range(2 ** len(self.measurements)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
@@ -209,41 +222,37 @@ class MeasurementValue(Generic[T]):
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
-        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
+        return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))
 
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
-        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
-        merged_measurement_ids.sort()
+        merged_measurements = list(set(self.measurements).union(set(other.measurements)))
+        merged_measurements.sort(key=lambda m: m.id)
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
-            sub_args_1 = (
-                x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]
-            )
+            sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
             out_1 = self.processing_fn(*sub_args_1)
 
-            sub_args_2 = (
-                x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]
-            )
+            sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
             out_2 = other.processing_fn(*sub_args_2)
 
             return out_1, out_2
 
-        return MeasurementValue(merged_measurement_ids, merged_fn)
+        return MeasurementValue(merged_measurements, merged_fn)
 
     def __getitem__(self, i):
-        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
         return self.processing_fn(*branch)
 
     def __str__(self):
         lines = []
-        for i in range(2 ** (len(self.measurement_ids))):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        for i in range(2 ** (len(self.measurements))):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             id_branch_mapping = [
-                f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))
+                f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
             ]
             lines.append(
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
