@@ -49,6 +49,7 @@ info = {
         "pennylane.plugins": [
             "default.qubit = pennylane.devices.experimental:DefaultQubit2",
             "default.gaussian = pennylane.devices:DefaultGaussian",
+            "default.qubit.legacy = pennylane.devices:DefaultQubit",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
             "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
             "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
