@@ -1000,11 +1000,15 @@ class TestQubitReset:
             qml.PhaseShift(p, 0)
             # Set measurement_ids so that the order of wires in combined
             # measurement values is consistent
-            m0 = qml.measurements.MidMeasureMP(0, reset=True, measurement_ids=[0])
+
+            mp0 = qml.measurements.MidMeasureMP(0, reset=True, id=0)
+            m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
             qml.cond(~m0, qml.RX)(x, 1)
-            m1 = qml.measurements.MidMeasureMP(1, reset=True, measurement_ids=[1])
+            mp1 = qml.measurements.MidMeasureMP(1, reset=True, id=1)
+            m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
             qml.cond(m0 & m1, qml.Hadamard)(0)
-            m2 = qml.measurements.MidMeasureMP(0, measurement_ids=[2])
+            mp2 = qml.measurements.MidMeasureMP(0, id=2)
+            m2 = qml.measurements.MeasurementValue([mp2], lambda v: v)
             qml.cond(m1 | m2, qml.RY)(y, 2)
             return qml.expval(qml.PauliZ(2))
 

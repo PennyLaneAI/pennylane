@@ -62,7 +62,7 @@ mp3 = MidMeasureMP(Wires(2), "m2")
 class TestMeasurementValueManipulation:
     """Test all the dunder methods associated with the MidMeasureMP class"""
 
-    def test_apply_function_to_measurement(self, reset):
+    def test_apply_function_to_measurement(self):
         """Test the general _apply method that can apply an arbitrary function to a measurement."""
 
         m = MeasurementValue([mp1], lambda v: v)
@@ -70,7 +70,6 @@ class TestMeasurementValueManipulation:
         sin_of_m = m._apply(np.sin)  # pylint: disable=protected-access
         assert sin_of_m[0] == 0.0
         assert sin_of_m[1] == np.sin(1)
-        assert sin_of_m.reset is False
 
     def test_and_with_bool(self):
         """Test the __add__ dunder method between MeasurementValue and scalar."""
@@ -78,7 +77,6 @@ class TestMeasurementValueManipulation:
         m_add = m & False
         assert not m_add[0]
         assert not m_add[1]
-        assert m_add.reset is False
 
     def test_and_to_measurements(self):
         """Test the __add__ dunder method between two MeasurementValues."""
@@ -89,7 +87,6 @@ class TestMeasurementValueManipulation:
         assert not sum_of_measurements[1]
         assert not sum_of_measurements[2]
         assert sum_of_measurements[3]
-        assert sum_of_measurements.reset is False
 
     def test_or_with_bool(self):
         """Test the __or__ dunder method between MeasurementValue and scalar."""
@@ -97,7 +94,6 @@ class TestMeasurementValueManipulation:
         m_add = m | False
         assert not m_add[0]
         assert m_add[1]
-        assert m_add.reset is False
 
     def test_or_to_measurements(self):
         """Test the __or__ dunder method between two MeasurementValues."""
@@ -108,7 +104,6 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[1]
         assert sum_of_measurements[2]
         assert sum_of_measurements[3]
-        assert sum_of_measurements.reset is False
 
     def test_add_with_scalar(self):
         """Test the __add__ dunder method between MeasurementValue and scalar."""
@@ -116,7 +111,6 @@ class TestMeasurementValueManipulation:
         m_add = m + 5
         assert m_add[0] == 5
         assert m_add[1] == 6
-        assert m_add.reset is False
 
     def test_add_to_measurements(self):
         """Test the __add__ dunder method between two MeasurementValues."""
@@ -127,7 +121,6 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[1] == 1
         assert sum_of_measurements[2] == 1
         assert sum_of_measurements[3] == 2
-        assert sum_of_measurements.reset is False
 
     def test_radd_with_scalar(self):
         """Test the __radd__ dunder method between a scalar and a MeasurementValue."""
@@ -135,7 +128,6 @@ class TestMeasurementValueManipulation:
         m_add = 5 + m
         assert m_add[0] == 5
         assert m_add[1] == 6
-        assert m_add.reset is False
 
     def test_sub_with_scalar(self):
         """Test the __sub__ dunder method between MeasurementValue and scalar."""
@@ -143,7 +135,6 @@ class TestMeasurementValueManipulation:
         m_add = m - 5
         assert m_add[0] == -5
         assert m_add[1] == -4
-        assert m_add.reset is False
 
     def test_sub_to_measurements(self):
         """Test the __sub__ dunder method between two MeasurementValues."""
@@ -154,7 +145,6 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[1] == -1
         assert sum_of_measurements[2] == 1
         assert sum_of_measurements[3] == 0
-        assert sum_of_measurements.reset is False
 
     def test_rsub_with_scalar(self):
         """Test the __rsub__ dunder method between a scalar and a MeasurementValue."""
@@ -169,7 +159,6 @@ class TestMeasurementValueManipulation:
         m_mul = m * 5
         assert m_mul[0] == 0
         assert m_mul[1] == 5
-        assert m_mul.reset is False
 
     def test_mul_with_measurement(self):
         """Test the __mul__ dunder method between two MeasurementValues."""
@@ -180,7 +169,6 @@ class TestMeasurementValueManipulation:
         assert mul_of_measurements[1] == 0
         assert mul_of_measurements[2] == 0
         assert mul_of_measurements[3] == 1
-        assert mul_of_measurements.reset is False
 
     def test_rmul_with_scalar(self):
         """Test the __rmul__ dunder method between a scalar and a MeasurementValue."""
@@ -188,7 +176,6 @@ class TestMeasurementValueManipulation:
         m_mul = 5 * m
         assert m_mul[0] == 0
         assert m_mul[1] == 5
-        assert m_mul.reset is False
 
     def test_truediv_with_scalar(self):
         """Test the __truediv__ dunder method between a MeasurementValue and a scalar"""
@@ -196,7 +183,6 @@ class TestMeasurementValueManipulation:
         m_mul = m / 5.0
         assert m_mul[0] == 0
         assert m_mul[1] == 1 / 5.0
-        assert m_mul.reset is False
 
     def test_truediv_with_measurement(self):
         """Test the __truediv__ dunder method between two MeasurementValues."""
@@ -207,7 +193,6 @@ class TestMeasurementValueManipulation:
         assert mul_of_measurements[1] == 3.0 / 6.0
         assert mul_of_measurements[2] == 4.0 / 5.0
         assert mul_of_measurements[3] == 4.0 / 6.0
-        assert mul_of_measurements.reset is False
 
     def test_rtruediv_with_scalar(self):
         """Test the __rtruediv__ dunder method between a scalar and a MeasurementValue."""
@@ -215,15 +200,13 @@ class TestMeasurementValueManipulation:
         m_mul = 5 / m
         assert m_mul[0] == 5 / 3.0
         assert m_mul[1] == 5 / 4.0
-        assert m_mul.reset is False
 
-    def test_inversion(self, reset):
+    def test_inversion(self):
         """Test the __inv__ dunder method."""
         m = MeasurementValue([mp1], lambda v: v)
         m_inversion = ~m
         assert m_inversion[0] is True
         assert m_inversion[1] is False
-        assert m_inversion.reset is False
 
     def test_lt(self):
         """Test the __lt__ dunder method between a MeasurementValue and a float."""
@@ -231,7 +214,6 @@ class TestMeasurementValueManipulation:
         m_inversion = m < 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
-        assert m_inversion.reset is False
 
     def test_lt_with_other_measurement_value(self):
         """Test the __lt__ dunder method between two MeasurementValues"""
@@ -242,7 +224,6 @@ class TestMeasurementValueManipulation:
         assert compared[1] is True
         assert compared[2] is False
         assert compared[3] is False
-        assert compared.reset is False
 
     def test_gt(self):
         """Test the __gt__ dunder method between a MeasurementValue and a float."""
@@ -250,7 +231,6 @@ class TestMeasurementValueManipulation:
         m_inversion = m > 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
-        assert m_inversion.reset is False
 
     def test_gt_with_other_measurement_value(self):
         """Test the __gt__ dunder method between two MeasurementValues."""
@@ -261,7 +241,6 @@ class TestMeasurementValueManipulation:
         assert compared[1] is False
         assert compared[2] is True
         assert compared[3] is False
-        assert compared.reset is False
 
     def test_le(self):
         """Test the __le__ dunder method between a MeasurementValue and a float."""
@@ -269,7 +248,6 @@ class TestMeasurementValueManipulation:
         m_inversion = m <= 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
-        assert m_inversion.reset is False
 
     def test_le_with_other_measurement_value(self):
         """Test the __le__ dunder method between two MeasurementValues"""
@@ -280,7 +258,6 @@ class TestMeasurementValueManipulation:
         assert compared[1] is True
         assert compared[2] is False
         assert compared[3] is True
-        assert compared.reset is False
 
     def test_ge(self):
         """Test the __ge__ dunder method between a MeasurementValue and a flaot."""
@@ -288,7 +265,6 @@ class TestMeasurementValueManipulation:
         m_inversion = m >= 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
-        assert m_inversion.reset is False
 
     def test_ge_with_other_measurement_value(self):
         """Test the __ge__ dunder method between two MeasurementValues."""
@@ -299,7 +275,6 @@ class TestMeasurementValueManipulation:
         assert compared[1] is False
         assert compared[2] is True
         assert compared[3] is True
-        assert compared.reset is False
 
     def test_equality_with_scalar(self):
         """Test the __eq__ dunder method between a MeasurementValue and an integer."""
@@ -307,7 +282,6 @@ class TestMeasurementValueManipulation:
         m_eq = m == 0
         assert m_eq[0] is True  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] is False
-        assert m_eq.reset is False
 
     def test_equality_with_scalar_opposite(self):
         """Test the __eq__ dunder method between a MeasurementValue and an integer."""
@@ -321,7 +295,6 @@ class TestMeasurementValueManipulation:
         assert compared[1] is False
         assert compared[2] is False
         assert compared[3] is True
-        assert compared.reset is False
 
     def test_non_equality_with_scalar(self):
         """Test the __ne__ dunder method between a MeasurementValue and an integer."""
@@ -329,7 +302,6 @@ class TestMeasurementValueManipulation:
         m_eq = m != 0
         assert m_eq[0] is False  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] is True
-        assert m_eq.reset is False
 
     def test_non_equality_with_scalar_opposite(self):
         """Test the __ne__ dunder method between a MeasurementValue and an integer."""
@@ -337,7 +309,6 @@ class TestMeasurementValueManipulation:
         m_eq = m != 1
         assert m_eq[0] is True
         assert m_eq[1] is False
-        assert m_eq.reset is False
 
     def test_non_eq_with_other_measurement_value(self):
         """Test the __ne__ dunder method between two MeasurementValues."""
@@ -365,7 +336,6 @@ class TestMeasurementValueManipulation:
         out = m0 + 10
         assert out[0] == 10
         assert out[1] == 11
-        assert out.reset is False
 
     def test_branches_method(self):
         """Test the __eq__ dunder method between two MeasurementValues."""
@@ -378,12 +348,12 @@ class TestMeasurementValueManipulation:
         assert branches[(1, 0)] is False
         assert branches[(1, 1)] is True
 
-    def test_str(self, reset):
+    def test_str(self):
         """Test that the output of the __str__ dunder method is as expected"""
         m = MeasurementValue([mp1], lambda v: v)
         assert str(m) == "if m0=0 => 0\nif m0=1 => 1"
 
-    def test_complex_str(self, reset):
+    def test_complex_str(self):
         """Test that the output of the __str__ dunder method is as expected
         w.r.t a more complicated MeasurementValue"""
         a = MeasurementValue([mp1], lambda v: v)
