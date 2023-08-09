@@ -17,7 +17,7 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation
 from pennylane.tape import make_qscript
 
@@ -40,7 +40,7 @@ class Conditional(Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (MidMeasureMP): the measurement outcome value to consider
+        expr (MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
@@ -50,7 +50,7 @@ class Conditional(Operation):
 
     def __init__(
         self,
-        expr: MidMeasureMP,
+        expr: MeasurementValue[bool],
         then_op: Type[Operation],
         id=None,
     ):
@@ -67,7 +67,7 @@ def cond(condition, true_fn, false_fn=None):
     :func:`defer_measurements` transform.
 
     Args:
-        condition (.MidMeasureMP): a conditional expression involving a mid-circuit
+        condition (.MeasurementValue): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`)
         true_fn (callable): The quantum function of PennyLane operation to
             apply if ``condition`` is ``True``
