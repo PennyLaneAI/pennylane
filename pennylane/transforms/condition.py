@@ -111,14 +111,8 @@ def cond(condition, true_fn, false_fn=None):
 
     .. warning::
 
-        The following are not supported as the ``condition`` argument:
-
-        * Expressions that contain multiple measurement values;
-        * Expressions with boolean logic flow using operators like ``and``,
-          ``or`` and ``not``.
-
-        While such statements may not result in errors, they may result in
-        incorrect behaviour.
+        Expressions with boolean logic flow using operators like ``and``,
+        ``or`` and ``not`` are not supported as the ``condition`` argument.
 
 
     .. details::

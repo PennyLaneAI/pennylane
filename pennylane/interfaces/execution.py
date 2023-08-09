@@ -377,6 +377,7 @@ def execute(
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
+    transform_program=None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[bool, dict, Cache] = True,
@@ -511,6 +512,7 @@ def execute(
         )
 
     ### Specifying and preprocessing variables ####
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
 
     if interface == "auto":
         params = []
@@ -568,6 +570,7 @@ def execute(
 
     #### Executing the configured setup #####
 
+    tapes, program_post_processing = transform_program(tapes)
     tapes, batch_fn, config = _batch_transform(
         tapes, device, config, override_shots, device_batch_transform
     )
@@ -575,7 +578,8 @@ def execute(
     # Exiting early if we do not need to deal with an interface boundary
     if no_interface_boundary_required:
         results = inner_execute(tapes)
-        return batch_fn(results)
+        results = batch_fn(results)
+        return program_post_processing(results)
 
     _grad_on_execution = False
 
@@ -704,7 +708,8 @@ def execute(
             f"version of {interface} to enable the '{interface}' interface."
         ) from e
 
-    return batch_fn(res)
+    results = batch_fn(results)
+    return program_post_processing(results)
 
 
 def _execute_legacy(
@@ -712,6 +717,7 @@ def _execute_legacy(
     device: device_type,
     gradient_fn: Callable = None,
     interface="auto",
+    transform_program=None,
     mode="best",
     gradient_kwargs=None,
     cache=True,
@@ -827,6 +833,9 @@ def _execute_legacy(
     if isinstance(device, qml.devices.experimental.Device):
         raise ValueError("New device interface only works with return types enabled.")
 
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
+    tapes, program_post_processing = transform_program(tapes)
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -855,24 +864,27 @@ def _execute_legacy(
     if gradient_fn is None:
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities():
-            return batch_fn(
+            results = batch_fn(
                 qml.interfaces.cache_execute(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
+            return program_post_processing(results)
         unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         res = qml.interfaces.cache_execute(
             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
         )(unwrapped_tapes)
 
-        return batch_fn(res)
+        results = batch_fn(res)
+        return program_post_processing(results)
 
     if gradient_fn == "backprop" or interface is None:
-        return batch_fn(
+        results = batch_fn(
             qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn
             )(tapes)
         )
+        return program_post_processing(results)
 
     # the default execution function is batch_execute
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
@@ -946,9 +958,12 @@ def _execute_legacy(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+    results = _execute(
+        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+    )
 
-    return batch_fn(res)
+    results = batch_fn(results)
+    return program_post_processing(results)
 
 
 def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
