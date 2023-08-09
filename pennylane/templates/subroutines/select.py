@@ -35,7 +35,7 @@ class Select(Operation):
     .. note::
         The position of the operation in the list determines which qubit state implements that operation.
         For example, when the qubit register is in the state :math:`|00\rangle`, we will apply ``ops[0]``.
-        When the qubit register is in the state :math:`|10>`, we will apply ``ops[2]``. To obtain the
+        When the qubit register is in the state :math:`|10\rangle`, we will apply ``ops[2]``. To obtain the
         binary bitstring representing the state for list position ``index`` we can use the following relationship:
         ``index = int(state_string, 2)``. For example, ``2 = int('10', 2)``.
 
