@@ -44,23 +44,23 @@ class TestMeasure:
 
     def test_hash(self):
         """Test that the hash for `MidMeasureMP` is defined correctly."""
-        m1 = MidMeasureMP(Wires(0), "m1")
-        m2 = MidMeasureMP(Wires(0), "m2")
-        m3 = MidMeasureMP(Wires(1), "m1")
-        m4 = MidMeasureMP(Wires(0), "m1")
+        m1 = MidMeasureMP(Wires(0), id="m1")
+        m2 = MidMeasureMP(Wires(0), id="m2")
+        m3 = MidMeasureMP(Wires(1), id="m1")
+        m4 = MidMeasureMP(Wires(0), id="m1")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
         assert m1.hash == m4.hash
 
 
-mp1 = MidMeasureMP(Wires(0), "m0")
-mp2 = MidMeasureMP(Wires(1), "m1")
-mp3 = MidMeasureMP(Wires(2), "m2")
+mp1 = MidMeasureMP(Wires(0), id="m0")
+mp2 = MidMeasureMP(Wires(1), id="m1")
+mp3 = MidMeasureMP(Wires(2), id="m2")
 
 
 class TestMeasurementValueManipulation:
-    """Test all the dunder methods associated with the MidMeasureMP class"""
+    """Test all the dunder methods associated with the MeasurementValue class"""
 
     def test_apply_function_to_measurement(self):
         """Test the general _apply method that can apply an arbitrary function to a measurement."""
@@ -287,6 +287,10 @@ class TestMeasurementValueManipulation:
         """Test the __eq__ dunder method between a MeasurementValue and an integer."""
         m = MeasurementValue([mp1], lambda v: v)
         m_eq = m == 1
+        assert m_eq[0] is False
+        assert m_eq[1] is True
+
+    def test_eq_with_other_measurement_value(self):
         """Test the __eq__ dunder method between two MeasurementValues."""
         m1 = MeasurementValue([mp1], lambda v: v)
         m2 = MeasurementValue([mp2], lambda v: v)
@@ -321,7 +325,7 @@ class TestMeasurementValueManipulation:
         assert compared[3] is False
 
     def test_merge_measurements_values_dependant_on_same_measurement(self):
-        """Test that the _merge operation does not create more than 2 branches when combining two MidMeasureMPs
+        """Test that the _merge operation does not create more than 2 branches when combining two MeasurementValues
         that are based on the same measurement."""
         m0 = MeasurementValue([mp1], lambda v: v)
         m1 = MeasurementValue([mp1], lambda v: v)
@@ -330,7 +334,7 @@ class TestMeasurementValueManipulation:
         assert combined[1] == 2
 
     def test_combine_measurement_value_with_non_measurement(self):
-        """Test that we can use dunder methods to combine a MidMeasureMP with the underlying "primitive"
+        """Test that we can use dunder methods to combine a MeasurementValue with the underlying "primitive"
         of that measurement value."""
         m0 = MeasurementValue([mp1], lambda v: v)
         out = m0 + 10
@@ -396,7 +400,7 @@ divisions = ["__rtruediv__", "__truediv__"]
 
 
 class TestMeasurementCompositeValueManipulation:
-    """Test composite application of dunder methods associated with the MidMeasureMP class"""
+    """Test composite application of dunder methods associated with the MeasurementValue class"""
 
     @pytest.mark.parametrize("unary_name", unary_dunders)
     @pytest.mark.parametrize("binary1_name, binary2_name", product(binary_dunders, binary_dunders))
@@ -408,17 +412,17 @@ class TestMeasurementCompositeValueManipulation:
         # 1. Apply a unary dunder method
         unary = getattr(m0, unary_name)
         m0 = unary()
-        assert isinstance(m0, MidMeasureMP)
+        assert isinstance(m0, MeasurementValue)
 
         # 2. Apply first binary dunder method
         binary_dunder1 = getattr(m0, binary1_name)
         sum_of_measurements = binary_dunder1(m1)
-        assert isinstance(sum_of_measurements, MidMeasureMP)
+        assert isinstance(sum_of_measurements, MeasurementValue)
 
         # 3. Apply a unary dunder method on the new MV
         unary = getattr(sum_of_measurements, unary_name)
         m0 = unary()
-        assert isinstance(m0, MidMeasureMP)
+        assert isinstance(m0, MeasurementValue)
 
         # 4. Apply second binary dunder method
         binary_dunder2 = getattr(m0, binary2_name)
@@ -426,7 +430,7 @@ class TestMeasurementCompositeValueManipulation:
         m2 = MeasurementValue([mp1], lambda v: v)
         boolean_of_measurements = binary_dunder2(m2)
 
-        assert isinstance(boolean_of_measurements, MidMeasureMP)
+        assert isinstance(boolean_of_measurements, MeasurementValue)
 
     @pytest.mark.parametrize("mv_dunder_name", measurement_value_binary_dunders)
     @pytest.mark.parametrize("boolean_dunder_name", boolean_binary_dunders)
@@ -442,12 +446,12 @@ class TestMeasurementCompositeValueManipulation:
         # 1. Apply first binary dunder method between m0 and scalar
         binary_dunder1 = getattr(m0, mv_dunder_name)
         sum_of_measurements = binary_dunder1(scalar)
-        assert isinstance(sum_of_measurements, MidMeasureMP)
+        assert isinstance(sum_of_measurements, MeasurementValue)
 
         # 2. Apply second binary dunder method between m0 and boolean
         binary_dunder2 = getattr(m0, boolean_dunder_name)
         boolean_of_measurements = binary_dunder2(boolean)
-        assert isinstance(boolean_of_measurements, MidMeasureMP)
+        assert isinstance(boolean_of_measurements, MeasurementValue)
 
     @pytest.mark.parametrize("div", divisions)
     @pytest.mark.parametrize("other", [MeasurementValue([mp3], lambda v: v) + 5, np.pi])
