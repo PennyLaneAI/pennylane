@@ -89,7 +89,7 @@ adjust several parts of the ecosystem to ensure messages are formatted a
 certain way, we control logging internally to PennyLane different to
 external packages, messages are sent to somewhere we can make them
 actionable, and we can remove messages that are not needed based on some
-criteria of interest. I’ll break the ``log_config.toml`` file into
+criteria of interest. Let's break the ``log_config.toml`` file into
 sections to discuss how these can be adjusted to suit needs:
 
 .. code:: toml
