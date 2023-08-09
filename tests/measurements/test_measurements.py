@@ -124,6 +124,62 @@ def test_none_return_type():
     assert mp.return_type is None
 
 
+def test_eq_warning(self):
+    """Test that a warning is raised when two measurement processes are compared for
+    equality using `==`."""
+
+    class DummyMP(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    mp1 = DummyMP(0)
+    mp2 = DummyMP(0)
+
+    with pytest.warns(UserWarning, match="The behaviour of measurement process equality"):
+        _ = mp1 == mp2
+
+
+def test_eq_correctness(self):
+    """Test that using `==` on two equivalent operators is True when both measurement
+    processes are the same object and False otherwise."""
+
+    class DummyMP(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    mp1 = DummyMP(0)
+    mp2 = DummyMP(0)
+
+    with pytest.warns(UserWarning, match="The behaviour of measurement process equality"):
+        assert mp1 == mp1  # pylint: disable=comparison-with-itself
+        assert mp1 != mp2
+
+
+def test_hash_warning(self):
+    """Test that a warning is raised when a measurement process's hash is used."""
+
+    class DummyMP(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    mp = DummyMP(0)
+
+    with pytest.warns(UserWarning, match="The behaviour of measurement process hashing"):
+        _ = hash(mp)
+
+
+def test_hash_correctness(self):
+    """Test that the hash of two equivalent measurement processes is the same when
+    both are the same object and different otherwise."""
+
+    class DummyMP(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    mp1 = DummyMP(0)
+    mp2 = DummyMP(0)
+
+    with pytest.warns(UserWarning, match="The behaviour of measurement process hashing"):
+        assert len({mp1, mp1}) == 1
+        assert len({mp1, mp2}) == 2
+
+
 @pytest.mark.parametrize(
     "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
 )
