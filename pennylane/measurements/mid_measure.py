@@ -58,7 +58,7 @@ def measure(
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
-    to the :math:`|0\rangle` state by setting ``reset=True``.
+    to the.
 
     .. code-block:: python3
 
