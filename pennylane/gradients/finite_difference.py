@@ -298,6 +298,8 @@ def finite_diff(
         ((array(-0.38751724), array(-0.18884792), array(-0.38355709)),
          (array(0.69916868), array(0.34072432), array(0.69202366)))
 
+        This gradient transform is compatible with devices that use shot vectors for execution.
+
         >>> shots = (10, 100, 1000)
         >>> dev = qml.device("default.qubit", wires=2, shots=shots)
         >>> @qml.qnode(dev)

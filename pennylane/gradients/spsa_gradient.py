@@ -227,6 +227,8 @@ def spsa_grad(
         ((array(-0.58222637), array(0.58222637), array(-0.58222637)),
          (array(1.05046797), array(-1.05046797), array(1.05046797)))
 
+        This gradient transform is compatible with devices that use shot vectors for execution.
+        
         >>> shots = (10, 100, 1000)
         >>> dev = qml.device("default.qubit", wires=2, shots=shots)
         >>> @qml.qnode(dev)

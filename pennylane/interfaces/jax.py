@@ -440,6 +440,7 @@ def _execute_bwd(
     # pylint: disable=unused-variable
     # Copy a given tape with operations and set parameters
 
+    # assumes all tapes have the same shot vector
     has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     @jax.custom_jvp

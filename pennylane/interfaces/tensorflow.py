@@ -332,6 +332,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     parameters = []
     params_unwrapped = []
 
+    # assumes all tapes have the same shot vector
     has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     for i, tape in enumerate(tapes):
