@@ -18,6 +18,8 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 from functools import partial
 from typing import Tuple, Callable, Optional
+from cachetools import LRUCache
+
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -210,25 +212,43 @@ class ExperimentalDeviceDerivatives(JacobianProductCalculator):
         device (pennylane.devices.experimental.Device):
         execution_config (pennylane.devices.experimental.ExecutionConfig):
 
+    **Technical comments on caching:**
+
+    In order to store results and jacobian for the backward pass during the forward pass,
+    the ``_cache`` property is an ``LRUCache`` objects with a maximum size of 3. This keeps the cache small,
+    since we often wont use more than one, but still allows a little more room
+    if the cache isn't used immediately.
+
+    The entries are a tuple of the results and jacobains since the results are required by the ``execute_and_compute_jvp``
+    method.
+
+    Note that the the results and jacobains are cached based on the ``id`` of the tapes. This is done to separate the key
+    from potentially expensive (in the future) ``QuantumScript.__hash__``. This means that the batch of tapes must be the
+    same instance, not just something that looks the same but has a different location in memory.
+
     """
+
+    def __repr__(self):
+        return f"<DeviceDerivatives: {self._device}, {self._execution_config}>"
 
     def __init__(self, device: qml.devices.experimental.Device, execution_config):
         self._device = device
         self._execution_config = execution_config
-        self._jacobian_cache = {}
-        self._results_cache = {}
+
+        # only really need to keep most recent entry, but keeping 3 around just in case
+        self._cache = LRUCache(maxsize=3)
 
     def __call__(self, tapes: Batch):
-        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        results, jac = self._device.execute_and_compute_derivatives(tapes, self._execution_config)
-        self._jacobian_cache[id(tapes)] = jac
-        self._results_cache[id(tapes)] = results
+        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        results, jac = self._device.execute_and_compute_derivatives(
+            numpy_tapes, self._execution_config
+        )
+        self._cache[id(tapes)] = (results, jac)
         return results
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents):
-        if id(tapes) in self._results_cache:
-            results = self._results_cache[id(tapes)]
-            jacs = self._jacobian_cache[id(tapes)]
+        if id(tapes) in self._cache:
+            results, jacs = self._cache[id(tapes)]
         else:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             results, jacs = self._device.execute_and_compute_derivatives(
@@ -240,8 +260,8 @@ class ExperimentalDeviceDerivatives(JacobianProductCalculator):
         return results, jvps
 
     def compute_vjp(self, tapes, dy):
-        if id(tapes) in self._jacobian_cache:
-            jacs = self._jacobian_cache[id(tapes)]
+        if id(tapes) in self._cache:
+            jacs = self._cache[id(tapes)][1]
         else:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
             jacs = self._device.compute_derivatives(tapes, self._execution_config)
@@ -253,7 +273,80 @@ class ExperimentalDeviceDerivatives(JacobianProductCalculator):
         )
 
     def compute_jacobian(self, tapes):
-        if id(tapes) in self._jacobian_cache:
-            return self._jacobian_cache[id(tapes)]
+        if id(tapes) in self._cache:
+            return self._cache[id(tapes)][1]
         tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         return self._device.compute_derivatives(tapes, self._execution_config)
+
+
+class DeviceJacobianProducts(JacobianProductCalculator):
+    """doc"""
+
+    def __repr__(self):
+        return f"<DeviceJacobianProducts: {self._device}, {self._execution_config}>"
+
+    def __init__(self, device: qml.devices.experimental.Device, execution_config):
+        self._device = device
+        self._execution_config = execution_config
+
+    def execute_and_compute_jvp(self, tapes: Batch, tangents):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        tangents = qml.math.unwrap(tangents)
+        return self._device.execute_and_compute_jvp(tapes, tangents, self._execution_config)
+
+    def compute_vjp(self, tapes: Batch, dy):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        dy = qml.math.unwrap(dy)
+        return self._device.compute_vjp(tapes, dy, self._execution_config)
+
+    def compute_jacobian(self, tapes: Batch):
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return self._device.compute_jacobian(tapes, self._execution_config)
+
+
+class LegacyDeviceDerivatives(JacobianProductCalculator):
+    """doc"""
+
+    def __repr__(self):
+        return f"<DeviceDerivatives: {self._device}, {self._gradient_kwargs}>"
+
+    def __init__(self, device: qml.Device, gradient_kwargs):
+        self._device = device
+        self._gradient_kwargs = gradient_kwargs
+        self._cache = LRUCache(maxsize=3)
+
+    def __call__(self, tapes: Batch):
+        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        results, jacs = self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
+        self._cache[id(tapes)] = (results, jacs)
+        return results
+
+    def execute_and_compute_jvp(self, tapes: Batch, tangents):
+        if id(tapes) in self._cache:
+            results, jacs = self._cache[id(tapes)]
+        else:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            results, jacs = self._device.execute_and_gradients(tapes, **self._gradient_kwargs)
+
+        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        jvps = _compute_jvps(jacs, tangents, multi_measurements)
+        return results, jvps
+
+    def compute_vjp(self, tapes, dy):
+        if id(tapes) in self._cache:
+            jacs = self._cache[id(tapes)][1]
+        else:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+            jacs = self._device.gradients(tapes, **self._gradient_kwargs)
+
+        multi_measurements = (len(t.measurments) > 1 for t in tapes)
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
+        return _compute_vjps(
+            jacs, dy, multi_measurements, has_partitioned_shots=has_partitioned_shots
+        )
+
+    def compute_jacobian(self, tapes):
+        if id(tapes) in self._cache:
+            return self._cache[id(tapes)][1]
+        tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return self._device.gradients(tapes, **self._gradient_kwargs)
