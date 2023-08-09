@@ -15,8 +15,9 @@
 Tests for the ``default.mixed`` device for the JAX interface
 """
 # pylint: disable=protected-access
-import pytest
 from functools import partial
+
+import pytest
 
 import numpy as np
 import pennylane as qml

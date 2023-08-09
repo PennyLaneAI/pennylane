@@ -15,8 +15,9 @@
 Unit tests for the ``batch_inputs`` transform.
 """
 # pylint: disable=too-few-public-methods
-import pytest
 from functools import partial
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
