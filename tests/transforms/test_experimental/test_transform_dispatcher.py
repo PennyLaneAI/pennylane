@@ -199,21 +199,23 @@ class TestTransformDispatcher:
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
-        """Test that no error is raised with the transform function and that the transform dispatcher returns
+        """Test that a warning is raised with the transform function and that the transform dispatcher returns
         the right object."""
 
         dispatched_transform = transform(valid_transform)
         targs = [0]
 
-        @dispatched_transform(targs=targs)
-        @qml.qnode(device=dev)
-        def qnode_circuit(a):
-            """QNode circuit."""
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=0)
-            qml.RZ(a, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+        with pytest.warns(UserWarning, match="The decorator syntax"):
+
+            @dispatched_transform(targs=targs)
+            @qml.qnode(device=dev)
+            def qnode_circuit(a):
+                """QNode circuit."""
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PauliX(wires=0)
+                qml.RZ(a, wires=1)
+                return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode_circuit, qml.QNode)
         assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)

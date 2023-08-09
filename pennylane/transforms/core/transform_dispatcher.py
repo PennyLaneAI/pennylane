@@ -15,6 +15,8 @@
 This module contains the transform function, the transform dispatcher and the transform container.
 """
 import copy
+import warnings
+
 import pennylane as qml
 
 
@@ -72,6 +74,14 @@ class TransformDispatcher:
         # Assume Python decorator syntax:
         #
         # result = some_transform(*transform_args)(qnode)(*qnode_args)
+
+        warnings.warn(
+            "The decorator syntax transform_fn(*transform_args)(qnode) has been "
+            "deprecated and will be removed in a future version. Please use either "
+            "transform_fn(qnode, *transform_args) or "
+            "functools.partial(transform_fn, *transform_args)(qnode) instead.",
+            UserWarning,
+        )
 
         if obj is not None:
             targs = (obj, *targs)
