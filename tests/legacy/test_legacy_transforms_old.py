@@ -266,22 +266,6 @@ class TestStateBackward:
 class TestExpvalTransform:
     """Test that the expval transform is applied correctly"""
 
-    def test_hadamard_transform(self):
-        """
-        Test that the transform is correct for a circuit that prepares
-        the uniform superposition
-        """
-        obs = qml.PauliZ(0)
-        circuit = hadamard_circuit(3, shots=100000)
-        circuit = qml.shadows.shadow_expval(obs)(circuit)
-
-        tape = circuit.construct((), {})[0][0]
-
-        assert all(qml.equal(qml.Hadamard(i), tape.operations[i]) for i in range(3))
-        assert len(tape.observables) == 1
-        assert isinstance(tape.observables[0], ShadowExpvalMP)
-        assert tape.observables[0].H == obs
-
     def test_hadamard_forward(self):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""

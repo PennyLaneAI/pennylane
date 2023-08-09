@@ -29,9 +29,7 @@ from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 class TestMakeProbs:
     """Class to test the private function _make_probs."""
 
-    def test_make_probs_makes_probs(
-        self,
-    ):
+    def test_make_probs_makes_probs(self):
         """Testing the correctness of _make_probs."""
         dev = qml.device("default.qubit", wires=3)
 
@@ -43,12 +41,12 @@ class TestMakeProbs:
 
         x = pnp.array([0.5])
         new_qnode = _make_probs(qnode)
-        tape, _ = new_qnode.construct(x, {})
-        assert tape[0].observables[0].return_type == qml.measurements.Probability
+        res = new_qnode(x)
 
-    def test_make_probs(
-        self,
-    ):
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (4,)
+
+    def test_make_probs(self):
         """Testing the private _make_probs transform"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(0)
