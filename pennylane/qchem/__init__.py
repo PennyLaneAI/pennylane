@@ -25,7 +25,7 @@ from .openfermion_obs import (
 )
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
-from .convert import import_operator
+from .convert import import_operator, import_state
 from .dipole import dipole_integrals, fermionic_dipole, dipole_moment
 from .factorization import basis_rotation, factorize
 from .hamiltonian import electron_integrals, fermionic_hamiltonian, diff_hamiltonian
