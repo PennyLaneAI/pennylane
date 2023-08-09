@@ -25,7 +25,7 @@ from .measurements import MeasurementProcess, MidMeasure
 
 
 def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name to mid_measure
-    """Perform a mid-circuit measurement in the computational basis on the
+    r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
     Measurement outcomes can be obtained and used to conditionally apply
@@ -56,7 +56,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Wires can be reused after measurement. Moreover, measured wires can be reset
-    to the :math:`\vert 0\rangle` by setting ``reset=True``.
+    to the :math:`|0 \rangle` by setting ``reset=True``.
 
     .. code-block:: python3
 
@@ -89,7 +89,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name t
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`\vert 0\rangle`
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
             state after measurement.
 
     Returns:
