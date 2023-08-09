@@ -39,9 +39,10 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Tensor, Operator
+
+from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrep
 from pennylane.ops import Hamiltonian, Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
 from pennylane.queuing import QueuingManager
 
@@ -643,6 +644,7 @@ class Device(abc.ABC):
 
         By default, this method expands the tape if:
 
+        - state preparation operations are called mid-circuit,
         - nested tapes are present,
         - any operations are not supported on the device, or
         - multiple observables are measured on the same wire.
@@ -662,6 +664,11 @@ class Device(abc.ABC):
         # pylint: disable=protected-access
         if max_expansion == 0:
             return circuit
+
+        expand_state_prep = any(isinstance(op, StatePrep) for op in circuit.operations[1:])
+
+        if expand_state_prep:  # expand mid-circuit StatePrep operations
+            circuit = expand_tape_state_prep(circuit)
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis

@@ -430,7 +430,7 @@ def _excited_configurations(electrons, orbitals, excitation):
         excitation (int): number of excited electrons
 
     Returns:
-        tuple(array, array): arrays of excited configurations and signs obtained by reordering the
+        tuple(list, list): lists of excited configurations and signs obtained by reordering the
          creation operators
 
     **Example**
@@ -476,30 +476,31 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     r"""Construct a wavefunction from PySCF's `UCISD` solver object.
 
     The generated wavefunction is a dictionary where the keys represent a configuration, which
-    corresponds to a Slater determinant, and the values are the CI coefficients of the that Slater
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
     determinant. Each dictionary key is a tuple of two integers. The binary representation of these
-    integers correspond to a specific configuration such that the first number represents the
+    integers correspond to a specific configuration: the first number represents the
     configuration of the alpha electrons and the second number represents the configuration of the
     beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
-    represented by the flipped binary string `0011`. This string can be splitted to `01` and `01` for
-    the alpha and beta electrons. The integer corresponding to `01` is `1`. Then the dictionary
-    representation of a state with `0.99` contribution of the Hartree-Fock state and `0.01`
-    contribution from the doubly-excited state will be `{(1, 1): 0.99, (2, 2): 0.01}`.
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    `{(1, 1): 0.99, (2, 2): 0.01}`.
 
     Args:
         cisd_solver (PySCF UCISD Class instance): the class object representing the UCISD calculation in PySCF
-        tol (float):  the tolerance to which the wavefunction is being built -- Slater determinants
-         with coefficients smaller than this are discarded. Default is 1e-15 (all coefficients are included).
+        tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Returns:
-        dict: Dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
-        spin sectors, respectively, and coeff being the CI coefficients of those configurations.
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
     **Example**
 
     >>> from pyscf import gto, scf, ci
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g', symmetry='d2h')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
     >>> wf_cisd = _ucisd_state(myci, tol=1e-1)
@@ -561,17 +562,17 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
 
 def import_state(solver, tol=1e-15):
-    r"""Convert an external wavefunction to a PennyLane state vector.
+    r"""Convert an external wavefunction to a state vector.
 
     Args:
         solver: external wavefunction object that will be converted
-        tol (float): the tolerance for discarding Slater determinants with small coefficients
+        tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
-        ValueError: if ``method`` is not supported
+        ValueError: if external object type is not supported
 
     Returns:
-        statevector (array): normalized state vector of length 2**len(number_of_spinorbitals)
+        array: normalized state vector of length 2**len(number_of_spinorbitals)
 
     **Example**
 
@@ -579,24 +580,29 @@ def import_state(solver, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = qml.qchem.convert.import_state(myci, tol=1e-1)
+    >>> wf_cisd = qml.qchem.import_state(myci, tol=1e-1)
     >>> print(wf_cisd)
     [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
       0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
       0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
      -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
     """
-    try:
-        import pyscf
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires pyscf. It can be installed with: pip install pyscf"
-        ) from Error
 
-    if isinstance(solver, pyscf.ci.ucisd.UCISD):
+    method = str(solver.__str__)
+
+    if "CISD" in method and "UCISD" not in method:
+        wf_dict = _rcisd_state(solver, tol=tol)
+    elif "UCISD" in method:
         wf_dict = _ucisd_state(solver, tol=tol)
+    elif "CCSD" in method and "UCCSD" not in method:
+        wf_dict = _rccsd_state(solver, tol=tol)
+    elif "UCCSD" in method:
+        wf_dict = _uccsd_state(solver, tol=tol)
     else:
-        raise ValueError("The supported option is 'ucisd' for unrestricted CISD calculations.")
+        raise ValueError(
+            "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"
+            " unrestricted configuration interaction and coupled cluster calculations."
+        )
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf
@@ -614,7 +620,7 @@ def _wfdict_to_statevector(wf_dict, norbs):
         norbs (int): number of molecular orbitals
 
     Returns:
-        statevector (array): normalized state vector of length 2^(number_of_spinorbitals)
+        array: normalized state vector of length 2^(number_of_spinorbitals)
     """
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
@@ -629,3 +635,371 @@ def _wfdict_to_statevector(wf_dict, norbs):
     statevector = statevector / np.sqrt(np.sum(statevector**2))
 
     return statevector
+
+
+def _rcisd_state(cisd_solver, tol=1e-15):
+    r"""Construct a wavefunction from PySCF's `RCISD` solver object.
+
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    `{(1, 1): 0.99, (2, 2): 0.01}`.
+
+    Args:
+        cisd_solver (PySCF CISD Class instance): the class object representing the CISD calculation in PySCF
+        tol (float): the tolerance for discarding Slater determinants based on their coefficients
+
+    Returns:
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary representation corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
+
+    **Example**
+
+    >>> from pyscf import gto, scf, ci
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g', symmetry='d2h')
+    >>> myhf = scf.RHF(mol).run()
+    >>> myci = ci.CISD(myhf).run()
+    >>> wf_cisd = _rcisd_state(myci, tol=1e-1)
+    >>> print(wf_cisd)
+    {(1, 1): -0.9942969785398775, (2, 2): 0.10664669927602162}
+    """
+    mol = cisd_solver.mol
+    cisdvec = cisd_solver.ci
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nocc, nvir = nelec // 2, norb - nelec // 2
+
+    c0, c1, c2 = (
+        cisdvec[0],
+        cisdvec[1 : nocc * nvir + 1],
+        cisdvec[nocc * nvir + 1 :].reshape(nocc, nocc, nvir, nvir),
+    )
+
+    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nocc - 1)
+    ref_b = ref_a
+
+    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
+
+    # alpha -> alpha excitations
+    c1a_configs, c1a_signs = _excited_configurations(nocc, norb, 1)
+    dict_fcimatr.update(
+        dict(zip(list(zip(c1a_configs, [ref_b] * len(c1a_configs))), c1 * c1a_signs))
+    )
+    # beta -> beta excitations
+    dict_fcimatr.update(
+        dict(zip(list(zip([ref_a] * len(c1a_configs), c1a_configs)), c1 * c1a_signs))
+    )
+
+    # check if double excitations within one spin sector (aa->aa and bb->bb) are possible
+    if nocc > 1 and nvir > 1:
+        # get rid of excitations from identical orbitals, double-count the allowed ones
+        c2_tr = c2 - c2.transpose(1, 0, 2, 3)
+        # select only unique excitations, via lower triangle of matrix (already double-counted)
+        ooidx, vvidx = np.tril_indices(nocc, -1), np.tril_indices(nvir, -1)
+        c2aa = c2_tr[ooidx][:, vvidx[0], vvidx[1]].ravel()
+
+        # alpha, alpha -> alpha, alpha excitations
+        c2aa_configs, c2aa_signs = _excited_configurations(nocc, norb, 2)
+        dict_fcimatr.update(
+            dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa * c2aa_signs))
+        )
+        # beta, beta -> beta, beta excitations
+        dict_fcimatr.update(
+            dict(zip(list(zip([ref_a] * len(c2aa_configs), c2aa_configs)), c2aa * c2aa_signs))
+        )
+
+    # alpha, beta -> alpha, beta excitations
+    # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
+    rowvals, colvals = np.array(list(product(c1a_configs, c1a_configs)), dtype=int).T.numpy()
+    c2ab = (c2.transpose(0, 2, 1, 3).reshape(nocc * nvir, -1)).ravel()
+    dict_fcimatr.update(
+        dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1a_signs).numpy()))
+    )
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
+
+
+def _rccsd_state(ccsd_solver, tol=1e-15):
+    r"""Construct a wavefunction from PySCF's `CCSD` Solver object.
+
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    `{(1, 1): 0.99, (2, 2): 0.01}`.
+
+    In the current version, the exponential ansatz :math:`\exp(\hat{T}_1 + \hat{T}_2) \ket{\text{HF}}`
+    is expanded to second order, with only single and double excitation terms collected and kept.
+    In the future this will be amended to collect also terms from higher order. The expansion gives
+
+    .. math::
+        \exp(\hat{T}_1 + \hat{T}_2) \ket{\text{HF}} = \left[ 1 + \hat{T}_1 +
+        \left( \hat{T}_2 + 0.5 * \hat{T}_1^2 \right) \right] \ket{\text{HF}}
+
+    The coefficients in this expansion are the CI coefficients used to build the wavefunction
+    representation.
+
+    Args:
+        ccsd_solver (PySCF CCSD Class instance): the class object representing the CCSD calculation in PySCF
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
+
+    Returns:
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
+
+    **Example**
+
+    >>> from pyscf import gto, scf, cc
+    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
+    >>> myhf = scf.RHF(mol).run()
+    >>> mycc = cc.CCSD(myhf).run()
+    >>> wf_ccsd = _rccsd_state(mycc, tol=1e-1)
+    >>> print(wf_ccsd)
+    {(7, 7): 0.8886969878256522, (11, 11): -0.30584590248164206,
+    (19, 19): -0.30584590248164145, (35, 35): -0.14507552651170982}
+    """
+
+    mol = ccsd_solver.mol
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nelec_a = int((nelec + mol.spin) / 2)
+    nelec_b = int((nelec - mol.spin) / 2)
+
+    nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
+
+    # build the full, unrestricted representation of the coupled cluster amplitudes
+    t1a = ccsd_solver.t1
+    t1b = t1a
+    t2aa = ccsd_solver.t2 - ccsd_solver.t2.transpose(1, 0, 2, 3)
+    t2ab = ccsd_solver.t2.transpose(0, 2, 1, 3)
+    t2bb = t2aa
+
+    # add in the disconnected part ( + 0.5 T_1^2) of double excitations
+    t2aa = (
+        t2aa
+        - 0.5
+        * np.kron(t1a, t1a).reshape(nelec_a, nvir_a, nelec_a, nvir_a).transpose(0, 2, 1, 3).numpy()
+    )
+    t2bb = (
+        t2bb
+        - 0.5
+        * np.kron(t1b, t1b).reshape(nelec_b, nvir_b, nelec_b, nvir_b).transpose(0, 2, 1, 3).numpy()
+    )
+    # align the entries with how the excitations are ordered when generated by _excited_configurations()
+    t2ab = t2ab - 0.5 * np.kron(t1a, t1b).reshape(nelec_a, nvir_a, nelec_b, nvir_b).numpy()
+
+    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
+
+    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [1.0]))
+
+    # alpha -> alpha excitations
+    t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
+    dict_fcimatr.update(
+        dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs))
+    )
+
+    # beta -> beta excitations
+    t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
+    dict_fcimatr.update(
+        dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs))
+    )
+
+    # alpha, alpha -> alpha, alpha excitations
+    if nelec_a > 1 and nvir_a > 1:
+        t2aa_configs, t2aa_signs = _excited_configurations(nelec_a, norb, 2)
+        # select only unique excitations, via lower triangle of matrix
+        ooidx = np.tril_indices(nelec_a, -1)
+        vvidx = np.tril_indices(nvir_a, -1)
+        t2aa = t2aa[ooidx][:, vvidx[0], vvidx[1]]
+        dict_fcimatr.update(
+            dict(
+                zip(list(zip(t2aa_configs, [ref_b] * len(t2aa_configs))), t2aa.ravel() * t2aa_signs)
+            )
+        )
+
+    if nelec_b > 1 and nvir_b > 1:
+        t2bb_configs, t2bb_signs = _excited_configurations(nelec_b, norb, 2)
+        # select only unique excitations, via lower triangle of matrix
+        ooidx = np.tril_indices(nelec_b, -1)
+        vvidx = np.tril_indices(nvir_b, -1)
+        t2bb = t2bb[ooidx][:, vvidx[0], vvidx[1]]
+        dict_fcimatr.update(
+            dict(
+                zip(list(zip([ref_a] * len(t2bb_configs), t2bb_configs)), t2bb.ravel() * t2bb_signs)
+            )
+        )
+
+    # alpha, beta -> alpha, beta excitations
+    rowvals, colvals = np.array(list(product(t1a_configs, t1b_configs)), dtype=int).T.numpy()
+    dict_fcimatr.update(
+        dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+    )
+
+    # renormalize, to get the HF coefficient (CC wavefunction not normalized)
+    norm = np.sqrt(np.sum(np.array(list(dict_fcimatr.values())) ** 2)).numpy()
+    dict_fcimatr = {key: value / norm for (key, value) in dict_fcimatr.items()}
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
+
+
+def _uccsd_state(ccsd_solver, tol=1e-15):
+    r"""Construct a wavefunction from PySCF's `UCCSD` Solver object.
+
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string `0011` which is splitted to `01` and `01` for
+    the alpha and beta electrons. The integer corresponding to `01` is `1` and the dictionary
+    representation of the Hartree-Fock state will be `{(1, 1): 1.0}`. The dictionary
+    representation of a state with `0.99` contribution from the Hartree-Fock state and `0.01`
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    `{(1, 1): 0.99, (2, 2): 0.01}`.
+
+    In the current version, the exponential ansatz :math:`\exp(\hat{T}_1 + \hat{T}_2) \ket{\text{HF}}`
+    is expanded to second order, with only single and double excitation terms collected and kept.
+    In the future this will be amended to collect also terms from higher order. The expansion gives
+
+    .. math::
+        \exp(\hat{T}_1 + \hat{T}_2) \ket{\text{HF}} = \left[ 1 + \hat{T}_1 +
+                                    \left( \hat{T}_2 + 0.5 * \hat{T}_1^2 \right) \right] \ket{\text{HF}}
+
+    The coefficients in this expansion are the CI coefficients used to build the wavefunction
+    representation.
+
+    Args:
+        ccsd_solver (PySCF UCCSD Class instance): the class object representing the UCCSD calculation in PySCF
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
+
+    Returns:
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
+
+    **Example**
+
+    >>> from pyscf import gto, scf, cc
+    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
+    >>> myhf = scf.UHF(mol).run()
+    >>> mycc = cc.UCCSD(myhf).run()
+    >>> wf_ccsd = _uccsd_state(mycc, tol=1e-1)
+    >>> print(wf_ccsd)
+    {(7, 7): 0.8886970081919591, (11, 11): -0.3058459002168582,
+    (19, 19): -0.30584590021685887, (35, 35): -0.14507552387854625}
+    """
+
+    mol = ccsd_solver.mol
+
+    norb = mol.nao
+    nelec = mol.nelectron
+    nelec_a = int((nelec + mol.spin) / 2)
+    nelec_b = int((nelec - mol.spin) / 2)
+
+    nvir_a, nvir_b = norb - nelec_a, norb - nelec_b
+
+    t1a, t1b = ccsd_solver.t1
+    t2aa, t2ab, t2bb = ccsd_solver.t2
+    # add in the disconnected part ( + 0.5 T_1^2) of double excitations
+    t2aa = (
+        t2aa
+        - 0.5
+        * np.kron(t1a, t1a).reshape(nelec_a, nvir_a, nelec_a, nvir_a).transpose(0, 2, 1, 3).numpy()
+    )
+    t2bb = (
+        t2bb
+        - 0.5
+        * np.kron(t1b, t1b).reshape(nelec_b, nvir_b, nelec_b, nvir_b).transpose(0, 2, 1, 3).numpy()
+    )
+    # align the entries with how the excitations are ordered when generated by _excited_configurations()
+    t2ab = (
+        t2ab.transpose(0, 2, 1, 3)
+        - 0.5 * np.kron(t1a, t1b).reshape(nelec_a, nvir_a, nelec_b, nvir_b).numpy()
+    )
+
+    # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
+
+    dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [1.0]))
+
+    # alpha -> alpha excitations
+    t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
+    dict_fcimatr.update(
+        dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs))
+    )
+
+    # beta -> beta excitations
+    t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
+    dict_fcimatr.update(
+        dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs))
+    )
+
+    # alpha, alpha -> alpha, alpha excitations
+    if nelec_a > 1 and nvir_a > 1:
+        t2aa_configs, t2aa_signs = _excited_configurations(nelec_a, norb, 2)
+        # select only unique excitations, via lower triangle of matrix
+        ooidx = np.tril_indices(nelec_a, -1)
+        vvidx = np.tril_indices(nvir_a, -1)
+        t2aa = t2aa[ooidx][:, vvidx[0], vvidx[1]]
+        dict_fcimatr.update(
+            dict(
+                zip(list(zip(t2aa_configs, [ref_b] * len(t2aa_configs))), t2aa.ravel() * t2aa_signs)
+            )
+        )
+
+    if nelec_b > 1 and nvir_b > 1:
+        t2bb_configs, t2bb_signs = _excited_configurations(nelec_b, norb, 2)
+        # select only unique excitations, via lower triangle of matrix
+        ooidx = np.tril_indices(nelec_b, -1)
+        vvidx = np.tril_indices(nvir_b, -1)
+        t2bb = t2bb[ooidx][:, vvidx[0], vvidx[1]]
+        dict_fcimatr.update(
+            dict(
+                zip(list(zip([ref_a] * len(t2bb_configs), t2bb_configs)), t2bb.ravel() * t2bb_signs)
+            )
+        )
+
+    # alpha, beta -> alpha, beta excitations
+    rowvals, colvals = np.array(list(product(t1a_configs, t1b_configs)), dtype=int).T.numpy()
+    dict_fcimatr.update(
+        dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+    )
+
+    # renormalize, to get the HF coefficient (CC wavefunction not normalized)
+    norm = np.sqrt(np.sum(np.array(list(dict_fcimatr.values())) ** 2)).numpy()
+    dict_fcimatr = {key: value / norm for (key, value) in dict_fcimatr.items()}
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
