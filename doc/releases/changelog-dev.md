@@ -37,24 +37,51 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+
 * A new `qml.Select` operation is available. It applies specific input operations depending on the
   state of the designated control qubits
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
 
->>> dev = qml.device('default.qubit',wires=4)
->>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
->>> @qml.qnode(dev)
->>> def circuit():
->>>     qml.Select(ops,control_wires=[0,1])
->>>     return qml.state()
-...
->>> print(qml.draw(circuit,expansion_strategy='device')())
-0: ─╭○─╭○─╭●─╭●────┤  State
-1: ─├○─├●─├○─├●────┤  State
-2: ─╰X─│──╰Y─├SWAP─┤  State
-3: ────╰X────╰SWAP─┤  State
-  
-  <h3>Improvements 🛠</h3>
+  ```pycon
+  >>> dev = qml.device('default.qubit',wires=4)
+  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     return qml.state()
+  ...
+  >>> print(qml.draw(circuit,expansion_strategy='device')())
+  0: ─╭○─╭○─╭●─╭●────┤  State
+  1: ─├○─├●─├○─├●────┤  State
+  2: ─╰X─│──╰Y─├SWAP─┤  State
+  3: ────╰X────╰SWAP─┤  State
+  ```
+
+* Functions are available to obtain a state vector from `PySCF` solver objects.
+  [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
+  [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
+
+  The `qml.qchem.import_state` function can be used to import a `PySCF` solver object and return the
+  corresponding state vector.
+
+  ```pycon
+  >>> from pyscf import gto, scf, ci
+  >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
+  >>> myhf = scf.UHF(mol).run()
+  >>> myci = ci.UCISD(myhf).run()
+  >>> wf_cisd = qml.qchem.import_state(myci, tol=1e-1)
+  >>> print(wf_cisd)
+  [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
+    0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+    0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+   -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
+  ```
+
+  The currently supported objects are RCISD, UCISD, RCCSD, and UCCSD which correspond to 
+  restricted (R) and unrestricted (U) configuration interaction (CI )and coupled cluster (CC) 
+  calculations with single and double (SD) excitations.
+
+<h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
@@ -130,10 +157,8 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
-
 
 * `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
   property. This property is merely used to set defaults for a workflow, and does not directly
@@ -150,7 +175,20 @@ array([False, False])
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
+* Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
+  [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+
+* Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
+  [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
+
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
+  their IDs.
+  [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
@@ -185,6 +223,9 @@ array([False, False])
   `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
+
+* The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 <h3>Deprecations 👋</h3>
 
@@ -290,14 +331,19 @@ array([False, False])
   and `var` measurements.
   [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
+* Subtracting a `Prod` from another operator now works as expected.
+  [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
+Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
+Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
