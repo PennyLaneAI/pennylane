@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires: Wires, reset: Optional[bool] = False):  # TODO: Change name to mid_measure
+def measure(wires: Wires, reset: Optional[bool] = False):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 

@@ -20,6 +20,8 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
 
+# pylint: disable=too-many-branches
+
 
 @qfunc_transform
 def defer_measurements(tape: QuantumTape):
