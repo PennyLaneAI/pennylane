@@ -354,35 +354,6 @@ class TestPytreeMethods:
         assert new_op.i_got_initialized
 
 
-class TestPytreeMethods:
-    def test_pytree_defaults(self):
-        """Test the default behavior for the flatten and unflatten methods."""
-
-        class CustomOp(qml.operation.Operator):
-            """A dummy operation with hyperparameters."""
-
-            def __init__(self, x1, x2, wires, info):
-                self._hyperparameters = {"info": info}
-                self.i_got_initialized = True  # check initialization got called
-                super().__init__(x1, x2, wires=wires)
-
-        info = "value"
-        op = CustomOp(1.2, 2.3, wires=(0, 1), info=info)
-
-        data, metadata = op._flatten()
-        assert data == (1.2, 2.3)
-        assert len(metadata) == 2
-        assert metadata[0] == qml.wires.Wires((0, 1))
-        assert metadata[1] == (("info", "value"),)
-
-        # check metadata is hashable
-        _ = {metadata: 0}
-
-        new_op = CustomOp._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
-        assert new_op.i_got_initialized
-
-
 class TestBroadcasting:
     """Test parameter broadcasting checks."""
 
