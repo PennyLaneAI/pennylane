@@ -44,7 +44,7 @@ faster to perform this check:
            arg_name_1, arg_name_2, ..., arg_name_n,
        )
 
-The above line can be added to below the function/method entry point,
+The above line can be added below the function/method entry point,
 and the provided arguments can be used to populate the log message. This
 allows us a way to track the inputs and calls through the stack in the
 order they are executed, as is the basis for following a trail of
