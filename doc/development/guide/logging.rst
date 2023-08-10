@@ -145,7 +145,7 @@ The above section defines how to filter log messages (known as
 ``LogRecords``), given some predicate. In this case, we have defined
 some classes, ``LocalProcessFilter`` and ``DebugOnlyFilter`` to filter
 based on process ID and on the severity of the incoming message. These
-can used in the next section.
+can be used in the next section.
 
 .. code:: toml
 
