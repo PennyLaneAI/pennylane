@@ -162,6 +162,7 @@ class DefaultQubitJax(DefaultQubit):
     _const_mul = staticmethod(jnp.multiply)
     _size = staticmethod(jnp.size)
     _ndim = staticmethod(jnp.ndim)
+    _norm = staticmethod(jnp.linalg.norm)
 
     operations = DefaultQubit.operations.union({"ParametrizedEvolution"})
 

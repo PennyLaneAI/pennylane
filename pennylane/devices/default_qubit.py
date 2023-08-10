@@ -289,8 +289,6 @@ class DefaultQubit(QubitDevice):
                         self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
             elif isinstance(operation, ParametrizedEvolution):
                 self._state = self._apply_parametrized_evolution(self._state, operation)
-            elif isinstance(operation, qml.Projector):
-                self._state = self._apply_projector(self._state, operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -335,12 +333,17 @@ class DefaultQubit(QubitDevice):
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
         if operation in diagonal_in_z_basis:
-            return self._apply_diagonal_unitary(state, matrix, wires)
+            new_state = self._apply_diagonal_unitary(state, matrix, wires)
         if len(wires) <= 2:
             # Einsum is faster for small gates
-            return self._apply_unitary_einsum(state, matrix, wires)
+            new_state = self._apply_unitary_einsum(state, matrix, wires)
+        else:
+            new_state = self._apply_unitary(state, matrix, wires)
 
-        return self._apply_unitary(state, matrix, wires)
+        if operation.__class__.__name__ in {"Projector", "_BasisStateProjector"}:
+            new_state = new_state / self._norm(new_state)
+
+        return new_state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
@@ -548,29 +551,6 @@ class DefaultQubit(QubitDevice):
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], self._const_mul(phase, state[sl_1])], axis=axes[0])
-
-    def _apply_projector(self, state: TensorLike, operation: Operation):
-        """Applies a projector onto the state along the axis specified by the operation
-        wires.
-
-        Args:
-            state (array[complex]): input state
-            operation (~.Projector): operation to apply onto the state
-
-        Returns:
-            array[complex]: output state
-        """
-        axes = self.wires.indices(operation.wires)
-        projector = operation.data[0]
-
-        ndim = self._ndim(state)
-        sl = _get_slice(int(not projector[0]), axes[0], ndim)
-
-        state[sl] = state[sl] * 0.0
-        if np.allclose(state, 0.0):
-            return np.NaN
-
-        return state / np.linalg.norm(state)
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a

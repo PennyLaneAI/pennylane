@@ -136,6 +136,7 @@ class QubitDevice(Device):
     _real = staticmethod(np.real)
     _size = staticmethod(np.size)
     _ndim = staticmethod(np.ndim)
+    _norm = staticmethod(np.linalg.norm)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

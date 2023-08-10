@@ -136,6 +136,7 @@ class DefaultQubitTF(DefaultQubit):
     _stack = staticmethod(tf.stack)
     _size = staticmethod(tf.size)
     _ndim = staticmethod(_ndim_tf)
+    _norm = staticmethod(tf.norm)
 
     @staticmethod
     def _const_mul(constant, array):

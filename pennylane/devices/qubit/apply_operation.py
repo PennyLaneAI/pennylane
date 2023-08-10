@@ -190,8 +190,12 @@ def apply_operation(
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
     ) or (op.batch_size and is_state_batched):
-        return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-    return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+        new_state = apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    else:
+        new_state = apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    if op.__class__.__name__ in {"Projector", "_BasisStateProjector"}:
+        new_state = new_state / math.norm(new_state)
 
 
 @apply_operation.register
