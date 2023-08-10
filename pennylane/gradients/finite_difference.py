@@ -339,7 +339,10 @@ def finite_diff(
         )
 
     if any(qml.math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
-        warn("Finite differences with float32 detected. Answers may be inaccurate. ", UserWarning)
+        warn(
+            "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
+            UserWarning,
+        )
 
     shots = Shots(shots)
     if argnum is None and not tape.trainable_params:
