@@ -77,13 +77,7 @@ filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
 # Control JAX logging
 [loggers.jax]
 handlers = ["qml_debug_stream",]
-level = "DEBUG"
-propagate = false
-
-# Control logging in the executing Python script
-[loggers.__main__]
-handlers = ["qml_debug_stream",]
-level = "DEBUG"
+level = "CRITICAL"
 propagate = false
 
 # Control logging across pennylane

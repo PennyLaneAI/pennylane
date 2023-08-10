@@ -30,7 +30,6 @@ from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, make_qscript
 
-# See https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
