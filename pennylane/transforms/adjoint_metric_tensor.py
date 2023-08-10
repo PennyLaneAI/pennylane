@@ -176,7 +176,6 @@ def _adjoint_metric_tensor_tape(tape):
         psi = qml.devices.qubit.apply_operation(op, psi)
 
     for j, outer_op in enumerate(trainable_operations):
-
         generator_1, prefactor_1 = qml.generator(outer_op)
         generator_unitary = _get_op_for_generator(generator_1, like_real)
 
