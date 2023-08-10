@@ -461,6 +461,7 @@ class TestMeasurementCompositeValueManipulation:
         # 1. Apply a binary dundar
         m0 = MeasurementValue([mp1], lambda v: v)
         m1 = MeasurementValue([mp2], lambda v: v)
+
         binary_dunder = getattr(m0, binary)
         m0 = binary_dunder(m1)
 
