@@ -257,6 +257,9 @@ array([False, False])
   some aspects of its use.
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
+* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation
+  for the function and its private helper functions. [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4461)
+
 <h3>Bug fixes 🐛</h3>
 
 * Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
