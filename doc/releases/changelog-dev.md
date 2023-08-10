@@ -137,6 +137,9 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
@@ -321,6 +324,7 @@ array([False, False])
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Isaac De Vlugt,
 Stepan Fomichev,
 Lillian M. A. Frederiksen,

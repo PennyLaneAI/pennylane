@@ -28,25 +28,44 @@ test_hamiltonians = [
     np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
 ]
 
+test_general_matrix = [
+    np.array([[2.5, -0.5, 1.0], [-0.5, 2.5, -1j]]),
+    np.array(np.diag([0, 0, 0, 0, 1])),
+    np.array(
+        [
+            [-2, -2 + 1j, -2, -2, -1],
+            [-2 - 1j, 0, 0, -1, -1j],
+            [-2, 0, -2, -1, 2],
+            [-2, -1, -1, 0, 2j],
+        ]
+    ),
+]
+
+test_diff_matrix = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
+
 
 class TestDecomposition:
     """Tests the pauli_decompose function"""
 
-    @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
-    def test_wrong_shape(self, hamiltonian):
+    @pytest.mark.parametrize("hamiltonian", [np.ones((4, 2)), np.ones((2, 4))])
+    def test_wrong_shape_non_square(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
             ValueError,
-            match="The matrix should have shape",
+            match="The matrix should be square",
         ):
             qml.pauli_decompose(hamiltonian)
 
-    def test_not_hermitian(self):
-        """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
-        equal to its own conjugate transpose"""
-        with pytest.raises(ValueError, match="The matrix is not Hermitian"):
-            qml.pauli_decompose(np.array([[1, 2], [3, 4]]))
+    @pytest.mark.parametrize("hamiltonian", [np.ones((5, 5)), np.ones((3, 3))])
+    def test_wrong_shape_non_power_two(self, hamiltonian):
+        """Tests that an exception is raised if the Hamiltonian does not have
+        the correct shape"""
+        with pytest.raises(
+            ValueError,
+            match="Dimension of the matrix should be a power of 2",
+        ):
+            qml.pauli_decompose(hamiltonian)
 
     def test_hide_identity_true(self):
         """Tests that there are no Identity observables in the tensor products
@@ -77,7 +96,7 @@ class TestDecomposition:
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
-        assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
+        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
@@ -107,7 +126,44 @@ class TestDecomposition:
         assert isinstance(ps, qml.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
+    @pytest.mark.parametrize("hide_identity", [True, False])
+    @pytest.mark.parametrize("matrix", test_general_matrix)
+    def test_observable_types_general(self, matrix, hide_identity):
+        """Tests that the matrix decomposes into a linear combination of tensors,
+        the identity matrix, and Pauli matrices."""
+        shape = matrix.shape
+        num_qubits = int(np.ceil(np.log2(max(shape))))
+        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
+
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose(
+            matrix, hide_identity, padding=True
+        ).terms()
+        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
+
+        linear_comb = sum(
+            [
+                decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
+                for i, o in enumerate(decomposed_obs)
+            ]
+        )
+        assert np.allclose(matrix, linear_comb[: shape[0], : shape[1]])
+
+        if not hide_identity:
+            tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
+            assert all(len(tensor.obs) == num_qubits for tensor in tensors)
+
+    @pytest.mark.parametrize("matrix", test_general_matrix)
+    def test_to_paulisentence_general(self, matrix):
+        """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
+        shape = matrix.shape
+        ps = qml.pauli_decompose(matrix, pauli=True, padding=True)
+        num_qubits = int(np.ceil(np.log2(max(shape))))
+
+        assert isinstance(ps, qml.pauli.PauliSentence)
+        assert np.allclose(matrix, ps.to_mat(range(num_qubits))[: shape[0], : shape[1]])
+
     def test_wire_order(self):
+        """Test wire order is working as intended"""
         wire_order1 = ["a", 0]
         wire_order2 = ["auxiliary", "working"]
         hamiltonian = np.array(
@@ -122,20 +178,65 @@ class TestDecomposition:
             assert h.wires.toset() == set(wire_order)
 
     def test_wire_error(self):
+        """Test incorrect wire order throws error"""
+
         wire_order = [0]
         hamiltonian = np.array(
             [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]
         )
 
         with pytest.raises(
-            ValueError, match="number of wires 1 is not compatible with number of qubits 2"
+            ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
             qml.pauli_decompose(hamiltonian, wire_order=wire_order)
 
         with pytest.raises(
-            ValueError, match="number of wires 1 is not compatible with number of qubits 2"
+            ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
             qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
+
+    # Multiple interfaces will be tested with math module
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("matrix", test_diff_matrix)
+    def test_differentiability(self, matrix):
+        """Test differentiability for pauli_decompose"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(A):
+            decomp = qml.pauli_decompose(A, padding=True)
+            qml.RX(decomp.coeffs[2], 0)
+            return qml.expval(qml.PauliZ(0))
+
+        # NumPy Interface
+        grad_numpy = qml.grad(circuit)(qml.numpy.array(matrix))
+
+        # Jax Interface
+        import jax
+
+        grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
+
+        # PyTorch Interface
+        import torch
+
+        A = torch.tensor(matrix, requires_grad=True)
+        result = circuit(A)
+        result.backward()
+        grad_torch = A.grad
+
+        # Tensorflow Interface
+        import tensorflow as tf
+
+        A = tf.Variable(qml.numpy.array(matrix))
+        with tf.GradientTape() as tape:
+            loss = circuit(A)
+        grad_tflow = tape.gradient(loss, A)
+
+        # Comparisons - note: https://github.com/google/jax/issues/9110
+        assert qml.math.allclose(grad_numpy, grad_jax)
+        assert qml.math.allclose(grad_torch, grad_tflow)
+        assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
 
 
 class TestPauliSentence:
