@@ -146,36 +146,53 @@ def defer_measurements(tape: QuantumTape):
                 measured_wires.intersection(op.wires.toset())
             )
 
-    # Apply controlled operations to store measurement outcomes and replace
-    # classically controlled operations
-    new_wires = {}
+    # Map measured wires to new wires, which will then be used by the rest of the circuit.
+    # Operations controlled on the measured wire will use the original wire for control.
+    meas_wire_map = {}
+    control_wires = {}
+    # Current wire to which the measured wire will be mapped
     cur_wire = max(tape.wires) + 1
 
-    for op in tape:
+    for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            # Only store measurement outcome in new wire if wire gets reused
+            # Keep track of all new mappings for the measured wire and only add wires if
+            # the measured wire gets reused.
             if op.wires[0] in reused_measurement_wires:
-                new_wires[op.id] = cur_wire
+                cur_measurements = meas_wire_map.get(op.wires[0], [op.wires[0]]).append(cur_wire)
+                meas_wire_map[op.wires[0]] = cur_measurements
+                if not op.reset:
+                    qml.CNOT([cur_measurements[-2], cur_wire])
 
-                qml.CNOT([op.wires[0], cur_wire])
-                if op.reset:
-                    qml.CNOT([cur_wire, op.wires[0]])
-
-                cur_wire += 1
-            else:
-                new_wires[op.id] = op.wires[0]
+            control_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            _add_control_gate(op, new_wires)
+            _add_control_gate(op, control_wires)
         else:
+            if any(w in meas_wire_map for w in op.wires):
+                # Remap operator wires to use the new wires
+                mapped_wires = Wires(
+                    [meas_wire_map[w][-1] if w in meas_wire_map else w for w in op.wires]
+                )
+                op = qml.map_wires(op, dict(zip(op.wires, mapped_wires)))
             apply(op)
+
+    for mp in tape.measurements:
+        if mp.obs or mp.wires:
+            if any(w in meas_wire_map for w in mp.wires):
+                # Remap measurement wires to use the new wires
+                mapped_wires = Wires(
+                    [meas_wire_map[w][-1] if w in meas_wire_map else w for w in mp.wires]
+                )
+                mp = qml.map_wires(mp, dict(zip(mp.wires, mapped_wires)))
+
+        apply(mp)
 
     return tape._qfunc_output  # pylint: disable=protected-access
 
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [control_wires[m.id] for m in op.meas_val.measurements]
+    control = [control_wires[m.id][0] for m in op.meas_val.measurements]
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             ctrl(
