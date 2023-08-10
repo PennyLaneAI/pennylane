@@ -132,7 +132,7 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The following decorator syntax for batch transforms has been deprecated:
+* The following decorator syntax for transforms has been deprecated:
 
   .. code-block:: python
 
@@ -141,7 +141,7 @@ Pending deprecations
       def circuit():
           ...
 
-  Please call the batch transform directly using ``circuit = transform_fn(circuit, *transform_args)``,
+  Please call the transform directly using ``circuit = transform_fn(circuit, *transform_args)``,
   or use ``functools.partial``:
 
   .. code-block:: python
