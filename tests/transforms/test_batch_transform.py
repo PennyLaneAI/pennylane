@@ -340,7 +340,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(dev, a, b)
 
         @qml.qnode(dev, interface="autograd")
@@ -371,7 +371,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
         @qml.qnode(dev, interface="autograd")
@@ -428,7 +428,7 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
         assert circuit.interface == "auto"
 
@@ -464,7 +464,7 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
 
     def test_custom_qnode_wrapper(self):
@@ -664,7 +664,7 @@ class TestBatchTransformGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "batch_transform")
+        spy = mocker.spy(dev, "preprocess")
 
         res = circuit(weights)
         spy.assert_called()

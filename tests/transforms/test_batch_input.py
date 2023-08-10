@@ -14,7 +14,7 @@
 """
 Unit tests for the ``batch_inputs`` transform.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,no-value-for-parameter,comparison-with-callable
 import pytest
 
 import pennylane as qml
@@ -181,7 +181,7 @@ def test_mottonenstate_preparation(mocker):
     # weights is not batched
     weights = np.random.random((10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
@@ -220,7 +220,7 @@ def test_qubit_state_prep(mocker):
     # weights is not batched
     weights = np.random.random((10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
@@ -283,6 +283,7 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
+    # pylint:disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
@@ -858,7 +859,7 @@ def test_unbatched_not_copied():
     tape = qml.tape.QuantumScript(ops, meas)
     tape.trainable_params = [0, 2]
 
-    new_tapes = qml.batch_input(argnum=1)(tape)[0]
+    new_tapes = qml.batch_input(argnum=1)(tape)[0]  # pylint:disable=not-callable
     assert len(new_tapes) == batch_size
 
     for new_tape in new_tapes:

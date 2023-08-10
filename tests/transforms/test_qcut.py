@@ -15,7 +15,8 @@
 Unit tests for the `pennylane.qcut` package.
 """
 # pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods,comparison-with-callable
+# pylint: disable=no-value-for-parameter,no-member,not-callable
 import copy
 import itertools
 import string
@@ -3717,7 +3718,7 @@ class TestQCutProcessingFn:
         x = tf.Variable(0.9, dtype=tf.float64)
 
         def f(x):
-            x = tf.cast(x, dtype=tf.float64)
+            x = tf.cast(x, dtype=tf.float64)  # pylint:disable=unexpected-keyword-arg
             t1 = x * tf.range(4, dtype=tf.float64)
             t2 = x**2 * tf.range(16, dtype=tf.float64)
             t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
@@ -4631,7 +4632,7 @@ class TestCutStrategy:
         """Test if ill-initialized instances throw errors."""
 
         if (
-            isinstance(devices, qml.Device)
+            isinstance(devices, (qml.Device, qml.devices.experimental.Device))
             and imbalance_tolerance is None
             and num_fragments_probed is None
         ):

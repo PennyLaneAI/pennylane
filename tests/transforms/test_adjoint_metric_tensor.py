@@ -26,7 +26,7 @@ class TestApplyOperations:
     """Tests the application of operations via the helper function
     _apply_operations used in the adjoint metric tensor."""
 
-    device = qml.device("default.qubit", wires=2)
+    device = qml.device("default.qubit.legacy", wires=2)
     x = 0.5
 
     def test_simple_operation(self):
@@ -393,7 +393,7 @@ fubini_params = [
 def autodiff_metric_tensor(ansatz, num_wires):
     """Compute the metric tensor by full state vector
     differentiation via autograd."""
-    dev = qml.device("default.qubit", wires=num_wires)
+    dev = qml.device("default.qubit.legacy", wires=num_wires)
 
     @qml.qnode(dev)
     def qnode(*params):
@@ -565,7 +565,7 @@ class TestAdjointMetricTensorQNode:
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
@@ -594,7 +594,7 @@ class TestAdjointMetricTensorQNode:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface="jax")
         def circuit(*params):
@@ -650,7 +650,7 @@ class TestAdjointMetricTensorQNode:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
@@ -674,7 +674,7 @@ class TestAdjointMetricTensorQNode:
 
         exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
         dev2 = qml.device("default.qubit.autograd", wires=self.num_wires)
 
         @qml.qnode(dev)
@@ -718,7 +718,7 @@ class TestAdjointMetricTensorDifferentiability:
         calling the adjoint metric tensor on a QNode."""
         exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(*params):
@@ -745,7 +745,7 @@ class TestAdjointMetricTensorDifferentiability:
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface="jax")
         def circuit(*params):
@@ -773,7 +773,7 @@ class TestAdjointMetricTensorDifferentiability:
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface="torch")
         def circuit(*params):
@@ -798,7 +798,7 @@ class TestAdjointMetricTensorDifferentiability:
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.legacy", wires=self.num_wires)
 
         @qml.qnode(dev, interface="tf")
         def circuit(*params):
@@ -828,7 +828,7 @@ class TestErrors:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with pytest.raises(qml.QuantumFunctionError, match="The passed object is not a "):
             qml.adjoint_metric_tensor(ansatz, device=dev)
@@ -839,7 +839,7 @@ class TestErrors:
             qml.RX(0.2, wires=0)
             qml.RY(1.9, wires=1)
         tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.qubit", wires=2, shots=1)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1)
 
         with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
             qml.adjoint_metric_tensor(tape, device=dev)
@@ -847,8 +847,8 @@ class TestErrors:
     def test_warning_multiple_devices(self):
         """Test that a warning is issued if an ExpvalCost with multiple
         devices is passed."""
-        dev1 = qml.device("default.qubit", wires=2)
-        dev2 = qml.device("default.qubit", wires=1)
+        dev1 = qml.device("default.qubit.legacy", wires=2)
+        dev2 = qml.device("default.qubit.legacy", wires=1)
         H = qml.Hamiltonian([0.2, 0.9], [qml.PauliZ(0), qml.PauliY(0)])
 
         def ansatz(x, wires):

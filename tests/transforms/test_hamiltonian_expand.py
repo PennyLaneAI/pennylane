@@ -100,14 +100,14 @@ class TestHamiltonianExpand:
         """Tests that the hamiltonian_expand transform returns the correct value"""
 
         tapes, fn = hamiltonian_expand(tape)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = hamiltonian_expand(qs)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
         assert np.isclose(output, expval)
 
@@ -117,14 +117,14 @@ class TestHamiltonianExpand:
         if we switch grouping off"""
 
         tapes, fn = hamiltonian_expand(tape, group=False)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = hamiltonian_expand(qs, group=False)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
@@ -274,10 +274,10 @@ class TestHamiltonianExpand:
 
         with tf.GradientTape() as gtape:
             with AnnotatedQueue() as q:
-                for i in range(2):
-                    qml.RX(var[i, 0], wires=0)
-                    qml.RX(var[i, 1], wires=1)
-                    qml.RX(var[i, 2], wires=2)
+                for _i in range(2):
+                    qml.RX(var[_i, 0], wires=0)
+                    qml.RX(var[_i, 1], wires=1)
+                    qml.RX(var[_i, 2], wires=2)
                     qml.CNOT(wires=[0, 1])
                     qml.CNOT(wires=[1, 2])
                     qml.CNOT(wires=[2, 0])
@@ -295,6 +295,8 @@ class TestHamiltonianExpand:
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
+    for i in range(4):
+        qml.Identity(i)
     S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
     qml.expval(S1)
     qml.expval(S1)
@@ -406,7 +408,7 @@ class TestSumExpand:
     def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
         tapes, fn = sum_expand(qscript)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
@@ -416,7 +418,7 @@ class TestSumExpand:
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
         tapes, fn = sum_expand(qscript, group=False)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
@@ -559,10 +561,10 @@ class TestSumExpand:
 
         with tf.GradientTape() as gtape:
             with AnnotatedQueue() as q:
-                for i in range(2):
-                    qml.RX(var[i, 0], wires=0)
-                    qml.RX(var[i, 1], wires=1)
-                    qml.RX(var[i, 2], wires=2)
+                for _i in range(2):
+                    qml.RX(var[_i, 0], wires=0)
+                    qml.RX(var[_i, 1], wires=1)
+                    qml.RX(var[_i, 2], wires=2)
                     qml.CNOT(wires=[0, 1])
                     qml.CNOT(wires=[1, 2])
                     qml.CNOT(wires=[2, 0])

@@ -96,7 +96,7 @@ class TestSignExpand:
         """Tests that the sign_expand transform returns the correct value"""
 
         tapes, fn = qml.transforms.sign_expand(tape)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
@@ -108,7 +108,7 @@ class TestSignExpand:
         """
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval, 1e-2)
@@ -151,7 +151,7 @@ class TestSignExpand:
         """Tests that the sign_expand transform returns the correct value"""
 
         tapes, fn = qml.transforms.sign_expand(tape)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
@@ -163,7 +163,7 @@ class TestSignExpand:
         """
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
-        results = dev.batch_execute(tapes)
+        results = dev.execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval, 1e-1)

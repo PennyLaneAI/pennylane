@@ -14,7 +14,7 @@
 """
 Unit tests for the metric tensor transform.
 """
-# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
+# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods,not-callable
 import pytest
 from scipy.linalg import block_diag
 
@@ -93,6 +93,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = np.array([0.1], requires_grad=True)
+        # pylint:disable=unexpected-keyword-arg
         result = qml.metric_tensor(circuit, hybrid=False, approx="block-diag")(*params)
         assert result.shape == (2, 2)
 
@@ -1192,6 +1193,7 @@ class TestFullMetricTensor:
             return qml.expval(qml.PauliZ(0))
 
         if len(params) > 1:
+            # pylint:disable=unexpected-keyword-arg
             mt = qml.metric_tensor(circuit, argnums=range(0, len(params)), approx=None)(*params)
         else:
             mt = qml.metric_tensor(circuit, approx=None)(*params)
@@ -1745,6 +1747,7 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     assert len(recwarn) == 0
 
 
+@pytest.mark.xfail(reason="The new default.qubit does not enforce tape wires")
 def test_raises_circuit_that_uses_missing_wire():
     """Test that an error in the original circuit is reraised properly and not caught. This avoids
     accidentally catching relevant errors, which can lead to a recursion error."""

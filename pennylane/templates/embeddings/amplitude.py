@@ -18,7 +18,7 @@ Contains the AmplitudeEmbedding template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, StatePrep
 from pennylane.ops import QubitStateVector
 from pennylane.wires import Wires
 
@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 TOLERANCE = 1e-10
 
 
-class AmplitudeEmbedding(Operation):
+class AmplitudeEmbedding(StatePrep):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension
@@ -137,6 +137,9 @@ class AmplitudeEmbedding(Operation):
     @property
     def ndim_params(self):
         return (1,)
+
+    def state_vector(self, wire_order=None):
+        return QubitStateVector(self.data[0], wires=self.wires).state_vector(wire_order=wire_order)
 
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ

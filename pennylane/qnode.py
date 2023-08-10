@@ -905,7 +905,9 @@ class QNode:
         if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
-        if self.expansion_strategy == "device":
+        if self.expansion_strategy == "device" and not isinstance(
+            self.device, qml.devices.experimental.Device
+        ):
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
         # If the gradient function is a transform, expand the tape so that

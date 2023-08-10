@@ -64,7 +64,7 @@ class TestCreateExpandFn:
         """Test that passing a device alongside a stopping condition ensures
         that all operations are expanded to match the devices default gate
         set"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -80,7 +80,7 @@ class TestCreateExpandFn:
     def test_device_only_expansion(self):
         """Test that passing a device ensures that all operations are expanded
         to match the devices default gate set"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -432,8 +432,8 @@ class TestCreateCustomDecompExpandFn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        original_dev = qml.device("default.qubit", wires=3)
-        decomp_dev = qml.device("default.qubit", wires=3, custom_decomps={})
+        original_dev = qml.device("default.qubit.legacy", wires=3)
+        decomp_dev = qml.device("default.qubit.legacy", wires=3, custom_decomps={})
 
         original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
@@ -457,8 +457,8 @@ class TestCreateCustomDecompExpandFn:
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        original_dev = qml.device("default.qubit", wires=3)
-        decomp_dev = qml.device("default.qubit", wires=3, custom_decomps={})
+        original_dev = qml.device("default.qubit.legacy", wires=3)
+        decomp_dev = qml.device("default.qubit.legacy", wires=3, custom_decomps={})
 
         original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
@@ -474,7 +474,7 @@ class TestCreateCustomDecompExpandFn:
             )
         ]
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "lightning.qubit"])
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "lightning.qubit"])
     def test_one_custom_decomp(self, device_name):
         """Test that specifying a single custom decomposition works as expected."""
 
@@ -509,7 +509,7 @@ class TestCreateCustomDecompExpandFn:
 
         custom_decomps = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
         decomp_dev = qml.device(
-            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=0
+            "default.qubit.legacy", wires=2, custom_decomps=custom_decomps, decomp_depth=0
         )
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
@@ -529,8 +529,8 @@ class TestCreateCustomDecompExpandFn:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        original_dev = qml.device("default.qubit", wires=3)
-        decomp_dev = qml.device("default.qubit", wires=3, custom_decomps={"Rot": custom_rot})
+        original_dev = qml.device("default.qubit.legacy", wires=3)
+        decomp_dev = qml.device("default.qubit.legacy", wires=3, custom_decomps={"Rot": custom_rot})
 
         original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
@@ -558,7 +558,7 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit.legacy", wires=2, custom_decomps=custom_decomps)
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
         decomp_ops = decomp_qnode.qtape.operations
@@ -596,7 +596,7 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit.legacy", wires=2, custom_decomps=custom_decomps)
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
         decomp_ops = decomp_qnode.qtape.operations
@@ -640,7 +640,7 @@ class TestCreateCustomDecompExpandFn:
 
         # BasicEntanglerLayers custom decomposition involves AngleEmbedding
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit.legacy", wires=2, custom_decomps=custom_decomps)
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
         decomp_ops = decomp_qnode.qtape.operations
@@ -677,7 +677,7 @@ class TestCreateCustomDecompExpandFn:
         # not be further decomposed even though the custom decomposition is specified.
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
         decomp_dev = qml.device(
-            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=2
+            "default.qubit.legacy", wires=2, custom_decomps=custom_decomps, decomp_depth=2
         )
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
@@ -706,7 +706,7 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ("a"))
 
         custom_decomps = {qml.RX: custom_rx}
-        decomp_dev = qml.device("default.qubit", wires="a", custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit.legacy", wires="a", custom_decomps=custom_decomps)
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
         decomp_ops = decomp_qnode.qtape.operations
@@ -732,7 +732,7 @@ class TestCreateCustomDecompExpandFn:
                 return [qml.S(wire)]
 
         custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit.legacy", wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev, expansion_strategy="device")
         def circuit():
@@ -751,7 +751,7 @@ class TestCreateCustomDecompExpandFn:
     def test_custom_decomp_in_separate_context(self):
         """Test that the set_decomposition context manager works."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, expansion_strategy="device")
         def circuit():

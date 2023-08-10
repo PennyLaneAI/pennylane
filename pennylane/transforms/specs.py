@@ -123,7 +123,11 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
         info = qnode.qtape.specs.copy()
 
-        info["num_device_wires"] = getattr(qnode.device, "num_wires", None)
+        info["num_device_wires"] = (
+            len(qnode.tape.wires)
+            if isinstance(qnode.device, qml.devices.experimental.Device)
+            else len(qnode.device.wires)
+        )
         info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)
         info["expansion_strategy"] = qnode.expansion_strategy
         info["gradient_options"] = qnode.gradient_kwargs

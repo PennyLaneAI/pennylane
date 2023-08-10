@@ -499,11 +499,13 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
         shots = kwargs.pop("shots", False)
         shots = shots or qnode.device.shots
 
-        if shots is None:
+        if not shots:
             raise ValueError(
                 "A shots value must be provided in the device "
                 "or when calling the QNode to be cut"
             )
+        if isinstance(shots, qml.measurements.Shots):
+            shots = shots.total_shots
 
         qnode.construct(args, kwargs)
         tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs, shots=shots)
@@ -706,7 +708,7 @@ def expand_fragment_tapes_mc(
                         meas_w = op.wires[0]
                         MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
 
-            frag_config.append(QuantumScript.from_queue(q))
+            frag_config.append(QuantumScript.from_queue(q, shots=1))
 
         all_configs.append(frag_config)
 

@@ -49,15 +49,11 @@ class TestSpecsTransform:
         assert info["num_device_wires"] == 1
         assert info["diff_method"] == diff_method
         assert info["num_trainable_params"] == 0
+        assert info["device_name"] == dev.name
 
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 0
             assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
-
-        if diff_method != "backprop":
-            assert info["device_name"] == "default.qubit"
-        else:
-            assert info["device_name"] == "default.qubit.autograd"
 
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 11), ("parameter-shift", 12), ("adjoint", 11)]
@@ -99,14 +95,10 @@ class TestSpecsTransform:
         assert info["num_device_wires"] == 4
         assert info["diff_method"] == diff_method
         assert info["num_trainable_params"] == 4
+        assert info["device_name"] == dev.name
 
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 6
-
-        if diff_method != "backprop":
-            assert info["device_name"] == "default.qubit"
-        else:
-            assert info["device_name"] == "default.qubit.autograd"
 
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 11), ("parameter-shift", 12), ("adjoint", 11)]
@@ -143,10 +135,11 @@ class TestSpecsTransform:
 
         params_shape = qml.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
         rng = np.random.default_rng(seed=10)
-        params = rng.standard_normal(params_shape)
+        params = rng.standard_normal(params_shape)  # pylint:disable=no-member
 
         return circuit, params
 
+    @pytest.mark.xfail(reason="DefaultQubit2 does not support custom expansion depths")
     def test_max_expansion(self):
         """Test that a user can calculation specifications for a different max
         expansion parameter."""
@@ -167,7 +160,7 @@ class TestSpecsTransform:
         assert info["resources"] == expected_resources
         assert info["num_observables"] == 1
         assert info["num_device_wires"] == 5
-        assert info["device_name"] == "default.qubit.autograd"
+        assert info["device_name"] == "default.qubit.2"
         assert info["diff_method"] == "best"
         assert info["gradient_fn"] == "backprop"
 
@@ -209,3 +202,22 @@ class TestSpecsTransform:
         info = qml.specs(circuit)()
         assert info["diff_method"] == "test_specs.my_transform"
         assert info["gradient_fn"] == "test_specs.my_transform"
+
+    @pytest.mark.parametrize(
+        "device,num_wires",
+        [
+            (qml.device("default.qubit"), 1),
+            (qml.device("default.qubit", wires=2), 1),
+            (qml.device("default.qubit.legacy", wires=2), 2),
+        ],
+    )
+    def test_num_wires_source_of_truth(self, device, num_wires):
+        """Tests that num_wires behaves differently on old and new devices."""
+
+        @qml.qnode(device)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        info = qml.specs(circuit)()
+        assert info["num_device_wires"] == num_wires
