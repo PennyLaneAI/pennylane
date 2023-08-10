@@ -132,7 +132,6 @@ def defer_measurements(tape: QuantumTape):
     reused_measurement_wires = set()
     # Current wire to which the measured wire will be mapped
     cur_wire = max(tape.wires) + 1
-    new_wire_map
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
