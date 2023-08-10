@@ -20,7 +20,10 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.interfaces.jacobian_products import JacobianProductCalculator, TransformDerivatives
+from pennylane.interfaces.jacobian_products import (
+    JacobianProductCalculator,
+    TransformJacobianProducts,
+)
 
 dev = qml.devices.experimental.DefaultQubit2()
 
@@ -29,8 +32,8 @@ def inner_execute_numpy(tapes):
     return dev.execute(tapes)
 
 
-param_shift_jpc = TransformDerivatives(inner_execute_numpy, qml.gradients.param_shift)
-hadamard_grad_jpc = TransformDerivatives(
+param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.param_shift)
+hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
 
@@ -43,7 +46,7 @@ class TestBasics:
 
     def test_transform_derivatives_basics(self):
         """Test the initialization of properties for a transform derivatives class."""
-        jpc = TransformDerivatives(
+        jpc = TransformJacobianProducts(
             inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
         )
 
@@ -53,7 +56,7 @@ class TestBasics:
         assert jpc._gradient_kwargs == {"aux_wire": "aux"}
 
         expected_repr = (
-            f"TransformDerivatives({repr(inner_execute_numpy)}, "
+            f"TransformJacobianProducts({repr(inner_execute_numpy)}, "
             "gradient_transform=<gradient_transform: _hadamard_grad>, "
             "gradient_kwargs={'aux_wire': 'aux'})"
         )

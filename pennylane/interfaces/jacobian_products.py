@@ -13,7 +13,6 @@
 # limitations under the License.
 """
 Defines classes that take the vjps, jvps, and jacobians of circuits.
-
 """
 import abc
 from functools import partial
@@ -31,7 +30,7 @@ class JacobianProductCalculator(abc.ABC):
 
     @abc.abstractmethod
     def execute_and_compute_jvp(
-        self, tapes: Batch, tangents: TensorLike
+        self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
     ) -> Tuple[ResultBatch, Tuple]:
         """Calculate both the results for a batch of tapes and the jvp.
 
@@ -110,24 +109,24 @@ class JacobianProductCalculator(abc.ABC):
         """
 
 
-class TransformDerivatives(JacobianProductCalculator):
+class TransformJacobianProducts(JacobianProductCalculator):
     """Compute vjp, jvps, and jacobians via a gradient transform.
 
     Args:
         inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
             turns the batch of circuits into results.
-        gradient_transform (qml.gradients.gradient_transform): the gradient transform to use.
+        gradient_transform (pennylane.gradients.gradient_transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
     >>> kwargs = {"broadcast": True}
-    >>> jp_method = TransformDerivatives(inner_execute, gradient_transform, kwargs)
+    >>> jp_method = TransformJacobianProducts(inner_execute, gradient_transform, kwargs)
 
     """
 
     def __repr__(self):
-        return f"TransformDerivatives({self._inner_execute}, gradient_transform={self._gradient_transform}, gradient_kwargs={self._gradient_kwargs})"
+        return f"TransformJacobianProducts({self._inner_execute}, gradient_transform={self._gradient_transform}, gradient_kwargs={self._gradient_kwargs})"
 
     def __init__(
         self,
@@ -139,7 +138,7 @@ class TransformDerivatives(JacobianProductCalculator):
         self._gradient_transform = gradient_transform
         self._gradient_kwargs = gradient_kwargs or {}
 
-    def execute_and_compute_jvp(self, tapes: Batch, tangents):
+    def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
         num_result_tapes = len(tapes)
 
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
@@ -155,16 +154,15 @@ class TransformDerivatives(JacobianProductCalculator):
         jvps = jvp_processing_fn(jvp_results)
         return tuple(results), tuple(jvps)
 
-    def compute_vjp(self, tapes, dy):
+    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
 
         vjp_results = self._inner_execute(vjp_tapes)
-        # potentially need to squeeze out a singleton dimension here
         return tuple(processing_fn(vjp_results))
 
-    def compute_jacobian(self, tapes):
+    def compute_jacobian(self, tapes: Batch):
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
             partial_gradient_fn, tapes

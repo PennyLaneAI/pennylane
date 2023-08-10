@@ -39,7 +39,7 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
-* The `JacobianProductCalculator` abstract base class and implementation `TransformDerivatives`
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
   have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
 
