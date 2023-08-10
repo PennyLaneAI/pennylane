@@ -174,7 +174,7 @@ class TestTransformDispatcher:
         assert not dispatched_transform.is_informative
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
+    def test_integration_dispatcher_with_valid_transform_decorator_partial(self, valid_transform):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
         the right object."""
 
@@ -190,6 +190,32 @@ class TestTransformDispatcher:
             qml.PauliX(wires=0)
             qml.RZ(a, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
+
+        assert isinstance(qnode_circuit, qml.QNode)
+        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(
+            qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
+        """Test that a warning is raised with the transform function and that the transform dispatcher returns
+        the right object."""
+
+        dispatched_transform = transform(valid_transform)
+        targs = [0]
+
+        with pytest.warns(UserWarning, match="The decorator syntax"):
+
+            @dispatched_transform(targs)
+            @qml.qnode(device=dev)
+            def qnode_circuit(a):
+                """QNode circuit."""
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PauliX(wires=0)
+                qml.RZ(a, wires=1)
+                return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode_circuit, qml.QNode)
         assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
@@ -338,17 +364,6 @@ class TestTransformDispatcher:
             NotImplementedError, match="Classical cotransforms are not yet integrated."
         ):
             transform(first_valid_transform, classical_cotransform=non_callable)
-
-    def test_apply_dispatched_transform_non_valid_obj(self):
-        """Test that applying a dispatched function on a non-valid object raises an error."""
-        dispatched_transform = transform(first_valid_transform)
-        obj = qml.RX(0.1, wires=0)
-        with pytest.raises(
-            TransformError,
-            match="The object on which the transform is applied is not valid. It can only be a tape, a QNode or a "
-            "qfunc.",
-        ):
-            dispatched_transform(obj)
 
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
