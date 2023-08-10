@@ -132,6 +132,27 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The following decorator syntax for batch transforms has been deprecated:
+
+  .. code-block:: python
+
+      @transform_fn(*transform_args)
+      @qml.qnode(dev)
+      def circuit():
+          ...
+
+  Please call the batch transform directly using ``circuit = transform_fn(circuit, *transform_args)``,
+  or use ``functools.partial``:
+
+  .. code-block:: python
+
+      @functools.partial(transform_fn, *transform_args)
+      @qml.qnode(dev)
+      def circuit():
+          ...
+
+  - Deprecated in v0.32
+  - Will be removed in v0.34
 
 Completed deprecation cycles
 ----------------------------

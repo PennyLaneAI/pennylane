@@ -245,6 +245,24 @@ array([False, False])
   changes to operator equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
 
+* The following decorator syntax for batch transforms has been deprecated and will raise a warning:
+  ```python
+  @transform_fn(*transform_args)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  Please call the batch transform directly using `circuit = transform_fn(circuit, *transform_args)`,
+  or use `functools.partial`:
+
+  ```python
+  @functools.partial(transform_fn, *transform_args)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  []()
+
 <h3>Documentation 📝</h3>
 
 * The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
