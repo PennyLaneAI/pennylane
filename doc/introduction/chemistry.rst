@@ -43,7 +43,10 @@ installation. This backend is non-differentiable and can be selected by setting
 ``method='pyscf'`` in :func:`~.molecular_hamiltonian`. Additionally, if the electronic Hamiltonian
 is built independently using `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it
 can be readily converted to a PennyLane observable using the
-:func:`~.pennylane.import_operator` function.
+:func:`~.pennylane.import_operator` function. There is also capability to import wavefunctions (states) 
+that have been pre-computed by configuration interaction singles and doubles (CISD) and coupled cluster 
+singles and doubles (CCSD) methods via PySCF, for example to provide a better starting point to a quantum algorithm. 
+This can be accomplished using the :func:`~pennylane.import_state` utility function.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -255,6 +258,7 @@ Utility functions
     ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
+    ~pennylane.import_state
     ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 
