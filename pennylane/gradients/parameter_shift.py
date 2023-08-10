@@ -1277,7 +1277,7 @@ def param_shift(
          (array(0.69916862), array(0.34072424), array(0.69202359)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
-        
+
         >>> shots = (10, 100, 1000)
         >>> dev = qml.device("default.qubit", wires=2, shots=shots)
         >>> @qml.qnode(dev)
