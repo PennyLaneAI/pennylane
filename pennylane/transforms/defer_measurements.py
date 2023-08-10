@@ -44,9 +44,10 @@ def defer_measurements(tape: QuantumTape):
     .. note::
 
         Devices that inherit `QubitDevice` **must** be initialized with an additional
-        wire for each mid-circuit measurement for `defer_measurements` to transform
-        the quantum tape correctly. Such devices should also be initialized without
-        custom wire labels for correct behaviour.
+        wire for each mid-circuit measurement after which the measured wire is reused
+        or reset for `defer_measurements` to transform the quantum tape correctly.
+        Such devices should also be initialized without custom wire labels for correct
+        behaviour.
 
     .. note::
 
@@ -123,19 +124,44 @@ def defer_measurements(tape: QuantumTape):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
-    # Current wire in which pre-measurement state will be saved if dev_wires not specified
-    cur_wire = max(tape.wires) + 1
+    # Find wires that are reused after measurement
+    measured_wires = set()
+    reused_measurement_wires = set()
+
+    for op in tape.operations:
+        if isinstance(op, MidMeasureMP):
+            measured_wires.add(op.wires[0])
+            if op.reset:
+                reused_measurement_wires.add(op.wires[0])
+
+        elif op.__class__.__name__ == "Conditional":
+            reused_measurement_wires = reused_measurement_wires.union(
+                measured_wires.intersection(op.then_op.wires.toset())
+            )
+
+        else:
+            reused_measurement_wires = reused_measurement_wires.union(
+                measured_wires.intersection(op.wires.toset())
+            )
+
+    # Apply controlled operations to store measurement outcomes and replace
+    # classically controlled operations
     new_wires = {}
+    cur_wire = max(tape.wires) + 1
 
     for op in tape:
         if isinstance(op, MidMeasureMP):
-            new_wires[op.id] = cur_wire
-            qml.CNOT([op.wires[0], cur_wire])
+            # Only store measurement outcome in new wire if wire gets reused
+            if op.wires[0] in reused_measurement_wires:
+                new_wires[op.id] = cur_wire
 
-            if op.reset:
-                qml.CNOT([cur_wire, op.wires[0]])
+                qml.CNOT([op.wires[0], cur_wire])
+                if op.reset:
+                    qml.CNOT([cur_wire, op.wires[0]])
 
-            cur_wire += 1
+                cur_wire += 1
+            else:
+                new_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
             _add_control_gate(op, new_wires)
