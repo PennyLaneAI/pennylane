@@ -270,6 +270,7 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
+            print(self._state.shape)
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
@@ -334,7 +335,7 @@ class DefaultQubit(QubitDevice):
 
         if operation in diagonal_in_z_basis:
             new_state = self._apply_diagonal_unitary(state, matrix, wires)
-        if len(wires) <= 2:
+        elif len(wires) <= 2:
             # Einsum is faster for small gates
             new_state = self._apply_unitary_einsum(state, matrix, wires)
         else:
