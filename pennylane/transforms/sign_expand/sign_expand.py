@@ -15,7 +15,6 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 # pylint: disable=protected-access
 import json
 from os import path
-from functools import partial
 from typing import Sequence, Callable
 
 import pennylane as qml

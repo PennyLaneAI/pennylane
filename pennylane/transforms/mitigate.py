@@ -14,9 +14,9 @@
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
 
-from typing import Any, Dict, Optional, Sequence, Union, Callable
+from typing import Any, Dict, Optional, Sequence, Callable
 
-from pennylane import QNode, apply, adjoint
+from pennylane import apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumTape, QuantumScript
