@@ -143,11 +143,10 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
                 specialfunc(drawer, layer, mapped_wires, op)
 
             elif type(op).__name__ == "Conditional":
-                measured_layer = {_measured_layers[i] for i in op.meas_val.measurement_ids}.pop()
+                m_ids = [m.id for m in op.meas_val.measurements]
+                measured_layer = {_measured_layers[m_id] for m_id in m_ids}.pop()
                 control_wires = [
-                    wire_map[o.wires[0]]
-                    for o in layers[measured_layer]
-                    if o.id in op.meas_val.measurement_ids
+                    wire_map[o.wires[0]] for o in layers[measured_layer] if o.id in m_ids
                 ]
                 target_wires = [wire_map[w] for w in op.wires]
                 drawer.cond(layer, measured_layer, control_wires, target_wires)
