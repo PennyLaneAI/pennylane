@@ -38,6 +38,74 @@ def coordinate_sampler(indices, num_params, idx, rng=None):
     return direction
 
 
+class TestRademacherSampler:
+    """Test the Rademacher distribution sampler."""
+
+    @pytest.mark.parametrize(
+        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
+    )
+    def test_output_structure(self, ids, num):
+        """Test that the sampled output has the right entries to be non-zero
+        and attains the right values."""
+        ids_mask = np.zeros(num, dtype=bool)
+        ids_mask[ids] = True
+        rng = np.random.default_rng()
+
+        for _ in range(5):
+            direction = _rademacher_sampler(ids, num, rng=rng)
+            assert direction.shape == (num,)
+            assert set(direction).issubset({0, -1, 1})
+            assert np.allclose(np.abs(direction)[ids_mask], 1)
+            assert np.allclose(direction[~ids_mask], 0)
+
+    def test_call_with_third_arg(self):
+        """Test that a third argument is ignored."""
+        rng = np.random.default_rng()
+        _rademacher_sampler([0, 1, 2], 4, "ignored dummy", rng=rng)
+
+    def test_differing_seeds(self):
+        """Test that the output differs for different seeds."""
+        ids = [0, 1, 2, 3, 4]
+        num = 5
+        seeds = [42, 43]
+        rng = np.random.default_rng(seeds[0])
+        first_direction = _rademacher_sampler(ids, num, rng=rng)
+        rng = np.random.default_rng(seeds[1])
+        second_direction = _rademacher_sampler(ids, num, rng=rng)
+        assert not np.allclose(first_direction, second_direction)
+
+    def test_same_seeds(self):
+        """Test that the output is the same for identical RNGs."""
+        ids = [0, 1, 2, 3, 4]
+        num = 5
+        rng = np.random.default_rng(42)
+        first_direction = _rademacher_sampler(ids, num, rng=rng)
+        np.random.seed = 0  # Setting the global seed should have no effect.
+        rng = np.random.default_rng(42)
+        second_direction = _rademacher_sampler(ids, num, rng=rng)
+        assert np.allclose(first_direction, second_direction)
+
+    @pytest.mark.parametrize(
+        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
+    )
+    @pytest.mark.parametrize("N", [10, 10000])
+    def test_mean_and_var(self, ids, num, N):
+        """Test that the mean and variance of many produced samples are
+        close to the theoretical values."""
+        rng = np.random.default_rng(42)
+        ids_mask = np.zeros(num, dtype=bool)
+        ids_mask[ids] = True
+        outputs = [_rademacher_sampler(ids, num, rng=rng) for _ in range(N)]
+        # Test that the mean of non-zero entries is approximately right
+        assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
+        # Test that the variance of non-zero entries is approximately right
+        assert np.allclose(np.var(outputs, axis=0)[ids_mask], 1, atol=4 / N)
+        # Test that the mean of zero entries is exactly 0, because all entries should be
+        assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
+        # Test that the variance of zero entries is exactly 0, because all entries are the same
+        assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
+
+
 class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
 
