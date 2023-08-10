@@ -204,23 +204,17 @@ formatters so that the consumed message fits the needs of the user.
    level = "WARN"
    propagate = false
 
-   # Control logging in the executing Python script
-   [loggers.__main__]
-   handlers = ["qml_debug_stream",]
-   level = "INFO"
-   propagate = false
-
    # Control logging across pennylane
    [loggers.pennylane]
    handlers = ["qml_debug_stream",]
-   level = "DEBUG" # Set to 1 for highest verbosity
+   level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
    # Control logging specifically in the pennylane.qnode module
    # Note the required quotes to overcome TOML nesting issues
    [loggers."pennylane.qnode"]
    handlers = ["qml_debug_stream_alt",]
-   level = "DEBUG" # Set to 1 for highest verbosity
+   level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
    ###############################################################################
@@ -322,9 +316,18 @@ process, and surrounding operations:
    logger.info(f"Jacobian={jacfwd(lambda x: circuit(key1, x))(jnp.pi/3)}")
 
 We can examine the output of the log-statements, which shows debug level
-messages from JAX, and info-level messages for the given script
-(controlled by ``[loggers.__main__]`` in the config file). To see
-PennyLane-wide debug messages, we can revert the PennyLane log level to
+messages from JAX, and info-level messages for the given script. To modify the logger defined in the Python script, a new section can be added as:
+
+.. code:: toml
+
+   # Control logging in the executing Python script
+   [loggers.__main__]
+   handlers = ["qml_debug_stream",]
+   level = "INFO"
+   propagate = false
+
+
+To see PennyLane-wide debug messages, we can revert the PennyLane log level to
 debug, and rerun the script. There should be more output than previously
 observed.
 
