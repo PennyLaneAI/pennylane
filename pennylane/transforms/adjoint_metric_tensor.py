@@ -149,7 +149,6 @@ def _adjoint_metric_tensor_tape(tape):
         raise ValueError(
             "The adjoint method for the metric tensor is only implemented for shots=None"
         )
-
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
