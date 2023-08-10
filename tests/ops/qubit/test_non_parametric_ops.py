@@ -556,7 +556,7 @@ class TestBarrier:
 
         assert gates == 3
 
-        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
@@ -572,7 +572,7 @@ class TestBarrier:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
@@ -594,7 +594,7 @@ class TestBarrier:
 
         assert gates == 4
 
-        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qfunc = qml.compile(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
@@ -623,7 +623,7 @@ class TestBarrier:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile()(qfunc2)
+        optimized_qfunc = qml.compile(qfunc2)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
