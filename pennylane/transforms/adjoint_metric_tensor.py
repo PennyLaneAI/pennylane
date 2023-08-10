@@ -31,9 +31,8 @@ def _get_op_for_generator(generator, like_real):
 
 
 def _reshape_real_imag(state, dim):
-    real_part = qml.math.reshape(qml.math.real(state), (dim,))
-    imag_part = qml.math.reshape(qml.math.imag(state), (dim,))
-    return real_part, imag_part
+    state = qml.math.reshape(state, (dim,))
+    return qml.math.real(state), qml.math.imag(state)
 
 
 def _group_operations(tape):
