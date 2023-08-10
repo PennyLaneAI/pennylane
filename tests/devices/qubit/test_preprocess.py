@@ -217,10 +217,11 @@ class TestExpandFnTransformations:
     # pylint: disable=no-member
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
-        mv = MeasurementValue(["test_id"], processing_fn=lambda v: v)
+        mp = MidMeasureMP(wires=[0], id="test_id")
+        mv = MeasurementValue([mp], processing_fn=lambda v: v)
         ops = [
             qml.Hadamard(0),
-            MidMeasureMP(wires=[0], id="test_id"),
+            mp,
             qml.transforms.Conditional(mv, qml.RX(0.123, wires=1)),
         ]
         measurements = [qml.expval(qml.PauliZ(1))]
