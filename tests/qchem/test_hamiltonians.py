@@ -21,7 +21,8 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.operation import disable_new_opmath, enable_new_opmath
+from pennylane.fermi import from_string
 
 
 @pytest.mark.parametrize(
@@ -202,14 +203,90 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
         )
     ],
 )
-def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
+def test_fermionic_hamiltonian_fs_False(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
     r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+    # TODO: remove this test when supporting tuple output by fermionic_hamiltonian is deprecated.
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    h = qchem.fermionic_hamiltonian(mol)(*args)
+    h = qchem.fermionic_hamiltonian(mol, fs=False)(*args)
 
     assert np.allclose(h[0], coeffs_h_ref)
     assert h[1] == ops_h_ref
+
+
+def test_fermionic_hamiltonian_warning():
+    r"""Test that a warning is raised if `fs = False` in fermionic_hamiltonian."""
+    # TODO: remove this test when supporting tuple output by fermionic_hamiltonian is deprecated.
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    mol = qml.qchem.Molecule(symbols, geometry)
+    with pytest.warns(UserWarning, match="This function will return a fermionic operator"):
+        qchem.fermionic_hamiltonian(mol, fs=False)()
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "h_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            # Hamiltonian coefficients and operators computed with OpenFermion using
+            # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
+            # molecule = run_pyscf(molecule, run_scf=1)
+            # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
+            # The "^" symbols in the operators are replaced with "+"
+            1.0000000206358097 * from_string("")
+            + -1.3902192781338518 * from_string("0+ 0")
+            + 0.35721954051077603 * from_string("0+ 0+ 0 0")
+            + 0.08512072166002102 * from_string("0+ 0+ 2 2")
+            + 0.35721954051077603 * from_string("0+ 1+ 1 0")
+            + 0.08512072166002102 * from_string("0+ 1+ 3 2")
+            + 0.08512072166002102 * from_string("0+ 2+ 0 2")
+            + 0.3509265790433101 * from_string("0+ 2+ 2 0")
+            + 0.08512072166002102 * from_string("0+ 3+ 1 2")
+            + 0.3509265790433101 * from_string("0+ 3+ 3 0")
+            + 0.35721954051077603 * from_string("1+ 0+ 0 1")
+            + 0.08512072166002102 * from_string("1+ 0+ 2 3")
+            + -1.3902192781338518 * from_string("1+ 1")
+            + 0.35721954051077603 * from_string("1+ 1+ 1 1")
+            + 0.08512072166002102 * from_string("1+ 1+ 3 3")
+            + 0.08512072166002102 * from_string("1+ 2+ 0 3")
+            + 0.3509265790433101 * from_string("1+ 2+ 2 1")
+            + 0.08512072166002102 * from_string("1+ 3+ 1 3")
+            + 0.3509265790433101 * from_string("1+ 3+ 3 1")
+            + 0.35092657904330926 * from_string("2+ 0+ 0 2")
+            + 0.08512072166002102 * from_string("2+ 0+ 2 0")
+            + 0.35092657904330926 * from_string("2+ 1+ 1 2")
+            + 0.08512072166002102 * from_string("2+ 1+ 3 0")
+            + -0.29165329244211186 * from_string("2+ 2")
+            + 0.08512072166002102 * from_string("2+ 2+ 0 0")
+            + 0.36941834777609744 * from_string("2+ 2+ 2 2")
+            + 0.08512072166002102 * from_string("2+ 3+ 1 0")
+            + 0.36941834777609744 * from_string("2+ 3+ 3 2")
+            + 0.35092657904330926 * from_string("3+ 0+ 0 3")
+            + 0.08512072166002102 * from_string("3+ 0+ 2 1")
+            + 0.35092657904330926 * from_string("3+ 1+ 1 3")
+            + 0.08512072166002102 * from_string("3+ 1+ 3 1")
+            + 0.08512072166002102 * from_string("3+ 2+ 0 1")
+            + 0.36941834777609744 * from_string("3+ 2+ 2 3")
+            + -0.29165329244211186 * from_string("3+ 3")
+            + 0.08512072166002102 * from_string("3+ 3+ 1 1")
+            + 0.36941834777609744 * from_string("3+ 3+ 3 3"),
+        )
+    ],
+)
+def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
+    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    h = qchem.fermionic_hamiltonian(mol, fs=True)(*args)
+
+    assert np.allclose(list(h.values()), list(h_ref.values()))
+    assert h.keys() == h_ref.keys()
 
 
 @pytest.mark.parametrize(
@@ -264,15 +341,16 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref
         )
     ],
 )
-def test_diff_hamiltonian(symbols, geometry, h_ref_data):
+@pytest.mark.parametrize("fs", [True, False])
+def test_diff_hamiltonian(symbols, geometry, h_ref_data, fs):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
     mol = qchem.Molecule(symbols, geometry)
     args = []
-    h = qchem.diff_hamiltonian(mol)(*args)
+    h = qchem.diff_hamiltonian(mol, fs=fs)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
-    assert np.allclose(h.terms()[0], h_ref.terms()[0])
+    assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
@@ -289,7 +367,28 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     )
 
 
-def test_gradient_expvalH():
+def test_diff_hamiltonian_active_space():
+    r"""Test that diff_hamiltonian works when an active space is defined."""
+
+    symbols = ["H", "H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+
+    mol = qchem.Molecule(symbols, geometry, charge=1)
+    args = [geometry]
+
+    h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
+
+    assert isinstance(h, qml.Hamiltonian)
+
+    enable_new_opmath()
+    h_op = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
+    disable_new_opmath()
+
+    assert not isinstance(h_op, qml.Hamiltonian)
+
+
+@pytest.mark.parametrize("fs", [True, False])
+def test_gradient_expvalH(fs):
     r"""Test that the gradient of expval(H) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
@@ -312,7 +411,7 @@ def test_gradient_expvalH():
             qml.PauliX(0)
             qml.PauliX(1)
             qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = qchem.diff_hamiltonian(mol)(*args)
+            h_qubit = qchem.diff_hamiltonian(mol, fs=fs)(*args)
             return qml.expval(h_qubit)
 
         return circuit
@@ -364,7 +463,7 @@ class TestJax:
                 qml.PauliX(0)
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                h_qubit = qchem.diff_hamiltonian(mol)(*args)
+                h_qubit = qchem.diff_hamiltonian(mol, fs=False)(*args)
                 return qml.expval(h_qubit)
 
             return circuit

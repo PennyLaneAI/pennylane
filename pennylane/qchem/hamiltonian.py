@@ -16,6 +16,8 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 
+import warnings
+
 import pennylane as qml
 
 from .hartree_fock import nuclear_energy, scf
@@ -142,12 +144,15 @@ def electron_integrals(mol, core=None, active=None):
     return _electron_integrals
 
 
-def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
+def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False):
     r"""Return a function that computes the fermionic Hamiltonian.
 
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
+        fs (bool): if True, a fermi sentence will be returned
 
     Returns:
         function: function that computes the fermionic hamiltonian
@@ -170,21 +175,32 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
             *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
+            Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
         """
+
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
-        return fermionic_observable(core_constant, one, two, cutoff)
+        if not fs:
+            warnings.warn(
+                "This function will return a fermionic operator by default in the next release. For"
+                " details, see the Fermionic Operators tutorial:"
+                " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
+                " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
+            )
+        return fermionic_observable(core_constant, one, two, cutoff, fs)
 
     return _fermionic_hamiltonian
 
 
-def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
+def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=True):
     r"""Return a function that computes the qubit Hamiltonian.
 
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
+        fs (bool): if True, a fermi sentence is constructed and used internally
 
     Returns:
         function: function that computes the qubit hamiltonian
@@ -215,7 +231,8 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
-        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
+
+        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active, fs=fs)(*args)
 
         return qubit_observable(h_ferm)
 

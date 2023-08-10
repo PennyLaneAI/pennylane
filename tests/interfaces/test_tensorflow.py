@@ -466,7 +466,7 @@ class TestTensorFlowExecuteIntegration:
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
         with tf.GradientTape() as t:
-            tape.set_parameters([2 * a, b])
+            tape = tape.bind_new_parameters([2 * a, b], [0, 1])
             res2 = execute([tape], dev, **execute_kwargs)[0]
             res2 = tf.stack(res2)
 
@@ -497,7 +497,7 @@ class TestTensorFlowExecuteIntegration:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with tf.GradientTape() as t:
-            tape.set_parameters([a, b])
+            tape = tape.bind_new_parameters([a, b], [0, 1])
             assert tape.trainable_params == [0, 1]
             res = execute([tape], dev, **execute_kwargs)[0]
             res = qml.math.stack(res)
@@ -508,7 +508,7 @@ class TestTensorFlowExecuteIntegration:
         b = tf.Variable(0.8, dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            tape.set_parameters([2 * a, b])
+            tape = tape.bind_new_parameters([2 * a, b], [0, 1])
             res2 = execute([tape], dev, **execute_kwargs)[0]
             res2 = qml.math.stack(res2)
 
@@ -598,15 +598,13 @@ class TestTensorFlowExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)

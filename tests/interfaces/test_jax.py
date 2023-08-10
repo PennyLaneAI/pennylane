@@ -474,8 +474,8 @@ class TestJaxExecuteIntegration:
             # number of provided parameters fails in the tape: (len(params) !=
             # required_length) and the tape produces incorrect results.
             tape._update()
-            tape.set_parameters([a, b])
-            return execute([tape], dev, **execute_kwargs)[0]
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return execute([new_tape], dev, **execute_kwargs)[0]
 
         jac_fn = jax.grad(cost)
         jac = jac_fn(a, b)
@@ -620,15 +620,13 @@ class TestJaxExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         def cost_fn(a, p, device):
             with qml.queuing.AnnotatedQueue() as q_tape:

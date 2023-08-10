@@ -240,8 +240,8 @@ class TestHamiltonianExpand:
         tape = QuantumScript.from_queue(q)
 
         def cost(x):
-            tape.set_parameters(x, trainable_only=False)
-            tapes, fn = hamiltonian_expand(tape)
+            new_tape = tape.bind_new_parameters(x, list(range(9)))
+            tapes, fn = hamiltonian_expand(new_tape)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -523,8 +523,8 @@ class TestSumExpand:
         qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            qscript.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(qscript)
+            new_qscript = qscript.bind_new_parameters(x, list(range(9)))
+            tapes, fn = sum_expand(new_qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -617,8 +617,8 @@ class TestSumExpand:
         qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            qscript.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(qscript)
+            new_qscript = qscript.bind_new_parameters(x, list(range(9)))
+            tapes, fn = sum_expand(new_qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 

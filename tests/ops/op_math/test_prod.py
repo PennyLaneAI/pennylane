@@ -354,11 +354,8 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.CNOT([0, 1])
 
         prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_op = prod_gen(1.1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            prod_op = prod_gen(1.1)
-
-        assert prod_op not in q
         assert prod_op.id == 123987  # id was set
         assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
@@ -1487,21 +1484,21 @@ class TestSortWires:
             assert op1.data == op2.data
 
 
-swappable_ops = {
+swappable_ops = [
     (qml.PauliX(1), qml.PauliY(0)),
     (qml.PauliY(5), qml.PauliX(2)),
     (qml.PauliZ(3), qml.PauliX(2)),
     (qml.CNOT((1, 2)), qml.PauliX(0)),
     (qml.PauliX(3), qml.Toffoli((0, 1, 2))),
-}
+]
 
-non_swappable_ops = {
+non_swappable_ops = [
     (qml.PauliX(1), qml.PauliY(1)),
     (qml.PauliY(5), qml.RY(1, 5)),
     (qml.PauliZ(0), qml.PauliX(1)),
     (qml.CNOT((1, 2)), qml.PauliX(1)),
     (qml.PauliX(2), qml.Toffoli((0, 1, 2))),
-}
+]
 
 
 class TestSwappableOps:

@@ -654,3 +654,9 @@ def test_providing_wire_map_fermi_word_to_ps(wire_map, ops):
     op.simplify()
 
     assert ps == op
+
+
+def test_list_input_raises_warning():
+    """Test that using the old input format (list) raises a deprecation warning"""
+    with pytest.warns(UserWarning, match="List input for the jordan_wigner function is deprecated"):
+        _ = qml.jordan_wigner([3, 3, 3, 1], notation="chemist")

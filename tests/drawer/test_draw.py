@@ -166,18 +166,14 @@ class TestMatrixParameters:
             qml.QubitUnitary(np.eye(2), wires=0)
             return qml.expval(qml.Hermitian(np.eye(2), wires=0))
 
-        expected1 = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         "
-        )
+        expected1 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
 
         assert draw(matrices_circuit, show_matrices=False)() == expected1
 
         expected2 = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1. 0. 0. 0.]\n"
-            "M1 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰|Ψ⟩────────┤         \n"
+            "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
 
         assert draw(matrices_circuit)() == expected2
@@ -194,21 +190,20 @@ class TestMatrixParameters:
             return qml.expval(qml.Hermitian(np.eye(2, requires_grad=False), wires=1))
 
         expected1 = (
-            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
-            "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
-            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
-            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>\n\n"
-            "M0 = \n[1. 0. 0. 0.]\n"
-            "M1 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "1: ─╰|Ψ⟩──RX(1.20)─┤  <𝓗(M0)>\n\n"
+            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>\n\n"
+            "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
         output = draw(matrices_circuit)(np.array(1.0, requires_grad=True))
         assert output == expected1
 
         expected2 = (
-            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
-            "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
-            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
-            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>"
+            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "1: ─╰|Ψ⟩──RX(1.20)─┤  <𝓗(M0)>\n\n"
+            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>"
         )
         output = draw(matrices_circuit, show_matrices=False)(np.array(1.0, requires_grad=True))
         assert output == expected2

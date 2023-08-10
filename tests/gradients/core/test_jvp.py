@@ -835,7 +835,7 @@ class TestBatchJVP:
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
-        assert fn([]) == [None, None]
+        assert fn([]) == (None, None)
 
     def test_zero_tangent(self):
         """A zero dy vector will return no tapes and a zero matrix"""

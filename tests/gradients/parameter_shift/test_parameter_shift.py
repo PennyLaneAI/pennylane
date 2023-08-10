@@ -1139,9 +1139,8 @@ class TestParameterShiftRule:
 
         autograd_val = fn(dev.batch_execute(tapes))
 
-        tape_fwd, tape_bwd = tape.copy(copy_operations=True), tape.copy(copy_operations=True)
-        tape_fwd.set_parameters([theta + np.pi / 2])
-        tape_bwd.set_parameters([theta - np.pi / 2])
+        tape_fwd = tape.bind_new_parameters([theta + np.pi / 2], [1])
+        tape_bwd = tape.bind_new_parameters([theta - np.pi / 2], [1])
 
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
@@ -1184,10 +1183,10 @@ class TestParameterShiftRule:
             s = np.zeros_like(params)
             s[idx] += np.pi / 2
 
-            tape.set_parameters(params + s)
+            tape = tape.bind_new_parameters(params + s, [1, 2, 3])
             forward = dev.execute(tape)
 
-            tape.set_parameters(params - s)
+            tape = tape.bind_new_parameters(params - s, [1, 2, 3])
             backward = dev.execute(tape)
 
             component = (forward - backward) / 2
@@ -2432,9 +2431,8 @@ class TestParameterShiftRuleBroadcast:
 
         autograd_val = fn(dev.batch_execute(tapes))
 
-        tape_fwd, tape_bwd = tape.copy(copy_operations=True), tape.copy(copy_operations=True)
-        tape_fwd.set_parameters([theta + np.pi / 2])
-        tape_bwd.set_parameters([theta - np.pi / 2])
+        tape_fwd = tape.bind_new_parameters([theta + np.pi / 2], [1])
+        tape_bwd = tape.bind_new_parameters([theta - np.pi / 2], [1])
 
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
@@ -2472,10 +2470,10 @@ class TestParameterShiftRuleBroadcast:
             s = np.zeros_like(params)
             s[idx] += np.pi / 2
 
-            tape.set_parameters(params + s)
+            tape = tape.bind_new_parameters(params + s, [1, 2, 3])
             forward = dev.execute(tape)
 
-            tape.set_parameters(params - s)
+            tape = tape.bind_new_parameters(params - s, [1, 2, 3])
             backward = dev.execute(tape)
 
             manualgrad_val[idx] = (forward - backward) / 2

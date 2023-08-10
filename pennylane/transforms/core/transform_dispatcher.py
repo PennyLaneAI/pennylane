@@ -110,6 +110,8 @@ class TransformDispatcher:
             for op in transformed_tape.circuit:
                 qml.apply(op)
 
+            return tape._qfunc_output  # pylint:disable=protected-access
+
         return qfunc_transformed
 
     def _qnode_transform(self, qnode, targs, tkwargs):
@@ -142,8 +144,8 @@ class TransformContainer:
         self, transform, args=None, kwargs=None, classical_cotransform=None, is_informative=False
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
-        self._args = args if args else []
-        self._kwargs = kwargs if kwargs else {}
+        self._args = args or []
+        self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
 

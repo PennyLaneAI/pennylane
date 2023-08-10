@@ -76,7 +76,7 @@ class TestConstructor:
                 return [qml.S(0), qml.T(0)]
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
-        assert isinstance(new_op, qml.ops.Prod)
+        assert isinstance(new_op, qml.ops.Prod)  # pylint:disable=no-member
         assert qml.equal(new_op.operands[0], qml.S(0))
         assert qml.equal(new_op.operands[1], qml.T(0))
 
@@ -207,7 +207,7 @@ class TestInitialization:
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        params = rng.random(shape)
+        params = rng.random(shape)  # pylint:disable=no-member
 
         base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
         op: Pow = power_method(base=base, z=2.67)
@@ -405,7 +405,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
+        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)  # pylint:disable=no-member
         assert pow_op.arithmetic_depth == 2
 
     def test_simplify_nested_pow_ops(self):
@@ -445,15 +445,15 @@ class TestSimplify:
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.SProd)
+        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
-        pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(base=qml.PauliX(0), control_wires=1, id=3)
+        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
+        final_op = ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3)
         simplified_op = pow_op.simplify()
 
         assert isinstance(simplified_op, ControlledOp)

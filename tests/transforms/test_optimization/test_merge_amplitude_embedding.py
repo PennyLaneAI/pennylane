@@ -73,6 +73,25 @@ class TestMergeAmplitudeEmbedding:
         qnode = qml.QNode(qfunc, dev)
         assert qnode()[3] == 1.0
 
+    def test_broadcasting(self):
+        """Test that merging preserves the batch dimension"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        @qml.transforms.merge_amplitude_embedding
+        def qnode():
+            qml.AmplitudeEmbedding([[1, 0], [0, 1]], wires=0)
+            qml.AmplitudeEmbedding([1, 0], wires=1)
+            qml.AmplitudeEmbedding([[0, 1], [1, 0]], wires=2)
+            return qml.state()
+
+        res = qnode()
+        assert qnode.tape.batch_size == 2
+
+        # |001> and |100>
+        expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])
+        assert np.allclose(res, expected)
+
 
 class TestMergeAmplitudeEmbeddingInterfaces:
     """Test that merging amplitude embedding operations works in all interfaces."""

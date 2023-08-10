@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
+from pennylane.devices.qubit import simulate, get_final_state, measure_final_state
 
 
 class TestCurrentlyUnsupportedCases:
@@ -77,6 +77,17 @@ class TestBasicCircuit:
         assert isinstance(result, tuple)
         assert len(result) == 2
 
+        assert np.allclose(result[0], -np.sin(phi))
+        assert np.allclose(result[1], np.cos(phi))
+
+        state, is_state_batched = get_final_state(qs)
+        result = measure_final_state(qs, state, is_state_batched)
+
+        assert np.allclose(state, np.array([np.cos(phi / 2), -1j * np.sin(phi / 2)]))
+        assert not is_state_batched
+
+        assert isinstance(result, tuple)
+        assert len(result) == 2
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
@@ -190,6 +201,24 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
         assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
 
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]))
+        assert np.allclose(res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]))
+
     def test_broadcasted_op_state(self):
         """Test that simulate works for state measurements
         when an operation has broadcasted parameters"""
@@ -201,6 +230,20 @@ class TestBroadcasting:
         qs = qml.tape.QuantumScript(ops, measurements)
         res = simulate(qs)
 
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x))
+        assert np.allclose(res[1], -np.cos(x))
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x))
@@ -227,6 +270,28 @@ class TestBroadcasting:
             res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
         )
 
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        expected_state = np.array(
+            [
+                [np.cos(x / 2), 0, 0, np.sin(x / 2)],
+                [0, np.cos(x / 2), np.sin(x / 2), 0],
+                [-np.sin(x / 2), 0, 0, np.cos(x / 2)],
+                [0, -np.sin(x / 2), np.cos(x / 2), 0],
+            ]
+        ).reshape((4, 2, 2))
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(
+            res[0], np.array([np.cos(x), np.cos(x), -np.cos(x), -np.cos(x)]), atol=0.05
+        )
+        assert np.allclose(
+            res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
+        )
+
     def test_broadcasted_op_sample(self):
         """Test that simulate works for sample measurements
         when an operation has broadcasted parameters"""
@@ -238,6 +303,20 @@ class TestBroadcasting:
         qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
 
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res[0], np.cos(x), atol=0.05)
+        assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched, rng=123)
+
+        expected_state = np.zeros((4, 2, 2))
+        expected_state[:, 0, 1] = np.cos(x / 2)
+        expected_state[:, 1, 0] = np.sin(x / 2)
+
+        assert np.allclose(state, expected_state)
+        assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x), atol=0.05)
@@ -434,6 +513,39 @@ class TestSampleMeasurements:
         )
 
         assert result[2].shape == (10000, 2)
+
+    def test_shots_reuse(self, mocker):
+        """Test that samples are reused when two measurements commute"""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
+        mps = [
+            qml.expval(qml.PauliX(0)),
+            qml.expval(qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliX(1)),
+            qml.var(qml.PauliY(0)),
+            qml.probs(wires=[0]),
+            qml.probs(wires=[0, 1]),
+            qml.sample(wires=[0, 1]),
+            qml.expval(
+                qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1)])
+            ),
+            qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1))),
+            qml.expval(qml.s_prod(2.0, qml.PauliX(0))),
+            qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1))),
+        ]
+
+        qs = qml.tape.QuantumScript(ops, mps, shots=100)
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "sample_state")
+        result = simulate(qs)
+
+        assert isinstance(result, tuple)
+        assert len(result) == len(mps)
+
+        # check that samples are reused when possible
+        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
+        # Hamiltonian and Sum, and 1 group each for SProd and Prod
+        assert spy.call_count == 10
 
     shots_data = [
         [10000, 10000],

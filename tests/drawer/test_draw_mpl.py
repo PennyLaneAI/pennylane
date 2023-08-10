@@ -243,14 +243,14 @@ class TestMPLIntegration:
     """Test using matplotlib styling to modify look of graphic."""
 
     def test_rcparams(self):
-        """Test setting rcParams modifies style for draw_mpl(circuit, style=None)."""
+        """Test setting rcParams modifies style for draw_mpl(circuit, style="rcParams")."""
 
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
         plt.rcParams["patch.facecolor"] = rgba_red
         plt.rcParams["lines.color"] = rgba_green
 
-        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
 
         assert ax.patches[0].get_facecolor() == rgba_red
         assert ax.patches[1].get_facecolor() == rgba_red
@@ -258,15 +258,15 @@ class TestMPLIntegration:
         for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert l.get_color() == rgba_green
 
-        plt.style.use("default")
+        qml.drawer.use_style("black_white")
         plt.close()
 
     def test_style_with_matplotlib(self):
-        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style=None)."""
+        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style="rcParams")."""
 
         plt.style.use("fivethirtyeight")
 
-        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
 
         expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
         assert ax.patches[0].get_facecolor() == expected_facecolor
@@ -276,7 +276,7 @@ class TestMPLIntegration:
         for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
-        plt.style.use("default")
+        qml.drawer.use_style("black_white")
         plt.close()
 
     def test_style_restores_settings(self):

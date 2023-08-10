@@ -669,17 +669,24 @@ class TestHamiltonian:
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
-    def test_flatten_unflatten(self, coeffs, ops):
+    @pytest.mark.parametrize("grouping_type", (None, "qwc"))
+    def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for hamiltonians"""
-        H = Hamiltonian(coeffs, ops)
+
+        if any(not qml.pauli.is_pauli_word(t) for t in ops) and grouping_type:
+            pytest.skip("grouping type must be none if a term is not a pauli word.")
+
+        H = Hamiltonian(coeffs, ops, grouping_type=grouping_type)
         data, metadata = H._flatten()
-        assert metadata == tuple()
+        assert metadata[0] == H.grouping_indices
+        assert hash(metadata)
         assert len(data) == 2
         assert data[0] is H.data
         assert data[1] is H._ops
 
         new_H = Hamiltonian._unflatten(*H._flatten())
         assert qml.equal(H, new_H)
+        assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
     def test_hamiltonian_wires(self, coeffs, ops):
@@ -778,6 +785,45 @@ class TestHamiltonian:
             ),
             (0.5, frozenset([("PauliX", qml.wires.Wires(2), ())])),
         }
+
+    def test_data_gell_mann(self):
+        """Tests that the obs_data method for Hamiltonians with qml.GellMann
+        observables includes the Gell-Mann index."""
+        H = qml.Hamiltonian(
+            [1, -1, 0.5],
+            [
+                qml.GellMann(wires=0, index=3),
+                qml.GellMann(wires=0, index=3) @ qml.GellMann(wires=1, index=1),
+                qml.GellMann(wires=2, index=2),
+            ],
+        )
+        data = H._obs_data()
+
+        assert data == {
+            (1, frozenset([("GellMann", qml.wires.Wires(0), (3,))])),
+            (
+                -1,
+                frozenset(
+                    [("GellMann", qml.wires.Wires(0), (3,)), ("GellMann", qml.wires.Wires(1), (1,))]
+                ),
+            ),
+            (0.5, frozenset([("GellMann", qml.wires.Wires(2), (2,))])),
+        }
+
+    def test_compare_gell_mann(self):
+        """Tests that the compare method returns the correct result for Hamiltonians
+        with qml.GellMann present."""
+        H1 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=2)])
+        H2 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)])
+        H3 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=1)])
+        H4 = qml.Hamiltonian([1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)])
+
+        assert H1.compare(qml.GellMann(wires=2, index=2)) is True
+        assert H1.compare(qml.GellMann(wires=2, index=1)) is False
+        assert H1.compare(H3) is False
+        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)) is True
+        assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
+        assert H2.compare(H4) is False
 
     def test_hamiltonian_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
@@ -1468,7 +1514,7 @@ class TestGrouping:
         obs = [qml.PauliZ(1), qml.PauliZ(0), qml.Identity(0)]
 
         H = qml.Hamiltonian([1.0, 1.0, 1.0], obs, grouping_type="qwc")
-        assert H.grouping_indices == [[0, 1, 2]]
+        assert H.grouping_indices == ((0, 1, 2),)
 
     def test_grouping_is_correct_kwarg(self):
         """Basic test checking that grouping with a kwarg works as expected"""
@@ -1479,7 +1525,7 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
-        assert H.grouping_indices == [[0, 1], [2]]
+        assert H.grouping_indices == ((0, 1), (2,))
 
     def test_grouping_is_correct_compute_grouping(self):
         """Basic test checking that grouping with compute_grouping works as expected"""
@@ -1491,14 +1537,14 @@ class TestGrouping:
 
         H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
         H.compute_grouping()
-        assert H.grouping_indices == [[0, 1], [2]]
+        assert H.grouping_indices == ((0, 1), (2,))
 
     def test_set_grouping(self):
         """Test that we can set grouping indices."""
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
         H.grouping_indices = [[0, 1], [2]]
 
-        assert H.grouping_indices == [[0, 1], [2]]
+        assert H.grouping_indices == ((0, 1), (2,))
 
     def test_set_grouping_error(self):
         """Test that grouping indices are validated."""
@@ -1519,7 +1565,7 @@ class TestGrouping:
         coeffs = [1.0, 2.0, 3.0]
 
         H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
-        assert H.grouping_indices == [[0], [1], [2]]
+        assert H.grouping_indices == ((0,), (1,), (2,))
 
     def test_grouping_is_reset_when_simplifying(self):
         """Tests that calling simplify() resets the grouping"""
@@ -1556,12 +1602,12 @@ class TestGrouping:
 
         # compute grouping during construction
         H2 = qml.Hamiltonian(coeffs, obs, grouping_type="qwc", method="lf")
-        assert H2.grouping_indices == [[2, 1], [0]]
+        assert H2.grouping_indices == ((2, 1), (0,))
 
         # compute grouping separately
         H3 = qml.Hamiltonian(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert H3.grouping_indices == [[2, 1], [0]]
+        assert H3.grouping_indices == ((2, 1), (0,))
 
 
 class TestHamiltonianEvaluation:

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functions to convert a fermionic operator to the qubit basis."""
 
+import warnings
 from functools import singledispatch
 from typing import Union
 import numpy as np
@@ -124,17 +125,13 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    if len(fermi_operator) == 0:
-        qubit_operator = PauliSentence({PauliWord({}): 0})  # does anything break if I remove this?
+    qubit_operator = PauliSentence()
 
-    else:
-        qubit_operator = PauliSentence()
+    for fw, coeff in fermi_operator.items():
+        fermi_word_as_ps = jordan_wigner(fw, ps=True)
 
-        for fw, coeff in fermi_operator.items():
-            fermi_word_as_ps = jordan_wigner(fw, ps=True)
-
-            for pw in fermi_word_as_ps:
-                qubit_operator[pw] += fermi_word_as_ps[pw] * coeff
+        for pw in fermi_word_as_ps:
+            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
@@ -168,6 +165,12 @@ def _jordan_wigner_legacy(op: list, notation="physicist"):  # pylint:disable=too
     >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
+
+    warnings.warn(
+        "List input for the jordan_wigner function is deprecated; please use the fermionic operators format. For "
+        "details, see the Fermionic Operators tutorial: https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+    )
+
     if len(op) == 1:
         op = [(op[0], 1)]
 

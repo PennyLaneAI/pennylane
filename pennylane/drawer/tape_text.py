@@ -36,11 +36,6 @@ def _add_grouping_symbols(op, layer_str, wire_map):
     return layer_str
 
 
-def _bool_control_value(val):
-    """Converts a control value to a boolean."""
-    return (val == "1") if isinstance(val, str) else val
-
-
 def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
@@ -49,7 +44,7 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
     if control_values:
         for w, val in zip(control_wires, control_values):
-            layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"
+            layer_str[wire_map[w]] += "●" if val else "○"
     else:
         for w in control_wires:
             layer_str[wire_map[w]] += "●"

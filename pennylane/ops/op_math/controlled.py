@@ -73,10 +73,8 @@ def ctrl(op, control, control_values=None, work_wires=None):
     :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.
 
-    >>> qml.ctrl(qml.PauliX(0), (1,2))
-    Controlled(PauliX(wires=[0]), control_wires=[1, 2])
-    >>> qml.ctrl(qml.PauliX(0), (1,2)).decomposition()
-    [Toffoli(wires=[1, 2, 0])]
+    >>> qml.ctrl(qml.Hadamard(0), (1,2))
+    Controlled(Hadamard(wires=[0]), control_wires=[1, 2])
 
     Controlled operations work with all other forms of operator math and simplification:
 
@@ -86,19 +84,26 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     """
     custom_controlled_ops = {
-        qml.PauliZ: qml.CZ,
-        qml.PauliY: qml.CY,
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.PauliX, 1): qml.CNOT,
+        (qml.PauliX, 2): qml.Toffoli,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
+    custom_key = (type(op), len(control))
 
-    if (
-        isinstance(op, tuple(custom_controlled_ops))
-        and len(control) == 1
-        and (control_values is None or control_values[0])
-    ):
+    if custom_key in custom_controlled_ops and (control_values is None or all(control_values)):
         qml.QueuingManager.remove(op)
-        return custom_controlled_ops[type(op)](control + op.wires)
+        return custom_controlled_ops[custom_key](control + op.wires)
+    if isinstance(op, qml.PauliX):
+        qml.QueuingManager.remove(op)
+        control_string = (
+            None if control_values is None else "".join([str(int(v)) for v in control_values])
+        )
+        return qml.MultiControlledX(
+            wires=control + op.wires, control_values=control_string, work_wires=work_wires
+        )
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
@@ -121,9 +126,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
-            Controlled(
-                op, control_wires=control, control_values=op_control_values, work_wires=work_wires
-            )
+            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
             for op in qscript.operations
         ]
 

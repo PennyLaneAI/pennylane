@@ -21,7 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.devices.experimental import DefaultQubit2
 
 qubit_device_and_diff_method = [
@@ -405,16 +404,13 @@ class TestQNode:
         class U3(qml.U3):
             """Custom U3."""
 
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-
-                with qml.queuing.AnnotatedQueue() as q_tape:
-                    qml.Rot(lam, theta, -lam, wires=wires)
-                    qml.PhaseShift(phi + lam, wires=wires)
-
-                tape = QuantumScript.from_queue(q_tape)
-                return tape
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
@@ -504,32 +500,26 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(dev)
+        @qnode(DefaultQubit2())
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b)
+        cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
-        # if we set the shots to None, backprop can now be used
-        cost_fn(a, b, shots=None)
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
-
-        # original QNode settings are unaffected
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
 @pytest.mark.parametrize(
@@ -747,11 +737,8 @@ class TestQubitIntegration:
         class Template(qml.templates.StronglyEntanglingLayers):
             """Custom template."""
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1369,11 +1356,8 @@ class TestTapeExpansion:
 
             grad_method = None
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method=diff_method, grad_on_execution=grad_on_execution, max_diff=max_diff)
         def circuit(x, y):
@@ -1477,7 +1461,7 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
@@ -1492,12 +1476,15 @@ class TestTapeExpansion:
         c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
 
         # test output
-        res = circuit(d, w, c)
+        res = circuit(d, w, c, shots=50000)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
 
         # test gradients
-        grad = qml.grad(circuit)(d, w, c)
+        if diff_method in ["finite-diff", "spsa"]:
+            pytest.skip(f"{diff_method} not compatible")
+
+        grad = qml.grad(circuit)(d, w, c, shots=50000)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1508,10 +1495,10 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
-            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c, shots=50000)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c, shots=50000)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
@@ -1577,8 +1564,8 @@ class TestSample:
         assert len(result) == 3
 
         assert np.array_equal(result[0].shape, (n_sample,))
-        assert isinstance(result[1], np.ndarray)
-        assert isinstance(result[2], np.ndarray)
+        assert isinstance(result[1], (float, np.ndarray))
+        assert isinstance(result[2], (float, np.ndarray))
         assert result[0].dtype == np.dtype("int")
 
     def test_single_wire_sample(self):

@@ -445,7 +445,7 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
             elif callable(reduction):
                 reduction(jvps, jvp_)
 
-        return jvps
+        return tuple(jvps)
 
     return gradient_tapes, processing_fn
 

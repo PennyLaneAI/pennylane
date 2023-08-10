@@ -24,11 +24,10 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli import simplify, pauli_sentence
-from pennylane.pauli.utils import _binary_matrix_from_pws
-from pennylane.qchem.observable_hf import jordan_wigner
-from pennylane.wires import Wires
 from pennylane.operation import active_new_opmath
+from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
+from pennylane.pauli.utils import _binary_matrix_from_pws
+from pennylane.wires import Wires
 
 # Global Variables
 PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
@@ -481,17 +480,13 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
     # convert the HF state to a corresponding HF observable under the JW transform
-    fermop_terms = []
+    ferm_ps = PauliSentence({PauliWord({0: "I"}): 1.0})
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_terms = jordan_wigner([idx])
-            op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
+            ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
-            op_term = qml.Hamiltonian([1.0], [qml.Identity(idx)])
-        fermop_terms.append(op_term)
-
-    fermop_terms_as_ps = [pauli_sentence(term) for term in fermop_terms]
-    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
+            ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
+        ferm_ps *= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
@@ -752,7 +747,7 @@ def taper_operation(
     if active_new_opmath():
         raise qml.QuantumFunctionError(
             "This function is currently not supported with the new operator arithmetic "
-            "framework. Please de-activate it using `qml.disable_new_opmath()`"
+            "framework. Please de-activate it using `qml.operation.disable_new_opmath()`"
         )
 
     # maintain a flag to track functional form of the operation

@@ -29,7 +29,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():
@@ -332,7 +332,7 @@ class TestConstruction:
     )
     def test_update_batch_size(self, x, rot, exp_batch_size):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size, when creating and when using `bind_new_parameters`."""
 
         # Test with tape construction
         with qml.queuing.AnnotatedQueue() as q:
@@ -344,7 +344,7 @@ class TestConstruction:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size == exp_batch_size
 
-        # Test with set_parameters
+        # Test with bind_new_parameters
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Rot(1.0, 0.2, -0.3, wires=1)
@@ -354,7 +354,7 @@ class TestConstruction:
         tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size is None
 
-        tape.set_parameters([x] + rot)
+        tape = tape.bind_new_parameters([x] + rot, [0, 1, 2, 3])
         assert tape.batch_size == exp_batch_size
 
     @pytest.mark.parametrize(
@@ -366,7 +366,7 @@ class TestConstruction:
     )
     def test_error_inconsistent_batch_sizes(self, x, rot, y):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size, when creating and when using `bind_new_parameters`."""
 
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
@@ -387,7 +387,7 @@ class TestConstruction:
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            tape.set_parameters([x] + rot + [y])
+            tape.bind_new_parameters([x] + rot + [y], [0, 1, 2, 3, 4])
 
 
 class TestIteration:
@@ -727,10 +727,237 @@ class TestParameters:
 
     def test_setting_parameters(self, make_tape):
         """Test that parameters are correctly modified after construction"""
+        tape, params = make_tape
+        new_params = [0.6543, -0.654, 0, 0.3, 0.6]
+
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
+
+        for pinfo, pval in zip(new_tape._par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
+
+    def test_setting_free_parameters(self, make_tape):
+        """Test that free parameters are correctly modified after construction"""
+        tape, params = make_tape
+        new_params = [-0.654, 0.3]
+
+        tape.trainable_params = [1, 3]
+        new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
+
+        count = 0
+        for idx, pinfo in enumerate(new_tape._par_info):
+            if idx in tape.trainable_params:
+                assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
+                count += 1
+            else:
+                assert pinfo["op"].data[pinfo["p_idx"]] == params[idx]
+
+        assert new_tape.get_parameters(trainable_only=False) == [
+            params[0],
+            new_params[0],
+            params[2],
+            new_params[1],
+            params[4],
+        ]
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_setting_parameters_unordered(self, make_tape):
+        """Test that an 'unordered' trainable_params set does not affect
+        the setting of parameter values"""
+        tape, params = make_tape
+        new_params = [-0.654, 0.3]
+
+        tape.trainable_params = [3, 1]
+        new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
+
+        assert new_tape.get_parameters(trainable_only=True) == new_params
+        assert new_tape.get_parameters(trainable_only=False) == [
+            params[0],
+            new_params[0],
+            params[2],
+            new_params[1],
+            params[4],
+        ]
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_setting_all_parameters(self, make_tape):
+        """Test that all parameters are correctly modified after construction"""
+        tape, params = make_tape
+        new_params = [0.6543, -0.654, 0, 0.3, 0.6]
+
+        tape.trainable_params = [1, 3]
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
+
+        for pinfo, pval in zip(new_tape._par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert new_tape.get_parameters(trainable_only=False) == new_params
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_setting_parameters_error(self, make_tape):
+        """Test that exceptions are raised if incorrect parameters
+        are attempted to be set"""
+        tape, _ = make_tape
+
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
+            tape.bind_new_parameters([0.54], [0, 1, 2, 3, 4])
+
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
+            tape.bind_new_parameters([0.54, 0.54, 0.123], [0, 1])
+
+    def test_array_parameter(self):
+        """Test that array parameters integrate properly"""
+        a = np.array([1, 1, 0, 0]) / np.sqrt(2)
+        params = [a, 0.32, 0.76, 1.0]
+
+        with QuantumTape() as tape:
+            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
+            qml.Rot(params[1], params[2], params[3], wires=0)
+
+        assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
+
+        b = np.array([0, 1, 0, 0])
+        new_params = [b, 0.543, 0.654, 0.123]
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
+
+        assert np.all(op_.data[0] == a)
+        assert np.all(new_tape[0].data[0] == b)
+
+    def test_measurement_parameter(self):
+        """Test that measurement parameters integrate properly"""
+        H = np.array([[1, 0], [0, -1]])
+        params = [0.32, 0.76, 1.0, H]
+
+        with QuantumTape() as tape:
+            qml.Rot(params[0], params[1], params[2], wires=0)
+            obs = qml.Hermitian(params[3], wires=0)
+            qml.expval(obs)
+
+        assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
+
+        H2 = np.array([[0, 1], [1, 1]])
+        new_params = [0.543, 0.654, 0.123, H2]
+        new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
+        assert new_tape.get_parameters() == new_params
+        assert tape.get_parameters() == params
+
+        assert np.all(obs.data[0] == H)
+        assert np.all(new_tape[1].obs.data[0] == H2)
+
+
+# TODO: remove this class when set_parameters is removed
+class TestParametersOld:
+    """Tests for parameter processing, setting, and manipulation"""
+
+    @pytest.fixture
+    def make_tape(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.Rot(*params[1:4], wires=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(params[4], wires=4)
+            qml.expval(qml.PauliX(wires="a"))
+            qml.probs(wires=[0, "a"])
+
+        return tape, params
+
+    @pytest.fixture
+    def make_tape_with_hermitian(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        hermitian = qml.numpy.eye(2, requires_grad=False)
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.Rot(*params[1:4], wires=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(params[4], wires=4)
+            qml.expval(qml.Hermitian(hermitian, wires="a"))
+
+        return tape, params, hermitian
+
+    def test_parameter_processing(self, make_tape):
+        """Test that parameters are correctly counted and processed"""
+        tape, params = make_tape
+        assert tape.num_params == len(params)
+        assert tape.trainable_params == list(range(len(params)))
+        assert tape.get_parameters() == params
+
+    @pytest.mark.parametrize("operations_only", [False, True])
+    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
+        """Test the operations_only flag for getting the parameters on a tape with
+        qml.Hermitian is measured"""
+        tape, circuit_params, hermitian = make_tape_with_hermitian
+        num_all_params = len(circuit_params) + 1  # + 1 for hermitian
+        assert tape.num_params == num_all_params
+        assert tape.trainable_params == list(range(num_all_params))
+        assert (
+            tape.get_parameters(operations_only=operations_only) == circuit_params
+            if operations_only
+            else circuit_params + [hermitian]
+        )
+
+    def test_set_trainable_params(self, make_tape):
+        """Test that setting trainable parameters works as expected"""
+        tape, params = make_tape
+        trainable = [0, 2, 3]
+        tape.trainable_params = trainable
+        assert tape._trainable_params == trainable
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+        # add additional trainable parameters
+        trainable = {1, 2, 3, 4}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == [1, 2, 3, 4]
+        assert tape.num_params == 4
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+        # set trainable_params in wrong order
+        trainable = {3, 4, 1}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == [1, 3, 4]
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+    def test_changing_params(self, make_tape):
+        """Test that changing trainable parameters works as expected"""
+        tape, params = make_tape
+        trainable = (0, 2, 3)
+        tape.trainable_params = trainable
+        assert tape._trainable_params == list(trainable)
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+        assert tape.get_parameters(trainable_only=False) == params
+
+    def test_set_trainable_params_error(self, make_tape):
+        """Test that exceptions are raised if incorrect parameters
+        are set as trainable"""
+        tape, _ = make_tape
+
+        with pytest.raises(ValueError, match="must be non-negative integers"):
+            tape.trainable_params = [-1, 0]
+
+        with pytest.raises(ValueError, match="must be non-negative integers"):
+            tape.trainable_params = (0.5,)
+
+        with pytest.raises(ValueError, match="only has 5 parameters"):
+            tape.trainable_params = {0, 7}
+
+    def test_setting_parameters(self, make_tape):
+        """Test that parameters are correctly modified after construction"""
         tape, _ = make_tape
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -738,7 +965,8 @@ class TestParameters:
         assert tape.get_parameters() == new_params
 
         new_params = (0.1, -0.2, 1, 5, 0)
-        tape.data = new_params
+        with pytest.warns(UserWarning, match=r"The tape.data setter is deprecated"):
+            tape.data = new_params
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -751,7 +979,8 @@ class TestParameters:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         count = 0
         for idx, pinfo in enumerate(tape._par_info):
@@ -776,7 +1005,8 @@ class TestParameters:
         new_params = [-0.654, 0.3]
 
         tape.trainable_params = [3, 1]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
 
         assert tape.get_parameters(trainable_only=True) == new_params
         assert tape.get_parameters(trainable_only=False) == [
@@ -793,7 +1023,8 @@ class TestParameters:
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.trainable_params = [1, 3]
-        tape.set_parameters(new_params, trainable_only=False)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params, trainable_only=False)
 
         for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -806,11 +1037,13 @@ class TestParameters:
         tape, _ = make_tape
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.set_parameters([0.54])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.set_parameters([0.54])
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.trainable_params = [2, 3]
-            tape.set_parameters([0.54, 0.54, 0.123])
+            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+                tape.trainable_params = [2, 3]
+                tape.set_parameters([0.54, 0.54, 0.123])
 
     def test_array_parameter(self):
         """Test that array parameters integrate properly"""
@@ -826,7 +1059,9 @@ class TestParameters:
 
         b = np.array([0, 1, 0, 0])
         new_params = [b, 0.543, 0.654, 0.123]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
+
         assert tape.get_parameters() == new_params
 
         assert np.all(op_.data[0] == b)
@@ -846,7 +1081,9 @@ class TestParameters:
 
         H2 = np.array([[0, 1], [1, 1]])
         new_params = [0.543, 0.654, 0.123, H2]
-        tape.set_parameters(new_params)
+        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
+            tape.set_parameters(new_params)
+
         assert tape.get_parameters() == new_params
 
         assert np.all(obs.data[0] == H2)
@@ -900,7 +1137,6 @@ class TestExpand:
         # check that modifying the new tape does not affect the old tape
 
         new_tape.trainable_params = [0]
-        new_tape.set_parameters([10])
 
         assert tape.get_parameters() == [0.1, 0.2, 0.3]
         assert tape.trainable_params == [0, 1, 2]
@@ -1008,6 +1244,49 @@ class TestExpand:
 
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
+
+    @pytest.mark.parametrize("skip_first", (True, False))
+    @pytest.mark.parametrize(
+        "op, decomp",
+        zip(
+            [
+                qml.BasisState([1, 0], wires=[0, 1]),
+                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+            ],
+            [
+                qml.BasisStatePreparation([1, 0], wires=[0, 1]),
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
+            ],
+        ),
+    )
+    def test_expansion_state_prep(self, skip_first, op, decomp):
+        """Test that StatePrep operations are expanded correctly without
+        expanding other operations in the tape.
+        """
+        ops = [
+            qml.PauliZ(wires=0),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisState([0], wires=1),
+            qml.QubitStateVector([0, 1], wires=0),
+        ]
+        tape = QuantumTape(ops=ops, measurements=[], prep=[op])
+        new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
+
+        true_decomposition = []
+        if skip_first:
+            true_decomposition.append(op)
+        else:
+            true_decomposition.append(decomp)
+        true_decomposition += [
+            qml.PauliZ(wires=0),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisStatePreparation([0], wires=[1]),
+            qml.MottonenStatePreparation([0, 1], wires=[0]),
+        ]
+
+        assert len(new_tape.operations) == len(true_decomposition)
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(tape_op, true_op)
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
@@ -1237,10 +1516,10 @@ class TestExecution:
         assert tape.get_parameters() == params
 
         # test setting parameters
-        tape.set_parameters(params=[0.5, 0.6])
-        res3 = dev.execute(tape)
+        new_tape = tape.bind_new_parameters(params=[0.5, 0.6], indices=[0, 1])
+        res3 = dev.execute(new_tape)
         assert not np.allclose(res1, res3, atol=tol, rtol=0)
-        assert tape.get_parameters() == [0.5, 0.6]
+        assert new_tape.get_parameters() == [0.5, 0.6]
 
     def test_no_output_execute(self):
         """Test that tapes with no measurement process return
@@ -1460,10 +1739,9 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are simply references
-        assert copied_tape.operations == tape.operations
-        assert copied_tape.observables == tape.observables
-        assert copied_tape.measurements == tape.measurements
-        assert copied_tape.operations[0] is tape.operations[0]
+        assert all(o1 is o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
+        assert all(o1 is o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
+        assert all(m1 is m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
 
         # operation data is also a reference
         assert copied_tape.operations[0].wires is tape.operations[0].wires
@@ -1476,18 +1754,6 @@ class TestTapeCopying:
 
         # check that the output dim is identical
         assert tape.output_dim == copied_tape.output_dim
-
-        # since the copy is shallow, mutating the parameters
-        # on one tape will affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        tape.set_parameters(new_params)
-
-        # check that they are the same objects in memory
-        for i, j in zip(tape.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_tape.get_parameters(), new_params):
-            assert i is j
 
     @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), copy.copy])
     def test_shallow_copy_with_operations(self, copy_fn):
@@ -1505,10 +1771,9 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are not references; they are unique objects
-        assert copied_tape.operations != tape.operations
-        assert copied_tape.observables != tape.observables
-        assert copied_tape.measurements != tape.measurements
-        assert copied_tape.operations[0] is not tape.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
 
         # however, the underlying operation data *is still shared*
         assert copied_tape.operations[0].wires is tape.operations[0].wires
@@ -1520,18 +1785,6 @@ class TestTapeCopying:
 
         # check that the output dim is identical
         assert tape.output_dim == copied_tape.output_dim
-
-        # Since they have unique operations, mutating the parameters
-        # on one tape will *not* affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        tape.set_parameters(new_params)
-
-        for i, j in zip(tape.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_tape.get_parameters(), new_params):
-            assert not np.all(i == j)
-            assert i is not j
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
@@ -1546,10 +1799,9 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are not references
-        assert copied_tape.operations != tape.operations
-        assert copied_tape.observables != tape.observables
-        assert copied_tape.measurements != tape.measurements
-        assert copied_tape.operations[0] is not tape.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
 
         # check that the output dim is identical
         assert tape.output_dim == copied_tape.output_dim

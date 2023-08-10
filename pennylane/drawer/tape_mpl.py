@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls
-from .style import use_style
+from .style import _set_style
 
 has_mpl = True
 try:
@@ -143,11 +143,10 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
                 specialfunc(drawer, layer, mapped_wires, op)
 
             elif type(op).__name__ == "Conditional":
-                measured_layer = {_measured_layers[i] for i in op.meas_val.measurement_ids}.pop()
+                m_ids = [m.id for m in op.meas_val.measurements]
+                measured_layer = {_measured_layers[m_id] for m_id in m_ids}.pop()
                 control_wires = [
-                    wire_map[o.wires[0]]
-                    for o in layers[measured_layer]
-                    if o.id in op.meas_val.measurement_ids
+                    wire_map[o.wires[0]] for o in layers[measured_layer] if o.id in m_ids
                 ]
                 target_wires = [wire_map[w] for w in op.wires]
                 drawer.cond(layer, measured_layer, control_wires, target_wires)
@@ -210,9 +209,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     return drawer.fig, drawer.ax
 
 
-def tape_mpl(
-    tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
-):
+def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -225,8 +222,9 @@ def tape_mpl(
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
-            If ``None``, the current matplotlib settings will be used.
+            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
+            If you would like to use your environment's current rcParams, set `style` to "rcParams".
+            Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -386,15 +384,15 @@ def tape_mpl(
     """
 
     restore_params = {}
-    if style and has_mpl:
+    if update_style := (has_mpl and style != "rcParams"):
         restore_params = mpl.rcParams.copy()
-        use_style(style)
+        _set_style(style)
     try:
         return _tape_mpl(
             tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
         )
     finally:
-        if style and has_mpl:
+        if update_style:
             # we don't want to mess with how it modifies whether the interface is interactive
             # but we want to restore everything else
             restore_params["interactive"] = mpl.rcParams["interactive"]

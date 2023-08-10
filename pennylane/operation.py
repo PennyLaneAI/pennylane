@@ -532,7 +532,7 @@ class Operator(abc.ABC):
         * The data and hyperparameters are insufficient to reproduce the original operation via its initialization
         * The hyperparameters contain a non-hashable component, such as a list or dictionary.
 
-        Some examples include operator arithemtic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
+        Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
         perform preprocessing during initialization.
 
         See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
@@ -718,6 +718,31 @@ class Operator(abc.ABC):
                 _process_data(self),
             )
         )
+
+    # pylint: disable=useless-super-delegation
+    def __eq__(self, other):
+        warnings.warn(
+            "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
+            "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
+            "qml.equal(op1, op2). To continue using operator equality in its current state, "
+            "use 'op1 is op2'.",
+            UserWarning,
+        )
+
+        return super().__eq__(other)
+
+    # pylint: disable=useless-super-delegation
+    def __hash__(self):
+        warnings.warn(
+            "The behaviour of operator hashing will be updated soon. Currently, each operator "
+            "instance has a unique hash. Soon, an operator's hash will be determined by the "
+            "combined hash of the name, wires, parameters and hyperparameters of the operator. "
+            "To continue using operator hashing in its current state, wrap the operator inside "
+            "a qml.queuing.WrappedObj instance.",
+            UserWarning,
+        )
+
+        return super().__hash__()
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
@@ -1419,7 +1444,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        qscript = qml.tape.make_qscript(self.decomposition)()
+        qscript = qml.tape.QuantumScript(self.decomposition())
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1490,7 +1515,9 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, TensorLike)):
+        if isinstance(other, Operator):
+            return self + qml.s_prod(-1, other)
+        if isinstance(other, TensorLike):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
@@ -1896,6 +1923,8 @@ class Observable(Operator):
 
         for ob in obs:
             parameters = tuple(param.tobytes() for param in ob.parameters)
+            if isinstance(ob, qml.GellMann):
+                parameters += (ob.hyperparameters["index"],)
             tensor.add((ob.name, ob.wires, parameters))
 
         return tensor
@@ -2003,7 +2032,7 @@ class Tensor(Observable):
         return tuple(self.obs), tuple()
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, data, _):
         return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
@@ -2381,7 +2410,7 @@ class Tensor(Observable):
         return 0
 
     def sparse_matrix(
-        self, wires=None, format="csr"
+        self, wire_order=None, wires=None, format="csr"
     ):  # pylint:disable=arguments-renamed, arguments-differ
         r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
@@ -2389,9 +2418,14 @@ class Tensor(Observable):
         consisting mostly of zero entries.
 
         Args:
-            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
+            wires (Iterable): Same as ``wire_order`` to ensure compatibility with all the classes. Must only
+                provide one: either ``wire_order`` or ``wires``.
             format: the output format for the sparse representation. All scipy sparse formats are accepted.
+
+        Raises:
+            ValueError: if both ``wire_order`` and ``wires`` are provided at the same time.
 
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
@@ -2412,7 +2446,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
-        >>> print(t.sparse_matrix(wires=[1, 0]))
+        >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1
         (2, 3)	-1
@@ -2421,11 +2455,17 @@ class Tensor(Observable):
         We can also enforce implicit identities by passing wire labels that
         are not present in the constituent operations:
 
-        >>> res = t.sparse_matrix(wires=[0, 1, 2])
+        >>> res = t.sparse_matrix(wire_order=[0, 1, 2])
         >>> print(res.shape)
         (8, 8)
         """
+        if wires is not None and wire_order is not None:
+            raise ValueError(
+                "Wire order has been specified twice. Provide only one of either "
+                "``wire_order`` or ``wires``, but not both."
+            )
 
+        wires = wires or wire_order
         wires = self.wires if wires is None else Wires(wires)
         list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
 
@@ -2807,6 +2847,9 @@ class StatePrep(Operation):
             array: A state vector for all wires in a circuit
         """
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return "|Ψ⟩"
+
 
 def operation_derivative(operation) -> np.ndarray:
     r"""Calculate the derivative of an operation.
@@ -2944,7 +2987,7 @@ def disable_new_opmath():
     True
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.disable_new_opmath()
+    >>> qml.operation.disable_new_opmath()
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.operation.Tensor'>
     """

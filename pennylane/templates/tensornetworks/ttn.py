@@ -59,11 +59,11 @@ def compute_indices(wires, n_block_wires):
     half_block_wires = n_block_wires // 2
 
     block_wires = []
-    for layer in range(1, n_layers + 1):
-        lower_shift = 2 ** (layer - 1) * half_block_wires - half_block_wires
-        upper_shift = 2 ** (layer) * half_block_wires - half_block_wires
+    for layer in range(n_layers):
+        lower_shift = (2 ** (layer) - 1) * half_block_wires
+        upper_shift = (2 ** (layer + 1) - 1) * half_block_wires
 
-        step = 2 ** (layer - 1) * n_block_wires
+        step = 2**layer * n_block_wires
         for block_offset in range(0, n_wires - half_block_wires, step):
             wires1 = tuple(wires[block_offset + lower_shift + i] for i in range(half_block_wires))
             wires2 = tuple(wires[block_offset + upper_shift + i] for i in range(half_block_wires))

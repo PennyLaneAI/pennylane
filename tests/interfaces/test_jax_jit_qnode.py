@@ -18,7 +18,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", True],
@@ -207,12 +206,13 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return QuantumScript(
-                    [qml.Rot(lam, theta, -lam, wires=wires), qml.PhaseShift(phi + lam, wires=wires)]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         num_wires = 1
 
@@ -544,11 +544,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)
+        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)
+        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
@@ -967,10 +967,8 @@ class TestQubitIntegration:
         dev = qml.device(dev_name, wires=num_wires)
 
         class Template(qml.templates.StronglyEntanglingLayers):
-            def expand(self):
-                return QuantumScript(
-                    [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
-                )
+            def decomposition(self):
+                return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1354,7 +1352,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")
+            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1524,8 +1522,8 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
-                return QuantumScript([qml.RY(3 * self.data[0], wires=self.wires)])
+            def decomposition(self):
+                return [qml.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(
             dev,
@@ -1965,7 +1963,7 @@ class TestJIT:
 
         def cost(x, y, idx):
             res = circuit(x, y)
-            return res[idx]
+            return res[idx]  # pylint:disable=unsubscriptable-object
 
         x = jax.numpy.array(1.0)
         y = jax.numpy.array(2.0)
@@ -2844,7 +2842,7 @@ class TestReturnHessian:
 
 
 @pytest.mark.parametrize("hessian", hessian_fn)
-@pytest.mark.parametrize("diff_method", ["param-shift", "hadamard"])
+@pytest.mark.parametrize("diff_method", ["parameter-shift", "hadamard"])
 def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
     num_wires = 1
@@ -2855,7 +2853,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     dev = qml.device("default.qubit.jax", wires=num_wires, shots=10000)
 
     @jax.jit
-    @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    @qml.qnode(dev, diff_method=diff_method, max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)

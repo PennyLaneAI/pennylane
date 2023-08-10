@@ -571,7 +571,7 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(a_val, requires_grad=True, device=torch_device)
         b = torch.tensor(b_val, requires_grad=True, device=torch_device)
 
-        tape.set_parameters([2 * a, b])
+        tape = tape.bind_new_parameters([2 * a, b], [0, 1])
         res2 = execute([tape], dev, **execute_kwargs)[0]
 
         expected = torch.tensor(
@@ -708,15 +708,13 @@ class TestTorchExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
-                tape = qml.tape.QuantumTape()
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
+                return [
                     qml.Rot(lam, theta, -lam, wires=wires),
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
-                return tape
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
