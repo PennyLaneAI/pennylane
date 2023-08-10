@@ -39,7 +39,7 @@ def test_analytic_deprecation():
         DeviceError,
         match=msg,
     ):
-        DefaultQubitJax(wires=1, shots=1, analytic=True)
+        qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
 
 
 # pylint: disable=too-many-public-methods
@@ -51,7 +51,7 @@ class TestQNodeIntegration:
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
@@ -81,7 +81,7 @@ class TestQNodeIntegration:
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         assert dev.num_wires == 2
         assert dev.shots is None
         assert dev.short_name == "default.qubit.jax"
@@ -94,7 +94,7 @@ class TestQNodeIntegration:
     def test_float_precision(self, jax_enable_x64, c_dtype, r_dtype):
         """Test that the plugin device uses the same float precision as the jax config."""
         jax.config.update("jax_enable_x64", jax_enable_x64)
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         assert dev.state.dtype == c_dtype
         assert dev.state.real.dtype == r_dtype
 
@@ -103,7 +103,7 @@ class TestQNodeIntegration:
         result for a simple circuit."""
         p = jnp.array(0.543)
 
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
@@ -118,7 +118,7 @@ class TestQNodeIntegration:
         result for a simple circuit under a jax.jit."""
         p = jnp.array(0.543)
 
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -141,7 +141,7 @@ class TestQNodeIntegration:
         result for a simple broadcasted circuit."""
         p = jnp.array([0.543, 0.21, 1.5])
 
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
@@ -156,7 +156,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         state = dev.state
         expected = jnp.array([1, 0, 0, 0])
@@ -180,7 +180,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         broadcasted quantum function on the device"""
 
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         state = dev.state
         expected = jnp.array([1, 0, 0, 0])
@@ -208,7 +208,7 @@ class TestQNodeIntegration:
     def test_correct_state_returned(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
@@ -226,7 +226,7 @@ class TestQNodeIntegration:
     def test_correct_state_returned_broadcasted(self, tol):
         """Test that the device state is correct after applying a
         broadcasted quantum function on the device"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit():
@@ -248,7 +248,7 @@ class TestQNodeIntegration:
 
     def test_probs_jax(self, tol):
         """Test that returning probs works with jax"""
-        dev = DefaultQubitJax(wires=1, shots=100)
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([0.0, 1.0])
 
         @qml.qnode(dev, interface="jax", diff_method=None)
@@ -261,7 +261,7 @@ class TestQNodeIntegration:
 
     def test_probs_jax_broadcasted(self, tol):
         """Test that returning probs works with jax"""
-        dev = DefaultQubitJax(wires=1, shots=100)
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([[0.0, 1.0]] * 3)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
@@ -275,7 +275,7 @@ class TestQNodeIntegration:
 
     def test_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit"""
-        dev = DefaultQubitJax(wires=1, shots=100)
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([0.0, 1.0])
 
         @qml.qnode(dev, interface="jax", diff_method=None)
@@ -294,8 +294,7 @@ class TestQNodeIntegration:
 
     def test_custom_shots_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit when using custom shot vector"""
-        # pylint:disable=unsubscriptable-object
-        dev = DefaultQubitJax(wires=1, shots=(3, 2))
+        dev = qml.device("default.qubit.jax", wires=1, shots=(3, 2))
         expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
@@ -312,7 +311,7 @@ class TestQNodeIntegration:
     def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
         """Test that returning probs works with jax and jit when
         using a custom shot vector and broadcasting"""
-        dev = DefaultQubitJax(wires=1, shots=(2, 2))
+        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
         expected = jnp.array([[[0.0, 1.0], [0.0, 1.0]]] * 5)
 
         @jax.jit
@@ -330,7 +329,7 @@ class TestQNodeIntegration:
 
         @jax.jit
         def circuit(x, key):
-            dev = DefaultQubitJax(wires=1, shots=1000, prng_key=key)
+            dev = qml.device("default.qubit.jax", wires=1, shots=1000, prng_key=key)
 
             @qml.qnode(dev, interface="jax", diff_method=None)
             def inner_circuit():
@@ -356,7 +355,7 @@ class TestQNodeIntegration:
     )
     def test_qubit_state_vector_arg_jax_jit(self, state_vector, tol):
         """Test that Qubit state vector as argument works with a jax.jit"""
-        dev = DefaultQubitJax(wires=list(range(2)))
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -374,7 +373,7 @@ class TestQNodeIntegration:
     )
     def test_qubit_state_vector_arg_jax(self, state_vector, tol):
         """Test that Qubit state vector as argument works with jax"""
-        dev = DefaultQubitJax(wires=list(range(2)))
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
@@ -391,7 +390,7 @@ class TestQNodeIntegration:
     )
     def test_qubit_state_vector_jax_jit(self, state_vector, tol):
         """Test that Qubit state vector works with a jax.jit"""
-        dev = DefaultQubitJax(wires=list(range(2)))
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -410,7 +409,7 @@ class TestQNodeIntegration:
     )
     def test_qubit_state_vector_jax(self, state_vector, tol):
         """Test that Qubit state vector works with a jax"""
-        dev = DefaultQubitJax(wires=list(range(2)))
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
@@ -428,7 +427,7 @@ class TestQNodeIntegration:
     )
     def test_qubit_state_vector_jax_not_normed(self, state_vector):
         """Test that an error is raised when Qubit state vector is not normed works with a jax"""
-        dev = DefaultQubitJax(wires=list(range(2)))
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
@@ -442,7 +441,7 @@ class TestQNodeIntegration:
 
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
-        dev = DefaultQubitJax(wires=1, shots=1000)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
@@ -455,7 +454,7 @@ class TestQNodeIntegration:
 
     def test_sampling_analytic_mode(self):
         """Test that when sampling with shots=None an error is raised."""
-        dev = DefaultQubitJax(wires=1, shots=None)
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
@@ -470,7 +469,7 @@ class TestQNodeIntegration:
 
     def test_sampling_analytic_mode_with_counts(self):
         """Test that when sampling with counts and shots=None an error is raised."""
-        dev = DefaultQubitJax(wires=1, shots=None)
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
@@ -485,7 +484,7 @@ class TestQNodeIntegration:
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests."""
-        dev = DefaultQubitJax(wires=2, shots=1000)
+        dev = qml.device("default.qubit.jax", wires=2, shots=1000)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
@@ -501,7 +500,7 @@ class TestQNodeIntegration:
 
     def test_diagonal_doesnt_crash(self):
         """Test that diagonal gates can be used."""
-        dev = DefaultQubitJax(wires=1, shots=1000)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
@@ -512,7 +511,7 @@ class TestQNodeIntegration:
 
     def test_broadcasted_diagonal_doesnt_crash(self):
         """Test that diagonal gates can be used."""
-        dev = DefaultQubitJax(wires=1, shots=1000)
+        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
@@ -525,7 +524,7 @@ class TestQNodeIntegration:
     def test_parametrized_evolution_state_vector(self, phi, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
         the `_evolve_state_vector_under_parametrized_evolution` method is used."""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
 
@@ -548,7 +547,7 @@ class TestQNodeIntegration:
     def test_parametrized_evolution_matrix(self, phi, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires < device.num_wires/2``
         the `_apply_operation` method is used."""
-        dev = DefaultQubitJax(wires=3)
+        dev = qml.device("default.qubit.jax", wires=3)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
         spy2 = mocker.spy(dev, "_apply_operation")
@@ -573,7 +572,7 @@ class TestQNodeIntegration:
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
         and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
         method is used."""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
         spy2 = mocker.spy(dev, "_apply_operation")
@@ -600,7 +599,7 @@ class TestQNodeIntegration:
     def test_parametrized_evolution_matrix_complementary(self, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
         but with ``complementary=True``, the `_apply_operation` method is used."""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
         spy2 = mocker.spy(dev, "_apply_operation")
@@ -638,7 +637,7 @@ class TestPassthruIntegration:
         z = 0.75110998
         weights = jnp.array([x, y, z])
 
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(p):
@@ -675,7 +674,7 @@ class TestPassthruIntegration:
         z = jnp.array([0.75110998, 0.12512, 9.12])
         weights = jnp.array([x, y, z])
 
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(p):
@@ -713,7 +712,7 @@ class TestPassthruIntegration:
         y = 0.2162158
         z = 0.75110998
         p = jnp.array([x, y, z])
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
@@ -738,7 +737,7 @@ class TestPassthruIntegration:
         """Test that jacobian of a QNode with an attached default.qubit.jax device
         gives the correct result in the case of repeated broadcasted parameters"""
         p = jnp.array([[0.433, 92.1, -0.512], [0.218, 0.241, -0.51], [0.71, 0.152, 9.12]])
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(x):
@@ -767,7 +766,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = DefaultQubitJax(wires=wires)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a):
@@ -788,7 +787,7 @@ class TestPassthruIntegration:
 
     def test_state_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device state can be differentiated"""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a):
@@ -812,7 +811,7 @@ class TestPassthruIntegration:
     def test_CRot_gradient(self, theta, tol):
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
@@ -839,7 +838,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
@@ -852,7 +851,7 @@ class TestPassthruIntegration:
         b = jnp.array(0.12)
 
         def cost(a, b):
-            prob_wire_1 = circuit(a, b).squeeze()  # pylint:disable=no-member
+            prob_wire_1 = circuit(a, b).squeeze()
             return prob_wire_1[1] - prob_wire_1[0]
 
         res = cost(a, b)
@@ -865,7 +864,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device probability can be differentiated"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
@@ -879,7 +878,7 @@ class TestPassthruIntegration:
 
         def cost(a, b):
             prob_wire_1 = circuit(a, b)
-            return prob_wire_1[:, 1] - prob_wire_1[:, 0]  # pylint:disable=unsubscriptable-object
+            return prob_wire_1[:, 1] - prob_wire_1[:, 0]
 
         res = cost(a, b)
         expected = -jnp.cos(a) * jnp.cos(b)
@@ -892,7 +891,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
@@ -915,7 +914,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient_broadcasted(self, tol):
         """Tests that the gradient of the broadcasted qnode is correct"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
@@ -941,7 +940,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(x):
@@ -958,7 +957,7 @@ class TestPassthruIntegration:
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the Jax interface, using a variety of differentiation methods."""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method, interface="jax")
         def circuit(x, weights, w=None):
@@ -1002,7 +1001,7 @@ class TestPassthruIntegration:
     def test_error_backprop_wrong_interface(self, interface):
         """Tests that an error is raised if diff_method='backprop' but not using
         the Jax interface"""
-        dev = DefaultQubitJax(wires=1)
+        dev = qml.device("default.qubit.jax", wires=1)
 
         def circuit(x, w=None):
             qml.RZ(x, wires=w)
@@ -1021,7 +1020,7 @@ class TestPassthruIntegration:
 
         When the JAX interface is applied, we can only get the expectation value and the variance of a QNode.
         """
-        dev = DefaultQubitJax(wires=1, shots=None)
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
         def circuit():
             return qml.probs(wires=0)
@@ -1036,7 +1035,7 @@ class TestHighLevelIntegration:
 
     def test_do_not_split_analytic_jax(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None using the jax device."""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         H = qml.Hamiltonian(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
@@ -1052,7 +1051,7 @@ class TestHighLevelIntegration:
     def test_direct_eval_hamiltonian_broadcasted_error_jax(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with Jax."""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         H = qml.Hamiltonian(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
@@ -1065,7 +1064,7 @@ class TestHighLevelIntegration:
 
     def test_template_integration(self):
         """Test that a PassthruQNode using default.qubit.jax works with templates."""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(weights):
@@ -1090,7 +1089,7 @@ class TestOps:
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = DefaultQubitJax(wires=wires)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(param):
@@ -1161,7 +1160,7 @@ class TestOpsBroadcasted:
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = DefaultQubitJax(wires=wires)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(param):
@@ -1208,7 +1207,7 @@ class TestEstimateProb:
     )
     def test_estimate_probability(self, wires, expected, monkeypatch):
         """Tests the estimate_probability method"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         samples = jnp.array([[0, 0], [1, 1], [1, 1], [0, 0]])
 
         with monkeypatch.context() as m:
@@ -1227,7 +1226,7 @@ class TestEstimateProb:
     )
     def test_estimate_probability_with_binsize(self, wires, expected, monkeypatch):
         """Tests the estimate_probability method with a bin size"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         samples = jnp.array([[1, 1], [1, 1], [1, 0], [0, 0]])
         bin_size = 2
 
@@ -1247,7 +1246,7 @@ class TestEstimateProb:
     )
     def test_estimate_probability_with_broadcasting(self, wires, expected, monkeypatch):
         """Tests the estimate_probability method with parameter broadcasting"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         samples = jnp.array(
             [
                 [[1, 0], [1, 1], [1, 1], [1, 1]],
@@ -1295,7 +1294,7 @@ class TestEstimateProb:
         self, wires, expected, monkeypatch
     ):
         """Tests the estimate_probability method with a bin size and parameter broadcasting"""
-        dev = DefaultQubitJax(wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         bin_size = 2
         samples = jnp.array(
             [

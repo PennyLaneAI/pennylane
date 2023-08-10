@@ -24,9 +24,9 @@ class TestSnapshot:
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit1(self, method):
+    def test_default_qubit_legacy(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
-        dev = qml.devices.DefaultQubit(wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -57,7 +57,7 @@ class TestSnapshot:
     def test_default_qubit2(self):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
-        dev = qml.devices.experimental.DefaultQubit2()
+        dev = qml.device("default.qubit")
 
         # TODO: add additional QNode test once the new device supports it
 

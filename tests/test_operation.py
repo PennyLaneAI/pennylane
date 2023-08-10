@@ -1035,7 +1035,7 @@ class TestOperatorIntegration:
         """Test that an exception is raised if the class is defined with ALL wires,
         but then instantiated with only one"""
 
-        dev1 = qml.devices.DefaultQubit(wires=2)
+        dev1 = qml.device("default.qubit.legacy", wires=2)
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""

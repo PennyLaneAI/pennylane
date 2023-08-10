@@ -24,7 +24,7 @@ def test_integration():
     wires = 2
     layers = 2
     dev_l = qml.device("lightning.qubit", wires=wires)
-    dev_d = qml.device("default.qubit", wires=wires)
+    dev_d = qml.device("default.qubit.legacy", wires=wires)
 
     def circuit(weights):
         qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
