@@ -185,18 +185,14 @@ def _adjoint_metric_tensor_tape(tape):
         diag_value = prefactor_1**2 * (
             qml.math.dot(phi_real, phi_real) + qml.math.dot(phi_imag, phi_imag)
         )
+        L = qml.math.scatter_element_add(L, (j, j), diag_value)
 
         lam = psi * 1.0
         lam_real, lam_imag = _reshape_real_imag(lam, dim)
 
         # this entry is missing a factor of 1j
         value = prefactor_1 * (qml.math.dot(lam_real, phi_real) + qml.math.dot(lam_imag, phi_imag))
-        L = qml.math.scatter_element_add(L, (j, j), diag_value)
         T = qml.math.scatter_element_add(T, (j,), value)
-
-        lam = psi * 1.0
-
-        ###
 
         for i in range(j - 1, -1, -1):
             # after first iteration of inner loop: apply U_{i+1}^\dagger
