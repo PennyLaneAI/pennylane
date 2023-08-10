@@ -320,7 +320,8 @@ class TestBatchTransform:
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, _ = self.my_transform(a, b)(tape)  # pylint: disable=no-value-for-parameter
+        with pytest.warns(UserWarning, match="The decorator syntax"):
+            tapes, _ = self.my_transform(a, b)(tape)  # pylint: disable=no-value-for-parameter
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
@@ -372,7 +373,8 @@ class TestBatchTransform:
         x = 0.543
 
         dev = qml.device("default.qubit", wires=1)
-        dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
+        with pytest.warns(UserWarning, match="The decorator syntax"):
+            dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
         @qml.qnode(dev, interface="autograd")
         def circuit(x):
@@ -441,12 +443,14 @@ class TestBatchTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @self.my_transform(a, b)  # pylint: disable=no-value-for-parameter
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+        with pytest.warns(UserWarning, match="The decorator syntax"):
+
+            @self.my_transform(a, b)  # pylint: disable=no-value-for-parameter
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.Hadamard(wires=0)
+                qml.RX(x, wires=0)
+                return qml.expval(qml.PauliX(0))
 
         spy = mocker.spy(self.my_transform, "construct")
         res = circuit(x)
