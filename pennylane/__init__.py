@@ -21,7 +21,7 @@ import warnings
 import pkg_resources
 
 
-import numpy as _n
+import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
