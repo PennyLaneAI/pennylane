@@ -72,7 +72,7 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
         # Remove Barrier gate
         if current_gate.name != "Barrier":
-            operations.append[current_gate]
+            operations.append(current_gate)
 
         list_copy.pop(0)
         continue

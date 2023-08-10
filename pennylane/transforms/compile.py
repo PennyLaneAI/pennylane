@@ -14,12 +14,12 @@
 """Code for the high-level quantum function transform that executes compilation."""
 # pylint: disable=too-many-branches
 from functools import partial
+from typing import Sequence, Callable
 
-from pennylane import apply
 from pennylane.queuing import QueuingManager
 from pennylane.ops import __all__ as all_ops
-
-from pennylane.transforms import single_tape_transform, qfunc_transform
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform, TransformDispatcher
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -31,8 +31,10 @@ from pennylane.transforms.optimization import (
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 
 
-@qfunc_transform
-def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
+@transform
+def compile(
+    tape: QuantumTape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
+) -> (Sequence[QuantumTape], Callable):
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -60,7 +62,11 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
             for tape expansion into the basis gates.
 
     Returns:
-        function: the transformed quantum function
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -142,7 +148,8 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     else:
         for p in pipeline:
             p_func = p.func if isinstance(p, partial) else p
-            if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
+            print(p_func)
+            if not isinstance(p_func, TransformDispatcher):
                 raise ValueError("Invalid transform function {p} passed to compile.")
 
     if num_passes < 1 or not isinstance(num_passes, int):
@@ -169,11 +176,17 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
             for transform in pipeline:
-                if isinstance(transform, (single_tape_transform, partial)):
-                    expanded_tape = transform(expanded_tape)
-                else:
-                    expanded_tape = transform.tape_fn(expanded_tape)
+                tapes, _ = transform(expanded_tape)
+                expanded_tape = tapes[0]
 
-    # Queue the operations on the optimized tape
-    for op in expanded_tape.operations + expanded_tape.measurements:
-        apply(op)
+    new_tape = QuantumTape(
+        expanded_tape.operations, expanded_tape.measurements, shots=expanded_tape.shots
+    )
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

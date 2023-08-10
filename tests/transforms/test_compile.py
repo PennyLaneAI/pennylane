@@ -15,7 +15,7 @@
 Unit tests for the ``compile`` transform.
 """
 import pytest
-
+from functools import partial
 from test_optimization.utils import compare_operation_lists
 
 import pennylane as qml
@@ -55,7 +55,7 @@ class TestCompile:
         """Test that error is raised for an invalid function in the pipeline"""
         qfunc = build_qfunc([0, 1, 2])
 
-        transformed_qfunc = compile(pipeline=[cancel_inverses, isinstance])(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline=[cancel_inverses, isinstance])
         transformed_qnode = qml.QNode(transformed_qfunc, dev_3wires)
 
         with pytest.raises(ValueError, match="Invalid transform function"):
@@ -64,7 +64,7 @@ class TestCompile:
     def test_compile_invalid_num_passes(self):
         """Test that error is raised for an invalid number of passes."""
         qfunc = build_qfunc([0, 1, 2])
-        transformed_qfunc = compile(num_passes=1.3)(qfunc)
+        transformed_qfunc = compile(qfunc, num_passes=1.3)
         transformed_qnode = qml.QNode(transformed_qfunc, dev_3wires)
 
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
@@ -77,12 +77,12 @@ class TestCompile:
         qfunc = build_qfunc(wires)
 
         pipeline = [
-            commute_controlled(direction="right").tape_fn,
+            partial(commute_controlled, direction="right"),
             cancel_inverses,
-            merge_rotations().tape_fn,
+            merge_rotations,
         ]
 
-        transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline)
         transformed_qnode = qml.QNode(transformed_qfunc, dev_3wires)
         transformed_qnode(0.3, 0.4, 0.5)
 
@@ -97,47 +97,6 @@ class TestCompile:
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
-    @pytest.mark.parametrize(
-        "transform_name,num_passes",
-        [
-            ("merge_rotations", 1),
-            ("commute_controlled", 1),
-            ("merge_rotations", 3),
-            ("commute_controlled", 2),
-        ],
-    )
-    def test_compile_mock_calls(self, transform_name, num_passes, mocker):
-        """Test that functions in the pipeline are called the correct number of times."""
-
-        class DummyTransforms:
-            def run_pipeline(self):
-                pipeline = [
-                    qml.transforms.single_tape_transform(DummyTransforms.merge_rotations),
-                    qml.transforms.single_tape_transform(DummyTransforms.commute_controlled),
-                ]
-
-                wires = [0, 1, 2]
-                qfunc = build_qfunc(wires)
-
-                transformed_qfunc = compile(pipeline=pipeline, num_passes=num_passes)(qfunc)
-                transformed_qnode = qml.QNode(transformed_qfunc, dev_3wires)
-                transformed_qnode(0.3, 0.4, 0.5)
-
-            @staticmethod
-            def merge_rotations(tape):
-                return qml.transforms.merge_rotations.tape_fn(tape)
-
-            @staticmethod
-            def commute_controlled(tape):
-                return qml.transforms.commute_controlled.tape_fn(tape, direction="left")
-
-        spy = mocker.spy(DummyTransforms, transform_name)
-
-        d = DummyTransforms()
-        d.run_pipeline()
-
-        assert len(spy.call_args_list) == num_passes
-
 
 class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
@@ -151,7 +110,7 @@ class TestCompileIntegration:
 
         qnode = qml.QNode(qfunc, dev)
 
-        transformed_qfunc = compile(pipeline=[])(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline=[])
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_result = qnode(0.3, 0.4, 0.5)
@@ -172,7 +131,7 @@ class TestCompileIntegration:
 
         qnode = qml.QNode(qfunc, dev)
 
-        transformed_qfunc = compile()(qfunc)
+        transformed_qfunc = compile(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_result = qnode(0.3, 0.4, 0.5)
@@ -200,12 +159,12 @@ class TestCompileIntegration:
         qnode = qml.QNode(qfunc, dev)
 
         pipeline = [
-            commute_controlled(direction="left"),
+            partial(commute_controlled, direction="left"),
             cancel_inverses,
-            merge_rotations(atol=1e-6),
+            partial(merge_rotations, atol=1e-6),
         ]
 
-        transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline=pipeline)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_result = qnode(0.3, 0.4, 0.5)
@@ -234,9 +193,9 @@ class TestCompileIntegration:
 
         # Rotation merging will not occur at all until commuting gates are
         # pushed through
-        pipeline = [merge_rotations, commute_controlled(direction="left"), cancel_inverses]
+        pipeline = [merge_rotations, partial(commute_controlled, direction="left"), cancel_inverses]
 
-        transformed_qfunc = compile(pipeline=pipeline, num_passes=2)(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline=pipeline, num_passes=2)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_result = qnode(0.3, 0.4, 0.5)
@@ -263,11 +222,11 @@ class TestCompileIntegration:
 
         qnode = qml.QNode(qfunc, dev)
 
-        pipeline = [commute_controlled(direction="left"), cancel_inverses, merge_rotations]
+        pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
 
         basis_set = ["CNOT", "RX", "RY", "RZ"]
 
-        transformed_qfunc = compile(pipeline=pipeline, basis_set=basis_set)(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline=pipeline, basis_set=basis_set)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_result = qnode(0.3, 0.4, 0.5)
@@ -322,7 +281,7 @@ class TestCompileIntegration:
         qnode = qml.QNode(qfunc, dev)
 
         pipeline = [commute_controlled, merge_rotations]
-        transformed_qfunc = compile(pipeline=pipeline)(qfunc)
+        transformed_qfunc = compile(qfunc, pipeline=pipeline)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         x = np.array([0.1, 0.2, 0.3])
@@ -351,9 +310,9 @@ def qfunc_emb(x, params):
     return qml.expval(qml.PauliZ(wires=2))
 
 
-pipeline_emb = [commute_controlled(direction="left"), merge_rotations]
+pipeline_emb = [partial(commute_controlled, direction="left"), merge_rotations]
 
-transformed_qfunc_emb = compile(pipeline=pipeline_emb)(qfunc_emb)
+transformed_qfunc_emb = partial(compile, pipeline=pipeline_emb)(qfunc_emb)
 
 dev_3wires = qml.device("default.qubit", wires=3)
 
@@ -524,7 +483,7 @@ class TestCompileInterfaces:
 
         pipeline = [cancel_inverses, unitary_to_rot, single_qubit_fusion]
 
-        compiled_qfunc = qml.compile(pipeline=pipeline)(test_qfunc)
+        compiled_qfunc = qml.compile(test_qfunc, pipeline=pipeline)
         compiled_qnode = qml.QNode(compiled_qfunc, dev, diff_method=diff_method)
 
         jitted_compiled_qnode = jax.jit(compiled_qnode)
