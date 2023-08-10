@@ -2680,6 +2680,7 @@ def test_docstring_example_of_operator_class(tol):
     assert np.allclose(res, expected, atol=tol)
 
 
+# pylint: disable=unused-import
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
 
