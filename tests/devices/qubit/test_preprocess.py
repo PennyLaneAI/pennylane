@@ -222,6 +222,7 @@ class TestExpandFnTransformations:
         ops = [
             qml.Hadamard(0),
             mp,
+            qml.PauliZ(0),
             qml.transforms.Conditional(mv, qml.RX(0.123, wires=1)),
         ]
         measurements = [qml.expval(qml.PauliZ(1))]
@@ -231,8 +232,8 @@ class TestExpandFnTransformations:
         expected = [
             qml.Hadamard(0),
             qml.CNOT([0, 2]),
-            qml.CNOT([2, 0]),
-            qml.ops.Controlled(qml.RX(0.123, wires=1), 2),
+            qml.PauliZ(2),
+            qml.ops.Controlled(qml.RX(0.123, wires=1), 0),
         ]
 
         for op, exp in zip(expanded_tape, expected + measurements):

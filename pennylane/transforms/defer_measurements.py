@@ -128,13 +128,24 @@ def defer_measurements(tape: QuantumTape):
 
     # Find wires that are reused after measurement
     measured_wires = set()
+    meas_wire_map = {}
     reused_measurement_wires = set()
+    # Current wire to which the measured wire will be mapped
+    cur_wire = max(tape.wires) + 1
+    new_wire_map
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            measured_wires.add(op.wires[0])
-            if op.reset:
-                reused_measurement_wires.add(op.wires[0])
+            wire = op.wires[0]
+            meas_wire_map[wire] = meas_wire_map.get(wire, [wire])
+
+            if wire in measured_wires:
+                reused_measurement_wires.add(wire)
+                cur_measurements = meas_wire_map.get(wire, [wire]).append(cur_wire)
+                meas_wire_map[wire] = cur_measurements
+
+                cur_wire += 1
+            measured_wires.add(meas_wire_map[wire][-1])
 
         elif op.__class__.__name__ == "Conditional":
             reused_measurement_wires = reused_measurement_wires.union(
@@ -148,10 +159,7 @@ def defer_measurements(tape: QuantumTape):
 
     # Map measured wires to new wires, which will then be used by the rest of the circuit.
     # Operations controlled on the measured wire will use the original wire for control.
-    meas_wire_map = {}
     control_wires = {}
-    # Current wire to which the measured wire will be mapped
-    cur_wire = max(tape.wires) + 1
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
@@ -192,7 +200,7 @@ def defer_measurements(tape: QuantumTape):
 
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
-    control = [control_wires[m.id][0] for m in op.meas_val.measurements]
+    control = [control_wires[m.id] for m in op.meas_val.measurements]
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             ctrl(
