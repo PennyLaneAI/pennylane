@@ -77,7 +77,7 @@ filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
 # Control JAX logging
 [loggers.jax]
 handlers = ["qml_debug_stream",]
-level = "CRITICAL"
+level = "WARN"
 propagate = false
 
 # Control logging across pennylane
