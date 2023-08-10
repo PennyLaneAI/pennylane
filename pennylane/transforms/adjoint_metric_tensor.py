@@ -188,8 +188,6 @@ def _adjoint_metric_tensor_tape(tape):
 
         lam = psi * 1.0
         lam_real, lam_imag = _reshape_real_imag(lam, dim)
-        lam_real = qml.math.reshape(qml.math.real(lam), (dim,))
-        lam_imag = qml.math.reshape(qml.math.imag(lam), (dim,))
 
         # this entry is missing a factor of 1j
         value = prefactor_1 * (qml.math.dot(lam_real, phi_real) + qml.math.dot(lam_imag, phi_imag))
