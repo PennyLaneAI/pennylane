@@ -211,7 +211,7 @@ class TestTransformDispatcher:
 
         with pytest.warns(UserWarning, match="The decorator syntax"):
 
-            @dispatched_transform(targs=targs)
+            @dispatched_transform(targs)
             @qml.qnode(device=dev)
             def qnode_circuit(a):
                 """QNode circuit."""
