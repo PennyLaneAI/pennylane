@@ -2678,3 +2678,24 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
+
+
+def test_get_attr():
+    """Test that importing attributes of operation work as expected"""
+
+    attr_name = "non_existent_attr"
+    with pytest.raises(
+        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+    ):
+        _ = qml.operation.non_existent_attr  # error is raised if non-existent attribute accessed
+
+    with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
+        from pennylane.operation import (
+            non_existent_attr,
+        )  # error is raised if non-existent attribute imported
+
+    from pennylane.operation import StatePrep
+
+    assert (
+        StatePrep is qml.operation.InitialState
+    )  # StatePrep imported from operation.py is an alias for InitialState

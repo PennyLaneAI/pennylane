@@ -3011,3 +3011,4 @@ def __getattr__(name):
     """To facilitate StatePrep rename"""
     if name == "StatePrep":
         return InitialState
+    raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
