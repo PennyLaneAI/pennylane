@@ -242,8 +242,7 @@ array([False, False])
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
 * The `__eq__` and `__hash__` dunder methods of `Operator` and `MeasurementProcess` will now raise
-  warnings to reflect upcoming changes to operator and measurement process
-  equality and hashing.
+  warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
