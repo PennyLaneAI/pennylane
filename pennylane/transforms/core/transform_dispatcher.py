@@ -76,10 +76,10 @@ class TransformDispatcher:
         # result = some_transform(*transform_args)(qnode)(*qnode_args)
 
         warnings.warn(
-            "The decorator syntax transform_fn(*transform_args)(qnode) has been "
+            "The decorator syntax transform_fn(**transform_kwargs)(qnode) has been "
             "deprecated and will be removed in a future version. Please use either "
-            "transform_fn(qnode, *transform_args) or "
-            "functools.partial(transform_fn, *transform_args)(qnode) instead.",
+            "transform_fn(qnode, **transform_kwargs) or "
+            "functools.partial(transform_fn, **transform_kwargs)(qnode) instead.",
             UserWarning,
         )
 

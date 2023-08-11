@@ -251,15 +251,14 @@ array([False, False])
 
 * The following decorator syntax for transforms has been deprecated and will raise a warning:
   ```python
-  @transform_fn(*transform_args)
+  @transform_fn(**transform_kwargs)
   @qml.qnode(dev)
   def circuit():
       ...
   ```
-  If you are using a transform that has supporting `transform_args`, please call the
-  transform directly using `circuit = transform_fn(circuit, *transform_args)`.
-  Alternatively, use `functools.partial`, in which case all arguments must be converted
-  to keyword arguments:
+  If you are using a transform that has supporting `transform_kwargs`, please call the
+  transform directly using `circuit = transform_fn(circuit, **transform_kwargs)`,
+  or use `functools.partial`:
   ```python
   @functools.partial(transform_fn, **transform_kwargs)
   @qml.qnode(dev)
