@@ -150,7 +150,7 @@ def test_append_gate(circuit):
     param = np.array([0.0])
     gate = qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3])
 
-    final_circuit = qml.optimize.adaptive.append_gate(param, [gate])(circuit.func)
+    final_circuit = qml.optimize.adaptive.append_gate(circuit.func, param, [gate])
     qnode = qml.QNode(final_circuit, dev)
     _ = qnode()
 
