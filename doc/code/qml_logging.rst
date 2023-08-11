@@ -6,3 +6,4 @@ qml.logging
 .. automodapi:: pennylane.logging
     :no-heading:
     :include-all-objects:
+    :skip: TRACE
