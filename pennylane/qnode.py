@@ -20,7 +20,7 @@ import inspect
 import warnings
 from collections.abc import Sequence
 from typing import Union
-
+import logging
 
 import autograd
 
@@ -29,6 +29,9 @@ from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, make_qscript
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _convert_to_interface(res, interface):
@@ -402,6 +405,25 @@ class QNode:
         max_diff=1,
         **gradient_kwargs,
     ):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, mode=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
+                func
+                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(func))
+                else "\n" + inspect.getsource(func),
+                repr(device),
+                interface,
+                diff_method,
+                expansion_strategy,
+                max_expansion,
+                grad_on_execution,
+                mode,
+                cache,
+                cachesize,
+                max_diff,
+                gradient_kwargs,
+            )
+
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
@@ -876,7 +898,7 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
         ]
-        if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
+        if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )

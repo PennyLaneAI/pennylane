@@ -686,8 +686,8 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0][0].id: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1][0].id: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
+    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
 
     all_configs = []
     for tape in tapes:
