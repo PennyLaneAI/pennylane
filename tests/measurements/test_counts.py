@@ -209,7 +209,7 @@ class TestProcessSamples:
 
 
 class TestCountsIntegration:
-    # pylint:disable=too-many-public-methods
+    # pylint:disable=too-many-public-methods,not-an-iterable
 
     def test_counts_dimension(self, mocker):
         """Test that the counts function outputs counts of the right size"""

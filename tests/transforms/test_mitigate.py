@@ -14,7 +14,6 @@
 """
 Tests for mitigation transforms.
 """
-# pylint:disable=no-self-use
 import pytest
 
 from packaging import version
@@ -118,7 +117,7 @@ class TestMitigateWithZNE:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -198,6 +197,8 @@ def skip_if_no_pl_qiskit_support():
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
     """Tests if the mitigate_with_zne transform is compatible with using mitiq as a backend"""
+
+    # pylint:disable=arguments-out-of-order
 
     def test_multiple_returns(self):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""

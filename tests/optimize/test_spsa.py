@@ -228,6 +228,7 @@ class TestSPSAOptimizer:
         k = 1
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
+        # pylint:disable=too-many-function-args
         deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
 
         args = (multid_array,)
