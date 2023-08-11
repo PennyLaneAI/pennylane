@@ -110,7 +110,10 @@ def test_pennylane_style():
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
-    assert plt.rcParams["font.sans-serif"] == ["Quicksand", "DejaVu Sans", "Bitstream Vera Sans", "Computer Modern Sans Serif", "Lucida Grande", "Verdana", "Geneva", "Lucid", "Arial", "Helvetica", "Avant Garde", "sans-serif"]
+    assert plt.rcParams["font.sans-serif"] == ["Quicksand", "DejaVu Sans",
+                                               "Bitstream Vera Sans", "Computer Modern Sans Serif",
+                                               "Lucida Grande", "Verdana", "Geneva", "Lucid",
+                                               "Arial", "Helvetica", "Avant Garde", "sans-serif"]
     assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 250, 1)
 
