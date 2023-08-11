@@ -14,13 +14,18 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
+from typing import Sequence, Callable
+
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
+
 import pennylane as qml
-from pennylane.transforms import qfunc_transform
 from pennylane.transforms.decompositions import one_qubit_decomposition, two_qubit_decomposition
 
 
-@qfunc_transform
-def unitary_to_rot(tape):
+@transform
+def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     r"""Quantum function transform to decomposes all instances of single-qubit and
     select instances of two-qubit :class:`~.QubitUnitary` operations to
     parametrized single-qubit operations.
@@ -36,7 +41,7 @@ def unitary_to_rot(tape):
         operations. See usage details below.
 
     Args:
-        qfunc (function): a quantum function
+        tape (QuantumTape): a quantum tape
 
     **Example**
 
@@ -128,16 +133,28 @@ def unitary_to_rot(tape):
                 qml.CNOT(wires=["b", "a"])
                 return qml.expval(qml.PauliX(wires="a"))
     """
-
+    operations = []
     for op in tape:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
             if qml.math.shape(op.parameters[0]) == (2, 2):
-                one_qubit_decomposition(op.parameters[0], op.wires[0])
+                with QueuingManager.stop_recording():
+                    operations.extend(one_qubit_decomposition(op.parameters[0], op.wires[0]))
             # Two-qubit unitary operations
             elif qml.math.shape(op.parameters[0]) == (4, 4):
-                two_qubit_decomposition(op.parameters[0], op.wires)
+                with QueuingManager.stop_recording():
+                    operations.extend(two_qubit_decomposition(op.parameters[0], op.wires))
             else:
-                qml.apply(op)
+                operations.append(op)
         else:
-            qml.apply(op)
+            operations.append(op)
+
+    new_tape = QuantumTape(operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
