@@ -182,13 +182,7 @@ def _grad_transform_jac_via_callback(
         new_tapes = set_parameters_on_copy_and_unwrap(tapes, inner_params, unwrap=False)
         all_jacs = []
         for new_t in new_tapes:
-            jvp_tapes, res_processing_fn = gradient_fn(
-                new_t,
-                shots=new_t.shots
-                if isinstance(device, qml.devices.experimental.Device)
-                else device.shots,
-                **gradient_kwargs
-            )
+            jvp_tapes, res_processing_fn = gradient_fn(new_t, **gradient_kwargs)
             jacs = execute_fn(jvp_tapes)[0]
             jacs = res_processing_fn(jacs)
             all_jacs.append(jacs)
@@ -206,13 +200,7 @@ def _grad_transform_jac_no_callback(
     new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
     jacobians = []
     for new_t in new_tapes:
-        jvp_tapes, res_processing_fn = gradient_fn(
-            new_t,
-            shots=new_t.shots
-            if isinstance(device, qml.devices.experimental.Device)
-            else device.shots,
-            **gradient_kwargs
-        )
+        jvp_tapes, res_processing_fn = gradient_fn(new_t, **gradient_kwargs)
         jacs = execute(
             jvp_tapes,
             device,
