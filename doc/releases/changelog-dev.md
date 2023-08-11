@@ -256,10 +256,12 @@ array([False, False])
   def circuit():
       ...
   ```
-  Please call the transform directly using `circuit = transform_fn(circuit, *transform_args)`,
-  or use `functools.partial`:
+  If you are using a transform that has supporting `transform_args`, please call the
+  transform directly using `circuit = transform_fn(circuit, *transform_args)`.
+  Alternatively, use `functools.partial`, in which case all arguments must be converted
+  to keyword arguments:
   ```python
-  @functools.partial(transform_fn, *transform_args)
+  @functools.partial(transform_fn, **transform_kwargs)
   @qml.qnode(dev)
   def circuit():
       ...
