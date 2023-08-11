@@ -89,7 +89,9 @@ class TransformDispatcher:
         def wrapper(obj):
             return self(obj, *targs, **tkwargs)
 
-        wrapper.__doc__ = f"Partial of transform {self} with bound arguments and keyword arguments."
+        wrapper.__doc__ = (
+            f"Partial of transform {self._transform} with bound arguments and keyword arguments."
+        )
 
         return wrapper
 
