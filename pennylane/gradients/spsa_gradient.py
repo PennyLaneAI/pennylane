@@ -68,7 +68,6 @@ def spsa_grad(
     strategy="center",
     f0=None,
     validate_params=True,
-    shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_seed=None,
@@ -106,9 +105,6 @@ def spsa_grad(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that
-            will be used to execute the tapes outputted by this transform. Note that this argument doesn't
-            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -172,7 +168,7 @@ def spsa_grad(
     Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
     bounds the cost of the estimation, it also implies that the returned values are not
-    exact (even for devices with ``shots=None``) and that they will fluctuate.
+    exact (even with ``shots=None``) and that they will fluctuate.
     See the usage details below for more information.
 
     .. details::
@@ -231,9 +227,7 @@ def spsa_grad(
         ((array(-0.58222637), array(0.58222637), array(-0.58222637)),
          (array(1.05046797), array(-1.05046797), array(1.05046797)))
 
-
-        Devices that have a shot vector defined can also be used for execution, provided
-        the ``shots`` argument was passed to the transform:
+        This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
         >>> dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -244,7 +238,7 @@ def spsa_grad(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.spsa_grad(circuit, shots=shots, h=1e-2)(params)
+        >>> qml.gradients.spsa_grad(circuit, h=1e-2)(params)
         (((array(0.), array(0.), array(0.)), (array(0.), array(0.), array(0.))),
          ((array(-1.4), array(-1.4), array(-1.4)),
           (array(2.548), array(2.548), array(2.548))),
@@ -266,15 +260,13 @@ def spsa_grad(
             strategy=strategy,
             f0=f0,
             validate_params=validate_params,
-            shots=shots,
             num_directions=num_directions,
             sampler=sampler,
             sampler_seed=sampler_seed,
         )
 
-    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     if validate_params:
         diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=spsa_grad)
@@ -282,7 +274,7 @@ def spsa_grad(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     gradient_tapes = []
     extract_r0 = False
@@ -360,7 +352,7 @@ def spsa_grad(
         return tuple(grads)
 
     processing_fn = partial(
-        _processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result
+        _processing_fn, shots=tape.shots, single_shot_batch_fn=_single_shot_batch_result
     )
 
     return gradient_tapes, processing_fn
@@ -377,7 +369,6 @@ def _spsa_grad_legacy(
     strategy="center",
     f0=None,
     validate_params=True,
-    shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_seed=None,
@@ -415,9 +406,6 @@ def _spsa_grad_legacy(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[~pennylane.measurements.ShotCopies]): The device shots that will
-            be used to execute the tapes outputted by this transform. Note that this argument doesn't
-            influence the shots used for tape execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -473,7 +461,7 @@ def _spsa_grad_legacy(
     Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
     bounds the cost of the estimation, it also implies that the returned values are not
-    exact (even for devices with ``shots=None``) and that they will fluctuate.
+    exact (even with ``shots=None``) and that they will fluctuate.
     See the usage details below for more information.
 
     .. details::
