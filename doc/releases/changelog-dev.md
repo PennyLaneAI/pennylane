@@ -167,7 +167,7 @@ array([False, False])
 * `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
-* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane` to create PennyLane-style plots. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
 <h3>Breaking changes 💔</h3>
 
