@@ -134,7 +134,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 return qml.expval(qml.PauliX(wires="a"))
     """
     operations = []
-    for op in tape:
+    for op in tape.operations:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
             if qml.math.shape(op.parameters[0]) == (2, 2):
@@ -149,7 +149,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         else:
             operations.append(op)
 
-    new_tape = QuantumTape(operations, tape.measurements, shots=tape.shots)
+    new_tape = QuantumTape(operations, measurements=tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
