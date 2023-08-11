@@ -202,8 +202,8 @@ class TestSelect:
         new_op = type(op)._unflatten(*op._flatten())
         assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
         assert op.wires == new_op.wires
-        assert op.control_wires == op.control_wires
-        assert op.target_wires == op.target_wires
+        assert op.control_wires == new_op.control_wires
+        assert op.target_wires == new_op.target_wires
         assert op is not new_op
 
 
