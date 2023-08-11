@@ -146,7 +146,7 @@ def _pennylane():
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
-    plt.rcParams["font.family"] = ["Quicksand", "sans-serif"]
+    plt.rcParams["font.sans-serif"] = ["Quicksand", "DejaVu Sans", "Bitstream Vera Sans", "Computer Modern Sans Serif", "Lucida Grande", "Verdana", "Geneva", "Lucid", "Arial", "Helvetica", "Avant Garde", "sans-serif"]
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 250, 1)
 
