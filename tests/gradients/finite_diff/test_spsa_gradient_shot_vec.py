@@ -255,7 +255,6 @@ class TestSpsaGradient:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-
         grad_fn = spsa_grad(circuit, h=h_val, sampler_rng=rng)
         all_result = grad_fn(params)
 
