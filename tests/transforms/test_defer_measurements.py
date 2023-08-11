@@ -112,8 +112,8 @@ class TestQNode:
             qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
-
+        tape, _ = qml.defer_measurements(tape)
+        tape = tape[0]
         # Check the operations and measurements in the tape
         assert tape._ops == []
         assert len(tape.measurements) == 1
@@ -214,8 +214,9 @@ class TestConditionalOperations:
             qml.apply(terminal_measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
-
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
+        print(tape.measurements)
         assert len(tape.operations) == 2
         assert len(tape.measurements) == 1
 
@@ -242,8 +243,8 @@ class TestConditionalOperations:
             qml.apply(terminal_measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
-
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
         # Conditioned on 0 as the control value, PauliX is applied before and after
         assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
@@ -268,8 +269,8 @@ class TestConditionalOperations:
             qml.expval(qml.PauliZ(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
-
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
         # Conditioned on 0 as the control value, PauliX is applied before and after
         assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
@@ -311,7 +312,8 @@ class TestConditionalOperations:
             qml.apply(terminal_measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
         assert len(tape.operations) == 5 + 2  # 5 regular ops + 2 conditional ops
         assert len(tape.measurements) == 1
 
@@ -393,8 +395,8 @@ class TestConditionalOperations:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
-
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
         assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
 
@@ -424,8 +426,8 @@ class TestConditionalOperations:
             qml.expval(H)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = qml.defer_measurements(tape)
-
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
         assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
 

@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
+from typing import Sequence, Callable
 import pennylane as qml
 from pennylane.measurements import MidMeasureMP
 from pennylane.ops.op_math import ctrl
-from pennylane.queuing import apply
-from pennylane.transforms import qfunc_transform
+
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
 from pennylane.wires import Wires
+from pennylane.queuing import QueuingManager
 
 
-@qfunc_transform
-def defer_measurements(tape):
+@transform
+def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -55,6 +58,13 @@ def defer_measurements(tape):
 
     Args:
         qfunc (function): a quantum function
+
+    Returns:
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -93,6 +103,8 @@ def defer_measurements(tape):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
+    new_operations = []
+
     for op in tape:
         op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
         if len(op_wires_measured) > 0:
@@ -104,18 +116,39 @@ def defer_measurements(tape):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            _add_control_gate(op, measured_wires)
+            with QueuingManager.stop_recording():
+                new_operations.extend(_add_control_gate(op, measured_wires))
         else:
-            apply(op)
+            new_operations.append(op)
+
+    new_tape = QuantumTape(
+        new_operations[: -len(tape.measurements)],
+        new_operations[-len(tape.measurements) :],
+        shots=tape.shots,
+    )
+    new_tape._qfunc_output = tape._qfunc_output
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
 
 
 def _add_control_gate(op, measured_wires):
     """Helper function to add control gates"""
     control = [measured_wires[m.id] for m in op.meas_val.measurements]
+    new_ops = []
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
-            ctrl(
-                lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
-                control=Wires(control),
-                control_values=branch,
+            qscript = qml.tape.make_qscript(
+                ctrl(
+                    lambda: qml.apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                    control=Wires(control),
+                    control_values=branch,
+                )
             )()
+            new_ops.extend(qscript.circuit)
+    return new_ops
