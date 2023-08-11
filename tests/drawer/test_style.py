@@ -96,7 +96,7 @@ def test_sketch_style():
 
 
 def test_pennylane_style():
-    """Tests the sketch style sets ``plt.rcParams`` with correct values"""
+    """Tests the pennylane style sets ``plt.rcParams`` with correct values"""
 
     _set_style("pennylane")
 
