@@ -108,6 +108,46 @@ class TestRademacherSampler:
 
 class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
+    def test_sampler_argument(self):
+        """Make sure that custom samplers can be created as defined in the docs of spsa_grad."""
+        def sampler_required_kwarg(indices, num_params, *args, rng):
+            direction = np.zeros(num_params)
+            direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
+            return direction
+
+        def sampler_required_arg_or_kwarg(indices, num_params, idx_rep, rng):
+            direction = np.zeros(num_params)
+            direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
+            return direction
+
+        def sampler_required_arg(indices, num_params, foo, idx_rep, rng, /):
+            '''This should fail since spsa_grad passes rng as a kwarg.'''
+            direction = np.zeros(num_params)
+            direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
+            return direction
+
+        dev = qml.device('default.qubit', wires=1)
+
+        tape = qml.tape.QuantumTape([qml.RX(.5, wires=0)], [qml.expval(qml.PauliZ(0))])
+
+        results = []
+        for sampler in [sampler_required_arg_or_kwarg, sampler_required_kwarg]:
+            sampler_rng = np.random.default_rng(42)
+            tapes, proc_fn = spsa_grad(
+                tape, sampler=sampler, num_directions=100, sampler_rng=sampler_rng
+            )
+
+            res = qml.execute(tapes, dev)
+            results.append(proc_fn(res))
+
+        assert np.isclose(results[0], results[1], atol=.1)
+
+        err = "got some positional-only arguments passed as keyword arguments: 'rng'"
+        with pytest.raises(TypeError, match=err):
+            tapes, proc_fn = spsa_grad(
+                tape, sampler=sampler_required_arg, num_directions=100, sampler_rng=sampler_rng
+            )
+
 
     def test_sampler_seed_deprecation(self):
         """
@@ -149,7 +189,8 @@ class TestSpsaGradient:
             qml.RX(param, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Argument sampler_rng has invalid type."):
+        expected_message = "The argument sampler_rng is expected to be a NumPy PRNG"
+        with pytest.raises(ValueError, match=expected_message):
             qml.grad(circuit)(np.array(1.0))
 
     def test_non_differentiable_error(self):

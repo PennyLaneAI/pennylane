@@ -126,8 +126,8 @@ def spsa_grad(
               A valid sampling method can, but does not have to, take this counter into
               account. In any case, ``sampler`` has to accept this third argument.
 
-            - The keyword argument ``rng``, expected to be a NumPy pseudo-random number generator,
-              which should be used to sample directions randomly.
+            - The required keyword argument ``rng``, expected to be a NumPy pseudo-random
+              number generator, which should be used to sample directions randomly.
 
             Note that the circuit evaluations in the various sampled directions are *averaged*,
             not simply summed up.
@@ -454,8 +454,8 @@ def _spsa_grad_legacy(
               A valid sampling method can, but does not have to, take this counter into
               account. In any case, ``sampler`` has to accept this third argument.
 
-            - The keyword argument ``rng``, expected to be a NumPy pseudo-random number generator,
-              which should be used to sample directions randomly.
+            - The required keyword argument ``rng``, expected to be a NumPy pseudo-random
+              number generator, which should be used to sample directions randomly.
 
         sampler_rng (Union[np.random.Generator, int, None]): Either a NumPy pseudo-random number
             generator or an integer which will be used as the PRNG seed. Default is None, which
