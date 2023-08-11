@@ -130,11 +130,15 @@ def defer_measurements(tape: QuantumTape):
     measured_wires = set()
     reused_measurement_wires = set()
 
+    for mp in tape.measurements:
+        if isinstance(mp.obs, tuple):
+            for mv in mp.obs:
+                measured_wires.add(mv.measurements[0].wires[0])
+
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             if op.wires[0] in measured_wires or op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
-            measured_wires.add(op.wires[0])
 
         else:
             reused_measurement_wires = reused_measurement_wires.union(
@@ -164,6 +168,11 @@ def defer_measurements(tape: QuantumTape):
             _add_control_gate(op, control_wires)
         else:
             apply(op)
+
+    for mp in tape.measurements:
+        if isinstance(mp.obs, tuple):
+            mp.wires = Wires([control_wires[mv.measurements[0].id] for mv in mp.obs])
+        apply(mp)
 
     return tape._qfunc_output  # pylint: disable=protected-access
 
