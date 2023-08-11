@@ -50,6 +50,8 @@ class TransformDispatcher:
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
 
+        self._qnode_transform = self.default_qnode_transform
+
     def __call__(self, *targs, **tkwargs):
         obj = None
 
@@ -163,10 +165,6 @@ class TransformDispatcher:
             return tape._qfunc_output  # pylint:disable=protected-access
 
         return qfunc_transformed
-
-    def _qnode_transform(self, qnode, targs, tkwargs):
-        """Apply the transform on a QNode. It populates the transform program of a QNode"""
-        return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 class TransformContainer:
