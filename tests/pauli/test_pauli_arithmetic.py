@@ -99,7 +99,7 @@ class TestPauliWord:
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
         """Test that the wires are tracked correctly."""
-        assert pw.wires == wires
+        assert set(pw.wires) == wires
 
     tup_pw_str = (
         (pw1, "X(1) @ Y(2)"),
@@ -140,10 +140,25 @@ class TestPauliWord:
         """Test that an appropriate error is raised when an empty
         PauliWord is cast to matrix."""
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=None)
+            pw4.to_mat(wire_order=[])
 
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
             pw4.to_mat(wire_order=Wires([]))
+
+    pw1 = PauliWord({0: I, 1: X, 2: Y})
+    pw2 = PauliWord({"a": X, "b": X, "c": Z})
+    pw3 = PauliWord({0: Z, "b": Z, "c": Z})
+    pw4 = PauliWord({})
+
+    pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
+
+    @pytest.mark.parametrize("pw, wire_order", pw_wire_order)
+    def test_to_mat_error_incomplete(self, pw, wire_order):
+        """Test that an appropriate error is raised when the wire order does
+        not contain all the PauliWord's wires."""
+        match = "Can't get the matrix for the specified wire order"
+        with pytest.raises(ValueError, match=match):
+            pw.to_mat(wire_order=wire_order)
 
     def test_to_mat_identity(self):
         """Test that an identity matrix is return if wire_order is provided."""
@@ -184,7 +199,7 @@ class TestPauliWord:
             assert pw_op.name == op.name
             assert pw_op.wires == op.wires
 
-        if isinstance(op, qml.ops.Prod):
+        if isinstance(op, qml.ops.Prod):  # pylint: disable=no-member
             pw_tensor_op = pw.operation(get_as_tensor=True)
             expected_tensor_op = qml.operation.Tensor(*op.operands)
             assert qml.equal(pw_tensor_op, expected_tensor_op)
@@ -299,7 +314,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("ps, wires", tup_ps_wires)
     def test_wires(self, ps, wires):
         """Test the correct wires are given for the PauliSentence."""
-        assert ps.wires == wires
+        assert set(ps.wires) == wires
 
     @pytest.mark.parametrize("ps", (ps1, ps2, ps3, ps4))
     def test_copy(self, ps):
@@ -395,14 +410,24 @@ class TestPauliSentence:
     )
 
     @pytest.mark.parametrize("ps, match", ps_match)
-    def test_to_mat_error(self, ps, match):
+    def test_to_mat_error_empty(self, ps, match):
         """Test that an appropriate error is raised when an empty
         PauliSentence or PauliWord is cast to matrix."""
         with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=None)
+            ps.to_mat(wire_order=[])
 
         with pytest.raises(ValueError, match=match):
             ps.to_mat(wire_order=Wires([]))
+
+    ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
+
+    @pytest.mark.parametrize("ps, wire_order", ps_wire_order)
+    def test_to_mat_error_incomplete(self, ps, wire_order):
+        """Test that an appropriate error is raised when the wire order does
+        not contain all the PauliSentence's wires."""
+        match = "Can't get the matrix for the specified wire order"
+        with pytest.raises(ValueError, match=match):
+            ps.to_mat(wire_order=wire_order)
 
     def test_to_mat_identity(self):
         """Test that an identity matrix is return if wire_order is provided."""
@@ -442,6 +467,14 @@ class TestPauliSentence:
         """Test that the correct type of matrix is returned given the format kwarg."""
         sparse_mat = ps.to_mat(wire_order, format="csr")
         assert sparse.issparse(sparse_mat)
+        assert np.allclose(sparse_mat.toarray(), true_matrix)
+
+    @pytest.mark.parametrize("ps,wire_order,true_matrix", tup_ps_mat)
+    def test_to_mat_buffer(self, ps, wire_order, true_matrix):
+        """Test that the intermediate matrices are added correctly once the maximum buffer
+        size is reached."""
+        buffer_size = 2 ** len(wire_order) * 48  # Buffer size for 2 matrices
+        sparse_mat = ps.to_mat(wire_order, format="csr", buffer_size=buffer_size)
         assert np.allclose(sparse_mat.toarray(), true_matrix)
 
     def test_simplify(self):
@@ -492,7 +525,7 @@ class TestPauliSentence:
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qml.ops.Prod):
+                if isinstance(ps_summand.base, qml.ops.Prod):  # pylint: disable=no-member
                     for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
                         _compare_ops(pw_factor, op_factor)
                 else:

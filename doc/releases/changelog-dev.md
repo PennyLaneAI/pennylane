@@ -95,8 +95,9 @@ array([False, False])
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
+* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
