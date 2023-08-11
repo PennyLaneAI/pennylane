@@ -850,8 +850,6 @@ class QNode:
         self._tape = make_qscript(self.func, shots)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
-        print("tape in construct", self._tape.wires)
-
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
