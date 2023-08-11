@@ -1788,7 +1788,7 @@ class TestClassicalShadows:
 
 
 class TestDynamicType:
-    """Tests the compatibility with dynamic type classes such as `qml.Projector` or `qml.Pow`."""
+    """Tests the compatibility with dynamic type classes such as `qml.Projector`."""
 
     @pytest.mark.parametrize("n_wires", [1, 2, 3])
     @pytest.mark.parametrize("max_workers", [None, 1, 2])

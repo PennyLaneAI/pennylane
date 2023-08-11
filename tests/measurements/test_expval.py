@@ -149,25 +149,25 @@ class TestExpval:
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
+    @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
-    def test_projector_expval(self, shots, mocker):
-        """Tests that the expectation of a ``Projector`` object is computed correctly."""
+    def test_projector_expval(self, state, shots, mocker):
+        """Tests that the expectation of a ``Projector`` object is computed correctly for both of
+        its subclasses."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         np.random.seed(42)
-
-        basis_state = np.array([0, 0, 0])
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
-            return qml.expval(qml.Projector(basis_state, wires=range(3)))
+            return qml.expval(qml.Projector(state, wires=range(3)))
 
+        res = circuit()
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "expval")
 
         res = circuit()
         expected = [0.5, 0.5] if isinstance(shots, list) else 0.5
-
         assert np.allclose(res, expected, atol=0.02, rtol=0.02)
 
         custom_measurement_process(new_dev, spy)

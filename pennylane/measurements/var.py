@@ -104,8 +104,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, Projector) and len(self.obs.parameters[0]) == len(self.obs.wires):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied before the sampling

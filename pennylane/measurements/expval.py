@@ -104,8 +104,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, Projector) and len(self.obs.parameters[0]) == len(self.obs.wires):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
