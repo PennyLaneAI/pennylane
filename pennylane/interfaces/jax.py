@@ -440,12 +440,8 @@ def _execute_bwd(
     # pylint: disable=unused-variable
     # Copy a given tape with operations and set parameters
 
-    if isinstance(device, qml.devices.experimental.Device):
-        # cant test until we integrate device with shot vector
-        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        jvp_shots = None
-    else:
-        has_partitioned_shots = jvp_shots = device.shot_vector
+    # assumes all tapes have the same shot vector
+    has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     @jax.custom_jvp
     def execute_wrapper(params):
@@ -463,7 +459,6 @@ def _execute_bwd(
                 new_tapes,
                 tangents[0],
                 gradient_fn,
-                jvp_shots,
             )
             _kwargs = {
                 "reduction": "append",
