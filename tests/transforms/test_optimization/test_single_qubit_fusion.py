@@ -40,7 +40,7 @@ class TestSingleQubitFusion:
             qml.T(wires=0)
             qml.PauliX(wires=0)
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(qfunc)
 
         # Compare matrices
         matrix_expected = qml.matrix(qfunc, [0])()
@@ -55,7 +55,7 @@ class TestSingleQubitFusion:
             qml.RZ(0.1, wires=0)
             qml.Hadamard(wires=1)
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RZ", "Hadamard"]
@@ -71,7 +71,7 @@ class TestSingleQubitFusion:
             qml.RX(-0.2, wires=0)
             qml.RZ(-0.1, wires=0)
 
-        transformed_qfunc = single_qubit_fusion(atol=1e-7)(qfunc)
+        transformed_qfunc = single_qubit_fusion(qfunc, atol=1e-7)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
 
@@ -88,7 +88,7 @@ class TestSingleQubitFusion:
             qml.RZ(0.1, wires=0)
             qml.Hadamard(wires=0)
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Rot", "PauliRot", "Rot"]
@@ -114,7 +114,7 @@ class TestSingleQubitFusion:
             # Excluded gate after multiple others
             qml.RZ(0.2, wires=1)
 
-        transformed_qfunc = single_qubit_fusion(exclude_gates=["RZ"])(qfunc)
+        transformed_qfunc = single_qubit_fusion(qfunc, exclude_gates=["RZ"])
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RZ", "Rot", "RZ", "CNOT", "Hadamard", "RZ", "Rot", "RZ"]
@@ -142,7 +142,7 @@ class TestSingleQubitFusion:
             qml.S(wires="b")
             qml.PhaseShift(0.3, wires="b")
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Rot", "Rot", "CNOT", "Rot"]
@@ -176,7 +176,7 @@ def qfunc_all_ops(theta):
     return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
 
-transformed_qfunc_all_ops = single_qubit_fusion()(qfunc_all_ops)
+transformed_qfunc_all_ops = single_qubit_fusion(qfunc_all_ops)
 
 expected_op_list = ["Rot", "Rot", "CNOT", "CRY", "CRY", "Rot"]
 expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([1, 2]), Wires(1)]
