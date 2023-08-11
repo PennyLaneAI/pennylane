@@ -49,7 +49,9 @@ def state_diagonalizing_gates(
     flattened_state = (
         math.reshape(state, (state.shape[0], -1)) if is_state_batched else math.flatten(state)
     )
-    return measurementprocess.process_state(flattened_state, wires)
+    return measurementprocess.process_state(
+        flattened_state, wires, is_state_batched=is_state_batched
+    )
 
 
 def csr_dot_products(

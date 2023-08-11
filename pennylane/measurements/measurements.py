@@ -570,16 +570,17 @@ class StateMeasurement(MeasurementProcess):
     * state (Sequence[complex]): quantum state
     * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
         dimension :math:`2^n` acts on a subspace of :math:`n` wires
+    * is_state_batched (Optional[bool]): whether the state is batched or not
 
     **Example:**
 
     Let's create a measurement that returns the diagonal of the reduced density matrix.
 
     >>> class MyMeasurement(StateMeasurement):
-    ...     def process_state(self, state, wire_order):
+    ...     def process_state(self, state, wire_order, is_state_batched=False):
     ...         # use the already defined `qml.density_matrix` measurement to compute the
     ...         # reduced density matrix from the given state
-    ...         density_matrix = qml.density_matrix(wires=self.wires).process_state(state, wire_order)
+    ...         density_matrix = qml.density_matrix(wires=self.wires).process_state(state, wire_order, is_state_batched=is_state_batched)
     ...         return qml.math.diagonal(qml.math.real(density_matrix))
 
     We can now execute it in a QNode:
@@ -595,13 +596,16 @@ class StateMeasurement(MeasurementProcess):
     """
 
     @abstractmethod
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(
+        self, state: Sequence[complex], wire_order: Wires, is_state_batched: bool = False
+    ):
         """Process the given quantum state.
 
         Args:
             state (Sequence[complex]): quantum state
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
+            is_state_batched (Optional[bool]): whether the state is batched or not
         """
 
 

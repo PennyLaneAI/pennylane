@@ -98,7 +98,9 @@ class PurityMP(StateMeasurement):
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(
+        self, state: Sequence[complex], wire_order: Wires, is_state_batched: bool = False
+    ):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
         state = qml.math.dm_from_state_vector(state)

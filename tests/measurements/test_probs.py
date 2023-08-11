@@ -280,6 +280,19 @@ class TestProbs:
 
         custom_measurement_process(dev, spy)
 
+    @pytest.mark.tf
+    def test_process_state_tf_autograph(self):
+        """Test that process_state passes when decorated with tf.function."""
+        import tensorflow as tf
+
+        @tf.function
+        def probs_from_state(state, wires):
+            return qml.probs(wires=wires).process_state(state, wires)
+
+        wires = qml.wires.Wires([0])
+        state = qml.devices.qubit.create_initial_state(wires)
+        assert np.allclose(probs_from_state(state, wires), [1, 0])
+
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, mocker, shots):
         """Test the probability is correct for a batched input."""

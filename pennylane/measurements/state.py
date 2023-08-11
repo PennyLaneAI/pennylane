@@ -183,7 +183,9 @@ class StateMP(StateMeasurement):
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(
+        self, state: Sequence[complex], wire_order: Wires, is_state_batched: bool = False
+    ):
         if self.wires:
             # qml.density_matrix
             wire_map = dict(zip(wire_order, range(len(wire_order))))
