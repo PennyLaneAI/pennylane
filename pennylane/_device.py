@@ -672,7 +672,7 @@ class Device(abc.ABC):
         # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
 
-        if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
+        if any(isinstance(m, MidMeasureMP) for m in circuit.operations):
             circuit = (
                 qml.defer_measurements(circuit, dev_wires=self.wires)
                 if not self.capabilities().get("supports_mid_measure", False)
