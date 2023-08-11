@@ -24,12 +24,6 @@ from pennylane import numpy as np
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
 
 
-def _get_op_for_generator(generator, like_real):
-    mat = qml.matrix(generator)
-    real_mat = qml.math.convert_like(mat, like_real)
-    return qml.QubitUnitary(real_mat, generator.wires)
-
-
 def _reshape_real_imag(state, dim):
     state = qml.math.reshape(state, (dim,))
     return qml.math.real(state), qml.math.imag(state)
@@ -175,10 +169,9 @@ def _adjoint_metric_tensor_tape(tape):
 
     for j, outer_op in enumerate(trainable_operations):
         generator_1, prefactor_1 = qml.generator(outer_op)
-        generator_unitary = _get_op_for_generator(generator_1, like_real)
 
         # the state vector phi is missing a factor of 1j * prefactor_1
-        phi = qml.devices.qubit.apply_operation(generator_unitary, psi)
+        phi = qml.devices.qubit.apply_operation(generator_1, psi)
 
         phi_real, phi_imag = _reshape_real_imag(phi, dim)
         diag_value = prefactor_1**2 * (
@@ -208,9 +201,8 @@ def _adjoint_metric_tensor_tape(tape):
             inner_op = trainable_operations[i]
             # extract and apply G_i
             generator_2, prefactor_2 = qml.generator(inner_op)
-            generator_op = _get_op_for_generator(generator_2, lam)
             # this state vector is missing a factor of 1j * prefactor_2
-            mu = qml.devices.qubit.apply_operation(generator_op, lam)
+            mu = qml.devices.qubit.apply_operation(generator_2, lam)
 
             phi_real, phi_imag = _reshape_real_imag(phi, dim)
             mu_real, mu_imag = _reshape_real_imag(mu, dim)
