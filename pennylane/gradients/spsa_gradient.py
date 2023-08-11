@@ -574,21 +574,16 @@ def _spsa_grad_legacy(
         shifts = shifts[1:]
 
     if sampler_seed is not None:
+        msg = (
+            "The sampler_seed argument is deprecated. Use the sampler_rng argument "
+            "instead to pass a random number generator or a seed."
+        )
         if sampler_rng is None:
-            warnings.warn(
-                (
-                    "The sampler_seed argument is deprecated. Use the sampler_rng argument "
-                    "instead to pass a random number generator or a seed."
-                ),
-                UserWarning,
-            )
+            warnings.warn(msg, UserWarning)
             sampler_rng = sampler_seed
         else:
             raise ValueError(
-                (
-                    "Both arguments sampler_rng and sampler_seed were specified. "
-                    "Only specify one. Note that the sampler_seed argument is deprecated."
-                )
+                "Both sampler_rng and sampler_seed were specified. Only specify one.\n" + msg
             )
 
     sampler_rng = np.random.default_rng(sampler_rng)
