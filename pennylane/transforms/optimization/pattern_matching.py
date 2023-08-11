@@ -20,7 +20,11 @@ from collections import OrderedDict
 
 import numpy as np
 
+from typing import Sequence, Callable
+
 import pennylane as qml
+from pennylane.transforms.core import transform
+from pennylane.tape import QuantumTape
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumTape, QuantumScript
@@ -30,17 +34,23 @@ from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-statements
-@qfunc_transform
-def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quantum_cost=None):
+@transform
+def pattern_matching_optimization(
+    tape: QuantumTape, pattern_tapes, custom_quantum_cost=None
+) -> (Sequence[QuantumTape], Callable):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
-        qfunc (function): A quantum function to be optimized.
+        tape (QuantumTape): A quantum tape to be optimized.
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
     Returns:
-        function: the transformed quantum function
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     Raises:
         QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or
@@ -254,12 +264,15 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                 qscript = QuantumScript.from_queue(q_inside)
                 tape = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
 
-    for op in tape.operations:
-        qml.apply(op)
+    new_tape = QuantumTape(tape.operations, tape.measurements, shots=tape.shots)
 
-    # After optimization, simply apply the measurements
-    for m in measurements:
-        qml.apply(m)
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
 
 
 def pattern_matching(circuit_dag, pattern_dag):

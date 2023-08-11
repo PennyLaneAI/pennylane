@@ -43,6 +43,13 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     Args:
         tape (QuantumTape): a quantum tape
 
+    Returns:
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
+
     **Example**
 
     Suppose we would like to apply the following unitary operation:

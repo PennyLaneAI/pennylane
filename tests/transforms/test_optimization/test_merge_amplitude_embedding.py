@@ -33,7 +33,7 @@ class TestMergeAmplitudeEmbedding:
             qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
-            qml.state()
+            return qml.state()
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
