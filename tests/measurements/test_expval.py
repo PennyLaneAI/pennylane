@@ -162,7 +162,6 @@ class TestExpval:
             qml.Hadamard(0)
             return qml.expval(qml.Projector(state, wires=range(3)))
 
-        res = circuit()
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "expval")
 

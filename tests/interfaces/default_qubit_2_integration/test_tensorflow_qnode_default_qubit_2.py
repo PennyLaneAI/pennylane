@@ -902,7 +902,8 @@ class TestQubitIntegration:
         expected = [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_projector(self, dev, diff_method, grad_on_execution, tol, interface):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, dev, diff_method, grad_on_execution, tol, interface):
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
@@ -912,7 +913,7 @@ class TestQubitIntegration:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        P = tf.constant([1])
+        P = tf.constant(state)
 
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)
