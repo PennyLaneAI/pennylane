@@ -54,7 +54,7 @@ class TestInheritanceMixins:
             num_params = 1
 
         base = CustomOp(1.234, wires=0)
-        op = qml.adjoint(base)
+        op = Adjoint(base)
 
         assert isinstance(op, Adjoint)
         assert isinstance(op, qml.operation.Operator)
@@ -65,6 +65,31 @@ class TestInheritanceMixins:
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
+
+    def test_observable(self):
+        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
+
+        # pylint: disable=too-few-public-methods
+        class CustomObs(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+
+        base = CustomObs(wires=0)
+        ob = Adjoint(base)
+
+        assert isinstance(ob, Adjoint)
+        assert isinstance(ob, qml.operation.Operator)
+        assert not isinstance(ob, qml.operation.Operation)
+        assert isinstance(ob, qml.operation.Observable)
+        assert not isinstance(ob, AdjointOperation)
+
+        # Check some basic observable functionality
+        assert ob.compare(ob)
+        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
+
+        # check the dir
+        assert "return_type" in dir(ob)
+        assert "grad_recipe" not in dir(ob)
 
 
 class TestInitialization:
@@ -422,21 +447,21 @@ class TestAdjointOperation:
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
         base = qml.RX(0.5, 0)
-        op = qml.adjoint(base)
+        op = Adjoint(base)
 
         assert op.has_generator is True
 
     def test_has_generator_false(self):
         """Test `has_generator` property carries over when base op does not define a generator."""
         base = qml.PauliX(0)
-        op = qml.adjoint(base)
+        op = Adjoint(base)
 
         assert op.has_generator is False
 
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
-        op = qml.adjoint(base)
+        op = Adjoint(base)
 
         assert base.generator().compare(-1.0 * op.generator())
 
@@ -444,12 +469,12 @@ class TestAdjointOperation:
         """Test that an adjointed non-Operation raises a GeneratorUndefinedError."""
 
         with pytest.raises(qml.operation.GeneratorUndefinedError):
-            qml.adjoint(1.0 * qml.PauliX(0)).generator()
+            Adjoint(1.0 * qml.PauliX(0)).generator()
 
     def test_single_qubit_rot_angles(self):
         param = 1.234
         base = qml.RX(param, wires=0)
-        op = qml.adjoint(base)
+        op = Adjoint(base)
 
         base_angles = base.single_qubit_rot_angles()
         angles = op.single_qubit_rot_angles()
@@ -467,12 +492,12 @@ class TestAdjointOperation:
         ),
     )
     def test_basis_property(self, base, basis):
-        op = qml.adjoint(base)
+        op = Adjoint(base)
         assert op.basis == basis
 
     def test_control_wires(self):
         """Test the control_wires of an adjoint are the same as the base op."""
-        op = qml.adjoint(qml.CNOT(wires=("a", "b")))
+        op = Adjoint(qml.CNOT(wires=("a", "b")))
         assert op.control_wires == qml.wires.Wires("a")
 
 
@@ -482,21 +507,21 @@ class TestAdjointOperationDiffInfo:
     def test_grad_method_None(self):
         """Test grad_method copies base grad_method when it is None."""
         base = qml.PauliX(0)
-        op = qml.adjoint(base)
+        op = Adjoint(base)
 
         assert op.grad_method is None
 
     @pytest.mark.parametrize("op", (qml.RX(1.2, wires=0),))
     def test_grad_method_not_None(self, op):
         """Make sure the grad_method property of a Adjoint op is the same as the base op."""
-        assert qml.adjoint(op).grad_method == op.grad_method
+        assert Adjoint(op).grad_method == op.grad_method
 
     @pytest.mark.parametrize(
         "base", (qml.PauliX(0), qml.RX(1.234, wires=0), qml.Rotation(1.234, wires=0))
     )
     def test_grad_recipe(self, base):
         """Test that the grad_recipe of the Adjoint is the same as the grad_recipe of the base."""
-        assert qml.adjoint(base).grad_recipe == base.grad_recipe
+        assert Adjoint(base).grad_recipe == base.grad_recipe
 
     @pytest.mark.parametrize(
         "base",
@@ -504,7 +529,7 @@ class TestAdjointOperationDiffInfo:
     )
     def test_parameter_frequencies(self, base):
         """Test that the parameter frequencies of an Adjoint are the same as those of the base."""
-        assert qml.adjoint(base).parameter_frequencies == base.parameter_frequencies
+        assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
 
 
 class TestQueueing:
@@ -517,7 +542,7 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             _ = Adjoint(base)
 
-        assert qml.queuing.WrappedObj(base) not in q
+        assert base not in q
         assert len(q) == 1
 
     def test_queuing_base_defined_outside(self):
@@ -736,7 +761,7 @@ class TestIntegration:
     def test_gradient_adj_rx(self, diff_method):
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
-            qml.adjoint(qml.RX(x, wires=0))
+            Adjoint(qml.RX(x, wires=0))
             return qml.expval(qml.PauliY(0))
 
         x = np.array(1.2345, requires_grad=True)
@@ -756,7 +781,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.adjoint(qml.RX(x, wires=0))
+            Adjoint(qml.RX(x, wires=0))
             return qml.expval(qml.PauliY(0))
 
         x = qml.numpy.array([1.234, 2.34, 3.456])
@@ -990,6 +1015,16 @@ class TestAdjointConstructorOutsideofQueuing:
         assert isinstance(out, qml.RX)
         assert out.data == (-x,)
 
+    def test_observable(self):
+        """Test providing a preconstructed Observable outside of a queuing context."""
+
+        base = 1.0 * qml.PauliX(0)
+        obs = adjoint(base)
+
+        assert isinstance(obs, Adjoint)
+        assert isinstance(obs, qml.operation.Observable)
+        assert obs.base is base
+
     def test_single_op_function(self):
         """Test the transform on a single op as a callable outside of a queuing context."""
         x = 1.234
@@ -1067,7 +1102,7 @@ class TestAdjointConstructorIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
-            qml.adjoint(qml.RX)(x, wires=0)
+            adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
         x = jax.numpy.array(0.234)
