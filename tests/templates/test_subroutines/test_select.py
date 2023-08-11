@@ -21,7 +21,7 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
-class TestDecomposition:
+class TestSelect:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
@@ -137,6 +137,74 @@ class TestDecomposition:
 
         assert [op.name for op in select_ops] == [op.name for op in expected_gates]
         assert [op.wires for op in select_ops] == [op.wires for op in expected_gates]
+
+    @pytest.mark.parametrize(
+        ("ops", "control_wires", "expected_gates"),
+        [
+            (
+                [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+                [1],
+                [
+                    qml.ctrl(qml.PauliX(wires=0), control=1, control_values=0),
+                    qml.ctrl(qml.PauliY(wires=0), control=1),
+                ],
+            ),
+            (
+                [qml.RX(0.5, wires=0), qml.RY(0.7, wires=1)],
+                [2],
+                [
+                    qml.ctrl(qml.RX(0.5, wires=0), control=2, control_values=0),
+                    qml.ctrl(qml.RY(0.7, wires=1), control=2),
+                ],
+            ),
+            (
+                [
+                    qml.RX(0.5, wires=0),
+                    qml.RY(0.7, wires=1),
+                    qml.RZ(0.3, wires=1),
+                    qml.PauliX(wires=2),
+                ],
+                [3, 4],
+                [
+                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
+                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
+                    qml.ctrl(qml.RZ(0.3, wires=1), control=[3, 4], control_values=[1, 0]),
+                    qml.ctrl(qml.PauliX(wires=2), control=[3, 4], control_values=[1, 1]),
+                ],
+            ),
+        ],
+    )
+    def test_decomposition(self, ops, control_wires, expected_gates):
+        """Unit test checking that compute_decomposition and decomposition work as expected."""
+        op = qml.Select(ops, control_wires=control_wires)
+        select_decomposition = op.decomposition()
+        select_compute_decomposition = op.compute_decomposition(ops, control_wires)
+
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(select_decomposition, expected_gates))
+        assert all(
+            qml.equal(op1, op2) for op1, op2 in zip(select_compute_decomposition, expected_gates)
+        )
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Test that the _flatten and _unflatten functions work as expected."""
+        ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
+        op = qml.Select(ops, control_wires=[0, 1])
+        data, metadata = op._flatten()
+
+        assert hash(metadata)
+
+        assert len(data) == len(ops)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(data, ops))
+
+        assert metadata == op.control_wires
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
+        assert op.wires == new_op.wires
+        assert op.control_wires == op.control_wires
+        assert op.target_wires == op.target_wires
+        assert op is not new_op
 
 
 class TestErrorMessages:

@@ -59,15 +59,17 @@ class Select(Operation):
     num_wires = qml.operation.AnyWires
 
     def _flatten(self):
-        return tuple(self.ops), tuple()
+        return (self.ops), (self.control_wires)
 
     @classmethod
-    def _unflatten(cls, data, _) -> "Select":
-        return cls(*data)
+    def _unflatten(cls, data, metadata) -> "Select":
+        return cls(data, metadata)
 
     def __init__(self, ops, control_wires, id=None):
-        self.ops = ops
         control_wires = qml.wires.Wires(control_wires)
+        self.hyperparameters["ops"] = ops
+        self.hyperparameters["control_wires"] = control_wires
+
         if 2 ** len(control_wires) < len(ops):
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "
@@ -84,13 +86,49 @@ class Select(Operation):
         for op in ops:
             qml.QueuingManager.remove(op)
 
-        all_wires = qml.wires.Wires.all_wires([op.wires for op in ops]) + control_wires
-        super().__init__(ops, control_wires, wires=all_wires, id=id)
+        target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
+        self.hyperparameters["target_wires"] = target_wires
+
+        all_wires = target_wires + control_wires
+        super().__init__(ops, wires=all_wires, id=id)
+
+    def decomposition(self):
+        r"""Representation of the operator as a product of other operators.
+
+        .. math:: O = O_1 O_2 \dots O_n
+
+        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
+        return self.compute_decomposition(self.ops, control_wires=self.control_wires)
 
     @staticmethod
     def compute_decomposition(
-        ops, control_wires, wires=None
+        ops,
+        control_wires,
     ):  # pylint: disable=arguments-differ, unused-argument
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            ops (list[Operator]): operations to apply
+            control_wires (Sequence[int]): the wires controlling which operation is applied
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
         states = [
             [int(i) for i in list(bitstring)]
             for bitstring in [
@@ -102,3 +140,23 @@ class Select(Operation):
             for index, op in enumerate(ops)
         ]
         return decomp_ops
+
+    @property
+    def ops(self):
+        """Operations to be applied."""
+        return self.hyperparameters["ops"]
+
+    @property
+    def control_wires(self):
+        """The control wires."""
+        return self.hyperparameters["control_wires"]
+
+    @property
+    def target_wires(self):
+        """The wires of the input operators."""
+        return self.hyperparameters["target_wires"]
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.hyperparameters["control_wires"] + self.hyperparameters["target_wires"]
