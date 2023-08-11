@@ -430,7 +430,7 @@ class Projector(Observable):
     def __reduce__(self):
         """Defines how to pickle and unpickle a :class:`~.Projector`. Circumbents the pickling
         issues caused by its dynamic type:
-        >>> qml.Projector([1], wires=[0]) is qml.Projector
+        >>> type(qml.Projector([1], wires=[0])) is qml.Projector
         False
         >>> isinstance(qml.Projector([1], wires=[0]), qml.Projector)
         True
