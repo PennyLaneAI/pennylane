@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module defines formatting rules for the PennyLane loggers."""
-from .formatter import Formatter
+from .formatter import DefaultFormatter
+from .formatter import SimpleFormatter
