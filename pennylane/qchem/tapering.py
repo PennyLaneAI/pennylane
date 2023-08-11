@@ -299,7 +299,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
         ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
 
-    wireset = ps_u.wires.union(ps_h.wires)
+    wireset = ps_u.wires + ps_h.wires
     wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
