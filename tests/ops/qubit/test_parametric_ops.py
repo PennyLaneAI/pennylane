@@ -154,7 +154,6 @@ class TestOperations:
     @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_jax_pytrees(self, op):
-
         import jax
 
         leaves = jax.tree_util.tree_leaves(op)

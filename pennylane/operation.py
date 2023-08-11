@@ -675,7 +675,7 @@ class Operator(abc.ABC):
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
 
     def __copy__(self):

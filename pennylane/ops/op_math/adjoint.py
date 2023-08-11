@@ -361,5 +361,6 @@ class AdjointObs(Adjoint, Observable):
     """A child of :class:`~.Adjoint` that also inherits from :class:`~.Observable`."""
 
 
+# pylint: disable=too-many-ancestors
 class AdjointOpObs(AdjointOperation, Observable):
     """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
