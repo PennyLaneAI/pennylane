@@ -69,6 +69,52 @@ class TestQNode:
 
         _ = qnode()
 
+    def test_no_new_wires_without_reuse(self):
+        """Test that new wires are not added if a measured wire is not reused."""
+        dev = qml.device("default.qubit", wires=3)
+
+        # Quantum teleportation
+        @qml.qnode(dev)
+        def qnode1(phi):
+            qml.RX(phi, 0)
+            qml.Hadamard(1)
+            qml.CNOT([1, 2])
+            qml.CNOT([0, 1])
+            qml.Hadamard(0)
+
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliZ)(2)
+            m1 = qml.measure(1)
+            qml.cond(m1, qml.PauliX)(2)
+            return qml.expval(qml.PauliZ(2))
+
+        # Prepare wire 0 in arbitrary state
+        @qml.qnode(dev)
+        def qnode2(phi):
+            qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Outputs should match
+        assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
+
+        assert isinstance(qnode1.qtape.operations[5], qml.ops.Controlled)
+        assert qml.equal(qnode1.qtape.operations[5].base, qml.PauliZ(2))
+        assert qnode1.qtape.operations[5].hyperparameters["control_wires"] == qml.wires.Wires(0)
+
+        assert qml.equal(qnode1.qtape.operations[6], qml.CNOT([1, 2]))
+
+    def test_new_wires_after_reuse(self):
+        """Test that a new wire is added for every measurement after which
+        the wire is reused."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def qnode1(phi, theta):
+            qml.RX(phi, 0)
+            qml.measure(0, reset=True)  # Reused measurement
+            qml.CNOT([0, 1])
+            return
+
     def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
         after a mid-circuit measurement yields the correct results and is
