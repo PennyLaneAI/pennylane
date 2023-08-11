@@ -304,7 +304,9 @@ def spsa_grad(
         shifts = shifts[1:]
 
     if not isinstance(sampler_rng, (int, np.random.Generator, type(None))):
-        raise ValueError(f"The argument sampler_rng is expected to be a NumPy PRNG, an integer or None, but is {sampler_rng}.")
+        raise ValueError(
+            f"The argument sampler_rng is expected to be a NumPy PRNG, an integer or None, but is {sampler_rng}."
+        )
 
     if sampler_seed is not None:
         msg = (
@@ -315,7 +317,9 @@ def spsa_grad(
             warnings.warn(msg, UserWarning)
             sampler_rng = sampler_seed
         else:
-            raise ValueError("Both sampler_rng and sampler_seed were specified. Only specify one.\n" + msg)
+            raise ValueError(
+                "Both sampler_rng and sampler_seed were specified. Only specify one.\n" + msg
+            )
 
     sampler_rng = np.random.default_rng(sampler_rng)
 

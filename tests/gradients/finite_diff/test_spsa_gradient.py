@@ -108,8 +108,10 @@ class TestRademacherSampler:
 
 class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
+
     def test_sampler_argument(self):
         """Make sure that custom samplers can be created as defined in the docs of spsa_grad."""
+
         def sampler_required_kwarg(indices, num_params, *args, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
@@ -121,14 +123,14 @@ class TestSpsaGradient:
             return direction
 
         def sampler_required_arg(indices, num_params, foo, idx_rep, rng, /):
-            '''This should fail since spsa_grad passes rng as a kwarg.'''
+            """This should fail since spsa_grad passes rng as a kwarg."""
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
-        tape = qml.tape.QuantumTape([qml.RX(.5, wires=0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumTape([qml.RX(0.5, wires=0)], [qml.expval(qml.PauliZ(0))])
 
         results = []
         for sampler in [sampler_required_arg_or_kwarg, sampler_required_kwarg]:
@@ -140,14 +142,13 @@ class TestSpsaGradient:
             res = qml.execute(tapes, dev)
             results.append(proc_fn(res))
 
-        assert np.isclose(results[0], results[1], atol=.1)
+        assert np.isclose(results[0], results[1], atol=0.1)
 
         err = "got some positional-only arguments passed as keyword arguments: 'rng'"
         with pytest.raises(TypeError, match=err):
             tapes, proc_fn = spsa_grad(
                 tape, sampler=sampler_required_arg, num_directions=100, sampler_rng=sampler_rng
             )
-
 
     def test_sampler_seed_deprecation(self):
         """
