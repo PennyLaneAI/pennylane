@@ -58,7 +58,7 @@ array([False, False])
   ```
 
   The currently supported objects are RCISD, UCISD, RCCSD, and UCCSD which correspond to 
-  restricted (R) and unrestricted (U) configuration interaction (CI )and coupled cluster (CC) 
+  restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
   calculations with single and double (SD) excitations.
 
 <h3>Improvements 🛠</h3>
@@ -258,7 +258,7 @@ array([False, False])
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
 * `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation
-  for the function and its private helper functions. [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4461)
+  for the function and its private helper functions. [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
 
 <h3>Bug fixes 🐛</h3>
 
