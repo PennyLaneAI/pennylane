@@ -898,7 +898,7 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
         ]
-        if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
+        if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
