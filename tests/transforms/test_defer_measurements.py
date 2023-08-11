@@ -106,14 +106,38 @@ class TestQNode:
     def test_new_wires_after_reuse(self):
         """Test that a new wire is added for every measurement after which
         the wire is reused."""
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def qnode1(phi, theta):
             qml.RX(phi, 0)
-            qml.measure(0, reset=True)  # Reused measurement
-            qml.CNOT([0, 1])
-            return
+            m0 = qml.measure(0, reset=True)  # Reused measurement, one new wire added
+            qml.cond(m0, qml.Hadamard)(1)
+            m1 = qml.measure(1)  # No reuse
+            qml.RY(theta, 2)
+            qml.cond(m1, qml.RY)(-theta, 2)
+            return qml.expval(qml.PauliZ(2))
+
+        res1 = qnode1(np.pi / 4, 3 * np.pi / 4)
+
+        assert len(qnode1.qtape.wires) == 4
+        assert len(qnode1.qtape.operations) == 6
+
+        @qml.qnode(dev)
+        def qnode2(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)  # No reuse
+            qml.cond(m0, qml.Hadamard)(1)
+            m1 = qml.measure(1)  # No reuse
+            qml.RY(theta, 2)
+            qml.cond(m1, qml.RY)(-theta, 2)
+            return qml.expval(qml.PauliZ(2))
+
+        res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
+        assert np.allclose(res1, res2)
+
+        assert len(qnode2.qtape.wires) == 3
+        assert len(qnode2.qtape.operations) == 4
 
     def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
