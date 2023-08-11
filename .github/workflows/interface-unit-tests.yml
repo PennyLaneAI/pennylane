@@ -10,7 +10,7 @@ on:
         description: The version of JAX to install for any job that requires JAX
         required: false
         type: string
-        default: 0.4.13
+        default: 0.4.14
       tensorflow_version:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.8'
+          - '3.9'
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -53,7 +53,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.8'
           - '3.9'
           - '3.10'
           - '3.11'
@@ -78,7 +77,7 @@ jobs:
           - '1'
           - '2'
         python-version:
-          - '3.8'
+          - '3.9'
           - '3.10'
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -105,7 +104,7 @@ jobs:
           - '1'
           - '2'
         python-version:
-          - '3.8'
+          - '3.9'
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -131,7 +130,6 @@ jobs:
           - '1'
           - '2'
         python-version:
-          - '3.8'
           - '3.9'
           - '3.10'
           - '3.11'
@@ -157,7 +155,7 @@ jobs:
       job_name: all-interfaces-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
-      python_version: 3.8
+      python_version: 3.9
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -192,7 +190,7 @@ jobs:
       job_name: qcut-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
-      python_version: 3.8
+      python_version: 3.9
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -228,7 +226,7 @@ jobs:
       job_name: legacy-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: legacy-coverage
-      python_version: 3.8
+      python_version: 3.9
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -252,7 +250,7 @@ jobs:
       job_name: gradients-tests (${{ matrix.config.suite }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
-      python_version: 3.8
+      python_version: 3.9
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -300,7 +298,7 @@ jobs:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
-      python_version: 3.8
+      python_version: 3.9
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
