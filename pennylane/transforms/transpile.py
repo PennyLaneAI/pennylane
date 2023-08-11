@@ -1,23 +1,25 @@
 """
 Contains the transpiler transform.
 """
-from typing import List, Union
+from typing import List, Union, Sequence, Callable
 
 import networkx as nx
 
 import pennylane as qml
-from pennylane import Hamiltonian, apply
+from pennylane.transforms.core import transform
+from pennylane import Hamiltonian
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
 
 
-@qfunc_transform
-def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
+@transform
+def transpile(
+    tape: QuantumTape, coupling_map: Union[List, nx.Graph]
+) -> (Sequence[QuantumTape], Callable):
     """Transpile a circuit according to a desired coupling map
 
     .. warning::
@@ -26,12 +28,16 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
         is passed which contains these types of measurements, a ``NotImplementedError`` will be raised.
 
     Args:
-        tape (function): A quantum function.
+        tape (QuantumTape): A quantum tape.
         coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
             `networkx.Graph` specifying the couplings between different qubits.
 
     Returns:
-        function: the transformed quantum function
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -161,9 +167,16 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             # adjust qubit indices in remaining ops + measurements to new mapping
             list_op_copy = [_adjust_op_indices(op, map_wires) for op in list_op_copy]
             measurements = [_adjust_mmt_indices(m, map_wires) for m in measurements]
+    new_tape = QuantumTape(gates, measurements, shots=tape.shots)
+    new_tape._qfunc_output = tuple(measurements)
 
-    for op in gates + measurements:
-        apply(op)
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
 
 
 def _adjust_op_indices(_op, _map_wires):

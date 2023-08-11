@@ -262,6 +262,7 @@ def pattern_matching_optimization(
                 tape = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
 
     new_tape = QuantumTape(tape.operations, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
