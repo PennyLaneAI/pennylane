@@ -401,7 +401,7 @@ class TestTransformDispatcher:
 
         @partial(dispatched_transform, index=0)
         @qml.qnode(dev)
-        def qnode1(a):
+        def qnode1():
             """QNode circuit."""
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0))
@@ -413,7 +413,7 @@ class TestTransformDispatcher:
         )
 
         @qml.qnode(dev)
-        def qnode2(a):
+        def qnode2():
             """QNode circuit."""
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
