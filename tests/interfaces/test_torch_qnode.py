@@ -1194,7 +1194,8 @@ class TestQubitIntegration:
         )
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, interface, dev_name, diff_method, grad_on_execution, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
@@ -1205,7 +1206,7 @@ class TestQubitIntegration:
             pytest.skip("Hadamard does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
-        P = torch.tensor([1], requires_grad=False)
+        P = torch.tensor(state, requires_grad=False)
 
         x, y = 0.765, -0.654
         weights = torch.tensor([x, y], requires_grad=True, dtype=torch.float64)

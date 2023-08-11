@@ -1200,7 +1200,8 @@ class TestQubitIntegration:
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, interface, dev_name, diff_method, mode, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, interface, dev_name, diff_method, mode, tol):
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
@@ -1209,7 +1210,7 @@ class TestQubitIntegration:
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
-        P = np.array([1], requires_grad=False)
+        P = np.array(state, requires_grad=False)
         x, y = np.array([0.765, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
