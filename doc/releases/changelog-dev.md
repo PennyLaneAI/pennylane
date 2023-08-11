@@ -108,8 +108,9 @@ array([False, False])
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
+* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
@@ -157,6 +158,9 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
@@ -185,6 +189,9 @@ array([False, False])
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 <h3>Breaking changes 💔</h3>
+
+* Support for Python 3.8 is dropped.
+  [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
 
 * `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
   their IDs.
@@ -227,6 +234,9 @@ array([False, False])
 * The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
+* The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
+  [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
@@ -258,9 +268,10 @@ array([False, False])
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
-* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
-  changes to operator equality and hashing.
+* The `__eq__` and `__hash__` dunder methods of `Operator` and `MeasurementProcess` will now raise
+  warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+  [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
 <h3>Documentation 📝</h3>
 
@@ -338,6 +349,7 @@ array([False, False])
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Isaac De Vlugt,
 Stepan Fomichev,
 Lillian M. A. Frederiksen,
