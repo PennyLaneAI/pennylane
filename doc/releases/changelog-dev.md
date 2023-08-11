@@ -248,9 +248,10 @@ array([False, False])
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
-* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
-  changes to operator equality and hashing.
+* The `__eq__` and `__hash__` dunder methods of `Operator` and `MeasurementProcess` will now raise
+  warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+  [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
 <h3>Documentation 📝</h3>
 
