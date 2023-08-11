@@ -132,14 +132,9 @@ def defer_measurements(tape: QuantumTape):
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            measured_wires.add(op.wires[0])
-            if op.reset:
+            if op.wires[0] in measured_wires or op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
-
-        elif op.__class__.__name__ == "Conditional":
-            reused_measurement_wires = reused_measurement_wires.union(
-                measured_wires.intersection(op.then_op.wires.toset())
-            )
+            measured_wires.add(op.wires[0])
 
         else:
             reused_measurement_wires = reused_measurement_wires.union(
@@ -148,14 +143,14 @@ def defer_measurements(tape: QuantumTape):
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
-    new_wires = {}
+    control_wires = {}
     cur_wire = max(tape.wires) + 1
 
     for op in tape:
         if isinstance(op, MidMeasureMP):
             # Only store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires:
-                new_wires[op.id] = cur_wire
+                control_wires[op.id] = cur_wire
 
                 qml.CNOT([op.wires[0], cur_wire])
                 if op.reset:
@@ -163,10 +158,10 @@ def defer_measurements(tape: QuantumTape):
 
                 cur_wire += 1
             else:
-                new_wires[op.id] = op.wires[0]
+                control_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            _add_control_gate(op, new_wires)
+            _add_control_gate(op, control_wires)
         else:
             apply(op)
 
