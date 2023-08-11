@@ -32,7 +32,7 @@ for pkg in toml_libs:
 # Define absolute path to this file in source tree
 _path = os.path.dirname(__file__)
 
-# Define a more verbose mode for the messages. Not currently controlled by internal log configurations.
+# Define a more verbose log-level. Not currently controlled by internal log configurations.
 TRACE = logging.DEBUG // 2
 
 
@@ -56,7 +56,7 @@ def _add_trace_level():
 def _configure_logging(config_file):
     """
     This method allows custom logging configuration throughout PennyLane.
-    All configurations are read through config_file `toml` files.
+    All configurations are read through the ``log_config.toml`` file.
     """
     if not has_toml:
         raise ImportError(
@@ -73,8 +73,12 @@ def _configure_logging(config_file):
 
 def enable_logging():
     """
-    This method allows top selectively enable logging throughout PennyLane.
-    All configurations are read through the ``log_config.toml`` file.
+    This method allows to selectively enable logging throughout PennyLane, following the configuration options defined in the ``log_config.toml`` file.
+
+    Enabling logging through this method will override any externally defined logging configurations.
+
+    **Example**
+    >>> qml.logging.enable_logging()
     """
     _add_trace_level()
     _configure_logging("log_config.toml")
@@ -82,7 +86,15 @@ def enable_logging():
 
 def config_path():
     """
-    This method returns the full absolute path to the configuration file.
+    This method returns the full absolute path to the the ``log_config.toml`` configuration file.
+
+    Returns:
+        str: System path to the ``log_config.toml`` file.
+
+    **Example**
+
+    >>> config_path()
+    /home/user/pyenv/lib/python3.10/site-packages/pennylane/logging/log_config.toml
     """
     path = os.path.join(_path, "log_config.toml")
     return path
