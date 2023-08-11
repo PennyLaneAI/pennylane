@@ -151,6 +151,20 @@ class TestOperations:
         new_op = type(op)._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
+    def test_jax_pytrees(self, op):
+
+        import jax
+
+        leaves = jax.tree_util.tree_leaves(op)
+        for d1, d2 in zip(leaves, op.data):
+            assert d1 is d2
+
+        new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
+        for d1, d2 in zip(new_op.data, op.data):
+            assert qml.math.allclose(d1, d2 + 1.0)
+
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()

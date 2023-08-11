@@ -71,6 +71,17 @@ class TestSimplifyOperators:
         with pytest.raises(ValueError, match="Cannot simplify the object"):
             qml.simplify("unsupported type")
 
+    @pytest.mark.jax
+    def test_jit_simplification(self):
+        """Test that simplification can be jitted."""
+
+        import jax
+
+        sum_op = qml.sum(qml.PauliX(0), qml.PauliX(0))
+        simplified_op = jax.jit(qml.simplify)(sum_op)
+
+        assert qml.equal(simplified_op, qml.s_prod(2.0, qml.PauliX(0)))
+
 
 class TestSimplifyTapes:
     """Tests for the qml.simplify method used with tapes."""

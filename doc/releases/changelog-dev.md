@@ -63,6 +63,17 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
+  This unlocks the ability to jit functions of `Operator`.
+  [(#4458)](https://github.com/PennyLaneAI/pennylane/pull/4458/)
+
+  >>> op = qml.adjoint(qml.RX(1.0, wires=0))
+  >>> jax.jit(qml.matrix)(op)
+  Array([[0.87758255-0.j        , 0.        +0.47942555j],
+       [0.        +0.47942555j, 0.87758255-0.j        ]],      dtype=complex64, weak_type=True)
+  >>> jax.tree_util.tree_map(lambda x: x+1, op)
+  Adjoint(RX(2.0, wires=[0]))
+
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)

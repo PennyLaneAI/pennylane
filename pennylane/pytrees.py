@@ -23,12 +23,6 @@ try:
 except ImportError:
     has_jax = False
 
-has_torch = True
-try:
-    from torch.utils._pytree import _register_pytree_node as torch_register_pytree
-except ImportError:
-    has_torch = False
-
 Leaves = Any
 Metadata = Any
 
@@ -46,8 +40,7 @@ def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatte
 def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn):
     """Register a type with all available pytree backends.
 
-    Current backends are jax and torch.
-
+    Current backends is jax.
     Args:
         pytree_type (type): the type to register, such as ``qml.RX``
         flatten_fn (Callable): a function that splits an object into trainable leaves and hashable metadata.
@@ -63,6 +56,3 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
 
     if has_jax:
         _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
-
-    if has_torch:
-        torch_register_pytree(pytree_type, flatten_fn, unflatten_fn)
