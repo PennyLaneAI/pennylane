@@ -88,8 +88,9 @@ array([False, False])
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
+* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
@@ -136,6 +137,9 @@ array([False, False])
 
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+
+* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
@@ -322,10 +326,14 @@ array([False, False])
   and `var` measurements.
   [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
+* Subtracting a `Prod` from another operator now works as expected.
+  [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Isaac De Vlugt,
 Stepan Fomichev,
 Lillian M. A. Frederiksen,
