@@ -17,7 +17,7 @@ This module contains styles for using matplotlib graphics.
 To add a new style:
 * create a private function that modifies ``plt.rcParams``.
 * add an entry to the private dictionary ``_style_map``.
-* Add an entry to ``doc/code/qml.drawer.rst``
+* Add an entry to ``doc/code/qml_drawer.rst``
 * Add a test in ``tests/drawer/test_style.py``
 
 Use the decorator ``_needs_mpl`` on style functions to raise appropriate
