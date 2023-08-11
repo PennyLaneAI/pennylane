@@ -218,6 +218,7 @@ def use_style(style: str):
     * ``'black_white'``
     * ``'black_white_dark'``
     * ``'sketch'``
+    * ``'pennylane'``
     * ``'sketch_dark'``
     * ``'solarized_light'``
     * ``'solarized_dark'``
