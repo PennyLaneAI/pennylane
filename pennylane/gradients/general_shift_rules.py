@@ -414,9 +414,7 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
     prep = all_ops[: len(tape._prep)]
     ops = all_ops[len(tape._prep) : len(tape.operations)]
     meas = all_ops[len(tape.operations) :]
-    shifted_tape = QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
-
-    return shifted_tape
+    return QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
 
 
 def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=False):
