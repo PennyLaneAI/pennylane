@@ -28,6 +28,7 @@ errors if ``matplotlib`` is not installed.
 _has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
+    import matplotlib.font_manager as fm
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
@@ -146,20 +147,8 @@ def _pennylane():
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
-    plt.rcParams["font.sans-serif"] = [
-        "Quicksand",
-        "DejaVu Sans",
-        "Bitstream Vera Sans",
-        "Computer Modern Sans Serif",
-        "Lucida Grande",
-        "Verdana",
-        "Geneva",
-        "Lucid",
-        "Arial",
-        "Helvetica",
-        "Avant Garde",
-        "sans-serif",
-    ]
+    if "Quicksand" in fm.get_font_names():
+        plt.rcParams["font.family"] = "Quicksand"
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 250, 1)
 
