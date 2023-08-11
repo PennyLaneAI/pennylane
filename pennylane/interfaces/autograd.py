@@ -411,15 +411,9 @@ def vjp(
             return cached_jac["jacobian"]
 
         jacs = []
-        if isinstance(device, qml.devices.experimental.Device):
-            shot_vector = (
-                tapes[0].shots.shot_vector if tapes[0].shots.has_partitioned_shots else None
-            )
-        else:
-            shot_vector = device.shot_vector
 
         def partial_gradient_fn(tape):
-            return gradient_fn(tape, shots=shot_vector, **gradient_kwargs)
+            return gradient_fn(tape, **gradient_kwargs)
 
         g_tapes, fn = qml.transforms.map_batch_transform(partial_gradient_fn, tapes)
         unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
@@ -438,12 +432,8 @@ def vjp(
         dy = dy[0]
 
         computing_jacobian = _n == max_diff
-        if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
-            # assumes all tapes have the same shot vector
-            has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-            vjp_shots = None
-        else:
-            has_partitioned_shots = vjp_shots = device.shot_vector
+        # assumes all tapes have the same shot vector
+        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -467,7 +457,6 @@ def vjp(
                         unwrapped_tapes,
                         dy,
                         gradient_fn,
-                        shots=vjp_shots,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -479,7 +468,6 @@ def vjp(
                         tapes,
                         dy,
                         gradient_fn,
-                        shots=vjp_shots,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
