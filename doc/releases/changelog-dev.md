@@ -331,6 +331,8 @@ array([False, False])
 * Subtracting a `Prod` from another operator now works as expected.
   [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
 
+* `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
