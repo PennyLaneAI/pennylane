@@ -175,8 +175,8 @@ def compile(
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
-            for transform in pipeline:
-                tapes, _ = transform(expanded_tape)
+            for transf in pipeline:
+                tapes, _ = transf(expanded_tape)
                 expanded_tape = tapes[0]
 
     new_tape = QuantumTape(
