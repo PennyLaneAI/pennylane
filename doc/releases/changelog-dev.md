@@ -174,6 +174,9 @@ array([False, False])
 
 <h3>Breaking changes 💔</h3>
 
+* Support for Python 3.8 is dropped.
+  [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
+
 * `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
   their IDs.
   [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
