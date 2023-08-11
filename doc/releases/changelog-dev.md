@@ -264,7 +264,7 @@ array([False, False])
   def circuit():
       ...
   ```
-  []()
+  [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
 <h3>Documentation 📝</h3>
 
