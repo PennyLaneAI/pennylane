@@ -52,7 +52,7 @@ class TestTranspile:
 
         # build circuit
         original_qfunc = build_qfunc_pauli_z([0, 1, 2])
-        transpiled_qfunc = transpile(coupling_map=[(0, 1)])(original_qfunc)
+        transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         err_msg = (
             r"Not all wires present in coupling map! wires: \[0, 2, 1\], coupling map: \[0, 1\]"
@@ -73,7 +73,7 @@ class TestTranspile:
             return qml.expval(H)
 
         # build circuit
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])(circuit)
+        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         err_msg = (
             "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
@@ -91,7 +91,7 @@ class TestTranspile:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         # build circuit
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])(circuit)
+        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         err_msg = (
             r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
@@ -109,7 +109,7 @@ class TestTranspile:
         original_expectation = original_qnode(0.1, 0.2, 0.3)
 
         # build circuit with transpile
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(original_qfunc)
+        transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(0.1, 0.2, 0.3)
 
@@ -125,7 +125,7 @@ class TestTranspile:
         original_probs = original_qnode(0.1, 0.2, 0.3)
 
         # build circuit with transpile
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(original_qfunc)
+        transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_probs = transpiled_qnode(0.1, 0.2, 0.3)
 
@@ -146,7 +146,7 @@ class TestTranspile:
             qml.PhaseShift(parameters[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        transpiled_circ = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_circ = transpile(circuit, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_circ, dev)
         params = np.array([0.5, 0.1, 0.2], requires_grad=True)
         qml.gradients.param_shift(transpiled_qnode)(params)
@@ -161,7 +161,7 @@ class TestTranspile:
 
         param = 0.3
 
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         with pytest.raises(
             NotImplementedError,
@@ -177,7 +177,7 @@ class TestTranspile:
             qml.Toffoli(wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
 
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         with pytest.raises(
             NotImplementedError,
@@ -204,7 +204,7 @@ class TestTranspile:
         original_expectation = original_qnode(param)
 
         # build circuit with transpile
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(original_qfunc)
+        transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 
@@ -247,7 +247,7 @@ class TestTranspile:
         original_expectation = original_qnode(param)
 
         # build circuit with transpile
-        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(original_qfunc)
+        transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(param)
 

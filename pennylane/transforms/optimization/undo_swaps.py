@@ -110,6 +110,7 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         gates.reverse()
 
     new_tape = QuantumTape(gates, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

@@ -78,6 +78,7 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         continue
 
     new_tape = QuantumTape(operations, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

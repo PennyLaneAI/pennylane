@@ -182,6 +182,7 @@ def compile(
     new_tape = QuantumTape(
         expanded_tape.operations, expanded_tape.measurements, shots=expanded_tape.shots
     )
+    new_tape._qfunc_output = tape._qfunc_output
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
