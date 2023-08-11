@@ -732,7 +732,7 @@ class TestMeasurements:
         "measurements,N",
         [
             ([qml.expval(qml.PauliX(0))], 2),
-            ([qml.probs(qml.PauliX(0)), qml.probs(qml.PauliZ(1))], 4),
+            ([qml.probs(op=qml.PauliX(0)), qml.probs(op=qml.PauliZ(1))], 4),
             ([qml.probs(wires=[0, 1])], 4),
             ([qml.counts(wires=[0, 1, 2])], 8),
         ],

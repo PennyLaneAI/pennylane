@@ -209,7 +209,7 @@ class TestGradientTransformIntegration:
                 qml.RX(weights, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
@@ -233,7 +233,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -260,7 +260,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
         res = grad_fn(*w)
