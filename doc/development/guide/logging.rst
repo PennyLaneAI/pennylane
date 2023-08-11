@@ -13,7 +13,9 @@ To enable logging support in your PennyLane work-flow simply run the following l
 
 
 This will ensure all levels of the execution pipeline logs function entries, and
-outputs to handlers pointing to the standard output.
+outputs to handlers pointing to the standard output. Note, since Python's logging framework configuration functions overwrite previous logger configurations (such as with :class:`~logging.basicConfig`), it is expected that :func:`~pennylane.logging.enable_logging()` is called only when not using external logging configurations. 
+
+If you are defining custom logging configurations, you can extend the logging configuration options as defined in Section `logging-config`_, or avoid calling :func:`~pennylane.logging.enable_logging()`.
 
 Adding logging supports during development
 ------------------------------------------
@@ -27,10 +29,7 @@ To add logging support to components of PennyLane, we must define a module logge
 
 which will be used within the given module, and track directories,
 filenames and function names, as we have defined the appropriate types
-within the formatter configuration (see
-``pennylane.logging.formatters.formatter.py::DefaultFormatter``). With
-the logger defined, we can selectively add to the logger by if-else
-statements, which compare the given module’s log-level to any log record
+within the formatter configuration (see :class:`~pennylane.logging.formatters.DefaultFormatter`). With the logger defined, we can selectively add to the logger by if-else statements, which compare the given module’s log-level to any log record
 message it receives. This step is not necessary, as the message will
 only output if the level is enabled, though if an expensive function
 call is required to build the string for the log-message, it can be
@@ -55,6 +54,7 @@ pipeline output log level messages with the originating function making
 that call, as this can allow us to track hard-to-find bug origins in the
 execution pipeline.
 
+.. _logging-config:
 
 Customizing the logging configuration
 -------------------------------------
