@@ -74,7 +74,7 @@ def _configure_logging(config_file):
 def enable_logging():
     """
     This method allows top selectively enable logging throughout PennyLane.
-    All configurations are read through the `log_config.toml` file.
+    All configurations are read through the ``log_config.toml`` file.
     """
     _add_trace_level()
     _configure_logging("log_config.toml")
