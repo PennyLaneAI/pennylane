@@ -246,7 +246,8 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     """
 
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
-        circuit = qml.defer_measurements(circuit)
+        circuits, _ = qml.defer_measurements(circuit)
+        circuit = circuits[0]
 
     if not all(_accepted_operator(op) for op in circuit.operations):
         try:
