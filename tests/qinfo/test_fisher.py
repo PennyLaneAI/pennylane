@@ -147,8 +147,8 @@ class TestIntegration:
 
         n_wires = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
-        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
+        dev_hard = qml.device("default.qubit.legacy", wires=n_wires + 1, shots=1000)
 
         def qfunc(params):
             qml.RX(params[0], wires=0)
@@ -160,7 +160,7 @@ class TestIntegration:
 
         circ_hard = qml.QNode(qfunc, dev_hard)
         QFIM_hard = quantum_fisher(circ_hard)(params)
-        QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
+        QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)  # pylint:disable=not-callable
 
         circ = qml.QNode(qfunc, dev)
         QFIM = quantum_fisher(circ)(params)
