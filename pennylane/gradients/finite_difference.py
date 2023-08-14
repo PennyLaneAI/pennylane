@@ -337,7 +337,6 @@ def finite_diff(
             UserWarning,
         )
 
-
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
