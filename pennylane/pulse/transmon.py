@@ -53,7 +53,7 @@ def transmon_interaction(
 
     .. math::
 
-        H = \sum_{q\in \text{wires}} \omega_q b^\dagger_q b_q
+        H = \sum_{q\in \text{wires}} \frac{\omega_q}{2} b^\dagger_q b_q
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(b^\dagger_i b_j + b_j^\dagger b_i \right)
         + \sum_{q\in \text{wires}} \alpha_q b^\dagger_q b^\dagger_q b_q b_q
 
@@ -179,7 +179,7 @@ def transmon_interaction(
 
     # qubit term
     coeffs = list(omega)
-    observables = [ad(i, d) @ a(i, d) for i in wires]
+    observables = [qml.s_prod(0.5, ad(i, d) @ a(i, d)) for i in wires]
 
     # coupling term
     coeffs += list(g)

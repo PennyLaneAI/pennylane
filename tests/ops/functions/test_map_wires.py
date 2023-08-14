@@ -105,10 +105,12 @@ class TestMapWiresTapes:
             build_op()
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
+        tape.trainable_params = [0, 2]
         # TODO: Use qml.equal when supported
 
         s_tape = qml.map_wires(tape, wire_map=wire_map)
         assert len(s_tape) == 1
+        assert s_tape.trainable_params == [0, 2]
         s_op = s_tape[0]
         assert isinstance(s_op, qml.ops.Prod)  # pylint:disable=no-member
         assert s_op.data == mapped_op.data
@@ -125,9 +127,11 @@ class TestMapWiresTapes:
             qml.expval(op=qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
+        tape._qfunc_output = (qml.expval(qml.PauliZ(1)),)  # pylint: disable=protected-access
         # TODO: Use qml.equal when supported
 
         m_tape = qml.map_wires(tape, wire_map=wire_map)
+        assert m_tape._qfunc_output is tape._qfunc_output  # pylint: disable=protected-access
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
         assert qml.equal(m_op, mapped_op)
