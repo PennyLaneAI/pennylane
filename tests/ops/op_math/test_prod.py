@@ -1302,8 +1302,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results
-        assert -1 not in results
+        assert 1 in results  # pylint:disable=unsupported-membership-test
+        assert -1 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""

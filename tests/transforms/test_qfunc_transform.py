@@ -120,7 +120,7 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        new_qfunc = my_transform(qfunc)
+        new_qfunc = my_transform(qfunc)  # pylint:disable=assignment-from-no-return
         x = 0.543
 
         ops = qml.tape.make_qscript(new_qfunc)(x).operations
