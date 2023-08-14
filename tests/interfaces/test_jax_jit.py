@@ -30,26 +30,6 @@ jax.config.update("jax_enable_x64", True)
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
-    def test_import_error(self, mocker):
-        """Test that an exception is caught on import error"""
-
-        mock = mocker.patch.object(jax, "custom_jvp")
-        mock.side_effect = ImportError()
-
-        dev = qml.device("default.qubit", wires=2, shots=None)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliY(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="jax not found. Please install the latest version "
-            "of jax to enable the 'jax' interface",
-        ):
-            qml.execute([tape], dev, interface="jax", gradient_fn=qml.gradients.param_shift)
-
     def test_jacobian_options(self, mocker):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")

@@ -152,7 +152,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
                     vjps = processing_fn(
-                        execute(
+                        _execute_legacy(
                             vjp_tapes,
                             ctx.device,
                             ctx.execute_fn,
@@ -339,8 +339,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-        res, ctx.jacs = ctx.execute_fn(unwrapped_tapes, **ctx.gradient_kwargs)
+        res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
         ctx.torch_device = None
@@ -406,9 +405,8 @@ class ExecuteTapes(torch.autograd.Function):
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
-                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        unwrapped_tapes,
+                        ctx.tapes,
                         dy,
                         ctx.gradient_fn,
                         reduction="extend",
@@ -427,8 +425,7 @@ class ExecuteTapes(torch.autograd.Function):
                 #
                 # so we cannot support higher-order derivatives.
 
-                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-                jacs = ctx.gradient_fn(unwrapped_tapes, **ctx.gradient_kwargs)
+                jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjps(dy, jacs, multi_measurements)
 
@@ -466,17 +463,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[torch.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # pylint: disable=unused-argument
-    if not qml.active_return():
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
     # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:

@@ -26,15 +26,15 @@ from pennylane.measurements import CountsMP, Shots
 from pennylane.transforms import convert_to_numpy_parameters
 
 
-def _set_copy_and_unwrap_tape(t, a):
+def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.bind_new_parameters(a, list(range(len(a))))
-    return convert_to_numpy_parameters(tc)
+    return convert_to_numpy_parameters(tc) if unwrap else tc
 
 
-def set_parameters_on_copy_and_unwrap(tapes, params):
+def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a) for t, a in zip(tapes, params))
+    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
 def _compute_vjp_legacy(dy, jacs):
@@ -260,7 +260,7 @@ def _execute_legacy(
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
                         vjps = processing_fn(
-                            execute(
+                            _execute_legacy(
                                 vjp_tapes,
                                 device,
                                 execute_fn,
@@ -317,16 +317,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if not qml.active_return():
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
     # pylint: disable=unused-argument
 
     parameters = []
@@ -346,9 +336,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         params_unwrapped.append(
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
-
-    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
-    res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
+    res, jacs = execute_fn(tapes, **gradient_kwargs)
     res = tuple(_to_tensors(r) for r in res)  # convert output to TensorFlow tensors
 
     @tf.custom_gradient
@@ -376,7 +364,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        new_tapes = set_parameters_on_copy_and_unwrap(
+                            tapes, params_unwrapped, unwrap=False
+                        )
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             new_tapes,
                             dy,
@@ -420,7 +410,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                    new_tapes = set_parameters_on_copy_and_unwrap(
+                        tapes, params_unwrapped, unwrap=False
+                    )
                     jac = gradient_fn(new_tapes, **gradient_kwargs)
 
                     vjps = _compute_vjp(dy, jac, multi_measurements, has_partitioned_shots)
