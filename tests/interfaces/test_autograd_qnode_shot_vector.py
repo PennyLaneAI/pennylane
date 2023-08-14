@@ -26,9 +26,9 @@ shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [(((5, 1), 10), 2), ((10, (5, 1)), 2)]
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 0.05}],
-    ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", {"h": 0.05, "num_directions": 20}],
+    ["default.qubit.legacy", "finite-diff", {"h": 0.05}],
+    ["default.qubit.legacy", "parameter-shift", {}],
+    ["default.qubit.legacy", "spsa", {"h": 0.05, "num_directions": 20}],
 ]
 
 TOLS = {

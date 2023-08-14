@@ -41,7 +41,7 @@ class TestAutogradExecuteUnitTests:
         except KeyError:
             pass
 
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliY(1))
@@ -60,7 +60,7 @@ class TestAutogradExecuteUnitTests:
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def cost(a, device):
             with qml.queuing.AnnotatedQueue() as q:
@@ -86,7 +86,7 @@ class TestAutogradExecuteUnitTests:
         is used with grad_on_execution=True"""
         a = np.array([0.1, 0.2], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def cost(a, device):
             with qml.queuing.AnnotatedQueue() as q:
@@ -106,7 +106,7 @@ class TestAutogradExecuteUnitTests:
         """Test that an error is raised if the interface is unknown"""
         a = np.array([0.1, 0.2], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def cost(a, device):
             with qml.queuing.AnnotatedQueue() as q:
@@ -122,7 +122,7 @@ class TestAutogradExecuteUnitTests:
 
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
         def cost(a):
@@ -148,7 +148,7 @@ class TestAutogradExecuteUnitTests:
 
     def test_no_gradients_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
 
@@ -184,7 +184,7 @@ class TestBatchTransformExecution:
 
     def test_no_batch_transform(self, mocker):
         """Test that batch transforms can be disabled and enabled"""
-        dev = qml.device("default.qubit", wires=2, shots=100000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
         x = 0.6
@@ -214,7 +214,7 @@ class TestBatchTransformExecution:
     def test_batch_transform_dynamic_shots(self):
         """Tests that the batch transform considers the number of shots for the execution, not those
         statically on the device."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         H = 2.0 * qml.PauliZ(0)
         qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         res = qml.execute([qscript], dev, interface=None, override_shots=10)
@@ -226,7 +226,7 @@ class TestCaching:
 
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cachesize):
@@ -248,7 +248,7 @@ class TestCaching:
 
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cache):
@@ -270,7 +270,7 @@ class TestCaching:
     def test_caching_param_shift(self, tol):
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -315,7 +315,7 @@ class TestCaching:
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = np.arange(1, num_params + 1) / 10
 
         N = len(params)
@@ -378,7 +378,7 @@ class TestCaching:
     def test_caching_adjoint_no_grad_on_execution(self):
         """Test that caching reduces the number of adjoint evaluations
         when the grads is not on execution."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = np.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
@@ -418,7 +418,7 @@ class TestCaching:
         """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
         is requested for multiple tapes."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         def f(x):
             tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
@@ -440,7 +440,7 @@ class TestCaching:
         """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
         derivatives are requested for a a tape that the device split into batches."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliZ(0)], grouping_type="qwc")
 
@@ -480,7 +480,7 @@ class TestAutogradExecuteIntegration:
 
     def test_execution(self, execute_kwargs):
         """Test execution"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         def cost(a, b):
             with qml.queuing.AnnotatedQueue() as q1:
@@ -508,7 +508,7 @@ class TestAutogradExecuteIntegration:
     def test_scalar_jacobian(self, execute_kwargs, tol):
         """Test scalar jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:
@@ -548,7 +548,7 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return autograd.numpy.hstack(qml.execute([tape], device, **execute_kwargs)[0])
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         res = cost(a, b, device=dev)
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
@@ -570,7 +570,7 @@ class TestAutogradExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         def cost(params):
             with qml.queuing.AnnotatedQueue() as q1:
@@ -614,7 +614,7 @@ class TestAutogradExecuteIntegration:
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tapes_with_different_return_size(self, execute_kwargs):
         """Test that tapes wit different can be executed and differentiated."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         def cost(params):
             with qml.queuing.AnnotatedQueue() as q1:
@@ -652,7 +652,7 @@ class TestAutogradExecuteIntegration:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
@@ -705,7 +705,7 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute([tape], device, **execute_kwargs)[0]
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
 
         # Only two arguments are trainable
@@ -728,7 +728,7 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return autograd.numpy.hstack(qml.execute([tape], device, **execute_kwargs)[0])
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
@@ -758,7 +758,7 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute([tape], device, **execute_kwargs)[0]
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         res = cost(a, U, device=dev)
         assert isinstance(res, np.ndarray)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
@@ -794,7 +794,7 @@ class TestAutogradExecuteIntegration:
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         res = cost_fn(a, p, device=dev)
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
@@ -833,7 +833,7 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return autograd.numpy.hstack(qml.execute([tape], device, **execute_kwargs)[0])
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
@@ -894,7 +894,7 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
             return autograd.numpy.hstack(qml.execute([tape], device, **execute_kwargs)[0])
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
@@ -936,7 +936,7 @@ class TestAutogradExecuteIntegration:
             return qml.execute([tape], device, **execute_kwargs)[0]
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         res = cost(device=dev)
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -1100,7 +1100,7 @@ class TestOverridingShots:
 
     def test_changing_shots(self, mocker, tol):
         """Test that changing shots works on execution"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1130,7 +1130,7 @@ class TestOverridingShots:
 
     def test_overriding_shots_with_same_value(self, mocker):
         """Overriding shots with the same value as the device will have no effect"""
-        dev = qml.device("default.qubit", wires=2, shots=123)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=123)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1161,7 +1161,7 @@ class TestOverridingShots:
     def test_overriding_device_with_shot_vector(self):
         """Overriding a device that has a batch of shots set
         results in original shots being returned after execution"""
-        dev = qml.device("default.qubit", wires=2, shots=[10, (1, 3), 5])
+        dev = qml.device("default.qubit.legacy", wires=2, shots=[10, (1, 3), 5])
 
         assert dev.shots == 18
         assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
@@ -1192,7 +1192,7 @@ class TestOverridingShots:
         """Test that temporarily setting the shots works
         for gradient computations"""
         # TODO: Update here when shot vectors are supported
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(a, b, shots):
@@ -1285,7 +1285,7 @@ class TestHamiltonianWorkflows:
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
         weights = np.array([0.4, 0.5], requires_grad=True)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
@@ -1301,7 +1301,7 @@ class TestHamiltonianWorkflows:
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)

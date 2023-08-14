@@ -20,13 +20,13 @@ from pennylane import numpy as np
 from pennylane import qnode
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "backprop", True],
-    ["default.qubit", "finite-diff", False],
-    ["default.qubit", "parameter-shift", False],
-    ["default.qubit", "adjoint", True],
-    ["default.qubit", "adjoint", False],
-    ["default.qubit", "spsa", False],
-    ["default.qubit", "hadamard", False],
+    ["default.qubit.legacy", "backprop", True],
+    ["default.qubit.legacy", "finite-diff", False],
+    ["default.qubit.legacy", "parameter-shift", False],
+    ["default.qubit.legacy", "adjoint", True],
+    ["default.qubit.legacy", "adjoint", False],
+    ["default.qubit.legacy", "spsa", False],
+    ["default.qubit.legacy", "hadamard", False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -809,7 +809,7 @@ class TestShotsIntegration:
 
     def test_changing_shots(self, interface, mocker, tol):
         """Test that changing shots works on execution"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = jax.numpy.array([0.543, -0.654])
 
         @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
@@ -840,7 +840,7 @@ class TestShotsIntegration:
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
-        dev = qml.device("default.qubit", wires=2, shots=1)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1)
         a, b = jax.numpy.array([0.543, -0.654])
 
         @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
@@ -860,7 +860,7 @@ class TestShotsIntegration:
     def test_update_diff_method(self, mocker, interface):
         """Test that temporarily setting the shots updates the diff method"""
         # pylint: disable=unused-argument
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=100)
         a, b = jax.numpy.array([0.543, -0.654])
 
         spy = mocker.spy(qml, "execute")
@@ -1481,7 +1481,7 @@ class TestCV:
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
 def test_adjoint_reuse_device_state(mocker, interface):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.legacy", wires=1)
 
     @qnode(dev, interface=interface, diff_method="adjoint")
     def circ(x):
