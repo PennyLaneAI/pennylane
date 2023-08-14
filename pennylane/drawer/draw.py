@@ -304,7 +304,7 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch', 'pennylane'
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
             global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
             If you would like to use your environment's current rcParams, set `style` to "rcParams".
