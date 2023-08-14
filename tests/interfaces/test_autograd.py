@@ -1141,6 +1141,7 @@ class TestOverridingShots:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.Mock(wraps=qml.Device.shots.fset)
+        # pylint:disable=assignment-from-no-return,too-many-function-args
         mock_property = qml.Device.shots.setter(spy)
         mocker.patch.object(qml.Device, "shots", mock_property)
 
