@@ -137,12 +137,6 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     if isinstance(op, MeasurementValue):
         op = (op,)
     if isinstance(op, Sequence):
-        for o in op:
-            if not isinstance(o, MeasurementValue):
-                raise ValueError(
-                    "Sequences of observables can only be used with qml.counts for "
-                    f"MeasurementValues. Found {type(o)}."
-                )
         return CountsMP(obs=tuple(op))
 
     if op is not None and not op.is_hermitian:  # None type is also allowed for op

@@ -145,7 +145,11 @@ class MeasurementProcess(ABC):
 
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
-        self._wires = wires
+        self._wires = (
+            wires
+            if not isinstance(self.obs, tuple)
+            else [mv.measurements[0].wires[0] for mv in self.obs]
+        )
         self._eigvals = None
 
         if eigvals is not None:
@@ -322,7 +326,7 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.obs is not None:
+        if self.obs is not None and not isinstance(self.obs, tuple):
             return self.obs.wires
 
         return (
@@ -414,7 +418,7 @@ class MeasurementProcess(ABC):
         >>> print(tape.measurements[0].obs)
         None
         """
-        if self.obs is None:
+        if self.obs is None or isinstance(self.obs, tuple):
             raise qml.operation.DecompositionUndefinedError
 
         with qml.queuing.AnnotatedQueue() as q:

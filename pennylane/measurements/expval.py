@@ -58,12 +58,6 @@ def expval(op: Operator):
     if isinstance(op, MeasurementValue):
         op = (op,)
     if isinstance(op, Sequence):
-        for o in op:
-            if not isinstance(o, MeasurementValue):
-                raise ValueError(
-                    "Sequences of observables can only be used with qml.expval for "
-                    f"MeasurementValues. Found {type(o)}."
-                )
         return ExpectationMP(obs=tuple(op))
 
     if not op.is_hermitian:

@@ -166,7 +166,7 @@ def defer_measurements(tape: QuantumTape):
 
     for mp in tape.measurements:
         if isinstance(mp.obs, tuple):
-            mp.wires = Wires([control_wires[mv.measurements[0].id] for mv in mp.obs])
+            mp._wires = [control_wires[mv.measurements[0].id] for mv in mp.obs]
         apply(mp)
 
     return tape._qfunc_output  # pylint: disable=protected-access

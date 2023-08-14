@@ -302,7 +302,7 @@ class QuantumScript:
         obs = []
 
         for m in self.measurements:
-            if m.obs is not None:
+            if m.obs is not None and not isinstance(m.obs, tuple):
                 m.obs.return_type = m.return_type
                 obs.append(m.obs)
             else:
@@ -433,7 +433,7 @@ class QuantumScript:
 
         n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
-            if m.obs is not None:
+            if m.obs is not None and not isinstance(m.obs, tuple):
                 self._par_info.extend(
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
@@ -658,7 +658,7 @@ class QuantumScript:
         if operations_only:
             return params
         for m in self.measurements:
-            if m.obs is not None:
+            if m.obs is not None and not isinstance(m.obs, tuple):
                 params.extend(m.obs.data)
         return params
 

@@ -132,6 +132,8 @@ def get_measurement_function(
     """
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
+            if isinstance(measurementprocess.obs, tuple):
+                return state_diagonalizing_gates
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 

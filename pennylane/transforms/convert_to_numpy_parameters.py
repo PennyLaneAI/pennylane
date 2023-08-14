@@ -34,7 +34,7 @@ def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Opera
 def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
-    if m.obs is None or math.get_interface(*m.obs.data) == "numpy":
+    if m.obs is None or isinstance(m.obs, tuple) or math.get_interface(*m.obs.data) == "numpy":
         return m
     # Use measurement method to change parameters when it becomes available
     copied_m = copy.copy(m)

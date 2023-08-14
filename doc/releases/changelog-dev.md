@@ -8,6 +8,30 @@
   $|0\rangle$ computational basis state after measurement.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
 
+* Measurement statistics can now be collected for mid-circuit measurements on the new
+  `DefaultQubit2` device. Currently, `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`,
+  and `qml.counts` are supported. Users can collect joint statistics for multiple
+  mid-circuit measurements as well.
+  [(#4474)](https://github.com/PennyLaneAI/pennylane/pull/4474)
+
+```python3
+import pennylane as qml
+from pennylane.devices.experimental import DefaultQubit2
+dev = DefaultQubit2()
+
+@qml.qnode(dev)
+def circ(x, y):
+    qml.RX(x, wires=0)
+    m0 = qml.measure(0)
+    qml.RY(y, wires=1)
+    m1 = qml.measure(1)
+    return qml.expval(qml.PauliZ(0)), qml.sample([m0, m1])
+
+circ(1.0, 2.0, shots=10)
+
+
+```
+
 * `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
   A `ProcessPoolExecutor` executes tapes asynchronously
   using a pool of at most `max_workers` processes. If `max_workers` is `None`

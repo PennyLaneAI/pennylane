@@ -59,12 +59,6 @@ def var(op: Operator) -> "VarianceMP":
     if isinstance(op, MeasurementValue):
         op = (op,)
     if isinstance(op, Sequence):
-        for o in op:
-            if not isinstance(o, MeasurementValue):
-                raise ValueError(
-                    "Sequences of observables can only be used with qml.var for "
-                    f"MeasurementValues. Found {type(o)}."
-                )
         return VarianceMP(obs=tuple(op))
 
     if not op.is_hermitian:
