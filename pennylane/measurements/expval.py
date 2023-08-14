@@ -121,21 +121,15 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return qml.math.squeeze(qml.math.mean(samples, axis=axis))
 
-    def process_state(
-        self, state: Sequence[complex], wire_order: Wires, is_state_batched: bool = False
-    ):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         if isinstance(self.obs, Projector):
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            probs = qml.probs(wires=self.wires).process_state(
-                state=state, wire_order=wire_order, is_state_batched=is_state_batched
-            )
+            probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx]
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(
-            state=state, wire_order=wire_order, is_state_batched=is_state_batched
-        )
+        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
         return qml.math.dot(prob, eigvals)

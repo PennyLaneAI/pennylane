@@ -194,13 +194,18 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         prob = self._count_samples(indices, batch_size, dim)
         return qml.math.squeeze(prob) if bin_size is None else prob
 
-    def process_state(
-        self, state: Sequence[complex], wire_order: Wires, is_state_batched: bool = False
-    ):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         num_wires = len(wire_order)
         dim = 2**num_wires
         # Compute batch_size
-        batch_size = qml.math.size(state) // dim if is_state_batched else None
+        expected_shape = [2] * num_wires
+        expected_size = dim
+        size = qml.math.size(state)
+        batch_size = (
+            size // expected_size
+            if qml.math.ndim(state) > len(expected_shape) or size > expected_size
+            else None
+        )
         flat_state = qml.math.reshape(
             state, (batch_size, dim) if batch_size is not None else (dim,)
         )

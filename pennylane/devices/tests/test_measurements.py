@@ -1680,7 +1680,7 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             """Dummy state measurement."""
 
-            def process_state(self, state, wire_order, is_state_batched=False):
+            def process_state(self, state, wire_order):
                 return 1
 
         @qml.qnode(dev)
@@ -1701,7 +1701,7 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             """Dummy state measurement."""
 
-            def process_state(self, state, wire_order, is_state_batched=False):
+            def process_state(self, state, wire_order):
                 return 1
 
         @qml.qnode(dev)
