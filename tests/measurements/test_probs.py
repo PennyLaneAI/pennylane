@@ -27,7 +27,7 @@ from pennylane.queuing import AnnotatedQueue
 
 
 # TODO: Remove this when new CustomMP are the default
-def custom_measurement_process(device, spy):
+def custom_measurement_process(device, spy, is_state_batched=False):
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
     samples = device._samples  # pylint: disable=protected-access
@@ -43,7 +43,9 @@ def custom_measurement_process(device, spy):
         meas = qml.probs(wires=wires)
         old_res = device.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
         if device.shots is None:
-            new_res = meas.process_state(state=state, wire_order=device.wires)
+            new_res = meas.process_state(
+                state=state, wire_order=device.wires, is_state_batched=is_state_batched
+            )
         else:
             new_res = meas.process_samples(
                 samples=samples,
@@ -238,7 +240,9 @@ class TestProbs:
         """Tests that process_state functions as expected with all interfaces with batching."""
         states = qml.math.array([[1 / 2, 0] * 4, [0, 1 / 2] * 4], like=interface)
         wires = qml.wires.Wires(range(3))
-        subset_probs = qml.probs(wires=subset_wires).process_state(states, wires)
+        subset_probs = qml.probs(wires=subset_wires).process_state(
+            states, wires, is_state_batched=True
+        )
         assert subset_probs.shape == qml.math.shape(expected)
         assert qml.math.allclose(subset_probs, expected)
 
@@ -309,7 +313,7 @@ class TestProbs:
         expected = [[1.0, 0.0], [0.5, 0.5]]
         assert np.allclose(res, expected, atol=0.1, rtol=0.1)
 
-        custom_measurement_process(dev, spy)
+        custom_measurement_process(dev, spy, is_state_batched=True)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
