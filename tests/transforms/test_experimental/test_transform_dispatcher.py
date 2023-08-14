@@ -390,14 +390,16 @@ class TestTransformDispatcher:
     def test_custom_qnode_transform(self, valid_transform):
         """Test that the custom qnode transform is correctly executed"""
 
-        dispatched_transform = transform(valid_transform)
-
         history = []
 
-        @dispatched_transform.custom_qnode_transform
-        def _custom_qnode_transform(self, qnode, targs, tkwargs):
+        def custom_qnode_transform(self, qnode, targs, tkwargs):
             history.append((targs, tkwargs))
-            return self.default_qnode_transform(qnode, targs, tkwargs)
+            qnode.add_transform(
+                qml.transforms.core.TransformContainer(self._transform, targs, tkwargs)
+            )
+            return qnode
+
+        dispatched_transform = transform(valid_transform, qnode_transform=custom_qnode_transform)
 
         @partial(dispatched_transform, index=0)
         @qml.qnode(dev)
