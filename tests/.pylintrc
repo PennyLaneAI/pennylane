@@ -44,7 +44,14 @@ disable=
   import-outside-toplevel,
   missing-class-docstring,
   missing-function-docstring,
-  no-self-use
+  no-self-use,
+  no-member, # because of qnode decorator
+  comparison-with-callable,
+  unsubscriptable-object, # because of qnode decorator
+  not-callable, # because of qnode decorator
+  unexpected-keyword-arg,
+  arguments-differ,
+  no-value-for-parameter
 
 [MISCELLANEOUS]
 

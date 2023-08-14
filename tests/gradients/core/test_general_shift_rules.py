@@ -460,7 +460,7 @@ class TestGenerateMultishiftedTapes:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
-            qml.RX(1, wires=0)
+            qml.RX(1.0, wires=0)
             qml.CNOT(wires=[0, 2])
             qml.Rot(2.0, 3.0, 4.0, wires=0)
             qml.expval(qml.PauliZ(0))
