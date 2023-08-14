@@ -147,7 +147,7 @@ def _pennylane():
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
-    if "Quicksand" in fm.get_font_names():
+    if "Quicksand" in fm.get_font_names(): # pragma: no cover
         plt.rcParams["font.family"] = "Quicksand"
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 250, 1)
