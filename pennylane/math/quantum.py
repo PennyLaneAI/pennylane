@@ -719,6 +719,63 @@ def _compute_mutual_info(
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
 
+def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype="complex128"):
+    r"""Compute the expectation value of an operator and a pure state. 
+
+    The expectation value of an operator :math:`A` for a pure states given by state vector :math:`\ket{\psi}` 
+    is defined as
+
+    .. math::
+        \langle A \rangle = \bra{\psi} A \ket{\psi}
+
+    Args:
+        operator_matrix (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` operator matrix.
+        state_vector (tensor_like): ``(2**N)`` or ``(batch_dim, 2**N)`` state vector.
+        check_state (bool): If True, the function will check the validity of both states; that is,
+            the shape and the norm
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Expectation value of the operator for the state vector.
+
+    **Example**
+
+    Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
+
+    >>> state_vector = np.array([0, 1])
+    >>> operator_matrix = np.array([[0,1],[1,0]])
+    >>> qml.math.expectation_value(operator_matrix, state1)
+    0.0
+
+    .. seealso:: :func:`pennylane.math.fidelity` and :func:`pennylane.qinfo.transforms.fidelity`
+
+    """
+    # Cast as a c_dtype array
+    state_vector = cast(state_vector, dtype=c_dtype)
+
+    # Cannot be cast_like if jit
+    if not is_abstract(state_vector):
+        operator_matrix = cast_like(operator_matrix, state_vector)
+
+    if check_state:
+        _check_state_vector(state_vector)
+
+    if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    batched0 = len(qml.math.shape(state_vector)) > 1
+    batched1 = len(qml.math.shape(operator_matrix)) > 2
+    # The overlap <psi|A|psi>
+    indices0 = "bj" if batched0 else "j"
+    indices1 = "bji" if batched1 else "ij"
+    indices2 = "bi" if batched0 else "i"
+    target = "b" if batched0 or batched1 else ""
+    overlap = qml.math.einsum(
+        f"{indices0},{indices1},{indices2}->{target}",  
+        np.conj(state_vector), operator_matrix, state_vector, optimize="greedy"
+        )
+
+    return overlap
 
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     r"""Compute the fidelity for two states (given as density matrices) acting on quantum

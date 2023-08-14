@@ -69,6 +69,7 @@ from .quantum import (
     dm_from_state_vector,
     fidelity,
     fidelity_statevector,
+    expectation_value,
     marginal_prob,
     mutual_info,
     purity,
