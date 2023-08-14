@@ -1004,7 +1004,7 @@ class TestIntegration:
 
         results = my_circ()
 
-        assert sum(results.values()) == 20  # pylint:disable=no-member
+        assert sum(results.values()) == 20
         assert 1.23 in results  # pylint:disable=unsupported-membership-test
         assert -1.23 not in results  # pylint:disable=unsupported-membership-test
 

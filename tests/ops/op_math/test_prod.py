@@ -758,6 +758,7 @@ class TestProperties:
     @pytest.mark.tf
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
+        # pylint:disable=invalid-unary-operand-type
         import tensorflow as tf
 
         theta = tf.Variable(1.23)
@@ -1301,7 +1302,7 @@ class TestIntegration:
 
         results = my_circ()
 
-        assert sum(results.values()) == 20  # pylint:disable=no-member
+        assert sum(results.values()) == 20
         assert 1 in results  # pylint:disable=unsupported-membership-test
         assert -1 not in results  # pylint:disable=unsupported-membership-test
 

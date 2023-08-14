@@ -267,6 +267,7 @@ class TestCommuteControlled:
     def test_push_mixed_with_matrix(self, direction):
         """Test that arbitrary gates after controlled gates on controls *and*
         targets get properly pushed."""
+        # pylint:disable=too-many-function-args
 
         def qfunc():
             qml.PauliX(wires=1)
