@@ -130,11 +130,6 @@ def defer_measurements(tape: QuantumTape):
     measured_wires = set()
     reused_measurement_wires = set()
 
-    for mp in tape.measurements:
-        if isinstance(mp.obs, tuple):
-            for mv in mp.obs:
-                measured_wires.add(mv.measurements[0].wires[0])
-
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             if op.wires[0] in measured_wires or op.reset is True:

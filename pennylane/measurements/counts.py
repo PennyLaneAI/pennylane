@@ -22,6 +22,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
 def _sample_to_str(sample):
@@ -39,7 +40,9 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     specified on the device.
 
     Args:
-        op (Observable or None): a quantum observable object
+        op (Observable or Sequence[MeasurementValue] or None): a quantum observable object.
+            To get counts for mid-circuit measurements, ``op`` should be specified as a sequence of
+            their respective ``MeasurementValue``'s.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
         all_outcomes(bool): determines whether the returned dict will contain only the observed
@@ -131,6 +134,17 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
+    if isinstance(op, MeasurementValue):
+        op = (op,)
+    if isinstance(op, Sequence):
+        for o in op:
+            if not isinstance(o, MeasurementValue):
+                raise ValueError(
+                    "Sequences of observables can only be used with qml.counts for "
+                    f"MeasurementValues. Found {type(o)}."
+                )
+        return CountsMP(obs=tuple(op))
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -152,9 +166,9 @@ class CountsMP(SampleMeasurement):
     Please refer to :func:`counts` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, Tuple[.MeasurementValue]]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -219,7 +233,7 @@ class CountsMP(SampleMeasurement):
         num_wires = len(self.wires) if self.wires else len(wire_order)
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
-            if self.obs is None
+            if self.obs is None or isinstance(self.obs, tuple)
             else samples.reshape((-1, bin_size))
         )
 

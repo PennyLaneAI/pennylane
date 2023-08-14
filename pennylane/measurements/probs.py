@@ -21,6 +21,7 @@ from pennylane import numpy as np
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .mid_measure import MeasurementValue
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
@@ -42,8 +43,9 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a ``diagonalizing_gates`` attribute) that rotates
-            the computational basis
+        op (Observable or Sequence[MeasurementValue]]): Observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis, or a sequence of ``MeasurementValue``'s
+            corresponding to mid-circuit measurements.
 
     Returns:
         ProbabilityMP: Measurement process instance
@@ -91,6 +93,17 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     the device simulates qubit or continuous variable quantum systems.
     """
 
+    if isinstance(op, MeasurementValue):
+        op = (op,)
+    if isinstance(op, Sequence):
+        for o in op:
+            if not isinstance(o, MeasurementValue):
+                raise ValueError(
+                    "Sequences of observables can only be used with qml.probs for "
+                    f"MeasurementValues. Found {type(o)}."
+                )
+        return ProbabilityMP(obs=tuple(op))
+
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
@@ -120,9 +133,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`probs` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, Tuple[.MeasurementValue]]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.

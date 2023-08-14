@@ -16,16 +16,19 @@ This module contains the qml.sample measurement.
 """
 import functools
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
-def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
+def sample(
+    op: Optional[Union[Operator, Sequence[MeasurementValue]]] = None, wires=None
+) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -35,7 +38,9 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     specified on the device.
 
     Args:
-        op (Observable or None): a quantum observable object
+        op (Observable or Sequence[MeasurementValue]): a quantum observable object. To get samples
+            for mid-circuit measurements, ``op`` should be specified as a sequence of
+            their respective ``MeasurementValue``'s.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
 
@@ -101,6 +106,17 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
            [0, 0]])
 
     """
+    if isinstance(op, MeasurementValue):
+        op = (op,)
+    if isinstance(op, Sequence):
+        for o in op:
+            if not isinstance(o, MeasurementValue):
+                raise ValueError(
+                    "Sequences of observables can only be used with qml.sample for "
+                    f"MeasurementValues. Found {type(o)}."
+                )
+        return SampleMP(obs=tuple(op))
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -122,9 +138,9 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`sample` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, Tuple[.MeasurementValue]]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -209,7 +225,7 @@ class SampleMP(SampleMeasurement):
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        name = self.obs.name if self.obs is not None else None
+        name = self.obs.name if self.obs is not None and not isinstance(self.obs, tuple) else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -223,7 +239,7 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None:
+        if self.obs is None or isinstance(self.obs, tuple):
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
