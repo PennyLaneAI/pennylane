@@ -574,9 +574,9 @@ def execute(
             from .jax import get_jax_interface_name
         except ImportError as e:  # pragma: no-cover
             raise qml.QuantumFunctionError(  # pragma: no-cover
-                "jax not found. Please install the latest "
-                "version of jax to enable the 'jax' interface."
-            ) from e
+                "jax not found. Please install the latest " # pragma: no-cover
+                "version of jax to enable the 'jax' interface." # pragma: no-cover
+            ) from e # pragma: no-cover
 
         interface = get_jax_interface_name(tapes)
 
