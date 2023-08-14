@@ -19,7 +19,7 @@ from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops import Projector
+from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
@@ -104,7 +104,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, Projector) and len(self.obs.parameters[0]) == len(self.obs.wires):
+        if isinstance(self.obs, BasisStateProjector):
             # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_samples(
@@ -122,7 +122,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.mean(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if isinstance(self.obs, Projector) and len(self.obs.parameters[0]) == len(self.obs.wires):
+        if isinstance(self.obs, BasisStateProjector):
             # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
