@@ -384,14 +384,6 @@ class batch_transform:
             #     ...
             # result = circuit(*qnode_args)
 
-            warnings.warn(
-                "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
-                "deprecated and will be removed in a future version. Please decorate "
-                "with @functools.partial(transform_fn, **transform_kwargs) instead, "
-                "or call the transform directly using qnode = transform_fn(qnode, **transform_kwargs)",
-                UserWarning,
-            )
-
             # Prepend the input to the transform args,
             # and create a wrapper function.
             if qnode is not None:
