@@ -298,6 +298,26 @@ class TestProbs:
 
         custom_measurement_process(dev, spy)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "prep_op, expected",
+        [
+            (None, [1, 0]),
+            (qml.QubitStateVector([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
+        ],
+    )
+    def test_process_state_tf_autograph(self, prep_op, expected):
+        """Test that process_state passes when decorated with tf.function."""
+        import tensorflow as tf
+
+        @tf.function
+        def probs_from_state(state, wires):
+            return qml.probs(wires=wires).process_state(state, wires)
+
+        wires = qml.wires.Wires([0])
+        state = qml.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
+        assert np.allclose(probs_from_state(state, wires), expected)
+
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
         """Test that the finite difference and parameter shift rule
