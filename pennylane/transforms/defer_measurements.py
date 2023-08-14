@@ -119,6 +119,7 @@ def defer_measurements(tape: QuantumTape):
     >>> func(*pars)
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
     """
+    # pylint: disable=protected-access
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -134,6 +135,7 @@ def defer_measurements(tape: QuantumTape):
         if isinstance(op, MidMeasureMP):
             if op.wires[0] in measured_wires or op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
+            measured_wires.add(op.wires[0])
 
         else:
             reused_measurement_wires = reused_measurement_wires.union(
@@ -145,7 +147,7 @@ def defer_measurements(tape: QuantumTape):
     control_wires = {}
     cur_wire = max(tape.wires) + 1
 
-    for op in tape:
+    for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             # Only store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires:
@@ -169,7 +171,7 @@ def defer_measurements(tape: QuantumTape):
             mp._wires = [control_wires[mv.measurements[0].id] for mv in mp.obs]
         apply(mp)
 
-    return tape._qfunc_output  # pylint: disable=protected-access
+    return tape._qfunc_output
 
 
 def _add_control_gate(op, control_wires):

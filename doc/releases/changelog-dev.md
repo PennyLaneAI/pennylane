@@ -14,22 +14,26 @@
   mid-circuit measurements as well.
   [(#4474)](https://github.com/PennyLaneAI/pennylane/pull/4474)
 
-```python3
-import pennylane as qml
-from pennylane.devices.experimental import DefaultQubit2
+```python
 dev = DefaultQubit2()
 
 @qml.qnode(dev)
 def circ(x, y):
     qml.RX(x, wires=0)
     m0 = qml.measure(0)
+
     qml.RY(y, wires=1)
     m1 = qml.measure(1)
     return qml.expval(qml.PauliZ(0)), qml.sample([m0, m1])
-
-circ(1.0, 2.0, shots=10)
-
-
+```
+```pycon
+>>> circ(1.0, 2.0, shots=5)
+(0.6,
+ array([[False,  True],
+        [False,  True],
+        [False,  True],
+        [False,  True],
+        [False,  True]]))
 ```
 
 * `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
