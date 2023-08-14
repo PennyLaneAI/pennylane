@@ -40,13 +40,7 @@ with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
 installation. This backend is non-differentiable and can be selected by setting
-``method='pyscf'`` in :func:`~.molecular_hamiltonian`. Additionally, if the electronic Hamiltonian
-is built independently using `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it
-can be readily converted to a PennyLane observable using the
-:func:`~.pennylane.import_operator` function. There is also capability to import wavefunctions (states) 
-that have been pre-computed by configuration interaction singles and doubles (CISD) and coupled cluster 
-singles and doubles (CCSD) methods via PySCF, for example to provide a better starting point to a quantum algorithm. 
-This can be accomplished using the :func:`~pennylane.import_state` utility function.
+``method='pyscf'`` in :func:`~.molecular_hamiltonian`. 
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -65,6 +59,17 @@ specified for each backend.
         active_electrons=2,
         active_orbitals=2
     )
+
+Importing the Hamiltonian and ansatz state
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Additionally, if the electronic Hamiltonian is built independently using 
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
+to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
+capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
+from `PySCF <https://github.com/sunqm/pyscf>`_, for example to provide a better starting point to a quantum algorithm. 
+This can be accomplished using the :func:`~pennylane.import_state` utility function.
+
 
 Importing molecular structure data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
