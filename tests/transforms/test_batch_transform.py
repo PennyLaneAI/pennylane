@@ -320,7 +320,7 @@ class TestBatchTransform:
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.warns(UserWarning, match="The decorator syntax"):
+        with pytest.warns(UserWarning, match="Decorating a QNode with"):
             tapes, _ = self.my_transform(a, b)(tape)  # pylint: disable=no-value-for-parameter
 
         assert len(tapes[0].operations) == 2
@@ -373,7 +373,7 @@ class TestBatchTransform:
         x = 0.543
 
         dev = qml.device("default.qubit", wires=1)
-        with pytest.warns(UserWarning, match="The decorator syntax"):
+        with pytest.warns(UserWarning, match="Decorating a QNode with"):
             dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
         @qml.qnode(dev, interface="autograd")
@@ -443,7 +443,7 @@ class TestBatchTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with pytest.warns(UserWarning, match="The decorator syntax"):
+        with pytest.warns(UserWarning, match="Decorating a QNode with"):
 
             @self.my_transform(a, b)  # pylint: disable=no-value-for-parameter
             @qml.qnode(dev)

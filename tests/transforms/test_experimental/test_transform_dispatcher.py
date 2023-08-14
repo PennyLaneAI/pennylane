@@ -205,7 +205,8 @@ class TestTransformDispatcher:
         dispatched_transform = transform(valid_transform)
         targs = [0]
 
-        with pytest.warns(UserWarning, match="The decorator syntax"):
+        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been deprecated"
+        with pytest.warns(UserWarning, match=msg):
 
             @dispatched_transform(targs)
             @qml.qnode(device=dev)
