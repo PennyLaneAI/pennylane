@@ -745,7 +745,7 @@ class TestQubitIntegration:
             qml.RX(x[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit(x)
 
         res.backward()
@@ -795,7 +795,7 @@ class TestQubitIntegration:
             qml.RX(x[1], wires=0)
             return qml.probs(wires=0)
 
-        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit(x)
         jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
 
@@ -861,7 +861,7 @@ class TestQubitIntegration:
         def circuit_stack(x):
             return torch.hstack(circuit(x))
 
-        x = torch.tensor([1.0, 2.0], requires_grad=True)
+        x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit_stack(x)
 
         jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
@@ -1840,8 +1840,8 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        par_0 = torch.tensor(0.1, requires_grad=True)
-        par_1 = torch.tensor(0.2, requires_grad=True)
+        par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
+        par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
         @qnode(
             dev,
@@ -1911,8 +1911,8 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        par_0 = torch.tensor(0.1, requires_grad=True)
-        par_1 = torch.tensor(0.2, requires_grad=True)
+        par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
+        par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
         @qnode(
             dev,
@@ -1955,7 +1955,7 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        params = torch.tensor([0.1, 0.2], requires_grad=True)
+        params = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
 
         @qnode(
             dev,
@@ -1985,8 +1985,8 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        par_0 = torch.tensor(0.1, requires_grad=True)
-        par_1 = torch.tensor(0.2, requires_grad=True)
+        par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
+        par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
         @qnode(
             dev,
@@ -2037,7 +2037,7 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        par = torch.tensor([0.1, 0.2], requires_grad=True)
+        par = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
 
         @qnode(
             dev,

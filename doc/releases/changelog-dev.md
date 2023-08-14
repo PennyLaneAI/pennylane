@@ -165,6 +165,17 @@ array([False, False])
 * Provide users access to the logging configuration file path and improve the logging configuration structure.
   [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 
+* Refactoring of `pennylane/interfaces`.  The `execute_fn` passed to the machine learning framework boundaries 
+  is now responsible for converting parameters to numpy. The gradients module can now handle tensorflow parameters,
+  but gradient tapes now retain the original dtype instead of converting to float64.  This may cause instability 
+  with finite diff and float32 parameters. The ml boundary functions are now uncoupled from their legacy
+  counterparts.
+  [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
+
+* `qml.transforms.adjoint_metric_tensor` now uses the simulation tools in `pennylane.devices.qubit` instead of
+  private methods of `pennylane.devices.DefaultQubit`.
+  [(#4456)](https://github.com/PennyLaneAI/pennylane/pull/4456)
+
 * Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
@@ -176,6 +187,10 @@ array([False, False])
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
 
 <h3>Breaking changes 💔</h3>
+
+* Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
+  with float32 parameters may no longer give accurate results.
+  [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
 
 * Support for Python 3.8 is dropped.
   [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
