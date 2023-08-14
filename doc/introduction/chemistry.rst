@@ -63,12 +63,13 @@ specified for each backend.
 Importing the Hamiltonian and ansatz state
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Additionally, if the electronic Hamiltonian is built independently using 
+If the electronic Hamiltonian is built independently using 
 `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
 to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
 capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
-from `PySCF <https://github.com/sunqm/pyscf>`_, for example to provide a better starting point to a quantum algorithm. 
-This can be accomplished using the :func:`~pennylane.import_state` utility function.
+from `PySCF <https://github.com/sunqm/pyscf>`_, which could be used to for example to provide a better 
+starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.import_state` 
+utility function.
 
 
 Importing molecular structure data
