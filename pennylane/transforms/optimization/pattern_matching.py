@@ -178,8 +178,6 @@ def pattern_matching_optimization(
     """
     # pylint: disable=protected-access, too-many-branches
 
-    measurements = tape.measurements
-
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 

@@ -113,7 +113,7 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
         new_operations.append(gate)
 
     new_tape = QuantumTape(new_operations, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

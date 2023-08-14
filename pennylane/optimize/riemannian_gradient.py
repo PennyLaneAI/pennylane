@@ -13,11 +13,12 @@
 # limitations under the License.
 """Riemannian gradient optimizer"""
 import warnings
+from typing import Sequence, Callable
 
 import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
-from typing import Sequence, Callable
+
 from pennylane.transforms.core import transform
 from pennylane.tape import QuantumTape
 from pennylane.queuing import QueuingManager
@@ -68,7 +69,7 @@ def append_time_evolution(
         tape executions.
 
     """
-    new_operations = [op for op in tape.operations]
+    new_operations = tape.operations
     if exact:
         with QueuingManager.stop_recording():
             new_operations.append(
@@ -82,7 +83,7 @@ def append_time_evolution(
             new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
 
     new_tape = QuantumTape(new_operations, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

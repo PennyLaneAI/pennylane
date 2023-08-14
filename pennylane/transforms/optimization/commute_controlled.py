@@ -224,7 +224,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
         op_list = _commute_controlled_left(tape.operations)
 
     new_tape = QuantumTape(op_list, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

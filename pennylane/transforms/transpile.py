@@ -168,7 +168,7 @@ def transpile(
             list_op_copy = [_adjust_op_indices(op, map_wires) for op in list_op_copy]
             measurements = [_adjust_mmt_indices(m, map_wires) for m in measurements]
     new_tape = QuantumTape(gates, measurements, shots=tape.shots)
-    new_tape._qfunc_output = tuple(measurements)
+    new_tape._qfunc_output = tuple(measurements)  # pylint: disable=protected-access
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
