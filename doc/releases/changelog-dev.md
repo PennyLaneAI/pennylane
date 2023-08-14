@@ -178,8 +178,9 @@ array([False, False])
 * Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
 
-* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$. Furthermore, qubit frequencies in `transmon_interaction` are now divided by 2 as is common as well.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+  [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
 
 <h3>Breaking changes 💔</h3>
 
