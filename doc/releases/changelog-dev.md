@@ -333,6 +333,7 @@ array([False, False])
   [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
+  [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
 <h3>Contributors ✍️</h3>
 
