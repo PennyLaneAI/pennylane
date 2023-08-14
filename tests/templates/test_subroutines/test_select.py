@@ -295,7 +295,7 @@ class TestInterfaces:
         grad_fn2 = qml.grad(circuit_select)
         grads2 = grad_fn2(input_grad)
 
-        assert np.allclose(grads, grads2)
+        assert qml.math.allclose(grads, grads2)
 
     @pytest.mark.tf
     def test_tf(self):
@@ -310,7 +310,7 @@ class TestInterfaces:
         input_default = [0.5, 0.2]
         input_tf = tf.Variable(input_default)
 
-        assert np.allclose(
+        assert qml.math.allclose(
             qml.matrix(circuit_default)(input_default), qml.matrix(circuit_tf)(input_tf)
         )
         assert qml.math.get_interface(qml.matrix(circuit_tf)(input_tf)) == "tensorflow"
@@ -323,7 +323,7 @@ class TestInterfaces:
             res2 = circuit_tf(input_tf)
         grads2 = tape2.gradient(res2, [input_tf])
 
-        assert np.allclose(grads[0], grads2[0])
+        assert qml.math.allclose(grads[0], grads2[0])
 
     @pytest.mark.torch
     def test_torch(self):
@@ -368,7 +368,7 @@ class TestInterfaces:
         circuit_default = qml.QNode(manual_rx_circuit, dev)
         circuit_jax = qml.QNode(select_rx_circuit, dev)
 
-        assert np.allclose(
+        assert qml.math.allclose(
             qml.matrix(circuit_default)(input_default), qml.matrix(circuit_jax)(input_jax)
         )
         assert qml.math.get_interface(qml.matrix(circuit_jax)(input_jax)) == "jax"
@@ -379,4 +379,4 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit_jax)
         grads2 = grad_fn2(input_jax)
 
-        assert np.allclose(grads, grads2)
+        assert qml.math.allclose(grads, grads2)
