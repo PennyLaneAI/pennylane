@@ -174,3 +174,107 @@ class Identity(CVObservable, Operation):
 
     def pow(self, _):
         return [Identity(wires=self.wires)]
+
+
+class GlobalPhase(Operation):
+    r"""A global phase operation that multiplies the all components of the state by :math:`\exp{1j \phi}`.
+
+    Args:
+        phi (TensorLike): the global phase
+        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+
+    """
+
+    num_params = 1
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    def _flatten(self):
+        return self.data, (self.wires, tuple())
+
+    def __init__(self, phi, wires=tuple(), id=None):
+        super().__init__(phi, wires=wires, id=id)
+        self._hyperparameters = {"n_wires": len(self.wires)}
+
+    @staticmethod
+    def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.GlobalPhase.eigvals`
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
+        array([6.123234e-17+1.j, 6.123234e-17+1.j])
+        """
+        return qml.math.exp(1j * phi) * qml.math.ones(2**n_wires)
+
+    @staticmethod
+    def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+         The canonical matrix is the textbook matrix representation that does not consider wires.
+         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+         .. seealso:: :meth:`~.GlobalPhase.matrix`
+
+         Returns:
+             ndarray: matrix
+
+         **Example**
+
+         >>> qml.GlobalPhase.compute_matrix(np.pi, n_wires=1)
+         array([[6.123234e-17+1.j, 0.000000e+00+0.j],
+        [0.000000e+00+0.j, 6.123234e-17+1.j]])
+        """
+        return qml.math.exp(1j * phi) * qml.math.eye(int(2**n_wires))
+
+    @staticmethod
+    def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+        return qml.math.exp(1j * phi) * sparse.eye(int(2**n_wires), format="csr")
+
+    @staticmethod
+    def compute_diagonalizing_gates(
+        phi, wires, n_wires=1
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.GlobalPhase.diagonalizing_gates`.
+
+        Args:
+            wires (Iterable[Any], Wires): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.GlobalPhase.compute_diagonalizing_gates(1.2, wires=[0])
+        []
+        """
+        return []
+
+    def adjoint(self):
+        return GlobalPhase(qml.math.conj(self.data[0]), self.wires)
+
+    def pow(self, z):
+        return [GlobalPhase(z * self.data[0], self.wires)]
