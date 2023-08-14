@@ -14,8 +14,9 @@
 """
 Unit tests for the ``compile`` transform.
 """
-import pytest
 from functools import partial
+
+import pytest
 from test_optimization.utils import compare_operation_lists
 
 import pennylane as qml
