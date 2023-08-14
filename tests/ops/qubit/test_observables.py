@@ -20,7 +20,7 @@ import numpy as np
 
 from gate_data import I, X, Y, Z, H
 import pennylane as qml
-from pennylane.ops.qubit.observables import _BasisStateProjector, _StateVectorProjector
+from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
 
 
 @pytest.fixture(autouse=True)
@@ -468,7 +468,7 @@ class TestProjector:
         basis_state = [0, 1, 1, 0]
         wires = range(len(basis_state))
         basis_state_projector = qml.Projector(basis_state, wires)
-        assert isinstance(basis_state_projector, _BasisStateProjector)
+        assert isinstance(basis_state_projector, BasisStateProjector)
 
         second_projector = qml.Projector(basis_state, wires)
         assert qml.equal(second_projector, basis_state_projector)
@@ -478,7 +478,7 @@ class TestProjector:
         state_vector = np.array([1, 1, 1, 1]) / 2
         wires = [0, 1]
         state_vector_projector = qml.Projector(state_vector, wires)
-        assert isinstance(state_vector_projector, _StateVectorProjector)
+        assert isinstance(state_vector_projector, StateVectorProjector)
 
         second_projector = qml.Projector(state_vector, wires)
         assert qml.equal(second_projector, state_vector_projector)
@@ -569,7 +569,7 @@ class TestBasisStateProjector:
         diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
         assert diag_gates == []
 
-        diag_gates_static = _BasisStateProjector.compute_diagonalizing_gates(
+        diag_gates_static = BasisStateProjector.compute_diagonalizing_gates(
             basis_state, wires=range(num_wires)
         )
         assert diag_gates_static == []
@@ -630,7 +630,7 @@ class TestBasisStateProjector:
     def test_matrix_representation(self, basis_state, expected, n_wires, tol):
         """Test that the matrix representation is defined correctly"""
         res_dynamic = qml.Projector(basis_state, wires=range(n_wires)).matrix()
-        res_static = _BasisStateProjector.compute_matrix(basis_state)
+        res_static = BasisStateProjector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
@@ -655,7 +655,7 @@ class TestStateVectorProjector:
         num_wires = np.log2(len(state_vector)).astype(int)
         proj = qml.Projector(state_vector, wires=range(num_wires))
         diag_gates = proj.diagonalizing_gates()
-        diag_gates_static = _StateVectorProjector.compute_diagonalizing_gates(
+        diag_gates_static = StateVectorProjector.compute_diagonalizing_gates(
             state_vector, wires=range(num_wires)
         )
 
@@ -672,7 +672,7 @@ class TestStateVectorProjector:
         """Test that the matrix representation is defined correctly"""
         num_wires = np.log2(len(state_vector)).astype(int)
         res_dynamic = qml.Projector(state_vector, wires=range(num_wires)).matrix()
-        res_static = _StateVectorProjector.compute_matrix(state_vector)
+        res_static = StateVectorProjector.compute_matrix(state_vector)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
