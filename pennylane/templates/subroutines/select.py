@@ -41,14 +41,14 @@ class Select(Operation):
 
     **Example**
 
-    >>> dev = qml.device('default.qubit',wires=4)
-    >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+    >>> dev = qml.device('default.qubit', wires=4)
+    >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
-    >>>     qml.Select(ops,control_wires=[0,1])
+    >>>     qml.Select(ops, control_wires=[0,1])
     >>>     return qml.state()
     ...
-    >>> print(qml.draw(circuit,expansion_strategy='device')())
+    >>> print(qml.draw(circuit, expansion_strategy='device')())
     0: ─╭○─╭○─╭●─╭●────┤  State
     1: ─├○─├●─├○─├●────┤  State
     2: ─╰X─│──╰Y─├SWAP─┤  State
