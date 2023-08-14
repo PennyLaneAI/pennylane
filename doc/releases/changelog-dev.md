@@ -159,6 +159,10 @@ array([False, False])
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
 
+* `qml.transforms.adjoint_metric_tensor` now uses the simulation tools in `pennylane.devices.qubit` instead of
+  private methods of `pennylane.devices.DefaultQubit`.
+  [(#4456)](https://github.com/PennyLaneAI/pennylane/pull/4456)
+
 * Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
