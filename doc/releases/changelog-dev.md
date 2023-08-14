@@ -4,7 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+* Python-native logging can now be enabled with `qml.logging.enable_logging()`.
+  [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
+
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing.
   A `ProcessPoolExecutor` executes tapes asynchronously
   using a pool of at most `max_workers` processes. If `max_workers` is `None`
   or not given, only the current process executes tapes. If you experience any
@@ -105,7 +108,7 @@ array([False, False])
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * The `qchem` functions `primitive_norm` and `contracted_norm` are modified to be compatible with
-  higher versions of scipy. The private function `_fac2` for computing double factorials is added. 
+  higher versions of scipy. The private function `_fac2` for computing double factorials is added.
   [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
 
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
@@ -158,6 +161,9 @@ array([False, False])
 
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+  
+* Provide users access to the logging configuration file path and improve the logging configuration structure.
+  [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 
 * Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
@@ -165,10 +171,14 @@ array([False, False])
 * Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
 
-* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$. Furthermore, qubit frequencies in `transmon_interaction` are now divided by 2 as is common as well.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+  [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
 
 <h3>Breaking changes 💔</h3>
+
+* Support for Python 3.8 is dropped.
+  [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
 
 * `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
   their IDs.
@@ -216,8 +226,8 @@ array([False, False])
 
 <h3>Deprecations 👋</h3>
 
-* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
-  List input to define the fermionic operator is also deprecated; the fermionic 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead.
+  List input to define the fermionic operator is also deprecated; the fermionic
   operators in the ``qml.fermi`` module should be used instead.
   [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
 
@@ -225,11 +235,11 @@ array([False, False])
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX``
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
 
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes
   are deprecated. Use ``convert_to_numpy_parameters`` instead.
   [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
@@ -245,9 +255,10 @@ array([False, False])
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
-* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
-  changes to operator equality and hashing.
+* The `__eq__` and `__hash__` dunder methods of `Operator` and `MeasurementProcess` will now raise
+  warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+  [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
 * The following decorator syntax for transforms has been deprecated and will raise a warning:
   ```python
@@ -345,6 +356,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Isaac De Vlugt,
+Amintor Dusko,
 Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
@@ -353,6 +365,7 @@ Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Lee James O'Riordan,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,

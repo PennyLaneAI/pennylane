@@ -16,6 +16,9 @@ This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,too-many-branches
+import inspect
+import logging
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager import context
@@ -24,6 +27,9 @@ import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.measurements import CountsMP, Shots
 from pennylane.transforms import convert_to_numpy_parameters
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _set_copy_and_unwrap_tape(t, a):
@@ -56,6 +62,17 @@ def _compute_vjp_legacy(dy, jacs):
 def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
     # compute the vector-Jacobian product dy @ jac
     # for a list of dy's and Jacobian matrices.
+
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(dy=%s, jacs=%s, multi_measurements=%s, shots=%s) called by=%s",
+            dy,
+            jacs,
+            multi_measurements,
+            has_partitioned_shots,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     vjps = []
 
     for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
@@ -317,6 +334,23 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(tapes=%s, jacs=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
+            tapes,
+            repr(device),
+            execute_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
+            gradient_kwargs,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     if not qml.active_return():
         return _execute_legacy(
             tapes,
@@ -353,9 +387,27 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(parameters=%s) called by=%s",
+                parameters,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "Entry with args=(dy=%s, tfkwargs=%s) called by=%s",
+                    dy,
+                    tfkwargs,
+                    "::L".join(
+                        str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                    ),
+                )
 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
