@@ -436,6 +436,7 @@ class Projector(Observable):
 class BasisStateProjector(Projector, Observable):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
+
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
@@ -563,6 +564,7 @@ class BasisStateProjector(Projector, Observable):
 class StateVectorProjector(Projector, Observable):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a state."""
+
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
