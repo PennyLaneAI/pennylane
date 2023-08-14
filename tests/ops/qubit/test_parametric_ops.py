@@ -2718,6 +2718,7 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2760,6 +2761,7 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)

@@ -523,7 +523,7 @@ class TestGrad:
             op(phi, wires=0)
             return qml.expval(obs)
 
-        phi_torch = torch.tensor(phi, requires_grad=True)
+        phi_torch = torch.tensor(phi, requires_grad=True, dtype=torch.float64)
         grad = torch.autograd.grad(circuit(phi_torch), phi_torch)
 
         assert qml.math.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
@@ -544,7 +544,7 @@ class TestGrad:
             op(phi, wires=0)
             return qml.expval(obs)
 
-        phi_torch = torch.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        phi_torch = torch.linspace(0, 2 * np.pi, 7, requires_grad=True, dtype=torch.float64)
         jac = torch.autograd.functional.jacobian(circuit, phi_torch)
         phi = phi_torch.detach().numpy()
 

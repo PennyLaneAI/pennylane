@@ -291,19 +291,6 @@ def execute(
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if not qml.active_return():
-        mode = "forward" if grad_on_execution else "backward"
-
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-            mode=mode,
-        )
 
     all_params = []
     parameters = []
@@ -357,7 +344,7 @@ def execute(
         params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped, unwrap=False)
         # Forward pass: execute the tapes
         res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -436,7 +423,9 @@ def execute(
 
                             dy = _res_restructured(dy, tapes)
 
-                            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                            new_tapes = set_parameters_on_copy_and_unwrap(
+                                tapes, params_unwrapped, unwrap=False
+                            )
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 new_tapes,
                                 dy,
@@ -501,7 +490,9 @@ def execute(
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
 
-                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        new_tapes = set_parameters_on_copy_and_unwrap(
+                            tapes, params_unwrapped, unwrap=False
+                        )
                         jac = gradient_fn(new_tapes, **gradient_kwargs)
 
                         vjps = _compute_vjp(dy, jac, multi_measurements, has_partitioned_shots)
