@@ -53,7 +53,7 @@ Currently Available Styles
 .. |sks| image:: ../_static/style/sketch_style.png
     :width: 100%
 
-.. |sks| image:: ../_static/style/pennylane_style.png
+.. |pls| image:: ../_static/style/pennylane_style.png
     :width: 100%
 
 .. |skd| image:: ../_static/style/sketch_dark_style.png
