@@ -152,7 +152,7 @@ Pending deprecations
       def circuit():
           ...
 
-  - Deprecated in v0.32
+  - Deprecated in v0.33
   - Will be removed in v0.34
 
 Completed deprecation cycles
