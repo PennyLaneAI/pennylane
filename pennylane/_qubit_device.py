@@ -956,7 +956,7 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            if m.obs is not None:
+            if m.obs is not None and not isinstance(m.obs, tuple):
                 obs = m.obs
                 obs.return_type = m.return_type
             else:
@@ -1662,7 +1662,12 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(
+                    observable.eigvals()
+                    if not isinstance(observable, MeasurementProcess)
+                    else np.arange(2 ** len(observable.wires)),
+                    dtype=self.R_DTYPE,
+                )
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
@@ -1674,6 +1679,10 @@ class QubitDevice(Device):
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        if isinstance(observable, MeasurementProcess):
+            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+            indices = samples @ powers_of_two
+            samples = np.array(indices)  # Add np.array here for Jax support.
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -1694,7 +1703,12 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(
+                    observable.eigvals()
+                    if not isinstance(observable, MeasurementProcess)
+                    else np.arange(2 ** len(observable.wires)),
+                    dtype=self.R_DTYPE,
+                )
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
@@ -1707,6 +1721,10 @@ class QubitDevice(Device):
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        if isinstance(observable, MeasurementProcess):
+            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+            indices = samples @ powers_of_two
+            samples = np.array(indices)  # Add np.array here for Jax support.
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -1817,7 +1835,7 @@ class QubitDevice(Device):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = observable.name if not isinstance(observable, tuple) else None
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
