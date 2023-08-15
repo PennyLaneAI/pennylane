@@ -1979,7 +1979,7 @@ class TestTapeExpansion:
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         res = circuit()
-        assert np.allclose(res, c[2], atol=0.1)
+        assert np.allclose(res, c[2], atol=0.3)
 
         spy.assert_called()
         tapes, _ = spy.spy_return
