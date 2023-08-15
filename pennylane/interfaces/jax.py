@@ -16,6 +16,9 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
+import inspect
+import logging
+
 import jax
 import jax.numpy as jnp
 
@@ -25,6 +28,9 @@ from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -393,6 +399,23 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
+            tapes,
+            repr(device),
+            execute_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
+            gradient_kwargs,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     # Set the trainable parameters
     if _n == 1:
         for tape in tapes:
@@ -440,12 +463,8 @@ def _execute_bwd(
     # pylint: disable=unused-variable
     # Copy a given tape with operations and set parameters
 
-    if isinstance(device, qml.devices.experimental.Device):
-        # cant test until we integrate device with shot vector
-        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        jvp_shots = None
-    else:
-        has_partitioned_shots = jvp_shots = device.shot_vector
+    # assumes all tapes have the same shot vector
+    has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     @jax.custom_jvp
     def execute_wrapper(params):
@@ -458,12 +477,11 @@ def _execute_bwd(
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             at_max_diff = _n == max_diff
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             _args = (
                 new_tapes,
                 tangents[0],
                 gradient_fn,
-                jvp_shots,
             )
             _kwargs = {
                 "reduction": "append",
@@ -491,7 +509,7 @@ def _execute_bwd(
             # Execution: execute the function first
             res = execute_wrapper(primals[0])
             # Backward: Gradient function is a device method.
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0])
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             jacs = gradient_fn(new_tapes, **gradient_kwargs)
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
@@ -516,7 +534,7 @@ def _execute_fwd(
     # pylint: disable=unused-variable
     @jax.custom_jvp
     def execute_wrapper(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
         res, jacs = execute_fn(new_tapes, **gradient_kwargs)
         res = _to_jax(res)
 

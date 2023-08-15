@@ -209,7 +209,7 @@ class TestGradientTransformIntegration:
                 qml.RX(weights, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
@@ -233,7 +233,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -260,7 +260,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
         res = grad_fn(*w)
@@ -393,6 +393,7 @@ class TestGradientTransformIntegration:
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
+        # pylint:disable=unexpected-keyword-arg
         res = qml.gradients.param_shift(circuit, hybrid=True)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
@@ -574,6 +575,7 @@ class TestGradientTransformIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # when executed with hybrid=False, only the quantum jacobian is returned
+        # pylint:disable=unexpected-keyword-arg
         res = qml.gradients.param_shift(circuit, hybrid=False)(w)
         assert res[0].shape == (4,)
         assert res[1].shape == (4,)
