@@ -20,7 +20,12 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.ops import Sum, Hamiltonian
-from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
+from pennylane.measurements import (
+    StateMeasurement,
+    MeasurementProcess,
+    ExpectationMP,
+    MeasurementValue,
+)
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -132,7 +137,7 @@ def get_measurement_function(
     """
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
-            if isinstance(measurementprocess.obs, tuple):
+            if isinstance(measurementprocess.obs, MeasurementValue):
                 return state_diagonalizing_gates
 
             if measurementprocess.obs.name == "SparseHamiltonian":
@@ -158,7 +163,7 @@ def get_measurement_function(
 
         if (
             measurementprocess.obs is None
-            or isinstance(measurementprocess.obs, tuple)
+            or isinstance(measurementprocess.obs, MeasurementValue)
             or measurementprocess.obs.has_diagonalizing_gates
         ):
             return state_diagonalizing_gates

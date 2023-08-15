@@ -128,18 +128,18 @@ def defer_measurements(tape: QuantumTape):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     # Find wires that are reused after measurement
-    measured_wires = set()
+    measured_wires = []
     reused_measurement_wires = set()
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            if op.wires[0] in measured_wires or op.reset is True:
+            if op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
-            measured_wires.add(op.wires[0])
+            measured_wires.append(op.wires[0])
 
         else:
             reused_measurement_wires = reused_measurement_wires.union(
-                measured_wires.intersection(op.wires.toset())
+                set(measured_wires).intersection(op.wires.toset())
             )
 
     # Apply controlled operations to store measurement outcomes and replace
@@ -149,8 +149,10 @@ def defer_measurements(tape: QuantumTape):
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            # Only store measurement outcome in new wire if wire gets reused
-            if op.wires[0] in reused_measurement_wires:
+            _ = measured_wires.pop(0)
+
+            # Store measurement outcome in new wire if wire gets reused
+            if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
                 control_wires[op.id] = cur_wire
 
                 qml.CNOT([op.wires[0], cur_wire])
@@ -158,6 +160,7 @@ def defer_measurements(tape: QuantumTape):
                     qml.CNOT([cur_wire, op.wires[0]])
 
                 cur_wire += 1
+
             else:
                 control_wires[op.id] = op.wires[0]
 
