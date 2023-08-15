@@ -8,10 +8,10 @@
   $|0\rangle$ computational basis state after measurement.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
 
-* Measurement statistics can now be collected for mid-circuit measurements on the new
-  `DefaultQubit2` device. Currently, `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`,
-  and `qml.counts` are supported. Users can collect joint statistics for multiple
-  mid-circuit measurements as well.
+* Measurement statistics can now be collected for mid-circuit measurements. Currently,
+  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
+  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` devices. Users can
+  collect joint statistics for multiple mid-circuit measurements as well.
   [(#4474)](https://github.com/PennyLaneAI/pennylane/pull/4474)
 
 ```python
