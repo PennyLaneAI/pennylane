@@ -14,7 +14,7 @@
 """
 Unit tests for the get_unitary_matrix transform
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,too-many-function-args
 from functools import reduce
 
 import pytest
