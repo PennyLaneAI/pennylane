@@ -22,11 +22,10 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
+
 # pylint: disable=too-few-public-methods
 class PlainOperator(qml.operation.Operator):
     """just an operator."""
-
-    pass
 
 
 class TestInheritanceMixins:
