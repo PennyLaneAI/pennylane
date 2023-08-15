@@ -396,8 +396,9 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
 
         # Shift copied parameter
         new_params = list(op.data)
-        new_params[p_idx] = qml.math.convert_like(new_params[p_idx], multiplier)
-        new_params[p_idx] = qml.math.cast_like(new_params[p_idx], multiplier)
+        new_params[p_idx] = qml.math.cast(new_params[p_idx], np.float64)
+        multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
+        multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
         shift = qml.math.convert_like(shift, new_params[p_idx])
         shift = qml.math.cast_like(shift, new_params[p_idx])
         new_params[p_idx] = new_params[p_idx] * multiplier

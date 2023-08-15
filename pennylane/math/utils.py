@@ -117,6 +117,9 @@ def cast(tensor, dtype):
         except (AttributeError, TypeError, ImportError):
             dtype = getattr(dtype, "name", dtype)
 
+    if get_interface(tensor) == "numpy":
+        return _np.array(tensor, dtype=ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
+
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
 
 
