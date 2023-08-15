@@ -285,7 +285,7 @@ class CountsMP(SampleMeasurement):
         batched_ndims = 2
         shape = qml.math.shape(samples)
 
-        if self.obs is None:
+        if self.obs is None or isinstance(self.obs, tuple):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)

@@ -134,6 +134,7 @@ def get_measurement_function(
         if isinstance(measurementprocess, ExpectationMP):
             if isinstance(measurementprocess.obs, tuple):
                 return state_diagonalizing_gates
+
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
@@ -155,7 +156,11 @@ def get_measurement_function(
 
                     return csr_dot_products
 
-        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
+        if (
+            measurementprocess.obs is None
+            or isinstance(measurementprocess.obs, tuple)
+            or measurementprocess.obs.has_diagonalizing_gates
+        ):
             return state_diagonalizing_gates
 
     raise NotImplementedError
