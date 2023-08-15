@@ -292,6 +292,9 @@ array([False, False])
 * `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
   [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
 
+* Input types and sources for external wavefunctions and operators for `qml.import_state` 
+  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+
 <h3>Bug fixes 🐛</h3>
 
 * Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
