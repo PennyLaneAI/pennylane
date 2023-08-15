@@ -26,6 +26,11 @@ class Select(Operation):
     the designated control qubits.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
+    
+    .. figure:: ../../../doc/_static/templates/subroutines/select.png
+                    :align: center
+                    :width: 60%
+                    :target: javascript:void(0);
 
     Args:
         ops (list[Operator]): operations to apply
