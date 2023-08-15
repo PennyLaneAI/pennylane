@@ -741,14 +741,14 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
 
     **Example**
 
-    Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
+    A operator matrix and a state vectors can be used as arguments and the overlap is returned, e.g.:
 
     >>> state_vector = np.array([0, 1])
     >>> operator_matrix = np.array([[0,1],[1,0]])
     >>> qml.math.expectation_value(operator_matrix, state1)
     0.0
 
-    .. seealso:: :func:`pennylane.math.fidelity` and :func:`pennylane.qinfo.transforms.fidelity`
+    .. seealso:: :func:`pennylane.math.fidelity`
 
     """
     # Cast as a c_dtype array
