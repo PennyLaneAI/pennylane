@@ -565,8 +565,8 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
-    Currently the only accepted source of wavefunctions is the PySCF library. The currently
-    supported methods are the restricted and unrestricted CISD/CCSD methods.
+    Currently, the only accepted source of wavefunctions is the PySCF library.
+    The restricted and unrestricted CISD/CCSD methods are supported.
 
     Args:
         solver: external wavefunction object (e.g. PySCF Solver object) that will be converted
