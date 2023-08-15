@@ -24,8 +24,8 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires):  # TODO: Change name to mid_measure
-    """Perform a mid-circuit measurement in the computational basis on the
+def measure(wires: Wires, reset: Optional[bool] = False):
+    r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
     Measurement outcomes can be obtained and used to conditionally apply
@@ -38,7 +38,7 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def func(x, y):
@@ -55,16 +55,37 @@ def measure(wires):  # TODO: Change name to mid_measure
     >>> func(*pars)
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
+    Wires can be reused after measurement. Moreover, measured wires can be reset
+    to the :math:`|0 \rangle` by setting ``reset=True``.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def func():
+            qml.PauliX(1)
+            m_0 = qml.measure(1, reset=True)
+            return qml.probs(wires=[1])
+
+    Executing this QNode:
+
+    >>> func()
+    tensor([1., 0.], requires_grad=True)
+
     Mid circuit measurements can be manipulated using the following dunder methods
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
     ``>=``, ``<``, ``>`` with other mid-circuit measurements or scalars.
 
-    Note:
-        python ``not``, ``and``, ``or``, do not work since these do not have dunder
-        methods. Instead use ``~``, ``&``, ``|``.
+    .. Note ::
+
+        Python ``not``, ``and``, ``or``, do not work since these do not have dunder methods.
+        Instead use ``~``, ``&``, ``|``.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
 
     Returns:
         MidMeasureMP: measurement process instance
@@ -72,6 +93,7 @@ def measure(wires):  # TODO: Change name to mid_measure
     Raises:
         QuantumFunctionError: if multiple wires were specified
     """
+
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
@@ -80,7 +102,7 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, id=measurement_id)
+    mp = MidMeasureMP(wires=wire, reset=reset, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -90,17 +112,23 @@ T = TypeVar("T")
 class MidMeasureMP(MeasurementProcess):
     """Mid-circuit measurement.
 
+    This class additionally stores information about unknown measurement outcomes in the qubit model.
+    Measurements on a single qubit in the computational basis are assumed.
+
     Please refer to :func:`measure` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
+        reset (bool): Whether to reset the wire after measurement.
+        id (str): Custom label given to a measurement instance.
     """
 
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(
+        self, wires: Optional[Wires] = None, reset: Optional[bool] = False, id: Optional[str] = None
+    ):
+        super().__init__(wires=Wires(wires), id=id)
+        self.reset = reset
 
     @property
     def return_type(self):
