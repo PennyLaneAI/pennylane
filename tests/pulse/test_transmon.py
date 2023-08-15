@@ -356,7 +356,7 @@ class TestTransmonInteraction:
         g = 2 * np.pi * coupling
         assert H.coeffs[:6] == [2 * np.pi] * 6
         assert all(H.coeffs[6:] == g)
-        for o1, o2 in zip(H.ops[:6], [qml.s_prod(0.5, ad(i, 2) @ a(i, 2)) for i in wires]):
+        for o1, o2 in zip(H.ops[:6], [ad(i, 2) @ a(i, 2) for i in wires]):
             assert qml.equal(o1, o2)
 
     def test_single_callable_qubit_freq_with_explicit_wires(self):
@@ -377,7 +377,7 @@ class TestTransmonInteraction:
         assert qml.math.allclose(H.coeffs[:10], g)
         for coeff in H.coeffs[10:]:
             assert coeff([3, 4, 5], 6) == omega([3, 4, 5], 6)
-        for o1, o2 in zip(H.ops[10:], [qml.s_prod(0.5, ad(i, 2) @ a(i, 2)) for i in wires0]):
+        for o1, o2 in zip(H.ops[10:], [ad(i, 2) @ a(i, 2) for i in wires0]):
             assert qml.equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
