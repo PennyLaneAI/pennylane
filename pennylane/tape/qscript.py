@@ -460,7 +460,12 @@ class QuantumScript:
             _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
                 the observables in _obs_sharing_wires
         """
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        obs_wires = [
+            wire
+            for m in self.measurements
+            for wire in m.wires
+            if m.obs is not None and not isinstance(m.obs, MeasurementValue)
+        ]
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
 

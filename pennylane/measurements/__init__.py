@@ -73,6 +73,78 @@ In general, a :class:`MeasurementProcess` is differentiable with respect to a pa
 that parameter is continuous. When using the analytic method of differentiation the output of the
 measurement process must be a real scalar value for it to be differentiable.
 
+Working with mid-circuit measurements
+-------------------------------------
+Mid-circuit measurements can be made using ``qml.measure``. The measurement value is returned by ``qml.measure``
+and can be used as a condition for classical control. Moreover, multiple measurement values can be combined
+using arithmetic operators for more complex conditioning:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circ(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=1)
+
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        qml.cond(~m0 & m1 == 0, qml.PauliX)(wires=2)
+        return qml.expval(qml.PauliZ(wires=2))
+
+Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
+reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
+
+Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
+``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. Users have the
+ability to collect statistics on single measurement values, as well as joint statistics for multiple measurement
+values. Multiple measurement values can be combined using the ``@`` operator:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circ(x, y):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, reset=True)
+
+        qml.RY(y, wires=1)
+        m1 = qml.measure(1)
+        return qml.expval(qml.PauliZ(0)), qml.sample(m0 @ m1)
+
+    @qml.qnode(dev)
+    def circ_xy(x, y):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0)
+        qml.RY(y, wires=1)
+        m1 = qml.measure(1)
+        return qml.probs(op=m0 @ m1)
+
+QNodes can be executed as usual when collecting mid-circuit measurement statistics:
+
+>>> circ(1.0, 2.0, shots=5)
+(array(1.),
+ array([[1, 0],
+        [0, 0],
+        [0, 1],
+        [0, 0],
+        [0, 1]]))
+>>> circ_xy(1.0, 2.0)
+tensor([0.22482759, 0.54532356, 0.06709899, 0.16274986], requires_grad=True)
+
+.. note::
+
+    Using the ``@`` operator to combine measurement values is reserved for collecting statistics
+    and must not be used for conditioning with ``qml.cond``. Conversely, measurement values
+    combined using any other operators for use with ``qml.cond`` must not be used for collecting
+    statistics as this can result in incorrect wire ordering.
+
 Creating custom measurements
 ----------------------------
 A custom measurement process can be created by inheriting from any of the classes mentioned above.
