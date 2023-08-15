@@ -240,6 +240,7 @@ array([False, False])
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
 
 * `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`. 
+   `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
   [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Deprecations 👋</h3>
