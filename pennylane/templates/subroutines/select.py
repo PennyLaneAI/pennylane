@@ -16,6 +16,7 @@ Contains the Select template.
 """
 # pylint: disable=too-many-arguments
 
+import itertools
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane import math
@@ -153,12 +154,7 @@ class Select(Operation):
          Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        states = [
-            [int(i) for i in list(bitstring)]
-            for bitstring in [
-                format(i, f"0{len(control_wires)}b") for i in range(2 ** len(control_wires))
-            ]
-        ]
+        states = list(itertools.product([0, 1], repeat=len(control_wires)))
         decomp_ops = [
             qml.ctrl(op, control_wires, control_values=states[index])
             for index, op in enumerate(ops)
