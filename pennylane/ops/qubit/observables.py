@@ -412,7 +412,7 @@ class Projector(Observable):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
-class BasisStateProjector(Projector, Observable):
+class BasisStateProjector(Projector):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
 
@@ -543,7 +543,7 @@ class BasisStateProjector(Projector, Observable):
         return []
 
 
-class StateVectorProjector(Projector, Observable):
+class StateVectorProjector(Projector):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a state."""
 
