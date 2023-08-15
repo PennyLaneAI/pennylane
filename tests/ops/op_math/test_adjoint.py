@@ -13,12 +13,20 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper and the adjoint constructor."""
 
+import pickle
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
+
+# pylint: disable=too-few-public-methods
+class PlainOperator(qml.operation.Operator):
+    """just an operator."""
+
+    pass
 
 
 class TestInheritanceMixins:
@@ -28,11 +36,7 @@ class TestInheritanceMixins:
         """Test when base directly inherits from Operator, Adjoint only inherits
         from Adjoint and Operator."""
 
-        # pylint: disable=too-few-public-methods
-        class Tester(qml.operation.Operator):
-            num_wires = 1
-
-        base = Tester(1.234, wires=0)
+        base = PlainOperator(1.234, wires=0)
         op = Adjoint(base)
 
         assert isinstance(op, Adjoint)
@@ -90,6 +94,25 @@ class TestInheritanceMixins:
         # check the dir
         assert "return_type" in dir(ob)
         assert "grad_recipe" not in dir(ob)
+
+    @pytest.mark.parametrize(
+        "op",
+        (
+            PlainOperator(1.2, wires=0),
+            qml.RX(1.2, wires=0),
+            qml.operation.Tensor(qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0),
+        ),
+    )
+    def test_pickling(self, op):
+        """Test that pickling works for all inheritance combinations."""
+        adj_op = Adjoint(op)
+
+        pickled_adj_op = pickle.dumps(adj_op)
+        unpickled_op = pickle.loads(pickled_adj_op)
+
+        assert type(adj_op) is type(unpickled_op)
+        assert qml.equal(adj_op, unpickled_op)
 
 
 class TestInitialization:

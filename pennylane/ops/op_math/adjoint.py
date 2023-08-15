@@ -318,7 +318,7 @@ class AdjointOperation(Adjoint, Operation):
     class can be removed.
     """
 
-    def __new__(cls, *_, **_):
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
 
     @property
@@ -363,7 +363,7 @@ class AdjointOperation(Adjoint, Operation):
 class AdjointObs(Adjoint, Observable):
     """A child of :class:`~.Adjoint` that also inherits from :class:`~.Observable`."""
 
-    def __new__(cls, *_, **_):
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
 
 
@@ -371,5 +371,5 @@ class AdjointObs(Adjoint, Observable):
 class AdjointOpObs(AdjointOperation, Observable):
     """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
 
-    def __new__(cls, *_, **_):
+    def __new__(cls, *_, **__):
         return object.__new__(cls)
