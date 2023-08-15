@@ -719,10 +719,11 @@ def _compute_mutual_info(
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
 
-def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype="complex128"):
-    r"""Compute the expectation value of an operator and a pure state. 
 
-    The expectation value of an operator :math:`A` for a pure states given by state vector :math:`\ket{\psi}` 
+def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype="complex128"):
+    r"""Compute the expectation value of an operator and a pure state.
+
+    The expectation value of an operator :math:`A` for a pure states given by state vector :math:`\ket{\psi}`
     is defined as
 
     .. math::
@@ -771,11 +772,14 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
     indices2 = "bi" if batched0 else "i"
     target = "b" if batched0 or batched1 else ""
     overlap = qml.math.einsum(
-        f"{indices0},{indices1},{indices2}->{target}",  
-        np.conj(state_vector), operator_matrix, state_vector, optimize="greedy"
-        )
-
+        f"{indices0},{indices1},{indices2}->{target}",
+        np.conj(state_vector),
+        operator_matrix,
+        state_vector,
+        optimize="greedy",
+    )
     return overlap
+
 
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     r"""Compute the fidelity for two states (given as density matrices) acting on quantum
