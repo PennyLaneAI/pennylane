@@ -32,7 +32,7 @@ requirements = [
     "cachetools",
     "pennylane-lightning>=0.31",
     "requests",
-    "typing_extensions"
+    "typing_extensions",
 ]
 
 info = {
