@@ -41,7 +41,7 @@ class TestMergeAmplitudeEmbedding:
         assert len(ops) == 3
 
         # Check that the solution is as expected.
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
 
     @pytest.mark.xfail(reason="fails earlier because the operator inherits from StatePrep")
@@ -54,7 +54,7 @@ class TestMergeAmplitudeEmbedding:
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(transformed_qfunc, dev)
 
         with pytest.raises(DeviceError, match="applied in the same qubit"):
@@ -70,13 +70,13 @@ class TestMergeAmplitudeEmbedding:
 
             return qml.state()
 
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
         assert qnode()[3] == 1.0
 
     def test_broadcasting(self):
         """Test that merging preserves the batch dimension"""
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         @qml.transforms.merge_amplitude_embedding
@@ -106,7 +106,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
             qml.AmplitudeEmbedding(amplitude, wires=1)
             return qml.state()
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
@@ -124,7 +124,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
             qml.AmplitudeEmbedding(amplitude, wires=1)
             return qml.state()
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
@@ -142,7 +142,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
             qml.AmplitudeEmbedding(amplitude, wires=1)
             return qml.state()
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
@@ -163,7 +163,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
             qml.AmplitudeEmbedding(amplitude, wires=1)
             return qml.state()
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
