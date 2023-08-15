@@ -24,6 +24,11 @@ from pennylane import numpy as np
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
 
 
+def _reshape_real_imag(state, dim):
+    state = qml.math.reshape(state, (dim,))
+    return qml.math.real(state), qml.math.imag(state)
+
+
 def _group_operations(tape):
     """Divide all operations of a tape into trainable operations and blocks
     of untrainable operations after each trainable one."""

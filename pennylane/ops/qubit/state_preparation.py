@@ -232,6 +232,7 @@ class StatePrep(StatePrepBase):
         return math.convert_like(ket, op_vector)
 
 
+# pylint: disable=missing-class-docstring
 class QubitStateVector(StatePrep):
     pass  # QSV is still available
 
