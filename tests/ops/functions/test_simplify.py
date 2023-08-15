@@ -52,7 +52,7 @@ class TestSimplifyOperators:
         op = build_op()
 
         s_op = qml.simplify(op)
-        assert isinstance(s_op, qml.ops.Prod)
+        assert isinstance(s_op, qml.ops.Prod)  # pylint: disable=no-member
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -78,9 +78,9 @@ class TestSimplifyOperators:
         import jax
 
         sum_op = qml.sum(qml.PauliX(0), qml.PauliX(0))
-        simplified_op = jax.jit(qml.simplify)(sum_op)
+        simp_op = jax.jit(qml.simplify)(sum_op)
 
-        assert qml.equal(simplified_op, qml.s_prod(2.0, qml.PauliX(0)))
+        assert qml.equal(simp_op, qml.s_prod(2.0, qml.PauliX(0)))
 
 
 class TestSimplifyTapes:
@@ -96,7 +96,7 @@ class TestSimplifyTapes:
         s_tape = qml.simplify(tape)
         assert len(s_tape) == 1
         s_op = s_tape[0]
-        assert isinstance(s_op, qml.ops.Prod)
+        assert isinstance(s_op, qml.ops.Prod)  # pylint: disable=no-member
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
