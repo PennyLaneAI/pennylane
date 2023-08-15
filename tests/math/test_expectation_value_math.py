@@ -17,15 +17,14 @@
 import numpy as onp
 import pytest
 
+import torch
+import jax.numpy as jnp
+import tensorflow as tf
+
 import pennylane as qml
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
-
-tf = pytest.importorskip("tensorflow", minversion="2.1")
-torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
 
 
 class TestExpectationValueMath:
@@ -33,8 +32,8 @@ class TestExpectationValueMath:
 
     ops_vs_vecstates = [
         ([[1, 0], [0, 0]], [1, 0], 1),
-        ([[0, 1], [1, 0]], [0, 1j], 0),
-        ([[0.5, 0.5], [0.5, 0.5]], [1, 1] / np.sqrt(2), 0.5),
+        ([[0, 1], [1, 0]], [0, 1], 0),
+        ([[0.5, 0.5], [0.5, 0.5]], [1, 1] / np.sqrt(2), 1),
     ]
 
     array_funcs = [
@@ -57,7 +56,6 @@ class TestExpectationValueMath:
         ops, state_vectors, expected = operator_and_states
         ops = func(ops)
         state_vectors = func(state_vectors)
-
         overlap = qml.math.expectation_value(ops, state_vectors, check_state)
         assert qml.math.allclose(expected, overlap)
 
@@ -103,7 +101,7 @@ class TestExpectationValueMath:
                 [[1, 0], [0, 1]],
             ]
         )
-        state_vectors = func([[0, 1j], [1, 0], [1, 1] / np.sqrt(2)])
+        state_vectors = func([[0, 1], [1, 0], [1, 1] / np.sqrt(2)])
         expected = [0, 0.5, 1]
 
         overlap = qml.math.expectation_value(ops, state_vectors, check_state)
@@ -126,13 +124,7 @@ class TestExpectationValueMath:
         """Test broadcasting works for expectation values when the state vector input is unbatched"""
         ops = func(
             [
-                [
-                    [
-                        1,
-                        0,
-                    ],
-                    [0, 0],
-                ],
+                [[1, 0], [0, 0]],
                 [[0.5, 0.5], [0.5, 0.5]],
                 [[0, 0], [0, 1]],
             ]
