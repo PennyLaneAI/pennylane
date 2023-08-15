@@ -1567,6 +1567,25 @@ class TestParameterShiftRule:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("par", list(range(4)))  # integers, zero
+    def test_integer_parameters(self, tol, par):
+        """Test that the gradient of the RY gate matches the exact analytic formula."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(par, wires=[0])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {0}
+
+        # gradients
+        exact = np.cos(par)
+        gtapes, fn = qml.gradients.param_shift(tape)
+        grad_PS = fn(qml.execute(gtapes, dev, gradient_fn=None))
+
+        # different methods must agree
+        assert np.allclose(grad_PS, exact, atol=tol, rtol=0)
+
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
