@@ -108,6 +108,16 @@ class Select(Operation):
 
         Returns:
             list[Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+        >>> op = qml.Select(ops, control_wires=[0,1])
+        >>> op.decomposition()
+        [MultiControlledX(wires=[0, 1, 2], control_values="00"),
+         MultiControlledX(wires=[0, 1, 3], control_values="01"),
+         Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
+         Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         return self.compute_decomposition(self.ops, control_wires=self.control_wires)
 
@@ -133,6 +143,15 @@ class Select(Operation):
 
         Returns:
             list[Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
+        >>> qml.Select.compute_decomposition(ops, control_wires=[0,1])
+        [MultiControlledX(wires=[0, 1, 2], control_values="00"),
+         MultiControlledX(wires=[0, 1, 3], control_values="01"),
+         Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
+         Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
         states = [
             [int(i) for i in list(bitstring)]
