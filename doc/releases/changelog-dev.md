@@ -278,6 +278,13 @@ array([False, False])
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
+* The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
+  fix of the seed-setting behaviour.
+  Instead, the `sampler_rng` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally or to a NumPy pseudo-random number generator created via
+  `np.random.default_rng(seed)`.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
 <h3>Documentation 📝</h3>
 
 * The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
@@ -353,6 +360,13 @@ array([False, False])
 * Subtracting a `Prod` from another operator now works as expected.
   [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
 
+* Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
+  an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
+  being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
+  which allows reproducibly calling `spsa_grad` without getting the same results every time.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -374,3 +388,4 @@ Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
+Frederik Wilde
