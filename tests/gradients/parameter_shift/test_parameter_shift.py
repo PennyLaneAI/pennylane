@@ -3912,8 +3912,8 @@ class TestQnodeTorch:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = torch.tensor([0.543, 0.2], requires_grad=True)
-        y = torch.tensor(-0.654, requires_grad=True)
+        x = torch.tensor([0.543, 0.2], requires_grad=True, dtype=torch.float64)
+        y = torch.tensor(-0.654, requires_grad=True, dtype=torch.float64)
 
         res = qml.gradients.param_shift(circuit)(x, y)
 
@@ -3938,8 +3938,8 @@ class TestQnodeTorch:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        x = torch.tensor([0.543, 0.2], requires_grad=True)
-        y = torch.tensor(-0.654, requires_grad=True)
+        x = torch.tensor([0.543, 0.2], requires_grad=True, dtype=torch.float64)
+        y = torch.tensor(-0.654, requires_grad=True, dtype=torch.float64)
 
         res = qml.gradients.param_shift(circuit)(x, y)
 
@@ -3964,7 +3964,7 @@ class TestQnodeTorch:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = torch.tensor([0.543, -0.654], requires_grad=True)
+        x = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
         res = qml.gradients.param_shift(circuit)(x)
         res_expected = torch.autograd.functional.jacobian(circuit, x)
 

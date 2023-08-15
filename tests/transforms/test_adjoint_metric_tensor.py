@@ -19,231 +19,42 @@ import pytest
 from pennylane import numpy as np
 import pennylane as qml
 
-from pennylane.transforms.adjoint_metric_tensor import _apply_operations
-
-
-class TestApplyOperations:
-    """Tests the application of operations via the helper function
-    _apply_operations used in the adjoint metric tensor."""
-
-    device = qml.device("default.qubit", wires=2)
-    x = 0.5
-
-    def test_simple_operation(self):
-        """Test that an operation is applied correctly."""
-        op = qml.RX(self.x, wires=0)
-        out = _apply_operations(self.device._state, op, self.device)
-        out = qml.math.reshape(out, 4)
-        exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
-        assert np.allclose(out, exp)
-
-    def test_simple_operation_inv(self):
-        """Test that an operation is applied correctly when using invert=True
-        but does not alter the operation (in particular its inverse flag) that is used."""
-        op = qml.RX(self.x, wires=0)
-        out = _apply_operations(self.device._state, op, self.device, invert=True)
-        out = qml.math.reshape(out, 4)
-        exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
-        assert np.allclose(out, exp)
-
-    def test_operation_group(self):
-        """Test that a group of operations with is applied correctly
-        but does not alter the operations (in particular their order and
-        inverse flags) that are used."""
-        op = [qml.adjoint(qml.RX(self.x, wires=0)), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
-        out = _apply_operations(self.device._state, op, self.device)
-        out = qml.math.reshape(out, 4)
-        exp = np.array(
-            [
-                np.cos(self.x / 2) / np.sqrt(2),
-                1j * np.sin(self.x / 2) / np.sqrt(2),
-                1j * np.sin(self.x / 2) / np.sqrt(2),
-                np.cos(self.x / 2) / np.sqrt(2),
-            ]
-        )
-        assert np.allclose(out, exp)
-        assert qml.equal(op[0], qml.adjoint(qml.RX(self.x, wires=0)))
-        assert isinstance(op[1], qml.Hadamard)
-        assert isinstance(op[2], qml.CNOT)
-
-    def test_operation_group_inv(self):
-        """Test that a group of operations with is applied correctly when using invert=True
-        but does not alter the operations (in particular their order and
-        inverse flags) that are used."""
-        op = [qml.adjoint(qml.RX(self.x, wires=0)), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
-        out = _apply_operations(self.device._state, op, self.device, invert=True)
-        out = qml.math.reshape(out, 4)
-        exp = np.array(
-            [
-                np.cos(self.x / 2) / np.sqrt(2),
-                np.cos(self.x / 2) / np.sqrt(2),
-                -1j * np.sin(self.x / 2) / np.sqrt(2),
-                -1j * np.sin(self.x / 2) / np.sqrt(2),
-            ]
-        )
-        assert np.allclose(out, exp)
-        assert qml.equal(op[0], qml.adjoint(qml.RX(self.x, wires=0)))
-        assert isinstance(op[1], qml.Hadamard)
-        assert isinstance(op[2], qml.CNOT)
-
-    def test_state_prep(self):
-        """Test that a statevector preparation is applied correctly."""
-        state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
-        state /= np.linalg.norm(state, ord=2)
-        op = qml.StatePrep(state, wires=self.device.wires)
-        out = _apply_operations(None, op, self.device, invert=False)
-        out = qml.math.reshape(out, 4)
-        assert np.allclose(out, state)
-
-    def test_error_state_prep(self):
-        """Test that an error is raised for a statevector preparation with invert=True."""
-        state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
-        state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
-        state /= np.linalg.norm(state, ord=2)
-        op = qml.StatePrep(state, wires=self.device.wires)
-        with pytest.raises(ValueError, match="Can't invert state preparation."):
-            _apply_operations(None, op, self.device, invert=True)
-
-    def test_basisstate(self):
-        """Test that a basis state preparation is applied correctly."""
-        op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
-        out = _apply_operations(None, op, self.device, invert=False)
-        out = qml.math.reshape(out, 4)
-        exp = np.array([0.0, 0.0, 1.0, 0.0])
-        assert np.allclose(out, exp)
-
-    def test_error_basisstate(self):
-        """Test that an error is raised for a basis state preparation with invert=True."""
-        op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
-        with pytest.raises(ValueError, match="Can't invert state preparation."):
-            _apply_operations(None, op, self.device, invert=True)
-
-
-@pytest.mark.parametrize("invert", [False, True])
-class TestApplyOperationsDifferentiability:
-    """Tests the differentiability of applying operations via the helper function
-    _apply_operations used in the adjoint metric tensor."""
-
-    x = 0.5
-
-    @pytest.mark.autograd
-    def test_simple_operation_autograd(self, invert):
-        """Test differentiability for a simple operation with Autograd."""
-        device = qml.device("default.qubit.autograd", wires=2)
-        x = np.array(self.x, requires_grad=True)
-        r_fn = lambda x: qml.math.real(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        i_fn = lambda x: qml.math.imag(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        out = qml.jacobian(r_fn)(x) + 1j * qml.jacobian(i_fn)(x)
-        exp = (
-            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
-            / 2
-        )
-        assert np.allclose(out, exp)
-
-    @pytest.mark.jax
-    def test_simple_operation_jax(self, invert):
-        """Test differentiability for a simple operation with JAX."""
-        import jax
-
-        device = qml.device("default.qubit.jax", wires=2)
-        x = jax.numpy.array(self.x)
-        r_fn = lambda x: qml.math.real(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        i_fn = lambda x: qml.math.imag(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        out = jax.jacobian(r_fn)(x) + 1j * jax.jacobian(i_fn)(x)
-        exp = (
-            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
-            / 2
-        )
-        assert np.allclose(out, exp)
-
-    @pytest.mark.tf
-    def test_simple_operation_tf(self, invert):
-        """Test differentiability for a simple operation with TensorFlow."""
-        import tensorflow as tf
-
-        device = qml.device("default.qubit.tf", wires=2)
-        x = tf.Variable(self.x, dtype=tf.float64)
-        r_fn = lambda x: qml.math.real(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        i_fn = lambda x: qml.math.imag(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        with tf.GradientTape(persistent=True) as tape:
-            r_state = r_fn(x)
-            i_state = i_fn(x)
-        out = qml.math.complex(tape.jacobian(r_state, x), tape.jacobian(i_state, x))
-        exp = (
-            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
-            / 2
-        )
-        assert np.allclose(out, exp)
-
-    @pytest.mark.torch
-    def test_simple_operation_torch(self, invert):
-        """Test differentiability for a simple operation with Torch."""
-        import torch
-
-        jac_fn = torch.autograd.functional.jacobian
-        device = qml.device("default.qubit.torch", wires=2)
-        x = torch.tensor(self.x, requires_grad=True)
-        r_fn = lambda x: qml.math.real(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        i_fn = lambda x: qml.math.imag(
-            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
-        )
-        out = jac_fn(r_fn, x) + 1j * jac_fn(i_fn, x)
-        exp = (
-            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
-            / 2
-        )
-        assert np.allclose(out, exp)
-
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
 
 def fubini_ansatz0(params, wires=None):
-    qml.RX(params[0], wires=0)
-    qml.RY(fixed_pars[0], wires=0)
+    qml.RX(params[0], wires=wires[0])
+    qml.RY(fixed_pars[0], wires=wires[0])
     qml.CNOT(wires=[wires[0], wires[1]])
-    qml.RZ(params[1], wires=0)
+    qml.RZ(params[1], wires=wires[0])
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
 def fubini_ansatz1(params, wires=None):
-    qml.RX(fixed_pars[1], wires=0)
-    for wire in wires:
-        qml.Rot(*params[0][wire], wires=wire)
-    qml.CNOT(wires=[0, 1])
-    qml.adjoint(qml.RY(fixed_pars[1], wires=0))
-    qml.CNOT(wires=[1, 2])
-    for wire in wires:
-        qml.Rot(*params[1][wire], wires=wire)
-    qml.CNOT(wires=[1, 2])
-    qml.RX(fixed_pars[2], wires=1)
+    qml.RX(fixed_pars[1], wires=wires[0])
+    for i, wire in enumerate(wires):
+        qml.Rot(*params[0][i], wires=wire)
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.adjoint(qml.RY(fixed_pars[1], wires=wires[0]))
+    qml.CNOT(wires=[wires[1], wires[2]])
+    for i, wire in enumerate(wires):
+        qml.Rot(*params[1][i], wires=wire)
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.RX(fixed_pars[2], wires=wires[1])
 
 
 def fubini_ansatz2(params, wires=None):
     params0 = params[0]
     params1 = params[1]
     qml.RX(fixed_pars[1], wires=wires[0])
-    qml.Rot(*fixed_pars[2:5], wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.RY(params0, wires=0)
-    qml.RY(params0, wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.adjoint(qml.RX(params1, wires=0))
-    qml.RX(params1, wires=1)
+    qml.Rot(*fixed_pars[2:5], wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RY(params0, wires=wires[0])
+    qml.RY(params0, wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.adjoint(qml.RX(params1, wires=wires[0]))
+    qml.RX(params1, wires=wires[1])
 
 
 def fubini_ansatz3(params, wires=None):
@@ -251,37 +62,37 @@ def fubini_ansatz3(params, wires=None):
     params1 = params[1]
     params2 = params[2]
     qml.RX(fixed_pars[1], wires=wires[0])
-    qml.RX(fixed_pars[3], wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[1, 2])
-    qml.RX(params0, wires=0)
-    qml.RX(params0, wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[1, 2])
-    qml.CNOT(wires=[2, 0])
-    qml.RY(params1, wires=0)
-    qml.RY(params1, wires=1)
-    qml.RY(params1, wires=2)
-    qml.RZ(params2, wires=0)
-    qml.RZ(params2, wires=1)
-    qml.RZ(params2, wires=2)
+    qml.RX(fixed_pars[3], wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.RX(params0, wires=wires[0])
+    qml.RX(params0, wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.CNOT(wires=[wires[2], wires[0]])
+    qml.RY(params1, wires=wires[0])
+    qml.RY(params1, wires=wires[1])
+    qml.RY(params1, wires=wires[2])
+    qml.RZ(params2, wires=wires[0])
+    qml.RZ(params2, wires=wires[1])
+    qml.RZ(params2, wires=wires[2])
 
 
-def fubini_ansatz4(params00, params_rest, wires=None):
+def fubini_ansatz4(params00, params_rest, wires=(0, 1, 2, 3)):
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
     qml.RY(fixed_pars[3], wires=wires[0])
-    qml.RY(fixed_pars[2], wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[1, 2])
-    qml.RY(fixed_pars[4], wires=0)
-    qml.RX(params00, wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RX(params01, wires=1)
-    qml.RZ(params10, wires=1)
-    qml.CNOT(wires=[0, 1])
-    qml.RZ(params11, wires=1)
+    qml.RY(fixed_pars[2], wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.CNOT(wires=[wires[1], wires[2]])
+    qml.RY(fixed_pars[4], wires=wires[0])
+    qml.RX(params00, wires=wires[0])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RX(params01, wires=wires[1])
+    qml.RZ(params10, wires=wires[1])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RZ(params11, wires=wires[1])
 
 
 def fubini_ansatz5(params, wires=None):
@@ -298,39 +109,39 @@ def fubini_ansatz7(params0, params1, wires=None):
 
 def fubini_ansatz8(x, wires=None):
     qml.RX(fixed_pars[0], wires=wires[0])
-    qml.RX(x, wires=0)
+    qml.RX(x, wires=wires[0])
 
 
 def fubini_ansatz9(params, wires=None):
     params0 = params[0]
     params1 = params[1]
     qml.RX(fixed_pars[1], wires=[wires[0]])
-    qml.RY(fixed_pars[3], wires=[0])
-    qml.RZ(fixed_pars[2], wires=[0])
-    qml.RX(fixed_pars[2], wires=[1])
-    qml.RY(fixed_pars[2], wires=[1])
-    qml.RZ(fixed_pars[4], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.RX(fixed_pars[0], wires=[0])
-    qml.RY(fixed_pars[1], wires=[0])
-    qml.RZ(fixed_pars[3], wires=[0])
-    qml.RX(fixed_pars[1], wires=[1])
-    qml.RY(fixed_pars[2], wires=[1])
-    qml.RZ(fixed_pars[0], wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.RX(params0, wires=[0])
-    qml.RX(params0, wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.RY(fixed_pars[4], wires=[1])
-    qml.RY(params1, wires=[0])
-    qml.RY(params1, wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.RX(fixed_pars[2], wires=[1])
+    qml.RY(fixed_pars[3], wires=[wires[0]])
+    qml.RZ(fixed_pars[2], wires=[wires[0]])
+    qml.RX(fixed_pars[2], wires=[wires[1]])
+    qml.RY(fixed_pars[2], wires=[wires[1]])
+    qml.RZ(fixed_pars[4], wires=[wires[1]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RX(fixed_pars[0], wires=[wires[0]])
+    qml.RY(fixed_pars[1], wires=[wires[0]])
+    qml.RZ(fixed_pars[3], wires=[wires[0]])
+    qml.RX(fixed_pars[1], wires=[wires[1]])
+    qml.RY(fixed_pars[2], wires=[wires[1]])
+    qml.RZ(fixed_pars[0], wires=[wires[1]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RX(params0, wires=[wires[0]])
+    qml.RX(params0, wires=[wires[1]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RY(fixed_pars[4], wires=[wires[1]])
+    qml.RY(params1, wires=[wires[0]])
+    qml.RY(params1, wires=[wires[1]])
+    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.RX(fixed_pars[2], wires=[wires[1]])
 
 
 def fubini_ansatz10(weights, wires=None):
     # pylint: disable=unused-argument
-    qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+    qml.templates.BasicEntanglerLayers(weights, wires=[wires[0], wires[1]])
 
 
 B = np.array(
@@ -402,8 +213,13 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
     def mt(*params):
         state = qnode(*params)
-        rqnode = lambda *params: np.real(qnode(*params))
-        iqnode = lambda *params: np.imag(qnode(*params))
+
+        def rqnode(*params):
+            return np.real(qnode(*params))
+
+        def iqnode(*params):
+            return np.imag(qnode(*params))
+
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
 
@@ -444,14 +260,16 @@ class TestAdjointMetricTensorTape:
     def test_correct_output_tape_autograd(self, ansatz, params, interface):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor directly on a tape."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device("default.qubit.autograd", wires=self.num_wires)
+        expected = autodiff_metric_tensor(ansatz, 3)(*params)
+        dev = qml.devices.experimental.DefaultQubit2()
+
+        wires = ("a", "b", "c")
 
         @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qml.expval(qml.PauliZ(0))
+            ansatz(*params, wires)
+            return qml.expval(qml.PauliZ(wires[0]))
 
         circuit(*params)
         mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
@@ -838,7 +656,7 @@ class TestErrors:
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.RY(1.9, wires=1)
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=1)
         dev = qml.device("default.qubit", wires=2, shots=1)
 
         with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):

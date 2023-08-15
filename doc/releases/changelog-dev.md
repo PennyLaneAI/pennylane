@@ -4,7 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing. 
+* Python-native logging can now be enabled with `qml.logging.enable_logging()`.
+  [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
+
+* `DefaultQubit2` accepts a `max_workers` argument which controls multiprocessing.
   A `ProcessPoolExecutor` executes tapes asynchronously
   using a pool of at most `max_workers` processes. If `max_workers` is `None`
   or not given, only the current process executes tapes. If you experience any
@@ -58,7 +61,7 @@ array([False, False])
   ```
 
   The currently supported objects are RCISD, UCISD, RCCSD, and UCCSD which correspond to 
-  restricted (R) and unrestricted (U) configuration interaction (CI )and coupled cluster (CC) 
+  restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
   calculations with single and double (SD) excitations.
 
 <h3>Improvements 🛠</h3>
@@ -88,8 +91,9 @@ array([False, False])
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* `PauliWord` sparse matrices are much faster, which directly improves `PauliSentence`.
+* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
@@ -104,7 +108,7 @@ array([False, False])
   [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
 
 * The `qchem` functions `primitive_norm` and `contracted_norm` are modified to be compatible with
-  higher versions of scipy. The private function `_fac2` for computing double factorials is added. 
+  higher versions of scipy. The private function `_fac2` for computing double factorials is added.
   [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
 
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
@@ -137,10 +141,11 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
+* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
-
 
 * `pennylane.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
   property. This property is merely used to set defaults for a workflow, and does not directly
@@ -156,6 +161,20 @@ array([False, False])
 
 * The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
   [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+  
+* Provide users access to the logging configuration file path and improve the logging configuration structure.
+  [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
+
+* Refactoring of `pennylane/interfaces`.  The `execute_fn` passed to the machine learning framework boundaries 
+  is now responsible for converting parameters to numpy. The gradients module can now handle tensorflow parameters,
+  but gradient tapes now retain the original dtype instead of converting to float64.  This may cause instability 
+  with finite diff and float32 parameters. The ml boundary functions are now uncoupled from their legacy
+  counterparts.
+  [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
+
+* `qml.transforms.adjoint_metric_tensor` now uses the simulation tools in `pennylane.devices.qubit` instead of
+  private methods of `pennylane.devices.DefaultQubit`.
+  [(#4456)](https://github.com/PennyLaneAI/pennylane/pull/4456)
 
 * Updated `Device.default_expand_fn()` to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
@@ -163,13 +182,25 @@ array([False, False])
 * Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
 
-* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$. Furthermore, qubit frequencies in `transmon_interaction` are now divided by 2 as is common as well.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+  [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
 
 * `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`. 
   [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Breaking changes 💔</h3>
+
+* Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
+  with float32 parameters may no longer give accurate results.
+  [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
+
+* Support for Python 3.8 is dropped.
+  [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
+
+* `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
+  their IDs.
+  [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
   [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
@@ -208,10 +239,13 @@ array([False, False])
 * The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
+* The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
+  [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
 <h3>Deprecations 👋</h3>
 
-* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead. 
-  List input to define the fermionic operator is also deprecated; the fermionic 
+* ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead.
+  List input to define the fermionic operator is also deprecated; the fermionic
   operators in the ``qml.fermi`` module should be used instead.
   [(#4332)](https://github.com/PennyLaneAI/pennylane/pull/4332)
 
@@ -219,11 +253,11 @@ array([False, False])
   match the call signature of the operation.
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX`` 
+* The CV observables ``qml.X`` and ``qml.P`` have been deprecated. Use ``qml.QuadX``
   and ``qml.QuadP`` instead.
   [(#4330)](https://github.com/PennyLaneAI/pennylane/pull/4330)
 
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes 
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes
   are deprecated. Use ``convert_to_numpy_parameters`` instead.
   [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
@@ -239,9 +273,17 @@ array([False, False])
   been deprecated. Please use `QuantumScript.bind_new_parameters` instead.
   [(#4346)](https://github.com/PennyLaneAI/pennylane/pull/4346)
 
-* `Operator.__eq__` and `Operator.__hash__` will now raise warnings to reflect upcoming
-  changes to operator equality and hashing.
+* The `__eq__` and `__hash__` dunder methods of `Operator` and `MeasurementProcess` will now raise
+  warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
+  [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
+
+* The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
+  fix of the seed-setting behaviour.
+  Instead, the `sampler_rng` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally or to a NumPy pseudo-random number generator created via
+  `np.random.default_rng(seed)`.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
 
 <h3>Documentation 📝</h3>
 
@@ -254,6 +296,9 @@ array([False, False])
 * The documentation for `pennylane.devices.experimental.Device` is improved to clarify
   some aspects of its use.
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
+
+* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
+  [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -312,11 +357,23 @@ array([False, False])
   and `var` measurements.
   [(#4426)](https://github.com/PennyLaneAI/pennylane/pull/4426)
 
+* Subtracting a `Prod` from another operator now works as expected.
+  [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
+
+* Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
+  an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
+  being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
+  which allows reproducibly calling `spsa_grad` without getting the same results every time.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Isaac De Vlugt,
+Amintor Dusko,
 Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
@@ -325,8 +382,10 @@ Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Lee James O'Riordan,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
+Frederik Wilde

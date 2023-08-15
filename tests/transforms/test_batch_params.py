@@ -292,6 +292,7 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
+    # pylint:disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 

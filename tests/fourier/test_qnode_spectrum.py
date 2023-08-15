@@ -241,7 +241,7 @@ class TestCircuits:
         spec = qnode_spectrum(qnode)(*args)
         assert qnode.interface == "auto"
         assert spec.keys() == expected.keys()
-        for outer_key in spec.keys():
+        for outer_key in spec:
             assert spec[outer_key].keys() == expected[outer_key].keys()
             for key in spec[outer_key]:
                 assert np.allclose(spec[outer_key][key], expected[outer_key][key])

@@ -24,6 +24,14 @@ from pennylane.gradients import finite_diff, finite_diff_coeffs
 from pennylane.operation import AnyWires, Observable
 
 
+def test_float32_warning():
+    """Test that a warning is raised if provided float32 parameters."""
+    x = np.array(0.1, dtype=np.float32)
+    tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+    with pytest.warns(UserWarning, match="Finite differences with float32 detected."):
+        finite_diff(tape)
+
+
 class TestCoeffs:
     """Tests for the finite_diff_coeffs function"""
 

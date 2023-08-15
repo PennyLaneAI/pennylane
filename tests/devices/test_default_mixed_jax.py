@@ -566,6 +566,9 @@ class TestPassthruIntegration:
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the JAX interface, using a variety of differentiation methods."""
+        if diff_method == "finite-diff":
+            config.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.mixed", wires=1)
         state = jnp.array(1j * np.array([1, -1]) / np.sqrt(2))
 
@@ -625,6 +628,9 @@ class TestPassthruIntegration:
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if diff_method == "finite-diff":
+            config.config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)

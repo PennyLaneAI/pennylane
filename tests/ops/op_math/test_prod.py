@@ -1302,8 +1302,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results
-        assert -1 not in results
+        assert 1 in results  # pylint:disable=unsupported-membership-test
+        assert -1 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1484,21 +1484,21 @@ class TestSortWires:
             assert op1.data == op2.data
 
 
-swappable_ops = {
+swappable_ops = [
     (qml.PauliX(1), qml.PauliY(0)),
     (qml.PauliY(5), qml.PauliX(2)),
     (qml.PauliZ(3), qml.PauliX(2)),
     (qml.CNOT((1, 2)), qml.PauliX(0)),
     (qml.PauliX(3), qml.Toffoli((0, 1, 2))),
-}
+]
 
-non_swappable_ops = {
+non_swappable_ops = [
     (qml.PauliX(1), qml.PauliY(1)),
     (qml.PauliY(5), qml.RY(1, 5)),
     (qml.PauliZ(0), qml.PauliX(1)),
     (qml.CNOT((1, 2)), qml.PauliX(1)),
     (qml.PauliX(2), qml.Toffoli((0, 1, 2))),
-}
+]
 
 
 class TestSwappableOps:
