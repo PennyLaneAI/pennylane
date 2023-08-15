@@ -420,18 +420,6 @@ class Projector(Observable):
 
         return copied_op
 
-    def __reduce__(self):
-        """Defines how to pickle and unpickle a :class:`~.Projector`. Circumbents the pickling
-        issues caused by its dynamic type:
-        >>> type(qml.Projector([1], wires=[0])) is qml.Projector
-        False
-        >>> isinstance(qml.Projector([1], wires=[0]), qml.Projector)
-        True
-        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
-        """
-        state = self.data[0]
-        return (Projector, (state, self.wires), {"_id": self.id})
-
 
 class BasisStateProjector(Projector, Observable):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
@@ -447,6 +435,9 @@ class BasisStateProjector(Projector, Observable):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
         super().__init__(state, wires=wires, id=id)
+
+    def __new__(cls):  # pylint: disable=arguments-differ
+        return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -572,6 +563,9 @@ class StateVectorProjector(Projector, Observable):
         state = list(qml.math.toarray(state))
 
         super().__init__(state, wires=wires, id=id)
+
+    def __new__(cls):  # pylint: disable=arguments-differ
+        return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
