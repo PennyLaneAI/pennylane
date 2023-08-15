@@ -40,6 +40,11 @@ of PennyLane, plugins, and devices.
     :description: Proposing important PennyLane architectural decisions.
     :link: guide/adr.html
 
+.. title-card::
+    :name: Logging guidelines
+    :description: Defining how to develop using logging supports in PennyLane.
+    :link: guide/logging.html
+
 .. .. title-card::
 ..     :name: Best practices
 ..     :description: General best practices for contributing and developing for PennyLane.
@@ -65,4 +70,5 @@ of PennyLane, plugins, and devices.
     guide/pullrequests
     guide/adr
     guide/architecture
+    guide/logging
 ..    guide/bestpractices

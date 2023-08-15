@@ -64,19 +64,19 @@ class TestCheckMatCommutation:
 
     def test_matrices_commute(self):
         """Test that if the operations commute, then the helper function returns True"""
-        op1 = qml.S(0)
-        op2 = qml.T(0)
+        s0 = qml.S(0)
+        t0 = qml.T(0)
 
-        assert _check_mat_commutation(op1, op2)
-        assert _check_mat_commutation(op2, op1)
+        assert _check_mat_commutation(s0, t0)
+        assert _check_mat_commutation(t0, s0)
 
     def test_matrices_dont_commute(self):
         """Check matrices don't commute for two simple ops."""
-        op1 = qml.PauliX(0)
-        op2 = qml.PauliZ(0)
+        x0 = qml.PauliX(0)
+        z0 = qml.PauliZ(0)
 
-        assert not _check_mat_commutation(op1, op2)
-        assert not _check_mat_commutation(op2, op1)
+        assert not _check_mat_commutation(x0, z0)
+        assert not _check_mat_commutation(z0, x0)
 
 
 class TestControlledOps:
