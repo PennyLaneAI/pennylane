@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
+  $|0\rangle$ computational basis state after measurement.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
   [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
 
@@ -65,6 +69,9 @@ array([False, False])
   calculations with single and double (SD) excitations.
 
 <h3>Improvements 🛠</h3>
+
+* Wires can now be reused after making a mid-circuit measurement on them.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
