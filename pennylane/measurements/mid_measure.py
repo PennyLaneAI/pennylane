@@ -248,6 +248,13 @@ class MeasurementValue(Generic[T]):
     def __or__(self, other):
         return self._transform_bin_op(lambda a, b: a or b, other)
 
+    def __matmul__(self, other):
+        """This method is for using multiple MeasurementValues for measurement
+        statistics. MeasurementValues corresponding to conditions with multiple
+        measurement values should NOT be used with this method."""
+        merged_measurements = self.measurements + other.measurements
+        return MeasurementValue(merged_measurements, lambda v: v)
+
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurements, lambda *x: fn(self.processing_fn(*x)))

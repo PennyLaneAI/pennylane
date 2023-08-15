@@ -146,9 +146,9 @@ class MeasurementProcess(ABC):
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
         self._wires = (
-            wires
-            if not self.obs.__class__.__name__ != "MeasurementValue"
-            else [m.wires[0] for m in self.obs.measurements]
+            [m.wires[0] for m in self.obs.measurements]
+            if self.obs is not None and self.obs.__class__.__name__ == "MeasurementValue"
+            else wires
         )
         self._eigvals = None
 
@@ -425,7 +425,7 @@ class MeasurementProcess(ABC):
         >>> print(tape.measurements[0].obs)
         None
         """
-        if self.obs is None or self.obs.__class.__name__ == "MeasurementValue":
+        if self.obs is None or self.obs.__class__.__name__ == "MeasurementValue":
             raise qml.operation.DecompositionUndefinedError
 
         with qml.queuing.AnnotatedQueue() as q:
