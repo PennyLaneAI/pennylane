@@ -186,9 +186,6 @@ array([False, False])
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
 
-* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`. 
-  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
-
 <h3>Breaking changes 💔</h3>
 
 * Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
@@ -241,6 +238,9 @@ array([False, False])
 
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`. 
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Deprecations 👋</h3>
 
