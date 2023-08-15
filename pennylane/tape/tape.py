@@ -20,7 +20,7 @@ from threading import RLock
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator, InitialState
+from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
@@ -238,11 +238,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
 
 def expand_tape_state_prep(tape, skip_first=True):
-    """Expand all instances of InitialState operations in the tape.
+    """Expand all instances of StatePrepBase operations in the tape.
 
     Args:
         tape (QuantumScript): The tape to expand.
-        skip_first (Bool): If ``True``, will not expand a InitialState operation if
+        skip_first (Bool): If ``True``, will not expand a StatePrepBase operation if
             it is the first operation in the tape.
 
     Returns:
@@ -257,13 +257,13 @@ def expand_tape_state_prep(tape, skip_first=True):
     first_op = tape.operations[0]
     prep_decomp = (
         [first_op]
-        if isinstance(first_op, InitialState) and skip_first
+        if isinstance(first_op, StatePrepBase) and skip_first
         else first_op.decomposition()
     )
     new_prep.extend(prep_decomp)
 
     for op in tape.operations[1:]:
-        if isinstance(op, InitialState):
+        if isinstance(op, StatePrepBase):
             new_ops.extend(op.decomposition())
         else:
             new_ops.append(op)

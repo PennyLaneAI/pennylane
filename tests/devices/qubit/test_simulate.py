@@ -49,7 +49,7 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
-class TestInitialState:
+class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):

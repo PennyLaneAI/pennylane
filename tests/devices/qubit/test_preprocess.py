@@ -256,7 +256,7 @@ class TestExpandFnTransformations:
         "prep_op", (qml.BasisState([1], wires=0), qml.StatePrep([0, 1], wires=1))
     )
     def test_expand_fn_state_prep(self, prep_op):
-        """Test that the expand_fn only expands mid-circuit instances of InitialState"""
+        """Test that the expand_fn only expands mid-circuit instances of StatePrepBase"""
         ops = [
             prep_op,
             qml.Hadamard(wires=0),

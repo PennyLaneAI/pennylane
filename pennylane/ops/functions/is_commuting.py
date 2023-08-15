@@ -260,7 +260,7 @@ unsupported_operations = [
     "SProd",
 ]
 non_commuting_operations = [
-    # InitialState
+    # StatePrepBase
     "StatePrep",
     "BasisState",
     # Templates

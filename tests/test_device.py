@@ -556,7 +556,7 @@ class TestInternalFunctions:
         ),
     )
     def test_default_expand_with_initial_state(self, op, decomp):
-        """Test the default expand function with InitialState operations
+        """Test the default expand function with StatePrepBase operations
         integrates well."""
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]

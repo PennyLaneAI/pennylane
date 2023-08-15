@@ -18,14 +18,14 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.qubit import create_initial_state
-from pennylane.operation import InitialState
+from pennylane.operation import StatePrepBase
 
 
 class TestInitializeState:
     """Test the functions in initialize_state.py"""
 
     # pylint:disable=unused-argument,too-few-public-methods
-    class DefaultPrep(InitialState):
+    class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
         num_wires = qml.operation.AllWires
