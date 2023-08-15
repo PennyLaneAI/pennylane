@@ -574,7 +574,9 @@ class TestPassthruIntegration:
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the TF interface, using a variety of differentiation methods."""
         dev = qml.device("default.mixed", wires=1)
-        state = torch.tensor(1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False)
+        state = torch.tensor(
+            1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False, dtype=torch.complex128
+        )
 
         @qml.qnode(dev, diff_method=diff_method, interface="torch")
         def circuit(x, weights, w):
