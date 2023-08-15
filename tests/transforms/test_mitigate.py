@@ -14,7 +14,6 @@
 """
 Tests for mitigation transforms.
 """
-# pylint:disable=no-self-use
 import pytest
 
 from packaging import version
@@ -118,7 +117,7 @@ class TestMitigateWithZNE:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -211,7 +210,7 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -256,7 +255,7 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -291,7 +290,7 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -327,7 +326,7 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
@@ -380,7 +379,7 @@ class TestMitiqIntegration:
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
 
