@@ -411,15 +411,6 @@ class Projector(Observable):
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
-    def __copy__(self):
-        copied_op = self.__new__(Projector, self.data[0], self.wires)
-        copied_op.data = copy(self.data)
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        return copied_op
-
 
 class BasisStateProjector(Projector, Observable):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where

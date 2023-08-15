@@ -522,9 +522,10 @@ class TestProjector:
     def test_serialization(self):
         """Tests that Projector is pickle-able."""
         # Basis state projector
-        proj = qml.Projector([1], wires=[0], id="Andy")
+        proj = qml.Projector([1], wires=[0], id="Timmy")
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
+        assert type(new_proj) is type(proj)
         assert qml.equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
@@ -533,6 +534,7 @@ class TestProjector:
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
 
+        assert type(new_proj) is type(proj)
         assert qml.equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
