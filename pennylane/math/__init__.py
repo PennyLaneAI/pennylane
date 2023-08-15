@@ -94,6 +94,7 @@ from .utils import (
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
+get_dtype_name = ar.get_dtype_name
 
 
 class NumpyMimic(ar.autoray.NumpyMimic):

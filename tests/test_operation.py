@@ -1147,6 +1147,14 @@ class TestOperatorIntegration:
         neg_op = -qml.PauliX(0)
         assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
 
+    def test_sub_obs_from_op(self):
+        """Test that __sub__ returns an SProd to be consistent with other Operator dunders."""
+        op = qml.S(0) - qml.PauliX(1)
+        assert isinstance(op, Sum)
+        assert isinstance(op[1], SProd)
+        assert qml.equal(op[0], qml.S(0))
+        assert qml.equal(op[1], SProd(-1, qml.PauliX(1)))
+
     def test_mul_with_scalar(self):
         """Test the __mul__ dunder method with a scalar value."""
         sprod_op = 4 * qml.RX(1, 0)
@@ -2489,6 +2497,7 @@ pairs_of_ops = [
     (qml.S(0), qml.PauliX(0)),
     (qml.PauliX(0), qml.S(0)),
     (qml.PauliX(0), qml.PauliY(0)),
+    (qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliY(1))),
 ]
 
 
@@ -2521,6 +2530,11 @@ class TestNewOpMath:
             assert isinstance(op[1], SProd)
             assert op[1].scalar == -1
             assert qml.equal(op[1].base, op1)
+
+        def test_sub_with_unknown_not_supported(self):
+            """Test subtracting an unexpected type from an Operator."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                _ = qml.S(0) - "foo"
 
         def test_op_with_scalar(self):
             """Tests adding/subtracting ops with scalars."""

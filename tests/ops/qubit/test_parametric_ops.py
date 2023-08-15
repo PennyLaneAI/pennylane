@@ -24,7 +24,7 @@ from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhase
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.ops.qubit.parametric_ops import (
+from pennylane.ops.qubit import (
     RX as old_loc_RX,
     ControlledPhaseShift as old_loc_ControlledPhaseShift,
     MultiRZ as old_loc_MultiRZ,
@@ -2718,6 +2718,7 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2760,6 +2761,7 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
