@@ -38,9 +38,8 @@ def sample(
     specified on the device.
 
     Args:
-        op (Observable or Sequence[MeasurementValue]): a quantum observable object. To get samples
-            for mid-circuit measurements, ``op`` should be specified as a sequence of
-            their respective ``MeasurementValue``'s.
+        op (Observable or MeasurementValue): a quantum observable object. To get samples
+            for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
 
@@ -107,9 +106,7 @@ def sample(
 
     """
     if isinstance(op, MeasurementValue):
-        op = (op,)
-    if isinstance(op, Sequence):
-        return SampleMP(obs=tuple(op))
+        return SampleMP(obs=op)
 
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -132,7 +129,7 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`sample` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, Tuple[.MeasurementValue]]): The observable that is to be measured
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -219,7 +216,11 @@ class SampleMP(SampleMeasurement):
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        name = self.obs.name if self.obs is not None and not isinstance(self.obs, tuple) else None
+        name = (
+            self.obs.name
+            if self.obs is not None and not isinstance(self.obs, MeasurementValue)
+            else None
+        )
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -233,7 +234,7 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None or isinstance(self.obs, tuple):
+        if self.obs is None or isinstance(self.obs, MeasurementValue):
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 

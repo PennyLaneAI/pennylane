@@ -16,7 +16,7 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -27,13 +27,13 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
 
-def var(op: Operator) -> "VarianceMP":
+def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
-        op (Union[Operator, Sequence[MeasurementValue]]): a quantum observable object.
-            To get variances for mid-circuit measurements, ``op`` should be specified
-            as a sequence of their respective ``MeasurementValue``'s.
+        op (Union[Operator, MeasurementValue]): a quantum observable object.
+            To get variances for mid-circuit measurements, ``op`` should be a
+            ``MeasurementValue``.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -57,9 +57,7 @@ def var(op: Operator) -> "VarianceMP":
     0.7701511529340698
     """
     if isinstance(op, MeasurementValue):
-        op = (op,)
-    if isinstance(op, Sequence):
-        return VarianceMP(obs=tuple(op))
+        return VarianceMP(obs=op)
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -72,7 +70,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`var` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, Sequence[.MeasurementValue]]): The observable that is to be measured
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -126,7 +124,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         samples = qml.sample(op=self.obs).process_samples(
             samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
-        if isinstance(self.obs, tuple):
+        if isinstance(self.obs, MeasurementValue):
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             powers_of_two = 2 ** qml.math.arange(len(self.wires))[::-1]
@@ -149,7 +147,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
 
         eigvals = (
             qml.math.asarray(self.obs.eigvals(), dtype="float64")
-            if not isinstance(self.obs, tuple)
+            if not isinstance(self.obs, MeasurementValue)
             else qml.math.asarray(qml.math.arange(0, 2 ** len(self.wires)), dtype="float64")
         )
 

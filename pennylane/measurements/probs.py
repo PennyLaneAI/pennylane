@@ -43,8 +43,8 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or Sequence[MeasurementValue]]): Observable (with a ``diagonalizing_gates``
-            attribute) that rotates the computational basis, or a sequence of ``MeasurementValue``'s
+        op (Observable or MeasurementValue]): Observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
     Returns:
@@ -94,9 +94,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     """
 
     if isinstance(op, MeasurementValue):
-        op = (op,)
-    if isinstance(op, Sequence):
-        return ProbabilityMP(obs=tuple(op))
+        return ProbabilityMP(obs=op)
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
@@ -127,7 +125,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`probs` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, Tuple[.MeasurementValue]]): The observable that is to be measured
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.

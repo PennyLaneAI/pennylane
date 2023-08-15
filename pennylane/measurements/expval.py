@@ -15,7 +15,7 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -26,7 +26,7 @@ from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-def expval(op: Operator):
+def expval(op: Union[Operator, MeasurementValue]):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -48,17 +48,15 @@ def expval(op: Operator):
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, Sequence[MeasurementValue]]): a quantum observable object.
+        op (Union[Observable, MeasurementValue]): a quantum observable object.
             To get expectation values for mid-circuit measurements, ``op`` should be
-            specified as a sequence of their respective ``MeasurementValue``'s.
+             a ``MeasurementValue``.
 
     Returns:
         ExpectationMP: measurement process instance
     """
     if isinstance(op, MeasurementValue):
-        op = (op,)
-    if isinstance(op, Sequence):
-        return ExpectationMP(obs=tuple(op))
+        return ExpectationMP(obs=op)
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -72,7 +70,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`expval` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, Sequence[.MeasurementValue]]): The observable that is to be measured
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -123,7 +121,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         samples = qml.sample(op=self.obs).process_samples(
             samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
-        if isinstance(self.obs, tuple):
+        if isinstance(self.obs, MeasurementValue):
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             powers_of_two = 2 ** qml.math.arange(len(self.wires))[::-1]
@@ -143,7 +141,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             return probs[idx]
         eigvals = (
             qml.math.asarray(self.obs.eigvals(), dtype="float64")
-            if not isinstance(self.obs, tuple)
+            if not isinstance(self.obs, MeasurementValue)
             else qml.math.asarray(qml.math.arange(0, 2 ** len(self.wires)), dtype="float64")
         )
         # we use ``self.wires`` instead of ``self.obs`` because the observable was

@@ -42,6 +42,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MutualInfo,
     MutualInfoMP,
     Probability,
@@ -956,7 +957,7 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            if m.obs is not None and not isinstance(m.obs, tuple):
+            if m.obs is not None and not isinstance(m.obs, MeasurementValue):
                 obs = m.obs
                 obs.return_type = m.return_type
             else:
@@ -1835,7 +1836,7 @@ class QubitDevice(Device):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
-        name = observable.name if not isinstance(observable, tuple) else None
+        name = observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
