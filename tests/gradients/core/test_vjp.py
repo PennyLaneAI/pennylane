@@ -257,7 +257,7 @@ class TestVJP:
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert res.shape == (2,)
 
         exp = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
@@ -284,7 +284,7 @@ class TestVJP:
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert res.shape == (2,)
 
         exp = np.array([-np.sin(x), 2 * np.cos(y)])
@@ -311,7 +311,7 @@ class TestVJP:
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert res.shape == (2,)
 
         exp = (
@@ -397,7 +397,7 @@ class TestVJPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(dev.batch_execute(tapes))
+            vjp = fn(dev.execute(tapes))
             return vjp
 
         dy = np.array([-1.0, 0.0, 0.0, 1.0], requires_grad=False)
@@ -455,7 +455,7 @@ class TestVJPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(dev.batch_execute(tapes))
+            vjp = fn(dev.execute(tapes))
 
         assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
 
@@ -518,7 +518,7 @@ class TestVJPGradients:
             dy = jax.numpy.array([-1.0, 0.0, 0.0, 1.0])
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(dev.batch_execute(tapes))
+            vjp = fn(dev.execute(tapes))
             return vjp
 
         res = cost_fn(params)
@@ -560,7 +560,7 @@ class TestBatchVJP:
 
         # Even though there are 3 parameters, only two contribute
         # to the VJP, so only 2*2=4 quantum evals
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
         assert res[0] is None
         assert res[1] is not None
 
@@ -614,7 +614,7 @@ class TestBatchVJP:
         dys = [np.array(0.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift)
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         # Even though there are 3 parameters, only two contribute
         # to the VJP, so only 2*2=4 quantum evals
@@ -645,7 +645,7 @@ class TestBatchVJP:
         dys = [np.array(1.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift, reduction="append")
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         # Returned VJPs will be appended to a list, one vjp per tape
         assert len(res) == 2
@@ -676,7 +676,7 @@ class TestBatchVJP:
         dys = [np.array(1.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift, reduction="extend")
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         # Returned VJPs will be extended into a list. Each element of the returned
         # list will correspond to a single input parameter of the combined

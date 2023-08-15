@@ -481,7 +481,7 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert res.shape == () if batch_dim is None else (batch_dim,)
 
         exp = np.sum(np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]), axis=0)
@@ -508,7 +508,7 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert all(r.shape == () if batch_dim is None else (batch_dim,) for r in res)
@@ -537,7 +537,7 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 2
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert res[0].shape == () if batch_dim is None else (batch_dim,)
@@ -571,7 +571,7 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -658,7 +658,7 @@ class TestJVPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
-            jvp = fn(dev.batch_execute(tapes))
+            jvp = fn(dev.execute(tapes))
             return jvp
 
         res = cost_fn(params, tangent)
@@ -692,7 +692,7 @@ class TestJVPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
-            jvp = fn(dev.batch_execute(tapes))
+            jvp = fn(dev.execute(tapes))
             return jvp
 
         res = cost_fn(params, tangent)
@@ -726,7 +726,7 @@ class TestJVPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
-            jvp = fn(dev.batch_execute(tapes))
+            jvp = fn(dev.execute(tapes))
             return jvp
 
         with tf.GradientTape() as t:
@@ -762,7 +762,7 @@ class TestJVPGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
-            jvp = fn(dev.batch_execute(tapes))
+            jvp = fn(dev.execute(tapes))
             return jvp
 
         res = cost_fn(params, tangent)
@@ -805,7 +805,7 @@ class TestBatchJVP:
 
         # Even though there are 3 parameters, only two contribute
         # to the JVP, so only 2*2=4 quantum evals
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         assert res[0] is None
         assert res[1] is not None
@@ -861,7 +861,7 @@ class TestBatchJVP:
         tangents = [np.array([0.0]), np.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         # Even though there are 3 parameters, only two contribute
         # to the JVP, so only 2*2=4 quantum evals
@@ -893,7 +893,7 @@ class TestBatchJVP:
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="append")
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         # Returned JVPs will be appended to a list, one JVP per tape
 
@@ -926,7 +926,7 @@ class TestBatchJVP:
         tangents = [np.array([1.0]), np.array([1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
         assert len(res) == 4
 
     def test_reduction_extend_special(self):
@@ -961,7 +961,7 @@ class TestBatchJVP:
             if not isinstance(x, tuple) and x.shape == ()
             else jvps.extend(x),
         )
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
 
         assert len(res) == 3
 
@@ -992,6 +992,6 @@ class TestBatchJVP:
         v_tapes, fn = qml.gradients.batch_jvp(
             tapes, tangents, param_shift, reduction=lambda jvps, x: jvps.append(x)
         )
-        res = fn(dev.batch_execute(v_tapes))
+        res = fn(dev.execute(v_tapes))
         # Returned JVPs will be appended to a list, one JVP per tape
         assert len(res) == 2

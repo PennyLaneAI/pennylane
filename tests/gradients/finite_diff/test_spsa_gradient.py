@@ -64,7 +64,7 @@ class TestSpsaGradient:
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape)
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -88,7 +88,7 @@ class TestSpsaGradient:
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape, num_directions=num_directions)
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -359,13 +359,13 @@ class TestSpsaGradient:
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         n1 = 5
         tapes, fn = spsa_grad(tape1, approx_order=1, strategy="forward", num_directions=n1)
-        j1 = fn(dev.batch_execute(tapes))
+        j1 = fn(dev.execute(tapes))
 
         assert len(tapes) == dev.num_executions == n1 + 1
 
         n2 = 11
         tapes, fn = spsa_grad(tape2, num_directions=n2)
-        j2 = fn(dev.batch_execute(tapes))
+        j2 = fn(dev.execute(tapes))
 
         assert len(tapes) == 2 * n2
 
@@ -518,7 +518,7 @@ class TestSpsaGradientIntegration:
             num_directions=11,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
 
@@ -557,7 +557,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -601,7 +601,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -650,7 +650,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -695,7 +695,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert isinstance(res[0], tuple)
@@ -726,7 +726,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -771,7 +771,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             num_directions=2,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -816,7 +816,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             num_directions=2,
         )
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -885,7 +885,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = np.array(fn(dev.batch_execute(tapes)))
+            jac = np.array(fn(dev.execute(tapes)))
             if sampler is coordinate_sampler:
                 jac *= 2
             return jac
@@ -920,7 +920,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             if sampler is coordinate_sampler:
                 jac = tuple(tuple(2 * _j for _j in _jac) for _jac in jac)
             return jac[1][0]
@@ -951,7 +951,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac_0, jac_1 = fn(dev.batch_execute(tapes))
+            jac_0, jac_1 = fn(dev.execute(tapes))
             if sampler is coordinate_sampler:
                 jac_0 *= 2
                 jac_1 *= 2
@@ -992,7 +992,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
 
-            jac_01 = fn(dev.batch_execute(tapes))[1][0]
+            jac_01 = fn(dev.execute(tapes))[1][0]
             if sampler is coordinate_sampler:
                 jac_01 *= 2
 
@@ -1023,7 +1023,7 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             if sampler is coordinate_sampler:
                 jac = tuple(2 * _jac for _jac in jac)
             return jac
@@ -1066,7 +1066,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             if sampler is coordinate_sampler:
                 jac = tuple(2 * _jac for _jac in jac)
             return jac

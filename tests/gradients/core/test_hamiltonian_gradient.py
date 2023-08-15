@@ -30,10 +30,10 @@ def test_behaviour():
     tape = qml.tape.QuantumScript.from_queue(q)
     tape.trainable_params = {2, 3}
     tapes, processing_fn = hamiltonian_grad(tape, idx=0)
-    res1 = processing_fn(dev.batch_execute(tapes))
+    res1 = processing_fn(dev.execute(tapes))
 
     tapes, processing_fn = hamiltonian_grad(tape, idx=1)
-    res2 = processing_fn(dev.batch_execute(tapes))
+    res2 = processing_fn(dev.execute(tapes))
 
     with qml.queuing.AnnotatedQueue() as q1:
         qml.RY(0.3, wires=0)

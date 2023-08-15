@@ -71,7 +71,7 @@ class TestSpsaGradient:
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
         tapes, fn = spsa_grad(tape, h=h_val)
 
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -99,7 +99,7 @@ class TestSpsaGradient:
         tape = qml.tape.QuantumScript.from_queue(q, shots=default_shot_vector)
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
         tapes, fn = spsa_grad(tape, h=h_val, num_directions=num_directions)
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -404,7 +404,7 @@ class TestSpsaGradient:
             num_directions=n1,
             h=h_val,
         )
-        j1 = fn(dev.batch_execute(tapes))
+        j1 = fn(dev.execute(tapes))
 
         assert len(tapes) == dev.num_executions == n1 + 1
 
@@ -416,7 +416,7 @@ class TestSpsaGradient:
             h=h_val,
             num_directions=n2,
         )
-        j2 = fn(dev.batch_execute(tapes))
+        j2 = fn(dev.execute(tapes))
 
         assert len(tapes) == n2 + 1
 
@@ -577,7 +577,7 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             num_directions=3,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(many_shots_shot_vector)
 
@@ -620,7 +620,7 @@ class TestSpsaGradientIntegration:
             num_directions=4,
             sampler=coordinate_sampler,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -668,7 +668,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             h=h_val,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -720,7 +720,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             h=h_val,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -773,7 +773,7 @@ class TestSpsaGradientIntegration:
             sampler=coordinate_sampler,
             h=h_val,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -812,7 +812,7 @@ class TestSpsaGradientIntegration:
             h=h_val,
             num_directions=4,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -865,7 +865,7 @@ class TestSpsaGradientIntegration:
             num_directions=6,
             sampler=coordinate_sampler,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -919,7 +919,7 @@ class TestSpsaGradientIntegration:
             num_directions=4,
             h=h_val,
         )
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
@@ -1000,7 +1000,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = np.array(fn(dev.batch_execute(tapes)))
+            jac = np.array(fn(dev.execute(tapes)))
             return jac
 
         all_res = qml.jacobian(cost_fn)(params)
@@ -1044,7 +1044,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac[1][0]
 
         x, y = params
@@ -1084,7 +1084,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
             )
-            jac_0, jac_1 = fn(dev.batch_execute(tapes))
+            jac_0, jac_1 = fn(dev.execute(tapes))
 
         x, y = 1.0 * params
 
@@ -1127,7 +1127,7 @@ class TestSpsaGradientDifferentiation:
                 h=h_val,
             )
 
-            jac_01 = fn(dev.batch_execute(tapes))[1][0]
+            jac_01 = fn(dev.execute(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -1162,7 +1162,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
@@ -1209,7 +1209,7 @@ class TestSpsaGradientDifferentiation:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         all_res = jax.jacobian(cost_fn)(params)
@@ -1282,7 +1282,7 @@ class TestReturn:
         tape.trainable_params = {0}
 
         tapes, fn = spsa_grad(tape)
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
@@ -1316,7 +1316,7 @@ class TestReturn:
         tape.trainable_params = {0}
 
         tapes, fn = spsa_grad(tape)
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
@@ -1350,7 +1350,7 @@ class TestReturn:
         tape.trainable_params = {0, 1}
 
         tapes, fn = spsa_grad(tape)
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)
@@ -1389,7 +1389,7 @@ class TestReturn:
         tape.trainable_params = {0, 1, 2, 3, 4}
 
         tapes, fn = spsa_grad(tape)
-        all_res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.execute(tapes))
 
         assert len(all_res) == grad_transform_shots.num_copies
         assert isinstance(all_res, tuple)

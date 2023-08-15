@@ -25,7 +25,7 @@ from pennylane import numpy as np
 def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
     tapes, fn = fn(tape, **kwargs)
-    return fn(dev.batch_execute(tapes)), tapes
+    return fn(dev.execute(tapes)), tapes
 
 
 def cost1(x):
@@ -980,7 +980,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return qml.math.stack(jac)
 
         def cost_fn_param_shift(x):
@@ -993,7 +993,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return qml.math.stack(jac)
 
         res_hadamard = qml.jacobian(cost_fn_hadamard)(params)
@@ -1019,7 +1019,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
-            jac_h = fn(dev.batch_execute(tapes))
+            jac_h = fn(dev.execute(tapes))
             jac_h = qml.math.stack(jac_h)
 
         with tf.GradientTape() as t_p:
@@ -1032,7 +1032,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
-            jac_p = fn(dev.batch_execute(tapes))
+            jac_p = fn(dev.execute(tapes))
             jac_p = qml.math.stack(jac_p)
 
         res_hadamard = t_h.jacobian(jac_h, params)
@@ -1059,7 +1059,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         def cost_p(x):
@@ -1072,7 +1072,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.gradients.param_shift(tape)
 
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         res_hadamard = torch.autograd.functional.jacobian(cost_h, params)
@@ -1105,7 +1105,7 @@ class TestHadamardTestGradDiff:
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         def cost_p(x):
@@ -1119,7 +1119,7 @@ class TestHadamardTestGradDiff:
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            jac = fn(dev.batch_execute(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         res_hadamard = jax.jacobian(cost_h)(params)

@@ -40,7 +40,7 @@ X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 def grad_fn(tape, dev, fn=pulse_generator, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
     _tapes, fn = fn(tape, **kwargs)
-    return fn(dev.batch_execute(_tapes)), _tapes
+    return fn(dev.execute(_tapes)), _tapes
 
 
 def integral_of_polyval(params, t):
@@ -863,7 +863,7 @@ class TestPulseGeneratorEdgeCases:
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             _tapes, fn = pulse_generator(tape)
-        res = fn(dev.batch_execute(_tapes))
+        res = fn(dev.execute(_tapes))
 
         assert _tapes == []
         assert isinstance(res, tuple)
