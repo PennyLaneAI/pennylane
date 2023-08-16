@@ -66,6 +66,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qml.PSWAP(0.123, wires=[0, 1]),
+    qml.GlobalPhase(0.123, wires=0),
 ]
 
 BROADCASTED_OPERATIONS = [
@@ -130,8 +131,13 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 
-dot_broadcasted = lambda a, b: np.einsum("...ij,...jk->...ik", a, b)
-multi_dot_broadcasted = lambda matrices: reduce(dot_broadcasted, matrices)
+
+def dot_broadcasted(a, b):
+    return np.einsum("...ij,...jk->...ik", a, b)
+
+
+def multi_dot_broadcasted(matrices):
+    return reduce(dot_broadcasted, matrices)
 
 
 class TestOperations:
@@ -2722,7 +2728,7 @@ class TestGrad:
             0.5
             * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
+                -1 * tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
@@ -2764,7 +2770,7 @@ class TestGrad:
             0.5
             * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
+                -1 * tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
