@@ -1072,8 +1072,12 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(42),
+            }
             tol = TOL_FOR_SPSA
 
         num_wires = 1
