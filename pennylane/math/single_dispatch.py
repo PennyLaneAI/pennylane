@@ -297,7 +297,7 @@ def _ndim_tf(tensor):
     try:
         ndim = _i("tf").experimental.numpy.ndim(tensor)
         if ndim is None:
-            raise AttributeError
+            return len(tensor.shape)
         return ndim
     except AttributeError:
         return len(tensor.shape)
