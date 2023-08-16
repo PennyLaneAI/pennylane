@@ -11,12 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Contains the implementation of quantum fidelity.
+
+Note: care needs to be taken to make it fully differentiable
+"""
 
 import autograd
 import autoray as ar
 import pennylane as qml
 
-from .utils import is_abstract, allclose, cast, convert_like, cast_like
+from .utils import cast
 from .quantum import _check_density_matrix, _check_state_vector
 
 
@@ -77,7 +82,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
     # Two mixed states
-    fid = qml.math._compute_fidelity(state0, state1)
+    fid = qml.math.compute_fidelity(state0, state1)
     # fid = _compute_fidelity_vanilla(state0, state1)
     return fid
 
@@ -124,10 +129,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
-
-    # Cannot be cast_like if jit
-    if not is_abstract(state0):
-        state1 = cast_like(state1, state0)
+    state1 = cast(state1, dtype=c_dtype)
 
     if check_state:
         _check_state_vector(state0)
@@ -220,6 +222,7 @@ def _compute_fidelity_vjp1(dm0, dm1, grad_out):
     """
     Compute the VJP of fidelity with respect to the second density matrix
     """
+    # pylint: disable=arguments-out-of-order
     return _compute_fidelity_vjp0(dm1, dm0, grad_out)
 
 
@@ -229,7 +232,7 @@ def _compute_fidelity_grad(dm0, dm1, grad_out):
 
 ################################ numpy ###################################
 
-ar.register_function("numpy", "_compute_fidelity", _compute_fidelity_vanilla)
+ar.register_function("numpy", "compute_fidelity", _compute_fidelity_vanilla)
 
 ################################ autograd ################################
 
@@ -239,14 +242,14 @@ def _compute_fidelity_autograd(dm0, dm1):
     return _compute_fidelity_vanilla(dm0, dm1)
 
 
-def _compute_fidelity_autograd_vjp0(fid, dm0, dm1):
+def _compute_fidelity_autograd_vjp0(_, dm0, dm1):
     def vjp(grad_out):
         return _compute_fidelity_vjp0(dm0, dm1, grad_out)
 
     return vjp
 
 
-def _compute_fidelity_autograd_vjp1(fid, dm0, dm1):
+def _compute_fidelity_autograd_vjp1(_, dm0, dm1):
     def vjp(grad_out):
         return _compute_fidelity_vjp1(dm0, dm1, grad_out)
 
@@ -256,7 +259,7 @@ def _compute_fidelity_autograd_vjp1(fid, dm0, dm1):
 autograd.extend.defvjp(
     _compute_fidelity_autograd, _compute_fidelity_autograd_vjp0, _compute_fidelity_autograd_vjp1
 )
-ar.register_function("autograd", "_compute_fidelity", _compute_fidelity_autograd)
+ar.register_function("autograd", "compute_fidelity", _compute_fidelity_autograd)
 
 ################################# jax #####################################
 
@@ -276,7 +279,7 @@ try:
         return _compute_fidelity_grad(dm0, dm1, grad_out)
 
     _compute_fidelity_jax.defvjp(_compute_fidelity_jax_fwd, _compute_fidelity_jax_bwd)
-    ar.register_function("jax", "_compute_fidelity", _compute_fidelity_jax)
+    ar.register_function("jax", "compute_fidelity", _compute_fidelity_jax)
 
 except ModuleNotFoundError:
     # jax not installed
@@ -301,7 +304,7 @@ try:
             dm0, dm1 = ctx.saved_tensors
             return _compute_fidelity_grad(dm0, dm1, grad_out)
 
-    ar.register_function("torch", "_compute_fidelity", _TorchFidelity.apply)
+    ar.register_function("torch", "compute_fidelity", _TorchFidelity.apply)
 
 except ModuleNotFoundError:
     # torch not installed
@@ -321,7 +324,7 @@ try:
 
         return fid, vjp
 
-    ar.register_function("tensorflow", "_compute_fidelity", _compute_fidelity_tf)
+    ar.register_function("tensorflow", "compute_fidelity", _compute_fidelity_tf)
 
 except ModuleNotFoundError:
     # tensorflow not installed
