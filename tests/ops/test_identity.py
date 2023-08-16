@@ -21,7 +21,6 @@ from pennylane import Identity
 
 @pytest.mark.parametrize("wires", [[0], [0, 1], ["a", "b", "c"], [100, "xasd", 12]])
 class TestIdentity:
-
     # pylint: disable=protected-access
     def test_flatten_unflatten(self, wires):
         """Test the flatten and unflatten methods of identity."""
