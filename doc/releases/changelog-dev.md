@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
+  $|0\rangle$ computational basis state after measurement.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
   [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
 
@@ -40,6 +44,26 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+
+* A new `qml.Select` operation is available. It applies specific input operations depending on the
+  state of the designated control qubits
+  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+
+  ```pycon
+  >>> dev = qml.device('default.qubit',wires=4)
+  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     return qml.state()
+  ...
+  >>> print(qml.draw(circuit,expansion_strategy='device')())
+  0: ─╭○─╭○─╭●─╭●────┤  State
+  1: ─├○─├●─├○─├●────┤  State
+  2: ─╰X─│──╰Y─├SWAP─┤  State
+  3: ────╰X────╰SWAP─┤  State
+  ```
+
 * Functions are available to obtain a state vector from `PySCF` solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
@@ -65,6 +89,9 @@ array([False, False])
   calculations with single and double (SD) excitations.
 
 <h3>Improvements 🛠</h3>
+
+* Wires can now be reused after making a mid-circuit measurement on them.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
@@ -182,9 +209,10 @@ array([False, False])
 * Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
 
-* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$. Furthermore, qubit frequencies in `transmon_interaction` are now divided by 2 as is common as well.
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
+  [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
 <h3>Breaking changes 💔</h3>
 
@@ -297,7 +325,13 @@ array([False, False])
 * `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
   [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
 
+* Input types and sources for external wavefunctions and operators for `qml.import_state` 
+  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+
 <h3>Bug fixes 🐛</h3>
+
+* `qml.Projector` is pickle-able again.
+  [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
 
 * Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
   `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 

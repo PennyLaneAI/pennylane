@@ -1151,7 +1151,8 @@ class TestQubitIntegrationHigherOrder:
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, dev, diff_method, grad_on_execution, interface, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, dev, diff_method, grad_on_execution, interface, tol):
         """Test that the variance of a projector is correctly returned"""
         gradient_kwargs = {}
         if diff_method == "adjoint":
@@ -1163,7 +1164,7 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
-        P = jax.numpy.array([1])
+        P = jax.numpy.array(state)
         x, y = 0.765, -0.654
 
         @qnode(

@@ -67,7 +67,7 @@ def cond(condition, true_fn, false_fn=None):
     :func:`defer_measurements` transform.
 
     Args:
-        condition (.MeasurementValue[bool]): a conditional expression involving a mid-circuit
+        condition (.MeasurementValue): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`)
         true_fn (callable): The quantum function of PennyLane operation to
             apply if ``condition`` is ``True``
@@ -114,6 +114,8 @@ def cond(condition, true_fn, false_fn=None):
         Expressions with boolean logic flow using operators like ``and``,
         ``or`` and ``not`` are not supported as the ``condition`` argument.
 
+        While such statements may not result in errors, they may result in
+        incorrect behaviour.
 
     .. details::
         :title: Usage Details

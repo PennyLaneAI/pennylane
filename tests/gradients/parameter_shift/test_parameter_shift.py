@@ -2202,17 +2202,17 @@ class TestParameterShiftRule:
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
 
-    def test_projector_variance(self, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
         dev = qml.device("default.qubit", wires=2)
-        P = np.array([1])
         x, y = 0.765, -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+            qml.var(qml.Projector(state, wires=0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
@@ -3002,17 +3002,17 @@ class TestParameterShiftRuleBroadcast:
         # assert gradA == pytest.approx(expected, abs=tol)
         # assert gradF == pytest.approx(expected, abs=tol)
 
-    def test_projector_variance(self, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
         dev = qml.device("default.qubit", wires=2)
-        P = np.array([1])
         x, y = 0.765, -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+            qml.var(qml.Projector(state, wires=0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
