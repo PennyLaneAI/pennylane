@@ -268,13 +268,13 @@ class Pow(ScalarSymbolicOp):
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)
 
-    def sparse_matrix(self, wire_order=None):
-        if not isinstance(self.z, int):
-            raise SparseMatrixUndefinedError
-
-        if self._pauli_rep:
-            return self._pauli_rep.to_mat(wire_order=wire_order, format="csr")
-        return self.base.sparse_matrix() ** self.z
+    # pylint: disable=arguments-differ
+    @staticmethod
+    def compute_sparse_matrix(*params, base=None, z=0):
+        if isinstance(z, int):
+            base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
+            return base_matrix**z
+        raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

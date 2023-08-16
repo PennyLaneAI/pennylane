@@ -222,7 +222,7 @@ class Sum(CompositeOp):
 
     def sparse_matrix(self, wire_order=None):
         if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order, format="csr")
+            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 

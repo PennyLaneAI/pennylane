@@ -141,7 +141,7 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 0
-        assert op.parameters == []
+        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert op.data == ()
 
         assert op.num_wires == 4
@@ -984,6 +984,8 @@ class TestDifferentiation:
 
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
@@ -1750,6 +1752,8 @@ class TestCtrlTransformDifferentiation:
         """Test differentiation using JAX"""
 
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         jnp = jax.numpy
 
