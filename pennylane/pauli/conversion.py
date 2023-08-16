@@ -148,11 +148,15 @@ def pauli_decompose(
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a PauliSentence instance if ``True``.
-        check_hermitian (bool): check if the provided matrix is Hermitian or not.
+        check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
 
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
         of Pauli operators, either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence` instance.
+
+    .. seealso::
+
+        :func:`~.pauli_decompose_with_phase` for decomposing any general matrix.
 
     **Example:**
 
@@ -261,8 +265,8 @@ def pauli_decompose_with_phase(
 
     Returns:
         Union[Tuple(tensor_like, list), ~.PauliSentence]: the matrix decomposed as a linear combination of
-        Pauli operators as as a tuple consisting of an array of coefficients and a list of corresponding
-        Pauli terms, or :class:`~.PauliSentence` instance.
+        Pauli operators as as a ``tuple`` consisting of an ``array`` of coefficients and a ``list`` of
+        corresponding Pauli terms, or :class:`~.PauliSentence` instance.
 
     **Example:**
 
