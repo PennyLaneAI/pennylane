@@ -147,7 +147,7 @@ class MeasurementProcess(ABC):
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
         self._wires = (
-            [m.wires[0] for m in self.obs.measurements]
+            [m.wires[0] for m in self.obs._measurements_orig_order]
             if self.obs is not None and self.obs.__class__.__name__ == "MeasurementValue"
             else wires
         )

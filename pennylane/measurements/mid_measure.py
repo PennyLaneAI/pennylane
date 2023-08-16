@@ -171,6 +171,7 @@ class MeasurementValue(Generic[T]):
     def __init__(self, measurements, processing_fn):
         self.measurements = measurements
         self.processing_fn = processing_fn
+        self._measurements_orig_order = measurements
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
@@ -219,7 +220,14 @@ class MeasurementValue(Generic[T]):
         return self._apply(lambda v: other - v)
 
     def __mul__(self, other):
-        return self._transform_bin_op(lambda a, b: a * b, other)
+        mv_merged = self._transform_bin_op(lambda a, b: a * b, other)
+
+        # This attribute is for using multiple MeasurementValues for measurement
+        # statistics
+        mv_merged._measurements_orig_order = (
+            self._measurements_orig_order + other._measurements_orig_order
+        )
+        return mv_merged
 
     def __rmul__(self, other):
         return self._apply(lambda v: other * v)
@@ -247,13 +255,6 @@ class MeasurementValue(Generic[T]):
 
     def __or__(self, other):
         return self._transform_bin_op(lambda a, b: a or b, other)
-
-    def __matmul__(self, other):
-        """This method is for using multiple MeasurementValues for measurement
-        statistics. MeasurementValues corresponding to conditions with multiple
-        measurement values should NOT be used with this method."""
-        merged_measurements = self.measurements + other.measurements
-        return MeasurementValue(merged_measurements, lambda v: v)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""

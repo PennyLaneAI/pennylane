@@ -75,7 +75,7 @@ measurement process must be a real scalar value for it to be differentiable.
 
 Working with mid-circuit measurements
 -------------------------------------
-Mid-circuit measurements can be made using ``qml.measure``. The measurement value is returned by ``qml.measure``
+Mid-circuit measurements can be made using :func:`qml.measure`. The measurement value is returned by ``qml.measure``
 and can be used as a condition for classical control. Moreover, multiple measurement values can be combined
 using arithmetic operators for more complex conditioning:
 
@@ -101,7 +101,7 @@ reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument 
 Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
 ``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. Users have the
 ability to collect statistics on single measurement values, as well as joint statistics for multiple measurement
-values. Multiple measurement values can be combined using the ``@`` operator:
+values. Multiple measurement values can be combined using the ``*`` operator:
 
 .. code-block:: python
 
@@ -116,7 +116,7 @@ values. Multiple measurement values can be combined using the ``@`` operator:
 
         qml.RY(y, wires=1)
         m1 = qml.measure(1)
-        return qml.expval(qml.PauliZ(0)), qml.sample(m0 @ m1)
+        return qml.expval(qml.PauliZ(0)), qml.sample(m0 * m1)
 
     @qml.qnode(dev)
     def circ_xy(x, y):
@@ -124,7 +124,7 @@ values. Multiple measurement values can be combined using the ``@`` operator:
         m0 = qml.measure(0)
         qml.RY(y, wires=1)
         m1 = qml.measure(1)
-        return qml.probs(op=m0 @ m1)
+        return qml.probs(op=m0 * m1)
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
@@ -140,10 +140,9 @@ tensor([0.22482759, 0.54532356, 0.06709899, 0.16274986], requires_grad=True)
 
 .. note::
 
-    Using the ``@`` operator to combine measurement values is reserved for collecting statistics
-    and must not be used for conditioning with ``qml.cond``. Conversely, measurement values
-    combined using any other operators for use with ``qml.cond`` must not be used for collecting
-    statistics as this can result in incorrect wire ordering.
+    Using the ``*`` operator to combine measurement values is used differently for collecting statistics
+    and for conditioning with ``qml.cond``. Conditions created using any arithmetic or boolean operators
+    should not be used when collecting statistics as this can lead to incorrect results.
 
 Creating custom measurements
 ----------------------------

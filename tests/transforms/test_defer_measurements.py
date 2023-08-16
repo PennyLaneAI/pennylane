@@ -174,7 +174,7 @@ class TestQNode:
             m0 = qml.measure(0)
             qml.RY(y, 1)
             m1 = qml.measure(1)
-            return qml.probs(op=m0 @ m1)
+            return qml.probs(op=m0 * m1)
 
         dev = DefaultQubit2(seed=10)
 
@@ -200,7 +200,7 @@ class TestQNode:
             m0 = qml.measure(0)
             qml.RY(y, 1)
             m1 = qml.measure(1)
-            return qml.expval(qml.PauliX(1)), qml.probs(op=m0 @ m1)
+            return qml.expval(qml.PauliX(1)), qml.probs(op=m0 * m1)
 
         dev = DefaultQubit2(seed=10)
 

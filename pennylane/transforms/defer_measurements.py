@@ -171,7 +171,7 @@ def defer_measurements(tape: QuantumTape):
 
     for mp in tape.measurements:
         if isinstance(mp.obs, MeasurementValue):
-            mp._wires = [control_wires[m.id] for m in mp.obs.measurements]
+            mp._wires = [control_wires[m.id] for m in mp.obs._measurements_orig_order]
         apply(mp)
 
     return tape._qfunc_output

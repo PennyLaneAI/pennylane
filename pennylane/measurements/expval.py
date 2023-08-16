@@ -117,15 +117,18 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
             return probs[idx]
+
         # estimate the ev
+        # Get samples as decimal integer values if computing ev for a MeasurementValue,
+        # otherwise the returned samples would be boolean lists
+        decimal = True if isinstance(self.obs, MeasurementValue) else False
         samples = qml.sample(op=self.obs).process_samples(
-            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+            samples=samples,
+            wire_order=wire_order,
+            shot_range=shot_range,
+            bin_size=bin_size,
+            decimal=decimal,
         )
-        if isinstance(self.obs, MeasurementValue):
-            # Replace the basis state in the computational basis with the correct eigenvalue.
-            # Extract only the columns of the basis samples required based on ``wires``.
-            powers_of_two = 2 ** qml.math.arange(len(self.wires))[::-1]
-            samples = qml.math.asarray(samples @ powers_of_two)
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size

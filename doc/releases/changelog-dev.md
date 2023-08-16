@@ -24,7 +24,7 @@ def circ(x, y):
 
     qml.RY(y, wires=1)
     m1 = qml.measure(1)
-    return qml.expval(qml.PauliZ(0)), qml.sample(m0 @ m1)
+    return qml.expval(qml.PauliZ(0)), qml.sample(m0 * m1)
 ```
 ```pycon
 >>> circ(1.0, 2.0, shots=5)

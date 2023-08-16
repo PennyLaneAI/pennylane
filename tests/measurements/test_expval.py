@@ -35,8 +35,10 @@ def custom_measurement_process(device, spy):
             call_args.kwargs["bin_size"],
         )
         # no need to use op, because the observable has already been applied to ``self.dev._state``
-        meas = qml.expval(op=obs)
         old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
+        if isinstance(obs, qml.measurements.MeasurementProcess):
+            obs = obs.obs
+        meas = qml.expval(op=obs)
         if device.shots is None:
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
@@ -113,6 +115,72 @@ class TestExpval:
         spy = mocker.spy(qml.QubitDevice, "expval")
 
         circuit()
+
+        custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 4 * np.pi, np.pi / 4))
+    def test_observable_is_measurement_value(self, shots, phi, mocker, tol, tol_stochastic):
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.expval(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "expval")
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
+        custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 4 * np.pi, np.pi / 4))
+    @pytest.mark.parametrize("swap", [False, True])
+    def test_observable_multiple_measurement_values(
+        self, shots, phi, swap, mocker, tol, tol_stochastic
+    ):
+        """Test that expectation values for mid-circuit measurement values
+        are correct for multiple measurement values in any order."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RY(theta, 1)
+            m1 = qml.measure(1)
+            return qml.expval(m0 * m1) if not swap else qml.expval(m1 * m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "expval")
+
+        theta = phi - 2 * np.pi
+        res = circuit(phi, theta)
+
+        atol = tol if shots is None else tol_stochastic
+        expected_probs = np.array(
+            [
+                (np.cos(phi / 2) * np.cos(theta / 2)) ** 2,
+                (np.cos(phi / 2) * np.sin(theta / 2)) ** 2,
+                (np.sin(phi / 2) * np.cos(theta / 2)) ** 2,
+                (np.sin(phi / 2) * np.sin(theta / 2)) ** 2,
+            ]
+        )
+        order = np.array([0, 1, 2, 3] if not swap else [0, 2, 1, 3])
+        expected = np.dot(expected_probs, order)
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:
+                assert np.allclose(r, expected, atol=atol, rtol=0)
 
         custom_measurement_process(new_dev, spy)
 
