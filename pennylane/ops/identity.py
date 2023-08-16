@@ -177,11 +177,11 @@ class Identity(CVObservable, Operation):
 
 
 class GlobalPhase(Operation):
-    r"""A global phase operation that multiplies the all components of the state by :math:`\exp{1j \phi}`.
+    r"""A global phase operation that multiplies the all components of the state by :math:`\exp{-1j \phi}`.
 
     Args:
         phi (TensorLike): the global phase
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        wires (Iterable[Any] or Any): Wire label(s) that the global phase acts on.
 
     """
 
@@ -219,7 +219,7 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
-        return qml.math.exp(1j * phi) * qml.math.ones(2**n_wires)
+        return qml.math.exp(-1j * phi) * qml.math.ones(2**n_wires)
 
     @staticmethod
     def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -239,11 +239,11 @@ class GlobalPhase(Operation):
          array([[6.123234e-17+1.j, 0.000000e+00+0.j],
         [0.000000e+00+0.j, 6.123234e-17+1.j]])
         """
-        return qml.math.exp(1j * phi) * qml.math.eye(int(2**n_wires))
+        return qml.math.exp(-1j * phi) * qml.math.eye(int(2**n_wires))
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
-        return qml.math.exp(1j * phi) * sparse.eye(int(2**n_wires), format="csr")
+        return qml.math.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -274,7 +274,7 @@ class GlobalPhase(Operation):
         return []
 
     def adjoint(self):
-        return GlobalPhase(qml.math.conj(self.data[0]), self.wires)
+        return GlobalPhase(-1 * self.data[0], self.wires)
 
     def pow(self, z):
         return [GlobalPhase(z * self.data[0], self.wires)]

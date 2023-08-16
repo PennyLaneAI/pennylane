@@ -344,8 +344,8 @@ class DefaultQubit(QubitDevice):
         return self._apply_unitary(state, matrix, wires)
 
     def _apply_global_phase(self, state, operation: qml.GlobalPhase):
-        """Applies a :class:`~.GlobalPhase` operation to thet state."""
-        return qml.math.exp(1j * operation.data[0]) * state
+        """Applies a :class:`~.GlobalPhase` operation to the state."""
+        return qml.math.exp(-1j * operation.data[0]) * state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
