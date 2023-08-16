@@ -112,6 +112,18 @@ def assert_no_variance(measurements, transform_name):
             "gradient transform is not supported."
         )
 
+def assert_no_tape_batching(tape, transform_name):
+    """Check whether a tape is broadcasted and raise an error if this is the case.
+
+    Args:
+        tape (`~.QuantumScript`): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the tape
+    """
+    if tape.batch_size is not None:
+        raise NotImplementedError(
+            f"Computing the gradient of broadcasted tapes with the {transform_name} "
+            "gradient transform is currently not supported."
+        )
 
 def _gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
@@ -613,6 +625,12 @@ class gradient_transform(qml.batch_transform):
                 return ()
 
             qjac = _wrapper(*args, **kwargs)
+            if qnode.tape.batch_size is not None:
+                raise NotImplementedError(
+                    f"Computing the gradient of broadcasted/batched circuits with gradient "
+                    "transforms is not supported on the QNode level yet. Expand the tapes before "
+                    "computing the derivative or apply the gradient transform to the tape directly."
+                )
 
             if not hybrid:
                 return qjac

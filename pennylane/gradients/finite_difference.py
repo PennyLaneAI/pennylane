@@ -28,6 +28,7 @@ from pennylane.measurements import ProbabilityMP
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     _all_zero_grad,
+    assert_no_tape_batching,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
@@ -318,6 +319,9 @@ def finite_diff(
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
+    transform_name = "finite difference"
+    assert_no_tape_batching(tape, transform_name)
+
     if not qml.active_return():
         return _finite_diff_legacy(
             tape,

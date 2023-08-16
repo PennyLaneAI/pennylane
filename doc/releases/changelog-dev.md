@@ -177,6 +177,10 @@ array([False, False])
 
 <h3>Breaking changes 💔</h3>
 
+* Applying gradient transforms to broadcasted/batched tapes was deactivated until it is consistently
+  supported for QNodes as well.
+  [(#4___)](https://github.com/PennyLaneAI/pennylane/pull/4___)
+
 * Support for Python 3.8 is dropped.
   [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
 

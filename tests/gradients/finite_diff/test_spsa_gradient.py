@@ -40,6 +40,13 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
 class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the SPSA gradient transform"
+        with pytest.raises(NotImplementedError, match=_match):
+            spsa_grad(tape)
+
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""

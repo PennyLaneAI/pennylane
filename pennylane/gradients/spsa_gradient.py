@@ -26,6 +26,7 @@ import pennylane as qml
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .gradient_transform import (
     _all_zero_grad,
+    assert_no_tape_batching,
     gradient_transform,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -250,6 +251,8 @@ def spsa_grad(
         Note that the stochastic approximation and the fluctuations from the shot noise
         of the device accumulate, leading to a very coarse-grained estimate for the gradient.
     """
+    transform_name = "SPSA"
+    assert_no_tape_batching(tape, transform_name)
     if not qml.active_return():
         return _spsa_grad_legacy(
             tape,

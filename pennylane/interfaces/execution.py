@@ -646,6 +646,14 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
+    elif tapes[0].batch_size is not None:
+        raise NotImplementedError(
+            f"Computing the gradient of broadcasted/batched circuits with gradient "
+            "transforms is not supported on the QNode level yet. Expand the tapes before "
+            "computing the derivative or apply the gradient transform to the tape directly."
+        )
+
+
     mapped_interface = INTERFACE_MAP[config.interface]
     try:
         if mapped_interface == "autograd":
