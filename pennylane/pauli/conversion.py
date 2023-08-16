@@ -214,7 +214,7 @@ def pauli_decompose(
     if H.shape != (N, N):
         raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
-    if check_hermitian and not qml.math.allclose(H, H.conj().T):
+    if check_hermitian and not qml.math.allclose(H, qml.math.conjugate(qml.math.transpose(H))):
         raise ValueError("The matrix is not Hermitian")
 
     coeffs, obs = _generalized_pauli_decompose(
@@ -264,9 +264,9 @@ def pauli_decompose_with_phase(
             that are not of shape :math:`2^n\times 2^n` by padding them with zeros if ``True``.
 
     Returns:
-        Union[Tuple(tensor_like, list), ~.PauliSentence]: the matrix decomposed as a linear combination of
-        Pauli operators as as a ``tuple`` consisting of an ``array`` of coefficients and a ``list`` of
-        corresponding Pauli terms, or :class:`~.PauliSentence` instance.
+        Union[Tuple[tensor_like[complex], list[~.Operation]], ~.PauliSentence]: the matrix decomposed as
+        a linear combination of Pauli operators as as a ``tuple`` consisting of an ``array`` of complex
+        coefficients and a ``list`` of corresponding Pauli terms, or :class:`~.PauliSentence` instance.
 
     **Example:**
 
