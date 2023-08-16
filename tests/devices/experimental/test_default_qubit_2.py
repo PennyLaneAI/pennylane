@@ -1796,7 +1796,7 @@ class TestDynamicType:
         """Test that qml.Projector yields the expected results for both of its subclasses."""
         wires = list(range(n_wires))
         dev = DefaultQubit2(max_workers=max_workers)
-        ops = [qml.Hadamard(q) for q in wires]
+        ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
         basis_state = np.zeros((n_wires,))
         state_vector = np.zeros((2**n_wires,))
         state_vector[0] = 1
