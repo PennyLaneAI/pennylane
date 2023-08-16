@@ -1574,10 +1574,7 @@ class TestParameterShiftRule:
         """Test that the gradient of the RY gate matches the exact analytic formula."""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RY(par, wires=[0])
-            qml.expval(qml.PauliX(0))
-
+        tape = qml.tape.QuantumScript([qml.RY(par, wires=[0])], [qml.expval(qml.PauliX(0))])
         tape.trainable_params = {0}
 
         # gradients
