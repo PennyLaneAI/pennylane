@@ -227,6 +227,8 @@ array([False, False])
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
+* `qml.ctrl(qml.PauliX)` returns a `Controlled` instead of a `MultiControlledX` like before.
+
 <h3>Breaking changes 💔</h3>
 
 * Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff

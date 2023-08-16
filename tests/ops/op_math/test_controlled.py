@@ -1685,12 +1685,12 @@ class TestCtrlCustomOperator:
             ([1, 2, 3], None, None),
         ],
     )
-    def test_ctrl_PauliX_MultiControlledX(self, control_wires, control_values, expected_values):
+    def test_ctrl_PauliX_multi(self, control_wires, control_values, expected_values):
         """Tests that ctrl(PauliX) with 3+ control wires or Falsy control values make a MCX"""
         with qml.queuing.AnnotatedQueue() as q:
             op = qml.ctrl(qml.PauliX(0), control_wires, control_values=control_values)
 
-        expected = qml.MultiControlledX(wires=control_wires + [0], control_values=expected_values)
+        expected = Controlled(qml.PauliX(0), control_wires, expected_values)
         assert len(q) == 1
         assert qml.equal(op, expected)
         assert qml.equal(q.queue[0], expected)
