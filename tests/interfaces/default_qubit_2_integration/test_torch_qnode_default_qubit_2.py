@@ -596,10 +596,11 @@ class TestQubitIntegration:
     def test_probability_differentiation(self, interface, dev, diff_method, grad_on_execution, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-
+        kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x_val = 0.543
@@ -608,7 +609,11 @@ class TestQubitIntegration:
         y = torch.tensor(y_val, requires_grad=True, dtype=torch.float64)
 
         @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface,
+            **kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
