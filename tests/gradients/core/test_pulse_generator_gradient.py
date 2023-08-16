@@ -958,19 +958,21 @@ class TestPulseGeneratorEdgeCases:
         assert np.allclose(res_pulse_gen[1][2], 0)
 
 
+# TODO: add default.qubit once it supports PRNG key
 @pytest.mark.jax
+@pytest.mark.parametrize("dev_name", ["default.qubit.jax"])
 class TestPulseGeneratorTape:
     """Test that differentiating tapes with ``pulse_generator`` works."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
-    def test_single_pulse_single_term(self, shots, tol):
+    def test_single_pulse_single_term(self, dev_name, shots, tol):
         """Test that a single pulse with a single Hamiltonian term is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(8251)
-        dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=prng_key)
+        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=prng_key)
 
         H = jnp.polyval * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -998,15 +1000,15 @@ class TestPulseGeneratorTape:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
-    def test_single_pulse_multi_term(self, shots, tol):
+    def test_single_pulse_multi_term(self, dev_name, shots, tol):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(8251)
-        dev = qml.device("default.qubit.jax", wires=1, shots=None)
-        dev_shots = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=prng_key)
+        dev = qml.device(dev_name, wires=1, shots=None)
+        dev_shots = qml.device(dev_name, wires=1, shots=shots, prng_key=prng_key)
 
         H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1038,13 +1040,13 @@ class TestPulseGeneratorTape:
             assert all(qml.math.allclose(g, e, atol=tol) for g, e in zip(grad, exp_grad))
 
     @pytest.mark.parametrize("argnum", (0, [0], 1, [1]))
-    def test_single_pulse_multi_term_argnum(self, argnum):
+    def test_single_pulse_multi_term_argnum(self, dev_name, argnum):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly when setting ``argnum``."""
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
 
         H = jnp.polyval * X(0) + qml.pulse.constant * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1078,15 +1080,15 @@ class TestPulseGeneratorTape:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
-    def test_multi_pulse(self, shots, tol):
+    def test_multi_pulse(self, dev_name, shots, tol):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(8251)
-        dev = qml.device("default.qubit.jax", wires=1, shots=None)
-        dev_shots = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=prng_key)
+        dev = qml.device(dev_name, wires=1, shots=None)
+        dev_shots = qml.device(dev_name, wires=1, shots=shots, prng_key=prng_key)
 
         H0 = 0.1 * Z(0) + jnp.polyval * X(0)
         H1 = 0.2 * Y(0) + qml.pulse.constant * Y(0) + jnp.polyval * Z(0)
@@ -1122,14 +1124,15 @@ class TestPulseGeneratorTape:
 
 
 @pytest.mark.jax
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestPulseGeneratorQNode:
     """Test that pulse_generator integrates correctly with QNodes."""
 
-    def test_raises_for_application_to_qnodes(self):
+    def test_raises_for_application_to_qnodes(self, dev_name):
         """Test that an error is raised when applying ``stoch_pulse_grad``
         to a QNode directly."""
 
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(dev, interface="jax")
@@ -1143,14 +1146,14 @@ class TestPulseGeneratorQNode:
 
     # TODO: include the following tests when #4225 is resolved.
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
-    def test_qnode_expval_single_par(self):
+    def test_qnode_expval_single_par(self, dev_name):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * Y(0)
 
@@ -1169,14 +1172,14 @@ class TestPulseGeneratorQNode:
         assert tracker.totals["executions"] == 2  # two shifted tapes
 
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
-    def test_qnode_expval_probs_single_par(self):
+    def test_qnode_expval_probs_single_par(self, dev_name):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0)
 
@@ -1201,14 +1204,14 @@ class TestPulseGeneratorQNode:
             assert qml.math.allclose(j, e)
 
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
-    def test_qnode_probs_expval_multi_par(self):
+    def test_qnode_probs_expval_multi_par(self, dev_name):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1, shots=None)
+        dev = qml.device(dev_name, wires=1, shots=None)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0) + qml.pulse.constant * Y(0)
 
@@ -1241,17 +1244,18 @@ class TestPulseGeneratorQNode:
 
 
 @pytest.mark.jax
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestPulseGeneratorIntegration:
     """Test that pulse_generator integrates correctly with QNodes."""
 
-    def test_simple_qnode_expval(self):
+    def test_simple_qnode_expval(self, dev_name):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * Y(0)
 
@@ -1268,14 +1272,14 @@ class TestPulseGeneratorIntegration:
         assert qml.math.allclose(grad, exp_grad)
         assert tracker.totals["executions"] == 1 + 2  # one forward pass, two shifted tapes
 
-    def test_simple_qnode_expval_two_evolves(self):
+    def test_simple_qnode_expval_two_evolves(self, dev_name):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T_x = 0.1
         T_y = 0.2
         ham_x = qml.pulse.constant * X(0)
@@ -1294,14 +1298,14 @@ class TestPulseGeneratorIntegration:
         exp_grad = [[-2 * jnp.sin(2 * (p_x + p_y)) * T_x], [-2 * jnp.sin(2 * (p_x + p_y)) * T_y]]
         assert qml.math.allclose(grad, exp_grad)
 
-    def test_simple_qnode_probs(self):
+    def test_simple_qnode_probs(self, dev_name):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * Y(0)
 
@@ -1316,14 +1320,14 @@ class TestPulseGeneratorIntegration:
         exp_jac = jnp.array([-1, 1]) * jnp.sin(2 * p) * T
         assert qml.math.allclose(jac, exp_jac)
 
-    def test_simple_qnode_probs_expval(self):
+    def test_simple_qnode_probs_expval(self, dev_name):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0)
 
@@ -1345,13 +1349,13 @@ class TestPulseGeneratorIntegration:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
-    def test_simple_qnode_jit(self, time_interface):
+    def test_simple_qnode_jit(self, dev_name, time_interface):
         """Test that a simple qnode can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = {"python": 0.2, "numpy": np.array(0.2), "jax": jnp.array(0.2)}[time_interface]
         ham_single_q_const = qml.pulse.constant * Y(0)
 
@@ -1367,15 +1371,18 @@ class TestPulseGeneratorIntegration:
         assert qml.math.isclose(jit_grad, exp_grad)
 
     @pytest.mark.slow
-    def test_advanced_qnode(self):
+    def test_advanced_qnode(self, dev_name):
         """Test that an advanced qnode can be differentiated with pulse_generator."""
         import jax
         import jax.numpy as jnp
 
+        if dev_name == "default.qubit":
+            pytest.skip("num_executions is not correct")
+
         jax.config.update("jax_enable_x64", True)
 
         params = [jnp.array(0.21), jnp.array(-0.171), jnp.array([0.05, 0.03, -0.1])]
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device(dev_name, wires=2)
         ham = (
             qml.pulse.constant * X(0)
             + (lambda p, t: jnp.sin(p * t)) * Z(0)
@@ -1403,14 +1410,14 @@ class TestPulseGeneratorIntegration:
         )
 
     @pytest.mark.parametrize("argnums", [[0, 1], 0, 1])
-    def test_simple_qnode_expval_multiple_params(self, argnums):
+    def test_simple_qnode_expval_multiple_params(self, dev_name, argnums):
         """Test that a simple qnode with two parameters
         can be differentiated with pulse_generator and `argnums` works as expected."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.2
         ham1 = qml.pulse.constant * Y(0)
         ham2 = qml.pulse.constant * Y(0)
@@ -1435,7 +1442,9 @@ class TestPulseGeneratorIntegration:
             assert tracker.totals["executions"] == 1 + 2  # one forward pass, two shifted tapes
 
 
+# TODO: port ParametrizedEvolution to new default.qubit
 @pytest.mark.jax
+@pytest.mark.parametrize("dev_name", ["default.qubit.jax"])
 class TestPulseGeneratorDiff:
     """Test that pulse_generator is differentiable, i.e. that computing
     the derivative with pulse_generator is differentiable a second time,
@@ -1443,14 +1452,14 @@ class TestPulseGeneratorDiff:
 
     # pylint: disable=too-few-public-methods
     @pytest.mark.slow
-    def test_jax(self):
+    def test_jax(self, dev_name):
         """Test that pulse_generator is differentiable,
         allowing to compute the Hessian, with JAX.."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device(dev_name, wires=1)
         T = 0.5
         ham_single_q_const = qml.pulse.constant * Y(0)
 
