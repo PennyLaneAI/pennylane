@@ -74,7 +74,6 @@ class TestHadamardGrad:
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape)
 
-
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):

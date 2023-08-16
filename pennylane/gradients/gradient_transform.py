@@ -113,6 +113,7 @@ def assert_no_variance(measurements, transform_name):
             "gradient transform is not supported."
         )
 
+
 def assert_no_tape_batching(tape, transform_name):
     """Check whether a tape is broadcasted and raise an error if this is the case.
 
@@ -125,6 +126,7 @@ def assert_no_tape_batching(tape, transform_name):
             f"Computing the gradient of broadcasted tapes with the {transform_name} "
             "gradient transform is currently not supported."
         )
+
 
 def _gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with

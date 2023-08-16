@@ -901,6 +901,7 @@ class TestParamShift:
             ):
                 qml.gradients.param_shift(tape)
 
+
 # Remove the following and unskip the class below once broadcasted
 # tapes are fully supported with gradient transforms.
 class TestParamShiftRaisesWithBroadcasted:
