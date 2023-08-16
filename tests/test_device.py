@@ -518,7 +518,7 @@ class TestInternalFunctions:
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(0)
             m0 = qml.measure(0)
-            qml.cond(m0, qml.RX)(0.123, 1),
+            qml.cond(m0, qml.RX)(0.123, 1)
             qml.expval(qml.PauliZ(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
