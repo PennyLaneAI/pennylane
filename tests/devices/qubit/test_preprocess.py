@@ -217,7 +217,7 @@ class TestExpandFnTransformations:
     # pylint: disable=no-member
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
-        mp = MidMeasureMP(wires=[0], id="test_id")
+        mp = MidMeasureMP(wires=[0], reset=True, id="test_id")
         mv = MeasurementValue([mp], processing_fn=lambda v: v)
         ops = [
             qml.Hadamard(0),
@@ -230,7 +230,9 @@ class TestExpandFnTransformations:
         expanded_tape = expand_fn(tape)
         expected = [
             qml.Hadamard(0),
-            qml.ops.Controlled(qml.RX(0.123, wires=1), 0),
+            qml.CNOT([0, 2]),
+            qml.CNOT([2, 0]),
+            qml.ops.Controlled(qml.RX(0.123, wires=1), 2),
         ]
 
         for op, exp in zip(expanded_tape, expected + measurements):
