@@ -238,7 +238,7 @@ class GlobalPhase(Operation):
         array([[0.70710678-0.70710678j, 0.        +0.j        ],
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
-        return qml.math.exp(-1j * phi) * qml.math.eye(int(2**n_wires))
+        return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
