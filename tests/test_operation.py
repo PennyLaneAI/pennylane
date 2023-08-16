@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -2692,3 +2692,20 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
+
+
+@pytest.mark.jax
+def test_custom_operator_is_jax_pytree():
+    """Test that a custom operator is registered as a jax pytree."""
+
+    import jax
+
+    class CustomOperator(qml.operation.Operator):
+        pass
+
+    op = CustomOperator(1.2, wires=0)
+    data, structure = jax.tree_util.tree_flatten(op)
+    assert data == [1.2]
+
+    new_op = jax.tree_util.tree_unflatten(structure, [2.3])
+    assert qml.equal(new_op, CustomOperator(2.3, wires=0))

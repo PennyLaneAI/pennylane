@@ -87,6 +87,9 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Wires can now be reused after making a mid-circuit measurement on them.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
