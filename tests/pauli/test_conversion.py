@@ -92,7 +92,7 @@ class TestDecomposition:
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
-        assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
+        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
