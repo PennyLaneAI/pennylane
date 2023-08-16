@@ -130,8 +130,13 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 
-dot_broadcasted = lambda a, b: np.einsum("...ij,...jk->...ik", a, b)
-multi_dot_broadcasted = lambda matrices: reduce(dot_broadcasted, matrices)
+
+def dot_broadcasted(a, b):
+    return np.einsum("...ij,...jk->...ik", a, b)
+
+
+def multi_dot_broadcasted(matrices):
+    return reduce(dot_broadcasted, matrices)
 
 
 class TestOperations:
@@ -159,7 +164,7 @@ class TestOperations:
         leaves = jax.tree_util.tree_leaves(op)
         for d1, d2 in zip(leaves, op.data):
             assert d1 is d2
-         
+
         leaves, tree_def = jax.tree_util.tree_flatten(op)
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         assert qml.equal(op_unflattened, op)
