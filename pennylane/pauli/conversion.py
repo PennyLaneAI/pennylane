@@ -230,7 +230,7 @@ def pauli_decompose(
         return Hamiltonian(coeffs, obs)
 
 
-def phased_pauli_decompose(
+def pauli_decompose_with_phase(
     matrix,
     hide_identity=False,
     wire_order=None,
@@ -270,7 +270,7 @@ def phased_pauli_decompose(
 
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  1j]])
-    >>> coeffs, obs = qml.phased_pauli_decompose(A)
+    >>> coeffs, obs = qml.pauli_decompose_with_phase(A)
     >>> coeffs
     array([-1. +0.25j, -1.5+0.j  , -0.5+0.j  , -1. -0.25j, -1.5+0.j  ,
        -1. +0.j  , -0.5+0.j  ,  1. -0.j  ,  0. -0.25j, -0.5+0.j  ,
@@ -285,7 +285,7 @@ def phased_pauli_decompose(
 
     We can also set custom wires using the ``wire_order`` argument:
 
-    >>> ps = qml.phased_pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> ps = qml.pauli_decompose_with_phase(A, pauli=True, wire_order=['a', 'b'])
     >>> print(ps)
     (-1+0.25j) * I
     + (-1.5+0j) * X(b)
@@ -307,7 +307,7 @@ def phased_pauli_decompose(
         For non-square matrices, we need to provide the ``padding=True`` keyword argument:
 
         >>> A = np.array([[-2, -2 + 1j]])
-        >>> ps = qml.phased_pauli_decompose(A, padding=True, pauli=True)
+        >>> ps = qml.pauli_decompose_with_phase(A, padding=True, pauli=True)
         >>> print(ps)
         (-1+0j) * I
         + (-1+0.5j) * X(0)
@@ -320,7 +320,7 @@ def phased_pauli_decompose(
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
         ... def circuit(A):
-        ...    coeffs, _ = qml.phased_pauli_decompose(A, padding=True)
+        ...    coeffs, _ = qml.pauli_decompose_with_phase(A, padding=True)
         ...    qml.RX(qml.math.real(coeffs[2]), 0)
         ...    return qml.expval(qml.PauliZ(0))
         >>> qml.grad(circuit)(A)

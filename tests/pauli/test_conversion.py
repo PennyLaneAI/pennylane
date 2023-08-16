@@ -156,7 +156,7 @@ class TestDecomposition:
 
 
 class TestPhasedDecomposition:
-    """Tests the phased_pauli_decompose function"""
+    """Tests the pauli_decompose_with_phase function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((4, 2)), np.ones((2, 4))])
     def test_wrong_shape_non_square(self, hamiltonian):
@@ -166,7 +166,7 @@ class TestPhasedDecomposition:
             ValueError,
             match="The matrix should be square",
         ):
-            qml.phased_pauli_decompose(hamiltonian)
+            qml.pauli_decompose_with_phase(hamiltonian)
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((5, 5)), np.ones((3, 3))])
     def test_wrong_shape_non_power_two(self, hamiltonian):
@@ -176,13 +176,13 @@ class TestPhasedDecomposition:
             ValueError,
             match="Dimension of the matrix should be a power of 2",
         ):
-            qml.phased_pauli_decompose(hamiltonian)
+            qml.pauli_decompose_with_phase(hamiltonian)
 
     def test_hide_identity_true(self):
         """Tests that there are no Identity observables in the tensor products
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
-        _, obs_list = qml.phased_pauli_decompose(H, hide_identity=True)
+        _, obs_list = qml.pauli_decompose_with_phase(H, hide_identity=True)
         tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
 
         for tensor in tensors:
@@ -193,7 +193,7 @@ class TestPhasedDecomposition:
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
-        _, obs_list = qml.phased_pauli_decompose(H, hide_identity=True)
+        _, obs_list = qml.pauli_decompose_with_phase(H, hide_identity=True)
         tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
 
         for tensor in tensors:
@@ -206,14 +206,14 @@ class TestPhasedDecomposition:
         the identity matrix, and Pauli matrices."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        _, decomposed_obs = qml.phased_pauli_decompose(hamiltonian, hide_identity)
+        _, decomposed_obs = qml.pauli_decompose_with_phase(hamiltonian, hide_identity)
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
         """Tests that tensors are composed of a number of terms equal to the number
         of qubits."""
-        _, decomposed_obs = qml.phased_pauli_decompose(hamiltonian)
+        _, decomposed_obs = qml.pauli_decompose_with_phase(hamiltonian)
         n = int(np.log2(len(hamiltonian)))
 
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
@@ -221,9 +221,9 @@ class TestPhasedDecomposition:
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
-        """Tests that phased_pauli_decompose successfully decomposes Hamiltonians into a
+        """Tests that pauli_decompose_with_phase successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = qml.phased_pauli_decompose(hamiltonian)
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose_with_phase(hamiltonian)
         n = range(int(np.log2(len(hamiltonian))))
 
         linear_comb = sum(
@@ -237,7 +237,7 @@ class TestPhasedDecomposition:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_to_paulisentence(self, hamiltonian):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
-        ps = qml.phased_pauli_decompose(hamiltonian, pauli=True)
+        ps = qml.pauli_decompose_with_phase(hamiltonian, pauli=True)
         num_qubits = int(np.log2(len(hamiltonian)))
 
         assert isinstance(ps, qml.pauli.PauliSentence)
@@ -252,7 +252,7 @@ class TestPhasedDecomposition:
         num_qubits = int(np.ceil(np.log2(max(shape))))
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = qml.phased_pauli_decompose(
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose_with_phase(
             matrix, hide_identity, padding=True
         )
 
@@ -274,7 +274,7 @@ class TestPhasedDecomposition:
     def test_to_paulisentence_general(self, matrix):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
         shape = matrix.shape
-        ps = qml.phased_pauli_decompose(matrix, padding=True, pauli=True)
+        ps = qml.pauli_decompose_with_phase(matrix, padding=True, pauli=True)
         num_qubits = int(np.ceil(np.log2(max(shape))))
 
         assert isinstance(ps, qml.pauli.PauliSentence)
@@ -289,10 +289,10 @@ class TestPhasedDecomposition:
         )
 
         for wire_order in (wire_order1, wire_order2):
-            c, o = qml.phased_pauli_decompose(hamiltonian, wire_order=wire_order)
+            c, o = qml.pauli_decompose_with_phase(hamiltonian, wire_order=wire_order)
             h = qml.Hamiltonian(qml.math.real(c), o)
 
-            ps = qml.phased_pauli_decompose(hamiltonian, wire_order=wire_order, pauli=True)
+            ps = qml.pauli_decompose_with_phase(hamiltonian, wire_order=wire_order, pauli=True)
 
             assert set(ps.wires) == set(wire_order)
             assert h.wires.toset() == set(wire_order)
@@ -308,7 +308,7 @@ class TestPhasedDecomposition:
         with pytest.raises(
             ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
-            qml.phased_pauli_decompose(hamiltonian, wire_order=wire_order)
+            qml.pauli_decompose_with_phase(hamiltonian, wire_order=wire_order)
 
     @pytest.mark.parametrize("pauli", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -316,7 +316,7 @@ class TestPhasedDecomposition:
         """Test that decompositions are not queued"""
 
         with qml.queuing.AnnotatedQueue() as q1:
-            qml.phased_pauli_decompose(hamiltonian, pauli=pauli, padding=True)
+            qml.pauli_decompose_with_phase(hamiltonian, pauli=pauli, padding=True)
 
         with qml.queuing.AnnotatedQueue() as q2:
             qml.pauli_decompose(hamiltonian, pauli=pauli)
@@ -327,13 +327,13 @@ class TestPhasedDecomposition:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("matrix", test_diff_matrix)
     def test_differentiability(self, matrix):
-        """Test differentiability for phased_pauli_decompose"""
+        """Test differentiability for pauli_decompose_with_phase"""
 
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(A):
-            coeffs, _ = qml.phased_pauli_decompose(A, padding=True)
+            coeffs, _ = qml.pauli_decompose_with_phase(A, padding=True)
             qml.RX(qml.math.real(coeffs[2]), 0)
             return qml.expval(qml.PauliZ(0))
 

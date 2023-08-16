@@ -64,8 +64,8 @@ array([False, False])
   restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
   calculations with single and double (SD) excitations.
 
-* A fully differentiable method `qml.phased_pauli_decompose` that can be used to decompose any
-  non-Hermitian or non-square matrix to linear combination of Pauli operators.
+* A fully differentiable method `qml.pauli_decompose_with_phase` can now be used to decompose
+  any non-Hermitian or non-square matrix to a linear combination of Pauli operators.
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
 <h3>Improvements 🛠</h3>

@@ -34,7 +34,7 @@ import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
-from pennylane.pauli import pauli_decompose, phased_pauli_decompose
+from pennylane.pauli import pauli_decompose, pauli_decompose_with_phase
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import FermiC, FermiA, jordan_wigner
