@@ -159,6 +159,10 @@ class TestOperations:
         leaves = jax.tree_util.tree_leaves(op)
         for d1, d2 in zip(leaves, op.data):
             assert d1 is d2
+         
+        leaves, tree_def = jax.tree_util.tree_flatten(op)
+        op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
+        assert qml.equal(op_unflattened, op)
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
