@@ -48,6 +48,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "order",
     "reduction",
     "sampler",
+    "sampler_rng",
     "sampler_seed",
     "shifts",
     "shots",

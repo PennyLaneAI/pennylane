@@ -18,6 +18,7 @@ of a quantum tape.
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 import functools
 from collections.abc import Sequence
+from warnings import warn
 
 import numpy as np
 from scipy.special import factorial
@@ -333,6 +334,13 @@ def finite_diff(
             f0=f0,
             validate_params=validate_params,
         )
+
+    if any(qml.math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
+        warn(
+            "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
+            UserWarning,
+        )
+
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 

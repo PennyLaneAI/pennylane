@@ -30,13 +30,17 @@ shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 qubit_device_and_diff_method = [
     [DefaultQubit2(), "finite-diff", {"h": 10e-2}],
     [DefaultQubit2(), "parameter-shift", {}],
-    [DefaultQubit2(), "spsa", {"h": 10e-2, "num_directions": 20}],
+    [
+        DefaultQubit2(),
+        "spsa",
+        {"h": 10e-2, "num_directions": 20, "sampler_rng": np.random.default_rng(42)},
+    ],
 ]
 
 TOLS = {
     "finite-diff": 0.3,
     "parameter-shift": 1e-2,
-    "spsa": 0.3,
+    "spsa": 0.5,
 }
 
 

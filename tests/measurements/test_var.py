@@ -139,18 +139,17 @@ class TestVar:
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
+    @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
-    def test_projector_var(self, shots, mocker):
+    def test_projector_var(self, state, shots, mocker):
         """Tests that the variance of a ``Projector`` object is computed correctly."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "var")
 
-        basis_state = np.array([0, 0, 0])
-
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
-            return qml.var(qml.Projector(basis_state, wires=range(3)))
+            return qml.var(qml.Projector(state, wires=range(3)))
 
         res = circuit()
         expected = [0.25, 0.25] if isinstance(shots, list) else 0.25

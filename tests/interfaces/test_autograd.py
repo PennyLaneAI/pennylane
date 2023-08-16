@@ -1072,7 +1072,7 @@ class TestHigherOrderDerivatives:
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -1157,6 +1157,7 @@ class TestOverridingShots:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.Mock(wraps=qml.Device.shots.fset)
+        # pylint:disable=assignment-from-no-return,too-many-function-args
         mock_property = qml.Device.shots.setter(spy)
         mocker.patch.object(qml.Device, "shots", mock_property)
 

@@ -103,7 +103,10 @@ def map_wires(
         measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
         prep = [qml.map_wires(p, wire_map) for p in input._prep]  # pylint: disable=protected-access
 
-        return input.__class__(ops=ops, measurements=measurements, prep=prep, shots=input.shots)
+        out = input.__class__(ops=ops, measurements=measurements, prep=prep, shots=input.shots)
+        out.trainable_params = input.trainable_params
+        out._qfunc_output = input._qfunc_output  # pylint: disable=protected-access
+        return out
 
     if callable(input):
         func = input.func if isinstance(input, QNode) else input
