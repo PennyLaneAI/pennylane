@@ -150,7 +150,7 @@ def validate_and_expand_adjoint(
     try:
         new_ops = [
             final_op
-            for op in circuit._ops
+            for op in circuit.operations[circuit.num_preps :]
             for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
         ]
     except RecursionError as e:
@@ -187,6 +187,7 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
+    new_ops = circuit.operations[: circuit.num_preps] + new_ops
     return qml.tape.QuantumScript(new_ops, measurements, shots=circuit.shots)
 
 
