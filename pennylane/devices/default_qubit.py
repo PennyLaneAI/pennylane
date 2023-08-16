@@ -343,7 +343,7 @@ class DefaultQubit(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _apply_global_phase(self, state, operation: qml.GlobalPhase):
+    def _apply_global_phase(self, state, operation: qml.GlobalPhase):  # pylint: disable=no-self-use
         """Applies a :class:`~.GlobalPhase` operation to the state."""
         return qml.math.exp(-1j * operation.data[0]) * state
 

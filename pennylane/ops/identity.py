@@ -224,20 +224,19 @@ class GlobalPhase(Operation):
     @staticmethod
     def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-         The canonical matrix is the textbook matrix representation that does not consider wires.
-         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+        .. seealso:: :meth:`~.GlobalPhase.matrix`
 
-         .. seealso:: :meth:`~.GlobalPhase.matrix`
+        Returns:
+            ndarray: matrix
 
-         Returns:
-             ndarray: matrix
+        **Example**
 
-         **Example**
-
-         >>> qml.GlobalPhase.compute_matrix(np.pi, n_wires=1)
-         array([[6.123234e-17+1.j, 0.000000e+00+0.j],
-        [0.000000e+00+0.j, 6.123234e-17+1.j]])
+        >>> qml.GlobalPhase.compute_matrix(np.pi/4, n_wires=1)
+        array([[0.70710678-0.70710678j, 0.        +0.j        ],
+               [0.        +0.j        , 0.70710678-0.70710678j]])
         """
         return qml.math.exp(-1j * phi) * qml.math.eye(int(2**n_wires))
 
