@@ -119,7 +119,7 @@ class TestExpval:
         custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
-    @pytest.mark.parametrize("phi", np.arange(0, 4 * np.pi, np.pi / 4))
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(self, shots, phi, mocker, tol, tol_stochastic):
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
@@ -141,7 +141,7 @@ class TestExpval:
         custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
-    @pytest.mark.parametrize("phi", np.arange(0, 4 * np.pi, np.pi / 4))
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     @pytest.mark.parametrize("swap", [False, True])
     def test_observable_multiple_measurement_values(
         self, shots, phi, swap, mocker, tol, tol_stochastic

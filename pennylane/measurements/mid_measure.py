@@ -224,9 +224,10 @@ class MeasurementValue(Generic[T]):
 
         # This attribute is for using multiple MeasurementValues for measurement
         # statistics
-        mv_merged._measurements_orig_order = (
-            self._measurements_orig_order + other._measurements_orig_order
-        )
+        if isinstance(other, MeasurementValue):
+            mv_merged._measurements_orig_order = (
+                self._measurements_orig_order + other._measurements_orig_order
+            )
         return mv_merged
 
     def __rmul__(self, other):

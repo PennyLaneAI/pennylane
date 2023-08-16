@@ -196,6 +196,138 @@ class TestSample:
 
         custom_measurement_process(dev, spy)
 
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    def test_observable_is_measurement_value(self, shots, phi, mocker):
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.sample(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s,) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots,)
+        custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    @pytest.mark.parametrize("swap", [False, True])
+    def test_observable_multiple_measurement_values(self, shots, phi, swap, mocker):
+        """Test that expectation values for mid-circuit measurement values
+        are correct for multiple measurement values in any order."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RY(theta, 1)
+            m1 = qml.measure(1)
+            return qml.sample(m0 * m1) if not swap else qml.sample(m1 * m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        theta = phi - 2 * np.pi
+        res = circuit(phi, theta)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots, 2)
+
+        custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    def test_decimal_true(self, shots):
+        """Test that if `decimal==True`, then samples are returned as base-10 integers
+        rather than boolean lists."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.Hadamard(2)
+            return qml.sample(wires=[0, 1, 2])
+
+        # Run circuit to populate dev._samples
+        _ = circuit()
+
+        samples = dev._samples
+        meas = qml.sample(wires=dev.wires)
+        shot_range = None if isinstance(shots, int) else (0, sum(shots))
+        bin_size = None if isinstance(shots, int) else shots[0]
+
+        # Using `meas` as the observable because `QubitDevice.sample` expects a
+        # measurement process for that argument when no observable is provided
+        old_samples = dev.sample(meas, shot_range=shot_range, bin_size=bin_size, decimal=True)
+        new_samples = meas.process_samples(
+            samples, wire_order=dev.wires, shot_range=shot_range, bin_size=bin_size, decimal=True
+        )
+
+        assert np.allclose(old_samples, new_samples)
+
+        if isinstance(shots, int):
+            assert old_samples.shape == new_samples.shape == (shots,)
+        else:
+            # Samples are reshaped to dimension (bin_size, -1) for decimal values
+            assert old_samples.shape == new_samples.shape == (bin_size, len(shots))
+
+        assert np.amax(old_samples) < 2 ** len(dev.wires)
+        assert np.amax(new_samples) < 2 ** len(dev.wires)
+        assert np.min(old_samples) >= 0
+        assert np.min(new_samples) >= 0
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    def test_decimal_false(self, shots):
+        """Test that if `decimal==False`, then samples are returned as boolean
+        lists."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.Hadamard(2)
+            return qml.sample(wires=[0, 1, 2])
+
+        # Run circuit to populate dev._samples
+        _ = circuit()
+
+        samples = dev._samples
+        meas = qml.sample(wires=dev.wires)
+        shot_range = None if isinstance(shots, int) else (0, sum(shots))
+        bin_size = None if isinstance(shots, int) else shots[0]
+
+        # Using `meas` as the observable because `QubitDevice.sample` expects a
+        # measurement process for that argument when no observable is provided
+        old_samples = dev.sample(meas, shot_range=shot_range, bin_size=bin_size, decimal=False)
+        new_samples = meas.process_samples(
+            samples, wire_order=dev.wires, shot_range=shot_range, bin_size=bin_size, decimal=False
+        )
+
+        assert np.allclose(old_samples, new_samples)
+
+        if isinstance(shots, int):
+            assert old_samples.shape == new_samples.shape == (shots, len(dev.wires))
+        else:
+            # Samples are reshaped to dimension (num_wires, bin_size, -1) for boolean lists
+            assert old_samples.shape == new_samples.shape == (len(dev.wires), bin_size, len(shots))
+
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""
         dev = qml.device("default.qubit", wires=2)

@@ -247,7 +247,7 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None or isinstance(self.obs, MeasurementValue) and not decimal:
+        if (self.obs is None or isinstance(self.obs, MeasurementValue)) and not decimal:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
