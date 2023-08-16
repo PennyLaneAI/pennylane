@@ -754,7 +754,7 @@ class Device(abc.ABC):
 
         if any(isinstance(m, MidMeasureMP) for m in circuit.operations):
             circuit = (
-                qml.defer_measurements(circuit, dev_wires=self.wires)
+                qml.defer_measurements(circuit)
                 if not self.capabilities().get("supports_mid_measure", False)
                 else circuit
             )
