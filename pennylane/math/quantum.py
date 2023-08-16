@@ -768,7 +768,7 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
     batched1 = len(qml.math.shape(operator_matrix)) > 2
     # The overlap <psi|A|psi>
     indices0 = "bj" if batched0 else "j"
-    indices1 = "bji" if batched1 else "ij"
+    indices1 = "bji" if batched1 else "ji"
     indices2 = "bi" if batched0 else "i"
     target = "b" if batched0 or batched1 else ""
     overlap = qml.math.einsum(
