@@ -41,6 +41,26 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+
+* A new `qml.Select` operation is available. It applies specific input operations depending on the
+  state of the designated control qubits
+  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+
+  ```pycon
+  >>> dev = qml.device('default.qubit',wires=4)
+  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     return qml.state()
+  ...
+  >>> print(qml.draw(circuit,expansion_strategy='device')())
+  0: ─╭○─╭○─╭●─╭●────┤  State
+  1: ─├○─├●─├○─├●────┤  State
+  2: ─╰X─│──╰Y─├SWAP─┤  State
+  3: ────╰X────╰SWAP─┤  State
+  ```
+
 * Functions are available to obtain a state vector from `PySCF` solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
