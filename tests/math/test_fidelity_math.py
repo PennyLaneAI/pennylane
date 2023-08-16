@@ -294,6 +294,8 @@ def expected_grad_multi2(x):
 class TestGradient:
     """Test the gradient of qml.math.fidelity"""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
     def test_single_wire_autograd(self, x, tol):
