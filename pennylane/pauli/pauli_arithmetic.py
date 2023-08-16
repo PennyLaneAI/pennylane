@@ -479,7 +479,6 @@ class PauliSentence(dict):
             mat_indices[:, :n_matrices_in_buffer], mat_data[:, :n_matrices_in_buffer]
         )
         matrix.eliminate_zeros()
-        print(matrix.data)
         return matrix
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
