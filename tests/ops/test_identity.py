@@ -31,7 +31,7 @@ class TestIdentity:
         assert metadata[0] == qml.wires.Wires(wires)
         assert metadata[1] == tuple()
 
-        new_op = Identity(*op.flatten())
+        new_op = Identity._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
 
     @pytest.mark.jax
