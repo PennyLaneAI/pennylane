@@ -27,6 +27,7 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
+
 # pylint: disable=too-many-branches
 def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
