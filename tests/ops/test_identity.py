@@ -15,11 +15,36 @@
 import numpy as np
 import pytest
 
+import pennylane as qml
 from pennylane import Identity
 
 
 @pytest.mark.parametrize("wires", [[0], [0, 1], ["a", "b", "c"], [100, "xasd", 12]])
 class TestIdentity:
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self, wires):
+        """Test the flatten and unflatten methods of identity."""
+        op = Identity(wires)
+        data, metadata = op._flatten()
+        assert data == tuple()
+        assert metadata[0] == qml.wires.Wires(wires)
+        assert metadata[1] == tuple()
+
+        new_op = Identity(*op.flatten())
+        assert qml.equal(op, new_op)
+
+    @pytest.mark.jax
+    def test_jax_pytree_integration(self, wires):
+        """Test that identity is a pytree by jitting a function of it."""
+        import jax
+
+        op = qml.Identity(wires)
+
+        adj_op = jax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
+
+        assert qml.equal(op, adj_op)
+
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""
         res = Identity(wires).eigvals()
