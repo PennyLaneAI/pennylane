@@ -2731,4 +2731,3 @@ def test_get_attr():
     assert (
         StatePrep is qml.operation.StatePrepBase
     )  # StatePrep imported from operation.py is an alias for StatePrepBase
-    
