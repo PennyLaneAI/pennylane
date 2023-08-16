@@ -118,6 +118,19 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
+  This unlocks the ability to jit functions of `Operator`.
+  [(#4458)](https://github.com/PennyLaneAI/pennylane/pull/4458/)
+
+  ```pycon
+  >>> op = qml.adjoint(qml.RX(1.0, wires=0))
+  >>> jax.jit(qml.matrix)(op)
+  Array([[0.87758255-0.j        , 0.        +0.47942555j],
+       [0.        +0.47942555j, 0.87758255-0.j        ]],      dtype=complex64, weak_type=True)
+  >>> jax.tree_util.tree_map(lambda x: x+1, op)
+  Adjoint(RX(2.0, wires=[0]))
+  ```
+
 * Wires can now be reused after making a mid-circuit measurement on them.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
 
@@ -424,6 +437,7 @@ array([False, False])
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+  [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
 
 
 <h3>Contributors ✍️</h3>
