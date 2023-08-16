@@ -179,28 +179,28 @@ class Adjoint(SymbolicOp):
     .. details::
         :title: Developer Details
 
-    This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.
-    For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
-    the ``AdjointOperation`` mixin.
+        This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.
+        For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
+        the ``AdjointOperation`` mixin.
 
-    >>> op = Adjoint(qml.RX(1.234, wires=0))
-    >>> isinstance(op, qml.operation.Operation)
-    True
-    >>> isinstance(op, AdjointOperation)
-    True
-    >>> op.grad_method
-    'A'
+        >>> op = Adjoint(qml.RX(1.234, wires=0))
+        >>> isinstance(op, qml.operation.Operation)
+        True
+        >>> isinstance(op, AdjointOperation)
+        True
+        >>> op.grad_method
+        'A'
 
-    If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
-    well.
+        If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
+        well.
 
-    >>> op = Adjoint(1.0 * qml.PauliX(0))
-    >>> isinstance(op, qml.operation.Observable)
-    True
-    >>> isinstance(op, qml.operation.Operation)
-    False
-    >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
-    Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
+        >>> op = Adjoint(1.0 * qml.PauliX(0))
+        >>> isinstance(op, qml.operation.Observable)
+        True
+        >>> isinstance(op, qml.operation.Operation)
+        False
+        >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
+        Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
 
     """
 
