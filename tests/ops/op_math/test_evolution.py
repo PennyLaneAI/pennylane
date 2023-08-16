@@ -36,7 +36,7 @@ class TestEvolution:
 
         assert op.num_params == 1
         assert op.parameters == [param]
-        assert op.data == [param]
+        assert op.data == (param,)
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
@@ -79,14 +79,14 @@ class TestEvolution:
         base = qml.PauliX(0)
         op = Evolution(base, param)
 
-        assert op.data == [param]
+        assert op.data == (param,)
         assert op.coeff == -1j * op.data[0]
         assert op.param == op.data[0]
 
         new_param = np.array(2.345)
-        op.data = [new_param]
+        op.data = (new_param,)
 
-        assert op.data == [new_param]
+        assert op.data == (new_param,)
         assert op.coeff == -1j * op.data[0]
         assert op.data == op.data[0]
 

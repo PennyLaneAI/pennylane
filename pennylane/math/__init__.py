@@ -66,15 +66,19 @@ from .multi_dispatch import (
 )
 from .quantum import (
     cov_matrix,
+    dm_from_state_vector,
     fidelity,
+    fidelity_statevector,
     marginal_prob,
     mutual_info,
     purity,
-    reduced_dm,
+    reduce_dm,
+    reduce_statevector,
     relative_entropy,
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    trace_distance,
 )
 from .utils import (
     allclose,
@@ -91,6 +95,7 @@ from .utils import (
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
+get_dtype_name = ar.get_dtype_name
 
 
 class NumpyMimic(ar.autoray.NumpyMimic):
@@ -117,7 +122,7 @@ def __getattr__(name):
 
 
 __all__ = [
-    "multi_dispatch",
+    "add",
     "allclose",
     "allequal",
     "array",
@@ -129,32 +134,36 @@ __all__ = [
     "cov_matrix",
     "detach",
     "diag",
+    "dm_from_state_vector",
     "dot",
     "einsum",
+    "expand_matrix",
     "eye",
     "fidelity",
+    "fidelity_statevector",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
     "in_backprop",
     "is_abstract",
     "is_independent",
+    "iscomplex",
     "marginal_prob",
     "max_entropy",
+    "multi_dispatch",
     "mutual_info",
     "ones_like",
     "purity",
-    "reduced_dm",
+    "reduce_dm",
+    "reduce_statevector",
     "relative_entropy",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",
     "stack",
     "tensordot",
+    "trace_distance",
     "unwrap",
     "vn_entropy",
     "where",
-    "add",
-    "iscomplex",
-    "expand_matrix",
 ]

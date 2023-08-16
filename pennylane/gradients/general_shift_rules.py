@@ -20,6 +20,9 @@ import warnings
 
 import numpy as np
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
+from pennylane.ops.functions import bind_new_parameters
+from pennylane.tape import QuantumScript
 
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
@@ -378,6 +381,46 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     return _combine_shift_rules(rules)
 
 
+def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
+    """Create a copy of a tape and of parameters, and set the new tape to the parameters
+    rescaled and shifted as indicated by ``indices``, ``multipliers`` and ``shifts``."""
+    all_ops = tape.circuit
+
+    for idx, shift, multiplier in zip(indices, shifts, multipliers):
+        _, op_idx, p_idx = tape.get_operation(idx)
+        op = (
+            all_ops[op_idx].obs
+            if isinstance(all_ops[op_idx], MeasurementProcess)
+            else all_ops[op_idx]
+        )
+
+        # Shift copied parameter
+        new_params = list(op.data)
+        multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
+        multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
+        shift = qml.math.convert_like(shift, new_params[p_idx])
+        shift = qml.math.cast_like(shift, new_params[p_idx])
+        new_params[p_idx] = new_params[p_idx] * multiplier
+        new_params[p_idx] = new_params[p_idx] + shift
+        if cast:
+            dtype = getattr(new_params[p_idx], "dtype", float)
+            new_params[p_idx] = qml.math.cast(new_params[p_idx], dtype)
+
+        # Create operator with shifted parameter and put into shifted tape
+        shifted_op = bind_new_parameters(op, new_params)
+        if op_idx < len(tape.operations):
+            all_ops[op_idx] = shifted_op
+        else:
+            mp = all_ops[op_idx].__class__
+            all_ops[op_idx] = mp(obs=shifted_op)
+
+    # pylint: disable=protected-access
+    prep = all_ops[: len(tape._prep)]
+    ops = all_ops[len(tape._prep) : len(tape.operations)]
+    meas = all_ops[len(tape.operations) :]
+    return QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
+
+
 def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=False):
     r"""Generate a list of tapes or a single broadcasted tape, where one marked
     trainable parameter has been shifted by the provided shift values.
@@ -403,27 +446,14 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
 
-    def _copy_and_shift_params(tape, params, idx, shift, mult):
-        """Create a copy of a tape and of parameters, and set the new tape to the parameters
-        rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
-        new_params = params.copy()
-        new_params[idx] = new_params[idx] * qml.math.convert_like(
-            mult, new_params[idx]
-        ) + qml.math.convert_like(shift, new_params[idx])
-
-        shifted_tape = tape.copy(copy_operations=True)
-        shifted_tape.set_parameters(new_params)
-        return shifted_tape
-
-    params = list(tape.get_parameters())
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 
     if broadcast:
-        return (_copy_and_shift_params(tape, params, index, shifts, multipliers),)
+        return (_copy_and_shift_params(tape, [index], [shifts], [multipliers]),)
 
     return tuple(
-        _copy_and_shift_params(tape, params, index, shift, multiplier)
+        _copy_and_shift_params(tape, [index], [shift], [multiplier])
         for shift, multiplier in zip(shifts, multipliers)
     )
 
@@ -450,22 +480,12 @@ def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
             of tapes will match the summed lengths of all inner sequences in ``shifts``
             and ``multipliers`` (if provided).
     """
-    params = list(tape.get_parameters())
     if multipliers is None:
         multipliers = np.ones_like(shifts)
 
-    tapes = []
-
-    for _shifts, _multipliers in zip(shifts, multipliers):
-        new_params = params.copy()
-        shifted_tape = tape.copy(copy_operations=True)
-        for idx, shift, multiplier in zip(indices, _shifts, _multipliers):
-            dtype = getattr(new_params[idx], "dtype", float)
-            new_params[idx] = new_params[idx] * qml.math.convert_like(multiplier, new_params[idx])
-            new_params[idx] = new_params[idx] + qml.math.convert_like(shift, new_params[idx])
-            new_params[idx] = qml.math.cast(new_params[idx], dtype)
-
-        shifted_tape.set_parameters(new_params)
-        tapes.append(shifted_tape)
+    tapes = [
+        _copy_and_shift_params(tape, indices, _shifts, _multipliers, cast=True)
+        for _shifts, _multipliers in zip(shifts, multipliers)
+    ]
 
     return tapes

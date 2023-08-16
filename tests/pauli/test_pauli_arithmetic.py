@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
+# pylint: disable=too-many-public-methods
 import pickle
-import pytest
 from copy import copy, deepcopy
+import pytest
 
 from scipy import sparse
 import pennylane as qml
@@ -98,7 +99,7 @@ class TestPauliWord:
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
         """Test that the wires are tracked correctly."""
-        assert pw.wires == wires
+        assert set(pw.wires) == wires
 
     tup_pw_str = (
         (pw1, "X(1) @ Y(2)"),
@@ -119,17 +120,18 @@ class TestPauliWord:
         (pw3, pw4, pw3, 1.0),
     )
 
-    @pytest.mark.parametrize("pw1, pw2, result_pw, coeff", tup_pws_mult)
-    def test_mul(self, pw1, pw2, result_pw, coeff):
-        copy_pw1 = copy(pw1)
-        copy_pw2 = copy(pw2)
+    @pytest.mark.parametrize("word1, word2, result_pw, coeff", tup_pws_mult)
+    def test_mul(self, word1, word2, result_pw, coeff):
+        copy_pw1 = copy(word1)
+        copy_pw2 = copy(word2)
 
-        assert pw1 * pw2 == (result_pw, coeff)
-        assert copy_pw1 == pw1  # check for mutation of the pw themselves
-        assert copy_pw2 == pw2
+        assert word1 * word2 == (result_pw, coeff)
+        assert copy_pw1 == word1  # check for mutation of the pw themselves
+        assert copy_pw2 == word2
 
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
+        (pw1, [2, 1, 0], np.kron(np.kron(matY, matX), matI)),
         (pw2, ["c", "b", "a"], np.kron(np.kron(matZ, matX), matX)),
         (pw3, [0, "b", "c"], np.kron(np.kron(matZ, matZ), matZ)),
     )
@@ -138,15 +140,31 @@ class TestPauliWord:
         """Test that an appropriate error is raised when an empty
         PauliWord is cast to matrix."""
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=None)
+            pw4.to_mat(wire_order=[])
 
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
             pw4.to_mat(wire_order=Wires([]))
+
+    pw1 = PauliWord({0: I, 1: X, 2: Y})
+    pw2 = PauliWord({"a": X, "b": X, "c": Z})
+    pw3 = PauliWord({0: Z, "b": Z, "c": Z})
+    pw4 = PauliWord({})
+
+    pw_wire_order = ((pw1, [0, 1]), (pw1, [0, 1, 3]), (pw2, [0]))
+
+    @pytest.mark.parametrize("pw, wire_order", pw_wire_order)
+    def test_to_mat_error_incomplete(self, pw, wire_order):
+        """Test that an appropriate error is raised when the wire order does
+        not contain all the PauliWord's wires."""
+        match = "Can't get the matrix for the specified wire order"
+        with pytest.raises(ValueError, match=match):
+            pw.to_mat(wire_order=wire_order)
 
     def test_to_mat_identity(self):
         """Test that an identity matrix is return if wire_order is provided."""
         assert np.allclose(pw4.to_mat(wire_order=[0, 1]), np.eye(4))
         assert sparse.issparse(pw4.to_mat(wire_order=[0, 1], format="csr"))
+        assert not (pw4.to_mat(wire_order=[0, 1], format="csr") != sparse.eye(4)).sum()
 
     @pytest.mark.parametrize("pw, wire_order, true_matrix", tup_pws_mat_wire)
     def test_to_mat(self, pw, wire_order, true_matrix):
@@ -181,7 +199,7 @@ class TestPauliWord:
             assert pw_op.name == op.name
             assert pw_op.wires == op.wires
 
-        if isinstance(op, qml.ops.Prod):
+        if isinstance(op, qml.ops.Prod):  # pylint: disable=no-member
             pw_tensor_op = pw.operation(get_as_tensor=True)
             expected_tensor_op = qml.operation.Tensor(*op.operands)
             assert qml.equal(pw_tensor_op, expected_tensor_op)
@@ -269,15 +287,15 @@ class TestPauliSentence:
     tup_ps_str = (
         (
             ps1,
-            "1.23 * X(1) @ Y(2)\n" "+ 4j * X(a) @ X(b) @ Z(c)\n" "+ -0.5 * Z(0) @ Z(b) @ Z(c)",
+            "1.23 * X(1) @ Y(2)\n+ 4j * X(a) @ X(b) @ Z(c)\n+ -0.5 * Z(0) @ Z(b) @ Z(c)",
         ),
         (
             ps2,
-            "-1.23 * X(1) @ Y(2)\n" "+ (-0-4j) * X(a) @ X(b) @ Z(c)\n" "+ 0.5 * Z(0) @ Z(b) @ Z(c)",
+            "-1.23 * X(1) @ Y(2)\n+ (-0-4j) * X(a) @ X(b) @ Z(c)\n+ 0.5 * Z(0) @ Z(b) @ Z(c)",
         ),
-        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * I"),
+        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n+ 1 * I"),
         (ps4, "1 * I"),
-        (ps5, "I"),
+        (ps5, "0 * I"),
     )
 
     @pytest.mark.parametrize("ps, str_rep", tup_ps_str)
@@ -296,7 +314,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("ps, wires", tup_ps_wires)
     def test_wires(self, ps, wires):
         """Test the correct wires are given for the PauliSentence."""
-        assert ps.wires == wires
+        assert set(ps.wires) == wires
 
     @pytest.mark.parametrize("ps", (ps1, ps2, ps3, ps4))
     def test_copy(self, ps):
@@ -353,18 +371,18 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)
-    def test_mul(self, ps1, ps2, res):
+    @pytest.mark.parametrize("string1, string2, res", tup_ps_mult)
+    def test_mul(self, string1, string2, res):
         """Test that the correct result of multiplication is produced."""
-        copy_ps1 = copy(ps1)
-        copy_ps2 = copy(ps2)
+        copy_ps1 = copy(string1)
+        copy_ps2 = copy(string2)
 
-        simplified_product = ps1 * ps2
+        simplified_product = string1 * string2
         simplified_product.simplify()
 
         assert simplified_product == res
-        assert ps1 == copy_ps1
-        assert ps2 == copy_ps2
+        assert string1 == copy_ps1
+        assert string2 == copy_ps2
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
@@ -373,18 +391,18 @@ class TestPauliSentence:
         (ps2, ps5, ps2),
     )
 
-    @pytest.mark.parametrize("ps1, ps2, result", tup_ps_add)
-    def test_add(self, ps1, ps2, result):
+    @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
+    def test_add(self, string1, string2, result):
         """Test that the correct result of addition is produced."""
-        copy_ps1 = copy(ps1)
-        copy_ps2 = copy(ps2)
+        copy_ps1 = copy(string1)
+        copy_ps2 = copy(string2)
 
-        simplified_product = ps1 + ps2
+        simplified_product = string1 + string2
         simplified_product.simplify()
 
         assert simplified_product == result
-        assert ps1 == copy_ps1
-        assert ps2 == copy_ps2
+        assert string1 == copy_ps1
+        assert string2 == copy_ps2
 
     ps_match = (
         (ps4, "Can't get the matrix of an empty PauliWord."),
@@ -392,14 +410,24 @@ class TestPauliSentence:
     )
 
     @pytest.mark.parametrize("ps, match", ps_match)
-    def test_to_mat_error(self, ps, match):
+    def test_to_mat_error_empty(self, ps, match):
         """Test that an appropriate error is raised when an empty
         PauliSentence or PauliWord is cast to matrix."""
         with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=None)
+            ps.to_mat(wire_order=[])
 
         with pytest.raises(ValueError, match=match):
             ps.to_mat(wire_order=Wires([]))
+
+    ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
+
+    @pytest.mark.parametrize("ps, wire_order", ps_wire_order)
+    def test_to_mat_error_incomplete(self, ps, wire_order):
+        """Test that an appropriate error is raised when the wire order does
+        not contain all the PauliSentence's wires."""
+        match = "Can't get the matrix for the specified wire order"
+        with pytest.raises(ValueError, match=match):
+            ps.to_mat(wire_order=wire_order)
 
     def test_to_mat_identity(self):
         """Test that an identity matrix is return if wire_order is provided."""
@@ -439,6 +467,14 @@ class TestPauliSentence:
         """Test that the correct type of matrix is returned given the format kwarg."""
         sparse_mat = ps.to_mat(wire_order, format="csr")
         assert sparse.issparse(sparse_mat)
+        assert np.allclose(sparse_mat.toarray(), true_matrix)
+
+    @pytest.mark.parametrize("ps,wire_order,true_matrix", tup_ps_mat)
+    def test_to_mat_buffer(self, ps, wire_order, true_matrix):
+        """Test that the intermediate matrices are added correctly once the maximum buffer
+        size is reached."""
+        buffer_size = 2 ** len(wire_order) * 48  # Buffer size for 2 matrices
+        sparse_mat = ps.to_mat(wire_order, format="csr", buffer_size=buffer_size)
         assert np.allclose(sparse_mat.toarray(), true_matrix)
 
     def test_simplify(self):
@@ -489,7 +525,7 @@ class TestPauliSentence:
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qml.ops.Prod):
+                if isinstance(ps_summand.base, qml.ops.Prod):  # pylint: disable=no-member
                     for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
                         _compare_ops(pw_factor, op_factor)
                 else:
@@ -592,9 +628,9 @@ class TestPauliSentence:
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
-        pw1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
-        pw2 = PauliWord({2: "Y", 3: "Z"})
-        ps = PauliSentence({pw1: 1.5, pw2: -0.5})
+        word1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
+        word2 = PauliWord({2: "Y", 3: "Z"})
+        ps = PauliSentence({word1: 1.5, word2: -0.5})
 
         serialization = pickle.dumps(ps)
         new_ps = pickle.loads(serialization)

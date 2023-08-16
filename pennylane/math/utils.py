@@ -138,7 +138,9 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    if not is_abstract(tensor2):
+    if isinstance(tensor2, ArrayBox):
+        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif not is_abstract(tensor2):
         dtype = ar.to_numpy(tensor2).dtype.type
     else:
         dtype = tensor2.dtype
@@ -369,7 +371,7 @@ def is_abstract(tensor, like=None):
         if isinstance(
             tensor,
             (
-                jax.ad.JVPTracer,
+                jax.interpreters.ad.JVPTracer,
                 jax.interpreters.batching.BatchTracer,
                 jax.interpreters.partial_eval.JaxprTracer,
             ),

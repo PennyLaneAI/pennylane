@@ -20,6 +20,7 @@ import os
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import active_new_opmath
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -809,8 +810,6 @@ def molecular_hamiltonian(
     alpha=None,
     coeff=None,
     args=None,
-    grouping_type=None,
-    grouping_method="rlf",
     load_data=False,
     convert_tol=1e012,
 ):  # pylint:disable=too-many-arguments
@@ -867,9 +866,6 @@ def molecular_hamiltonian(
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         args (array[array[float]]): initial values of the differentiable parameters
-        grouping_type (str): method to group commuting observables
-        grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
-            for grouping
         load_data (bool): flag to load data from the basis-set-exchange library
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
@@ -942,14 +938,28 @@ def molecular_hamiltonian(
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
-        if args is None:
-            h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            coeffs = qml.numpy.real(h.coeffs, requires_grad=False)
-            h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
+
+        requires_grad = args is not None
+        h = (
+            qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+            if requires_grad
+            else qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+        )
+
+        if active_new_opmath():
+            h_as_ps = qml.pauli.pauli_sentence(h)
+            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
+
+            h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
+            h = (
+                qml.s_prod(0, qml.Identity(h.wires[0]))
+                if len(h_as_ps) == 0
+                else h_as_ps.operation()
+            )
         else:
-            h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-            coeffs = qml.numpy.real(h.coeffs)
-            h = qml.Hamiltonian(coeffs, h.ops, grouping_type=grouping_type, method=grouping_method)
+            coeffs = qml.numpy.real(h.coeffs, requires_grad=requires_grad)
+            h = qml.Hamiltonian(coeffs, h.ops)
+
         if wires:
             h = qml.map_wires(h, wires_map)
         return h, 2 * len(active)
@@ -968,7 +978,4 @@ def molecular_hamiltonian(
 
     h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
-    return (
-        qml.Hamiltonian(h_pl.coeffs, h_pl.ops, grouping_type=grouping_type, method=grouping_method),
-        qubits,
-    )
+    return h_pl, qubits

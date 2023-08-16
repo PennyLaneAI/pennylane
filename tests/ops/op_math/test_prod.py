@@ -122,7 +122,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True, id=id)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert prod_op.wires == Wires((0, "a"))
         assert prod_op.num_wires == 2
@@ -130,7 +130,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert prod_op.id == id
         assert prod_op.queue_idx is None
 
-        assert prod_op.data == [0.23]
+        assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
         assert prod_op.num_params == 1
 
@@ -216,7 +216,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
         assert prod_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
@@ -224,7 +224,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         but is a Hamiltonian has `has_matrix=True`."""
 
         H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
-        prod_op = prod(H, qml.RZ(0.23, wires=5), do_queue=True)
+        prod_op = prod(H, qml.RZ(0.23, wires=5))
         assert prod_op.has_matrix is True
 
     @pytest.mark.parametrize(
@@ -234,7 +234,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators of which one does not have `has_matrix=True`
         has `has_matrix=False`."""
 
-        prod_op = prod(first_factor, MyOp(0.23, wires="a"), do_queue=True)
+        prod_op = prod(first_factor, MyOp(0.23, wires="a"))
         assert prod_op.has_matrix is False
 
     @pytest.mark.parametrize(
@@ -253,7 +253,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        prod_op = prod(*factors, do_queue=True)
+        prod_op = prod(*factors)
         assert prod_op.has_adjoint is True
 
     @pytest.mark.parametrize(
@@ -272,7 +272,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_decomposition=True`
         has `has_decomposition=True` as well."""
 
-        prod_op = prod(*factors, do_queue=True)
+        prod_op = prod(*factors)
         assert prod_op.has_decomposition is True
 
     @pytest.mark.parametrize(
@@ -291,7 +291,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
-        prod_op = prod(*factors, do_queue=True)
+        prod_op = prod(*factors)
         assert prod_op.has_diagonalizing_gates is True
 
     @pytest.mark.parametrize(
@@ -306,14 +306,14 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a product of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
-        prod_op = prod(*factors, do_queue=True)
+        prod_op = prod(*factors)
         assert prod_op.has_diagonalizing_gates is True
 
     def test_has_diagonalizing_gates_false_via_factor(self):
         """Test that a product of operators of which one has
         `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
 
-        prod_op = prod(MyOp(3.1, 0), qml.PauliX(2), do_queue=True)
+        prod_op = prod(MyOp(3.1, 0), qml.PauliX(2))
         assert prod_op.has_diagonalizing_gates is False
 
     def test_qfunc_init(self):
@@ -353,12 +353,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.prod(qml.RX(x, 0), qml.PauliZ(1))
             qml.CNOT([0, 1])
 
-        prod_gen = prod(qfunc, do_queue=False, id=123987, lazy=False)
+        prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_op = prod_gen(1.1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            prod_op = prod_gen(1.1)
-
-        assert prod_op not in q  # do_queue worked
         assert prod_op.id == 123987  # id was set
         assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
@@ -546,7 +543,7 @@ class TestMatrix:
         wires = [0, 1]
         prod_op = Prod(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=2),
-            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+            qml.Projector(state=qnp.array([0, 1]), wires=wires),
         )
         mat = prod_op.matrix()
 
@@ -1195,10 +1192,9 @@ class TestWrapperFunc:
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "prod_op"
-        do_queue = False
 
-        prod_func_op = prod(*factors, id=op_id, do_queue=do_queue)
-        prod_class_op = Prod(*factors, id=op_id, do_queue=do_queue)
+        prod_func_op = prod(*factors, id=op_id)
+        prod_class_op = Prod(*factors, id=op_id)
 
         assert prod_class_op.operands == prod_func_op.operands
         assert np.allclose(prod_class_op.matrix(), prod_func_op.matrix())
@@ -1306,8 +1302,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results
-        assert -1 not in results
+        assert 1 in results  # pylint:disable=unsupported-membership-test
+        assert -1 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1488,21 +1484,21 @@ class TestSortWires:
             assert op1.data == op2.data
 
 
-swappable_ops = {
+swappable_ops = [
     (qml.PauliX(1), qml.PauliY(0)),
     (qml.PauliY(5), qml.PauliX(2)),
     (qml.PauliZ(3), qml.PauliX(2)),
     (qml.CNOT((1, 2)), qml.PauliX(0)),
     (qml.PauliX(3), qml.Toffoli((0, 1, 2))),
-}
+]
 
-non_swappable_ops = {
+non_swappable_ops = [
     (qml.PauliX(1), qml.PauliY(1)),
     (qml.PauliY(5), qml.RY(1, 5)),
     (qml.PauliZ(0), qml.PauliX(1)),
     (qml.CNOT((1, 2)), qml.PauliX(1)),
     (qml.PauliX(2), qml.Toffoli((0, 1, 2))),
-}
+]
 
 
 class TestSwappableOps:

@@ -14,18 +14,10 @@
 """
 Unit tests and integration tests for the ``default.qubit.tf`` device.
 """
-from itertools import product
-
+# pylint: disable=too-many-arguments,protected-access,too-many-public-methods
 import numpy as np
 import pytest
 
-tf = pytest.importorskip("tensorflow", minversion="2.0")
-
-import pennylane as qml
-from pennylane import numpy as pnp
-from pennylane import DeviceError
-from pennylane.wires import Wires
-from pennylane.devices.default_qubit_tf import DefaultQubitTF
 from gate_data import (
     I,
     X,
@@ -38,7 +30,6 @@ from gate_data import (
     CZ,
     CCZ,
     SWAP,
-    CNOT,
     Toffoli,
     CSWAP,
     Rphi,
@@ -55,6 +46,15 @@ from gate_data import (
     ControlledPhaseShift,
     OrbitalRotation,
     FermionicSWAP,
+)
+
+import pennylane as qml
+from pennylane import numpy as pnp
+from pennylane import DeviceError
+
+tf = pytest.importorskip("tensorflow", minversion="2.0")
+from pennylane.devices.default_qubit_tf import (  # pylint: disable=wrong-import-position
+    DefaultQubitTF,
 )
 
 np.random.seed(42)
@@ -111,8 +111,9 @@ four_qubit_param = [(qml.OrbitalRotation, OrbitalRotation)]
 #####################################################
 
 
-@pytest.fixture
-def init_state(scope="session"):
+# pylint: disable=unused-argument
+@pytest.fixture(name="init_state")
+def init_state_fixture(scope="session"):
     """Generates a random initial state"""
 
     def _init_state(n):
@@ -125,8 +126,9 @@ def init_state(scope="session"):
     return _init_state
 
 
-@pytest.fixture
-def broadcasted_init_state(scope="session"):
+# pylint: disable=unused-argument
+@pytest.fixture(name="broadcasted_init_state")
+def broadcasted_init_state_fixture(scope="session"):
     """Generates a random initial state"""
 
     def _broadcasted_init_state(n, batch_size):
@@ -293,7 +295,7 @@ class TestApply:
         assert isinstance(res, tf.Tensor)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_invalid_basis_state_length(self, tol):
+    def test_invalid_basis_state_length(self):
         """Test that an exception is raised if the basis state is the wrong size"""
         dev = DefaultQubitTF(wires=4)
         state = np.array([0, 0, 1, 0])
@@ -303,7 +305,7 @@ class TestApply:
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
 
-    def test_invalid_basis_state(self, tol):
+    def test_invalid_basis_state(self):
         """Test that an exception is raised if the basis state is invalid"""
         dev = DefaultQubitTF(wires=4)
         state = np.array([0, 0, 1, 2])
@@ -561,14 +563,12 @@ class TestApply:
 
     def test_do_not_split_analytic_tf(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None using the tf device."""
-        import tensorflow as tf
-
         dev = qml.device("default.qubit.tf", wires=2)
-        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+        ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit():
-            return qml.expval(H)
+            return qml.expval(ham)
 
         spy = mocker.spy(dev, "expval")
 
@@ -597,7 +597,7 @@ class TestApplyBroadcasted:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
-    def test_invalid_basis_state_length_broadcasted(self, tol):
+    def test_invalid_basis_state_length_broadcasted(self):
         """Test that an exception is raised if the basis state is the wrong size"""
         dev = DefaultQubitTF(wires=4)
         state = np.array([0, 0, 1, 0])
@@ -608,7 +608,7 @@ class TestApplyBroadcasted:
             dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
 
     @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
-    def test_invalid_basis_state_broadcasted(self, tol):
+    def test_invalid_basis_state_broadcasted(self):
         """Test that an exception is raised if the basis state is invalid"""
         dev = DefaultQubitTF(wires=4)
         state = np.array([0, 0, 1, 2])
@@ -649,7 +649,7 @@ class TestApplyBroadcasted:
         assert np.all(tf.reshape(dev._state, [3, 8]) == state)
         spy.assert_not_called()
 
-    def test_error_partial_subsystem_statevector_broadcasted(self, mocker):
+    def test_error_partial_subsystem_statevector_broadcasted(self):
         """Test applying a broadcasted state vector to a subset of wires of the full subsystem"""
         dev = DefaultQubitTF(wires=["a", "b", "c"])
         state = tf.constant(
@@ -927,20 +927,16 @@ class TestApplyBroadcasted:
         expected = np.einsum("ij,lj->li", mat, state)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_direct_eval_hamiltonian_broadcasted_error_tf(self, mocker):
+    def test_direct_eval_hamiltonian_broadcasted_error_tf(self):
         """Tests that an error is raised when attempting to evaluate a Hamiltonian with
         broadcasting and shots=None directly via its sparse representation with TF."""
-        import tensorflow as tf
-
         dev = qml.device("default.qubit.tf", wires=2)
-        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+        ham = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit():
             qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
-            return qml.expval(H)
-
-        spy = mocker.spy(dev, "expval")
+            return qml.expval(ham)
 
         with pytest.raises(NotImplementedError, match="Hamiltonians for interface!=None"):
             circuit()
@@ -955,6 +951,7 @@ broadcasted_angles = [(THETA, PHI, VARPHI), (THETA[0], PHI, VARPHI)]
 all_angles = scalar_angles + broadcasted_angles
 
 
+# pylint: disable=unused-argument
 @pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", all_angles)
 class TestExpval:
@@ -1000,8 +997,8 @@ class TestExpval:
         dev = DefaultQubitTF(wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(obs(wires=[i])) for i in range(2)]
+            _ = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
+            _ = [qml.expval(obs(wires=[i])) for i in range(2)]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
@@ -1012,8 +1009,8 @@ class TestExpval:
         dev = DefaultQubitTF(wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(qml.Hermitian(A, wires=[i])) for i in range(2)]
+            _ = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+            _ = [qml.expval(qml.Hermitian(A, wires=[i])) for i in range(2)]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
@@ -1029,7 +1026,7 @@ class TestExpval:
 
     def test_multi_mode_hermitian_expectation(self, theta, phi, varphi, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
-        A = np.array(
+        _A = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -1041,8 +1038,8 @@ class TestExpval:
         dev = DefaultQubitTF(wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
-            observables = [qml.expval(qml.Hermitian(A, wires=[0, 1]))]
+            _ = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
+            _ = [qml.expval(qml.Hermitian(_A, wires=[0, 1]))]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
@@ -1135,7 +1132,7 @@ class TestExpval:
         dev = qml.device("default.qubit.tf", wires=3)
         dev.reset()
 
-        A = np.array(
+        _A = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -1144,7 +1141,7 @@ class TestExpval:
             ]
         )
 
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+        obs = qml.PauliZ(0) @ qml.Hermitian(_A, wires=[1, 2])
 
         dev.apply(
             [
@@ -1221,10 +1218,6 @@ class TestExpval:
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit.tf", wires=2)
 
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
-
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
 
         dev.apply(
@@ -1244,13 +1237,9 @@ class TestExpval:
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit.tf", wires=3, shots=None)
-
-        A = np.array(
-            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
-        )
         Identity = np.array([[1, 0], [0, 1]])
-        H = np.kron(np.kron(Identity, Identity), A)
-        obs = qml.Hermitian(H, wires=[2, 1, 0])
+        ham = np.kron(np.kron(Identity, Identity), A)
+        obs = qml.Hermitian(ham, wires=[2, 1, 0])
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
@@ -1277,8 +1266,8 @@ class TestVar:
         # test correct variance for <Z> of a rotated state
 
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-            observables = [qml.var(qml.PauliZ(wires=[0]))]
+            _ = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+            _ = [qml.var(qml.PauliZ(wires=[0]))]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
@@ -1290,11 +1279,11 @@ class TestVar:
         dev = DefaultQubitTF(wires=2)
 
         # test correct variance for <H> of a rotated state
-        H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        ham = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
 
         with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
-            observables = [qml.var(qml.Hermitian(H, wires=[0]))]
+            _ = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
+            _ = [qml.var(qml.Hermitian(ham, wires=[0]))]
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
@@ -1369,7 +1358,7 @@ class TestVar:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit.tf", wires=3)
 
-        A = np.array(
+        _A = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -1378,7 +1367,7 @@ class TestVar:
             ]
         )
 
-        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+        obs = qml.PauliZ(0) @ qml.Hermitian(_A, wires=[1, 2])
 
         dev.apply(
             [
@@ -2314,8 +2303,6 @@ class TestGetBatchSize:
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_no_error_abstract_tensor(self, jit_compile):
         """Test that no error is raised if an abstract tensor is provided"""
-        import tensorflow as tf
-
         dev = qml.device("default.qubit.tf", wires=2)
         signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
 

@@ -14,12 +14,13 @@
 """
 Unit tests for the qml.map_wires function
 """
+# pylint: disable=too-few-public-methods
 from functools import partial
 
 import pytest
 
 import pennylane as qml
-from pennylane.ops import Prod, Sum
+from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -104,10 +105,12 @@ class TestMapWiresTapes:
             build_op()
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
+        tape.trainable_params = [0, 2]
         # TODO: Use qml.equal when supported
 
         s_tape = qml.map_wires(tape, wire_map=wire_map)
         assert len(s_tape) == 1
+        assert s_tape.trainable_params == [0, 2]
         s_op = s_tape[0]
         assert isinstance(s_op, qml.ops.Prod)
         assert s_op.data == mapped_op.data
@@ -124,9 +127,11 @@ class TestMapWiresTapes:
             qml.expval(op=qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
+        tape._qfunc_output = (qml.expval(qml.PauliZ(1)),)  # pylint: disable=protected-access
         # TODO: Use qml.equal when supported
 
         m_tape = qml.map_wires(tape, wire_map=wire_map)
+        assert m_tape._qfunc_output is tape._qfunc_output  # pylint: disable=protected-access
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
         assert isinstance(m_op, qml.ops.Prod)
@@ -210,7 +215,7 @@ class TestMapWiresCallables:
         @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
-            qml.PauliX(0) ** 2
+            _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
         x = jax.numpy.array(4 * jax.numpy.pi + 0.1)

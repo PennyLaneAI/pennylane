@@ -167,7 +167,7 @@ class TestTranspile:
             NotImplementedError,
             match="transpile transform only supports gates acting on 1 or 2 qubits",
         ):
-            transpiled_expectation = transpiled_qnode(param)
+            transpiled_qnode(param)
 
     def test_more_than_2_qubits_raises_3_qubit_gate(self):
         """test that transpile raises an error for an operation that acts on more than 2 qubits"""
@@ -183,7 +183,7 @@ class TestTranspile:
             NotImplementedError,
             match="transpile transform only supports gates acting on 1 or 2 qubits",
         ):
-            transpiled_expectation = transpiled_qnode()
+            transpiled_qnode()
 
     def test_transpile_ops_anywires(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
@@ -218,7 +218,7 @@ class TestTranspile:
         assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
 
         assert isinstance(transpiled_ops[3], qml.MultiRZ)
-        assert transpiled_ops[3].data == [param]
+        assert transpiled_ops[3].data == (param,)
         assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
 
         assert isinstance(transpiled_ops[4], qml.measurements.MeasurementProcess)
@@ -261,7 +261,7 @@ class TestTranspile:
         assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
 
         assert isinstance(transpiled_ops[3], qml.MultiRZ)
-        assert transpiled_ops[3].data == [param]
+        assert transpiled_ops[3].data == (param,)
         assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
 
         assert isinstance(transpiled_ops[4], qml.measurements.MeasurementProcess)

@@ -47,15 +47,19 @@ class TestEvolveConstructor:
     def test_evolve_returns_parametrized_evolution(self):
         """Test that the evolve function returns a ParametrizedEvolution with `params=None` and `t=None`
         when the input is a ParametrizedHamiltonian."""
-        coeffs = [1, 2, 3]
+
+        def fun(p, t):
+            return p[0] * qml.math.sin(p[1] * t)
+
+        coeffs = [1, fun, 3]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         H = ParametrizedHamiltonian(coeffs=coeffs, observables=ops)
         final_op = qml.evolve(H)
         assert isinstance(final_op, ParametrizedEvolution)
         assert final_op.parameters == []
         assert final_op.t is None
-        param_evolution = final_op(params=[1, 2, 3], t=1)
+        param_evolution = final_op(params=[[1, 2]], t=1)
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
-        assert qml.math.allequal(param_evolution.parameters, [1, 2, 3])
+        assert qml.math.allequal(param_evolution.parameters, [[1, 2]])
         assert qml.math.allequal(param_evolution.t, [0, 1])

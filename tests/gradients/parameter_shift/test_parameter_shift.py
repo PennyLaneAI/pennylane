@@ -17,7 +17,11 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import _get_operation_recipe, _put_zeros_in_pdA2_involutory
+from pennylane.gradients.parameter_shift import (
+    _get_operation_recipe,
+    _put_zeros_in_pdA2_involutory,
+    _make_zero_rep,
+)
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
@@ -152,6 +156,160 @@ class TestGetOperationRecipe:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(NotImplementedError, match="only is implemented for orders 1 and 2."):
             _get_operation_recipe(tape, 0, shifts=None, order=order)
+
+
+class TestMakeZeroRep:
+    """Test that producing a zero-gradient representative with ``_make_zero_rep`` works."""
+
+    # mimic an expectation value or variance, and a probs vector
+    @pytest.mark.parametrize("g", [np.array(0.6), np.array([0.6, 0.9])])
+    def test_single_measure_no_partitioned_shots(self, g):
+        """Test the zero-gradient representative with a single measurement and single shots."""
+        rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=False)
+        assert isinstance(rep, np.ndarray) and rep.shape == g.shape
+        assert qml.math.allclose(rep, 0.0)
+
+    # mimic an expectation value or variance, and a probs vector
+    @pytest.mark.parametrize(
+        "g", [(np.array(0.6), np.array(0.4)) * 3, (np.array([0.3, 0.1]), np.array([0.6, 0.9]))]
+    )
+    def test_single_measure_partitioned_shots(self, g):
+        """Test the zero-gradient representative with a single measurement and a shot vector."""
+        rep = _make_zero_rep(g, single_measure=True, has_partitioned_shots=True)
+        assert isinstance(rep, tuple) and len(rep) == len(g)
+        for r, _g in zip(rep, g):
+            assert isinstance(r, np.ndarray) and r.shape == _g.shape
+            assert qml.math.allclose(r, 0.0)
+
+    # mimic an expectation value, a probs vector, or a mixture of them
+    @pytest.mark.parametrize(
+        "g",
+        [
+            (np.array(0.6), np.array(0.4)) * 3,
+            (np.array([0.3, 0.1]), np.array([0.6, 0.9])),
+            (np.array(0.5), np.ones(4), np.array(0.2)),
+        ],
+    )
+    def test_multi_measure_no_partitioned_shots(self, g):
+        """Test the zero-gradient representative with multiple measurements and single shots."""
+        rep = _make_zero_rep(g, single_measure=False, has_partitioned_shots=False)
+
+        assert isinstance(rep, tuple) and len(rep) == len(g)
+        for r, _g in zip(rep, g):
+            assert isinstance(r, np.ndarray) and r.shape == _g.shape
+            assert qml.math.allclose(r, 0.0)
+
+    # mimic an expectation value, a probs vector, or a mixture of them
+    @pytest.mark.parametrize(
+        "g",
+        [
+            ((np.array(0.6), np.array(0.4)),) * 3,
+            ((np.array([0.3, 0.1]), np.array([0.6, 0.9])),) * 2,
+            ((np.array(0.5), np.ones(4), np.array(0.2)),) * 4,
+        ],
+    )
+    def test_multi_measure_partitioned_shots(self, g):
+        """Test the zero-gradient representative with multiple measurements and a shot vector."""
+        rep = _make_zero_rep(g, single_measure=False, has_partitioned_shots=True)
+
+        assert isinstance(rep, tuple) and len(rep) == len(g)
+        for _rep, _g in zip(rep, g):
+            assert isinstance(_rep, tuple) and len(_rep) == len(_g)
+            for r, __g in zip(_rep, _g):
+                assert isinstance(r, np.ndarray) and r.shape == __g.shape
+                assert qml.math.allclose(r, 0.0)
+
+    # mimic an expectation value or variance, and a probs vector, but with 1d arguments
+    @pytest.mark.parametrize(
+        "g", [np.array([0.6, 0.2, 0.1]), np.outer([0.4, 0.2, 0.1], [0.6, 0.9])]
+    )
+    @pytest.mark.parametrize(
+        "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
+    )
+    def test_single_measure_no_partitioned_shots_par_shapes(self, g, par_shapes):
+        """Test the zero-gradient representative with a single measurement and single shots
+        as well as provided par_shapes."""
+        old_shape, new_shape = par_shapes
+        exp_shape = new_shape + g.shape[len(old_shape) :]
+        rep = _make_zero_rep(
+            g, single_measure=True, has_partitioned_shots=False, par_shapes=par_shapes
+        )
+        assert isinstance(rep, np.ndarray) and rep.shape == exp_shape
+        assert qml.math.allclose(rep, 0.0)
+
+    # mimic an expectation value or variance, and a probs vector, but with 1d arguments
+    @pytest.mark.parametrize(
+        "g", [(np.array(0.6), np.array(0.4)) * 3, (np.array([0.3, 0.1]), np.array([0.6, 0.9]))]
+    )
+    @pytest.mark.parametrize(
+        "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
+    )
+    def test_single_measure_partitioned_shots_par_shapes(self, g, par_shapes):
+        """Test the zero-gradient representative with a single measurement and a shot vector
+        as well as provided par_shapes."""
+        old_shape, new_shape = par_shapes
+        rep = _make_zero_rep(
+            g, single_measure=True, has_partitioned_shots=True, par_shapes=par_shapes
+        )
+        assert isinstance(rep, tuple) and len(rep) == len(g)
+        for r, _g in zip(rep, g):
+            exp_shape = new_shape + _g.shape[len(old_shape) :]
+            assert isinstance(r, np.ndarray) and r.shape == exp_shape
+            assert qml.math.allclose(r, 0.0)
+
+    # mimic an expectation value, a probs vector, or a mixture of them, but with 1d arguments
+    @pytest.mark.parametrize(
+        "g",
+        [
+            (np.array(0.6), np.array(0.4)) * 3,
+            (np.array([0.3, 0.1]), np.array([0.6, 0.9])),
+            (np.array(0.5), np.ones(4), np.array(0.2)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
+    )
+    def test_multi_measure_no_partitioned_shots_par_shapes(self, g, par_shapes):
+        """Test the zero-gradient representative with multiple measurements and single shots
+        as well as provided par_shapes."""
+        old_shape, new_shape = par_shapes
+        rep = _make_zero_rep(
+            g, single_measure=False, has_partitioned_shots=False, par_shapes=par_shapes
+        )
+
+        assert isinstance(rep, tuple) and len(rep) == len(g)
+        for r, _g in zip(rep, g):
+            exp_shape = new_shape + _g.shape[len(old_shape) :]
+            assert isinstance(r, np.ndarray) and r.shape == exp_shape
+            assert qml.math.allclose(r, 0.0)
+
+    # mimic an expectation value, a probs vector, or a mixture of them, but with 1d arguments
+    @pytest.mark.parametrize(
+        "g",
+        [
+            ((np.array(0.6), np.array(0.4)),) * 3,
+            ((np.array([0.3, 0.1]), np.array([0.6, 0.9])),) * 2,
+            ((np.array(0.5), np.ones(4), np.array(0.2)),) * 4,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "par_shapes", [((), ()), ((), (2,)), ((), (3, 1)), ((3,), ()), ((3,), (3,)), ((3,), (4, 5))]
+    )
+    def test_multi_measure_partitioned_shots_par_shapes(self, g, par_shapes):
+        """Test the zero-gradient representative with multiple measurements and a shot vector
+        as well as provided par_shapes."""
+        old_shape, new_shape = par_shapes
+        rep = _make_zero_rep(
+            g, single_measure=False, has_partitioned_shots=True, par_shapes=par_shapes
+        )
+
+        assert isinstance(rep, tuple) and len(rep) == len(g)
+        for _rep, _g in zip(rep, g):
+            assert isinstance(_rep, tuple) and len(_rep) == len(_g)
+            for r, __g in zip(_rep, _g):
+                exp_shape = new_shape + __g.shape[len(old_shape) :]
+                assert isinstance(r, np.ndarray) and r.shape == exp_shape
+                assert qml.math.allclose(r, 0.0)
 
 
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
@@ -981,9 +1139,8 @@ class TestParameterShiftRule:
 
         autograd_val = fn(dev.batch_execute(tapes))
 
-        tape_fwd, tape_bwd = tape.copy(copy_operations=True), tape.copy(copy_operations=True)
-        tape_fwd.set_parameters([theta + np.pi / 2])
-        tape_bwd.set_parameters([theta - np.pi / 2])
+        tape_fwd = tape.bind_new_parameters([theta + np.pi / 2], [1])
+        tape_bwd = tape.bind_new_parameters([theta - np.pi / 2], [1])
 
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
@@ -1026,10 +1183,10 @@ class TestParameterShiftRule:
             s = np.zeros_like(params)
             s[idx] += np.pi / 2
 
-            tape.set_parameters(params + s)
+            tape = tape.bind_new_parameters(params + s, [1, 2, 3])
             forward = dev.execute(tape)
 
-            tape.set_parameters(params - s)
+            tape = tape.bind_new_parameters(params - s, [1, 2, 3])
             backward = dev.execute(tape)
 
             component = (forward - backward) / 2
@@ -2026,17 +2183,17 @@ class TestParameterShiftRule:
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
 
-    def test_projector_variance(self, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
         dev = qml.device("default.qubit", wires=2)
-        P = np.array([1])
         x, y = 0.765, -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+            qml.var(qml.Projector(state, wires=0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
@@ -2274,9 +2431,8 @@ class TestParameterShiftRuleBroadcast:
 
         autograd_val = fn(dev.batch_execute(tapes))
 
-        tape_fwd, tape_bwd = tape.copy(copy_operations=True), tape.copy(copy_operations=True)
-        tape_fwd.set_parameters([theta + np.pi / 2])
-        tape_bwd.set_parameters([theta - np.pi / 2])
+        tape_fwd = tape.bind_new_parameters([theta + np.pi / 2], [1])
+        tape_bwd = tape.bind_new_parameters([theta - np.pi / 2], [1])
 
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
@@ -2314,10 +2470,10 @@ class TestParameterShiftRuleBroadcast:
             s = np.zeros_like(params)
             s[idx] += np.pi / 2
 
-            tape.set_parameters(params + s)
+            tape = tape.bind_new_parameters(params + s, [1, 2, 3])
             forward = dev.execute(tape)
 
-            tape.set_parameters(params - s)
+            tape = tape.bind_new_parameters(params - s, [1, 2, 3])
             backward = dev.execute(tape)
 
             manualgrad_val[idx] = (forward - backward) / 2
@@ -2827,17 +2983,17 @@ class TestParameterShiftRuleBroadcast:
         # assert gradA == pytest.approx(expected, abs=tol)
         # assert gradF == pytest.approx(expected, abs=tol)
 
-    def test_projector_variance(self, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
         dev = qml.device("default.qubit", wires=2)
-        P = np.array([1])
         x, y = 0.765, -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+            qml.var(qml.Projector(state, wires=0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
@@ -3756,8 +3912,8 @@ class TestQnodeTorch:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = torch.tensor([0.543, 0.2], requires_grad=True)
-        y = torch.tensor(-0.654, requires_grad=True)
+        x = torch.tensor([0.543, 0.2], requires_grad=True, dtype=torch.float64)
+        y = torch.tensor(-0.654, requires_grad=True, dtype=torch.float64)
 
         res = qml.gradients.param_shift(circuit)(x, y)
 
@@ -3782,8 +3938,8 @@ class TestQnodeTorch:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        x = torch.tensor([0.543, 0.2], requires_grad=True)
-        y = torch.tensor(-0.654, requires_grad=True)
+        x = torch.tensor([0.543, 0.2], requires_grad=True, dtype=torch.float64)
+        y = torch.tensor(-0.654, requires_grad=True, dtype=torch.float64)
 
         res = qml.gradients.param_shift(circuit)(x, y)
 
@@ -3808,7 +3964,7 @@ class TestQnodeTorch:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = torch.tensor([0.543, -0.654], requires_grad=True)
+        x = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
         res = qml.gradients.param_shift(circuit)(x)
         res_expected = torch.autograd.functional.jacobian(circuit, x)
 

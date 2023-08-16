@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixed, DefaultQubit
 
 
 @pytest.fixture(scope="function")
@@ -141,6 +140,7 @@ big_hamiltonian_grad = (
 # Ansatz
 
 
+# pylint: disable=unused-argument
 def custom_fixed_ansatz(params, wires=None):
     """Custom fixed ansatz"""
     qml.RX(0.5, wires=0)
@@ -201,8 +201,8 @@ CIRCUITS = [
 # Device
 
 
-@pytest.fixture(scope="function")
-def mock_device(monkeypatch):
+@pytest.fixture(scope="function", name="mock_device")
+def mock_device_fixture(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(qml.Device, "__abstractmethods__", frozenset())
         m.setattr(
@@ -221,7 +221,7 @@ def mock_device(monkeypatch):
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
 
         def get_device(wires=1):
-            return qml.Device(wires=wires)
+            return qml.Device(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_device
 
@@ -270,7 +270,7 @@ class TestVQE:
     """Test the core functionality of the VQE module"""
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
+    @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.Hamiltonian(coeffs, observables)
@@ -294,7 +294,7 @@ class TestVQE:
         """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
-            cost = catch_warn_ExpvalCost(4, hamiltonian, mock_device())
+            catch_warn_ExpvalCost(4, hamiltonian, mock_device())
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
@@ -313,6 +313,7 @@ class TestVQE:
             assert qnode.gradient_kwargs["h"] == 123
             assert qnode.gradient_kwargs["order"] == 2
 
+    # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -358,6 +359,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
+    # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -403,6 +405,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
+    # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -448,6 +451,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
+    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_multiple_terms_autograd(self):
         """Test that an ExpvalCost with observable optimization gives the same
@@ -503,6 +507,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
+    # pylint: disable=protected-access
     @pytest.mark.torch
     def test_optimize_multiple_terms_torch(self):
         """Test that an ExpvalCost with observable optimization gives the same
@@ -558,6 +563,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
+    # pylint: disable=protected-access
     @pytest.mark.tf
     def test_optimize_multiple_terms_tf(self):
         """Test that an ExpvalCost with observable optimization gives the same
@@ -613,6 +619,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
+    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
@@ -772,13 +779,14 @@ class TestVQE:
 
 # Test data
 np.random.seed(1967)
-shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
-PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+_shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
+PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=_shape)
 
 
 class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
+    # pylint: disable=cell-var-from-loop
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
@@ -799,11 +807,11 @@ class TestNewVQE:
         for obs in observables:
 
             @qml.qnode(dev)
-            def circuit():
+            def separate_circuit():
                 ansatz(params, wires=range(3))
                 return qml.expval(obs)
 
-            res_expected.append(circuit())
+            res_expected.append(separate_circuit())
 
         res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
 
@@ -903,7 +911,7 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit2()
 
-    def test_error_multiple_expvals_same_wire(self):
+    def test_multiple_expvals_same_wires(self):
         """Tests that more than one Hamiltonian expval can be evaluated."""
 
         coeffs = [1.0, 1.0, 1.0]
@@ -916,8 +924,15 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H1), qml.expval(H1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            circuit()
+        res = circuit()
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1)
+
+        assert res[0] == circuit1()
+        assert res[1] == circuit1()
 
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
@@ -1059,17 +1074,16 @@ class TestNewVQE:
 
         assert res["num_observables"] == 1
         assert res["num_diagonalizing_gates"] == 0
-        assert res["num_used_wires"] == 2
 
 
-@pytest.mark.autograd
-class TestAutogradInterface:
-    """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
+class TestInterfaces:
+    """Tests for VQE with interfaces."""
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("interface", ["autograd"])
-    def test_gradient(self, tol, interface):
-        """Test differentiation works"""
+    def test_gradient_autograd(self, tol, interface):
+        """Tests for the Autograd interface (and the NumPy interface for
+        backward compatibility)"""
         dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1094,13 +1108,9 @@ class TestAutogradInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-@pytest.mark.torch
-class TestTorchInterface:
-    """Tests for the PyTorch interface"""
-
-    def test_gradient(self, tol):
-        """Test differentiation works"""
+    @pytest.mark.torch
+    def test_gradient_torch(self, tol):
+        """Tests for the PyTorch interface"""
         import torch
 
         dev = qml.device("default.qubit", wires=1)
@@ -1129,13 +1139,9 @@ class TestTorchInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-@pytest.mark.tf
-class TestTFInterface:
-    """Tests for the TF interface"""
-
-    def test_gradient(self, tol):
-        """Test differentiation works"""
+    @pytest.mark.tf
+    def test_gradient_tf(self, tol):
+        """Tests for the TF interface"""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=1)
@@ -1163,12 +1169,8 @@ class TestTFInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-# Multiple interfaces it will bee tested with math module
-@pytest.mark.all_interfaces
-class TestMultipleInterfaceIntegration:
-    """Tests to ensure that interfaces agree and integrate correctly"""
-
+    # Multiple interfaces will be tested with math module
+    @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
         import tensorflow as tf

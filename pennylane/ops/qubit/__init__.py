@@ -22,8 +22,8 @@ The operations are divided into the following files:
 * ``non_parameteric_ops.py``: All operations with no parameters.
 * ``observables.py``: Qubit observables excluding the Pauli gates, which are
   located in ``non_parameteric_ops.py`` instead.
-* ``parametric_ops_single_qubit.py``: Core parametric operations of one qubit.
-* ``parametric_ops_multi_qubit.py``: Core parametric operations of multiple qubits.
+* ``parametric_ops_single_qubit.py``: Core single qubit parametric operations.
+* ``parametric_ops_multi_qubit.py``: Core multi-qubit parametric operations.
 * ``parametric_ops_controlled.py``: Controlled parametric operations.
 * ``qchem_ops.py``: Operations for quantum chemistry applications.
 * ``state_preparation.py``: Operations that initialize the state.
@@ -57,9 +57,7 @@ ops = {
     "T",
     "SX",
     "CNOT",
-    "CZ",
     "CCZ",
-    "CY",
     "CH",
     "SWAP",
     "ISWAP",

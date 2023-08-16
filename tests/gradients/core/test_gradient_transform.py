@@ -194,10 +194,11 @@ class TestChooseGradMethods:
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
-    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
     @pytest.mark.parametrize("slicing", [False, True])
     def test_acting_on_qnodes_single_param(self, shots, slicing, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
+        np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -208,14 +209,12 @@ class TestGradientTransformIntegration:
                 qml.RX(weights, wires=[0])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
         expected = np.array([-np.sin(w[0] if slicing else w), 0])
-        print(expected)
-        print(res)
         if isinstance(shots, list):
             assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:
@@ -224,6 +223,7 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
     def test_acting_on_qnodes_multi_param(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
+        np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -233,7 +233,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -260,7 +260,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+        grad_fn = qml.gradients.param_shift(circuit)
 
         w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
         res = grad_fn(*w)
@@ -393,6 +393,7 @@ class TestGradientTransformIntegration:
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
+        # pylint:disable=unexpected-keyword-arg
         res = qml.gradients.param_shift(circuit, hybrid=True)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
@@ -574,6 +575,7 @@ class TestGradientTransformIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # when executed with hybrid=False, only the quantum jacobian is returned
+        # pylint:disable=unexpected-keyword-arg
         res = qml.gradients.param_shift(circuit, hybrid=False)(w)
         assert res[0].shape == (4,)
         assert res[1].shape == (4,)

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for converting observables obtained from external libraries to a
-PennyLane observable.
+Unit tests for functions needed for converting objects obtained from external libraries to a
+PennyLane object.
 """
+# pylint: disable=too-many-arguments,protected-access
 import os
 import sys
 
@@ -23,10 +24,14 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.operation import disable_new_opmath, enable_new_opmath
 
-# TODO: Bring pytest skip to relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
+pyscf = pytest.importorskip("pyscf")
+
+pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
+pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
 
 
 def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
@@ -47,20 +52,21 @@ def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
         list(range(100, 120)),
         {13 - i: "abcdefghijklmn"[i] for i in range(14)},
     ],
+    name="custom_wires",
 )
-def custom_wires(request):
+def custom_wires_fixture(request):
     """Custom wire mapping for Pennylane<->OpenFermion conversion"""
     return request.param
 
 
-@pytest.fixture(scope="session")
-def tol():
+@pytest.fixture(scope="session", name="tol")
+def tol_fixture():
     """Numerical tolerance for equality tests."""
     return {"rtol": 0, "atol": 1e-8}
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "terms_ref"),
+    ("_", "terms_ref"),
     [
         ("empty", None),
         ("singlewire", {((0, "Z"),): (0.155924093421341 + 0j)}),
@@ -336,7 +342,7 @@ def tol():
         ),
     ],
 )
-def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
+def test_observable_conversion(_, terms_ref, custom_wires, monkeypatch):
     r"""Test the correctness of the QubitOperator observable conversion from
     OpenFermion to Pennylane.
 
@@ -359,6 +365,71 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     assert qml.qchem.convert._openfermion_pennylane_equivalent(qOp, vqe_observable, custom_wires)
 
 
+ops_wires = (
+    (
+        ([0.1, 0.2], [qml.PauliZ(0), qml.Identity(1)]),
+        (0.1 * openfermion.QubitOperator("Z0") + 0.2 * openfermion.QubitOperator("")),
+        [0, 1],
+    ),
+    (
+        ([0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+        (
+            0.1 * openfermion.QubitOperator("X0")
+            + 0.2 * openfermion.QubitOperator("Y1")
+            + 0.3 * openfermion.QubitOperator("Z2")
+        ),
+        [0, 1, 2],
+    ),
+    (
+        ([0.1], [qml.s_prod(0.5, qml.PauliZ(0))]),
+        0.05 * openfermion.QubitOperator("Z0"),
+        [0],
+    ),
+    (
+        ([0.1, 0.2], [qml.PauliX(0), qml.prod(qml.PauliY(1), qml.PauliZ(2))]),
+        (0.1 * openfermion.QubitOperator("X0") + 0.2 * openfermion.QubitOperator("Y1 Z2")),
+        [0, 1, 2],
+    ),
+    (
+        ([0.1, 0.2, 0.3], [qml.PauliX(0), qml.sum(qml.PauliY(1), qml.PauliZ(2)), qml.PauliY(1)]),
+        (
+            0.1 * openfermion.QubitOperator("X0")
+            + 0.5 * openfermion.QubitOperator("Y1")
+            + 0.2 * openfermion.QubitOperator("Z2")
+        ),
+        [0, 1, 2],
+    ),
+)
+
+
+@pytest.mark.parametrize("pl_op, of_op, wire_order", ops_wires)
+def test_operation_conversion(pl_op, of_op, wire_order):
+    """Assert the conversion between pennylane and openfermion operators"""
+    converted_pl_op = qml.qchem.convert._pennylane_to_openfermion(*pl_op)  # coeffs, ops lists
+    assert of_op == converted_pl_op
+
+    converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
+    _, converted_of_op_terms = converted_of_op
+    assert all(isinstance(term, pauli_ops_and_tensor) for term in converted_of_op_terms)
+    assert np.allclose(
+        qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
+        qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
+    )
+
+    # test arithmetic types
+    enable_new_opmath()
+    converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
+    disable_new_opmath()
+
+    _, converted_of_op_terms = converted_of_op
+    assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
+
+    assert np.allclose(
+        qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
+        qml.matrix(qml.dot(*converted_of_op), wire_order=wire_order),
+    )
+
+
 @pytest.mark.parametrize(
     ("terms_ref", "lib_name"),
     [
@@ -376,18 +447,23 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
         qml.qchem.convert.import_operator(qOp, format=lib_name)
 
 
-def test_not_xyz_pennylane_to_openfermion():
+invalid_ops = (
+    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+    qml.prod(qml.PauliX(0), qml.Hadamard(1)),
+    qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
+)
+
+
+@pytest.mark.parametrize("op", invalid_ops)
+def test_not_xyz_pennylane_to_openfermion(op):
     r"""Test if the conversion complains about non Pauli matrix observables"""
-    with pytest.raises(
-        ValueError,
-        match="Expected only PennyLane observables PauliX/Y/Z or Identity, but also got {"
-        "'QuadOperator'}.",
-    ):
+    _match = "Expected a Pennylane operator with a valid Pauli word representation,"
+    with pytest.raises(ValueError, match=_match):
         qml.qchem.convert._pennylane_to_openfermion(
             np.array([0.1 + 0.0j, 0.0]),
             [
                 qml.operation.Tensor(qml.PauliX(0)),
-                qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+                op,
             ],
         )
 
@@ -427,7 +503,66 @@ def test_types_consistency():
 
     for i, op in enumerate(ops):
         assert op.name == ops_ref[i].name
-        assert type(op) == type(ops_ref[i])
+        assert isinstance(op, type(ops_ref[i]))
+
+
+of_pl_ops = (
+    (
+        (
+            0.1 * openfermion.QubitOperator("X0")
+            + 0.2 * openfermion.QubitOperator("Y1")
+            + 0.3 * openfermion.QubitOperator("Z2")
+            + 0.4 * openfermion.QubitOperator("")
+        ),
+        qml.Hamiltonian(
+            [0.1, 0.2, 0.3, 0.4],
+            [qml.PauliX("w0"), qml.PauliY("w1"), qml.PauliZ("w2"), qml.Identity("w0")],
+        ),
+        qml.sum(
+            qml.s_prod(0.1, qml.PauliX("w0")),
+            qml.s_prod(0.2, qml.PauliY("w1")),
+            qml.s_prod(0.3, qml.PauliZ("w2")),
+            qml.s_prod(0.4, qml.Identity("w0")),
+        ),
+        ["w0", "w1", "w2"],
+    ),
+    (
+        (0.1 * openfermion.QubitOperator("X0 Y1") + 0.2 * openfermion.QubitOperator("Z2")),
+        qml.Hamiltonian([0.1, 0.2], [qml.PauliX("w0") @ qml.PauliY("w1"), qml.PauliZ("w2")]),
+        qml.sum(
+            qml.s_prod(0.1, qml.prod(qml.PauliX("w0"), qml.PauliY("w1"))),
+            qml.s_prod(0.2, qml.PauliZ("w2")),
+        ),
+        ["w0", "w1", "w2"],
+    ),
+    (
+        (0.1 * openfermion.QubitOperator("X0 Y1")),
+        qml.Hamiltonian([0.1], [qml.PauliX("w0") @ qml.PauliY("w1")]),
+        qml.s_prod(0.1, qml.prod(qml.PauliX("w0"), qml.PauliY("w1"))),
+        ["w0", "w1"],
+    ),
+)
+
+
+@pytest.mark.parametrize("of_op, pl_h, pl_op, wires", of_pl_ops)
+def test_import_operator(of_op, pl_h, pl_op, wires):
+    """Test the import_operator function correctly imports an OpenFermion operator into a PL one."""
+    of_h = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
+    assert qml.equal(of_h, pl_h)
+
+    enable_new_opmath()
+    of_arithmetic_op = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
+    disable_new_opmath()
+
+    assert isinstance(of_arithmetic_op, type(pl_op))
+    if isinstance(of_arithmetic_op, qml.ops.Sum):
+        assert all(
+            isinstance(term, qml.ops.SProd) and isinstance(term.base, pauli_ops_and_prod)
+            for term in of_arithmetic_op.operands
+        )
+    assert np.allclose(
+        qml.matrix(of_arithmetic_op, wire_order=wires), qml.matrix(pl_op, wire_order=wires)
+    )
 
 
 op_1 = (
@@ -441,8 +576,8 @@ op_2 = openfermion.QubitOperator("Z0 Y1", 2.3e-6j)
 @pytest.mark.parametrize(
     ("qubit_op", "tol"),
     [
-        (op_1, 1e08),
-        (op_2, 1e010),
+        (op_1, 1e-8),
+        (op_2, 1e-10),
     ],
 )
 def test_exception_import_operator(qubit_op, tol):
@@ -514,7 +649,7 @@ def test_pennylane_to_openfermion_no_decomp():
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "terms_ref", "expected_cost"),
+    ("_", "terms_ref", "expected_cost"),
     [
         ("empty", None, 0),
         (
@@ -541,7 +676,7 @@ def test_pennylane_to_openfermion_no_decomp():
     ],
 )
 def test_integration_observable_to_vqe_cost(
-    monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
+    monkeypatch, _, terms_ref, expected_cost, custom_wires, tol
 ):
     r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
 
@@ -594,9 +729,7 @@ def test_process_wires(custom_wires, n_wires):
         if not isinstance(custom_wires, dict):
             assert wires == qml.qchem.convert._process_wires(custom_wires[:n_wires], n_wires)
         else:
-            assert wires == qml.qchem.convert._process_wires(
-                {k: v for k, v in custom_wires.items()}, n_wires
-            )
+            assert wires == qml.qchem.convert._process_wires(custom_wires, n_wires)
 
 
 def test_process_wires_raises():
@@ -680,3 +813,266 @@ def test_integration_mol_file_to_vqe_cost(
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
+
+
+@pytest.mark.parametrize(
+    ("electrons", "orbitals", "singles_ref", "doubles_ref"),
+    [
+        # trivial case, e.g., H2/STO-3G
+        (2, 4, [[0, 2], [0, 3], [1, 2], [1, 3]], [[0, 1, 2, 3]]),
+    ],
+)
+def test_excitations(electrons, orbitals, singles_ref, doubles_ref):
+    r"""Test if the _excitations function returns correct single and double excitations."""
+    singles, doubles = qchem.convert._excitations(electrons, orbitals)
+    assert singles == singles_ref
+    assert doubles == doubles_ref
+
+
+@pytest.mark.parametrize(
+    ("electrons", "orbitals", "excitation", "states_ref", "signs_ref"),
+    [
+        # reference data computed with pyscf:
+        # pyscf_addrs, pyscf_signs = pyscf.ci.cisd.tn_addrs_signs(orbitals, electrons, excitation)
+        # pyscf_state = pyscf.fci.cistring.addrs2str(orbitals, electrons, pyscf_addrs)
+        # pyscf_state, pyscf_signs
+        (
+            3,
+            8,
+            1,
+            np.array([14, 22, 38, 70, 134, 13, 21, 37, 69, 133, 11, 19, 35, 67, 131]),
+            np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1]),
+        ),
+        (
+            3,
+            6,
+            2,
+            np.array([28, 44, 52, 26, 42, 50, 25, 41, 49]),
+            np.array([1, 1, 1, -1, -1, -1, 1, 1, 1]),
+        ),
+    ],
+)
+def test_excited_configurations(electrons, orbitals, excitation, states_ref, signs_ref):
+    r"""Test if the _excited_configurations function returns correct states and signs."""
+    states, signs = qchem.convert._excited_configurations(electrons, orbitals, excitation)
+    assert np.allclose(states, states_ref)
+    assert np.allclose(signs, signs_ref)
+
+
+@pytest.mark.parametrize(
+    ("wf_dict", "n_orbitals", "string_ref", "coeff_ref"),
+    [  # reference data were obtained manually
+        (  #  0.87006284 |1100> + 0.3866946 |1001> + 0.29002095 |0110> + 0.09667365 |0011>
+            {(1, 1): 0.87006284, (1, 2): 0.3866946, (2, 1): 0.29002095, (2, 2): 0.09667365},
+            2,
+            ["1100", "1001", "0110", "0011"],
+            [0.87006284, 0.3866946, 0.29002095, 0.09667365],
+        ),
+        (  # 0.80448616 |110000> + 0.53976564 |001100> + 0.22350293 |000011> + 0.10724511 |100100>
+            {(1, 1): 0.80448616, (2, 2): 0.53976564, (4, 4): 0.22350293, (1, 2): 0.10724511},
+            3,
+            ["110000", "001100", "000011", "100100"],
+            [0.80448616, 0.53976564, 0.22350293, 0.10724511],
+        ),
+    ],
+)
+def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
+    r"""Test that _wfdict_to_statevector returns the correct state vector."""
+    wf_ref = np.zeros(2 ** (n_orbitals * 2))
+    idx_nonzero = [int(s, 2) for s in string_ref]
+    wf_ref[idx_nonzero] = coeff_ref
+
+    wf_comp = qchem.convert._wfdict_to_statevector(wf_dict, n_orbitals)
+
+    assert np.allclose(wf_comp, wf_ref)
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "wf_ref"),
+    [
+        (
+            [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]],
+            "sto6g",
+            "d2h",
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
+def test_import_state(molecule, basis, symm, method, wf_ref):
+    r"""Test that import_state returns the correct state vector."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+
+    if method == "rcisd":
+        myhf = pyscf.scf.RHF(mol).run()
+        solver = pyscf.ci.cisd.RCISD(myhf).run()
+    elif method == "ucisd":
+        myhf = pyscf.scf.UHF(mol).run()
+        solver = pyscf.ci.ucisd.UCISD(myhf).run()
+    elif method == "rccsd":
+        myhf = pyscf.scf.RHF(mol).run()
+        solver = pyscf.cc.rccsd.RCCSD(myhf).run()
+    elif method == "uccsd":
+        myhf = pyscf.scf.UHF(mol).run()
+        solver = pyscf.cc.uccsd.UCCSD(myhf).run()
+
+    wf_comp = qchem.convert.import_state(solver)
+
+    # overall sign could be different in each PySCF run
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+
+def test_import_state_error():
+    r"""Test that an error is raised by import_state if a wrong object is entered."""
+
+    myci = "wrongobject"
+
+    with pytest.raises(ValueError, match="The supported objects"):
+        _ = qchem.convert.import_state(myci)
+
+
+@pytest.mark.parametrize(("excitation"), [-1, 0, 3])
+def test_excited_configurations_error(excitation):
+    r"""Test that an error is raised by _excited_configurations if a wrong excitation is entered."""
+    with pytest.raises(ValueError, match="excitations are supported"):
+        _ = qchem.convert._excited_configurations(2, 4, excitation)
+
+
+h2_molecule = [["H", (0, 0, 0)], ["H", (0, 0, 0.71)]]
+h2_wf_sto6g = {(1, 1): -0.9942969785398778, (2, 2): 0.10664669927602179}  # tol = 1e-1
+h2_wf_ccpvdz = {  # tol = 4e-2
+    (1, 1): 0.9919704795977625,
+    (2, 2): -0.048530356564386895,
+    (2, 8): 0.044523330850078625,
+    (4, 4): -0.050035945684911876,
+    (8, 2): 0.04452333085007864,
+    (8, 8): -0.052262303220437775,
+    (16, 16): -0.040475973747662694,
+    (32, 32): -0.040475973747662694,
+}
+
+li2_molecule = [["Li", (0, 0, 0)], ["Li", (0, 0, 0.71)]]
+li2_wf_sto6g = {  # tol = 1e-1
+    (7, 7): 0.8886970081919591,
+    (11, 11): -0.3058459002168582,
+    (19, 19): -0.30584590021685887,
+    (35, 35): -0.14507552387854625,
+}
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (h2_molecule, "cc-pvdz", "d2h", 4e-2, h2_wf_ccpvdz),
+    ],
+)
+def test_ucisd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _ucisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    myci = pyscf.ci.UCISD(myhf).run()
+
+    wf_cisd = qchem.convert._ucisd_state(myci, tol=tol)
+
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (h2_molecule, "cc-pvdz", "d2h", 4e-2, h2_wf_ccpvdz),
+        (
+            [["Be", (0, 0, 0)]],
+            "sto6g",
+            "d2h",
+            1e-3,
+            {
+                (3, 3): 0.9446343496981953,
+                (6, 5): 0.003359774446779245,
+                (10, 9): 0.003359774446779244,
+                (18, 17): 0.003359774446779245,
+                (5, 6): 0.003359774446779244,
+                (5, 5): -0.18938190575578503,
+                (9, 10): 0.003359774446779243,
+                (9, 9): -0.18938190575578523,
+                (17, 18): 0.003359774446779244,
+                (17, 17): -0.18938190575578503,
+            },
+        ),
+    ],
+)
+def test_rcisd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _rcisd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.RHF(mol).run()
+    myci = pyscf.ci.CISD(myhf).run()
+
+    wf_cisd = qchem.convert._rcisd_state(myci, tol=tol)
+
+    assert wf_cisd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_cisd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (li2_molecule, "sto6g", "d2h", 1e-1, li2_wf_sto6g),
+    ],
+)
+def test_uccsd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _uccsd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.UHF(mol).run()
+    mycc = pyscf.cc.UCCSD(myhf).run()
+
+    wf_ccsd = qchem.convert._uccsd_state(mycc, tol=tol)
+
+    assert wf_ccsd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("molecule", "basis", "symm", "tol", "wf_ref"),
+    [
+        (h2_molecule, "sto6g", "d2h", 1e-1, h2_wf_sto6g),
+        (li2_molecule, "sto6g", "d2h", 1e-1, li2_wf_sto6g),
+    ],
+)
+def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
+    r"""Test that _rccsd_state returns the correct wavefunction."""
+
+    mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
+    myhf = pyscf.scf.RHF(mol).run()
+    mycc = pyscf.cc.CCSD(myhf).run()
+
+    wf_ccsd = qchem.convert._rccsd_state(mycc, tol=tol)
+
+    assert wf_ccsd.keys() == wf_ref.keys()
+    assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))

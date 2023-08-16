@@ -15,6 +15,7 @@
 Unit tests for functions needed for estimating the number of logical qubits and non-Clifford gates
 for quantum algorithms in first quantization using a plane-wave basis.
 """
+# pylint: disable=too-many-arguments,protected-access
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -264,3 +265,140 @@ def test_norm_error(n, eta, omega, error, br, charge):
     r"""Test that norm raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
         qml.resource.FirstQuantization.norm(n, eta, omega, error, br, charge)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "vectors", "lamb", "g_cost", "q_cost"),
+    [
+        (
+            100000,
+            156,
+            None,
+            np.array(
+                [
+                    [9.44862994, 0.0, 0.0],
+                    [0.0, 10.39349294, 0.0],
+                    [0.94486299, 0.94486299, 11.33835593],
+                ]
+            ),
+            817051.632523202,
+            151664625909497,
+            3331,
+        ),
+        (
+            10000,
+            312,
+            None,
+            np.array(
+                [
+                    [18.89725988, 0.0, 0.0],
+                    [0.0, 10.39349294, 0.0],
+                    [0.94486299, 0.94486299, 11.33835593],
+                ]
+            ),
+            1793399.3143809892,
+            64986483274430,
+            5193,
+        ),
+        (
+            100000,
+            156,
+            None,
+            np.array(
+                [
+                    [9.44862994, 0.0, 0.0],
+                    [0.0, 10.39349294, 0.0],
+                    [0.0, 0.0, 11.33835593],
+                ]
+            ),
+            725147.0916537816,
+            134604911168852,
+            3331,
+        ),
+    ],
+)
+def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
+    r"""Test that the FirstQuantization class computes correct attributes."""
+    est = qml.resource.FirstQuantization(n, eta, omega, vectors=vectors)
+
+    assert np.allclose(est.lamb, lamb)
+    assert np.allclose(est.gates, g_cost)
+    assert np.allclose(est.qubits, q_cost)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "br", "charge", "vectors"),
+    [
+        (10000, 156, None, 0.001, 7, 0, None),
+    ],
+)
+def test_init_error_1(n, eta, omega, error, br, charge, vectors):
+    r"""Test that init raises an error when volume and vectors are None."""
+    with pytest.raises(ValueError, match="The lattice vectors must be provided"):
+        qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "br", "charge", "vectors"),
+    [
+        (
+            10000,
+            156,
+            1113.47,
+            0.001,
+            7,
+            0,
+            np.array(
+                [
+                    [9.0, 0.0, 0.0],
+                    [0.0, 9.0, 0.0],
+                    [9.0, 9.0, 9.0],
+                ]
+            ),
+        ),
+    ],
+)
+def test_init_error_2(n, eta, omega, error, br, charge, vectors):
+    r"""Test that init raises an error when volume and vectors are None."""
+    with pytest.raises(ValueError, match="lattice vectors and the unit cell volume should not be"):
+        qml.resource.FirstQuantization(n, eta, omega, error, charge, br, vectors)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "error", "br", "charge", "vectors"),
+    [
+        (
+            1e10,
+            100,
+            0.0016,
+            7,
+            0,
+            np.array(
+                [
+                    [10.0, 0.0, 0.0],
+                    [0.0, 10.0, 0.0],
+                    [1.0, 1.0, 10.0],
+                ]
+            ),
+        ),
+    ],
+)
+def test_norm_error_noncubic(n, eta, error, br, charge, vectors):
+    r"""Test that _norm_noncubic raises an error when the computed norm is zero."""
+    print(n, eta, error, br, charge, vectors)
+    with pytest.raises(ValueError, match="The computed 1-norm is zero"):
+        qml.resource.FirstQuantization._norm_noncubic(n, eta, error, br, charge, vectors)
+
+
+@pytest.mark.parametrize(
+    ("n_p, n_m, n_dirty, n_tof, kappa, ms_cost_ref, beta_ref"),
+    [(6, 37, 3331, 500, 1, 13372.0, 90.0), (6, 37, 3331, 1, 1, 30686.0, 68.0)],
+)
+def test_momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa, ms_cost_ref, beta_ref):
+    r"""Test that the _momentum_state_qrom function returns correct values."""
+    ms_cost, beta = qml.resource.FirstQuantization._momentum_state_qrom(
+        n_p, n_m, n_dirty, n_tof, kappa
+    )
+
+    assert ms_cost == ms_cost_ref
+    assert beta == beta_ref

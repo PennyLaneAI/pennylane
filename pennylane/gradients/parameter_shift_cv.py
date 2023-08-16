@@ -498,7 +498,6 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-    shots=None,
 ):
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
@@ -643,10 +642,8 @@ def param_shift_cv(
         function, which together define the gradient are directly returned:
 
         >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.Squeezing(r0, phi0, wires=[0])
-        ...     qml.Squeezing(r1, phi1, wires=[0])
-        ...     qml.expval(qml.NumberOperator(0))  # second-order
+        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi2, wires=0)]
+        >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.NumberOperator(0))])
         >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=4>,

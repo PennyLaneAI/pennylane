@@ -123,6 +123,7 @@ class VnEntropyMP(StateMeasurement):
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )

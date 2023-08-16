@@ -68,7 +68,11 @@ class Shots:
 
     Instances of this class are static. If an instance is passed to the constructor, that same
     instance is returned. If an instance is constructed with a ``None`` value, ``total_shots``
-    will be ``None``.  This indicates analytic execution.
+    will be ``None``.  This indicates analytic execution. A ``Shots`` object created with a
+    ``None`` value is Falsy, while any other value results in a Truthy object:
+
+    >>> bool(Shots(None)), bool(Shots(1))
+    (False, True)
 
     **Examples**
 
@@ -186,7 +190,11 @@ class Shots:
 
     def __eq__(self, other):
         """Equality between Shot instances."""
-        return self.total_shots == other.total_shots and self.shot_vector == other.shot_vector
+        return (
+            isinstance(other, Shots)
+            and self.total_shots == other.total_shots
+            and self.shot_vector == other.shot_vector
+        )
 
     def __hash__(self):
         """Hash for a given Shot instance."""
@@ -211,6 +219,9 @@ class Shots:
         self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
         self.total_shots = total_shots + current_shots * current_copies
 
+    def __bool__(self):
+        return self.total_shots is not None
+
     @property
     def has_partitioned_shots(self):
         """
@@ -220,6 +231,11 @@ class Shots:
         Returns:
             bool: whether shots are partitioned
         """
-        if self.total_shots is None:
+        if not self:
             return False
         return len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1
+
+    @property
+    def num_copies(self):
+        """The total number of copies of any shot quantity."""
+        return sum(s.copies for s in self.shot_vector)

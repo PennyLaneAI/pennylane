@@ -40,8 +40,6 @@ def test_adjoint_error_exception(op):
 @pytest.mark.parametrize(
     "op, mat, base",
     [
-        (qml.BasisState(np.array([0, 1]), wires=0), [0, 1], "BasisState"),
-        (qml.QubitStateVector(np.array([1.0, 0.0]), wires=0), [1.0, 0.0], "QubitStateVector"),
         (qml.QubitDensityMatrix(densitymat0, wires=0), densitymat0, "QubitDensityMatrix"),
     ],
 )

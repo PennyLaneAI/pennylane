@@ -234,7 +234,7 @@ def pwc(timespan):
         time = jnp.linspace(0, 10, 1000)
         timespan=(2, 7)
         y = qml.pulse.pwc(timespan)(params, time)
-        plt.plot(time, y, label=f"params={params},\ntimespan={timespan}")
+        plt.plot(time, y, label=f"params={params}, timespan={timespan}")
         plt.legend()
         plt.show()
 

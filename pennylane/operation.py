@@ -250,6 +250,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
+from .pytrees import register_pytree
 
 # =============================================================================
 # Errors
@@ -417,11 +418,9 @@ class Operator(abc.ABC):
     ``hyperparameters`` are the respective attributes of the operator class.
 
     Args:
-        params (tuple[tensor_like]): trainable parameters
+        *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -450,8 +449,7 @@ class Operator(abc.ABC):
             # we request parameter-shift (or "analytic") differentiation.
             grad_method = "A"
 
-            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                               do_queue=True, id=None):
+            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
 
                 # checking the inputs --------------
 
@@ -473,9 +471,7 @@ class Operator(abc.ABC):
                 # The parent class expects all trainable parameters to be fed as positional
                 # arguments, and all wires acted on fed as a keyword argument.
                 # The id keyword argument allows users to give their instance a custom name.
-                # The do_queue keyword argument specifies whether or not
-                # the operator is queued when created in a tape context.
-                super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+                super().__init__(angle, wires=all_wires, id=id)
 
             @property
             def num_params(self):
@@ -522,6 +518,31 @@ class Operator(abc.ABC):
     >>> a = np.array(3.14)
     >>> circuit(a)
     -0.9999987318946099
+
+    .. details::
+        :title: Serialization and Pytree format
+        :href: serialization
+
+        PennyLane operations are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
+
+        For most operators, this process will happen automatically without need for custom implementations.
+
+        Customization of this process must occur if:
+
+        * The data and hyperparameters are insufficient to reproduce the original operation via its initialization
+        * The hyperparameters contain a non-hashable component, such as a list or dictionary.
+
+        Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
+        perform preprocessing during initialization.
+
+        See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
+
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
 
     .. details::
         :title: Parameter broadcasting
@@ -654,10 +675,13 @@ class Operator(abc.ABC):
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
+    def __init_subclass__(cls, **_):
+        register_pytree(cls, cls._flatten, cls._unflatten)
+
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()
+        copied_op.data = copy.copy(self.data)
         for attr, value in vars(self).items():
             if attr != "data":
                 setattr(copied_op, attr, value)
@@ -677,7 +701,7 @@ class Operator(abc.ABC):
                 # Shallow copy the list of parameters. We avoid a deep copy
                 # here, since PyTorch does not support deep copying of tensors
                 # within a differentiable computation.
-                copied_op.data = value.copy()
+                copied_op.data = copy.copy(value)
             else:
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
@@ -695,6 +719,31 @@ class Operator(abc.ABC):
             )
         )
 
+    # pylint: disable=useless-super-delegation
+    def __eq__(self, other):
+        warnings.warn(
+            "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
+            "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
+            "qml.equal(op1, op2). To continue using operator equality in its current state, "
+            "use 'op1 is op2'.",
+            UserWarning,
+        )
+
+        return super().__eq__(other)
+
+    # pylint: disable=useless-super-delegation
+    def __hash__(self):
+        warnings.warn(
+            "The behaviour of operator hashing will be updated soon. Currently, each operator "
+            "instance has a unique hash. Soon, an operator's hash will be determined by the "
+            "combined hash of the name, wires, parameters and hyperparameters of the operator. "
+            "To continue using operator hashing in its current state, wrap the operator inside "
+            "a qml.queuing.WrappedObj instance.",
+            UserWarning,
+        )
+
+        return super().__hash__()
+
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -702,11 +751,11 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
+        .. seealso:: :meth:`.Operator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             tensor_like: matrix representation
@@ -759,8 +808,8 @@ class Operator(abc.ABC):
         .. seealso:: :meth:`~.Operator.sparse_matrix`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters``
                 attribute
 
         Returns:
@@ -805,11 +854,11 @@ class Operator(abc.ABC):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Operator.eigvals` and :func:`~.eigvals`
+        .. seealso:: :meth:`Operator.eigvals() <.eigvals>` and :func:`qml.eigvals() <pennylane.eigvals>`
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             tensor_like: eigenvalues
@@ -970,7 +1019,7 @@ class Operator(abc.ABC):
         param_string = ",\n".join(_format(p) for p in params)
         return f"{op_label}\n({param_string})"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
@@ -1021,10 +1070,9 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = [np.array(p) if isinstance(p, (list, tuple)) else p for p in params]
+        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
-        if do_queue:
-            self.queue()
+        self.queue()
 
     def _check_batching(self, params):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1038,6 +1086,7 @@ class Operator(abc.ABC):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
+
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
@@ -1052,6 +1101,12 @@ class Operator(abc.ABC):
             if any(qml.math.is_abstract(p) for p in params):
                 return
             raise e
+
+        if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
+            # if the batch dimension is unknown, then skip the validation
+            # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
+            # typically during compilation of a function decorated with jax.jit or tf.function
+            return
 
         self._ndim_params = ndims
         if ndims != self.ndim_params:
@@ -1157,7 +1212,7 @@ class Operator(abc.ABC):
     @property
     def parameters(self):
         """Trainable parameters that the operator depends on."""
-        return self.data.copy()
+        return list(self.data)
 
     @property
     def hyperparameters(self):
@@ -1217,9 +1272,9 @@ class Operator(abc.ABC):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
             wires (Iterable[Any], Wires): wires that the operator acts on
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -1389,7 +1444,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        qscript = qml.tape.make_qscript(self.decomposition)()
+        qscript = qml.tape.QuantumScript(self.decomposition())
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1460,7 +1515,9 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, TensorLike)):
+        if isinstance(other, Operator):
+            return self + qml.s_prod(-1, other)
+        if isinstance(other, TensorLike):
             return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
@@ -1477,6 +1534,71 @@ class Operator(abc.ABC):
         if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
+
+    def _flatten(self):
+        """Serialize the operation into trainable and non-trainable components.
+
+        Returns:
+            data, metadata: The trainable and non-trainable components.
+
+        See ``Operator._unflatten``.
+
+        The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
+        will be the operator ``RX(1, wires=0)``.
+
+        The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> qml.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
+        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        ``_flatten`` methods.
+
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op._flatten()
+        ((U2(3.4, 4.5, wires=['a']),),
+        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+
+        """
+        hashable_hyperparameters = tuple(
+            (key, value) for key, value in self.hyperparameters.items()
+        )
+        return self.data, (self.wires, hashable_hyperparameters)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        """Recreate an operation from its serialized format.
+
+        Args:
+            data: the trainable component of the operation
+            metadata: the non-trainable component of the operation.
+
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten()
+        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> type(op)._unflatten(*op._flatten())
+        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+
+        """
+        hyperparameters_dict = dict(metadata[1])
+        return cls(*data, wires=metadata[0], **hyperparameters_dict)
 
 
 # =============================================================================
@@ -1509,8 +1631,6 @@ class Operation(Operator):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1641,17 +1761,8 @@ class Operation(Operator):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    @property
-    def base_name(self):
-        """Holdover from when in-place inversion changed then name. To be removed."""
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self.__class__.__name__
-
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
@@ -1669,8 +1780,6 @@ class Channel(Operation, abc.ABC):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1694,8 +1803,8 @@ class Channel(Operation, abc.ABC):
             of a particular operator.
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator,
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            **hyperparams (dict): non-trainable hyperparameters of the operator,
                 as stored in the ``hyperparameters`` attribute
 
         Returns:
@@ -1740,8 +1849,6 @@ class Observable(Operator):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -1816,6 +1923,8 @@ class Observable(Operator):
 
         for ob in obs:
             parameters = tuple(param.tobytes() for param in ob.parameters)
+            if isinstance(ob, qml.GellMann):
+                parameters += (ob.hyperparameters["index"],)
             tensor.add((ob.name, ob.wires, parameters))
 
         return tensor
@@ -1918,6 +2027,13 @@ class Tensor(Observable):
     return_type = None
     tensor = True
     has_matrix = True
+
+    def _flatten(self):
+        return tuple(self.obs), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(*data)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         wires = [op.wires for op in args]
@@ -2038,9 +2154,9 @@ class Tensor(Observable):
         """Raw parameters of all constituent observables in the tensor product.
 
         Returns:
-            list[Any]: flattened list containing all dependent parameters
+            tuple[Any]: flattened list containing all dependent parameters
         """
-        return sum((o.data for o in self.obs), [])
+        return tuple(d for op in self.obs for d in op.data)
 
     @data.setter
     def data(self, new_data):
@@ -2061,8 +2177,14 @@ class Tensor(Observable):
         [array([[5., 0.],
         [0., 5.]])]
         """
-        for new_entry, op in zip(new_data, self.obs):
-            op.data = new_entry
+        if isinstance(new_data, tuple):
+            start = 0
+            for op in self.obs:
+                op.data = new_data[start : start + len(op.data)]
+                start += len(op.data)
+        else:
+            for new_entry, op in zip(new_data, self.obs):
+                op.data = tuple(new_entry)
 
     @property
     def num_params(self):
@@ -2288,7 +2410,7 @@ class Tensor(Observable):
         return 0
 
     def sparse_matrix(
-        self, wires=None, format="csr"
+        self, wire_order=None, wires=None, format="csr"
     ):  # pylint:disable=arguments-renamed, arguments-differ
         r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
@@ -2296,9 +2418,14 @@ class Tensor(Observable):
         consisting mostly of zero entries.
 
         Args:
-            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
+            wires (Iterable): Same as ``wire_order`` to ensure compatibility with all the classes. Must only
+                provide one: either ``wire_order`` or ``wires``.
             format: the output format for the sparse representation. All scipy sparse formats are accepted.
+
+        Raises:
+            ValueError: if both ``wire_order`` and ``wires`` are provided at the same time.
 
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
@@ -2319,7 +2446,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
-        >>> print(t.sparse_matrix(wires=[1, 0]))
+        >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1
         (2, 3)	-1
@@ -2328,11 +2455,17 @@ class Tensor(Observable):
         We can also enforce implicit identities by passing wire labels that
         are not present in the constituent operations:
 
-        >>> res = t.sparse_matrix(wires=[0, 1, 2])
+        >>> res = t.sparse_matrix(wire_order=[0, 1, 2])
         >>> print(res.shape)
         (8, 8)
         """
+        if wires is not None and wire_order is not None:
+            raise ValueError(
+                "Wire order has been specified twice. Provide only one of either "
+                "``wire_order`` or ``wires``, but not both."
+            )
 
+        wires = wires or wire_order
         wires = self.wires if wires is None else Wires(wires)
         list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
 
@@ -2543,8 +2676,6 @@ class CVOperation(CV, Operation):
         params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
@@ -2668,8 +2799,6 @@ class CVObservable(CV, Observable):
        params (tuple[tensor_like]): trainable parameters
        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
            If not given, args[-1] is interpreted as wires.
-       do_queue (bool): indicates whether the operator should be
-           recorded when created in a tape context
        id (str): custom label given to an operator instance,
            can be useful for some applications where the instance has to be identified
     """
@@ -2717,6 +2846,9 @@ class StatePrep(Operation):
         Returns:
             array: A state vector for all wires in a circuit
         """
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return "|Ψ⟩"
 
 
 def operation_derivative(operation) -> np.ndarray:
@@ -2855,7 +2987,7 @@ def disable_new_opmath():
     True
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.disable_new_opmath()
+    >>> qml.operation.disable_new_opmath()
     >>> type(qml.PauliX(0) @ qml.PauliZ(1))
     <class 'pennylane.operation.Tensor'>
     """

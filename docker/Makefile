@@ -13,7 +13,7 @@ available-interfaces:
 
 available-plugins:
 	@echo "The following plugins are available for PennyLane:"
-	@echo "1.qiskit 2.amazon-braket 3.sf 4.cirq 5.qulacs 6.aqt"
+	@echo "1.qiskit 2.amazon-braket 3.quantuminspire 4.cirq 5.qulacs 6.aqt"
 	@echo "7.honeywell 8.pq 9.qsharp 10.forest 11.orquestra 12.ionq"
 
 build-base:

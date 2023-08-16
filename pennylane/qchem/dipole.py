@@ -97,7 +97,7 @@ def dipole_integrals(mol, core=None, active=None):
         r"""Compute the dipole moment integrals in the molecular orbital basis.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple[array[float]]: tuple containing the core orbital contributions and the dipole
@@ -197,7 +197,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
         r"""Build the fermionic dipole moment observable.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple(array[float], list[list[int]]): the dipole moment coefficients and the indices of
@@ -297,7 +297,7 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
         r"""Compute the qubit dipole moment observable.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             (list[Hamiltonian]): x, y and z components of the dipole moment observable

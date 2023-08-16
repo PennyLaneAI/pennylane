@@ -16,13 +16,22 @@
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
 from dataclasses import replace
+import os
 from typing import Generator, Callable, Tuple, Union
 import warnings
+from functools import partial
 
 import pennylane as qml
 
-from pennylane.operation import Tensor
-from pennylane.measurements import MidMeasureMP, StateMeasurement, SampleMeasurement, ExpectationMP
+from pennylane.operation import Tensor, StatePrep
+from pennylane.measurements import (
+    MidMeasureMP,
+    StateMeasurement,
+    SampleMeasurement,
+    ExpectationMP,
+    ClassicalShadowMP,
+    ShadowExpvalMP,
+)
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
 
@@ -58,14 +67,19 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    return op.has_matrix
+    return op.name == "Snapshot" or op.has_matrix
+
+
+def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Oeprator is supported by adjoint differentiation."""
+    return op.num_params == 0 or op.num_params == 1 and op.has_generator
 
 
 def _operator_decomposition_gen(
-    op: qml.operation.Operator,
+    op: qml.operation.Operator, acceptance_function: Callable[[qml.operation.Operator], bool]
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted by DefaultQubit2."""
-    if _accepted_operator(op):
+    if acceptance_function(op):
         yield op
     else:
         try:
@@ -76,10 +90,47 @@ def _operator_decomposition_gen(
             ) from e
 
         for sub_op in decomp:
-            yield from _operator_decomposition_gen(sub_op)
+            yield from _operator_decomposition_gen(sub_op, acceptance_function)
 
 
 #######################
+
+
+def validate_multiprocessing_workers(max_workers):
+    """Validates the number of workers for multiprocessing.
+
+    Checks that the CPU is not oversubscribed and warns user if it is,
+    making suggestions for the number of workers and/or the number of
+    threads per worker.
+
+    Args:
+        max_workers (int): Maximal number of multiprocessing workers
+    """
+    if max_workers is None:
+        return
+    threads_per_proc = os.cpu_count()  # all threads by default
+    varname = "OMP_NUM_THREADS"
+    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+    for var in varnames:
+        if os.getenv(var):  # pragma: no cover
+            varname = var
+            threads_per_proc = int(os.getenv(var))
+            break
+    num_threads = threads_per_proc * max_workers
+    num_cpu = os.cpu_count()
+    num_threads_suggest = max(1, os.cpu_count() // max_workers)
+    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+    if num_threads > num_cpu:
+        warnings.warn(
+            f"""The device requested {num_threads} threads ({max_workers} processes
+            times {threads_per_proc} threads per process), but the processor only has
+            {num_cpu} logical cores. The processor is likely oversubscribed, which may
+            lead to performance deterioration. Consider decreasing the number of processes,
+            setting the device or execution config argument `max_workers={num_workers_suggest}`
+            for example, or decreasing the number of threads per process by setting the
+            environment variable `{varname}={num_threads_suggest}`.""",
+            UserWarning,
+        )
 
 
 def validate_and_expand_adjoint(
@@ -95,6 +146,33 @@ def validate_and_expand_adjoint(
         Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
         If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
     """
+
+    try:
+        new_ops = [
+            final_op
+            for op in circuit._ops
+            for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
+        ]
+    except RecursionError as e:
+        raise DeviceError(
+            "Reached recursion limit trying to decompose operations. "
+            "Operator decomposition may have entered an infinite loop."
+        ) from e
+
+    prep = circuit._prep[:1]
+
+    for k in circuit.trainable_params:
+        if hasattr(circuit._par_info[k]["op"], "return_type"):
+            warnings.warn(
+                "Differentiating with respect to the input parameters of "
+                f"{circuit._par_info[k]['op'].name} is not supported with the "
+                "adjoint differentiation method. Gradients are computed "
+                "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                "the parameters of the measured observables as non-trainable "
+                "to silence this warning.",
+                UserWarning,
+            )
+
     # Check validity of measurements
     measurements = []
     for m in circuit.measurements:
@@ -111,40 +189,7 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
-    expanded_ops = []
-    for op in circuit._ops:
-        if op.num_params > 1:
-            if not isinstance(op, qml.Rot):
-                return DeviceError(
-                    f"The {op} operation is not supported using "
-                    'the "adjoint" differentiation method.'
-                )
-            ops = op.decomposition()
-            expanded_ops.extend(ops)
-        elif not isinstance(op, qml.operation.StatePrep):
-            expanded_ops.append(op)
-
-    prep = circuit._prep[:1]
-
-    trainable_params = []
-    for k in circuit.trainable_params:
-        if hasattr(circuit._par_info[k]["op"], "return_type"):
-            warnings.warn(
-                "Differentiating with respect to the input parameters of "
-                f"{circuit._par_info[k]['op'].name} is not supported with the "
-                "adjoint differentiation method. Gradients are computed "
-                "only with regards to the trainable parameters of the circuit.\n\n Mark "
-                "the parameters of the measured observables as non-trainable "
-                "to silence this warning.",
-                UserWarning,
-            )
-        else:
-            trainable_params.append(k)
-
-    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep, circuit.shots)
-    expanded_tape.trainable_params = trainable_params
-
-    return expanded_tape
+    return qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
 
 
 def validate_measurements(
@@ -165,7 +210,7 @@ def validate_measurements(
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
     """
-    if circuit.shots.total_shots is None:
+    if not circuit.shots:
         for m in circuit.measurements:
             if not isinstance(m, StateMeasurement):
                 raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
@@ -178,9 +223,9 @@ def validate_measurements(
             )
 
         for m in circuit.measurements:
-            if not isinstance(m, SampleMeasurement):
+            if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
                 raise DeviceError(
-                    f"Circuits with finite shots must only contain SampleMeasurements; got {m}"
+                    f"Circuits with finite shots must only contain SampleMeasurements, ClassicalShadowMP, or ShadowExpvalMP; got {m}"
                 )
 
 
@@ -203,13 +248,15 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
         circuit = qml.defer_measurements(circuit)
 
-    if len(circuit._prep) > 1:
-        raise DeviceError("DefaultQubit2 accepts at most one state prep operation.")
-
-    if not all(_accepted_operator(op) for op in circuit._ops):
+    if not all(_accepted_operator(op) for op in circuit.operations):
         try:
+            # don't decompose initial operations if its StatePrep
+            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrep) else []
+
             new_ops = [
-                final_op for op in circuit._ops for final_op in _operator_decomposition_gen(op)
+                final_op
+                for op in circuit.operations[bool(prep_op) :]
+                for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
             raise DeviceError(
@@ -217,7 +264,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Operator decomposition may have entered an infinite loop."
             ) from e
         circuit = qml.tape.QuantumScript(
-            new_ops, circuit.measurements, circuit._prep, shots=circuit.shots
+            prep_op + new_ops, circuit.measurements, shots=circuit.shots
         )
 
     for observable in circuit.observables:
@@ -231,7 +278,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
 
 
 def batch_transform(
-    circuit: qml.tape.QuantumScript,
+    circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
 ) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
@@ -248,15 +295,18 @@ def batch_transform(
 
     Args:
         circuit (.QuantumTape): the circuit to preprocess
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
 
     Returns:
         tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
         the sequence of circuits to be executed, and a post-processing function
         to be applied to the list of evaluated circuit results.
     """
-    # Check whether the circuit was broadcasted
-    if circuit.batch_size is None:
-        # If the circuit wasn't broadcasted, no action required
+    # Check whether the circuit was broadcasted or if the diff method is anything other than adjoint
+    if circuit.batch_size is None or execution_config.gradient_method != "adjoint":
+        # If the circuit wasn't broadcasted, or if built-in PennyLane broadcasting
+        # can be used, then no action required
         circuits = [circuit]
 
         def batch_fn(res: ResultBatch) -> Result:
@@ -323,6 +373,7 @@ def preprocess(
             if isinstance(circuit_or_error, DeviceError):
                 raise circuit_or_error  # it's an error
 
-    circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
+    transform = partial(batch_transform, execution_config=execution_config)
+    circuits, batch_fn = qml.transforms.map_batch_transform(transform, circuits)
 
     return circuits, batch_fn, _update_config(execution_config)

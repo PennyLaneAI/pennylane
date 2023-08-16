@@ -16,21 +16,20 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-import numpy as np
 import io
 import contextlib
+import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import QuantumTape
 from pennylane.resource import ResourcesOperation, Resources
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
 
-@pytest.fixture
-def ops():
+@pytest.fixture(name="ops")
+def ops_fixture():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
         qml.RX(0.43, wires=0),
@@ -43,8 +42,8 @@ def ops():
     ]
 
 
-@pytest.fixture
-def obs():
+@pytest.fixture(name="obs")
+def obs_fixture():
     """A fixture of observables to go after the queue fixture."""
     return [
         qml.expval(qml.PauliX(wires=0)),
@@ -52,23 +51,22 @@ def obs():
     ]
 
 
-@pytest.fixture
-def circuit(ops, obs):
-    """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
-    return circuit
+@pytest.fixture(name="circuit")
+def circuit_fixture(ops, obs):
+    """A fixture of a circuit generated based on the ops and obs fixtures above."""
+    return CircuitGraph(ops, obs, Wires([0, 1, 2]))
 
 
-@pytest.fixture
-def parameterized_circuit_gaussian(wires):
+@pytest.fixture(name="parameterized_circuit_gaussian")
+def parameterized_circuit_gaussian_fixture(wires):
     def qfunc(a, b, c, d, e, f):
-        qml.Rotation(a, wires=wires[0]),
-        qml.Rotation(b, wires=wires[1]),
-        qml.Rotation(c, wires=wires[2]),
+        qml.Rotation(a, wires=wires[0])
+        qml.Rotation(b, wires=wires[1])
+        qml.Rotation(c, wires=wires[2])
         qml.Beamsplitter(d, 1, wires=[wires[0], wires[1]])
-        qml.Rotation(1, wires=wires[0]),
-        qml.Rotation(e, wires=wires[1]),
-        qml.Rotation(f, wires=wires[2]),
+        qml.Rotation(1, wires=wires[0])
+        qml.Rotation(e, wires=wires[1])
+        qml.Rotation(f, wires=wires[2])
 
         return qml.expval(qml.ops.NumberOperator(wires=wires[0]))
 
@@ -94,6 +92,7 @@ def circuit_measure_multiple_with_max_twice():
     )
 
 
+# pylint: disable=too-few-public-methods
 class CustomOpDepth2(ResourcesOperation):
     num_wires = 3
 
@@ -101,6 +100,7 @@ class CustomOpDepth2(ResourcesOperation):
         return Resources(num_wires=self.num_wires, depth=2)
 
 
+# pylint: disable=too-few-public-methods
 class CustomOpDepth3(ResourcesOperation):
     num_wires = 2
 
@@ -108,6 +108,7 @@ class CustomOpDepth3(ResourcesOperation):
         return Resources(num_wires=self.num_wires, depth=3)
 
 
+# pylint: disable=too-few-public-methods
 class CustomOpDepth4(ResourcesOperation):
     num_wires = 2
 
@@ -178,7 +179,7 @@ class TestCircuitGraph:
             assert queue[o_idx] in ancestors
 
         descendants = circuit.descendants([queue[6]])
-        assert descendants == set([queue[8]])
+        assert descendants == [queue[8]]
 
     def test_in_topological_order_example(self, ops, obs):
         """
@@ -299,8 +300,8 @@ class TestCircuitGraph:
         assert circuit.max_simultaneous_measurements == expected
 
     def test_grid_when_sample_no_wires(self):
-        """A test to ensure the sample operation applies to all wires when
-        none are explicitly provided."""
+        """A test to ensure the sample operation applies to all wires on the
+        `CircuitGraph`s grid when none are explicitly provided."""
 
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
         obs_no_wires = [qml.sample(op=None, wires=None)]
@@ -310,21 +311,29 @@ class TestCircuitGraph:
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 
         sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
-        expected_grid = {
+        expected_grid_w_wires = {
             0: [ops[0], ops[1], sample_w_wires_op],
             1: [ops[1], sample_w_wires_op],
             2: [sample_w_wires_op],
         }
 
+        sample_no_wires_op = qml.sample(op=None, wires=None)
+        expected_grid_no_wires = {
+            0: [ops[0], ops[1], sample_no_wires_op],
+            1: [ops[1], sample_no_wires_op],
+            2: [sample_no_wires_op],
+        }
+
         for key in range(3):
             lst_w_wires = circuit_w_wires._grid[key]
             lst_no_wires = circuit_no_wires._grid[key]
-            lst_expected = expected_grid[key]
+            lst_expected_w_wires = expected_grid_w_wires[key]
+            lst_expected_no_wires = expected_grid_no_wires[key]
 
-            for el1, el2 in zip(lst_no_wires, lst_w_wires):
+            for el1, el2 in zip(lst_w_wires, lst_expected_w_wires):
                 assert qml.equal(el1, el2)
 
-            for el1, el2 in zip(lst_no_wires, lst_expected):
+            for el1, el2 in zip(lst_no_wires, lst_expected_no_wires):
                 assert qml.equal(el1, el2)
 
     def test_print_contents(self):

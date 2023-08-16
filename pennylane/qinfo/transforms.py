@@ -49,8 +49,10 @@ def reduced_dm(qnode, wires):
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
-    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduced_dm`
+    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices = [wire_map[w] for w in wires]
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
@@ -58,11 +60,15 @@ def reduced_dm(qnode, wires):
         if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc measurement needs to be State.")
 
+        # determine if the measurement is a state vector or a density matrix
+        # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
+        # line with isinstance checks
+        dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+        dm_func = qml.math.reduce_statevector if not dm_measurement else qml.math.reduce_dm
+
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = qml.math.reduced_dm(
-            state_built, indices=wires, c_dtype=qnode.device.C_DTYPE
-        )
+        density_matrix = dm_func(state_built, indices=indices, c_dtype=qnode.device.C_DTYPE)
         return density_matrix
 
     return wrapper
@@ -117,6 +123,8 @@ def purity(qnode, wires):
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices = [wire_map[w] for w in wires]
 
     def wrapper(*args, **kwargs):
         # Construct tape
@@ -127,8 +135,17 @@ def purity(qnode, wires):
         if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc return type needs to be a state.")
 
+        # determine if the measurement is a state vector or a density matrix
+        # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
+        # line with isinstance checks
+        dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+
         state_built = qnode(*args, **kwargs)
-        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
+
+        if not dm_measurement:
+            state_built = qml.math.dm_from_state_vector(state_built)
+
+        return qml.math.purity(state_built, indices, c_dtype=qnode.device.C_DTYPE)
 
     return wrapper
 
@@ -171,6 +188,8 @@ def vn_entropy(qnode, wires, base=None):
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices = [wire_map[w] for w in wires]
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
 
@@ -181,14 +200,24 @@ def vn_entropy(qnode, wires, base=None):
             measurements = qnode.tape.measurements
             if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
                 raise ValueError("The qfunc return type needs to be a state.")
-            density_matrix = qnode(*args, **kwargs)
-            if density_matrix.shape == (density_matrix.shape[0],):
+
+            # determine if the measurement is a state vector or a density matrix
+            # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
+            # line with isinstance checks
+            dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+
+            if not dm_measurement:
+                # if state vector, the entropy is 0
                 return 0.0
-            entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+
+            density_matrix = qnode(*args, **kwargs)
+            entropy = qml.math.vn_entropy(
+                density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE
+            )
             return entropy
 
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+        entropy = qml.math.vn_entropy(density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE)
         return entropy
 
     return wrapper
@@ -242,12 +271,15 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    indices0 = [wire_map[w] for w in wires0]
+    indices1 = [wire_map[w] for w in wires1]
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
 
     def wrapper(*args, **kwargs):
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.mutual_info(density_matrix, wires0, wires1, base=base)
+        entropy = qml.math.mutual_info(density_matrix, indices0, indices1, base=base)
         return entropy
 
     return wrapper
@@ -742,17 +774,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    # Get the state vector if all wires are selected
-    if len(wires0) == len(qnode0.device.wires):
-        state_qnode0 = qnode0
-    else:
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-
-    # Get the state vector if all wires are selected
-    if len(wires1) == len(qnode1.device.wires):
-        state_qnode1 = qnode1
-    else:
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_fidelity(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
@@ -871,28 +894,19 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    # Get the state vector if all wires are selected
-    if len(wires0) == len(qnode0.device.wires):
-        state_qnode0 = qnode0
-    else:
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-
-    # Get the state vector if all wires are selected
-    if len(wires1) == len(qnode1.device.wires):
-        state_qnode1 = qnode1
-    else:
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_relative_entropy(all_args0=None, all_args1=None):
-        """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
-        the args and kwargs to each :class:`.QNode`.
+        """Wrapper used for evaluation of the relative entropy between two states computed from
+        QNodes. It allows giving the args and kwargs to each :class:`.QNode`.
 
         Args:
             all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
             all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
 
         Returns:
-            float: Fidelity between two quantum states
+            float: Relative entropy between two quantum states
         """
         if not isinstance(all_args0, tuple) and all_args0 is not None:
             all_args0 = (all_args0,)
@@ -932,3 +946,124 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
         return qml.math.relative_entropy(state0, state1)
 
     return evaluate_relative_entropy
+
+
+def trace_distance(qnode0, qnode1, wires0, wires1):
+    r"""
+    Compute the trace distance for two :class:`.QNode` returning a :func:`~pennylane.state` (a state can be a state vector
+    or a density matrix, depending on the device) acting on quantum systems with the same size.
+
+    .. math::
+        T(\rho, \sigma)=\frac12\|\rho-\sigma\|_1
+        =\frac12\text{Tr}\left(\sqrt{(\rho-\sigma)^{\dagger}(\rho-\sigma)}\right)
+
+    where :math:`\|\cdot\|_1` is the Schatten :math:`1`-norm.
+
+    The trace distance measures how close two quantum states are. In particular, it upper-bounds
+    the probability of distinguishing two quantum states.
+
+    Args:
+        qnode0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
+        qnode1 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
+        wires0 (Sequence[int]): the subsystem of the first QNode.
+        wires1 (Sequence[int]): the subsystem of the second QNode.
+
+    Returns:
+        func: A function that takes as input the joint arguments of the two QNodes,
+        and returns the trace distance between their output states.
+
+    **Example**
+
+    Consider the following QNode:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+    The ``qml.qinfo.trace_distance`` transform can be used to compute the trace distance
+    between the output states of the QNode:
+
+    >>> trace_distance_circuit = qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[0])
+
+    The returned function takes two tuples as input, the first being the arguments to the
+    first QNode and the second being the arguments to the second QNode:
+
+    >>> x, y = np.array(0.4), np.array(0.6)
+    >>> trace_distance_circuit((x,), (y,))
+    0.047862689546603415
+
+    This transform is fully differentiable:
+
+    .. code-block:: python
+
+        def wrapper(x, y):
+            return trace_distance_circuit((x,), (y,))
+
+    >>> wrapper(x, y)
+    0.047862689546603415
+    >>> qml.grad(wrapper)(x, y)
+    (tensor(-0.19470917, requires_grad=True),
+     tensor(0.28232124, requires_grad=True))
+    """
+
+    if len(wires0) != len(wires1):
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+
+    def evaluate_trace_distance(all_args0=None, all_args1=None):
+        """Wrapper used for evaluation of the trace distance between two states computed from
+        QNodes. It allows giving the args and kwargs to each :class:`.QNode`.
+
+        Args:
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
+
+        Returns:
+            float: Trace distance between two quantum states
+        """
+        if not isinstance(all_args0, tuple) and all_args0 is not None:
+            all_args0 = (all_args0,)
+
+        if not isinstance(all_args1, tuple) and all_args1 is not None:
+            all_args1 = (all_args1,)
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args0 is not None:
+            # Handle a dictionary as last argument
+            if isinstance(all_args0[-1], dict):
+                args0 = all_args0[:-1]
+                kwargs0 = all_args0[-1]
+            else:
+                args0 = all_args0
+                kwargs0 = {}
+            state0 = state_qnode0(*args0, **kwargs0)
+        else:
+            # No args
+            state0 = state_qnode0()
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args1 is not None:
+            # Handle a dictionary as last argument
+            if isinstance(all_args1[-1], dict):
+                args1 = all_args1[:-1]
+                kwargs1 = all_args1[-1]
+            else:
+                args1 = all_args1
+                kwargs1 = {}
+            state1 = state_qnode1(*args1, **kwargs1)
+        else:
+            # No args
+            state1 = state_qnode1()
+
+        # From the two generated states, compute the trace distance
+        return qml.math.trace_distance(state0, state1)
+
+    return evaluate_trace_distance

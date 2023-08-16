@@ -164,6 +164,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/chemistry
    introduction/data
    introduction/returns
+   introduction/logging
 
 .. toctree::
    :maxdepth: 1
@@ -184,9 +185,11 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml
    code/qml_data
    code/qml_drawer
+   code/qml_fermi
    code/qml_fourier
    code/qml_gradients
    code/qml_kernels
+   code/qml_logging
    code/qml_math
    code/qml_numpy
    code/qml_ops_op_math

@@ -17,7 +17,7 @@ from pennylane.transforms import qfunc_transform
 
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
-from pennylane.math import kron
+from pennylane.math import flatten, reshape
 
 
 @qfunc_transform
@@ -49,7 +49,7 @@ def merge_amplitude_embedding(tape):
     >>> dev = qml.device('default.qubit', wires=4)
     >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode, show_matrices=True)())
+    >>> print(qml.draw(optimized_qnode)())
     0: ─╭●──────────────────────┤  State
     1: ─╰X──────────────────────┤  State
     2: ─╭AmplitudeEmbedding(M0)─┤  State
@@ -62,7 +62,7 @@ def merge_amplitude_embedding(tape):
     list_copy = tape.operations.copy()
     not_amplitude_embedding = []
     visited_wires = set()
-    input_wires, input_vectors = [], []
+    input_wires, input_vectors, input_batch_size = [], [], []
     while len(list_copy) > 0:
         current_gate = list_copy[0]
         wires_set = set(current_gate.wires)
@@ -81,17 +81,25 @@ def merge_amplitude_embedding(tape):
             )
         input_wires.append(current_gate.wires)
         input_vectors.append(current_gate.parameters[0])
+        input_batch_size.append(current_gate.batch_size)
         list_copy.pop(0)
         visited_wires = visited_wires.union(wires_set)
 
     if len(input_wires) > 0:
         final_wires = input_wires[0]
         final_vector = input_vectors[0]
+        final_batch_size = input_batch_size[0]
 
         # Merge all parameters and qubits into a single one.
-        for w, v in zip(input_wires[1:], input_vectors[1:]):
-            final_vector = kron(final_vector, v)
+        for w, v, b in zip(input_wires[1:], input_vectors[1:], input_batch_size[1:]):
+            final_vector = final_vector[..., :, None] * v[..., None, :]
+            final_batch_size = final_batch_size or b
             final_wires = final_wires + w
+
+            if final_batch_size:
+                final_vector = reshape(final_vector, (final_batch_size, -1))
+            else:
+                final_vector = flatten(final_vector)
 
         AmplitudeEmbedding(final_vector, wires=final_wires)
 

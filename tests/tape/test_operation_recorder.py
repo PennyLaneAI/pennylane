@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import pytest
-
+"""
+Unit tests for the ``OperationRecorder`` in PennyLane.
+"""
 import pennylane as qml
-from pennylane.tape import OperationRecorder
 
 
 class TestOperationRecorder:

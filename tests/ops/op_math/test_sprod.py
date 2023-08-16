@@ -102,7 +102,7 @@ class TestInitialization:
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
-        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=True, id=test_id)
+        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), id=test_id)
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
@@ -112,7 +112,7 @@ class TestInitialization:
         assert sprod_op.id == test_id
         assert sprod_op.queue_idx is None
 
-        assert sprod_op.data == [3.14, 0.23]
+        assert sprod_op.data == (3.14, 0.23)
         assert sprod_op.parameters == [3.14, 0.23]
         assert sprod_op.num_params == 2
 
@@ -122,17 +122,17 @@ class TestInitialization:
 
     def test_data(self):
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert sprod_op.data == [9.87, 1.23, 4.0, 5.67]
+        assert sprod_op.data == (9.87, 1.23, 4.0, 5.67)
 
     def test_data_setter(self):
         """Test the setter method for data"""
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
-        old_data = [9.87, 1.23, 4.0, 5.67]
+        old_data = (9.87, 1.23, 4.0, 5.67)
 
         sprod_op = s_prod(scalar, qml.Rot(*angles, wires=1))
         assert sprod_op.data == old_data
 
-        new_data = [1.23, 0.0, -1.0, -2.0]
+        new_data = (1.23, 0.0, -1.0, -2.0)
         sprod_op.data = new_data
         assert sprod_op.data == new_data
         assert sprod_op.scalar == new_data[0]
@@ -141,20 +141,20 @@ class TestInitialization:
     def test_data_setter_shallow(self):
         """Test the setter method for data with a non-parametric base op."""
         op = s_prod(0.1, qml.PauliX(0))
-        op.data = [0.2]
-        assert op.data == [0.2] == [op.scalar]
+        op.data = (0.2,)
+        assert op.data == (0.2,) == (op.scalar,)
 
     def test_data_setter_deep(self):
         """Test the setter method for data with a deep base operator."""
         op = s_prod(0.1, qml.sum(qml.PauliX(0), qml.prod(qml.PauliY(0), qml.RX(0.2, 1))))
-        assert op.data == [0.1, 0.2]
+        assert op.data == (0.1, 0.2)
 
-        new_data = [0.3, 0.4]
+        new_data = (0.3, 0.4)
         op.data = new_data
         assert op.data == new_data
         assert op.scalar == 0.3
-        assert op.base[1].data == [0.4]
-        assert op.base[1][1].data == [0.4]
+        assert op.base[1].data == (0.4,)
+        assert op.base[1][1].data == (0.4,)
 
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
@@ -192,6 +192,24 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("op_scalar_tup", ops)
+    def test_flatten_unflatten(self, op_scalar_tup):
+        scalar, op = op_scalar_tup
+        sprod_op = SProd(scalar, op)
+
+        data, metadata = sprod_op._flatten()
+
+        assert len(data) == 2
+        assert data[0] == scalar
+        assert data[1] is op
+
+        assert metadata == tuple()
+
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
+        assert qml.equal(new_op, sprod_op)
+        assert new_op is not sprod_op
+
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):
         """Test the copy dunder method properly copies the operator."""
@@ -208,9 +226,6 @@ class TestMscMethods:
         assert sprod_op.base.name == copied_op.base.name
         assert sprod_op.base.wires == copied_op.base.wires
         assert sprod_op.base.data == copied_op.base.data
-        assert (
-            sprod_op.base.data is not copied_op.base.data
-        )  # we want different object with same content
 
     def test_has_matrix_true_via_factor_has_matrix(self):
         """Test that a scalar product with an operator that has `has_matrix=True`
@@ -406,7 +421,7 @@ class TestMatrix:
     def test_sprod_observables(self):
         """Test that observable objects can also be scaled with correct matrix representation."""
         wires = [0, 1]
-        sprod_op1 = SProd(1.23, qml.Projector(basis_state=qnp.array([0, 1]), wires=wires))
+        sprod_op1 = SProd(1.23, qml.Projector(state=qnp.array([0, 1]), wires=wires))
         sprod_op2 = SProd(3.45, qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0))
         mat1 = sprod_op1.matrix()
         mat2 = sprod_op2.matrix()
@@ -491,6 +506,32 @@ class TestMatrix:
         assert isinstance(mat, tf.Tensor)
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
+
+    @pytest.mark.tf
+    def test_tf_matrix_type_casting(self):
+        """Test that types for the matrix are always converted to complex128 and parameters aren't truncated."""
+        import tensorflow as tf
+
+        coeff = tf.Variable(0.1)
+        op = qml.PauliX(0)
+
+        sprod_op = SProd(coeff, op)
+        mat = sprod_op.matrix()
+
+        assert mat.dtype == tf.complex128
+        expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
+        assert qml.math.allclose(mat, expected)
+        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
+
+        op = qml.PauliY(0)
+
+        sprod_op = SProd(coeff, op)
+        mat = sprod_op.matrix()
+
+        assert mat.dtype == tf.complex128
+        expected = np.array([[0, -0.1j], [0.1j, 0.0]], dtype="complex128")
+        assert qml.math.allclose(mat, expected)
+        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
 
 
 class TestSparseMatrix:
@@ -851,10 +892,9 @@ class TestWrapperFunc:
         coeff, op = op_scalar_tup
 
         op_id = "sprod_op"
-        do_queue = False
 
-        sprod_func_op = s_prod(coeff, op, id=op_id, do_queue=do_queue)
-        sprod_class_op = SProd(coeff, op, id=op_id, do_queue=do_queue)
+        sprod_func_op = s_prod(coeff, op, id=op_id)
+        sprod_class_op = SProd(coeff, op, id=op_id)
 
         assert sprod_class_op.scalar == sprod_func_op.scalar
         assert sprod_class_op.base == sprod_func_op.base
@@ -965,8 +1005,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results
-        assert -1.23 not in results
+        assert 1.23 in results  # pylint:disable=unsupported-membership-test
+        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op

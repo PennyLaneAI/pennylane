@@ -30,7 +30,7 @@ def draw(
     show_all_wires=False,
     decimals=2,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode or quantum function.
@@ -100,15 +100,15 @@ def draw(
     >>> print(qml.draw(circuit2)("x"))
     0: ──RX(x)─┤  <Z>
 
-    When requested with ``show_matrices=True``, matrix valued parameters are printed below the
-    circuit:
+    When requested with ``show_matrices=True`` (the default), matrix valued parameters
+    are printed below the circuit. For ``show_matrices=False``, they are not printed:
 
     >>> @qml.qnode(qml.device('default.qubit', wires=2))
     ... def circuit3():
     ...     qml.QubitUnitary(np.eye(2), wires=0)
     ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
     ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-    >>> print(qml.draw(circuit3, show_matrices=True)())
+    >>> print(qml.draw(circuit3)())
     0: ──U(M0)─╭U(M1)─┤
     1: ────────╰U(M1)─┤  <𝓗(M0)>
     M0 =
@@ -119,6 +119,9 @@ def draw(
     [-0. -1. -0. -0.]
     [-0. -0. -1. -0.]
     [-0. -0. -0. -1.]]
+    >>> print(qml.draw(circuit3, show_matrices=False)())
+    0: ──U(M0)─╭U(M1)─┤
+    1: ────────╰U(M1)─┤  <𝓗(M0)>
 
     The ``max_length`` keyword warps long circuits:
 
@@ -232,7 +235,7 @@ def _draw_qnode(
     show_all_wires=False,
     decimals=2,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     expansion_strategy=None,
 ):
     @wraps(qnode)
@@ -245,7 +248,7 @@ def _draw_qnode(
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or getattr(qnode.device, "wires", None)
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -261,10 +264,12 @@ def _draw_qnode(
                 )
                 for t in tapes[0]
             ]
-            if show_matrices:
-                mat_str = "\n"
+            if show_matrices and cache["matrices"]:
+                mat_str = ""
                 for i, mat in enumerate(cache["matrices"]):
                     mat_str += f"\nM{i} = \n{mat}"
+                if mat_str:
+                    mat_str = "\n" + mat_str
                 return "\n\n".join(res) + mat_str
             return "\n\n".join(res)
 
@@ -286,7 +291,7 @@ def draw_mpl(
     show_all_wires=False,
     decimals=None,
     expansion_strategy=None,
-    style="black_white",
+    style=None,
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -301,8 +306,9 @@ def draw_mpl(
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            ``'black_white'`` style will be used. Setting style does not modify matplotlib global plotting settings.
-            If ``None``, the current matplotlib settings will be used.
+            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
+            If you would like to use your environment's current rcParams, set `style` to "rcParams".
+            Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -537,7 +543,7 @@ def _draw_mpl_qnode(
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or getattr(qnode.device, "wires", None)
 
         return tape_mpl(
             qnode.qtape,

@@ -11,19 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``single_qubit_fusion``.
+"""
 import pytest
-from pennylane import numpy as np
+from utils import compare_operation_lists, check_matrix_equivalence
 
+from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import single_qubit_fusion
 
-from utils import *
-
 
 class TestSingleQubitFusion:
     """Test that sequences of any single-qubit rotations are fully fused."""
+
+    # pylint:disable=too-many-function-args
 
     def test_single_qubit_full_fusion(self):
         """Test that a sequence of single-qubit gates all fuse."""
@@ -111,8 +114,6 @@ class TestSingleQubitFusion:
             # Excluded gate after multiple others
             qml.RZ(0.2, wires=1)
 
-        original_ops = qml.tape.make_qscript(qfunc)().operations
-
         transformed_qfunc = single_qubit_fusion(exclude_gates=["RZ"])(qfunc)
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
@@ -142,8 +143,6 @@ class TestSingleQubitFusion:
             qml.PhaseShift(0.3, wires="b")
 
         transformed_qfunc = single_qubit_fusion()(qfunc)
-
-        original_ops = qml.tape.make_qscript(qfunc)().operations
         transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Rot", "Rot", "CNOT", "Rot"]
@@ -163,7 +162,7 @@ dev = qml.device("default.qubit", wires=3)
 
 
 # Test each of single-qubit, two-qubit, and Rot gates
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.Hadamard(wires=0)
     qml.RZ(theta[0], wires=0)
     qml.PauliY(wires=1)
@@ -177,7 +176,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
 
-transformed_qfunc = single_qubit_fusion()(qfunc)
+transformed_qfunc_all_ops = single_qubit_fusion()(qfunc_all_ops)
 
 expected_op_list = ["Rot", "Rot", "CNOT", "CRY", "CRY", "Rot"]
 expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([1, 2]), Wires(1)]
@@ -190,8 +189,8 @@ class TestSingleQubitFusionInterfaces:
     def test_single_qubit_fusion_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
 
@@ -212,8 +211,8 @@ class TestSingleQubitFusionInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
@@ -239,8 +238,8 @@ class TestSingleQubitFusionInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
         transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
@@ -275,11 +274,10 @@ class TestSingleQubitFusionInterfaces:
         # Enable float64 support
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
 
@@ -303,13 +301,12 @@ class TestSingleQubitFusionInterfaces:
 
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
         jitted_qnode = jax.jit(original_qnode)
 
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
         jitted_transformed_qnode = jax.jit(transformed_qnode)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)

@@ -36,11 +36,6 @@ def _add_grouping_symbols(op, layer_str, wire_map):
     return layer_str
 
 
-def _bool_control_value(val):
-    """Converts a control value to a boolean."""
-    return (val == "1") if isinstance(val, str) else val
-
-
 def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
@@ -49,7 +44,7 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
     if control_values:
         for w, val in zip(control_wires, control_values):
-            layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"
+            layer_str[wire_map[w]] += "●" if val else "○"
     else:
         for w in control_wires:
             layer_str[wire_map[w]] += "●"
@@ -101,7 +96,7 @@ def tape_text(
     show_all_wires=False,
     decimals=None,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     cache=None,
 ):
     """Text based diagram for a Quantum Tape.
@@ -116,7 +111,7 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+        show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
 
@@ -127,16 +122,19 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0, 1, 2))
-            qml.RX(1.234, wires=0)
-            qml.RY(1.234, wires=1)
-            qml.RZ(1.234, wires=2)
+        ops = [
+            qml.QFT(wires=(0, 1, 2)),
+            qml.RX(1.234, wires=0),
+            qml.RY(1.234, wires=1),
+            qml.RZ(1.234, wires=2),
             qml.Toffoli(wires=(0, 1, "aux"))
-
-            qml.expval(qml.PauliZ("aux"))
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+        ]
+        measurements = [
+            qml.expval(qml.PauliZ("aux")),
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
@@ -204,16 +202,18 @@ def tape_text(
 
     Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
-    selecting ``show_matrices=True``:
+    selecting ``show_matrices=True`` (the default):
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitUnitary(np.eye(2), wires=0)
+        ops = [
+            qml.QubitUnitary(np.eye(2), wires=0),
             qml.QubitUnitary(np.eye(2), wires=1)
-            qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
+        ]
+        measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True))
+    >>> print(qml.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -230,7 +230,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True, cache=cache))
+    >>> print(qml.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -332,6 +332,7 @@ def tape_text(
             totals = [filler.join([t, s]) for t, s in zip(totals, layer_str)]
         if ender:
             totals = [s + "─┤" for s in totals]
+            line_length += 2
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(finished_lines + totals)

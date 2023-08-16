@@ -34,24 +34,6 @@ class QuantumPhaseEstimation(Operation):
         :width: 60%
         :target: javascript:void(0);
 
-    This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
-    of the following steps:
-
-    #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
-       of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
-       :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
-       be prepared more generally.
-    #. Apply the ``QuantumPhaseEstimation`` circuit.
-    #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
-       measurement outcomes in the computational basis.
-    #. Find the index of the largest value in the probability distribution and divide that number by
-       :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
-       exponentially with the number of qubits :math:`n`.
-
-    Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
-    :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. The
-    usage details below give an example of this case.
-
     Args:
         unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
             :class:`~.Operator`
@@ -67,6 +49,24 @@ class QuantumPhaseEstimation(Operation):
 
     .. details::
         :title: Usage Details
+
+        This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
+        of the following steps:
+
+        #. Prepare ``target_wires`` in a given state. If ``target_wires`` are prepared in an eigenstate
+           of :math:`U` that has corresponding eigenvalue :math:`e^{2 \pi i \theta}` with phase
+           :math:`\theta \in [0, 1)`, this algorithm will measure :math:`\theta`. Other input states can
+           be prepared more generally.
+        #. Apply the ``QuantumPhaseEstimation`` circuit.
+        #. Measure ``estimation_wires`` using :func:`~.probs`, giving a probability distribution over
+           measurement outcomes in the computational basis.
+        #. Find the index of the largest value in the probability distribution and divide that number by
+           :math:`2^{n}`. This number will be an estimate of :math:`\theta` with an error that decreases
+           exponentially with the number of qubits :math:`n`.
+
+        Note that if :math:`\theta \in (-1, 0]`, we can estimate the phase by again finding the index
+        :math:`i` found in step 4 and calculating :math:`\theta \approx \frac{1 - i}{2^{n}}`. An example
+        of this case is below.
 
         Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
@@ -139,7 +139,17 @@ class QuantumPhaseEstimation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=True, id=None):
+    # pylint: disable=no-member
+    def _flatten(self):
+        data = (self.hyperparameters["unitary"],)
+        metadata = (self.hyperparameters["estimation_wires"],)
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
+        return cls(data[0], estimation_wires=metadata[0])
+
+    def __init__(self, unitary, target_wires=None, estimation_wires=None, id=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
@@ -162,8 +172,8 @@ class QuantumPhaseEstimation(Operation):
         if estimation_wires is None:
             raise qml.QuantumFunctionError("No estimation wires specified.")
 
-        target_wires = list(target_wires)
-        estimation_wires = list(estimation_wires)
+        target_wires = qml.wires.Wires(target_wires)
+        estimation_wires = qml.wires.Wires(estimation_wires)
         wires = target_wires + estimation_wires
 
         if any(wire in target_wires for wire in estimation_wires):
@@ -177,7 +187,7 @@ class QuantumPhaseEstimation(Operation):
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def target_wires(self):

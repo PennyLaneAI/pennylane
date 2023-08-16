@@ -46,9 +46,9 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
     >>> matrix = np.array([[1, 2, 3, 4],
-    ...                         [5, 6, 7, 8],
-    ...                         [9, 10, 11, 12],
-    ...                         [13, 14, 15, 16]])
+    ...                    [5, 6, 7, 8],
+    ...                    [9, 10, 11, 12],
+    ...                    [13, 14, 15, 16]])
     >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
@@ -83,7 +83,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     The method works with tensors from all autodifferentiation frameworks, for example:
 
     >>> matrix_torch = torch.tensor([[1., 2.],
-    ...                                   [3., 4.]], requires_grad=True)
+    ...                              [3., 4.]], requires_grad=True)
     >>> res = expand_matrix(matrix_torch, wires=["b"], wire_order=["a", "b"])
     >>> type(res)
     torch.Tensor

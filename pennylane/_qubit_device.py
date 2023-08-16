@@ -25,6 +25,8 @@ import itertools
 import warnings
 from collections import defaultdict
 from typing import Union, List
+import inspect
+import logging
 
 import numpy as np
 
@@ -61,10 +63,14 @@ from pennylane.measurements import (
     VnEntropyMP,
     Shots,
 )
+from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.resource import Resources
 from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _sample_to_str(sample):
@@ -298,7 +304,7 @@ class QubitDevice(Device):
 
         * :meth:`~.probability`
 
-        Additional keyword arguments may be passed to the this method
+        Additional keyword arguments may be passed to this method
         that can be utilised by :meth:`apply`. An example would be passing
         the ``QNode`` hash that can be used later for parametric compilation.
 
@@ -311,6 +317,17 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(circuit=%s, kwargs=%s) called by=%s",
+                circuit,
+                kwargs,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         if not qml.active_return():
             return self._execute_legacy(circuit, **kwargs)
 
@@ -591,6 +608,15 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         if not qml.active_return():
             return self._batch_execute_legacy(circuits=circuits)
 
@@ -1281,7 +1307,7 @@ class QubitDevice(Device):
         """
         state = getattr(self, "state", None)
         wires = self.map_wires(wires)
-        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qml.math.reduce_statevector(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
         r"""Returns the Von Neumann entropy prior to measurement.
@@ -1297,7 +1323,7 @@ class QubitDevice(Device):
             float: returns the Von Neumann entropy
         """
         try:
-            state = self.access_state()
+            state = self.density_matrix(wires=self.wires)
         except qml.QuantumFunctionError as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
@@ -1324,7 +1350,7 @@ class QubitDevice(Device):
             float: the mutual information
         """
         try:
-            state = self.access_state()
+            state = self.density_matrix(wires=self.wires)
         except qml.QuantumFunctionError as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
@@ -1361,7 +1387,7 @@ class QubitDevice(Device):
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~pennylane.classical_shadow`
+        .. seealso:: :func:`~.pennylane.classical_shadow`
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
@@ -1441,7 +1467,7 @@ class QubitDevice(Device):
 
         .. note::
 
-            :meth:`marginal_prob` may be used as a utility method
+            :meth:`~.marginal_prob` may be used as a utility method
             to calculate the marginal probability distribution.
 
         Args:
@@ -1649,8 +1675,8 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if isinstance(observable, BasisStateProjector):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1679,8 +1705,8 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-        if observable.name == "Projector":
-            # branch specifically to handle the projector observable
+        if isinstance(observable, BasisStateProjector):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
             probs = self.probability(
                 wires=observable.wires, shot_range=shot_range, bin_size=bin_size
@@ -1909,6 +1935,11 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        if tape.batch_size is not None:
+            raise qml.QuantumFunctionError(
+                "Parameter broadcasting is not supported with adjoint differentiation"
+            )
+
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment

@@ -16,7 +16,6 @@ This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
 # pylint: disable=no-member, too-many-branches
-from collections.abc import Sequence
 import numpy as np
 import autograd
 
@@ -256,7 +255,7 @@ def compute_vjp(dy, jac, num=None):
     return qml.math.tensordot(jac, dy_row, [[0], [0]])
 
 
-def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
+def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a tape.
 
@@ -314,16 +313,17 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
         x = torch.tensor([[0.1, 0.2, 0.3],
                           [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(x[0, 1], wires=1)
-            qml.RZ(x[0, 2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x[1, 0], wires=1)
-            qml.RY(x[1, 1], wires=0)
+        ops = [
+            qml.RX(x[0, 0], wires=0),
+            qml.RY(x[0, 1], wires=1),
+            qml.RZ(x[0, 2], wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RX(x[1, 0], wires=1),
+            qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=1)
+        ]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can use the ``vjp`` function to compute the vector-Jacobian product,
     given a gradient-output vector ``dy``:
@@ -378,18 +378,17 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
     except (AttributeError, TypeError, NotImplementedError):
         pass
 
-    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        shot_vector = isinstance(shots, Sequence)
 
         if qml.active_return():
             multi = len(tape.measurements) > 1
             comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
 
-            if not shot_vector:
+            if not tape.shots.has_partitioned_shots:
                 return comp_vjp_fn(dy, jac, num=num)
 
             vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
@@ -401,7 +400,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
 
 
 # pylint: disable=too-many-arguments
-def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_kwargs=None):
+def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.
 
@@ -461,23 +460,20 @@ def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_
 
         x = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
 
-        def ansatz(x):
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(x[0, 1], wires=1)
-            qml.RZ(x[0, 2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x[1, 0], wires=1)
-            qml.RY(x[1, 1], wires=0)
+        ops = [
+            qml.RX(x[0, 0], wires=0),
+            qml.RY(x[0, 1], wires=1),
+            qml.RZ(x[0, 2], wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RX(x[1, 0], wires=1),
+            qml.RY(x[1, 1], wires=0),
             qml.RZ(x[1, 2], wires=1)
+        ]
+        measurements1 = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
+        tape1 = qml.tape.QuantumTape(ops, measurements1)
 
-        with qml.tape.QuantumTape() as tape1:
-            ansatz(x)
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=1)
-
-        with qml.tape.QuantumTape() as tape2:
-            ansatz(x)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        measurements2 = [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))]
+        tape2 = qml.tape.QuantumTape(ops, measurements2)
 
         tapes = [tape1, tape2]
 
@@ -522,7 +518,7 @@ def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_
 
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
-        g_tapes, fn = vjp(tape, dy, gradient_fn, shots=shots, gradient_kwargs=gradient_kwargs)
+        g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs=gradient_kwargs)
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)

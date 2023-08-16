@@ -75,7 +75,7 @@ class TestConstruction:
         with pytest.raises(
             TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
         ):
-            _ = CompositeOp(*self.simple_operands)
+            _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
     def test_raise_error_fewer_than_2_operands(self):
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
@@ -101,14 +101,14 @@ class TestConstruction:
     def test_data(self):
         """Test that data is initialized correctly."""
         op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
-        assert op.data == [9.87, 1.23, 4.0, 5.67]
+        assert op.data == (9.87, 1.23, 4.0, 5.67)
 
     def test_data_setter(self):
         """Test the setter method for data"""
         op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
-        assert op.data == [9.87, 1.23, 4.0, 5.67]
+        assert op.data == (9.87, 1.23, 4.0, 5.67)
 
-        new_data = [1.23, 0.0, -1.0, -2.0]
+        new_data = (1.23, 0.0, -1.0, -2.0)
         op.data = new_data  # pylint:disable=attribute-defined-outside-init
         assert op.data == new_data
 
@@ -275,6 +275,19 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         for i, operand in enumerate(ops_lst):
             assert op[i] == operand
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_flatten_unflatten(self, ops_lst):
+        """Test _flatten and _unflatten."""
+        op = ValidOp(*ops_lst)
+        data, metadata = op._flatten()
+        for data_op, input_op in zip(data, ops_lst):
+            assert data_op is input_op
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
 
 
 class TestProperties:

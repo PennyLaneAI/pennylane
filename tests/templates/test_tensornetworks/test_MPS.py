@@ -14,11 +14,46 @@
 """
 Tests for the MPS template.
 """
-import math
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.tensornetworks.mps import *
+from pennylane.templates.tensornetworks.mps import compute_indices_MPS, MPS
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the flatten and unflatten methods."""
+
+    def block(weights, wires):
+        qml.CNOT(wires=[wires[0], wires[1]])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RY(weights[1], wires=wires[1])
+
+    n_wires = 4
+    n_block_wires = 2
+    n_params_block = 2
+    n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+    template_weights = [[0.1, -0.3]] * n_blocks
+
+    wires = qml.wires.Wires((0, 1, 2, 3))
+
+    op = qml.MPS(wires, n_block_wires, block, n_params_block, template_weights)
+
+    data, metadata = op._flatten()
+    assert len(data) == 1
+    assert qml.math.allclose(data[0], template_weights)
+
+    assert metadata[0] == wires
+    assert dict(metadata[1]) == op.hyperparameters
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = qml.MPS._unflatten(*op._flatten())
+    assert qml.equal(new_op, op)
+    assert new_op._name == "MPS"  # make sure acutally initialized
+    assert new_op is not op
 
 
 class TestIndicesMPS:
@@ -91,15 +126,14 @@ class TestIndicesMPS:
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, [[1, 2], [2, 3], [3, 4]]),
-            (["a", "b", "c", "d"], 2, [["a", "b"], ["b", "c"], ["c", "d"]]),
+            ([1, 2, 3, 4], 2, ((1, 2), (2, 3), (3, 4))),
+            (["a", "b", "c", "d"], 2, (("a", "b"), ("b", "c"), ("c", "d"))),
         ],
     )
     def test_indices_output(self, wires, n_block_wires, expected_indices):
         """Verifies the indices are correct for both integer and string wire labels."""
         indices = compute_indices_MPS(wires, n_block_wires)
-        for i in range(len(expected_indices)):
-            assert all(indices[i] == expected_indices[i])
+        assert indices == expected_indices
 
 
 class TestTemplateInputs:
@@ -212,7 +246,8 @@ class TestAttributes:
         [(range(4), 5), (range(9), 20)],
     )
     def test_get_n_blocks_error(self, wires, n_block_wires):
-        """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
+        """Test that the number of blocks attribute raises an error when
+        n_block_wires is too large."""
 
         with pytest.raises(
             ValueError,
@@ -223,10 +258,14 @@ class TestAttributes:
 
 
 class TestTemplateOutputs:
+    """Test the output of the MPS template."""
+
+    @staticmethod
     def circuit1_block(weights, wires):
         qml.RZ(weights[0], wires=wires[0])
         qml.RZ(weights[1], wires=wires[1])
 
+    @staticmethod
     def circuit1_MPS(weights, wires):
         qml.RZ(weights[0][0], wires=wires[0])
         qml.RZ(weights[0][1], wires=wires[1])
@@ -235,12 +274,14 @@ class TestTemplateOutputs:
         qml.RZ(weights[2][0], wires=wires[2])
         qml.RZ(weights[2][1], wires=wires[3])
 
+    @staticmethod
     def circuit2_block(weights, wires):
         SELWeights = np.array(
             [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
         )
         qml.StronglyEntanglingLayers(SELWeights, wires)
 
+    @staticmethod
     def circuit2_MPS(weights, wires):
         SELWeights1 = np.array(
             [
@@ -272,14 +313,21 @@ class TestTemplateOutputs:
         ),
         [
             (
-                circuit1_block,
+                "circuit1_block",
                 2,
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                circuit1_MPS,
+                "circuit1_MPS",
             ),
-            (circuit2_block, 3, [1, 2, 3], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]], circuit2_MPS),
+            (
+                "circuit2_block",
+                3,
+                [1, 2, 3],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
+                "circuit2_MPS",
+            ),
         ],
     )
     def test_output(
@@ -287,18 +335,20 @@ class TestTemplateOutputs:
     ):
         """Verifies that the output of the circuits is correct."""
         dev = qml.device("default.qubit", wires=wires)
+        block = getattr(self, block)
+        expected_circuit = getattr(self, expected_circuit)
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_template():
             qml.MPS(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
-        template_result = circuit()
+        template_result = circuit_template()
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_manual():
             expected_circuit(template_weights, wires)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
-        manual_result = circuit()
+        manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)

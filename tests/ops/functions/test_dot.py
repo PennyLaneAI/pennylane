@@ -212,12 +212,14 @@ class TestDotPauliSentence:
         c = qml.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(qml.numpy.array(2.0), qml.PauliY(1)),
-            SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): 1.0,
+                qml.pauli.PauliWord({1: "Y"}): 2.0,
+                qml.pauli.PauliWord({2: "Z"}): 3.0,
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
 
     @pytest.mark.tf
@@ -228,12 +230,14 @@ class TestDotPauliSentence:
         c = tf.constant([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(tf.constant(2.0), qml.PauliY(1)),
-            SProd(tf.constant(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): tf.constant(1.0),
+                qml.pauli.PauliWord({1: "Y"}): tf.constant(2.0),
+                qml.pauli.PauliWord({2: "Z"}): tf.constant(3.0),
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
 
     @pytest.mark.torch
@@ -244,12 +248,14 @@ class TestDotPauliSentence:
         c = torch.tensor([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(torch.tensor(2.0), qml.PauliY(1)),
-            SProd(torch.tensor(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): torch.tensor(1.0),
+                qml.pauli.PauliWord({1: "Y"}): torch.tensor(2.0),
+                qml.pauli.PauliWord({2: "Z"}): torch.tensor(3.0),
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
 
     @pytest.mark.jax
@@ -260,10 +266,12 @@ class TestDotPauliSentence:
         c = jax.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(jax.numpy.array(2.0), qml.PauliY(1)),
-            SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): jax.numpy.array(1.0),
+                qml.pauli.PauliWord({1: "Y"}): jax.numpy.array(2.0),
+                qml.pauli.PauliWord({2: "Z"}): jax.numpy.array(3.0),
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2

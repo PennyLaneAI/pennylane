@@ -86,9 +86,10 @@ def metric_tensor(
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
-        aux_wire (int or str or pennylane.wires.Wires): Auxiliary wire to be used for
-            Hadamard tests. If ``None`` (the default), a suitable wire is inferred
-            from the (number of) used wires in the original circuit and ``device_wires``.
+        aux_wire (None or int or str or Sequence or pennylane.wires.Wires): Auxiliary wire to
+            be used for Hadamard tests. If ``None`` (the default), a suitable wire is inferred
+            from the (number of) used wires in the original circuit and ``device_wires``,
+            if the latter are given.
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None``.
@@ -210,12 +211,14 @@ def metric_tensor(
         function, which together define the metric tensor are directly returned:
 
         >>> params = np.array([1.7, 1.0, 0.5], requires_grad=True)
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.CNOT(wires=[0, 1])
-        ...     qml.PhaseShift(params[2], wires=1)
-        ...     qml.expval(qml.PauliX(0))
+        >>> ops = [
+        ...     qml.RX(params[0], wires=0),
+        ...     qml.RY(params[1], wires=0),
+        ...     qml.CNOT(wires=(0,1)),
+        ...     qml.PhaseShift(params[2], wires=1),
+        ...     ]
+        >>> measurements = [qml.expval(qml.PauliX(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> tapes, fn = qml.metric_tensor(tape)
         >>> tapes
         [<QuantumTape: wires=[0, 1], params=0>,
@@ -422,22 +425,29 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
-            if str(e) == "No device wires are unused by the tape.":
+            revert_text = (
+                "\n\nReverting to the block-diagonal approximation. It will often be "
+                "much more efficient to request the block-diagonal approximation directly!"
+            )
+            other_mt_errors = [
+                "The requested auxiliary wire is already in use by the circuit.",
+                "The requested auxiliary wire does not exist on the used device.",
+            ]
+
+            if str(e) == "The device has no free wire for the auxiliary wire.":
                 warnings.warn(
-                    "The device does not have a wire that is not used by the tape."
-                    "\n\nReverting to the block-diagonal approximation. It will often be "
-                    "much more efficient to request the block-diagonal approximation directly!"
+                    "The device does not have a wire that is not used by the circuit." + revert_text
                 )
-            else:
+            elif str(e) in other_mt_errors:
                 warnings.warn(
                     "An auxiliary wire is not available."
                     "\n\nThis can occur when computing the full metric tensor via the "
                     "Hadamard test, and the device does not provide an "
                     "additional wire or the requested auxiliary wire does not exist "
-                    "on the device."
-                    "\n\nReverting to the block-diagonal approximation. It will often be "
-                    "much more efficient to request the block-diagonal approximation directly!"
+                    "on the device." + revert_text
                 )
+            else:
+                raise e
             tkwargs["approx"] = "block-diag"
             return self(qnode, *targs, **tkwargs)(*args, **kwargs)
 
@@ -661,7 +671,9 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     tapes = []
     ids = []
     # Exclude the backwards cone of layer_i from the backwards cone of layer_j
-    ops_between_cgens = [op for op in layer_j.pre_ops if op not in layer_i.pre_ops]
+    ops_between_cgens = [
+        op1 for op1 in layer_j.pre_ops if not any(op1 is op2 for op2 in layer_i.pre_ops)
+    ]
 
     # Iterate over differentiated operation in first layer
     for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds):
@@ -851,25 +863,36 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
-        aux_wire (object): Input auxiliary wire. Returned unmodified if not ``None``
+        aux_wire (object): Input auxiliary wire. May be one of a variety of input formats:
+            If ``None``, try to infer a reasonable choice based on the number of wires used
+            in the ``tape``, and based on ``device_wires``, if they are not ``None``.
+            If an ``int``, a ``str`` or a ``Sequence``, convert the input to a ``Wires``
+            object and take the first entry of the result. This leads to consistent behaviour
+            between ``_get_aux_wire`` and the ``Wires`` class.
+            If a ``Wires`` instance already, the conversion to such an instance is performed
+            trivially as well (also see the source code of ``~.Wires``).
         tape (pennylane.tape.QuantumTape): Tape to infer the wire for
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None`` .
 
     Returns:
-        object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None`` ,
+        object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None``\ ,
         and an often reasonable choice else.
     """
     if aux_wire is not None:
+        aux_wire = qml.wires.Wires(aux_wire)[0]
+        if aux_wire in tape.wires:
+            msg = "The requested auxiliary wire is already in use by the circuit."
+            raise qml.wires.WireError(msg)
         if device_wires is None or aux_wire in device_wires:
             return aux_wire
-        raise qml.wires.WireError("The requested aux_wire does not exist on the used device.")
+        raise qml.wires.WireError("The requested auxiliary wire does not exist on the used device.")
 
     if device_wires is not None:
+        if len(device_wires) == len(tape.wires):
+            raise qml.wires.WireError("The device has no free wire for the auxiliary wire.")
         unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))
-        if not unused_wires:
-            raise qml.wires.WireError("No device wires are unused by the tape.")
         return unused_wires[0]
 
     _wires = tape.wires

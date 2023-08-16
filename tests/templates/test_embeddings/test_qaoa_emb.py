@@ -14,10 +14,27 @@
 """
 Tests for the QAOAEmbedding template.
 """
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test _flatten and _unflatten methods."""
+    features = [1.0, 2.0]
+    layer1 = [0.1, -0.3, 1.5]
+    layer2 = [3.1, 0.2, -2.8]
+    weights = [layer1, layer2]
+
+    op = qml.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
+    _, metadata = op._flatten()
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
 
 
 class TestDecomposition:
@@ -213,6 +230,29 @@ class TestDecomposition:
 
 class TestInputs:
     """Test inputs and pre-processing."""
+
+    @pytest.mark.parametrize(
+        "local_field, expected",
+        (
+            ("X", qml.RX),
+            ("Y", qml.RY),
+            ("Z", qml.RZ),
+            (qml.RX, qml.RX),
+            (qml.RY, qml.RY),
+            (qml.RZ, qml.RZ),
+        ),
+    )
+    def test_local_field_options(self, local_field, expected):
+        """Verifies all allowed options for local field are accepted and set properly."""
+
+        features = [0]
+        n_wires = 1
+        weights = np.zeros(shape=(1, 1))
+        op = qml.QAOAEmbedding(
+            features=features, weights=weights, wires=range(n_wires), local_field=local_field
+        )
+
+        assert op.hyperparameters["local_field"] == expected
 
     def test_exception_fewer_qubits_than_features(
         self,

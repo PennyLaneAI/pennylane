@@ -488,7 +488,7 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
-def einsum(indices, *operands, like=None):
+def einsum(indices, *operands, like=None, optimize=None):
     """Evaluates the Einstein summation convention on the operands.
 
     Args:
@@ -537,7 +537,10 @@ def einsum(indices, *operands, like=None):
     if like is None:
         like = get_interface(*operands)
     operands = np.coerce(operands, like=like)
-    return np.einsum(indices, *operands, like=like)
+    if optimize is None or like == "torch":
+        # torch einsum doesn't support the optimize keyword argument
+        return np.einsum(indices, *operands, like=like)
+    return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
 def where(condition, x=None, y=None):
@@ -761,17 +764,27 @@ def unwrap(values, max_depth=None):
     return [convert(val) for val in values]
 
 
-@multi_dispatch(argnum=[0])
+@multi_dispatch(argnum=[0, 1])
 def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
     if like == "scipy":
         return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
-    try:
-        return np.add(*args, **kwargs)
-    except TypeError:
-        # catch arg1 = torch, arg2=numpy error
-        # works fine with opposite order
-        return np.add(args[1], args[0], *args[2:], **kwargs)
+
+    arg_interfaces = {get_interface(args[0]), get_interface(args[1])}
+
+    # case of one torch tensor and one vanilla numpy array
+    if like == "torch" and len(arg_interfaces) == 2:
+        # In autoray 0.6.5, np.add dispatches to torch instead of
+        # numpy if one parameter is a torch tensor and the other is
+        # a numpy array. torch.add raises an Exception if one of the
+        # arguments is a numpy array, so here we cast both arguments
+        # to be tensors.
+        dev = getattr(args[0], "device", None) or getattr(args[1], "device")
+        arg0 = np.asarray(args[0], device=dev, like=like)
+        arg1 = np.asarray(args[1], device=dev, like=like)
+        return np.add(arg0, arg1, *args[2:], **kwargs)
+
+    return np.add(*args, **kwargs, like=like)
 
 
 @multi_dispatch()
@@ -919,11 +932,13 @@ def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
     """
     import jax
 
-    with jax.core.new_main(jax.ad.JVPTrace) as main:
-        trace = jax.ad.JVPTrace(main, 0)
+    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+        trace = jax.interpreters.ad.JVPTrace(main, 0)
 
     args_jvp = [
-        jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape)) if i in argnums else arg
+        jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+        if i in argnums
+        else arg
         for i, arg in enumerate(args)
     ]
 

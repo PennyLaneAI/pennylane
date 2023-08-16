@@ -27,13 +27,23 @@ from pennylane.wires import Wires
 
 
 PARAMETRIZED_OPERATIONS = [
-    qml.TRX(0.123, wires=0, subspace=[1, 2]),
+    qml.TRX(0.123, wires=0, subspace=(0, 1)),
+    qml.TRX(0.123, wires=0, subspace=(0, 2)),
+    qml.TRX(0.123, wires=0, subspace=(1, 2)),
+    qml.TRY(0.123, wires=0, subspace=(0, 1)),
+    qml.TRY(0.123, wires=0, subspace=(0, 2)),
+    qml.TRY(0.123, wires=0, subspace=(1, 2)),
+    qml.TRZ(0.123, wires=0, subspace=(0, 1)),
+    qml.TRZ(0.123, wires=0, subspace=(0, 2)),
+    qml.TRZ(0.123, wires=0, subspace=(1, 2)),
     qml.QutritUnitary(TSHIFT, wires=0),
     qml.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
 ]
 
 BROADCASTED_OPERATIONS = [
-    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[1, 2]),
+    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(1, 2)),
+    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 2)),
+    qml.TRZ(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 1)),
     qml.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
     qml.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
 ]
@@ -106,34 +116,82 @@ class TestParameterFrequencies:
 
 
 matrix_data = [
-    (qml.TRX, 0, [0, 1], np.eye(3)),
-    (qml.TRX, 0, [1, 2], np.eye(3)),
-    (qml.TRX, 0, [0, 2], np.eye(3)),
+    (qml.TRX, 0, (0, 1), np.eye(3)),
+    (qml.TRX, 0, (1, 2), np.eye(3)),
+    (qml.TRX, 0, (0, 2), np.eye(3)),
+    (qml.TRY, 0, (0, 1), np.eye(3)),
+    (qml.TRY, 0, (1, 2), np.eye(3)),
+    (qml.TRY, 0, (0, 2), np.eye(3)),
+    (qml.TRZ, 0, (0, 1), np.eye(3)),
+    (qml.TRZ, 0, (1, 2), np.eye(3)),
+    (qml.TRZ, 0, (0, 2), np.eye(3)),
     (
         qml.TRX,
         np.pi / 2,
-        [0, 1],
+        (0, 1),
         np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
         qml.TRX,
         np.pi / 2,
-        [1, 2],
+        (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRX,
         np.pi / 2,
-        [0, 2],
+        (0, 2),
         np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2),
     ),
-    (qml.TRX, np.pi, [0, 1], -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
-    (qml.TRX, np.pi, [1, 2], -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
-    (qml.TRX, np.pi, [0, 2], -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
+    (
+        qml.TRY,
+        np.pi / 2,
+        (0, 1),
+        np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
+    ),
+    (
+        qml.TRY,
+        np.pi / 2,
+        (1, 2),
+        np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2),
+    ),
+    (
+        qml.TRY,
+        np.pi / 2,
+        (0, 2),
+        np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        (0, 1),
+        np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        (1, 2),
+        np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        (0, 2),
+        np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])),
+    ),
+    (qml.TRX, np.pi, (0, 1), -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
+    (qml.TRX, np.pi, (1, 2), -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
+    (qml.TRX, np.pi, (0, 2), -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
+    (qml.TRY, np.pi, (0, 1), np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
+    (qml.TRY, np.pi, (1, 2), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
+    (qml.TRY, np.pi, (0, 2), np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
+    (qml.TRZ, np.pi, (0, 1), -1j * np.diag([1, -1, 1j])),
+    (qml.TRZ, np.pi, (1, 2), -1j * np.diag([1j, 1, -1])),
+    (qml.TRZ, np.pi, (0, 2), -1j * np.diag([1, 1j, -1])),
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [0, 1],
+        (0, 1),
         np.tensordot(
             [1, 1], np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
         ),
@@ -141,7 +199,7 @@ matrix_data = [
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [1, 2],
+        (1, 2),
         np.tensordot(
             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2), axes=0
         ),
@@ -149,10 +207,52 @@ matrix_data = [
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [0, 2],
+        (0, 2),
         np.tensordot(
             [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
         ),
+    ),
+    (
+        qml.TRY,
+        np.array([np.pi / 2] * 2),
+        (0, 1),
+        np.tensordot(
+            [1, 1], np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
+        ),
+    ),
+    (
+        qml.TRY,
+        np.array([np.pi / 2] * 2),
+        (1, 2),
+        np.tensordot(
+            [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2), axes=0
+        ),
+    ),
+    (
+        qml.TRY,
+        np.array([np.pi / 2] * 2),
+        (0, 2),
+        np.tensordot(
+            [1, 1], np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2), axes=0
+        ),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        (0, 1),
+        np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])), axes=0),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        (1, 2),
+        np.tensordot([1, 1], np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])), axes=0),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        (0, 2),
+        np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])), axes=0),
     ),
 ]
 
@@ -185,10 +285,14 @@ class TestMatrix:
 
 label_data = [
     (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
+    (qml.TRY(1.23456, wires=0), "TRY", "TRY\n(1.23)", "TRY\n(1)", "TRY\n(1)†"),
+    (qml.TRZ(1.23456, wires=0), "TRZ", "TRZ\n(1.23)", "TRZ\n(1)", "TRZ\n(1)†"),
 ]
 
 label_data_broadcasted = [
     (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX†"),
+    (qml.TRY(np.array([1.23, 4.56]), wires=0), "TRY", "TRY", "TRY", "TRY†"),
+    (qml.TRZ(np.array([1.23, 4.56]), wires=0), "TRZ", "TRZ", "TRZ", "TRZ†"),
 ]
 
 
@@ -257,7 +361,11 @@ class TestLabel:
         assert op1.label(decimals=0) == "TRX"
 
 
-pow_parametric_ops = (qml.TRX(1.234, wires=0),)
+pow_parametric_ops = (
+    qml.TRX(1.234, wires=0),
+    qml.TRY(1.234, wires=0),
+    qml.TRZ(1.234, wires=0),
+)
 
 
 class TestParametricPow:
@@ -289,6 +397,8 @@ class TestParametricPow:
 
 control_data = [
     (qml.TRX(1.234, wires=0), Wires([])),
+    (qml.TRY(1.234, wires=0), Wires([])),
+    (qml.TRZ(1.234, wires=0), Wires([])),
 ]
 
 
@@ -298,6 +408,14 @@ def test_control_wires(op, control_wires):
     assert op.control_wires == control_wires
 
 
+@pytest.mark.parametrize(
+    "op, obs, grad_fn",
+    [
+        (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
+        (qml.TRY, qml.GellMann(0, 1), np.cos),
+        (qml.TRZ, qml.GellMann(0, 1), lambda phi: -np.sin(phi)),
+    ],
+)
 class TestGrad:
     """Test that the gradients for qutrit parametrized operations are correct"""
 
@@ -307,41 +425,47 @@ class TestGrad:
     @pytest.mark.autograd
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability(self, phi, diff_method, tol):
-        """Test that TRX is differentiable and the gradient is correct"""
+    def test_differentiability(self, op, obs, grad_fn, phi, diff_method, tol):
+        """Test that parametrized rotations are differentiable and the gradient is correct"""
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
         grad = np.squeeze(qml.grad(circuit)(phi))
 
-        assert np.isclose(grad, -1.0 * np.sin(phi), atol=tol, rtol=0)
+        assert np.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX with broadcasting works."""
+    def test_differentiability_broadcasted(self, op, obs, grad_fn, diff_method, tol):
+        """Test that differentiation of parametrized operations with broadcasting works."""
         phi = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
 
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
         jac = qml.jacobian(circuit)(phi)
 
-        assert np.allclose(jac, -1.0 * np.sin(np.diag(phi)), atol=tol, rtol=0)
+        assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_jax(self, phi, diff_method, tol):
-        """Test that TRX is differentiable with JAX and the gradient is correct"""
+    def test_differentiability_jax(self, op, obs, grad_fn, phi, diff_method, tol):
+        """Test that parametrized operations are differentiable with JAX and the gradient is correct"""
         import jax
         import jax.numpy as jnp
 
@@ -349,18 +473,21 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
         phi = jnp.array(phi)
         grad = np.squeeze(jax.grad(circuit)(phi))
 
-        assert np.isclose(grad, -1.0 * jnp.sin(phi), atol=tol, rtol=0)
+        assert np.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_jax_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX in JAX with broadcasting works."""
+    def test_differentiability_jax_broadcasted(self, op, obs, grad_fn, diff_method, tol):
+        """Test that differentiation of parametrized operations in JAX with broadcasting works."""
         import jax
         import jax.numpy as jnp
 
@@ -368,91 +495,107 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
         phi = jnp.linspace(0, 2 * np.pi, 7)
         jac = jax.jacobian(circuit)(phi)
 
-        assert np.allclose(jac, -1.0 * jnp.sin(np.diag(phi)), atol=tol, rtol=0)
+        assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_torch(self, phi, diff_method, tol):
-        """Test that TRX is differentiable with Torch and the gradient is correct"""
+    def test_differentiability_torch(self, op, obs, grad_fn, phi, diff_method, tol):
+        """Test that parametrized operations are differentiable with Torch and the gradient is correct"""
         import torch
 
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
-        phi_torch = torch.tensor(phi, requires_grad=True)
+        phi_torch = torch.tensor(phi, requires_grad=True, dtype=torch.float64)
         grad = torch.autograd.grad(circuit(phi_torch), phi_torch)
 
-        assert qml.math.isclose(grad, -1.0 * np.sin(phi), atol=tol, rtol=0)
+        assert qml.math.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_torch_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX in Torch with broadcasting works."""
+    def test_differentiability_torch_broadcasted(self, op, obs, grad_fn, diff_method, tol):
+        """Test that differentiation of parametrized operations in Torch with broadcasting works."""
         import torch
 
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
-        phi = torch.linspace(0, 2 * np.pi, 7, requires_grad=True)
-        jac = torch.autograd.functional.jacobian(circuit, phi)
+        phi_torch = torch.linspace(0, 2 * np.pi, 7, requires_grad=True, dtype=torch.float64)
+        jac = torch.autograd.functional.jacobian(circuit, phi_torch)
+        phi = phi_torch.detach().numpy()
 
-        assert qml.math.allclose(jac, -1.0 * torch.sin(torch.diag(phi)), atol=tol, rtol=0)
+        assert qml.math.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_tf(self, phi, diff_method, tol):
-        """Test that TRX is differentiable with TensorFlow and the gradient is correct"""
+    def test_differentiability_tf(self, op, obs, grad_fn, phi, diff_method, tol):
+        """Test that parametrized operations are differentiable with TensorFlow and the gradient is correct"""
         import tensorflow as tf
 
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
-        phi = tf.Variable(phi)
+        phi_tf = tf.Variable(phi)
 
         with tf.GradientTape() as tape:
-            result = circuit(phi)
-        res = tape.gradient(result, phi)
+            result = circuit(phi_tf)
+        res = tape.gradient(result, phi_tf)
 
-        assert qml.math.isclose(res, -1.0 * tf.sin(phi), atol=tol, rtol=0)
+        assert qml.math.isclose(res, grad_fn(phi), atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_trx_differentiability_tf_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX in TensorFlow with broadcasting works."""
+    def test_differentiability_tf_broadcasted(self, op, obs, grad_fn, diff_method, tol):
+        """Test that differentiation of parametrized operations in TensorFlow with broadcasting works."""
         import tensorflow as tf
 
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.TRX(phi, wires=0)
-            return qml.expval(qml.GellMann(wires=0, index=3))
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
+            op(phi, wires=0)
+            return qml.expval(obs)
 
         phi = np.linspace(0, 2 * np.pi, 7)
         phi_tf = tf.Variable(phi)
         with tf.GradientTape() as tape:
             result = circuit(phi_tf)
         res = tape.jacobian(result, phi_tf)
-        expected = tf.Variable(-1.0 * np.sin(np.diag(phi)))
+        expected = tf.Variable(np.diag(grad_fn(phi)))
 
         assert qml.math.allclose(res, expected, atol=tol, rtol=0)

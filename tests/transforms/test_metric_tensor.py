@@ -14,22 +14,25 @@
 """
 Unit tests for the metric tensor transform.
 """
+# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
 import pytest
-from pennylane import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from gate_data import Y, Z
+from pennylane import numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
 
 
 class TestMetricTensor:
     """Tests for metric tensor subcircuit construction and evaluation"""
 
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_rot_decomposition(self, diff_method):
+    def assert_Y_decomp(self, ops):
+        assert isinstance(ops[0], qml.PauliZ)
+        assert isinstance(ops[1], qml.S)
+        assert isinstance(ops[2], qml.Hadamard)
+
+    def test_rot_decomposition(self):
         """Test that the rotation gate is correctly decomposed"""
-        dev = qml.device("default.qubit", wires=1)
         params = np.array([1.0, 2.0, 3.0], requires_grad=True)
 
         with qml.queuing.AnnotatedQueue() as q_circuit:
@@ -46,18 +49,16 @@ class TestMetricTensor:
         # Second parameter subcircuit
         assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RZ)
-        assert tapes[1].operations[0].data == [1]
+        assert tapes[1].operations[0].data == (1,)
         # PauliY decomp
-        assert isinstance(tapes[1].operations[1], qml.PauliZ)
-        assert isinstance(tapes[1].operations[2], qml.S)
-        assert isinstance(tapes[1].operations[3], qml.Hadamard)
+        self.assert_Y_decomp(tapes[1].operations[1:4])
 
         # Third parameter subcircuit
         assert len(tapes[2].operations) == 2
         assert isinstance(tapes[2].operations[0], qml.RZ)
         assert isinstance(tapes[2].operations[1], qml.RY)
-        assert tapes[2].operations[0].data == [1]
-        assert tapes[2].operations[1].data == [2]
+        assert tapes[2].operations[0].data == (1,)
+        assert tapes[2].operations[1].data == (2,)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_multirz_decomposition(self, diff_method):
@@ -97,8 +98,6 @@ class TestMetricTensor:
 
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
-        dev = qml.device("default.qubit", wires=2)
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.array(1.0, requires_grad=True), wires=0)
             qml.RY(np.array(1.0, requires_grad=True), wires=0)
@@ -119,9 +118,7 @@ class TestMetricTensor:
         assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RX)
         # PauliY decomp
-        assert isinstance(tapes[1].operations[1], qml.PauliZ)
-        assert isinstance(tapes[1].operations[2], qml.S)
-        assert isinstance(tapes[1].operations[3], qml.Hadamard)
+        self.assert_Y_decomp(tapes[1].operations[1:4])
 
         # third parameter subcircuit
         assert len(tapes[2].operations) == 3
@@ -133,7 +130,6 @@ class TestMetricTensor:
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
         when a layer structure exists"""
-        dev = qml.device("default.qubit", wires=3)
         params = np.ones([8])
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -174,10 +170,7 @@ class TestMetricTensor:
         assert len(tapes[1].operations) == 4
         assert isinstance(tapes[1].operations[0], qml.RX)
         # PauliY decomp
-        assert isinstance(tapes[1].operations[1], qml.PauliZ)
-        assert isinstance(tapes[1].operations[2], qml.S)
-        assert isinstance(tapes[1].operations[3], qml.Hadamard)
-
+        self.assert_Y_decomp(tapes[1].operations[1:4])
         # # third layer subcircuit
         assert len(tapes[2].operations) == 8
         assert isinstance(tapes[2].operations[0], qml.RX)
@@ -187,9 +180,7 @@ class TestMetricTensor:
         # PauliX decomp
         assert isinstance(tapes[2].operations[4], qml.Hadamard)
         # PauliY decomp
-        assert isinstance(tapes[2].operations[5], qml.PauliZ)
-        assert isinstance(tapes[2].operations[6], qml.S)
-        assert isinstance(tapes[2].operations[7], qml.Hadamard)
+        self.assert_Y_decomp(tapes[2].operations[5:8])
 
         # # fourth layer subcircuit
         assert len(tapes[3].operations) == 13
@@ -205,9 +196,7 @@ class TestMetricTensor:
         # PauliX decomp
         assert isinstance(tapes[3].operations[9], qml.Hadamard)
         # PauliY decomp
-        assert isinstance(tapes[3].operations[10], qml.PauliZ)
-        assert isinstance(tapes[3].operations[11], qml.S)
-        assert isinstance(tapes[3].operations[12], qml.Hadamard)
+        self.assert_Y_decomp(tapes[3].operations[10:13])
 
     def test_evaluate_diag_metric_tensor(self, tol):
         """Test that a diagonal metric tensor evaluates correctly for
@@ -225,7 +214,7 @@ class TestMetricTensor:
         circuit = qml.QNode(circuit, dev)
 
         abc = np.array([0.432, 0.12, -0.432], requires_grad=True)
-        a, b, c = abc
+        a, b, _ = abc
 
         # evaluate metric tensor
         g_diag = qml.metric_tensor(circuit, approx="diag")(abc)
@@ -242,7 +231,7 @@ class TestMetricTensor:
         assert qml.math.allclose(g_blockdiag, np.diag(expected), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("strategy", ["gradient", "device"])
-    def test_template_integration(self, strategy, tol):
+    def test_template_integration(self, strategy):
         """Test that the metric tensor transform acts on QNodes
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
@@ -366,9 +355,9 @@ class TestMetricTensor:
         G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
 
         # off diag elements
-        G1[0, 1] = np.sin(a) ** 2 * np.sin(b) * np.cos(b + c) / 4
-        G1[0, 2] = np.sin(a) ** 2 * np.cos(b + c) / 4
-        G1[1, 2] = (
+        G1[0, 1] = G1[1, 0] = np.sin(a) ** 2 * np.sin(b) * np.cos(b + c) / 4
+        G1[0, 2] = G1[2, 0] = np.sin(a) ** 2 * np.cos(b + c) / 4
+        G1[1, 2] = G1[2, 1] = (
             -np.sin(b)
             * (
                 np.cos(2 * (a - b - c))
@@ -379,11 +368,6 @@ class TestMetricTensor:
             )
             / 32
         )
-
-        G1[1, 0] = G1[0, 1]
-        G1[2, 0] = G1[0, 2]
-        G1[2, 1] = G1[1, 2]
-
         assert qml.math.allclose(G[:3, :3], G1, atol=tol, rtol=0)
 
         # =============================================
@@ -396,10 +380,10 @@ class TestMetricTensor:
         # Observables are the generators of:
         #   qml.RY(f, wires=1)
         #   qml.RZ(g, wires=2)
-        G2 = np.zeros([2, 2])
 
+        @qml.qnode(dev)
         def layer2_diag(params):
-            x, y, z, h, g, f = params
+            x, y, z, *_ = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -407,10 +391,9 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.var(qml.PauliZ(2)), qml.var(qml.PauliY(1))
 
-        layer2_diag = qml.QNode(layer2_diag, dev)
-
+        @qml.qnode(dev)
         def layer2_off_diag_first_order(params):
-            x, y, z, h, g, f = params
+            x, y, z, *_ = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -418,10 +401,9 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.PauliZ(2)), qml.expval(qml.PauliY(1))
 
-        layer2_off_diag_first_order = qml.QNode(layer2_off_diag_first_order, dev)
-
+        @qml.qnode(dev)
         def layer2_off_diag_second_order(params):
-            x, y, z, h, g, f = params
+            x, y, z, *_ = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -429,19 +411,15 @@ class TestMetricTensor:
             non_parametrized_layer(a, b, c)
             return qml.expval(qml.PauliY(1) @ qml.PauliZ(2))
 
-        layer2_off_diag_second_order = qml.QNode(layer2_off_diag_second_order, dev)
-
         # calculate the diagonal terms
         varK0, varK1 = layer2_diag(params)
-        G2[0, 0] = varK0 / 4
-        G2[1, 1] = varK1 / 4
+        G2 = np.diag([varK0 / 4, varK1 / 4])
 
         # calculate the off-diagonal terms
         exK0, exK1 = layer2_off_diag_first_order(params)
         exK01 = layer2_off_diag_second_order(params)
 
-        G2[0, 1] = (exK01 - exK0 * exK1) / 4
-        G2[1, 0] = (exK01 - exK0 * exK1) / 4
+        G2[0, 1] = G2[1, 0] = (exK01 - exK0 * exK1) / 4
 
         assert qml.math.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
 
@@ -459,8 +437,9 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
+        @qml.qnode(dev)
         def layer3_diag(params):
-            x, y, z, h, g, f = params
+            x, y, z, *_, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -469,7 +448,6 @@ class TestMetricTensor:
             qml.RY(f, wires=2)
             return qml.var(qml.PauliX(1))
 
-        layer3_diag = qml.QNode(layer3_diag, dev)
         G3 = layer3_diag(params) / 4
         assert qml.math.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
@@ -477,8 +455,7 @@ class TestMetricTensor:
         # Finally, double check that the entire metric
         # tensor is as computed.
 
-        G_expected = block_diag(G1, G3, G2)
-        assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
+        assert qml.math.allclose(G, block_diag(G1, G3, G2), atol=tol, rtol=0)
 
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
         """Test that a metric tensor under the diagonal approximation evaluates
@@ -529,7 +506,7 @@ class TestMetricTensor:
         G2 = np.zeros([2, 2])
 
         def layer2_diag(params):
-            x, y, z, h, g, f = params
+            x, y, z, *_ = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -561,7 +538,7 @@ class TestMetricTensor:
         # only need to compute a single diagonal element.
 
         def layer3_diag(params):
-            x, y, z, h, g, f = params
+            x, y, z, *_, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -818,7 +795,6 @@ class TestMetricTensor:
     def test_argnum_metric_tensor_errors(self):
         """Test that argnum successfully reduces the number of tapes and gives
         the desired outcome."""
-        dev = qml.device("default.qubit", wires=3)
 
         def circuit(weights):
             qml.RX(weights[0], wires=0)
@@ -834,18 +810,17 @@ class TestMetricTensor:
 
         error_msg = (
             "Some parameters specified in argnum are not in the "
-            "trainable parameters \[0, 1, 2, 3\] of the tape "
+            r"trainable parameters \[0, 1, 2, 3\] of the tape "
             "and will be ignored. This may be caused by attempting to "
             "differentiate with respect to parameters that are not marked "
             "as trainable."
         )
         with pytest.raises(ValueError, match=error_msg):
-            tapes, proc_fn = qml.metric_tensor(tape, argnum=4)
+            qml.metric_tensor(tape, argnum=4)
 
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
 
-        dev = qml.device("default.qubit", wires=3)
         with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(0)
             qml.Hadamard(2)
@@ -855,7 +830,7 @@ class TestMetricTensor:
             qml.IsingZZ(-4.2, wires=[1, 2])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
+        tapes, _ = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 4
         assert [len(tape.operations) for tape in tapes] == [3, 5, 4, 5]
         assert [len(tape.measurements) for tape in tapes] == [1] * 4
@@ -995,12 +970,13 @@ def fubini_ansatz1(params, wires=None):
 
 
 def fubini_ansatz2(params, wires=None):
+    # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qml.RX(fixed_pars[1], wires=0)
     qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RY(params0, wires=0) ** 0.4
+    _ = qml.RY(params0, wires=0) ** 0.4
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.adjoint(qml.RX)(params1, wires=0)
@@ -1008,6 +984,7 @@ def fubini_ansatz2(params, wires=None):
 
 
 def fubini_ansatz3(params, wires=None):
+    # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
@@ -1029,6 +1006,7 @@ def fubini_ansatz3(params, wires=None):
 
 
 def fubini_ansatz4(params00, params_rest, wires=None):
+    # pylint: disable=unused-argument
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
@@ -1054,11 +1032,12 @@ def fubini_ansatz6(params, wires=None):
 
 
 def fubini_ansatz7(x, wires=None):
-    qml.RX(fixed_pars[0], wires=0)
+    qml.RX(fixed_pars[0], wires=wires[0])
     qml.RX(x, wires=0)
 
 
 def fubini_ansatz8(params, wires=None):
+    # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qml.RX(fixed_pars[1], wires=[0])
@@ -1232,7 +1211,6 @@ class TestFullMetricTensor:
 
         from jax import numpy as jnp
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
 
         params = tuple(jnp.array(p) for p in params)
@@ -1260,7 +1238,7 @@ class TestFullMetricTensor:
 
         params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires[:-1])
@@ -1290,7 +1268,7 @@ class TestFullMetricTensor:
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             qml.metric_tensor(circuit, approx="block-diag")(*params)
             mt = qml.metric_tensor(circuit, approx=None)(*params)
 
@@ -1301,6 +1279,7 @@ class TestFullMetricTensor:
 
 
 def diffability_ansatz_0(weights, wires=None):
+    # pylint: disable=unused-argument
     qml.RX(weights[0], wires=0)
     qml.RX(weights[1], wires=0)
     qml.CNOT(wires=[0, 1])
@@ -1321,6 +1300,7 @@ expected_diag_jac_0 = lambda weights: np.array(
 
 
 def diffability_ansatz_1(weights, wires=None):
+    # pylint: disable=unused-argument
     qml.RX(weights[0], wires=0)
     qml.RY(weights[1], wires=0)
     qml.CNOT(wires=[0, 1])
@@ -1341,6 +1321,7 @@ expected_diag_jac_1 = lambda weights: np.array(
 
 
 def diffability_ansatz_2(weights, wires=None):
+    # pylint: disable=unused-argument
     qml.RX(weights[0], wires=0)
     qml.RY(weights[1], wires=1)
     qml.CNOT(wires=[0, 1])
@@ -1359,20 +1340,20 @@ expected_diag_jac_2 = lambda weights: np.array(
     ]
 )
 
-weights = np.array([0.432, 0.12, -0.292], requires_grad=True)
+weights_diff = np.array([0.432, 0.12, -0.292], requires_grad=True)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "ansatz, weights, expected_diag_jac",
     [
-        (diffability_ansatz_0, (weights,), expected_diag_jac_0),
-        (diffability_ansatz_1, (weights,), expected_diag_jac_1),
-        (diffability_ansatz_2, (weights,), expected_diag_jac_2),
+        (diffability_ansatz_0, (weights_diff,), expected_diag_jac_0),
+        (diffability_ansatz_1, (weights_diff,), expected_diag_jac_1),
+        (diffability_ansatz_2, (weights_diff,), expected_diag_jac_2),
     ],
 )
-class TestDifferentiability:
-    """Test for metric tensor differentiability"""
+class TestDifferentiabilityDiag:
+    """Test for diagonal metric tensor differentiability"""
 
     def get_circuit(self, ansatz):
         def circuit(*weights):
@@ -1412,28 +1393,6 @@ class TestDifferentiability:
         else:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
-        """Test metric tensor differentiability in the autograd interface"""
-        circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        def cost_full(*weights):
-            return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
-
-        _cost_full = lambda *weights: np.array(autodiff_metric_tensor(ansatz, 3)(*weights))
-        _c = _cost_full(*weights)
-        c = cost_full(*weights)
-        assert all(
-            qml.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
-        )
-        for argnum in range(len(weights)):
-            expected_full = qml.jacobian(_cost_full, argnum=argnum)(*weights)
-            jac = qml.jacobian(cost_full, argnum=argnum)(*weights)
-            assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_jax_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
@@ -1453,26 +1412,6 @@ class TestDifferentiability:
         jac = jax.jacobian(cost_diag)(jnp.array(*weights))
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
-    @pytest.mark.jax
-    def test_jax(self, diff_method, tol, ansatz, weights, expected_diag_jac):
-        """Test metric tensor differentiability in the JAX interface"""
-        if diff_method == "parameter-shift":
-            pytest.skip("Does not support parameter-shift")
-
-        import jax
-
-        circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
-
-        def cost_full(*weights):
-            return qml.metric_tensor(qnode, approx=None)(*weights)
-
-        _cost_full = lambda *weights: autodiff_metric_tensor(ansatz, num_wires=3)(*weights)
-        assert qml.math.allclose(_cost_full(*weights), cost_full(*weights), atol=tol, rtol=0)
-        jac = jax.jacobian(cost_full)(*weights)
-        expected_full = qml.jacobian(_cost_full)(*weights)
-        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
-
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["auto", "tf"])
     def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
@@ -1489,24 +1428,6 @@ class TestDifferentiability:
             )
         jac = tape.jacobian(loss_diag, weights_t)
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
-    def test_tf(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
-        """Test metric tensor differentiability in the TF interface"""
-        import tensorflow as tf
-
-        circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        weights_t = tuple(tf.Variable(w) for w in weights)
-        with tf.GradientTape() as tape:
-            loss_full = qml.metric_tensor(qnode, approx=None)(*weights_t)
-        jac = tape.jacobian(loss_full, weights_t)
-        _cost_full = lambda *weights: autodiff_metric_tensor(ansatz, num_wires=3)(*weights)
-        assert qml.math.allclose(_cost_full(*weights), loss_full, atol=tol, rtol=0)
-        expected_full = qml.jacobian(_cost_full)(*weights)
-        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
@@ -1544,9 +1465,91 @@ class TestDifferentiability:
                 jac.detach().numpy(), expected_diag_jac(*weights), atol=tol, rtol=0
             )
 
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+@pytest.mark.parametrize(
+    "ansatz, weights",
+    [
+        (diffability_ansatz_0, (weights_diff,)),
+        (diffability_ansatz_1, (weights_diff,)),
+        (diffability_ansatz_2, (weights_diff,)),
+    ],
+)
+class TestDifferentiability:
+    """Test for metric tensor differentiability"""
+
+    def get_circuit(self, ansatz):
+        def circuit(*weights):
+            ansatz(*weights)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        return circuit
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
+    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    def test_autograd(self, diff_method, tol, ansatz, weights, interface):
+        """Test metric tensor differentiability in the autograd interface"""
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
+
+        def cost_full(*weights):
+            return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
+
+        _cost_full = lambda *weights: np.array(autodiff_metric_tensor(ansatz, 3)(*weights))
+        _c = _cost_full(*weights)
+        c = cost_full(*weights)
+        assert all(
+            qml.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
+        )
+        for argnum in range(len(weights)):
+            expected_full = qml.jacobian(_cost_full, argnum=argnum)(*weights)
+            jac = qml.jacobian(cost_full, argnum=argnum)(*weights)
+            assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax(self, diff_method, tol, ansatz, weights):
+        """Test metric tensor differentiability in the JAX interface"""
+        if diff_method == "parameter-shift":
+            pytest.skip("Does not support parameter-shift")
+
+        import jax
+
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
+
+        def cost_full(*weights):
+            return qml.metric_tensor(qnode, approx=None)(*weights)
+
+        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
+        assert qml.math.allclose(_cost_full(*weights), cost_full(*weights), atol=tol, rtol=0)
+        jac = jax.jacobian(cost_full)(*weights)
+        expected_full = qml.jacobian(_cost_full)(*weights)
+        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_tf(self, diff_method, tol, ansatz, weights, interface):
+        """Test metric tensor differentiability in the TF interface"""
+        import tensorflow as tf
+
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
+
+        weights_t = tuple(tf.Variable(w) for w in weights)
+        with tf.GradientTape() as tape:
+            loss_full = qml.metric_tensor(qnode, approx=None)(*weights_t)
+        jac = tape.jacobian(loss_full, weights_t)
+        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
+        assert qml.math.allclose(_cost_full(*weights), loss_full, atol=tol, rtol=0)
+        expected_full = qml.jacobian(_cost_full)(*weights)
+        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_torch(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
+    def test_torch(self, diff_method, tol, ansatz, weights, interface):
         """Test metric tensor differentiability in the torch interface"""
         import torch
 
@@ -1668,7 +1671,7 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
     z = np.array(0.1, requires_grad=True)
 
     @qml.qnode(dev)
-    def circuit(x, z):
+    def circuit0(x, z):
         qml.CRX(x, wires=["wire1", "wire2"])
         qml.RZ(z, wires="wire2")
         return qml.expval(qml.PauliZ("wire2"))
@@ -1678,17 +1681,17 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
         m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
 
         if allow_nonunitary:
-            qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+            qml.metric_tensor(circuit0, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
         else:
             with pytest.raises(ValueError, match="Generator for operation"):
-                qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+                qml.metric_tensor(circuit0, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
     class RX(qml.RX):
         def generator(self):
             return qml.Hadamard(self.wires)
 
     @qml.qnode(dev)
-    def circuit(x, z):
+    def circuit1(x, z):
         RX(x, wires="wire1")
         qml.RZ(z, wires="wire1")
         return qml.expval(qml.PauliZ("wire2"))
@@ -1698,10 +1701,10 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
         m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
 
         if allow_nonunitary:
-            qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+            qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
         else:
             with pytest.raises(ValueError, match="Generator for operation"):
-                qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+                qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
 def test_no_error_missing_aux_wire_not_used(recwarn):
@@ -1742,14 +1745,33 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     assert len(recwarn) == 0
 
 
+def test_raises_circuit_that_uses_missing_wire():
+    """Test that an error in the original circuit is reraised properly and not caught. This avoids
+    accidentally catching relevant errors, which can lead to a recursion error."""
+
+    dev = qml.device("default.qubit", wires=[0, "b"])
+
+    @qml.qnode(dev)
+    def circuit(x):
+        """Flawed circuit that uses a wire which is not on the device."""
+        qml.RX(x[0], 0)
+        qml.CNOT([0, 1])  # wire 1 is not on the device
+        qml.RX(x[1], 0)
+        return qml.expval(qml.PauliZ(0))
+
+    x = np.array([1.3, 0.2])
+    with pytest.raises(qml.wires.WireError, match=r"Did not find some of the wires \(0, 1\)"):
+        qml.transforms.metric_tensor(circuit)(x)
+
+
 def aux_wire_ansatz_0(x, y):
     qml.RX(x, wires=0)
-    qml.RY(x, wires=2)
+    qml.RY(y, wires=2)
 
 
 def aux_wire_ansatz_1(x, y):
     qml.RX(x, wires=0)
-    qml.RY(x, wires=1)
+    qml.RY(y, wires=1)
 
 
 @pytest.mark.parametrize("aux_wire", [None, "aux", 3])
@@ -1773,14 +1795,18 @@ def test_get_aux_wire_with_device_wires():
     x, y = np.array([0.2, 0.1], requires_grad=True)
     with qml.queuing.AnnotatedQueue() as q:
         qml.RX(x, wires=0)
-        qml.RX(x, wires="one")
+        qml.RX(y, wires="one")
 
     tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "aux", "one"])
 
-    assert _get_aux_wire(0, tape, device_wires) == 0
-    assert _get_aux_wire("one", tape, device_wires) == "one"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
+    assert _get_aux_wire("aux", tape, device_wires) == "aux"
+    _match = "The requested auxiliary wire is already in use by the circuit."
+    with pytest.raises(qml.wires.WireError, match=_match):
+        _get_aux_wire("one", tape, device_wires)
+    with pytest.raises(qml.wires.WireError, match=_match):
+        _get_aux_wire(0, tape, device_wires)
 
 
 def test_get_aux_wire_with_unavailable_aux():
@@ -1788,8 +1814,8 @@ def test_get_aux_wire_with_unavailable_aux():
     x, y = np.array([0.2, 0.1], requires_grad=True)
     with qml.queuing.AnnotatedQueue() as q:
         qml.RX(x, wires=0)
-        qml.RX(x, wires="one")
+        qml.RX(y, wires="one")
     tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "one"])
-    with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
+    with pytest.raises(qml.wires.WireError, match="The requested auxiliary wire does not exist"):
         _get_aux_wire("two", tape, device_wires)

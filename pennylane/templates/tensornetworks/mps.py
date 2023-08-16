@@ -28,7 +28,7 @@ def compute_indices_MPS(wires, n_block_wires):
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block
     Returns:
-        layers (array): array of wire indices or wire labels for each block
+        layers (Tuple[Tuple]]): array of wire indices or wire labels for each block
     """
 
     n_wires = len(wires)
@@ -51,17 +51,14 @@ def compute_indices_MPS(wires, n_block_wires):
             f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
         )
 
-    layers = np.array(
-        [
-            [wires[idx] for idx in range(j, j + n_block_wires)]
-            for j in range(
-                0,
-                len(wires) - int(len(wires) % (n_block_wires // 2)) - n_block_wires // 2,
-                n_block_wires // 2,
-            )
-        ]
+    return tuple(
+        tuple(wires[idx] for idx in range(j, j + n_block_wires))
+        for j in range(
+            0,
+            len(wires) - int(len(wires) % (n_block_wires // 2)) - n_block_wires // 2,
+            n_block_wires // 2,
+        )
     )
-    return layers
 
 
 class MPS(Operation):
@@ -110,7 +107,7 @@ class MPS(Operation):
                 qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
-        >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+        >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
@@ -124,6 +121,13 @@ class MPS(Operation):
     num_wires = AnyWires
     par_domain = "A"
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls.__new__(cls)
+        new_op._hyperparameters = dict(metadata[1])
+        Operation.__init__(new_op, data, wires=metadata[0])
+        return new_op
+
     def __init__(
         self,
         wires,
@@ -131,7 +135,6 @@ class MPS(Operation):
         block,
         n_params_block,
         template_weights=None,
-        do_queue=True,
         id=None,
     ):
         ind_gates = compute_indices_MPS(wires, n_block_wires)
@@ -153,7 +156,7 @@ class MPS(Operation):
                 )
 
         self._hyperparameters = {"ind_gates": ind_gates, "block": block}
-        super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(
@@ -179,7 +182,7 @@ class MPS(Operation):
         decomp = []
         block_gen = qml.tape.make_qscript(block)
         for idx, w in enumerate(ind_gates):
-            decomp += block_gen(weights=weights[idx][:], wires=w.tolist())
+            decomp += block_gen(weights=weights[idx][:], wires=w)
         return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod

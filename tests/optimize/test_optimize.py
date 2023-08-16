@@ -14,7 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` optimizers.
 """
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -47,7 +47,9 @@ def opt(opt_name):
 
 @pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam"])
 class TestOverOpts:
-    """Tests keywords, multiple arguements, and non-training arguments in relevant optimizers"""
+    """Tests keywords, multiple arguments, and non-training arguments in relevant optimizers"""
+
+    # pylint: disable=unused-argument
 
     def test_kwargs(self, mocker, opt, opt_name, tol):
         """Test that the keywords get passed and alter the function"""
@@ -62,12 +64,12 @@ class TestOverOpts:
         wrapper = func_wrapper()
         spy = mocker.spy(wrapper, "func")
 
-        x_new_two = opt.step(wrapper.func, x, c=2.0)
+        _ = opt.step(wrapper.func, x, c=2.0)
         self.reset(opt)
 
         args2, kwargs2 = spy.call_args_list[-1]
 
-        x_new_three_wc, cost_three = opt.step_and_cost(wrapper.func, x, c=3.0)
+        _, cost_three = opt.step_and_cost(wrapper.func, x, c=3.0)
         self.reset(opt)
 
         args3, kwargs3 = spy.call_args_list[-1]
@@ -99,7 +101,7 @@ class TestOverOpts:
         self.reset(opt)
         args_called1, kwargs1 = spy.call_args_list[-1]  # just take last call
 
-        x_new2, y_new2, z_new2 = opt.step(wrapper.func, x_new, y_new, z_new)
+        _ = opt.step(wrapper.func, x_new, y_new, z_new)
         self.reset(opt)
         args_called2, kwargs2 = spy.call_args_list[-1]  # just take last call
 

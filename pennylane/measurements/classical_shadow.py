@@ -17,6 +17,7 @@ This module contains the qml.classical_shadow measurement.
 import copy
 from collections.abc import Iterable
 from typing import Optional, Union, Sequence
+from string import ascii_letters as ABC
 
 import numpy as np
 
@@ -175,10 +176,9 @@ def classical_shadow(wires, seed=None):
 
             dev = qml.device("default.qubit", wires=2, shots=5)
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1])
+            ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
+            measurements = [qml.classical_shadow(wires=(0,1))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
@@ -194,15 +194,11 @@ def classical_shadow(wires, seed=None):
 
             dev = qml.device("default.qubit", wires=2, shots=5)
 
-            with qml.tape.QuantumTape() as tape1:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1], seed=10)
+            measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
+            tape1 = qml.tape.QuantumTape(ops, measurements1)
 
-            with qml.tape.QuantumTape() as tape2:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1], seed=15)
+            measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
+            tape2 = qml.tape.QuantumTape(ops, measurements2)
 
         >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
@@ -314,6 +310,120 @@ class ClassicalShadowMP(MeasurementTransform):
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
+    def process_state_with_shots(
+        self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
+    ):
+        """Process the given quantum state with the given number of shots
+
+        Args:
+            state (Sequence[complex]): quantum state vector given as a rank-N tensor, where
+                each dim has size 2 and N is the number of wires.
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
+            shots (int): The number of shots
+            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+                If no value is provided, a default RNG will be used. The random measurement outcomes
+                in the form of bits will be generated from this argument, while the random recipes will be
+                created from the ``seed`` argument provided to ``.ClassicalShadowsMP``.
+
+        Returns:
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
+            the measured bits and the second represents the recipes used.
+        """
+        wire_map = {w: i for i, w in enumerate(wire_order)}
+        mapped_wires = [wire_map[w] for w in self.wires]
+        n_qubits = len(mapped_wires)
+        num_dev_qubits = len(state.shape)
+
+        # seed the random measurement generation so that recipes
+        # are the same for different executions with the same seed
+        recipe_rng = np.random.RandomState(self.seed)
+        recipes = recipe_rng.randint(0, 3, size=(shots, n_qubits))
+
+        bit_rng = np.random.default_rng(rng)
+
+        obs_list = np.stack(
+            [
+                qml.PauliX.compute_matrix(),
+                qml.PauliY.compute_matrix(),
+                qml.PauliZ.compute_matrix(),
+            ]
+        )
+
+        # the diagonalizing matrices corresponding to the Pauli observables above
+        diag_list = np.stack(
+            [
+                qml.Hadamard.compute_matrix(),
+                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
+                qml.Identity.compute_matrix(),
+            ]
+        )
+        obs = obs_list[recipes]
+        diagonalizers = diag_list[recipes]
+
+        # There's a significant speedup if we use the following iterative
+        # process to perform the randomized Pauli measurements:
+        #   1. Randomly generate Pauli observables for all snapshots for
+        #      a single qubit (e.g. the first qubit).
+        #   2. Compute the expectation of each Pauli observable on the first
+        #      qubit by tracing out all other qubits.
+        #   3. Sample the first qubit based on each Pauli expectation.
+        #   4. For all snapshots, determine the collapsed state of the remaining
+        #      qubits based on the sample result.
+        #   4. Repeat iteratively until no qubits are remaining.
+        #
+        # Observe that after the first iteration, the second qubit will become the
+        # "first" qubit in the process. The advantage to this approach as opposed to
+        # simulataneously computing the Pauli expectations for each qubit is that
+        # the partial traces are computed over iteratively smaller subsystems, leading
+        # to a significant speed-up.
+
+        # transpose the state so that the measured wires appear first
+        unmeasured_wires = [i for i in range(num_dev_qubits) if i not in mapped_wires]
+        transposed_state = np.transpose(state, axes=mapped_wires + unmeasured_wires)
+
+        outcomes = np.zeros((shots, n_qubits))
+        stacked_state = np.repeat(transposed_state[np.newaxis, ...], shots, axis=0)
+
+        for active_qubit in range(n_qubits):
+            # stacked_state loses a dimension each loop
+
+            # trace out every qubit except the first
+            num_remaining_qubits = num_dev_qubits - active_qubit
+            conj_state_first_qubit = ABC[num_remaining_qubits]
+            stacked_dim = ABC[num_remaining_qubits + 1]
+
+            state_str = f"{stacked_dim}{ABC[:num_remaining_qubits]}"
+            conj_state_str = f"{stacked_dim}{conj_state_first_qubit}{ABC[1:num_remaining_qubits]}"
+            target_str = f"{stacked_dim}a{conj_state_first_qubit}"
+
+            first_qubit_state = np.einsum(
+                f"{state_str},{conj_state_str}->{target_str}",
+                stacked_state,
+                np.conj(stacked_state),
+            )
+
+            # sample the observables on the first qubit
+            probs = (np.einsum("abc,acb->a", first_qubit_state, obs[:, active_qubit]) + 1) / 2
+            samples = bit_rng.random(size=probs.shape) > probs
+            outcomes[:, active_qubit] = samples
+
+            # collapse the state of the remaining qubits; the next qubit in line
+            # becomes the first qubit for the next iteration
+            rotated_state = np.einsum(
+                "ab...,acb->ac...", stacked_state, diagonalizers[:, active_qubit]
+            )
+            stacked_state = rotated_state[np.arange(shots), samples.astype(np.int8)]
+
+            # re-normalize the collapsed state
+            sum_indices = tuple(range(1, num_remaining_qubits))
+            state_squared = np.abs(stacked_state) ** 2
+            norms = np.sqrt(np.sum(state_squared, sum_indices, keepdims=True))
+            stacked_state /= norms
+
+        return np.stack([outcomes, recipes]).astype(np.int8)
+
     @property
     def samples_computational_basis(self):
         return False
@@ -328,7 +438,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def shape(self, device, shots):  # pylint: disable=unused-argument
         # otherwise, the return type requires a device
-        if not shots.total_shots:
+        if not shots:
             raise MeasurementShapeError(
                 "Shots must be specified to obtain the shape of a classical "
                 "shadow measurement process."
@@ -375,6 +485,29 @@ class ShadowExpvalMP(MeasurementTransform):
 
     def process(self, tape, device):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
+        return shadow.expval(self.H, self.k)
+
+    def process_state_with_shots(
+        self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
+    ):
+        """Process the given quantum state with the given number of shots
+
+        Args:
+            state (Sequence[complex]): quantum state
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
+            shots (int): The number of shots
+            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+                If no value is provided, a default RNG will be used.
+
+        Returns:
+            float: The estimate of the expectation value.
+        """
+        bits, recipes = qml.classical_shadow(
+            wires=self.wires, seed=self.seed
+        ).process_state_with_shots(state, wire_order, shots, rng=rng)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 

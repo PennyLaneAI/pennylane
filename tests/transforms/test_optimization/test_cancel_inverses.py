@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``cancel_inverses``.
+"""
 import pytest
-from pennylane import numpy as np
+from utils import compare_operation_lists
+
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import cancel_inverses
-from utils import compare_operation_lists
 
 
 class TestCancelInverses:
@@ -195,7 +198,7 @@ class TestCancelInverses:
 dev = qml.device("default.qubit", wires=3)
 
 
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.Hadamard(wires=0)
     qml.PauliX(wires=1)
     qml.S(wires=1)
@@ -210,7 +213,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
 
-transformed_qfunc = cancel_inverses(qfunc)
+transformed_qfunc_all_ops = cancel_inverses(qfunc_all_ops)
 
 expected_op_list = ["PauliX", "CNOT", "RZ", "PauliX", "RY"]
 expected_wires_list = [Wires(1), Wires([0, 1]), Wires(2), Wires(1), Wires(2)]
@@ -223,8 +226,8 @@ class TestCancelInversesInterfaces:
     def test_cancel_inverses_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
@@ -245,8 +248,8 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -272,8 +275,8 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -308,11 +311,10 @@ class TestCancelInversesInterfaces:
         # Enable float64 support
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 

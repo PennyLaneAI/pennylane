@@ -142,7 +142,7 @@ class TestInitialization:
 
         assert op.num_params == 0
         assert op.parameters == []
-        assert op.data == []
+        assert op.data == ()
 
         assert op.num_wires == 4
 
@@ -201,16 +201,16 @@ class TestProperties:
         base = qml.RX(x, wires="a")
         op = Controlled(base, (0, 1))
 
-        assert op.data == [x]
+        assert op.data == (x,)
 
-        x_new = np.array(2.3454)
+        x_new = (np.array(2.3454),)
         op.data = x_new
-        assert op.data == [x_new]
-        assert base.data == [x_new]
+        assert op.data == (x_new,)
+        assert base.data == (x_new,)
 
-        x_new2 = np.array(3.456)
+        x_new2 = (np.array(3.456),)
         base.data = x_new2
-        assert op.data == [x_new2]
+        assert op.data == (x_new2,)
         assert op.parameters == [x_new2]
 
     @pytest.mark.parametrize(
@@ -365,6 +365,28 @@ class TestMiscMethods:
             == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2, 3], work_wires=[4], control_values=[True, False])"
         )
 
+    def test_flatten_unflatten(self):
+        """Tests the _flatten and _unflatten methods."""
+        target = qml.S(0)
+        control_wires = qml.wires.Wires((1, 2))
+        control_values = (0, 0)
+        work_wires = qml.wires.Wires(3)
+
+        op = Controlled(target, control_wires, control_values=control_values, work_wires=work_wires)
+
+        data, metadata = op._flatten()
+        assert data[0] is target
+        assert len(data) == 1
+
+        assert metadata == (control_wires, control_values, work_wires)
+
+        # make sure metadata is hashable
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert new_op._name == "C(S)"  # make sure initialization was called
+
     def test_copy(self):
         """Test that a copy of a controlled oeprator can have its parameters updated
         independently of the original operator."""
@@ -380,10 +402,10 @@ class TestMiscMethods:
         assert copied_op.__class__ is op.__class__
         assert copied_op.control_wires == op.control_wires
         assert copied_op.control_values == op.control_values
-        assert copied_op.data == [param1]
+        assert copied_op.data == (param1,)
 
-        copied_op.data = [6.54]
-        assert op.data == [param1]
+        copied_op.data = (6.54,)
+        assert op.data == (param1,)
 
     def test_label(self):
         """Test that the label method defers to the label of the base."""
@@ -444,7 +466,7 @@ class TestMiscMethods:
 
         for wire, ob in zip(op.control_wires, gen_tensor.operands):
             assert isinstance(ob, qml.Projector)
-            assert ob.data == [[1]]
+            assert ob.data == ([1],)
             assert ob.wires == qml.wires.Wires(wire)
 
         assert gen_tensor.operands[-1].__class__ is base_gen.__class__
@@ -493,14 +515,7 @@ class TestMiscMethods:
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
 
-    def test_base_name_deprecated(self):
-        """Tests that the base_name property is deprecated."""
-
-        class DummyOp(Operation):
-            """Dummy op."""
-
-        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
-            assert Controlled(DummyOp(2), 1).base_name == "C(DummyOp)"
+    # pylint:disable=no-member
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -592,14 +607,14 @@ class TestSimplify:
 
     def test_simplify_nested_controlled_ops(self):
         """Test the simplify method with nested control operations on different wires."""
-        controlled_op = Controlled(Controlled(qml.PauliX(0), 1), 2)
-        final_op = Controlled(qml.PauliX(0), [2, 1])
+        controlled_op = Controlled(Controlled(qml.Hadamard(0), 1), 2)
+        final_op = Controlled(qml.Hadamard(0), [2, 1])
         simplified_op = controlled_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Controlled)
-        assert isinstance(simplified_op.base, qml.PauliX)
+        assert isinstance(simplified_op.base, qml.Hadamard)
         assert simplified_op.name == final_op.name
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
@@ -627,15 +642,6 @@ class TestQueuing:
 
         assert len(q) == 1
         assert q.queue[0] is op
-
-    def test_do_queue_false(self):
-        """Test that when `do_queue=False` is specified, the controlled op is not queued."""
-
-        base = qml.PauliX(0)
-        with qml.queuing.AnnotatedQueue() as q:
-            _ = Controlled(base, 1, do_queue=False)
-
-        assert len(q) == 0
 
 
 base_num_control_mats = [
@@ -952,7 +958,9 @@ class TestDifferentiation:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = torch.tensor(
+            [1.0, -1.0], requires_grad=False, dtype=torch.complex128
+        ) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
@@ -960,9 +968,9 @@ class TestDifferentiation:
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
-        b = torch.tensor(0.123, requires_grad=True)
+        b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()
+        loss.backward()  # pylint:disable=no-member
 
         res = b.grad.detach()
         expected = np.sin(b.detach() / 2) / 2
@@ -1366,8 +1374,8 @@ def test_ctrl_sanity_check():
         qml.CRX(0.789, wires=[1, 0]),
         qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
         qml.CNOT(wires=[1, 2]),
-        qml.CY(wires=[1, 4]),
-        qml.CZ(wires=[1, 0]),
+        *qml.CY(wires=[1, 4]).decomposition(),
+        *qml.CZ(wires=[1, 0]).decomposition(),
     ]
     assert len(tape.operations) == 7
     for op1, op2 in zip(expanded_tape, expected):
@@ -1407,27 +1415,27 @@ def test_adjoint_of_ctrl():
 def test_nested_ctrl():
     """Test nested use of control"""
     with qml.queuing.AnnotatedQueue() as q_tape:
-        CCX = ctrl(ctrl(qml.PauliX, 7), 3)
-        CCX(wires=0)
+        CCS = ctrl(ctrl(qml.S, 7), 3)
+        CCS(wires=0)
     tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=2)
-    assert qml.equal(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
+    assert qml.equal(new_tape[0], Controlled(qml.ControlledPhaseShift(np.pi / 2, [7, 0]), [3]))
 
 
 def test_multi_ctrl():
     """Test control with a list of wires."""
     with qml.queuing.AnnotatedQueue() as q_tape:
-        CCX = ctrl(qml.PauliX, control=[3, 7])
-        CCX(wires=0)
+        CCS = ctrl(qml.S, control=[3, 7])
+        CCS(wires=0)
     tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=1)
-    assert qml.equal(new_tape[0], qml.MultiControlledX(wires=[3, 7, 0]))
+    assert qml.equal(new_tape[0], Controlled(qml.PhaseShift(np.pi / 2, 0), [3, 7]))
 
 
 def test_ctrl_with_qnode():
@@ -1622,6 +1630,72 @@ def test_ctrl_template_and_operations():
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
 
+custom_controlled_ops = [  # operators with their own controlled class
+    (qml.PauliX, 1, qml.CNOT),
+    (qml.PauliY, 1, qml.CY),
+    (qml.PauliZ, 1, qml.CZ),
+    (qml.PauliX, 2, qml.Toffoli),
+]
+
+
+class TestCtrlCustomOperator:
+    @pytest.mark.parametrize("op_cls, num_ctrl_wires, custom_op_cls", custom_controlled_ops)
+    def test_ctrl_custom_operators(self, op_cls, num_ctrl_wires, custom_op_cls):
+        """Test that ctrl returns operators with their own controlled class."""
+        ctrl_wires = list(range(1, num_ctrl_wires + 1))
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, control=ctrl_wires)
+        custom_op = custom_op_cls(wires=ctrl_wires + [0])
+        assert qml.equal(ctrl_op, custom_op)
+        assert ctrl_op.name == custom_op.name
+
+    @pytest.mark.parametrize("op_cls, _, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_excess_wires(self, op_cls, _, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when there is an excess of control wires."""
+        if op_cls is qml.PauliX:
+            pytest.skip("ctrl(PauliX) becomes MultiControlledX, not Controlled")
+
+        control_wires = list(range(1, 6))
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, control=control_wires)
+        expected = Controlled(op, control_wires=control_wires)
+        assert not isinstance(ctrl_op, custom_op_cls)
+        assert qml.equal(ctrl_op, expected)
+
+    @pytest.mark.parametrize("op_cls, num_ctrl_wires, custom_op_cls", custom_controlled_ops)
+    def test_no_ctrl_custom_operators_control_values(self, op_cls, num_ctrl_wires, custom_op_cls):
+        """Test that ctrl returns a `Controlled` class when the control value is not `True`."""
+        if op_cls is qml.PauliX:
+            pytest.skip("ctrl(PauliX) becomes MultiControlledX, not Controlled")
+
+        ctrl_wires = list(range(1, num_ctrl_wires + 1))
+        op = op_cls(wires=0)
+        ctrl_op = qml.ctrl(op, ctrl_wires, control_values=[False] * num_ctrl_wires)
+        expected = Controlled(op, ctrl_wires, control_values=[False] * num_ctrl_wires)
+        assert not isinstance(ctrl_op, custom_op_cls)
+        assert qml.equal(ctrl_op, expected)
+
+    @pytest.mark.parametrize(
+        "control_wires,control_values,expected_values",
+        [
+            ([1], (False), "0"),
+            ([1, 2], (0, 1), "01"),
+            ([1, 2, 3], (True, True, True), "111"),
+            ([1, 2, 3], (True, True, False), "110"),
+            ([1, 2, 3], None, None),
+        ],
+    )
+    def test_ctrl_PauliX_MultiControlledX(self, control_wires, control_values, expected_values):
+        """Tests that ctrl(PauliX) with 3+ control wires or Falsy control values make a MCX"""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.ctrl(qml.PauliX(0), control_wires, control_values=control_values)
+
+        expected = qml.MultiControlledX(wires=control_wires + [0], control_values=expected_values)
+        assert len(q) == 1
+        assert qml.equal(op, expected)
+        assert qml.equal(q.queue[0], expected)
+
+
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
 class TestCtrlTransformDifferentiation:
     """Tests for differentiation"""
@@ -1651,7 +1725,9 @@ class TestCtrlTransformDifferentiation:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = torch.tensor(
+            [1.0, -1.0], requires_grad=False, dtype=torch.complex128
+        ) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
@@ -1659,9 +1735,9 @@ class TestCtrlTransformDifferentiation:
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
-        b = torch.tensor(0.123, requires_grad=True)
+        b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()
+        loss.backward()  # pylint:disable=no-member
 
         res = b.grad.detach()
         expected = np.sin(b.detach() / 2) / 2
@@ -1742,8 +1818,8 @@ def test_ctrl_values_sanity_check():
         qml.CRX(0.789, wires=[1, 0]),
         qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
         qml.CNOT(wires=[1, 2]),
-        qml.CY(wires=[1, 4]),
-        qml.CZ(wires=[1, 0]),
+        *qml.CY(wires=[1, 4]).decomposition(),
+        *qml.CZ(wires=[1, 0]).decomposition(),
         qml.PauliX(wires=1),
     ]
     assert len(tape) == 9
@@ -1762,7 +1838,7 @@ def test_multi_ctrl_values(ctrl_values):
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
-        exp_op.append(qml.MultiControlledX(wires=[3, 7, 0]))
+        exp_op.append(Controlled(qml.PhaseShift(np.pi / 2, 0), [3, 7]))
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
@@ -1770,8 +1846,8 @@ def test_multi_ctrl_values(ctrl_values):
         return exp_op
 
     with qml.queuing.AnnotatedQueue() as q_tape:
-        CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_values)
-        CCX(wires=0)
+        CCS = ctrl(qml.S, control=[3, 7], control_values=ctrl_values)
+        CCS(wires=0)
     tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]

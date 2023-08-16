@@ -24,3 +24,5 @@ benchmark/revisions/
 venv
 config.toml
 .envrc
+qml_debug.log
+datasets/*

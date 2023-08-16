@@ -32,7 +32,7 @@ class Snapshot(Operation):
 
     Args:
         tag (str or None): An optional custom tag for the snapshot, used to index it
-                           in the snapshots dictionary.
+            in the snapshots dictionary.
 
     **Example**
 
@@ -61,9 +61,9 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, tag=None, do_queue=True):
+    def __init__(self, tag=None):
         self.tag = tag
-        super().__init__(wires=[], do_queue=do_queue)
+        super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"

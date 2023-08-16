@@ -21,7 +21,7 @@ from pennylane import numpy as np
 from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit import sample_state, measure_with_samples
 
-two_qubit_state = np.array([[0, 1j], [-1, 0]]) / np.sqrt(2)
+two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
 APPROX_ATOL = 0.01
 
 
@@ -135,7 +135,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(100)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == (shots.total_shots, 2)
         assert result.dtype == np.bool8
@@ -149,8 +149,8 @@ class TestMeasureSamples:
         mp0 = qml.sample(wires=0)
         mp1 = qml.sample(wires=1)
 
-        result0 = measure_with_samples(mp0, state, shots=shots)
-        result1 = measure_with_samples(mp1, state, shots=shots)
+        result0 = measure_with_samples([mp0], state, shots=shots)[0]
+        result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
         assert result0.shape == (shots.total_shots,)
         assert result0.dtype == np.bool8
@@ -166,7 +166,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(100)
         mp = qml.probs(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == (4,)
         assert result[0] == 0
@@ -181,8 +181,8 @@ class TestMeasureSamples:
         mp0 = qml.probs(wires=0)
         mp1 = qml.probs(wires=1)
 
-        result0 = measure_with_samples(mp0, state, shots=shots)
-        result1 = measure_with_samples(mp1, state, shots=shots)
+        result0 = measure_with_samples([mp0], state, shots=shots)[0]
+        result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
         assert result0.shape == (2,)
         assert result1.shape == (2,)
@@ -199,7 +199,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(100)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == ()
         assert result == -1
@@ -212,8 +212,8 @@ class TestMeasureSamples:
         mp0 = qml.expval(qml.PauliZ(0))
         mp1 = qml.expval(qml.PauliY(1))
 
-        result0 = measure_with_samples(mp0, state, shots=shots)
-        result1 = measure_with_samples(mp1, state, shots=shots)
+        result0 = measure_with_samples([mp0], state, shots=shots)[0]
+        result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
         assert result0.shape == ()
         assert result1.shape == ()
@@ -226,7 +226,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(100)
         mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == ()
         assert result == 0
@@ -239,8 +239,8 @@ class TestMeasureSamples:
         mp0 = qml.var(qml.PauliZ(0))
         mp1 = qml.var(qml.PauliY(1))
 
-        result0 = measure_with_samples(mp0, state, shots=shots)
-        result1 = measure_with_samples(mp1, state, shots=shots)
+        result0 = measure_with_samples([mp0], state, shots=shots)[0]
+        result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
         assert result0.shape == ()
         assert result1.shape == ()
@@ -253,7 +253,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots, rng=123)
+        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
 
         one_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
         assert np.allclose(one_prob, 0.5, atol=0.05)
@@ -264,7 +264,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.probs(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots, rng=123)
+        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
 
         assert np.allclose(result[1], 0.5, atol=0.05)
         assert np.allclose(result[2], 0.5, atol=0.05)
@@ -276,7 +276,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples(mp, state, shots=shots, rng=123)
+        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
 
         assert result != 0
         assert np.allclose(result, 0, atol=0.05)
@@ -287,7 +287,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples(mp, state, shots=shots, rng=123)
+        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
 
         assert result != 1
         assert np.allclose(result, 1, atol=0.05)
@@ -310,16 +310,19 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(shots)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)
 
         if total_copies == 1:
-            assert isinstance(result, np.ndarray)
             result = (result,)
 
         assert isinstance(result, tuple)
         assert len(result) == total_copies
 
         for res, sh in zip(result, shots):
+            assert isinstance(res, tuple)
+            assert len(res) == 1
+            res = res[0]
+
             assert res.shape == (sh, 2)
             assert res.dtype == np.bool8
             assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in res)
@@ -342,16 +345,19 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(shots)
         mp = qml.probs(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)
 
         if total_copies == 1:
-            assert isinstance(result, np.ndarray)
             result = (result,)
 
         assert isinstance(result, tuple)
         assert len(result) == total_copies
 
         for res in result:
+            assert isinstance(res, tuple)
+            assert len(res) == 1
+            res = res[0]
+
             assert res.shape == (4,)
             assert res[0] == 0
             assert res[3] == 0
@@ -375,16 +381,19 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(shots)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)
 
         if total_copies == 1:
-            assert isinstance(result, np.float64)
             result = (result,)
 
         assert isinstance(result, tuple)
         assert len(result) == total_copies
 
         for res in result:
+            assert isinstance(res, tuple)
+            assert len(res) == 1
+            res = res[0]
+
             assert res.shape == ()
             assert res == -1
 
@@ -406,18 +415,183 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(shots)
         mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples([mp], state, shots=shots)
 
         if total_copies == 1:
-            assert isinstance(result, np.float64)
             result = (result,)
 
         assert isinstance(result, tuple)
         assert len(result) == total_copies
 
         for res in result:
+            assert isinstance(res, tuple)
+            assert len(res) == 1
+            res = res[0]
+
             assert res.shape == ()
             assert res == 0
+
+    def test_measure_with_samples_one_shot_one_wire(self):
+        """Tests that measure_with_samples works with a single shot."""
+        state = qml.math.array([0, 1])
+        shots = qml.measurements.Shots(1)
+        mp = qml.expval(qml.PauliZ(0))
+        result = measure_with_samples([mp], state, shots=shots)
+
+        assert isinstance(result, tuple)
+        assert len(result) == 1
+        result = result[0]
+
+        assert result.shape == ()
+        assert result == -1.0
+
+
+class TestBroadcasting:
+    """Test that measurements work when the state has a batch dim"""
+
+    def test_sample_measure(self):
+        """Test that broadcasting works for qml.sample and single shots"""
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(100)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        measurement = qml.sample(wires=[0, 1])
+        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)[0]
+
+        assert res.shape == (3, shots.total_shots, 2)
+        assert res.dtype == np.bool8
+
+        # first batch of samples is always |11>
+        assert np.all(res[0] == 1)
+
+        # second batch of samples is either |00> or |10>
+        assert np.all(np.logical_or(res[1] == [0, 0], res[1] == [1, 0]))
+
+        # third batch of samples can be any of |00>, |01>, |10>, or |11>
+        assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
+
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.probs(wires=[0, 1]),
+                np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
+            ),
+            (qml.expval(qml.PauliZ(1)), np.array([-1, 1, 0])),
+            (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
+        ],
+    )
+    def test_nonsample_measure(self, measurement, expected):
+        """Test that broadcasting works for the other sample measurements and single shots"""
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(10000)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+        assert np.allclose(res, expected, atol=0.01)
+
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            ((100, 2),),
+            (100, 100),
+            (100, 100),
+            (100, 100, 200),
+            (200, (100, 2)),
+        ],
+    )
+    def test_sample_measure_shot_vector(self, shots):
+        """Test that broadcasting works for qml.sample and shot vectors"""
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(shots)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        measurement = qml.sample(wires=[0, 1])
+        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+
+        assert isinstance(res, tuple)
+        assert len(res) == shots.num_copies
+
+        for s, r in zip(shots, res):
+            assert isinstance(r, tuple)
+            assert len(r) == 1
+            r = r[0]
+
+            assert r.shape == (3, s, 2)
+            assert r.dtype == np.bool8
+
+            # first batch of samples is always |11>
+            assert np.all(r[0] == 1)
+
+            # second batch of samples is either |00> or |10>
+            assert np.all(np.logical_or(r[1] == [0, 0], r[1] == [1, 0]))
+
+            # third batch of samples can be any of |00>, |01>, |10>, or |11>
+            assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
+
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            ((10000, 2),),
+            (10000, 10000),
+            (10000, 20000),
+            (10000, 10000, 20000),
+            (20000, (10000, 2)),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                qml.probs(wires=[0, 1]),
+                np.array([[0, 0, 0, 1], [1 / 2, 0, 1 / 2, 0], [1 / 4, 1 / 4, 1 / 4, 1 / 4]]),
+            ),
+            (qml.expval(qml.PauliZ(1)), np.array([-1, 1, 0])),
+            (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
+        ],
+    )
+    def test_nonsample_measure_shot_vector(self, shots, measurement, expected):
+        """Test that broadcasting works for the other sample measurements and shot vectors"""
+        rng = np.random.default_rng(123)
+        shots = qml.measurements.Shots(shots)
+
+        state = [
+            np.array([[0, 0], [0, 1]]),
+            np.array([[1, 0], [1, 0]]) / np.sqrt(2),
+            np.array([[1, 1], [1, 1]]) / 2,
+        ]
+        state = np.stack(state)
+
+        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+
+        assert isinstance(res, tuple)
+        assert len(res) == shots.num_copies
+
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == 1
+            r = r[0]
+
+            assert r.shape == expected.shape
+            assert np.allclose(r, expected, atol=0.01)
 
 
 class TestHamiltonianSamples:
@@ -431,10 +605,26 @@ class TestHamiltonianSamples:
         meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
-        res = simulate(qs, rng=100)
+        res = simulate(qs, rng=200)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
+
+    def test_hamiltonian_expval_shot_vector(self):
+        """Test that sampling works well for Hamiltonian observables with a shot vector"""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
+
+        qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
+        res = simulate(qs, rng=200)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert np.allclose(res[0], expected, atol=0.01)
+        assert np.allclose(res[1], expected, atol=0.01)
 
     def test_sum_expval(self):
         """Test that sampling works well for Sum observables"""
@@ -443,10 +633,26 @@ class TestHamiltonianSamples:
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
-        res = simulate(qs, rng=100)
+        res = simulate(qs, rng=200)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
+
+    def test_sum_expval_shot_vector(self):
+        """Test that sampling works well for Sum observables with a shot vector."""
+        x, y = np.array(0.67), np.array(0.95)
+        ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
+        meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
+
+        qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
+        res = simulate(qs, rng=200)
+
+        expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert np.allclose(res[0], expected, atol=0.01)
+        assert np.allclose(res[1], expected, atol=0.01)
 
     def test_multi_wires(self):
         """Test that sampling works for Sums with large numbers of wires"""

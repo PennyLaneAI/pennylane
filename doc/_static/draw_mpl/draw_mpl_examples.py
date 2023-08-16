@@ -93,11 +93,11 @@ def rcparams(circuit):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = qml.draw_mpl(circuit, style=None)(1.2345, 1.2345)
+    fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345, 1.2345)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
-    plt.style.use("default")
+    qml.drawer.use_style("black_white")
 
 
 def use_style(circuit):
@@ -106,7 +106,7 @@ def use_style(circuit):
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()
-    plt.style.use("default")
+    qml.drawer.use_style("black_white")
 
 
 def wires_labels(circuit):
@@ -114,6 +114,17 @@ def wires_labels(circuit):
         circuit, wire_options={"color": "teal", "linewidth": 5}, label_options={"size": 20}
     )(1.2345, 1.2345)
     plt.savefig(folder / "wires_labels.png")
+    plt.close()
+
+
+def mid_measure():
+    def circuit():
+        m0 = qml.measure(0)
+        qml.Hadamard(1)
+        qml.cond(m0, qml.PauliZ)(1)
+
+    _ = draw_mpl(circuit)()
+    plt.savefig(folder / "mid_measure.png")
     plt.close()
 
 
@@ -139,3 +150,4 @@ if __name__ == "__main__":
     use_style(circuit)
     rcparams(circuit)
     wires_labels(circuit)
+    mid_measure()

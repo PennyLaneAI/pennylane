@@ -24,9 +24,9 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli import simplify, pauli_sentence
-from pennylane.pauli.utils import _binary_matrix
-from pennylane.qchem.observable_hf import jordan_wigner
+from pennylane.operation import active_new_opmath
+from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
+from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
 # Global Variables
@@ -132,10 +132,10 @@ def symmetry_generators(h):
     in the Hamiltonian as given in `arXiv:1910.14644 <https://arxiv.org/abs/1910.14644>`_.
 
     Args:
-        h (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
+        h (Operator): Hamiltonian for which symmetries are to be generated to perform tapering
 
     Returns:
-        list[Hamiltonian]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
+        list[Operator]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
 
     **Example**
 
@@ -153,7 +153,8 @@ def symmetry_generators(h):
     num_qubits = len(h.wires)
 
     # Generate binary matrix for qubit_op
-    binary_matrix = _binary_matrix(h.ops, num_qubits)
+    ps = pauli_sentence(h)
+    binary_matrix = _binary_matrix_from_pws(list(ps), num_qubits)
 
     # Get reduced row echelon form of binary matrix
     rref_binary_matrix = _reduced_row_echelon(binary_matrix)
@@ -165,27 +166,29 @@ def symmetry_generators(h):
     nullspace = _kernel(rref_binary_matrix_red)
 
     generators = []
-    pauli_map = {"00": qml.Identity, "10": qml.PauliX, "11": qml.PauliY, "01": qml.PauliZ}
+    pauli_map = {"00": "I", "10": "X", "11": "Y", "01": "Z"}
 
     for null_vector in nullspace:
-        tau = qml.Identity(0)
+        tau = {}
         for idx, op in enumerate(zip(null_vector[:num_qubits], null_vector[num_qubits:])):
             x, z = op
-            tau @= pauli_map[f"{x}{z}"](idx)
+            tau[idx] = pauli_map[f"{x}{z}"]
 
-        ham = simplify(qml.Hamiltonian([1.0], [tau]))
+        ham = qml.pauli.PauliSentence({qml.pauli.PauliWord(tau): 1.0})
+        ham = ham.operation(h.wires) if active_new_opmath() else ham.hamiltonian(h.wires)
         generators.append(ham)
 
     return generators
 
 
-def paulix_ops(generators, num_qubits):
+def paulix_ops(generators, num_qubits):  # pylint: disable=protected-access
     r"""Generate the single qubit Pauli-X operators :math:`\sigma^{x}_{i}` for each symmetry :math:`\tau_j`,
     such that it anti-commutes with :math:`\tau_j` and commutes with all others symmetries :math:`\tau_{k\neq j}`.
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[Hamiltonian]): list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
+        generators (list[Operator]): list of generators of symmetries, :math:`\tau`'s,
+            for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Return:
@@ -200,8 +203,10 @@ def paulix_ops(generators, num_qubits):
     >>> paulix_ops(generators, 4)
     [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
     """
-    ops_generator = [g.ops[0] if isinstance(g.ops, list) else g.ops for g in generators]
-    bmat = _binary_matrix(ops_generator, num_qubits)
+    ops_generator = functools.reduce(
+        lambda a, b: list(a) + list(b), [pauli_sentence(g) for g in generators]
+    )
+    bmat = _binary_matrix_from_pws(ops_generator, num_qubits)
 
     paulixops = []
     for row in range(bmat.shape[0]):
@@ -226,11 +231,11 @@ def clifford(generators, paulixops):
     :math:`k` Pauli-X operators.
 
     Args:
-        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        generators (list[Operator]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
 
     Returns:
-        Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
+        (Operator): Clifford operator expressed as a PennyLane operator
 
     **Example**
 
@@ -256,7 +261,7 @@ def clifford(generators, paulixops):
 
     u = functools.reduce(lambda p, q: p * q, cliff)
 
-    return u.hamiltonian()
+    return u.operation() if active_new_opmath() else u.hamiltonian()
 
 
 def _split_pauli_sentence(pl_sentence, max_size=15000):
@@ -278,13 +283,13 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     r"""Transform a PauliSentence with a Clifford operator and then taper qubits.
 
     Args:
-        ps_h (Hamiltonian): PauliSentence
-        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
-        paulixops (list[Operation]): list of single-qubit Pauli-X operators
-        paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
+        ps_h (~.PauliSentence): The Hamiltonian to be tapered
+        generators (list[Operator]): generators expressed as PennyLane Hamiltonians
+        paulixops (list[~.PauliX]): list of single-qubit Pauli-X operators
+        paulix_sector (list[int]): eigenvalues of the Pauli-X operators.
 
     Returns:
-        Hamiltonian: the tapered Hamiltonian
+        (Operator): the tapered Hamiltonian
     """
 
     u = clifford(generators, paulixops)
@@ -293,38 +298,38 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     ts_ps = qml.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
         ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
-    ts_h = ts_ps.hamiltonian()  # cast back to hamiltonian
 
-    wireset = u.wires + ts_h.wires
+    wireset = ps_u.wires + ps_h.wires
     wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     o = []
-    h_coeffs, h_ops = ts_h.terms()
-    val = np.ones(len(h_coeffs))
+    val = np.ones(len(ts_ps))
 
-    wires_tap = [i for i in ts_h.wires if i not in paulix_wires]
+    wires_tap = [i for i in ts_ps.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
-    for i in range(len(h_coeffs)):
-        s = qml.pauli.pauli_word_to_string(h_ops[i], wire_map=wiremap)
+    for i, pw_coeff in enumerate(ts_ps.items()):
+        pw, _ = pw_coeff
 
         for idx, w in enumerate(paulix_wires):
-            if s[w] == "X":
+            if pw[w] == "X":
                 val[i] *= paulix_sector[idx]
 
-        wires = [x for x in ts_h.wires if x not in paulix_wires]
         o.append(
             qml.pauli.string_to_pauli_word(
-                "".join([s[wiremap[i]] for i in wires]), wire_map=wiremap_tap
+                "".join([pw[wiremap[i]] for i in wires_tap]),
+                wire_map=wiremap_tap,
             )
         )
 
-    c = qml.math.stack(qml.math.multiply(val * complex(1.0), h_coeffs))
+    c = qml.math.stack(qml.math.multiply(val * complex(1.0), list(ts_ps.values())))
 
-    tapered_ham = simplify(qml.Hamiltonian(c, o))
+    tapered_ham = (
+        qml.simplify(qml.dot(c, o)) if active_new_opmath() else simplify(qml.Hamiltonian(c, o))
+    )
     # If simplified Hamiltonian is missing wires, then add wires manually for consistency
-    if wires_tap != list(tapered_ham.wires):
+    if set(wires_tap) != tapered_ham.wires.toset():
         identity_op = functools.reduce(
             lambda i, j: i @ j,
             [
@@ -332,6 +337,10 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
                 for wire in Wires.unique_wires([tapered_ham.wires, Wires(wires_tap)])
             ],
         )
+
+        if active_new_opmath():
+            return tapered_ham + (0.0 * identity_op)
+
         tapered_ham = qml.Hamiltonian(
             np.array([*tapered_ham.coeffs, 0.0]), [*tapered_ham.ops, identity_op]
         )
@@ -347,13 +356,13 @@ def taper(h, generators, paulixops, paulix_sector):
     eigenvalues is defined as the Pauli sector.
 
     Args:
-        h (Hamiltonian): PennyLane Hamiltonian
-        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        h (Operator): Hamiltonian as a PennyLane operator
+        generators (list[Operator]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
-        paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
+        paulix_sector (list[int]): eigenvalues of the Pauli-X operators
 
     Returns:
-        Hamiltonian: the tapered Hamiltonian
+        (Operator): the tapered Hamiltonian
 
     **Example**
 
@@ -392,8 +401,8 @@ def optimal_sector(qubit_op, generators, active_electrons):
     act and the wires that correspond to occupied orbitals in the HF state.
 
     Args:
-        qubit_op (Hamiltonian): Hamiltonian for which symmetries are being generated
-        generators (list[Hamiltonian]): list of symmetry generators for the Hamiltonian
+        qubit_op (Operator): Hamiltonian for which symmetries are being generated
+        generators (list[Operator]): list of symmetry generators for the Hamiltonian
         active_electrons (int): The number of active electrons in the system
 
     Returns:
@@ -427,7 +436,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     perm = []
     for tau in generators:
-        symmstr = np.array([1 if wire in tau.ops[0].wires else 0 for wire in qubit_op.wires])
+        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
         coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 
@@ -445,7 +454,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     and leaving the rest in state :math:`|0\rangle`.
 
     Args:
-        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        generators (list[Operator]): list of generators of symmetries, taus, for the Hamiltonian
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
         num_electrons (int): number of active electrons in the system
@@ -471,21 +480,18 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
     # convert the HF state to a corresponding HF observable under the JW transform
-    fermop_terms = []
+    ferm_ps = PauliSentence({PauliWord({0: "I"}): 1.0})
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_terms = jordan_wigner([idx])
-            op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
+            ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
         else:
-            op_term = qml.Hamiltonian([1.0], [qml.Identity(idx)])
-        fermop_terms.append(op_term)
-
-    fermop_terms_as_ps = [pauli_sentence(term) for term in fermop_terms]
-    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
+            ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
+        ferm_ps *= ps
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
-    fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
+    fermop_ps = pauli_sentence(fermop_taper)
+    fermop_mat = _binary_matrix_from_pws(list(fermop_ps), len(fermop_taper.wires))
 
     # build a wireset to match wires with that of the tapered Hamiltonian
     gen_wires = Wires.all_wires([generator.wires for generator in generators])
@@ -556,26 +562,20 @@ def _build_callables(operation, op_wires=None, op_gen=None):
 def _build_generator(operation, wire_order, op_gen=None):
     r"""Computes the generator `G` for the general unitary operation :math:`U(\theta)=e^{iG\theta}`, where :math:`\theta` could either be a variational parameter,
     or a constant with some arbitrary fixed value.
-
     Args:
         operation (Operation): qubit operation to be tapered
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
         op_gen (Hamiltonian): generator of the operation in case it cannot be computed internally.
-
     Returns:
         Hamiltonian: the generator of the operation
-
     Raises:
         NotImplementedError: generator of the operation cannot be constructed internally
         ValueError: optional argument `op_gen` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
-
     **Example**
-
     >>> _build_generator(qml.SingleExcitation, [0, 1], op_wires=[0, 2])
       (-0.25) [Y0 X1]
     + (0.25) [X0 Y1]
     """
-
     if op_gen is None:
         if operation.num_params < 1:  # Non-parameterized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
@@ -744,6 +744,12 @@ def taper_operation(
 
             V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
     """
+    if active_new_opmath():
+        raise qml.QuantumFunctionError(
+            "This function is currently not supported with the new operator arithmetic "
+            "framework. Please de-activate it using `qml.operation.disable_new_opmath()`"
+        )
+
     # maintain a flag to track functional form of the operation
     callable_op = callable(operation)
     # get dummy objects in case functional form of operation or op_gen is being used

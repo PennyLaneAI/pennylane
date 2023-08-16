@@ -19,6 +19,7 @@ import functools
 import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+from pennylane.wires import Wires
 
 
 class GroverOperator(Operation):
@@ -101,13 +102,20 @@ class GroverOperator(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):
+    def __repr__(self):
+        return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
+
+    def _flatten(self):
+        hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
+        return tuple(), (self.wires, hyperparameters)
+
+    def __init__(self, wires=None, work_wires=None, id=None):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
+        self._hyperparameters = {"n_wires": len(wires), "work_wires": Wires(work_wires)}
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):

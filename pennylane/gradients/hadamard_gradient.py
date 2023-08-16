@@ -35,7 +35,6 @@ from .gradient_transform import (
 def _hadamard_grad(
     tape,
     argnum=None,
-    shots=None,
     aux_wire=None,
     device_wires=None,
 ):
@@ -46,9 +45,6 @@ def _hadamard_grad(
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
-            information about the shots.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
             a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
@@ -92,7 +88,6 @@ def _hadamard_grad(
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
-    >>> qml.enable_return()
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
@@ -111,11 +106,9 @@ def _hadamard_grad(
     device evaluation. Instead, the processed tapes, and post-processing
     function, which together define the gradient are directly returned:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     qml.expval(qml.PauliZ(0))
+    >>> ops = [qml.RX(p, wires=0) for p in params]
+    >>> measurements = [qml.expval(qml.PauliZ(0))]
+    >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
     >>> gradient_tapes
     [<QuantumTape: wires=[0, 1], params=3>,
@@ -148,7 +141,6 @@ def _hadamard_grad(
 
     If you use custom wires on your device, you need to pass an auxiliary wire.
 
-    >>> qml.enable_return()
     >>> dev_wires = ("a", "c")
     >>> dev = qml.device("default.qubit", wires=dev_wires)
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
@@ -188,29 +180,19 @@ def _hadamard_grad(
     assert_no_variance(tape.measurements, transform_name)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    if device_wires and len(tape.wires) == len(device_wires):
-        raise qml.QuantumFunctionError("The device has no free wire for the auxiliary wire.")
-
-    # Get default for aux_wire
-    if aux_wire is None:
-        aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
-    elif aux_wire[0] in tape.wires:
-        raise qml.QuantumFunctionError("The auxiliary wire is already used.")
-    elif aux_wire[0] not in device_wires:
-        raise qml.QuantumFunctionError(
-            "The requested auxiliary wire does not exist on the used device."
-        )
+    # Validate or get default for aux_wire
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 
