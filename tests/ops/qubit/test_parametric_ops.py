@@ -157,6 +157,23 @@ class TestOperations:
         new_op = type(op)._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
+    def test_jax_pytrees(self, op):
+        import jax
+
+        leaves = jax.tree_util.tree_leaves(op)
+        for d1, d2 in zip(leaves, op.data):
+            assert d1 is d2
+
+        leaves, tree_def = jax.tree_util.tree_flatten(op)
+        op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
+        assert qml.equal(op_unflattened, op)
+
+        new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
+        for d1, d2 in zip(new_op.data, op.data):
+            assert qml.math.allclose(d1, d2 + 1.0)
+
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
@@ -2752,6 +2769,7 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2794,6 +2812,7 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
