@@ -98,7 +98,7 @@ class TestConstruction:
         # test that the internal tape._measurements list is created properly
         assert isinstance(tape._measurements[0], MeasurementProcess)
         assert tape._measurements[0].return_type == qml.measurements.Expectation
-        assert tape._measurements[0].obs == obs[0]
+        assert qml.equal(tape._measurements[0].obs, obs[0])
 
         assert isinstance(tape._measurements[1], MeasurementProcess)
         assert tape._measurements[1].return_type == qml.measurements.Probability
@@ -227,9 +227,7 @@ class TestConstruction:
         assert tape.output_dim == 5
         assert tape.batch_size is None
 
-        assert a not in tape.operations
-        assert b not in tape.operations
-
+        assert not any(qml.equal(a, op) or qml.equal(b, op) for op in tape.operations)
         assert tape.wires == qml.wires.Wires([0, "a"])
 
     def test_state_preparation(self):
@@ -241,17 +239,19 @@ class TestConstruction:
             B = qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(wires=1))
 
-        assert tape.operations == [A, B]
-        assert tape._prep == [A]
+        assert tape.operations == tape._ops == [A, B]
         assert tape.get_parameters() == params
 
-    def test_state_preparation_error(self):
-        """Test that an exception is raised if a state preparation comes
+    def test_state_preparation_queued_after_operation(self):
+        """Test that no exception is raised if a state preparation comes
         after a quantum operation"""
-        with pytest.raises(ValueError, match="must occur prior to ops"):
-            with QuantumTape():
-                qml.PauliX(wires=0)
-                qml.BasisState(np.array([0, 1]), wires=[0, 1])
+        with QuantumTape() as tape:
+            qml.PauliX(wires=0)
+            qml.BasisState(np.array([0, 1]), wires=[0, 1])
+
+        assert len(tape.operations) == 2
+        assert qml.equal(tape.operations[0], qml.PauliX(wires=0))
+        assert qml.equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""

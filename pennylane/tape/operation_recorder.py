@@ -66,7 +66,7 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
         # be done via the following:
         # if exception_type is None:
         #    self._process_queue()
-        self._ops, self._measurements, self._prep = process_queue(self)
+        self._ops, self._measurements = process_queue(self)
         self._update()
 
         for obj, info in self.items():

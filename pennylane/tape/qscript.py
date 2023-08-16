@@ -83,13 +83,15 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 class QuantumScript:
-    """The state preparation, operations, and measurements that represent instructions for
+    """The operations and measurements that represent instructions for
     execution on a quantum device.
 
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
+        prep (Iterable[Operator]): Deprecated argument to specify state preparations to
+            perform at the start of the circuit. These should go at the beginning of ``ops``
+            instead.
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
@@ -105,14 +107,13 @@ class QuantumScript:
 
         from pennylane.tape import QuantumScript
 
-        prep = [qml.BasisState(np.array([1,1]), wires=(0,"a"))]
-
-        ops = [qml.RX(0.432, 0),
+        ops = [qml.BasisState(np.array([1,1]), wires=(0,"a")),
+               qml.RX(0.432, 0),
                qml.RY(0.543, 0),
                qml.CNOT((0,"a")),
                qml.RX(0.133, "a")]
 
-        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], prep)
+        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
 
     >>> list(qscript)
     [BasisState(array([1, 1]), wires=[0, "a"]),
@@ -164,7 +165,7 @@ class QuantumScript:
     >>> qscript.shots.shot_vector
     (ShotCopies(1 shots x 2), ShotCopies(2 shots x 3))
 
-    ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
+    ``ops`` and ``measurements`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
 
     >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
@@ -181,8 +182,15 @@ class QuantumScript:
         shots: Optional[Union[int, Sequence, Shots]] = None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
+        if prep is not None:
+            warnings.warn(
+                "The `prep` keyword argument is being removed from `QuantumScript`, and "
+                "`InitialState` operations should be placed at the beginning of the `ops` list "
+                "instead.",
+                UserWarning,
+            )
+            self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 
@@ -280,7 +288,7 @@ class QuantumScript:
         >>> qscript.operations
         [QubitStateVector([0, 1], wires=[0]), RX(0.432, wires=[0])]
         """
-        return self._prep + self._ops
+        return self._ops
 
     @property
     def observables(self) -> List[Union[MeasurementProcess, Observable]]:
@@ -380,6 +388,15 @@ class QuantumScript:
             ~.Shots: Object with shot information
         """
         return self._shots
+
+    @property
+    def num_preps(self) -> int:
+        """Returns the index of the first operator that is not an StatePrepBase operator."""
+        idx = 0
+        num_ops = len(self.operations)
+        while idx < num_ops and isinstance(self.operations[idx], qml.operation.StatePrep):
+            idx += 1
+        return idx
 
     ##### Update METHODS ###############
 
@@ -780,11 +797,10 @@ class QuantumScript:
 
             new_ops[op_idx] = new_op
 
-        new_prep = new_ops[: len(self._prep)]
-        new_operations = new_ops[len(self._prep) : len(self.operations)]
+        new_operations = new_ops[: len(self.operations)]
         new_measurements = new_ops[len(self.operations) :]
 
-        new_tape = self.__class__(new_operations, new_measurements, new_prep, shots=self.shots)
+        new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
         new_tape.trainable_params = self.trainable_params
         new_tape._qfunc_output = self._qfunc_output
 
@@ -1114,23 +1130,19 @@ class QuantumScript:
             QuantumScript : a shallow copy of the quantum script
         """
         if copy_operations:
-            # Perform a shallow copy of all operations in the state prep, operation, and measurement
+            # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
             # unless modified.
-            _prep = [copy.copy(op) for op in self._prep]
-            _ops = [copy.copy(op) for op in self._ops]
+            _ops = [copy.copy(op) for op in self.operations]
             _measurements = [copy.copy(op) for op in self.measurements]
         else:
-            # Perform a shallow copy of the state prep, operation, and measurement queues. The
+            # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
             # changing the original operations will always alter the operations on the copied script.
-            _prep = self._prep.copy()
-            _ops = self._ops.copy()
+            _ops = self.operations.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(
-            ops=_ops, measurements=_measurements, prep=_prep, shots=self.shots
-        )
+        new_qscript = self.__class__(ops=_ops, measurements=_measurements, shots=self.shots)
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
@@ -1165,11 +1177,14 @@ class QuantumScript:
 
         Consider the following nested quantum script:
 
-        >>> prep = [qml.BasisState(np.array([1, 1]), wires=[0, 'a'])]
         >>> nested_script = QuantumScript([qml.Rot(0.543, 0.1, 0.4, wires=0)])
-        >>> ops = [nested_script, qml.CNOT(wires=[0, 'a']), qml.RY(0.2, wires='a')]
+        >>> ops = [
+                qml.BasisState(np.array([1, 1]), wires=[0, 'a']),
+                nested_script,
+                qml.CNOT(wires=[0, 'a']), qml.RY(0.2, wires='a'),
+            ]
         >>> measurements = [qml.probs(wires=0), qml.probs(wires='a')]
-        >>> qscript = QuantumScript(ops, measurements, prep)
+        >>> qscript = QuantumScript(ops, measurements)
 
         The nested structure is preserved:
 
@@ -1208,11 +1223,11 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
+        ops = self.operations[self.num_preps :]
+        prep = self.operations[: self.num_preps]
         with qml.QueuingManager.stop_recording():
-            ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        return self.__class__(
-            ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
-        )
+            ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(ops)]
+        return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
 
     def unwrap(self):
         """A context manager that unwraps a quantum script with tensor-like parameters

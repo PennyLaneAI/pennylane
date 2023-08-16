@@ -130,25 +130,23 @@ Only the operators that will end up in the circuit will remain.
 [PauliX(wires=[0])]
 [PauliX(wires=[0])**1.5]
 
-Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations,
-measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
+Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
+and measurements in the final circuit. This step eliminates any object that has an owner.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     qml.QubitStateVector(np.array([1.0, 0]), wires=0)
 ...     base = qml.PauliX(0)
 ...     pow_op = base ** 1.5
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
->>> ops, measurements, prep = qml.queuing.process_queue(q)
+>>> ops, measurements = qml.queuing.process_queue(q)
 >>> ops
-[PauliX(wires=[0])**1.5]
+[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
->>> prep
-[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0])]
 
-These three lists can be used to construct a :class:`~.QuantumScript`:
+These two lists can be used to construct a :class:`~.QuantumScript`:
 
->>> qml.tape.QuantumScript(ops, measurements, prep)
+>>> qml.tape.QuantumScript(ops, measurements)
 <QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
@@ -562,12 +560,12 @@ def process_queue(queue: AnnotatedQueue):
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)], list(.Operation):
-        The list of main tape operations, the list of tape measurements, and the list of preparation operations
+        tuple[list(.Operation), list(.MeasurementProcess)]:
+        The list of tape operations, and the list of tape measurements
     """
-    lists = {"_prep": [], "_ops": [], "_measurements": []}
-    list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
-    current_list = "_prep"
+    lists = {"_ops": [], "_measurements": []}
+    list_order = {"_ops": 1, "_measurements": 2}
+    current_list = "_ops"
 
     for obj, info in queue.items():
         if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
@@ -580,4 +578,4 @@ def process_queue(queue: AnnotatedQueue):
                 )
             lists[obj._queue_category].append(obj)
 
-    return lists["_ops"], lists["_measurements"], lists["_prep"]
+    return lists["_ops"], lists["_measurements"]

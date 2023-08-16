@@ -159,8 +159,6 @@ def validate_and_expand_adjoint(
             "Operator decomposition may have entered an infinite loop."
         ) from e
 
-    prep = circuit._prep[:1]
-
     for k in circuit.trainable_params:
         if hasattr(circuit._par_info[k]["op"], "return_type"):
             warnings.warn(
@@ -189,7 +187,7 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
-    return qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
+    return qml.tape.QuantumScript(new_ops, measurements, shots=circuit.shots)
 
 
 def validate_measurements(

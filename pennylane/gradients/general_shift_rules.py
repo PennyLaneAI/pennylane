@@ -415,10 +415,9 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
             all_ops[op_idx] = mp(obs=shifted_op)
 
     # pylint: disable=protected-access
-    prep = all_ops[: len(tape._prep)]
-    ops = all_ops[len(tape._prep) : len(tape.operations)]
+    ops = all_ops[: len(tape.operations)]
     meas = all_ops[len(tape.operations) :]
-    return QuantumScript(ops=ops, measurements=meas, prep=prep, shots=tape.shots)
+    return QuantumScript(ops=ops, measurements=meas, shots=tape.shots)
 
 
 def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=False):
