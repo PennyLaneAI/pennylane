@@ -228,6 +228,7 @@ array([False, False])
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
 * `qml.ctrl(qml.PauliX)` returns a `Controlled` instead of a `MultiControlledX` like before.
+  [(#4486)](https://github.com/PennyLaneAI/pennylane/pull/4486)
 
 <h3>Breaking changes 💔</h3>
 
