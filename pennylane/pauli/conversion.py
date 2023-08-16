@@ -17,7 +17,7 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Union
+from typing import Union, Tuple
 
 import pennylane as qml
 from pennylane.operation import Tensor
@@ -27,31 +27,15 @@ from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
-
 # pylint: disable=too-many-branches
-def pauli_decompose(
-    matrix,
-    hide_identity=False,
-    wire_order=None,
-    pauli=False,
-    padding=False,
-) -> Union[Hamiltonian, PauliSentence]:
+def _generalized_pauli_decompose(
+    matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
+) -> Tuple[qml.math.array, list]:
     r"""Decomposes a matrix into a linear combination of Pauli operators.
-
-    This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
-    in time :math:`O(n 4^n)`. The input matrix is first padded with zeros if its dimensions are not
-    :math:`2^n\times 2^n` and written as a quantum state in the computational basis following the
-    `channel-state duality <https://en.wikipedia.org/wiki/Channel-state_duality>`_.
-    A Bell basis transformation is then performed using the
-    `Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Hadamard_transform>`_, after which
-    coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
-    phase from each ``PauliY`` term occurring in the word.
 
     Args:
         matrix (tensor_like[complex]): any matrix M, the keyword argument ``padding=True``
             should be provided if the dimension of M is not :math:`2^n\times 2^n`.
-        hide_identity (bool): does not include the Identity observable within
-            the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a PauliSentence instance if ``True``.
@@ -59,84 +43,8 @@ def pauli_decompose(
             that are not of shape :math:`2^n\times 2^n` by padding them with zeros if ``True``.
 
     Returns:
-        Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-        of Pauli operators, either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence` instance.
-
-    **Example:**
-
-    We can use this function to compute the Pauli operator decomposition of an arbitrary matrix:
-
-    >>> A = np.array(
-    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-    >>> H = qml.pauli_decompose(A)
-    >>> print(H)
-    (-1.5) [I0 X1]
-    + (-1.5) [X0 I1]
-    + (-1.0) [I0 I1]
-    + (-1.0) [I0 Z1]
-    + (-1.0) [X0 X1]
-    + (-0.5) [I0 Y1]
-    + (-0.5) [X0 Z1]
-    + (-0.5) [Z0 X1]
-    + (-0.5) [Z0 Y1]
-    + (1.0) [Y0 Y1]
-
-    We can return a :class:`~.PauliSentence` instance by using the keyword argument ``pauli=True``:
-
-    >>> ps = qml.pauli_decompose(A, pauli=True)
-    >>> print(ps)
-    -1.0 * I
-    + -1.5 * X(1)
-    + -0.5 * Y(1)
-    + -1.0 * Z(1)
-    + -1.5 * X(0)
-    + -1.0 * X(0) @ X(1)
-    + -0.5 * X(0) @ Z(1)
-    + 1.0 * Y(0) @ Y(1)
-    + -0.5 * Z(0) @ X(1)
-    + -0.5 * Z(0) @ Y(1)
-
-    We can also set custom wires using the ``wire_order`` argument:
-
-    >>> ps = qml.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
-    >>> print(ps)
-    -1.0 * I
-    + -1.5 * X(b)
-    + -0.5 * Y(b)
-    + -1.0 * Z(b)
-    + -1.5 * X(a)
-    + -1.0 * X(a) @ X(b)
-    + -0.5 * X(a) @ Z(b)
-    + 1.0 * Y(a) @ Y(b)
-    + -0.5 * Z(a) @ X(b)
-    + -0.5 * Z(a) @ Y(b)
-
-    .. details::
-        :title: Usage Details
-        :href: usage-decompose-operation
-
-        For non-square matrices, we need to provide the ``padding=True`` keyword argument:
-
-        >>> A = np.array([[-2, -2 + 1j]])
-        >>> H = qml.pauli_decompose(A, padding=True)
-        >>> print(H)
-          ((-1+0j)) [I0]
-        + ((-1+0.5j)) [X0]
-        + ((-1+0j)) [Z0]
-        + ((-0.5-1j)) [Y0]
-
-        We can also use the method within a differentiable workflow and obtain gradients:
-
-        >>> A = qml.numpy.array([[-2, -2 + 1j]], requires_grad=True)
-        >>> dev = qml.device("default.qubit", wires=1)
-        >>> @qml.qnode(dev)
-        ... def circuit(A):
-        ...    decomp = qml.pauli_decompose(A, padding=True)
-        ...    qml.RX(decomp.coeffs[2], 0)
-        ...    return qml.expval(qml.PauliZ(0))
-        >>> grad_numpy = qml.grad(circuit)(A)
-        tensor([[-2.+0.j, -2.+1.j]], requires_grad=True)
-
+        Tuple[qml.math.array, list]: the matrix decomposed as a linear combination of Pauli operators
+        as a tuple consisting of an array of coefficients and a list of corresponding Pauli terms.
     """
     # Ensuring original matrix is not manipulated and we support builtin types.
     matrix = qml.math.convert_like(matrix, matrix)
@@ -220,7 +128,95 @@ def pauli_decompose(
 
     coeffs = qml.math.stack(coeffs)
 
-    # Convert to Hamiltonian and PauliSentence
+    if not pauli:
+        with qml.QueuingManager.stop_recording():
+            obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs]
+
+    return (coeffs, obs)
+
+
+def pauli_decompose(
+    H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
+) -> Union[Hamiltonian, PauliSentence]:
+    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+
+    Args:
+        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
+        hide_identity (bool): does not include the Identity observable within
+            the tensor products of the decomposition if ``True``.
+        wire_order (list[Union[int, str]]): the ordered list of wires with respect
+            to which the operator is represented as a matrix.
+        pauli (bool): return a PauliSentence instance if ``True``.
+        check_hermitian (bool): check if the provided matrix is Hermitian or not.
+
+    Returns:
+        Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
+        of Pauli operators, either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence` instance.
+
+    **Example:**
+
+    We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
+    matrix:
+
+    >>> A = np.array(
+    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
+    >>> H = qml.pauli_decompose(A)
+    >>> print(H)
+    (-1.5) [I0 X1]
+    + (-1.5) [X0 I1]
+    + (-1.0) [I0 I1]
+    + (-1.0) [I0 Z1]
+    + (-1.0) [X0 X1]
+    + (-0.5) [I0 Y1]
+    + (-0.5) [X0 Z1]
+    + (-0.5) [Z0 X1]
+    + (-0.5) [Z0 Y1]
+    + (1.0) [Y0 Y1]
+
+    We can return a :class:`~.PauliSentence` instance by using the keyword argument ``pauli=True``:
+
+    >>> ps = qml.pauli_decompose(A, pauli=True)
+    >>> print(ps)
+    -1.0 * I
+    + -1.5 * X(1)
+    + -0.5 * Y(1)
+    + -1.0 * Z(1)
+    + -1.5 * X(0)
+    + -1.0 * X(0) @ X(1)
+    + -0.5 * X(0) @ Z(1)
+    + 1.0 * Y(0) @ Y(1)
+    + -0.5 * Z(0) @ X(1)
+    + -0.5 * Z(0) @ Y(1)
+
+    We can also set custom wires using the ``wire_order`` argument:
+
+    >>> ps = qml.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> print(ps)
+    -1.0 * I
+    + -1.5 * X(b)
+    + -0.5 * Y(b)
+    + -1.0 * Z(b)
+    + -1.5 * X(a)
+    + -1.0 * X(a) @ X(b)
+    + -0.5 * X(a) @ Z(b)
+    + 1.0 * Y(a) @ Y(b)
+    + -0.5 * Z(a) @ X(b)
+    + -0.5 * Z(a) @ Y(b)
+    """
+    n = int(qml.math.log2(len(H)))
+    N = 2**n
+
+    if H.shape != (N, N):
+        raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
+
+    if check_hermitian and not qml.math.allclose(H, H.conj().T):
+        raise ValueError("The matrix is not Hermitian")
+
+    coeffs, obs = _generalized_pauli_decompose(
+        H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=False
+    )
+    coeffs = qml.math.real(coeffs)
+
     if pauli:
         return PauliSentence(
             {
@@ -229,8 +225,120 @@ def pauli_decompose(
             }
         )
 
-    obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs]
-    return Hamiltonian(coeffs, obs)
+    with qml.QueuingManager.stop_recording():
+        return Hamiltonian(coeffs, obs)
+
+
+def phased_pauli_decompose(
+    matrix,
+    hide_identity=False,
+    wire_order=None,
+    pauli=False,
+    padding=False,
+) -> Union[Tuple[qml.math.array, list], PauliSentence]:
+    r"""Decomposes any matrix into a linear combination of Pauli operators.
+
+    This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
+    in time :math:`O(n 4^n)`. The input matrix is first padded with zeros if its dimensions are not
+    :math:`2^n\times 2^n` and written as a quantum state in the computational basis following the
+    `channel-state duality <https://en.wikipedia.org/wiki/Channel-state_duality>`_.
+    A Bell basis transformation is then performed using the
+    `Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Hadamard_transform>`_, after which
+    coefficients for each of the :math:`4^n` Pauli words are computed while accounting for the
+    phase from each ``PauliY`` term occurring in the word.
+
+    Args:
+        matrix (tensor_like[complex]): any matrix M, the keyword argument ``padding=True``
+            should be provided if the dimension of M is not :math:`2^n\times 2^n`.
+        hide_identity (bool): does not include the Identity observable within
+            the tensor products of the decomposition if ``True``.
+        wire_order (list[Union[int, str]]): the ordered list of wires with respect
+            to which the operator is represented as a matrix.
+        pauli (bool): return a PauliSentence instance if ``True``.
+        padding (bool): makes the function compatible with rectangular matrices and square matrices
+            that are not of shape :math:`2^n\times 2^n` by padding them with zeros if ``True``.
+
+    Returns:
+        Union[Tuple(tensor_like, list), ~.PauliSentence]: the matrix decomposed as a linear combination of
+        Pauli operators as as a tuple consisting of an array of coefficients and a list of corresponding
+        Pauli terms, or :class:`~.PauliSentence` instance.
+
+    **Example:**
+
+    We can use this function to compute the Pauli operator decomposition of an arbitrary matrix:
+
+    >>> A = np.array(
+    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  1j]])
+    >>> coeffs, obs = qml.phased_pauli_decompose(A)
+    >>> coeffs
+    array([-1. +0.25j, -1.5+0.j  , -0.5+0.j  , -1. -0.25j, -1.5+0.j  ,
+       -1. +0.j  , -0.5+0.j  ,  1. -0.j  ,  0. -0.25j, -0.5+0.j  ,
+       -0.5+0.j  ,  0. +0.25j])
+    >>> obs
+    [Identity(wires=[0]) @ Identity(wires=[1]), Identity(wires=[0]) @ PauliX(wires=[1]),
+    Identity(wires=[0]) @ PauliY(wires=[1]), Identity(wires=[0]) @ PauliZ(wires=[1]),
+    PauliX(wires=[0]) @ Identity(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1]),
+    PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliY(wires=[0]) @ PauliY(wires=[1]),
+    PauliZ(wires=[0]) @ Identity(wires=[1]), PauliZ(wires=[0]) @ PauliX(wires=[1]),
+    PauliZ(wires=[0]) @ PauliY(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[1])]
+
+    We can also set custom wires using the ``wire_order`` argument:
+
+    >>> ps = qml.phased_pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> print(ps)
+    (-1+0.25j) * I
+    + (-1.5+0j) * X(b)
+    + (-0.5+0j) * Y(b)
+    + (-1-0.25j) * Z(b)
+    + (-1.5+0j) * X(a)
+    + (-1+0j) * X(a) @ X(b)
+    + (-0.5+0j) * X(a) @ Z(b)
+    + (1-0j) * Y(a) @ Y(b)
+    + -0.25j * Z(a)
+    + (-0.5+0j) * Z(a) @ X(b)
+    + (-0.5+0j) * Z(a) @ Y(b)
+    + 0.25j * Z(a) @ Z(b)
+
+    .. details::
+        :title: Advanced Usage Details
+        :href: usage-decompose-operation
+
+        For non-square matrices, we need to provide the ``padding=True`` keyword argument:
+
+        >>> A = np.array([[-2, -2 + 1j]])
+        >>> ps = qml.phased_pauli_decompose(A, padding=True, pauli=True)
+        >>> print(ps)
+        (-1+0j) * I
+        + (-1+0.5j) * X(0)
+        + (-0.5-1j) * Y(0)
+        + (-1+0j) * Z(0)
+
+        We can also use the method within a differentiable workflow and obtain gradients:
+
+        >>> A = qml.numpy.array([[-2, -2 + 1j]], requires_grad=True)
+        >>> dev = qml.device("default.qubit", wires=1)
+        >>> @qml.qnode(dev)
+        ... def circuit(A):
+        ...    coeffs, _ = qml.phased_pauli_decompose(A, padding=True)
+        ...    qml.RX(qml.math.real(coeffs[2]), 0)
+        ...    return qml.expval(qml.PauliZ(0))
+        >>> qml.grad(circuit)(A)
+        array([[0.+0.j        , 0.+0.23971277j]])
+
+    """
+    coeffs, obs = _generalized_pauli_decompose(
+        matrix, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=padding
+    )
+
+    if pauli:
+        return PauliSentence(
+            {
+                PauliWord({w: o for o, w in obs_n_wires}): coeff
+                for coeff, obs_n_wires in zip(coeffs, obs)
+            }
+        )
+
+    return (coeffs, obs)
 
 
 def pauli_sentence(op):
