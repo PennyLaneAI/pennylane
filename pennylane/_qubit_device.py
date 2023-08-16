@@ -1846,6 +1846,7 @@ class QubitDevice(Device):
             counts (bool): whether counts (``True``) or raw samples (``False``)
                 should be returned
             decimal (bool): Whether to return samples as base-10 integers or boolean lists.
+                Setting ``decimal`` does not do anything if ``counts`` is ``True``.
 
         Raises:
             EigvalsUndefinedError: if no information is available about the
