@@ -742,7 +742,7 @@ def sqrt_matrix(density_matrix):
         sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * i
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
-    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ np.conj(np.transpose(vecs))
+    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
