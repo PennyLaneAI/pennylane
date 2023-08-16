@@ -310,6 +310,9 @@ array([False, False])
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.Projector` is pickle-able again.
+  [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
+
 * Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
   `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
   [(#4424)](https://github.com/PennyLaneAI/pennylane/pull/4424)
