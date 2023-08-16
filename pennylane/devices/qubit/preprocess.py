@@ -16,13 +16,14 @@
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
 from dataclasses import replace
+import os
 from typing import Generator, Callable, Tuple, Union
 import warnings
 from functools import partial
 
 import pennylane as qml
 
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, StatePrep
 from pennylane.measurements import (
     MidMeasureMP,
     StateMeasurement,
@@ -66,10 +67,7 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    if op.name == "Snapshot":
-        return True
-
-    return op.has_matrix
+    return op.name == "Snapshot" or op.has_matrix
 
 
 def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
@@ -96,6 +94,43 @@ def _operator_decomposition_gen(
 
 
 #######################
+
+
+def validate_multiprocessing_workers(max_workers):
+    """Validates the number of workers for multiprocessing.
+
+    Checks that the CPU is not oversubscribed and warns user if it is,
+    making suggestions for the number of workers and/or the number of
+    threads per worker.
+
+    Args:
+        max_workers (int): Maximal number of multiprocessing workers
+    """
+    if max_workers is None:
+        return
+    threads_per_proc = os.cpu_count()  # all threads by default
+    varname = "OMP_NUM_THREADS"
+    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+    for var in varnames:
+        if os.getenv(var):  # pragma: no cover
+            varname = var
+            threads_per_proc = int(os.getenv(var))
+            break
+    num_threads = threads_per_proc * max_workers
+    num_cpu = os.cpu_count()
+    num_threads_suggest = max(1, os.cpu_count() // max_workers)
+    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+    if num_threads > num_cpu:
+        warnings.warn(
+            f"""The device requested {num_threads} threads ({max_workers} processes
+            times {threads_per_proc} threads per process), but the processor only has
+            {num_cpu} logical cores. The processor is likely oversubscribed, which may
+            lead to performance deterioration. Consider decreasing the number of processes,
+            setting the device or execution config argument `max_workers={num_workers_suggest}`
+            for example, or decreasing the number of threads per process by setting the
+            environment variable `{varname}={num_threads_suggest}`.""",
+            UserWarning,
+        )
 
 
 def validate_and_expand_adjoint(
@@ -154,8 +189,7 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
-    expanded_tape = qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
-    return expanded_tape
+    return qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
 
 
 def validate_measurements(
@@ -214,14 +248,14 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
         circuit = qml.defer_measurements(circuit)
 
-    if len(circuit._prep) > 1:
-        raise DeviceError("DefaultQubit2 accepts at most one state prep operation.")
-
-    if not all(_accepted_operator(op) for op in circuit._ops):
+    if not all(_accepted_operator(op) for op in circuit.operations):
         try:
+            # don't decompose initial operations if its StatePrep
+            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrep) else []
+
             new_ops = [
                 final_op
-                for op in circuit._ops
+                for op in circuit.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
@@ -230,7 +264,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Operator decomposition may have entered an infinite loop."
             ) from e
         circuit = qml.tape.QuantumScript(
-            new_ops, circuit.measurements, circuit._prep, shots=circuit.shots
+            prep_op + new_ops, circuit.measurements, shots=circuit.shots
         )
 
     for observable in circuit.observables:

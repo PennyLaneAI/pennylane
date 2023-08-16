@@ -62,14 +62,14 @@ def _walsh_hadamard_transform(D, n=None):
         new_shape = (orig_shape[0],) + (2,) * n
     else:
         new_shape = (2,) * n
-    D = D.reshape(new_shape)
+    D = qml.math.reshape(D, new_shape)
     # Apply Hadamard transform to each axis, shifted by one for broadcasting
     for i in range(broadcasted, n + broadcasted):
         D = qml.math.tensordot(_walsh_hadamard_matrix, D, axes=[[1], [i]])
     # The axes are in reverted order after all matrix multiplications, so we need to transpose;
     # If D was broadcasted, this moves the broadcasting axis to first position as well.
     # Finally, reshape to original shape
-    return qml.math.transpose(D).reshape(orig_shape)
+    return qml.math.reshape(qml.math.transpose(D), orig_shape)
 
 
 class QubitUnitary(Operation):

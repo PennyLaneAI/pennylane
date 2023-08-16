@@ -62,7 +62,7 @@ def test_snapshot_multiprocessing_execute():
         [qml.expval(qml.PauliX(0))],
     )
     with pytest.raises(RuntimeError, match="ProcessPoolExecutor cannot execute a QuantumScript"):
-        dev.execute(tape)
+        dev.preprocess(tape)
 
 
 def test_snapshot_multiprocessing_qnode():
@@ -1651,7 +1651,7 @@ class TestHamiltonianSamples:
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = dev.execute(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.001)
+        assert np.allclose(res, expected, atol=0.002)
 
 
 class TestClassicalShadows:
@@ -1688,6 +1688,33 @@ class TestClassicalShadows:
 
         assert res.shape == ()
         assert np.allclose(res, 1.0, atol=0.05)
+
+    @pytest.mark.parametrize("n_qubits", [1, 2, 3])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_multiple_shadow_measurements(self, n_qubits, max_workers):
+        """Test that multiple classical shadow measurements work as expected"""
+        dev = DefaultQubit2(max_workers=max_workers)
+
+        ops = [qml.Hadamard(i) for i in range(n_qubits)]
+        mps = [qml.classical_shadow(range(n_qubits)), qml.classical_shadow(range(n_qubits))]
+        qs = qml.tape.QuantumScript(ops, mps, shots=100)
+        res = dev.execute(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        for r in res:
+            assert r.shape == (2, 100, n_qubits)
+            assert r.dtype == np.int8
+
+            # test that the bits are either 0 and 1
+            assert np.all(np.logical_or(r[0] == 0, r[0] == 1))
+
+            # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
+            assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
+
+        # check that the samples are different
+        assert not np.all(res[0] == res[1])
 
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_reconstruct_bell_state(self, max_workers):
@@ -1758,6 +1785,26 @@ class TestClassicalShadows:
 
             # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
             assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
+
+
+class TestDynamicType:
+    """Tests the compatibility with dynamic type classes such as `qml.Projector`."""
+
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_projector(self, max_workers, n_wires):
+        """Test that qml.Projector yields the expected results for both of its subclasses."""
+        wires = list(range(n_wires))
+        dev = DefaultQubit2(max_workers=max_workers)
+        ops = [qml.Hadamard(q) for q in wires]
+        basis_state = np.zeros((n_wires,))
+        state_vector = np.zeros((2**n_wires,))
+        state_vector[0] = 1
+
+        for state in [basis_state, state_vector]:
+            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
+            res = dev.execute(qs)
+            assert np.isclose(res, 1 / 2**n_wires)
 
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])

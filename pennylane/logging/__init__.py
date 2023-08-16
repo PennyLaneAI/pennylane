@@ -11,16 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
-"""
-This file exists to support backwards compatibility for datasets pickled with
-pennylane.ops.qubit.parametric_ops (i.e. from before the file splitting).
+"""This module enables support for log-level messaging throughout PennyLane, following the native Python logging framework interface. Please see the :doc:`PennyLane logging development guidelines</development/guide/logging>`, and the official Python documentation for details on usage https://docs.python.org/3/library/logging.html"""
 
-All new parametric operators should go into the more precisely named files.
-"""
-
-# pylint:disable=wildcard-import,unused-wildcard-import
-
-from .parametric_ops_controlled import *
-from .parametric_ops_multi_qubit import *
-from .parametric_ops_single_qubit import *
+from .configuration import enable_logging
+from .configuration import config_path
+from .configuration import TRACE
+from .formatters.formatter import DefaultFormatter, SimpleFormatter
+from .filter import LocalProcessFilter, DebugOnlyFilter

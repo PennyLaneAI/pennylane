@@ -23,9 +23,11 @@ devices with autodifferentiation support.
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
 # pylint: disable=too-many-statements, invalid-unary-operand-type, function-redefined
 
+import inspect
 import warnings
 from functools import wraps, partial
 from typing import Callable, Sequence, Optional, Union, Tuple
+import logging
 
 from cachetools import LRUCache, Cache
 
@@ -34,6 +36,9 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
@@ -84,6 +89,52 @@ def _adjoint_jacobian_expansion(
             tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
 
     return tapes
+
+
+def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callable:
+    """Imports and returns the function that binds derivatives of the required ml framework.
+
+    Args:
+        interface (str): The designated ml framework.
+
+        grad_on_execution (bool): whether or not the device derivatives are taken upon execution
+    Returns:
+        Callable
+
+    Raises:
+        pennylane.QuantumFunctionError if the required package is not installed.
+
+    """
+    mapped_interface = INTERFACE_MAP[interface]
+    try:
+        if mapped_interface == "autograd":
+            from .autograd import execute as ml_boundary
+
+        elif mapped_interface == "tf":
+            import tensorflow as tf
+
+            if not tf.executing_eagerly() or "autograph" in interface:
+                from .tensorflow_autograph import execute as ml_boundary
+
+                ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
+
+            else:
+                from .tensorflow import execute as ml_boundary
+
+        elif mapped_interface == "torch":
+            from .torch import execute as ml_boundary
+
+        elif interface == "jax-jit":
+            from .jax_jit_tuple import execute as ml_boundary
+        else:  #  interface in {"jax", "jax-python", "JAX"}:
+            from .jax import execute as ml_boundary
+
+    except ImportError as e:  # pragma: no-cover
+        raise qml.QuantumFunctionError(
+            f"{mapped_interface} not found. Please install the latest "
+            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+        ) from e
+    return ml_boundary
 
 
 def _batch_transform(
@@ -163,6 +214,49 @@ def _preprocess_expand_fn(
     return device_expansion_function
 
 
+def _make_inner_execute(
+    device, override_shots, cache, expand_fn=None, execution_config=None, numpy_only=True
+) -> Callable:
+    """Construct the function that will execute the tapes inside the ml framework registration
+    for the 1st order derivatives.
+
+    Steps in between the ml framework execution and the device are:
+    - caching
+    - conversion to numpy
+    - device expansion (old device)
+
+    For higher order derivatives, the "inner execute" will be another ml framework execute.
+    """
+
+    if isinstance(device, qml.Device):
+        device_execution = set_shots(device, override_shots)(device.batch_execute)
+
+    else:
+        device_execution = partial(device.execute, execution_config=execution_config)
+
+    # use qml.interfaces so that mocker can spy on it during testing
+    cached_device_execution = qml.interfaces.cache_execute(
+        device_execution, cache, return_tuple=False
+    )
+
+    def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
+        """Execution that occurs within a machine learning framework boundary.
+
+        Closure Variables:
+            expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
+            numpy_only (bool): whether or not to convert the data to numpy or leave as is
+            cached_device_execution (Callable[[Sequence[QuantumTape]], ResultBatch])
+
+        """
+        if expand_fn:
+            tapes = tuple(expand_fn(t) for t in tapes)
+        if numpy_only:
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return cached_device_execution(tapes)
+
+    return inner_execute
+
+
 def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
@@ -200,6 +294,21 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         function: a wrapped version of the execution function ``fn`` with caching
         support
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
+            fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(fn))
+            else "\n" + inspect.getsource(fn),
+            cache,
+            pass_kwargs,
+            return_tuple,
+            expand_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(expand_fn))
+            else "\n" + inspect.getsource(expand_fn) + "\n",
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     if expand_fn is not None:
         original_fn = fn
 
@@ -241,7 +350,6 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
-
                 if tape.shots and getattr(cache, "_persistent_cache", True):
                     warnings.warn(
                         "Cached execution with finite shots detected!\n"
@@ -266,7 +374,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         else:
             # execute all unique tapes that do not exist in the cache
             # convert to list as new device interface returns a tuple
-            res = list(fn(execution_tapes.values(), **kwargs))
+            res = list(fn(tuple(execution_tapes.values()), **kwargs))
 
         final_res = []
 
@@ -296,6 +404,7 @@ def execute(
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
+    transform_program=None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[bool, dict, Cache] = True,
@@ -407,6 +516,29 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
+            tapes,
+            repr(device),
+            gradient_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
+            interface,
+            grad_on_execution,
+            gradient_kwargs,
+            cache,
+            cachesize,
+            max_diff,
+            override_shots,
+            expand_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            else "\n" + inspect.getsource(expand_fn) + "\n",
+            max_expansion,
+            device_batch_transform,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     if not qml.active_return():
         if isinstance(grad_on_execution, str):
             mode = "best"
@@ -430,14 +562,24 @@ def execute(
         )
 
     ### Specifying and preprocessing variables ####
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
 
     if interface == "auto":
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    if interface == "jax":
+        try:  # pragma: no-cover
+            from .jax import get_jax_interface_name
+        except ImportError as e:  # pragma: no-cover
+            raise qml.QuantumFunctionError(  # pragma: no-cover
+                "jax not found. Please install the latest "  # pragma: no-cover
+                "version of jax to enable the 'jax' interface."  # pragma: no-cover
+            ) from e  # pragma: no-cover
 
-    new_device_interface = isinstance(device, qml.devices.experimental.Device)
+        interface = get_jax_interface_name(tapes)
+
     if gradient_fn is None:
         _gradient_method = None
     elif isinstance(gradient_fn, str):
@@ -456,55 +598,44 @@ def execute(
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
 
-    if new_device_interface:
-        batch_execute = device.execute
-    else:
-        batch_execute = set_shots(device, override_shots)(device.batch_execute)
-
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
+
+    # changing this set of conditions causes a bunch of tests to break.
+    no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
+    device_supports_interface_data = no_interface_boundary_required and (
+        interface is None
+        or gradient_fn == "backprop"
+        or getattr(device, "short_name", "") == "default.mixed"
+        or "passthru_interface" in getattr(device, "capabilities", lambda: {})()
+    )
+
+    inner_execute = _make_inner_execute(
+        device,
+        override_shots,
+        cache,
+        expand_fn,
+        config,
+        numpy_only=not device_supports_interface_data,
+    )
+
+    # moved to its own explicit step so it will be easier to remove
+    def inner_execute_with_empty_jac(tapes, **_):
+        return (inner_execute(tapes), [])
+
+    execute_fn = inner_execute_with_empty_jac
 
     #### Executing the configured setup #####
 
+    tapes, program_post_processing = transform_program(tapes)
     tapes, batch_fn, config = _batch_transform(
         tapes, device, config, override_shots, device_batch_transform
     )
 
     # Exiting early if we do not need to deal with an interface boundary
-    no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
-        device_supports_interface_data = (
-            new_device_interface
-            or config.interface is None
-            or gradient_fn == "backprop"
-            or device.short_name == "default.mixed"
-            or "passthru_interface" in device.capabilities()
-        )
-        if not device_supports_interface_data:
-            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-
-        # use qml.interfaces so that mocker can spy on it during testing
-        cached_execute_fn = qml.interfaces.cache_execute(
-            batch_execute,
-            cache,
-            expand_fn=expand_fn,
-            return_tuple=False,
-            pass_kwargs=new_device_interface,
-        )
-        results = cached_execute_fn(tapes, execution_config=config)
-        return batch_fn(results)
-
-    # the default execution function is batch_execute
-    # use qml.interfaces so that mocker can spy on it during testing
-    if new_device_interface:
-
-        def device_execution_with_config(tapes):
-            return device.execute(tapes, execution_config=config)
-
-        execute_fn = qml.interfaces.cache_execute(
-            device_execution_with_config, cache, expand_fn=expand_fn
-        )
-    else:
-        execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+        results = inner_execute(tapes)
+        results = batch_fn(results)
+        return program_post_processing(results)
 
     _grad_on_execution = False
 
@@ -521,7 +652,10 @@ def execute(
                     device: The device to execute on
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
-                return device.execute_and_compute_derivatives(internal_tapes, config)
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return device.execute_and_compute_derivatives(numpy_tapes, config)
 
             gradient_fn = None
 
@@ -534,7 +668,10 @@ def execute(
                     device: the device to execute on
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
-                return (device.execute(internal_tapes, config), tuple())
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return (device.execute(numpy_tapes, config), tuple())
 
             def gradient_fn(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
@@ -543,7 +680,10 @@ def execute(
                     device: the device to execute on
                     config: the ExecutionConfig that specifies how to take the derivative.
                 """
-                return device.compute_derivatives(internal_tapes, config)
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return device.compute_derivatives(numpy_tapes, config)
 
     elif gradient_fn == "device":
         # gradient function is a device method
@@ -561,34 +701,48 @@ def execute(
         if grad_on_execution is True or grad_on_execution == "best":
             # replace the forward execution function to return
             # both results and gradients
-            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
+            def device_execute_and_gradients(internal_tapes, **gradient_kwargs):
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return set_shots(device, override_shots)(device.execute_and_gradients)(
+                    numpy_tapes, **gradient_kwargs
+                )
+
+            execute_fn = device_execute_and_gradients
             gradient_fn = None
             _grad_on_execution = True
 
         else:
-            # disable caching on the forward pass
-            # use qml.interfaces so that mocker can spy on it during testing
-            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+            # need to override to have no cache
+            inner_execute = _make_inner_execute(device, override_shots, cache=None)
+
+            def inner_execute_with_empty_jac(tapes, **_):
+                return (inner_execute(tapes), [])
+
+            execute_fn = inner_execute_with_empty_jac
 
             # replace the backward gradient computation
             # use qml.interfaces so that mocker can spy on it during testing
             gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-            gradient_fn = qml.interfaces.cache_execute(
+            cached_gradient_fn = qml.interfaces.cache_execute(
                 gradient_fn_with_shots,
                 cache,
                 pass_kwargs=True,
                 return_tuple=False,
             )
 
+            def device_gradient_fn(inner_tapes, **gradient_kwargs):
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
+                )
+                return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
+
+            gradient_fn = device_gradient_fn
+
             # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
             # can not be reused from the device if `grad_on_execution is False`.
-
-            interface_jax = interface
-            if interface == "jax":
-                from .jax import get_jax_interface_name
-
-                interface_jax = get_jax_interface_name(tapes)
-            if interface_jax == "jax-jit":
+            if interface == "jax-jit":
                 use_device_state = gradient_kwargs.get("use_device_state", None)
                 if use_device_state:
                     gradient_kwargs["use_device_state"] = False
@@ -599,39 +753,13 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    mapped_interface = INTERFACE_MAP[config.interface]
-    try:
-        if mapped_interface == "autograd":
-            from .autograd import execute as _execute
+    ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
+    results = ml_boundary_execute(
+        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+    )
 
-        elif mapped_interface == "tf":
-            import tensorflow as tf
-
-            if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
-
-                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
-
-            else:
-                from .tensorflow import execute as _execute
-
-        elif mapped_interface == "torch":
-            from .torch import execute as _execute
-
-        elif mapped_interface == "jax":
-            _execute = _get_jax_execute_fn(interface, tapes)
-
-        res = _execute(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-        )
-
-    except ImportError as e:
-        raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
-        ) from e
-
-    return batch_fn(res)
+    results = batch_fn(results)
+    return program_post_processing(results)
 
 
 def _execute_legacy(
@@ -639,6 +767,7 @@ def _execute_legacy(
     device: device_type,
     gradient_fn: Callable = None,
     interface="auto",
+    transform_program=None,
     mode="best",
     gradient_kwargs=None,
     cache=True,
@@ -754,6 +883,9 @@ def _execute_legacy(
     if isinstance(device, qml.devices.experimental.Device):
         raise ValueError("New device interface only works with return types enabled.")
 
+    transform_program = transform_program or qml.transforms.core.TransformProgram()
+    tapes, program_post_processing = transform_program(tapes)
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -782,24 +914,27 @@ def _execute_legacy(
     if gradient_fn is None:
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities():
-            return batch_fn(
+            results = batch_fn(
                 qml.interfaces.cache_execute(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
+            return program_post_processing(results)
         unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         res = qml.interfaces.cache_execute(
             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
         )(unwrapped_tapes)
 
-        return batch_fn(res)
+        results = batch_fn(res)
+        return program_post_processing(results)
 
     if gradient_fn == "backprop" or interface is None:
-        return batch_fn(
+        results = batch_fn(
             qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn
             )(tapes)
         )
+        return program_post_processing(results)
 
     # the default execution function is batch_execute
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
@@ -851,20 +986,20 @@ def _execute_legacy(
         ) from e
     try:
         if mapped_interface == "autograd":
-            from .autograd import execute as _execute
+            from .autograd import _execute_legacy as _execute
         elif mapped_interface == "tf":
             import tensorflow as tf
 
             if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
+                from .tensorflow_autograph import _execute_legacy as _execute
 
                 _grad_on_execution = _mode == "forward"
 
-                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
+                _execute = partial(_execute, mode=_mode)
             else:
-                from .tensorflow import execute as _execute
+                from .tensorflow import _execute_legacy as _execute
         elif mapped_interface == "torch":
-            from .torch import execute as _execute
+            from .torch import _execute_legacy as _execute
         else:  # is jax
             _execute = _get_jax_execute_fn(interface, tapes)
     except ImportError as e:
@@ -873,9 +1008,12 @@ def _execute_legacy(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+    results = _execute(
+        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+    )
 
-    return batch_fn(res)
+    results = batch_fn(results)
+    return program_post_processing(results)
 
 
 def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):

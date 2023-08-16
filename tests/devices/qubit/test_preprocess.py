@@ -28,6 +28,7 @@ from pennylane.devices.qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
     validate_measurements,
+    validate_multiprocessing_workers,
 )
 from pennylane.devices.experimental import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, MeasurementValue
@@ -169,14 +170,6 @@ class TestExpandFnValidation:
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
         assert expand_fn(tape) is tape
 
-    def test_state_prep_only_one(self):
-        """Test that a device error is raised if the script has multiple state prep ops."""
-        qs = QuantumScript(prep=[qml.BasisState([0], wires=0), qml.BasisState([1], wires=1)])
-        with pytest.raises(
-            DeviceError, match=r"DefaultQubit2 accepts at most one state prep operation."
-        ):
-            expand_fn(qs)
-
     def test_expand_fn_passes(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
@@ -224,10 +217,11 @@ class TestExpandFnTransformations:
     # pylint: disable=no-member
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
-        mv = MeasurementValue(["test_id"], processing_fn=lambda v: v)
+        mp = MidMeasureMP(wires=[0], reset=True, id="test_id")
+        mv = MeasurementValue([mp], processing_fn=lambda v: v)
         ops = [
             qml.Hadamard(0),
-            MidMeasureMP(wires=[0], id="test_id"),
+            mp,
             qml.transforms.Conditional(mv, qml.RX(0.123, wires=1)),
         ]
         measurements = [qml.expval(qml.PauliZ(1))]
@@ -236,7 +230,9 @@ class TestExpandFnTransformations:
         expanded_tape = expand_fn(tape)
         expected = [
             qml.Hadamard(0),
-            qml.ops.Controlled(qml.RX(0.123, wires=1), 0),
+            qml.CNOT([0, 2]),
+            qml.CNOT([2, 0]),
+            qml.ops.Controlled(qml.RX(0.123, wires=1), 2),
         ]
 
         for op, exp in zip(expanded_tape, expected + measurements):
@@ -258,6 +254,33 @@ class TestExpandFnTransformations:
         qs = QuantumScript([NoMatOp("a")], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))])
         new_qs = expand_fn(qs)
         assert new_qs.measurements == qs.measurements
+
+    @pytest.mark.parametrize(
+        "prep_op", (qml.BasisState([1], wires=0), qml.QubitStateVector([0, 1], wires=1))
+    )
+    def test_expand_fn_state_prep(self, prep_op):
+        """Test that the expand_fn only expands mid-circuit instances of StatePrep"""
+        ops = [
+            prep_op,
+            qml.Hadamard(wires=0),
+            qml.QubitStateVector([0, 1], wires=1),
+            qml.BasisState([1], wires=0),
+            qml.RZ(0.123, wires=1),
+        ]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        expanded_tape = expand_fn(tape)
+        expected = [
+            prep_op,
+            qml.Hadamard(0),
+            qml.RY(3.14159265, wires=1),  # decomposition of QubitStateVector
+            qml.PauliX(wires=0),  # decomposition of BasisState
+            qml.RZ(0.123, wires=1),
+        ]
+
+        for op, exp in zip(expanded_tape.circuit, expected + measurements):
+            assert qml.equal(op, exp)
 
 
 class TestValidateMeasurements:
@@ -783,3 +806,8 @@ class TestPreprocess:
             qml.equal(o1, o2) for o1, o2 in zip(expanded_qs.measurements, expected_qs.measurements)
         )
         assert expanded_qs.trainable_params == expected_qs.trainable_params
+
+
+def test_validate_multiprocessing_workers_None():
+    """Test that validation does not fail when max_workers is None"""
+    validate_multiprocessing_workers(None)
