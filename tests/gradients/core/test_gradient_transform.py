@@ -194,24 +194,6 @@ class TestChooseGradMethods:
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
-    def test_raises_on_broadcasted_qnode(self):
-        """test that an error is raised when the QNode wrapper is applied to a QNode
-        with arguments that lead to a broadcasted tape."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        x = np.array([0.4, 0.2]) 
-        grad_fn = qml.gradients.param_shift(circuit)
-
-        _match = "Computing the gradient of broadcasted/batched circuits with gradient transforms"
-        with pytest.raises(NotImplementedError, match=_match): 
-            _ = grad_fn(x)
-
-
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
     @pytest.mark.parametrize("slicing", [False, True])
     def test_acting_on_qnodes_single_param(self, shots, slicing, atol):

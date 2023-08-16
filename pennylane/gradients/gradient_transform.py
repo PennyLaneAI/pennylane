@@ -626,12 +626,6 @@ class gradient_transform(qml.batch_transform):
                 return ()
 
             qjac = _wrapper(*args, **kwargs)
-            if qnode.tape.batch_size is not None:
-                raise NotImplementedError(
-                    f"Computing the gradient of broadcasted/batched circuits with gradient "
-                    "transforms is not supported on the QNode level yet. Expand the tapes before "
-                    "computing the derivative or apply the gradient transform to the tape directly."
-                )
 
             if not hybrid:
                 return qjac

@@ -75,25 +75,6 @@ class TestTensorFlowExecuteUnitTests:
         ):
             execute([tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface="tf")
 
-    def test_raises_batched_tape(self):
-        """Test that an error is raised if a gradient transform
-        is used with a batched tape"""
-        a = tf.Variable([0.1, 0.2])
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def cost(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with tf.GradientTape() as tape:
-            out = cost(a)
-
-        _match = "Computing the gradient of broadcasted/batched circuits with gradient transforms"
-        with pytest.raises(NotImplementedError, match=_match): 
-            tape.jacobian(out, a)
-
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)

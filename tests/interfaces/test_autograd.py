@@ -102,22 +102,6 @@ class TestAutogradExecuteUnitTests:
         ):
             qml.jacobian(cost)(a, device=dev)
 
-    def test_raises_batched_tape(self):
-        """Test that an error is raised if a gradient transform
-        is used with a batched tape"""
-        a = np.array([0.1, 0.2], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def cost(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        _match = "Computing the gradient of broadcasted/batched circuits with gradient transforms"
-        with pytest.raises(NotImplementedError, match=_match): 
-            qml.jacobian(cost)(a)
-
     def test_unknown_interface(self):
         """Test that an error is raised if the interface is unknown"""
         a = np.array([0.1, 0.2], requires_grad=True)
