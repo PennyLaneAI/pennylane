@@ -1073,7 +1073,7 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])]
     )
-    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type):
+    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type, mocker):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
@@ -1097,12 +1097,14 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type)
 
+        spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
         assert np.allclose(r1, r2)
+        spy.assert_called_once()
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state):
+    def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
         dev = qml.device("default.qubit", wires=3, shots=1000)
@@ -1125,9 +1127,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
+        spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
+        spy.assert_called_once()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
