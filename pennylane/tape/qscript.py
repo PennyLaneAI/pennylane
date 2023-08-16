@@ -1400,7 +1400,7 @@ class QuantumScript:
         qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations
-        operations = self.operations
+        operations = self.operations.copy()
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
