@@ -134,6 +134,7 @@ separately_tested_ops = [
     "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
+    "QubitStateVector",
     "StatePrep",
     "AmplitudeEmbedding",
     "AngleEmbedding",
