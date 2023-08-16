@@ -186,7 +186,7 @@ class QuantumScript:
         if prep is not None:
             warnings.warn(
                 "The `prep` keyword argument is being removed from `QuantumScript`, and "
-                "`InitialState` operations should be placed at the beginning of the `ops` list "
+                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
                 "instead.",
                 UserWarning,
             )
