@@ -942,6 +942,19 @@ class TestMatrix:
         assert np.allclose(qml.PhaseShift.compute_matrix(phi), expected, atol=tol, rtol=0)
         assert np.allclose(qml.U1.compute_matrix(phi), expected, atol=tol, rtol=0)
 
+    def test_global_phase(self, tol):
+        """Test GlobalPhase matrix is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.GlobalPhase.compute_matrix(0), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qml.GlobalPhase(0, wires=0).matrix(), np.identity(2), atol=tol, rtol=0)
+
+        # test arbitrary phase shift
+        phi = 0.5432
+        expected = np.array([[qml.math.exp(-1j * phi), 0], [0, qml.math.exp(-1j * phi)]])
+        assert np.allclose(qml.GlobalPhase.compute_matrix(phi), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.GlobalPhase(phi, wires=0).matrix(), expected, atol=tol, rtol=0)
+
     def test_rx(self, tol):
         """Test x rotation is correct"""
 
@@ -2203,6 +2216,21 @@ class TestEigvals:
         expected = [expected_pi_half, expected_pi]
         assert np.allclose(qml.CRZ.compute_eigvals(param_tf), expected, atol=tol, rtol=0)
         assert np.allclose(qml.CRZ(param_tf, wires=[0, 1]).eigvals(), expected, atol=tol, rtol=0)
+
+    def test_global_phase_eigvals(self):
+        """Test GlobalPhase eigenvalues are correct"""
+
+        # test identity for theta=0
+        op = qml.GlobalPhase(0.0, wires=[0])
+        assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), np.ones(2))
+        assert np.allclose(op.eigvals(), np.ones(2))
+
+        # test arbitrary phase shift
+        phi = 0.5432
+        op = qml.GlobalPhase(phi, wires=[0])
+        expected = np.array([np.exp(-1j * phi), np.exp(-1j * phi)])
+        assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), expected)
+        assert np.allclose(op.eigvals(), expected)
 
 
 class TestGrad:
@@ -4270,6 +4298,7 @@ pow_parametric_ops = (
     qml.IsingYY(3.1652, wires=(0, 1)),
     qml.IsingXY(-1.234, wires=(0, 1)),
     qml.IsingZZ(1.789, wires=("a", "b")),
+    qml.GlobalPhase(0.123, wires=0),
     # broadcasted ops
     qml.RX(np.array([1.234, 4.129]), wires=0),
     qml.RY(np.array([2.345, 6.789]), wires=0),

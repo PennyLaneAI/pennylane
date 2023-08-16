@@ -129,6 +129,10 @@ class TestSimpleObservables:
         """Test the static compute_diagonalizing_gates method for the Identity observable."""
         assert qml.Identity.compute_diagonalizing_gates(wires=1) == []
 
+    def test_diagonalization_static_global_phase(self):
+        """Test the static compute_diagonalizing_gates method for the GlobalPhase observable."""
+        assert qml.GlobalPhase.compute_diagonalizing_gates(0.123, wires=1) == []
+
     def test_diagonalization_static_hadamard(self):
         """Test the static compute_diagonalizing_gates method for the Hadamard observable."""
         res = qml.Hadamard.compute_diagonalizing_gates(wires=1)
