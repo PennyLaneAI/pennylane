@@ -252,9 +252,10 @@ class TestSample:
         custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
-    def test_decimal_true(self, shots):
+    @pytest.mark.parametrize("decimal", [True, False])
+    def test_decimal(self, shots, decimal):
         """Test that if `decimal==True`, then samples are returned as base-10 integers
-        rather than boolean lists."""
+        and as boolean lists otherwise."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
@@ -274,59 +275,25 @@ class TestSample:
 
         # Using `meas` as the observable because `QubitDevice.sample` expects a
         # measurement process for that argument when no observable is provided
-        old_samples = dev.sample(meas, shot_range=shot_range, bin_size=bin_size, decimal=True)
+        old_samples = dev.sample(meas, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
         new_samples = meas.process_samples(
-            samples, wire_order=dev.wires, shot_range=shot_range, bin_size=bin_size, decimal=True
+            samples, wire_order=dev.wires, shot_range=shot_range, bin_size=bin_size, decimal=decimal
         )
 
         assert np.allclose(old_samples, new_samples)
 
         if isinstance(shots, int):
-            assert old_samples.shape == new_samples.shape == (shots,)
+            expected_shape = (shots,) + ((len(dev.wires),) if not decimal else ())
+            assert old_samples.shape == new_samples.shape == expected_shape
         else:
-            # Samples are reshaped to dimension (bin_size, -1) for decimal values
-            assert old_samples.shape == new_samples.shape == (bin_size, len(shots))
+            # Samples are reshaped to dimension (bin_size, -1) for decimal values, and
+            # (num_wires, bin_size, -1) for boolean lists
+            expected_shape = ((len(dev.wires),) if not decimal else ()) + (bin_size, len(shots))
+            assert old_samples.shape == new_samples.shape == expected_shape
 
-        assert np.amax(old_samples) < 2 ** len(dev.wires)
-        assert np.amax(new_samples) < 2 ** len(dev.wires)
-        assert np.min(old_samples) >= 0
-        assert np.min(new_samples) >= 0
-
-    @pytest.mark.parametrize("shots", [5, [5, 5]])
-    def test_decimal_false(self, shots):
-        """Test that if `decimal==False`, then samples are returned as boolean
-        lists."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            qml.Hadamard(2)
-            return qml.sample(wires=[0, 1, 2])
-
-        # Run circuit to populate dev._samples
-        _ = circuit()
-
-        samples = dev._samples
-        meas = qml.sample(wires=dev.wires)
-        shot_range = None if isinstance(shots, int) else (0, sum(shots))
-        bin_size = None if isinstance(shots, int) else shots[0]
-
-        # Using `meas` as the observable because `QubitDevice.sample` expects a
-        # measurement process for that argument when no observable is provided
-        old_samples = dev.sample(meas, shot_range=shot_range, bin_size=bin_size, decimal=False)
-        new_samples = meas.process_samples(
-            samples, wire_order=dev.wires, shot_range=shot_range, bin_size=bin_size, decimal=False
-        )
-
-        assert np.allclose(old_samples, new_samples)
-
-        if isinstance(shots, int):
-            assert old_samples.shape == new_samples.shape == (shots, len(dev.wires))
-        else:
-            # Samples are reshaped to dimension (num_wires, bin_size, -1) for boolean lists
-            assert old_samples.shape == new_samples.shape == (len(dev.wires), bin_size, len(shots))
+        if decimal:
+            assert np.amax(new_samples) < 2 ** len(dev.wires)
+            assert np.min(new_samples) >= 0
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""
