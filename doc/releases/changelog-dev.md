@@ -135,7 +135,7 @@ array([False, False])
   are orders of magnitude faster.
   [(#4475)](https://github.com/PennyLaneAI/pennylane/pull/4475)
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
-  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+  [(#4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
