@@ -402,8 +402,8 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
             new_param_p_idx = new_params[p_idx]
         multiplier = qml.math.convert_like(multiplier, new_param_p_idx)
         shift = qml.math.convert_like(shift, new_param_p_idx)
-        new_params[p_idx] = new_params[p_idx] * multiplier
-        new_params[p_idx] = new_params[p_idx] + shift
+        new_params[p_idx] = new_param_p_idx * multiplier
+        new_params[p_idx] = new_param_p_idx + shift
         if cast:
             dtype = getattr(new_params[p_idx], "dtype", float)
             new_params[p_idx] = qml.math.cast(new_params[p_idx], dtype)
