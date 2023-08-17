@@ -16,7 +16,6 @@ helper methods for processing shift rules as well as for creating tapes with
 shifted parameters."""
 import functools
 import itertools
-import numbers
 import warnings
 
 import numpy as np
@@ -399,10 +398,10 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
         new_params = list(op.data)
         if qml.math.get_interface(new_params[p_idx]) == "tensorflow":
             new_param_p_idx = qml.math.cast(new_params[p_idx], float)
-       else:
-           new_param_p_idx = new_params[p_idx]
-        multiplier = qml.math.convert_like(multiplier, new_param_p_idx ) 
-        shift = qml.math.convert_like(shift, new_param_p_idx )
+        else:
+            new_param_p_idx = new_params[p_idx]
+        multiplier = qml.math.convert_like(multiplier, new_param_p_idx)
+        shift = qml.math.convert_like(shift, new_param_p_idx)
         new_params[p_idx] = new_params[p_idx] * multiplier
         new_params[p_idx] = new_params[p_idx] + shift
         if cast:
