@@ -16,6 +16,7 @@ helper methods for processing shift rules as well as for creating tapes with
 shifted parameters."""
 import functools
 import itertools
+import numbers
 import warnings
 
 import numpy as np
@@ -396,10 +397,11 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
 
         # Shift copied parameter
         new_params = list(op.data)
-        multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
-        multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
-        shift = qml.math.convert_like(shift, new_params[p_idx])
-        shift = qml.math.cast_like(shift, new_params[p_idx])
+        if not isinstance(new_params[p_idx], numbers.Integral):
+            multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
+            multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
+            shift = qml.math.convert_like(shift, new_params[p_idx])
+            shift = qml.math.cast_like(shift, new_params[p_idx])
         new_params[p_idx] = new_params[p_idx] * multiplier
         new_params[p_idx] = new_params[p_idx] + shift
         if cast:
