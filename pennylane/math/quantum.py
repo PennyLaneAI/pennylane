@@ -721,17 +721,17 @@ def _compute_mutual_info(
 
 
 def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype="complex128"):
-    r"""Compute the expectation value of an operator and a pure state.
+    r"""Compute the expectation value of an operator with respect to a pure state.
 
-    The expectation value of an operator :math:`A` for a pure states given by state vector :math:`\ket{\psi}`
+    The expectation value of an operator :math:`A` for a pure state given by a state vector :math:`\ket{\psi}`
     is defined as
 
     .. math::
-        \langle A \rangle = \bra{\psi} A \ket{\psi}
+        \langle A \rangle_\psi = \bra{\psi} A \ket{\psi}
 
     Args:
-        operator_matrix (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` operator matrix.
-        state_vector (tensor_like): ``(2**N)`` or ``(batch_dim, 2**N)`` state vector.
+        operator_matrix (tensor_like):  operator matrix with shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
+        state_vector (tensor_like): state vector with shape ``(2**N)`` or ``(batch_dim, 2**N)``.
         check_state (bool): If True, the function will check the validity of both states; that is,
             the shape and the norm
         c_dtype (str): Complex floating point precision type.
@@ -741,11 +741,11 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
 
     **Example**
 
-    A operator matrix and a state vectors can be used as arguments and the overlap is returned, e.g.:
+    An operator matrix and a state vector can be used as arguments to obtain the expectation value, e.g.:
 
     >>> state_vector = np.array([0, 1])
     >>> operator_matrix = np.array([[0,1],[1,0]])
-    >>> qml.math.expectation_value(operator_matrix, state1)
+    >>> qml.math.expectation_value(operator_matrix, state_vector)
     0.0
 
     .. seealso:: :func:`pennylane.math.fidelity`

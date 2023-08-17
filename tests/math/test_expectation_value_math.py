@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for differentiable quantum entropies.
+"""Unit tests for differentiable matrix-vector expectation values.
 """
 
 import numpy as onp
@@ -87,7 +87,7 @@ class TestExpectationValueMath:
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_op_sv(self, check_state, func):
-        """Test broadcasting works for expectation values, operators and state vectors"""
+        """Test simultaneous broadcasting of operators and state vectors works."""
         ops = func(
             [
                 [
