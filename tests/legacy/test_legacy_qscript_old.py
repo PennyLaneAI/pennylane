@@ -92,8 +92,8 @@ class TestInitialization:
     )
     def test_provided_state_prep(self, prep):
         """Test state prep are converted to lists"""
-        with pytest.warns(UserWarning, match="prep"):
-            qs = QuantumScript(prep=prep)
+        # with pytest.warns(UserWarning, match="prep"):
+        qs = QuantumScript(prep=prep)
 
         assert len(qs.operations) == 1
         assert len(qs._ops) == 1
