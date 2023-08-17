@@ -120,7 +120,9 @@ class TestExpval:
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(self, shots, phi, mocker, tol, tol_stochastic):
+    def test_observable_is_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -145,7 +147,7 @@ class TestExpval:
     @pytest.mark.parametrize("swap", [False, True])
     def test_observable_multiple_measurement_values(
         self, shots, phi, swap, mocker, tol, tol_stochastic
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for multiple measurement values in any order."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -179,7 +181,7 @@ class TestExpval:
         if not isinstance(shots, list):
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
         else:
-            for r in res:
+            for r in res:  # pylint: disable=not-an-iterable
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
         custom_measurement_process(new_dev, spy)

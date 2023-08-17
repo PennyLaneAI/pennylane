@@ -393,7 +393,7 @@ class MeasurementProcess(ABC):
             array: eigvals representation
         """
         if self.obs.__class__.__name__ == "MeasurementValue":
-            return list(range(2 ** len(self.wires)))
+            return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
             with contextlib.suppress(qml.operation.EigvalsUndefinedError):

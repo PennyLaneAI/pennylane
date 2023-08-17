@@ -44,7 +44,7 @@ def custom_measurement_process(device, spy):
         )
 
 
-class TestSample:
+class TestSample:  # pylint: disable=too-many-public-methods
     """Tests for the sample function"""
 
     @pytest.mark.parametrize("n_sample", (1, 10))
