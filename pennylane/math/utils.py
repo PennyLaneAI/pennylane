@@ -455,7 +455,10 @@ def requires_grad(tensor, interface=None):
         import tensorflow as tf
 
         try:
-            from tensorflow.python.eager.tape import should_record_backprop
+            try:
+                from tensorflow.python.eager.record import should_record_backprop
+            except ImportError:  # pragma: no cover
+                from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
             from tensorflow.python.eager.tape import should_record as should_record_backprop
 
@@ -508,7 +511,10 @@ def in_backprop(tensor, interface=None):
         import tensorflow as tf
 
         try:
-            from tensorflow.python.eager.tape import should_record_backprop
+            try:
+                from tensorflow.python.eager.record import should_record_backprop
+            except ImportError:  # pragma: no cover
+                from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
             from tensorflow.python.eager.tape import should_record as should_record_backprop
 

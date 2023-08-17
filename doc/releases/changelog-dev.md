@@ -227,6 +227,9 @@ array([False, False])
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
+* CI now runs tests with Tensorflow 2.13.0
+  [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
+
 <h3>Breaking changes 💔</h3>
 
 * Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
@@ -409,6 +412,7 @@ array([False, False])
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+  [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
 
 
 <h3>Contributors ✍️</h3>
