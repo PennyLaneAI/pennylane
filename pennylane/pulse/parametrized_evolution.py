@@ -505,7 +505,6 @@ class ParametrizedEvolution(Operation):
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
-
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
@@ -536,10 +535,14 @@ class ParametrizedEvolution(Operation):
         """
         op_label = base_label or self.__class__.__name__
 
+        if self.num_params == 0:
+            return op_label
+
         if decimals is None:
             return op_label
 
         params = self.parameters
+        array_like_params = [p for p in params if qml.math.shape(p)]
 
         def _format_number(x):
             try:
@@ -551,6 +554,18 @@ class ParametrizedEvolution(Operation):
         def _format_arraylike(x):
             s = "[" + ",".join(_format_number(i) for i in x) + "]"
             return s
+
+        if array_like_params:
+            if cache and isinstance(cache.get("matrices", None), list):
+
+                def _format_arraylike(x):
+                    mat_num = len(cache["matrices"])
+                    cache["matrices"].append(x)
+                    s = f"M{mat_num}"
+                    return s
+
+            else:
+                return op_label
 
         param_strings = [_format_arraylike(p) if p.shape else _format_number(p) for p in params]
 
@@ -569,4 +584,3 @@ def _bind_new_parameters_parametrized_evol(op: ParametrizedEvolution, params: Se
         dense=op.dense,
         **op.odeint_kwargs,
     )
-
