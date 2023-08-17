@@ -127,7 +127,7 @@ class TestRotGateFusion:
             qml.Rot(*angles_1, wires=0)
             qml.Rot(*angles_2, wires=0)
 
-        matrix_expected = qml.matrix(original_ops, [0])()
+        matrix_expected = qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()

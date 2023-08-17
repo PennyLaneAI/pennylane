@@ -2149,7 +2149,9 @@ class TestPassthruIntegration:
         using the PyTorch interface, using a variety of differentiation methods."""
         dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
-        input_state = torch.tensor(1j * np.array([1, -1]) / math.sqrt(2), device=torch_device)
+        input_state = torch.tensor(
+            1j * np.array([1, -1]) / math.sqrt(2.0), device=torch_device, dtype=torch.complex128
+        )
 
         @qml.qnode(dev, diff_method=diff_method, interface="torch")
         def circuit(x, weights, w):

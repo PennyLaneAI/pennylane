@@ -958,7 +958,9 @@ class TestDifferentiation:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = torch.tensor(
+            [1.0, -1.0], requires_grad=False, dtype=torch.complex128
+        ) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
@@ -966,7 +968,7 @@ class TestDifferentiation:
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
-        b = torch.tensor(0.123, requires_grad=True)
+        b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
         loss.backward()  # pylint:disable=no-member
 
@@ -1723,7 +1725,9 @@ class TestCtrlTransformDifferentiation:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = torch.tensor(
+            [1.0, -1.0], requires_grad=False, dtype=torch.complex128
+        ) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
@@ -1731,7 +1735,7 @@ class TestCtrlTransformDifferentiation:
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
-        b = torch.tensor(0.123, requires_grad=True)
+        b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
         loss.backward()  # pylint:disable=no-member
 
