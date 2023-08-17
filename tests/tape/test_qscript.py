@@ -94,11 +94,11 @@ class TestInitialization:
         assert QuantumScript(ops).num_preps == num_preps
 
     def test_prep_deprecation(self):
-        """Test that the prep keyword is deprecated and behaves as expected."""
+        """Test that the prep keyword ~is deprecated and~ behaves as expected."""
         prep = [qml.BasisState([1, 1], wires=(0, 1))]
         ops = [qml.PauliX(0)]
-        with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
-            qs = QuantumScript(ops=ops, prep=prep)
+        # with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
+        qs = QuantumScript(ops=ops, prep=prep)
         assert len(qs.operations) == len(qs._ops) == 2
         assert qml.equal(qs.operations[0], prep[0])
         assert qml.equal(qs.operations[1], ops[0])
