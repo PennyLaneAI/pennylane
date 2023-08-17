@@ -283,6 +283,9 @@ array([False, False])
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
 
+* The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
+  [(#4485)](https://github.com/PennyLaneAI/pennylane/pull/4485)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead.
