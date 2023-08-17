@@ -732,8 +732,8 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
     Args:
         operator_matrix (tensor_like):  operator matrix with shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
         state_vector (tensor_like): state vector with shape ``(2**N)`` or ``(batch_dim, 2**N)``.
-        check_state (bool): If True, the function will check the validity of both states; that is,
-            the shape and the norm
+        check_state (bool): If True, the function will check the validity of the state vector 
+            via its shape and the norm
         c_dtype (str): Complex floating point precision type.
 
     Returns:
