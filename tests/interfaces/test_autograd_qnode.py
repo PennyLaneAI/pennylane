@@ -1502,6 +1502,7 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -1536,6 +1537,7 @@ class TestCV:
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
             tol = TOL_FOR_SPSA
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
