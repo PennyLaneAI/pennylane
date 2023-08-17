@@ -301,19 +301,22 @@ def pauli_decompose(
         phase from each ``PauliY`` term occurring in the word.
 
     """
-    n = int(qml.math.log2(len(H)))
+    n = int(qml.math.log2(qml.math.shape(H)[0]))
     N = 2**n
 
-    if H.shape != (N, N):
-        raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
+    if check_hermitian:
+        if H.shape != (N, N):
+            raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
-    if check_hermitian and not qml.math.allclose(H, qml.math.conjugate(qml.math.transpose(H))):
-        raise ValueError("The matrix is not Hermitian")
+        if not qml.math.allclose(H, qml.math.conjugate(qml.math.transpose(H))):
+            raise ValueError("The matrix is not Hermitian")
 
     coeffs, obs = _generalized_pauli_decompose(
-        H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=False
+        H, hide_identity=hide_identity, wire_order=wire_order, pauli=pauli, padding=True
     )
-    coeffs = qml.math.real(coeffs)
+
+    if check_hermitian:
+        coeffs = qml.math.real(coeffs)
 
     if pauli:
         return PauliSentence(
