@@ -80,7 +80,7 @@ def _validate_computational_basis_sampling(measurements):
 def rotations_and_diagonal_measurements(tape):
     """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
     if not tape._obs_sharing_wires:
-        return [], tape._measurements
+        return [], tape.measurements
 
     with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
         try:
@@ -97,7 +97,7 @@ def rotations_and_diagonal_measurements(tape):
 
             raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
 
-        measurements = copy.copy(tape._measurements)
+        measurements = copy.copy(tape.measurements)
 
         for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
             new_m = tape.measurements[i].__class__(obs=o)
@@ -217,7 +217,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
             new_ops.extend(expanded_tape.operations)
-            new_measurements.extend(expanded_tape._measurements)
+            new_measurements.extend(expanded_tape.measurements)
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape

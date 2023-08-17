@@ -90,7 +90,7 @@ def _local_tape_expand(tape, depth, stop_at):
             expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
 
             new_ops.extend(expanded_tape.operations)
-            new_measurements.extend(expanded_tape._measurements)
+            new_measurements.extend(expanded_tape.measurements)
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape

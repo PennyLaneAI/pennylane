@@ -95,13 +95,13 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, _, obs = make_tape
 
-        # test that the internal tape._measurements list is created properly
-        assert isinstance(tape._measurements[0], MeasurementProcess)
-        assert tape._measurements[0].return_type == qml.measurements.Expectation
-        assert qml.equal(tape._measurements[0].obs, obs[0])
+        # test that the internal tape.measurements list is created properly
+        assert isinstance(tape.measurements[0], MeasurementProcess)
+        assert tape.measurements[0].return_type == qml.measurements.Expectation
+        assert qml.equal(tape.measurements[0].obs, obs[0])
 
-        assert isinstance(tape._measurements[1], MeasurementProcess)
-        assert tape._measurements[1].return_type == qml.measurements.Probability
+        assert isinstance(tape.measurements[1], MeasurementProcess)
+        assert tape.measurements[1].return_type == qml.measurements.Probability
 
         # test the public observables property
         assert len(tape.observables) == 2

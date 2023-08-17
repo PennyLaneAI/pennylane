@@ -591,7 +591,7 @@ def test_adjoint():
     assert len(q.queue) == 0  # not queued
 
     assert qml.equal(adj_qs.operations[0], qs.operations[0])
-    assert adj_qs._measurements == qs._measurements
+    assert adj_qs.measurements == qs.measurements
     assert adj_qs.shots is qs.shots
 
     # assumes lazy=False
