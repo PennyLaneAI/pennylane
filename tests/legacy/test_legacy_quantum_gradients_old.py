@@ -397,7 +397,7 @@ class TestQubitGradient:
 
         @qml.qnode(dev)
         def circuit(x, y):
-            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=[0])
+            qml.StatePrep(1j * np.array([1, -1]) / np.sqrt(2), wires=[0])
             qml.U2(x, y, wires=[0])
             return qml.expval(qml.PauliX(0))
 
@@ -419,7 +419,7 @@ class TestQubitGradient:
 
         @qml.qnode(dev)
         def circuit(x, y, z):
-            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=[0])
+            qml.StatePrep(1j * np.array([1, -1]) / np.sqrt(2), wires=[0])
             qml.U3(x, y, z, wires=[0])
             return qml.expval(qml.PauliX(0))
 
@@ -706,7 +706,7 @@ class TestFourTermParameterShifts:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(b):
-            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             G(b, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -727,7 +727,7 @@ class TestFourTermParameterShifts:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
-            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             qml.CRot(a, b, c, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
