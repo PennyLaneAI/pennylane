@@ -16,6 +16,7 @@ Contains the implementation of quantum fidelity.
 
 Note: care needs to be taken to make it fully differentiable
 """
+from functools import cache
 
 import autograd
 import autoray as ar
@@ -23,68 +24,6 @@ import pennylane as qml
 
 from .utils import cast
 from .quantum import _check_density_matrix, _check_state_vector
-
-
-def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
-    r"""Compute the fidelity for two states (given as density matrices) acting on quantum
-    systems with the same size.
-
-    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
-    is defined as
-
-    .. math::
-        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
-
-    .. note::
-        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
-        to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
-        first state.
-
-    Args:
-        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
-        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
-        check_state (bool): If True, the function will check the validity of both states; that is,
-            (shape, trace, positive-definitiveness) for density matrices.
-        c_dtype (str): Complex floating point precision type.
-
-    Returns:
-        float: Fidelity between the two quantum states.
-
-    **Example**
-
-    To find the fidelity between two state vectors, call :func:`~.math.dm_from_state_vector` on the
-    inputs first, e.g.:
-
-    >>> state0 = qml.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
-    >>> state1 = qml.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
-    >>> qml.math.fidelity(state0, state1)
-    0.9905158135644924
-
-    To find the fidelity between two density matrices, they can be passed directly:
-
-    >>> state0 = [[1, 0], [0, 0]]
-    >>> state1 = [[0, 0], [0, 1]]
-    >>> qml.math.fidelity(state0, state1)
-    0.0
-
-    .. seealso:: :func:`pennylane.math.fidelity_statevector` and :func:`pennylane.qinfo.transforms.fidelity`
-
-    """
-    # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-    state1 = cast(state1, dtype=c_dtype)
-
-    if check_state:
-        _check_density_matrix(state0)
-        _check_density_matrix(state1)
-
-    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
-
-    # Two mixed states
-    fid = qml.math.compute_fidelity(state0, state1)
-    # fid = _compute_fidelity_vanilla(state0, state1)
-    return fid
 
 
 def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):
@@ -151,6 +90,84 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
 
     overlap = qml.math.abs(overlap) ** 2
     return overlap
+
+
+def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
+    r"""Compute the fidelity for two states (given as density matrices) acting on quantum
+    systems with the same size.
+
+    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
+    is defined as
+
+    .. math::
+        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+
+    .. note::
+        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
+        to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
+        first state.
+
+    Args:
+        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
+        check_state (bool): If True, the function will check the validity of both states; that is,
+            (shape, trace, positive-definitiveness) for density matrices.
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Fidelity between the two quantum states.
+
+    **Example**
+
+    To find the fidelity between two state vectors, call :func:`~.math.dm_from_state_vector` on the
+    inputs first, e.g.:
+
+    >>> state0 = qml.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
+    >>> state1 = qml.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
+    >>> qml.math.fidelity(state0, state1)
+    0.9905158135644924
+
+    To find the fidelity between two density matrices, they can be passed directly:
+
+    >>> state0 = [[1, 0], [0, 0]]
+    >>> state1 = [[0, 0], [0, 1]]
+    >>> qml.math.fidelity(state0, state1)
+    0.0
+
+    .. seealso:: :func:`pennylane.math.fidelity_statevector` and :func:`pennylane.qinfo.transforms.fidelity`
+
+    """
+    # Cast as a c_dtype array
+    state0 = cast(state0, dtype=c_dtype)
+    state1 = cast(state1, dtype=c_dtype)
+
+    if check_state:
+        _check_density_matrix(state0)
+        _check_density_matrix(state1)
+
+    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    # Two mixed states
+    _register_vjp(state0, state1)
+    fid = qml.math.compute_fidelity(state0, state1)
+    return fid
+
+
+def _register_vjp(state0, state1):
+    """
+    Register the interface-specific custom VJP based on the interfaces of the given states
+
+    This function is needed because we don't want to register the custom
+    VJPs at PennyLane import time.
+    """
+    interface = qml.math.get_interface(state0, state1)
+    if interface == "jax":
+        _register_jax_vjp()
+    elif interface == "torch":
+        _register_torch_vjp()
+    elif interface == "tensorflow":
+        _register_tf_vjp()
 
 
 def _compute_fidelity_vanilla(density_matrix0, density_matrix1):
@@ -263,7 +280,13 @@ ar.register_function("autograd", "compute_fidelity", _compute_fidelity_autograd)
 
 ################################# jax #####################################
 
-try:
+
+@cache
+def _register_jax_vjp():
+    """
+    Register the custom VJP for JAX
+    """
+    # pylint: disable=import-outside-toplevel
     import jax
 
     @jax.custom_vjp
@@ -281,13 +304,16 @@ try:
     _compute_fidelity_jax.defvjp(_compute_fidelity_jax_fwd, _compute_fidelity_jax_bwd)
     ar.register_function("jax", "compute_fidelity", _compute_fidelity_jax)
 
-except ModuleNotFoundError:
-    # jax not installed
-    pass
 
 ################################ torch ###################################
 
-try:
+
+@cache
+def _register_torch_vjp():
+    """
+    Register the custom VJP for torch
+    """
+    # pylint: disable=import-outside-toplevel
     import torch
 
     class _TorchFidelity(torch.autograd.Function):
@@ -306,13 +332,16 @@ try:
 
     ar.register_function("torch", "compute_fidelity", _TorchFidelity.apply)
 
-except ModuleNotFoundError:
-    # torch not installed
-    pass
 
 ############################### tensorflow ################################
 
-try:
+
+@cache
+def _register_tf_vjp():
+    """
+    Register the custom VJP for tensorflow
+    """
+    # pylint: disable=import-outside-toplevel
     import tensorflow as tf
 
     @tf.custom_gradient
@@ -325,7 +354,3 @@ try:
         return fid, vjp
 
     ar.register_function("tensorflow", "compute_fidelity", _compute_fidelity_tf)
-
-except ModuleNotFoundError:
-    # tensorflow not installed
-    pass
