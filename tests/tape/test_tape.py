@@ -235,7 +235,7 @@ class TestConstruction:
         params = [np.array([1, 0, 1, 0]) / np.sqrt(2), 1]
 
         with QuantumTape() as tape:
-            A = qml.QubitStateVector(params[0], wires=[0, 1])
+            A = qml.StatePrep(params[0], wires=[0, 1])
             B = qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(wires=1))
 
@@ -813,7 +813,7 @@ class TestParameters:
         params = [a, 0.32, 0.76, 1.0]
 
         with QuantumTape() as tape:
-            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
+            op_ = qml.StatePrep(params[0], wires=[0, 1])
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)
@@ -1051,7 +1051,7 @@ class TestParametersOld:
         params = [a, 0.32, 0.76, 1.0]
 
         with QuantumTape() as tape:
-            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
+            op_ = qml.StatePrep(params[0], wires=[0, 1])
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)
@@ -1251,7 +1251,7 @@ class TestExpand:
         zip(
             [
                 qml.BasisState([1, 0], wires=[0, 1]),
-                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
             ],
             [
                 qml.BasisStatePreparation([1, 0], wires=[0, 1]),
@@ -1260,14 +1260,14 @@ class TestExpand:
         ),
     )
     def test_expansion_state_prep(self, skip_first, op, decomp):
-        """Test that StatePrep operations are expanded correctly without
+        """Test that StatePrepBase operations are expanded correctly without
         expanding other operations in the tape.
         """
         ops = [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
             qml.BasisState([0], wires=1),
-            qml.QubitStateVector([0, 1], wires=0),
+            qml.StatePrep([0, 1], wires=0),
         ]
         tape = QuantumTape(ops=ops, measurements=[], prep=[op])
         new_tape = expand_tape_state_prep(tape, skip_first=skip_first)

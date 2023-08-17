@@ -136,13 +136,13 @@ class TestToQasmUnitTests:
         psi = np.array([1, -1, -1, 1]) / np.sqrt(4)
 
         with qml.queuing.AnnotatedQueue() as q1:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
 
         circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm(precision=11)
 
         with qml.queuing.AnnotatedQueue() as q2:
-            qml.QubitStateVector.compute_decomposition(psi, wires=[0, 1])
+            qml.StatePrep.compute_decomposition(psi, wires=[0, 1])
 
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]), precision=11)
@@ -507,7 +507,7 @@ class TestQNodeQasmIntegrationTests:
 
         @qml.qnode(dev)
         def qnode(state=None):
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         # construct the qnode circuit

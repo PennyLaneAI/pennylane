@@ -527,7 +527,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
