@@ -397,11 +397,12 @@ def _copy_and_shift_params(tape, indices, shifts, multipliers, cast=False):
 
         # Shift copied parameter
         new_params = list(op.data)
-        if not isinstance(new_params[p_idx], numbers.Integral):
-            multiplier = qml.math.convert_like(multiplier, new_params[p_idx])
-            multiplier = qml.math.cast_like(multiplier, new_params[p_idx])
-            shift = qml.math.convert_like(shift, new_params[p_idx])
-            shift = qml.math.cast_like(shift, new_params[p_idx])
+        if qml.math.get_interface(new_params[p_idx]) == "tensorflow":
+            new_param_p_idx = qml.math.cast(new_params[p_idx], float)
+       else:
+           new_param_p_idx = new_params[p_idx]
+        multiplier = qml.math.convert_like(multiplier, new_param_p_idx ) 
+        shift = qml.math.convert_like(shift, new_param_p_idx )
         new_params[p_idx] = new_params[p_idx] * multiplier
         new_params[p_idx] = new_params[p_idx] + shift
         if cast:
