@@ -144,7 +144,6 @@ and measurements in the final circuit. This step eliminates any object that has 
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
 
-
 These two lists can be used to construct a :class:`~.QuantumScript`:
 
 >>> qml.tape.QuantumScript(ops, measurements)

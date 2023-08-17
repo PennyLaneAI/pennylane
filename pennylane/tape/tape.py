@@ -283,7 +283,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Deprecated arguments to specify state preparations to
+        prep (Iterable[Operator]): Arguments to specify state preparations to
             perform at the start of the circuit. These should go at the beginning of ``ops``
             instead.
 
