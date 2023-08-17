@@ -559,16 +559,22 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape with prob and expval outputs with less
         trainable parameters (argnums) than parameters."""
+        kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
         @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            **kwargs
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -890,8 +896,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -939,7 +948,11 @@ class TestQubitIntegrationHigherOrder:
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -997,8 +1010,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1059,8 +1075,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1160,8 +1179,7 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support var.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
         P = jax.numpy.array(state)
@@ -1256,8 +1274,11 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not yet support Hamiltonians.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")

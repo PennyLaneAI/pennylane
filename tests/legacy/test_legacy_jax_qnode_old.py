@@ -1212,6 +1212,7 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         r = 0.543
@@ -1241,6 +1242,7 @@ class TestCV:
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         n = 0.12
