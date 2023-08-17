@@ -83,7 +83,7 @@ class TestGatesQubitExpval:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(par, wires=wires)
+            qml.StatePrep(par, wires=wires)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
@@ -213,7 +213,7 @@ class TestGatesQubitExpval:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(*par, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
@@ -263,7 +263,7 @@ class TestGatesQubitExpval:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 

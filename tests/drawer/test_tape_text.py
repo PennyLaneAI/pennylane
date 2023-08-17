@@ -281,7 +281,7 @@ single_op_tests_data = [
     (qml.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
     (qml.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
     (
-        qml.QubitStateVector([0, 1, 0, 0], wires=(0, 1)),
+        qml.StatePrep([0, 1, 0, 0], wires=(0, 1)),
         "0: ─╭|Ψ⟩─┤  \n1: ─╰|Ψ⟩─┤  ",
     ),
     (qml.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
@@ -383,7 +383,7 @@ class TestLayering:
 
 
 tape_matrices = qml.tape.QuantumScript(
-    prep=[qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
+    prep=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
     ops=[qml.QubitUnitary(np.eye(2), wires=0)],
     measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
 )
