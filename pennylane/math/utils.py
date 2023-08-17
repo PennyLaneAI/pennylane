@@ -397,6 +397,22 @@ def is_abstract(tensor, like=None):
     return False
 
 
+def import_should_record_backprop():  # pragma: no cover
+    """Return should_record_backprop or an equivalent function from TensorFlow."""
+    import tensorflow.python as tfpy
+
+    if hasattr(tfpy.eager.tape, "should_record_backprop"):
+        from tensorflow.python.eager.tape import should_record_backprop
+    elif hasattr(tfpy.eager.tape, "should_record"):
+        from tensorflow.python.eager.tape import should_record as should_record_backprop
+    elif hasattr(tfpy.eager.record, "should_record_backprop"):
+        from tensorflow.python.eager.record import should_record_backprop
+    else:
+        raise ImportError("Cannot import should_record_backprop from TensorFlow.")
+
+    return should_record_backprop
+
+
 def requires_grad(tensor, interface=None):
     """Returns True if the tensor is considered trainable.
 
@@ -454,11 +470,7 @@ def requires_grad(tensor, interface=None):
     if interface == "tensorflow":
         import tensorflow as tf
 
-        try:
-            from tensorflow.python.eager.tape import should_record_backprop
-        except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
-
+        should_record_backprop = import_should_record_backprop()
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
@@ -507,11 +519,7 @@ def in_backprop(tensor, interface=None):
     if interface == "tensorflow":
         import tensorflow as tf
 
-        try:
-            from tensorflow.python.eager.tape import should_record_backprop
-        except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
-
+        should_record_backprop = import_should_record_backprop()
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":

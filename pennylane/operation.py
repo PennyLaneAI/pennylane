@@ -121,11 +121,11 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
-    ~StatePrep
+    ~StatePrepBase
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrepBase
     :parts: 1
 
 Errors
@@ -2827,7 +2827,7 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wire_order)
 
 
-class StatePrep(Operation):
+class StatePrepBase(Operation):
     """An interface for state-prep operations."""
 
     grad_method = None
@@ -3011,3 +3011,10 @@ def active_new_opmath():
     True
     """
     return __use_new_opmath
+
+
+def __getattr__(name):
+    """To facilitate StatePrep rename"""
+    if name == "StatePrep":
+        return StatePrepBase
+    raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")

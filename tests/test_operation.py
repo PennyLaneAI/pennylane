@@ -25,7 +25,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
+from pennylane.operation import Operation, Operator, StatePrepBase, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -1989,8 +1989,8 @@ add_zero_obs = [
     qml.Identity(1),
     cv.NumberOperator(wires=[1]),
     cv.TensorN(wires=[1]),
-    cv.X(wires=[1]),
-    cv.P(wires=[1]),
+    cv.QuadX(wires=[1]),
+    cv.QuadP(wires=[1]),
     # cv.QuadOperator(1.234, wires=0),
     # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
     cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
@@ -2385,10 +2385,10 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
-class TestStatePrep:
-    """Test the StatePrep interface."""
+class TestStatePrepBase:
+    """Test the StatePrepBase interface."""
 
-    class DefaultPrep(StatePrep):
+    class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
         # pylint:disable=unused-argument,too-few-public-methods
@@ -2396,15 +2396,15 @@ class TestStatePrep:
             return self.parameters[0]
 
     # pylint:disable=unused-argument,too-few-public-methods
-    def test_basic_stateprep(self):
-        """Tests a basic implementation of the StatePrep interface."""
+    def test_basic_initial_state(self):
+        """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrep):
+        class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
 
             # pylint:disable=abstract-class-instantiated
@@ -2412,8 +2412,8 @@ class TestStatePrep:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
 
-    def test_StatePrep_label(self):
-        """Tests that StatePrep classes by default have a psi ket label"""
+    def test_StatePrepBase_label(self):
+        """Tests that StatePrepBase classes by default have a psi ket label"""
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
@@ -2709,3 +2709,25 @@ def test_custom_operator_is_jax_pytree():
 
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+
+
+# pylint: disable=unused-import
+def test_get_attr():
+    """Test that importing attributes of operation work as expected"""
+
+    attr_name = "non_existent_attr"
+    with pytest.raises(
+        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+    ):
+        _ = qml.operation.non_existent_attr  # error is raised if non-existent attribute accessed
+
+    with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
+        from pennylane.operation import (
+            non_existent_attr,
+        )  # error is raised if non-existent attribute imported
+
+    from pennylane.operation import StatePrep
+
+    assert (
+        StatePrep is qml.operation.StatePrepBase
+    )  # StatePrep imported from operation.py is an alias for StatePrepBase

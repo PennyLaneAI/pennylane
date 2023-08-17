@@ -117,6 +117,7 @@ array([False, False])
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
@@ -227,9 +228,14 @@ array([False, False])
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
-* The label for `ParametrizedEvolution` can display parameters even when they are array-like. The 
-  number of decimal places used when displaying the parameters can be set by the kwarg `decimals`.
+* The label for `ParametrizedEvolution` can display parameters with the requested format as set by the 
+  kwarg `decimals`. Array-like parameters are displayed in the same format as matrices and stored in the 
+  cache.
   [(#4151)](https://github.com/PennyLaneAI/pennylane/pull/4151)
+
+* CI now runs tests with Tensorflow 2.13.0
+  [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -283,6 +289,10 @@ array([False, False])
 
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Deprecations 👋</h3>
 
@@ -346,6 +356,9 @@ array([False, False])
   and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
 <h3>Bug fixes 🐛</h3>
+
+* `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
+  [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
 * `qml.Projector` is pickle-able again.
   [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
@@ -413,6 +426,7 @@ array([False, False])
   being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+  [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
 
 
 <h3>Contributors ✍️</h3>
