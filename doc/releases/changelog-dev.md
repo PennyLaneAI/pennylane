@@ -110,6 +110,9 @@ array([False, False])
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
 
+* `TransformDispatcher` now allows registration of custom `QNode` transforms.
+  [(#4466)](https://github.com/PennyLaneAI/pennylane/pull/4466)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
