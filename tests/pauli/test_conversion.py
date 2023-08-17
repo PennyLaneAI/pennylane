@@ -88,8 +88,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
+        """Tests that the Hamiltonian decomposes into a linear combination of Pauli words."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
@@ -138,7 +137,8 @@ class TestDecomposition:
             assert set(ps.wires) == set(wire_order)
             assert h.wires.toset() == set(wire_order)
 
-    def test_wire_error(self):
+    @pytest.mark.parametrize("pauli", [False, True])
+    def test_wire_error(self, pauli):
         """Test that error for incorrect number of wires is raised"""
         wire_order = [0]
         hamiltonian = np.array(
@@ -148,12 +148,7 @@ class TestDecomposition:
         with pytest.raises(
             ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
-            qml.pauli_decompose(hamiltonian, wire_order=wire_order)
-
-        with pytest.raises(
-            ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
-        ):
-            qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
+            qml.pauli_decompose(hamiltonian, pauli=pauli, wire_order=wire_order)
 
 
 class TestPhasedDecomposition:

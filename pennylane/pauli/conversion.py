@@ -231,7 +231,8 @@ def pauli_decompose(
 
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-        of Pauli operators, either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence` instance.
+        of Pauli operators, returned either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence`
+        instance.
 
     **Example:**
 
@@ -268,7 +269,8 @@ def pauli_decompose(
     + -0.5 * Z(0) @ X(1)
     + -0.5 * Z(0) @ Y(1)
 
-    We can also set custom wires using the ``wire_order`` argument:
+    By default the wires are numbered [0, 1, ..., n], but we can also set custom wires using the
+    ``wire_order`` argument:
 
     >>> ps = qml.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
     >>> print(ps)
