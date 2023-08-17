@@ -123,7 +123,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # estimate the variance
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
         # otherwise the returned samples would be boolean lists
-        decimal = True if isinstance(self.obs, MeasurementValue) else False
+        decimal = isinstance(self.obs, MeasurementValue)
         samples = qml.sample(op=self.obs).process_samples(
             samples=samples,
             wire_order=wire_order,

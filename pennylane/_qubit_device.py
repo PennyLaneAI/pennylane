@@ -1705,7 +1705,7 @@ class QubitDevice(Device):
         # estimate the ev
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
         # otherwise the returned samples would be boolean lists
-        decimal = True if isinstance(observable, MeasurementProcess) else False
+        decimal = isinstance(observable, MeasurementProcess)
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
@@ -1744,7 +1744,7 @@ class QubitDevice(Device):
         # estimate the variance
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
         # otherwise the returned samples would be boolean lists
-        decimal = True if isinstance(observable, MeasurementProcess) else False
+        decimal = isinstance(observable, MeasurementProcess)
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
 
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
@@ -1833,7 +1833,9 @@ class QubitDevice(Device):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False, decimal=False):
+    def sample(
+        self, observable, shot_range=None, bin_size=None, counts=False, decimal=False
+    ):  # pylint: disable=too-many-arguments
         """Return samples of an observable.
 
         Args:
