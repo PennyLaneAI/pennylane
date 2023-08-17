@@ -284,6 +284,10 @@ array([False, False])
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
 
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead.
@@ -346,6 +350,9 @@ array([False, False])
   and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
 <h3>Bug fixes 🐛</h3>
+
+* `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
+  [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
 * `qml.Projector` is pickle-able again.
   [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)

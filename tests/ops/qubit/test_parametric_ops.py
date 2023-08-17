@@ -2260,7 +2260,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2293,7 +2293,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2331,7 +2331,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2366,7 +2366,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2401,7 +2401,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2437,7 +2437,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2473,7 +2473,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -2501,7 +2501,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2539,7 +2539,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2577,7 +2577,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2625,7 +2625,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2673,7 +2673,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -2703,7 +2703,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2735,7 +2735,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2778,7 +2778,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2821,7 +2821,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
