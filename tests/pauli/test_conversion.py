@@ -224,7 +224,7 @@ class TestPhasedDecomposition:
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
-        """Tests that pauli_decompose_with_phase successfully decomposes Hamiltonians into a
+        """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
         decomposed_coeff, decomposed_obs = qml.pauli_decompose(
             hamiltonian, check_hermitian=False
@@ -320,7 +320,7 @@ class TestPhasedDecomposition:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("matrix", test_diff_matrix)
     def test_differentiability(self, matrix):
-        """Test differentiability for pauli_decompose_with_phase"""
+        """Test differentiability for pauli_decompose"""
 
         dev = qml.device("default.qubit", wires=1)
 

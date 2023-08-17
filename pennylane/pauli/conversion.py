@@ -31,7 +31,7 @@ from .utils import is_pauli_word
 # pylint: disable=too-many-branches
 def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> Tuple[qml.math.array, list]:
+) -> Tuple[qml.typing.TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
 
     This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
@@ -64,7 +64,7 @@ def _generalized_pauli_decompose(
 
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  1j]])
-    >>> coeffs, obs = qml.pauli._generalized_pauli_decompose(A)
+    >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A)
     >>> coeffs
     array([-1. +0.25j, -1.5+0.j  , -0.5+0.j  , -1. -0.25j, -1.5+0.j  ,
        -1. +0.j  , -0.5+0.j  ,  1. -0.j  ,  0. -0.25j, -0.5+0.j  ,
@@ -85,7 +85,7 @@ def _generalized_pauli_decompose(
 
     We can also set custom wires using the ``wire_order`` argument:
 
-    >>> coeffs, obs = qml.pauli._generalized_pauli_decompose(A, wire_order=['a', 'b'])
+    >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
     >>> obs
     [Identity(wires=['a']) @ Identity(wires=['b']),
     Identity(wires=['a']) @ PauliX(wires=['b']),
@@ -107,7 +107,7 @@ def _generalized_pauli_decompose(
         For non-square matrices, we need to provide the ``padding=True`` keyword argument:
 
         >>> A = np.array([[-2, -2 + 1j]])
-        >>> coeffs, obs = qml.pauli._generalized_pauli_decompose(A, padding=True)
+        >>> coeffs, obs = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         >>> coeffs
         ([-1. +0.j , -1. +0.5j, -0.5-1.j , -1. +0.j ])
         >>> obs
@@ -119,7 +119,7 @@ def _generalized_pauli_decompose(
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
         ... def circuit(A):
-        ...    coeffs, _ = qml.pauli._generalized_pauli_decompose(A, padding=True)
+        ...    coeffs, _ = qml.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         ...    qml.RX(qml.math.real(coeffs[2]), 0)
         ...    return qml.expval(qml.PauliZ(0))
         >>> qml.grad(circuit)(A)
@@ -232,10 +232,6 @@ def pauli_decompose(
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
         of Pauli operators, either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence` instance.
-
-    .. seealso::
-
-        :func:`~.pauli_decompose_with_phase` for decomposing any general matrix.
 
     **Example:**
 
