@@ -108,6 +108,7 @@ BROADCASTED_OPERATIONS = [
 
 
 NON_PARAMETRIZED_OPERATIONS = [
+    qml.Identity(0),
     qml.S(wires=0),
     qml.SX(wires=0),
     qml.T(wires=0),
