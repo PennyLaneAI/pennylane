@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The data subpackage provides functionality to access, store and manipulate `quantum datasets <https://pennylane.ai/qml/datasets.html>`_.
+"""The data subpackage provides functionality to access, store and manipulate `quantum datasets <https://pennylane.ai/datasets>`_.
 
 .. note::
 
