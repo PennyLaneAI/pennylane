@@ -4380,7 +4380,7 @@ def test_global_phase_compute_sparse_matrix(phi, n_wires):
     sparse_matrix = qml.GlobalPhase.compute_sparse_matrix(phi, n_wires=n_wires)
     expected = np.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
-    assert np.allclose(sparse_matrix, expected)
+    assert np.allclose(sparse_matrix.todense(), expected.todense())
 
 
 control_data = [
