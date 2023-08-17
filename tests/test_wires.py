@@ -135,12 +135,12 @@ class TestWires:
         assert 0 in wires
         assert Wires([4, 5]) in wires
         assert None in wires
-        assert not Wires([1]) in wires
-        assert not Wires([0, 3]) in wires
-        assert not Wires([0, 4]) in wires
+        assert Wires([1]) not in wires
+        assert Wires([0, 3]) not in wires
+        assert Wires([0, 4]) not in wires
 
-        assert not [0, 4] in wires
-        assert not [4] in wires
+        assert [0, 4] not in wires
+        assert [4] not in wires
 
     def test_contains_wires(
         self,

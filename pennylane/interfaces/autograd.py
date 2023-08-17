@@ -303,16 +303,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if not qml.active_return():
-        return _execute_legacy(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
     # pylint: disable=unused-argument
     for tape in tapes:
         # set the trainable parameters
@@ -385,8 +375,7 @@ def _execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
-    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
-    res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
+    res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     return res, jacs
 
@@ -461,9 +450,7 @@ def vjp(
             return gradient_fn(tape, **gradient_kwargs)
 
         g_tapes, fn = qml.transforms.map_batch_transform(partial_gradient_fn, tapes)
-        unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
-
-        res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
+        res, _ = execute_fn(g_tapes, **gradient_kwargs)
 
         jacs = fn(res)
         cached_jac["jacobian"] = jacs
@@ -507,9 +494,8 @@ def vjp(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        unwrapped_tapes,
+                        tapes,
                         dy,
                         gradient_fn,
                         reduction="append",
@@ -551,8 +537,7 @@ def vjp(
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
-                jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
+                jacs = gradient_fn(tapes, **gradient_kwargs)
 
                 vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots)
 

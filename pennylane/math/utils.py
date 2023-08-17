@@ -138,7 +138,9 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    if not is_abstract(tensor2):
+    if isinstance(tensor2, ArrayBox):
+        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif not is_abstract(tensor2):
         dtype = ar.to_numpy(tensor2).dtype.type
     else:
         dtype = tensor2.dtype
@@ -453,7 +455,10 @@ def requires_grad(tensor, interface=None):
         import tensorflow as tf
 
         try:
-            from tensorflow.python.eager.tape import should_record_backprop
+            try:
+                from tensorflow.python.eager.record import should_record_backprop
+            except ImportError:  # pragma: no cover
+                from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
             from tensorflow.python.eager.tape import should_record as should_record_backprop
 
@@ -506,7 +511,10 @@ def in_backprop(tensor, interface=None):
         import tensorflow as tf
 
         try:
-            from tensorflow.python.eager.tape import should_record_backprop
+            try:
+                from tensorflow.python.eager.record import should_record_backprop
+            except ImportError:  # pragma: no cover
+                from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
             from tensorflow.python.eager.tape import should_record as should_record_backprop
 

@@ -107,6 +107,7 @@ class TestUI:
         def my_transform(op):
             return op.name
 
+        # pylint:disable=assignment-from-no-return
         res = my_transform(qml.CRX)(0.5, wires=[0, "a"])
         assert res == "CRX"
 
