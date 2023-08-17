@@ -145,6 +145,7 @@ array([False, False])
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
