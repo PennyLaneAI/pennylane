@@ -614,6 +614,23 @@ class TestApply:
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
+    @pytest.mark.parametrize("wire", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "input_state", ([1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1])
+    )
+    def test_apply_global_phase(self, qubit_device_3_wires, tol, wire, input_state):
+        """Tests that applying an operation yields the expected output state for single wire
+        operations that have parameters."""
+
+        qubit_device_3_wires._state = np.array(input_state, dtype=qubit_device_3_wires.C_DTYPE)
+        phase = 0.234
+
+        qubit_device_3_wires.apply([qml.GlobalPhase(phase, wires=[wire])])
+        expected_output = np.array(input_state) * np.exp(-1j * phase)
+
+        assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
+
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
@@ -2127,6 +2144,7 @@ class TestStateVector:
         spy.assert_called()
 
 
+# pylint:disable = unnecessary-lambda-assignment
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
