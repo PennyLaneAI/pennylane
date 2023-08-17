@@ -41,8 +41,8 @@ from .utils import (
 from .pauli_interface import pauli_word_prefactor
 
 from .conversion import (
+    _generalized_pauli_decompose,
     pauli_decompose,
-    pauli_decompose_with_phase,
     pauli_sentence,
 )
 

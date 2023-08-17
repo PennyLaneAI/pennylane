@@ -64,10 +64,6 @@ array([False, False])
   restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
   calculations with single and double (SD) excitations.
 
-* A fully differentiable method `qml.pauli_decompose_with_phase` can now be used to decompose
-  any non-Hermitian or non-square matrix to a linear combination of Pauli operators.
-  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
-
 <h3>Improvements 🛠</h3>
 
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
@@ -145,8 +141,9 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-* `qml.pauli_decompose` is now fully differentiable.
+* `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
