@@ -394,7 +394,7 @@ class QuantumScript:
         """Returns the index of the first operator that is not an StatePrepBase operator."""
         idx = 0
         num_ops = len(self.operations)
-        while idx < num_ops and isinstance(self.operations[idx], qml.operation.StatePrep):
+        while idx < num_ops and isinstance(self.operations[idx], qml.operation.StatePrepBase):
             idx += 1
         return idx
 
