@@ -48,9 +48,9 @@ def expval(op: Union[Operator, MeasurementValue]):
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, MeasurementValue]): a quantum observable object.
-            To get expectation values for mid-circuit measurements, ``op`` should be
-             a ``MeasurementValue``.
+        op (Union[Observable, MeasurementValue]): a quantum observable object. To
+            get expectation values for mid-circuit measurements, ``op`` should be
+            a ``MeasurementValue``.
 
     Returns:
         ExpectationMP: measurement process instance
