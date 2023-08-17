@@ -137,9 +137,8 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): Whether to return the global phase
-            as a ``qml.s_prod`` between ``exp(1j)*alpha`` and ``qml.Identity`` as the last
-            element of the returned list of operations.
+        return_global_phase (bool): Whether to return the global phase ``qml.GlobalPhase(-alpha)``
+            as the last element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RY`` and
@@ -156,7 +155,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     [RZ(12.32427531154459, wires=[0]),
      RY(1.1493817771511352, wires=[0]),
      RZ(1.733058145303424, wires=[0]),
-     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+     GlobalPhase((1.1759220332464762-0j), wires=[0])]
     """
 
     # Cast to batched format for more consistent code
@@ -193,7 +192,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        operations.append(qml.s_prod(math.exp(1j * alphas), qml.Identity(wire)))
+        operations.append(qml.GlobalPhase(-alphas, wire))
 
     return operations
 
@@ -206,9 +205,8 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     Args:
         U (array[complex]): A 2 x 2 unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): Whether to return the global phase
-            as a `qml.s_prod` between `exp(1j)*gamma` and `qml.Identity` as the last
-            element of the returned list of operations.
+        return_global_phase (bool): Whether to return the global phase ``qml.GlobalPhase(-gamma)``
+            as the last element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
@@ -225,7 +223,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     [RX(10.845351366405708, wires=[0]),
      RY(1.3974974118006174, wires=[0]),
      RX(0.45246583660683803, wires=[0]),
-     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+     GlobalPhase((1.1759220332464762-0j), wires=[0])]
     """
 
     # Small number to add to denominators to avoid division by zero
@@ -258,7 +256,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
-        operations.append(qml.s_prod(math.exp(1j * gammas), qml.Identity(wire)))
+        operations.append(qml.GlobalPhase(-gammas, wire))
 
     return operations
 
@@ -271,9 +269,8 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     Args:
         U (array[complex]): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): Whether to return the global phase
-            as a ``qml.s_prod`` between ``exp(1j)*alpha`` and ``qml.Identity`` as the last
-            element of the returned list of operations.
+        return_global_phase (bool): Whether to return the global phase as a
+            ``qml.GlobalPhase(-alpha)`` as the last element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RX`` and
@@ -290,7 +287,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
         [RZ(10.753478981934784, wires=[0]),
          RX(1.1493817777940705, wires=[0]),
          RZ(3.3038544749132295, wires=[0]),
-        (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+         GlobalPhase((1.1759220332464762-0j), wires=[0])]
     """
 
     # Small number to add to denominators to avoid division by zero
@@ -326,7 +323,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
-        operations.append(qml.s_prod(math.exp(1j * alphas), qml.Identity(wire)))
+        operations.append(qml.GlobalPhase(-alphas, wire))
 
     return operations
 
@@ -343,8 +340,8 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
         U (tensor): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
         rotations (str): A string defining the sequence of rotations to decompose :math:`U` into.
-        return_global_phase (bool): Whether to return the global phase as a ``qml.s_prod`` between ``exp(1j)*alpha``
-            and ``qml.Identity`` as the last element of the returned list of operations.
+        return_global_phase (bool): Whether to return the global phase as a ``qml.GlobalPhase(-alpha)``
+            as the last element of the returned list of operations.
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
