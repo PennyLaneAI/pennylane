@@ -414,6 +414,9 @@ array([False, False])
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
   [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
 
+* Using `jax.jit` on a function that jits a wire argument no longer breaks `qml.math.expand_matrix`.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 
 <h3>Contributors ✍️</h3>
 

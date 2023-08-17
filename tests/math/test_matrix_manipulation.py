@@ -527,6 +527,23 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
+    @pytest.mark.jax
+    def test_expand_matrix_jax_jit(self):
+        """Test that expand_matrix doesn't break with jax-jit."""
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circuit(x):
+            op = qml.Identity(wires=[0])
+            op2 = qml.ctrl(op, control=[x], work_wires=[2])
+            qml.matrix(op2)
+            return qml.state()
+
+        expected = np.zeros(8)
+        expected[0] = 1
+        assert np.allclose(circuit(1), expected)
+
 
 class TestExpandMatrixSparse:
     """Tests for the _sparse_expand_matrix function."""
