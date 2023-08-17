@@ -21,6 +21,7 @@ from functools import reduce
 import numpy as np
 import pytest
 from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
+from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as npp
@@ -4362,6 +4363,23 @@ class TestParametricPow:
         pow_mat = qml.matrix(op.pow)(n)
 
         assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
+
+
+# pylint:disable = use-implicit-booleaness-not-comparison
+def test_diagonalization_static_global_phase():
+    """Test the static compute_diagonalizing_gates method for the GlobalPhase operation."""
+    assert qml.GlobalPhase.compute_diagonalizing_gates(0.123, wires=1) == []
+
+
+@pytest.mark.parametrize("phi", [0.123, np.pi / 4, 0])
+@pytest.mark.parametrize("n_wires", [0, 1, 2])
+def test_global_phase_compute_sparse_matrix(phi, n_wires):
+    """Test that compute_sparse_matrix"""
+
+    sparse_matrix = qml.GlobalPhase.compute_sparse_matrix(phi, n_wires=n_wires)
+    expected = np.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
+
+    assert np.allclose(sparse_matrix, expected)
 
 
 control_data = [
