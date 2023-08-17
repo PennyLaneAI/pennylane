@@ -101,7 +101,7 @@ class TestExpectationValueMath:
                 [[1, 0], [0, 1]],
             ]
         )
-        state_vectors = func([[0, 1], [1, 0], [1, 1] / np.sqrt(2)])
+        state_vectors = qml.math.stack([func([0, 1]), func([1, 0]), func([1, 1]) / np.sqrt(2)])
         expected = [0, 0.5, 1]
 
         overlap = qml.math.expectation_value(ops, state_vectors, check_state)
