@@ -397,17 +397,17 @@ def is_abstract(tensor, like=None):
     return False
 
 
-def import_should_record_backprop():
+def import_should_record_backprop():  # pragma: no cover
     """Return should_record_backprop or an equivalent function from TensorFlow."""
     import tensorflow.python as tfpy
 
     if hasattr(tfpy.eager.tape, "should_record_backprop"):
         from tensorflow.python.eager.tape import should_record_backprop
-    elif hasattr(tfpy.eager.tape, "should_record"):  # pragma: no cover
+    elif hasattr(tfpy.eager.tape, "should_record"):
         from tensorflow.python.eager.tape import should_record as should_record_backprop
-    elif hasattr(tfpy.eager.record, "should_record_backprop"):  # pragma: no cover
+    elif hasattr(tfpy.eager.record, "should_record_backprop"):
         from tensorflow.python.eager.record import should_record_backprop
-    else:  # pragma: no cover
+    else:
         raise ImportError("Cannot import should_record_backprop from TensorFlow.")
 
     return should_record_backprop
