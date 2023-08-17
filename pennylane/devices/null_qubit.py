@@ -60,6 +60,7 @@ class NullQubit(QubitDevice):
         "Identity",
         "Snapshot",
         "BasisState",
+        "StatePrep",
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",

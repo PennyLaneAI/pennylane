@@ -303,7 +303,8 @@ def _openfermion_pennylane_equivalent(
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e010):
     r"""Convert an external operator to a PennyLane operator.
 
-    The external format currently supported is openfermion.
+    We currently support [openfermion](https://quantumai.google/openfermion) operators: the function accepts most types of
+    OpenFermion qubit operators, such as those corresponding to Pauli words and sums of Pauli words.
 
     Args:
         qubit_observable: external qubit operator that will be converted
@@ -316,7 +317,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
             If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
         tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the coefficients in ``qubit_observable``.
-            Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
+            Coefficients with imaginary part less than :math:`(2.22 \cdot 10^{-16}) \cdot \text{tol}` are considered to be real.
 
     Returns:
         (.Operator): PennyLane operator representing any operator expressed as linear combinations of
@@ -564,8 +565,11 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
+    Currently, the only accepted source of wavefunctions is the PySCF library.
+    The restricted and unrestricted CISD/CCSD methods are supported.
+
     Args:
-        solver: external wavefunction object that will be converted
+        solver: external wavefunction object (e.g. PySCF Solver object) that will be converted
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:

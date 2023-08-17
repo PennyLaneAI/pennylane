@@ -1433,7 +1433,8 @@ class TestQubitIntegration:
         assert res[1].shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, interface, dev_name, diff_method, grad_on_execution, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(
             diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1447,7 +1448,7 @@ class TestQubitIntegration:
             pytest.skip("Hadamard gradient does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
-        P = np.array([1], requires_grad=False)
+        P = np.array(state, requires_grad=False)
         x, y = np.array([0.765, -0.654], requires_grad=True)
 
         @qnode(dev, **kwargs)
@@ -1501,6 +1502,7 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -1535,6 +1537,7 @@ class TestCV:
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
             tol = TOL_FOR_SPSA
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
