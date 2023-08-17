@@ -275,10 +275,10 @@ class QuantumScript:
         Returns:
             list[.Operator]: quantum operations
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.operations
-        [QubitStateVector([0, 1], wires=[0]), RX(0.432, wires=[0])]
+        [StatePrep([0, 1], wires=[0]), RX(0.432, wires=[0])]
         """
         return self._prep + self._ops
 
@@ -291,7 +291,7 @@ class QuantumScript:
 
         **Example**
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.observables
         [expval(PauliZ(wires=[0]))]
@@ -319,7 +319,7 @@ class QuantumScript:
 
         **Example**
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.measurements
         [expval(PauliZ(wires=[0]))]
@@ -1254,7 +1254,7 @@ class QuantumScript:
         """Returns a directed acyclic graph representation of the recorded
         quantum circuit:
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.graph
         <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>

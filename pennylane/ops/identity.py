@@ -51,6 +51,9 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
+    def _flatten(self):
+        return tuple(), (self.wires, tuple())
+
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}

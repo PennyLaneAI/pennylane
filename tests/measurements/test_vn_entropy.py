@@ -80,7 +80,7 @@ class TestInitialization:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            qml.QubitStateVector(state_vector, wires=[0, 1])
+            qml.StatePrep(state_vector, wires=[0, 1])
             return qml.vn_entropy(wires=0)
 
         res = circuit()

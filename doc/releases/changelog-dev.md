@@ -117,6 +117,7 @@ array([False, False])
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
@@ -282,6 +283,10 @@ array([False, False])
 
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Deprecations 👋</h3>
 

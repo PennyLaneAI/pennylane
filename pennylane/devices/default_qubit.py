@@ -27,7 +27,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane import BasisState, DeviceError, QubitDevice, StatePrep, Snapshot
 from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
 from pennylane.ops import Sum
@@ -114,6 +114,7 @@ class DefaultQubit(QubitDevice):
         "Identity",
         "Snapshot",
         "BasisState",
+        "StatePrep",
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
@@ -271,13 +272,13 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, (StatePrep, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
 
-            if isinstance(operation, QubitStateVector):
+            if isinstance(operation, StatePrep):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
