@@ -31,7 +31,7 @@ from pennylane import (
     DeviceError,
     QubitDensityMatrix,
     QubitDevice,
-    QubitStateVector,
+    StatePrep,
     Snapshot,
 )
 from pennylane import numpy as np
@@ -86,6 +86,7 @@ class DefaultMixed(QubitDevice):
         "Snapshot",
         "BasisState",
         "QubitStateVector",
+        "StatePrep",
         "QubitDensityMatrix",
         "QubitUnitary",
         "ControlledQubitUnitary",
@@ -604,7 +605,7 @@ class DefaultMixed(QubitDevice):
         if operation.name == "Identity":
             return
 
-        if isinstance(operation, QubitStateVector):
+        if isinstance(operation, StatePrep):
             self._apply_state_vector(operation.parameters[0], wires)
             return
 
@@ -755,7 +756,7 @@ class DefaultMixed(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, (StatePrep, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
