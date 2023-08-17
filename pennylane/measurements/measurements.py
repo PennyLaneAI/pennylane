@@ -417,7 +417,7 @@ class MeasurementProcess(ABC):
     @property
     def samples_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
-        return self.obs is None
+        return self.obs is None or self.obs.__class__.__name__ == "MeasurementValue"
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
