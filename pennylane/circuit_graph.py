@@ -87,7 +87,7 @@ class CircuitGraph:
         par_info (list[dict]): Parameter information. For each index, the entry is a dictionary containing an operation
         and an index into that operation's parameters.
         trainable_params (set[int]): A set containing the indices of parameters that support
-            differentiability. The indices provided match the order of appearence in the
+            differentiability. The indices provided match the order of appearance in the
             quantum circuit.
     """
 
@@ -345,7 +345,7 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
-        return sorted(self.ancestors(ops), key=_by_idx)  # an abitrary topological order
+        return sorted(self.ancestors(ops), key=_by_idx)  # an arbitrary topological order
 
     def descendants_in_order(self, ops):
         """Operator descendants in a topological order.

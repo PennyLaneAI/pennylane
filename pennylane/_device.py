@@ -821,7 +821,7 @@ class Device(abc.ABC):
         of :meth:`~.execute`.
 
         Raises:
-            ValueError: if outside of the execution context
+            ValueError: if outside the execution context
 
         Returns:
             list[~.operation.Operation]
@@ -839,7 +839,7 @@ class Device(abc.ABC):
         of :meth:`~.execute`.
 
         Raises:
-            ValueError: if outside of the execution context
+            ValueError: if outside the execution context
 
         Returns:
             list[~.operation.Observable]
@@ -1029,7 +1029,7 @@ class Device(abc.ABC):
         Args:
             observable (str or list[str]): name of the observable(s)
             wires (Wires): wires the observable(s) are to be measured on
-            par (tuple or list[tuple]]): parameters for the observable(s)
+            par (tuple or list[tuple]): parameters for the observable(s)
 
         Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
@@ -1044,7 +1044,7 @@ class Device(abc.ABC):
         Args:
             observable (str or list[str]): name of the observable(s)
             wires (Wires): wires the observable(s) is to be measured on
-            par (tuple or list[tuple]]): parameters for the observable(s)
+            par (tuple or list[tuple]): parameters for the observable(s)
 
         Raises:
             NotImplementedError: if the device does not support variance computation
@@ -1068,7 +1068,7 @@ class Device(abc.ABC):
         Args:
             observable (str or list[str]): name of the observable(s)
             wires (Wires): wires the observable(s) is to be measured on
-            par (tuple or list[tuple]]): parameters for the observable(s)
+            par (tuple or list[tuple]): parameters for the observable(s)
 
         Raises:
             NotImplementedError: if the device does not support sampling

@@ -23,7 +23,7 @@ class _Debugger:
     """A debugging context manager.
 
     Without an active debugging context, devices will not save their internal state when
-    encoutering Snapshot operations. The debugger also serves as storage for the device states.
+    encountering Snapshot operations. The debugger also serves as storage for the device states.
 
     Args:
         dev (Device): device to attach the debugger to

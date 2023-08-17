@@ -296,7 +296,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
-        states by summing the probabiliites on the non-specified wires.
+        states by summing the probabilities on the non-specified wires.
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.

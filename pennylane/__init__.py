@@ -261,7 +261,7 @@ def device(name, *args, **kwargs):
 
     For example, suppose we are running on an ion trap device which does not
     natively implement the CNOT gate, but we would still like to write our
-    circuits in terms of CNOTs. On a ion trap device, CNOT can be implemented
+    circuits in terms of CNOTs. On an ion trap device, CNOT can be implemented
     using the ``IsingXX`` gate. We first define a decomposition function
     (such functions have the signature ``decomposition(*params, wires)``):
 

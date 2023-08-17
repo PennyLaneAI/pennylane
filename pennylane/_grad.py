@@ -267,7 +267,7 @@ def jacobian(func, argnum=None):
     of the QNode output shape (``(3,)``) and the shape of ``x`` (``(2,)``).
     Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(3, 2, 4)``.
 
-    Instead we may choose the output to contain only one of the two
+    Instead, we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnum``:
 
     >>> jac = qml.jacobian(circuit, argnum=[1])(x, y)
@@ -288,7 +288,7 @@ def jacobian(func, argnum=None):
     >>> qml.math.shape(jac)
     (3, 2, 4)
 
-    As expected, the tuple was unpacked and we directly received the Jacobian of the
+    As expected, the tuple was unpacked, and we directly received the Jacobian of the
     QNode with respect to ``y``.
     """
     # pylint: disable=no-value-for-parameter
