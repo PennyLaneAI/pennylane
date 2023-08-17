@@ -396,8 +396,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
         for obs in observable_descendents:
             # get the index of the descendent observable
-            idx = tape.observables.index(obs)
-            transformed_obs_idx.append(idx)
+            for obs_idx, tape_obs in enumerate(tape.observables):
+                if qml.equal(obs, tape_obs):
+                    break
+            transformed_obs_idx.append(obs_idx)  # pylint:disable=undefined-loop-variable
 
             transformed_obs = _transform_observable(obs, Z, dev_wires)
 
