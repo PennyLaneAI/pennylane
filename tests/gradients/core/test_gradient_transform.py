@@ -33,7 +33,7 @@ class TestGradAnalysis:
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -52,7 +52,7 @@ class TestGradAnalysis:
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -108,7 +108,7 @@ class TestGradAnalysis:
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])

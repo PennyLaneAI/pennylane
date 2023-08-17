@@ -291,7 +291,7 @@ State preparation
     :nosignatures:
 
     ~pennylane.BasisState
-    ~pennylane.QubitStateVector
+    ~pennylane.StatePrep
     ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
