@@ -66,13 +66,11 @@ def _local_tape_expand(tape, depth, stop_at):
     if depth == 0:
         return tape
 
-    new_prep = []
     new_ops = []
     new_measurements = []
 
     for queue, new_queue in [
-        (tape._prep, new_prep),
-        (tape._ops, new_ops),
+        (tape.operations, new_ops),
         (tape.measurements, new_measurements),
     ]:
         for obj in queue:
@@ -91,13 +89,12 @@ def _local_tape_expand(tape, depth, stop_at):
             # recursively expand out the newly created tape
             expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_prep.extend(expanded_tape._prep)
-            new_ops.extend(expanded_tape._ops)
-            new_measurements.extend(expanded_tape._measurements)
+            new_ops.extend(expanded_tape.operations)
+            new_measurements.extend(expanded_tape.measurements)
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
