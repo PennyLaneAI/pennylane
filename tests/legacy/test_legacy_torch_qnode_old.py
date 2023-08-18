@@ -974,7 +974,8 @@ class TestQubitIntegration:
         )
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, interface, dev_name, diff_method, mode, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, interface, dev_name, diff_method, mode, tol):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(diff_method=diff_method, interface=interface, mode=mode)
         if diff_method == "adjoint":
@@ -984,7 +985,7 @@ class TestQubitIntegration:
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
-        P = torch.tensor([1], requires_grad=False)
+        P = torch.tensor(state, requires_grad=False)
 
         x, y = 0.765, -0.654
         weights = torch.tensor([x, y], requires_grad=True, dtype=torch.float64)
@@ -1028,6 +1029,7 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         r = torch.tensor(0.543, dtype=torch.float64, requires_grad=True)
@@ -1061,6 +1063,7 @@ class TestCV:
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         n = torch.tensor(0.12, dtype=torch.float64, requires_grad=True)

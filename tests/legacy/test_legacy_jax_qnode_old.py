@@ -1041,7 +1041,8 @@ class TestQubitIntegration:
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, dev_name, diff_method, mode, interface, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, dev_name, diff_method, mode, interface, tol):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(diff_method=diff_method, interface=interface, mode=mode)
         if diff_method == "adjoint":
@@ -1051,7 +1052,7 @@ class TestQubitIntegration:
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
-        P = jax.numpy.array([1])
+        P = jax.numpy.array(state)
         x, y = 0.765, -0.654
 
         @qnode(dev, **kwargs)
@@ -1211,6 +1212,7 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         r = 0.543
@@ -1240,6 +1242,7 @@ class TestCV:
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         n = 0.12

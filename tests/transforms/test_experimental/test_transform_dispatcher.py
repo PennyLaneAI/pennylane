@@ -385,3 +385,47 @@ class TestTransformDispatcher:
         assert not container.kwargs
         assert container.classical_cotransform is None
         assert not container.is_informative
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_custom_qnode_transform(self, valid_transform):
+        """Test that the custom qnode transform is correctly executed"""
+
+        dispatched_transform = transform(valid_transform)
+
+        history = []
+
+        @dispatched_transform.custom_qnode_transform
+        def _custom_qnode_transform(self, qnode, targs, tkwargs):
+            history.append((targs, tkwargs))
+            return self.default_qnode_transform(qnode, targs, tkwargs)
+
+        @partial(dispatched_transform, index=0)
+        @qml.qnode(dev)
+        def qnode1():
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert isinstance(qnode1, qml.QNode)
+        assert isinstance(qnode1.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(
+            qnode1.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
+
+        @qml.qnode(dev)
+        def qnode2():
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        qnode2 = dispatched_transform(qnode2, 1)
+
+        assert isinstance(qnode2, qml.QNode)
+        assert isinstance(qnode2.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(
+            qnode2.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
+
+        # check that the custom qnode transform was called
+        assert history == [([], {"index": 0}), ([1], {})]

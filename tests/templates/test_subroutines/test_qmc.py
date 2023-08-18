@@ -145,7 +145,7 @@ class TestFuncToUnitary:
 
         @qml.qnode(dev)
         def apply_r(input_state):
-            qml.QubitStateVector(input_state, wires=range(wires))
+            qml.StatePrep(input_state, wires=range(wires))
             qml.QubitUnitary(r, wires=range(wires + 1))
             return qml.probs(wires)
 
