@@ -86,7 +86,7 @@ class batch_transform:
             ops2 = []
 
             # loop through all operations on the input tape
-            for op in tape._ops:
+            for op in tape.operations:
                 if op.name == "RX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -97,8 +97,8 @@ class batch_transform:
                     ops1.append(op)
                     ops2.append(op)
 
-            tape1 = qml.tape.QuantumTape(ops1, tape.measurements, tape._prep)
-            tape2 = qml.tape.QuantumTape(ops2, tape.measurements, tape._prep)
+            tape1 = qml.tape.QuantumTape(ops1, tape.measurements)
+            tape2 = qml.tape.QuantumTape(ops2, tape.measurements)
 
             def processing_fn(results):
                 return qml.math.sum(qml.math.stack(results))

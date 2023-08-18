@@ -292,6 +292,3 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
-
-    # This is a temporary attribute to fix the operator queuing behaviour
-    _queue_category = "_prep"
