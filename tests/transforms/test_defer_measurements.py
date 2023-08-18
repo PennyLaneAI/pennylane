@@ -69,7 +69,7 @@ class TestQNode:
 
         _ = qnode()
 
-    def test_no_new_wires_without_reuse(self):
+    def test_no_new_wires_without_reuse(self, mocker):
         """Test that new wires are not added if a measured wire is not reused."""
         dev = qml.device("default.qubit", wires=3)
 
@@ -94,19 +94,24 @@ class TestQNode:
             qml.RX(phi, 0)
             return qml.expval(qml.PauliZ(0))
 
+        spy = mocker.spy(qml, "defer_measurements")
+
         # Outputs should match
         assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
+        spy.assert_called_once()
 
-        assert isinstance(qnode1.qtape.operations[5], qml.ops.Controlled)
-        assert qml.equal(qnode1.qtape.operations[5].base, qml.PauliZ(2))
-        assert qnode1.qtape.operations[5].hyperparameters["control_wires"] == qml.wires.Wires(0)
+        deferred_tape = qml.defer_measurements(qnode1.qtape)
+        assert isinstance(deferred_tape.operations[5], qml.ops.Controlled)
+        assert qml.equal(deferred_tape.operations[5].base, qml.PauliZ(2))
+        assert deferred_tape.operations[5].hyperparameters["control_wires"] == qml.wires.Wires(0)
 
-        assert qml.equal(qnode1.qtape.operations[6], qml.CNOT([1, 2]))
+        assert qml.equal(deferred_tape.operations[6], qml.CNOT([1, 2]))
 
-    def test_new_wires_after_reuse(self):
+    def test_new_wires_after_reuse(self, mocker):
         """Test that a new wire is added for every measurement after which
         the wire is reused."""
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml, "defer_measurements")
 
         @qml.qnode(dev)
         def qnode1(phi, theta):
@@ -120,9 +125,6 @@ class TestQNode:
 
         res1 = qnode1(np.pi / 4, 3 * np.pi / 4)
 
-        assert len(qnode1.qtape.wires) == 4
-        assert len(qnode1.qtape.operations) == 6
-
         @qml.qnode(dev)
         def qnode2(phi, theta):
             qml.RX(phi, 0)
@@ -134,10 +136,18 @@ class TestQNode:
             return qml.expval(qml.PauliZ(2))
 
         res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
+
+        assert spy.call_count == 2
+
+        deferred_tape1 = qml.defer_measurements(qnode1.qtape)
+        assert len(deferred_tape1.wires) == 4
+        assert len(deferred_tape1.operations) == 6
+
         assert np.allclose(res1, res2)
 
-        assert len(qnode2.qtape.wires) == 3
-        assert len(qnode2.qtape.operations) == 4
+        deferred_tape2 = qml.defer_measurements(qnode2.qtape)
+        assert len(deferred_tape2.wires) == 3
+        assert len(deferred_tape2.operations) == 4
 
     def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
@@ -1041,7 +1051,7 @@ class TestQubitReset:
         expected_mat = np.array([[1, 0], [0, 0]])
         assert np.allclose(qnode(0.123), expected_mat)
 
-    def test_multiple_measurements_mixed_reset(self):
+    def test_multiple_measurements_mixed_reset(self, mocker):
         """Test that a QNode with multiple mid-circuit measurements with
         different resets is transformed correctly."""
         dev = qml.device("default.qubit", wires=6)
@@ -1064,7 +1074,9 @@ class TestQubitReset:
             qml.cond(m1 | m2, qml.RY)(y, 2)
             return qml.expval(qml.PauliZ(2))
 
+        spy = mocker.spy(qml, "defer_measurements")
         _ = qnode(0.123, 0.456, 0.789)
+        spy.assert_called_once()
 
         expected_circuit = [
             qml.Hadamard(0),
@@ -1082,10 +1094,11 @@ class TestQubitReset:
             qml.expval(qml.PauliZ(2)),
         ]
 
-        assert len(qnode.qtape.circuit) == len(expected_circuit)
+        deferred_tape = qml.defer_measurements(qnode.qtape)
+        assert len(deferred_tape.circuit) == len(expected_circuit)
         assert all(
             qml.equal(actual, expected)
-            for actual, expected in zip(qnode.qtape.circuit, expected_circuit)
+            for actual, expected in zip(deferred_tape.circuit, expected_circuit)
         )
 
 

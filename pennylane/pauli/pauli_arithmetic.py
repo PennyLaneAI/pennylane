@@ -478,13 +478,18 @@ class PauliSentence(dict):
         matrix += self._sum_different_structure_pws(
             mat_indices[:, :n_matrices_in_buffer], mat_data[:, :n_matrices_in_buffer]
         )
+        matrix.eliminate_zeros()
         return matrix
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
-        mat = pauli_words[0].to_mat(wire_order, coeff=self[pauli_words[0]], format="csr")
+        mat = pauli_words[0].to_mat(
+            wire_order, coeff=qml.math.to_numpy(self[pauli_words[0]]), format="csr"
+        )
         for word in pauli_words[1:]:
-            mat.data += word.to_mat(wire_order, coeff=self[word], format="csr").data
+            mat.data += word.to_mat(
+                wire_order, coeff=qml.math.to_numpy(self[word]), format="csr"
+            ).data
         return mat
 
     @staticmethod
