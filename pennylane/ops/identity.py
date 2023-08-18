@@ -180,11 +180,63 @@ class Identity(CVObservable, Operation):
 
 
 class GlobalPhase(Operation):
-    r"""A global phase operation that multiplies the all components of the state by :math:`\exp{-1j \phi}`.
+    r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
+
+    **Details:**
+
+    * Number of wires: All (the operation acts on all wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
 
     Args:
         phi (TensorLike): the global phase
         wires (Iterable[Any] or Any): Wire label(s) that the global phase acts on.
+
+    **Example**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi=None, return_state=False):
+            qml.PauliX(0)
+            if phi:
+                qml.GlobalPhase(phi, wires=[1])
+            if return_state:
+                return qml.state()
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    The circuit yields the same expectation values with and without the global phase:
+
+    >>> circuit()
+    (tensor(-1., requires_grad=True), tensor(1., requires_grad=True))
+    >>> circuit(phi=0.123)
+    (tensor(-1., requires_grad=True), tensor(1., requires_grad=True))
+
+    However, the states of the two systems differ by a global phase factor:
+
+    >>> circuit(return_state=True)
+    tensor([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j], requires_grad=True)
+    >>> circuit(return_state=True, phi=0.123)
+    tensor([0.        +0.j        , 0.        +0.j        ,
+            0.99244503-0.12269009j, 0.        +0.j        ], requires_grad=True)
+
+
+    The operator can be applied with a control to create a relative phase between terms:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.ctrl(qml.GlobalPhase(0.123, wires=[1]), 0)
+            return qml.state()
+
+        >>> circuit()
+        tensor([0.70710678+0.j        , 0.        +0.j        ,
+                0.70176461-0.08675499j, 0.        +0.j        ], requires_grad=True)
+
 
     """
 
