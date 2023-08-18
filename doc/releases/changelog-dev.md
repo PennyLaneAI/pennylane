@@ -172,6 +172,7 @@ array([False, False])
 * `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
