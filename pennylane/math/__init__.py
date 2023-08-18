@@ -96,6 +96,12 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 get_dtype_name = ar.get_dtype_name
+get_dtype_name.__doc__ = (
+    "An interface independent way of getting the name of the datatype.\n"
+    ">>> x = tf.Variable(0.1)\n"
+    ">>> qml.math.get_dtype_name(tf.Variable(0.1))\n"
+    "'float32'"
+)
 
 
 class NumpyMimic(ar.autoray.NumpyMimic):
@@ -142,6 +148,7 @@ __all__ = [
     "fidelity",
     "fidelity_statevector",
     "frobenius_inner_product",
+    "get_dtype_name",
     "get_interface",
     "get_trainable_indices",
     "in_backprop",

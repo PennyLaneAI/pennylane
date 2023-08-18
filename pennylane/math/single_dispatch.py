@@ -116,6 +116,16 @@ ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices
 ar.register_function("autograd", "unstack", list)
 
 
+def autograd_get_dtype_name(x):
+    """A autograd version of get_dtype_name that can handle array boxes."""
+    if hasattr(x, "_value"):
+        return ar.get_dtype_name(x._value)
+    return x.dtype.name
+
+
+ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
+
+
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
     _np = _i("qml").numpy

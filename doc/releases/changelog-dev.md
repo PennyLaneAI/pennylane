@@ -357,6 +357,8 @@ array([False, False])
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_dtype_name` now works with autograd array boxes.
+
 * `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
   [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
