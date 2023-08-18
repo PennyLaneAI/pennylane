@@ -1787,6 +1787,26 @@ class TestClassicalShadows:
             assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
 
 
+class TestDynamicType:
+    """Tests the compatibility with dynamic type classes such as `qml.Projector`."""
+
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_projector(self, max_workers, n_wires):
+        """Test that qml.Projector yields the expected results for both of its subclasses."""
+        wires = list(range(n_wires))
+        dev = DefaultQubit2(max_workers=max_workers)
+        ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
+        basis_state = np.zeros((n_wires,))
+        state_vector = np.zeros((2**n_wires,))
+        state_vector[0] = 1
+
+        for state in [basis_state, state_vector]:
+            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
+            res = dev.execute(qs)
+            assert np.isclose(res, 1 / 2**n_wires)
+
+
 @pytest.mark.parametrize("max_workers", [None, 1, 2])
 def test_broadcasted_parameter(max_workers):
     """Test that DefaultQubit2 handles broadcasted parameters as expected."""

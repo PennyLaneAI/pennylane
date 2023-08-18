@@ -43,7 +43,7 @@ def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
     with qml.queuing.AnnotatedQueue() as q:
-        qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=[0, 1])
+        qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
         RX_broadcasted(x, wires=0)
         qml.PauliY(0)
         RX_broadcasted(y, wires=1)
@@ -121,7 +121,7 @@ class TestBroadcastExpand:
         """Test that expansion works for state preparations"""
         ops = [qml.CNOT([0, 1])]
         meas = [qml.expval(qml.PauliZ(1))]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
         tape = qml.tape.QuantumScript(ops, meas, prep)
 
         tapes, fn = qml.transforms.broadcast_expand(tape)

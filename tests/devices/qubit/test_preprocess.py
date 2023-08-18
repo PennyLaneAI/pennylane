@@ -217,7 +217,7 @@ class TestExpandFnTransformations:
     # pylint: disable=no-member
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
-        mp = MidMeasureMP(wires=[0], id="test_id")
+        mp = MidMeasureMP(wires=[0], reset=True, id="test_id")
         mv = MeasurementValue([mp], processing_fn=lambda v: v)
         ops = [
             qml.Hadamard(0),
@@ -230,7 +230,9 @@ class TestExpandFnTransformations:
         expanded_tape = expand_fn(tape)
         expected = [
             qml.Hadamard(0),
-            qml.ops.Controlled(qml.RX(0.123, wires=1), 0),
+            qml.CNOT([0, 2]),
+            qml.CNOT([2, 0]),
+            qml.ops.Controlled(qml.RX(0.123, wires=1), 2),
         ]
 
         for op, exp in zip(expanded_tape, expected + measurements):
@@ -254,14 +256,14 @@ class TestExpandFnTransformations:
         assert new_qs.measurements == qs.measurements
 
     @pytest.mark.parametrize(
-        "prep_op", (qml.BasisState([1], wires=0), qml.QubitStateVector([0, 1], wires=1))
+        "prep_op", (qml.BasisState([1], wires=0), qml.StatePrep([0, 1], wires=1))
     )
     def test_expand_fn_state_prep(self, prep_op):
-        """Test that the expand_fn only expands mid-circuit instances of StatePrep"""
+        """Test that the expand_fn only expands mid-circuit instances of StatePrepBase"""
         ops = [
             prep_op,
             qml.Hadamard(wires=0),
-            qml.QubitStateVector([0, 1], wires=1),
+            qml.StatePrep([0, 1], wires=1),
             qml.BasisState([1], wires=0),
             qml.RZ(0.123, wires=1),
         ]
@@ -272,7 +274,7 @@ class TestExpandFnTransformations:
         expected = [
             prep_op,
             qml.Hadamard(0),
-            qml.RY(3.14159265, wires=1),  # decomposition of QubitStateVector
+            qml.RY(3.14159265, wires=1),  # decomposition of StatePrep
             qml.PauliX(wires=0),  # decomposition of BasisState
             qml.RZ(0.123, wires=1),
         ]
@@ -527,9 +529,7 @@ class TestAdjointDiffTapeValidation:
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
     def test_valid_tape_no_expand(self, G):
         """Test that a tape that is valid doesn't raise errors and is not expanded"""
-        prep_op = qml.QubitStateVector(
-            pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
+        prep_op = qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
         qs = QuantumScript(
             ops=[G(np.pi, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
@@ -547,9 +547,7 @@ class TestAdjointDiffTapeValidation:
     def test_valid_tape_with_expansion(self, shots):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
         and is expanded"""
-        prep_op = qml.QubitStateVector(
-            pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
+        prep_op = qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
         qs = QuantumScript(
             ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],

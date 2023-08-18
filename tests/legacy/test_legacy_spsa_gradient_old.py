@@ -26,7 +26,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
 
-def coordinate_sampler(indices, num_params, idx, seed=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
@@ -49,9 +49,10 @@ class TestRademacherSampler:
         and attains the right values."""
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
+        rng = np.random.default_rng()
 
         for _ in range(5):
-            direction = _rademacher_sampler(ids, num)
+            direction = _rademacher_sampler(ids, num, rng=rng)
             assert direction.shape == (num,)
             assert set(direction).issubset({0, -1, 1})
             assert np.allclose(np.abs(direction)[ids_mask], 1)
@@ -59,32 +60,30 @@ class TestRademacherSampler:
 
     def test_call_with_third_arg(self):
         """Test that a third argument is ignored."""
-        _rademacher_sampler([0, 1, 2], 4, "ignored dummy")
-
-    def test_call_with_third_arg_and_seed_None(self):
-        """Test that a third argument is ignored with seed=None."""
-        _rademacher_sampler([0, 1, 2], 4, "ignored dummy", seed=None)
-
-    @pytest.mark.parametrize(
-        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
-    )
-    def test_call_with_seed_not_None(self, ids, num):
-        """Test that a seed is used correctly by the sampler, reproducing the
-        same direction every time."""
-        seed = 12425
-        first_direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
-        for _ in range(5):
-            direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
-            assert np.allclose(first_direction, direction)
+        rng = np.random.default_rng()
+        _rademacher_sampler([0, 1, 2], 4, "ignored dummy", rng=rng)
 
     def test_differing_seeds(self):
         """Test that the output differs for different seeds."""
         ids = [0, 1, 2, 3, 4]
         num = 5
         seeds = [42, 43]
-        first_direction = _rademacher_sampler(ids, num, "ignored dummy", seeds[0])
-        second_direction = _rademacher_sampler(ids, num, "ignored dummy", seeds[1])
+        rng = np.random.default_rng(seeds[0])
+        first_direction = _rademacher_sampler(ids, num, rng=rng)
+        rng = np.random.default_rng(seeds[1])
+        second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert not np.allclose(first_direction, second_direction)
+
+    def test_same_seeds(self):
+        """Test that the output is the same for identical RNGs."""
+        ids = [0, 1, 2, 3, 4]
+        num = 5
+        rng = np.random.default_rng(42)
+        first_direction = _rademacher_sampler(ids, num, rng=rng)
+        np.random.seed = 0  # Setting the global seed should have no effect.
+        rng = np.random.default_rng(42)
+        second_direction = _rademacher_sampler(ids, num, rng=rng)
+        assert np.allclose(first_direction, second_direction)
 
     @pytest.mark.parametrize(
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
@@ -93,10 +92,10 @@ class TestRademacherSampler:
     def test_mean_and_var(self, ids, num, N):
         """Test that the mean and variance of many produced samples are
         close to the theoretical values."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
-        outputs = [_rademacher_sampler(ids, num) for _ in range(N)]
+        outputs = [_rademacher_sampler(ids, num, rng=rng) for _ in range(N)]
         # Test that the mean of non-zero entries is approximately right
         assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
         # Test that the variance of non-zero entries is approximately right
@@ -116,7 +115,7 @@ class TestSpsaGradient:
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -314,7 +313,7 @@ class TestSpsaGradient:
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -330,7 +329,9 @@ class TestSpsaGradient:
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         n1 = 5
-        tapes, fn = spsa_grad(tape1, approx_order=1, strategy="forward", num_directions=n1)
+        tapes, fn = spsa_grad(
+            tape1, approx_order=1, strategy="forward", num_directions=n1, sampler_rng=rng
+        )
         j1 = fn(dev.batch_execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
@@ -463,11 +464,17 @@ class TestSpsaGradient:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
-    @pytest.mark.parametrize("num_directions, tol", [(100, 0.3), (1000, 0.1)])
-    def test_convergence_single_par(self, num_directions, tol):
+    @pytest.mark.parametrize(
+        "num_directions, tol, rng",
+        [
+            (100, 0.3, np.random.default_rng(41)),
+            (1000, 0.1, np.random.default_rng(41)),
+            (1000, 0.1, 41),
+        ],
+    )
+    def test_convergence_single_par(self, num_directions, tol, rng):
         """Test that the SPSA gradient converges to the gradient for many direction samples
         and the Rademacher distribution."""
-        np.random.seed(41)
 
         x, y = 0.543, 0.214
         with qml.queuing.AnnotatedQueue() as q:
@@ -477,7 +484,7 @@ class TestSpsaGradient:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=1)
-        tapes, fn = spsa_grad(tape, num_directions=num_directions)
+        tapes, fn = spsa_grad(tape, num_directions=num_directions, sampler_rng=rng)
         res = fn(dev.batch_execute(tapes))
 
         expected = [-np.sin(x), -np.sin(y)]
@@ -762,7 +769,7 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -773,7 +780,9 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+            tapes, fn = spsa_grad(
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
+            )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
                 jac *= 2
@@ -795,7 +804,7 @@ class TestSpsaGradientDifferentiation:
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -807,7 +816,9 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+            tapes, fn = spsa_grad(
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
+            )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
                 jac *= 2
@@ -827,7 +838,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -838,7 +849,9 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+            tapes, fn = spsa_grad(
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
+            )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
                 jac *= 2
@@ -865,7 +878,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -877,7 +890,9 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+            tapes, fn = spsa_grad(
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
+            )
             jac = fn(dev.batch_execute(tapes))[1, 0]
             if sampler is coordinate_sampler:
                 jac *= 2
@@ -895,7 +910,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(params[0], wires=[0])
@@ -904,7 +919,9 @@ class TestSpsaGradientDifferentiation:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+        tapes, fn = spsa_grad(
+            tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
+        )
         jac = fn(dev.batch_execute(tapes))
         if sampler is coordinate_sampler:
             jac *= 2
@@ -937,7 +954,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit.jax", wires=2)
         params = jnp.array([0.543, -0.654])
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -948,7 +965,9 @@ class TestSpsaGradientDifferentiation:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+            tapes, fn = spsa_grad(
+                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
+            )
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
                 jac *= 2

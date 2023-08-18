@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
+  $|0\rangle$ computational basis state after measurement.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
   [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
 
@@ -40,6 +44,26 @@ def circuit():
 >>> circuit(shots=1)
 array([False, False])
 
+
+* A new `qml.Select` operation is available. It applies specific input operations depending on the
+  state of the designated control qubits
+  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+
+  ```pycon
+  >>> dev = qml.device('default.qubit',wires=4)
+  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     return qml.state()
+  ...
+  >>> print(qml.draw(circuit,expansion_strategy='device')())
+  0: ─╭○─╭○─╭●─╭●────┤  State
+  1: ─├○─├●─├○─├●────┤  State
+  2: ─╰X─│──╰Y─├SWAP─┤  State
+  3: ────╰X────╰SWAP─┤  State
+  ```
+
 * Functions are available to obtain a state vector from `PySCF` solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
@@ -66,9 +90,28 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
+  This unlocks the ability to jit functions of `Operator`.
+  [(#4458)](https://github.com/PennyLaneAI/pennylane/pull/4458/)
+
+  ```pycon
+  >>> op = qml.adjoint(qml.RX(1.0, wires=0))
+  >>> jax.jit(qml.matrix)(op)
+  Array([[0.87758255-0.j        , 0.        +0.47942555j],
+       [0.        +0.47942555j, 0.87758255-0.j        ]],      dtype=complex64, weak_type=True)
+  >>> jax.tree_util.tree_map(lambda x: x+1, op)
+  Adjoint(RX(2.0, wires=[0]))
+  ```
+
+* Wires can now be reused after making a mid-circuit measurement on them.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
+
+* `TransformDispatcher` now allows registration of custom `QNode` transforms.
+  [(#4466)](https://github.com/PennyLaneAI/pennylane/pull/4466)
 
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
@@ -77,6 +120,7 @@ array([False, False])
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
@@ -141,8 +185,9 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+* `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
@@ -182,9 +227,13 @@ array([False, False])
 * Updated `expand_fn()` for `DefaultQubit2` to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
 
-* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$. Furthermore, qubit frequencies in `transmon_interaction` are now divided by 2 as is common as well.
+* `transmon_drive` is updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
+  [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
+
+* CI now runs tests with Tensorflow 2.13.0
+  [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
 * `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
@@ -241,6 +290,10 @@ array([False, False])
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
 
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
+
 <h3>Deprecations 👋</h3>
 
 * ``qml.qchem.jordan_wigner`` is deprecated, use ``qml.jordan_wigner`` instead.
@@ -277,6 +330,13 @@ array([False, False])
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
 
+* The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
+  fix of the seed-setting behaviour.
+  Instead, the `sampler_rng` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally or to a NumPy pseudo-random number generator created via
+  `np.random.default_rng(seed)`.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+
 <h3>Documentation 📝</h3>
 
 * The `qml.pulse.transmon_interaction` and `qml.pulse.transmon_drive` documentation has been updated.
@@ -292,7 +352,16 @@ array([False, False])
 * `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
   [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
 
+* Input types and sources for external wavefunctions and operators for `qml.import_state` 
+  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+
 <h3>Bug fixes 🐛</h3>
+
+* `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
+  [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
+
+* `qml.Projector` is pickle-able again.
+  [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
 
 * Allow sparse matrix calculation of `SProd`s containing a `Tensor`. When using
   `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
@@ -352,6 +421,14 @@ array([False, False])
 * Subtracting a `Prod` from another operator now works as expected.
   [(#4441)](https://github.com/PennyLaneAI/pennylane/pull/4441)
 
+* Change the `sampler_seed` argument of `qml.gradients.spsa_grad` to `sampler_rng`. One can either provide
+  an integer, which will be used to create a PRNG internally. Previously, this lead to the same direction
+  being sampled, when `num_directions` is greater than 1. Alternatively, one can provide a NumPy PRNG,
+  which allows reproducibly calling `spsa_grad` without getting the same results every time.
+  [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
+  [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -374,3 +451,4 @@ Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
+Frederik Wilde
