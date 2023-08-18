@@ -71,7 +71,7 @@ Currently Available Styles
 +-----+-----+-----+
 +|bws|+|bwd|+|sks|+
 +-----+-----+-----+
-+|skd|+|sol|+|sod|+
++|pls|+|skd|+|sol|+
 +-----+-----+-----+
-+|def|+     +     +
++|sod|+|def|+     +
 +-----+-----+-----+
