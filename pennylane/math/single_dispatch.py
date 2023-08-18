@@ -118,9 +118,8 @@ ar.register_function("autograd", "unstack", list)
 
 def autograd_get_dtype_name(x):
     """A autograd version of get_dtype_name that can handle array boxes."""
-    if hasattr(x, "_value"):
-        return ar.get_dtype_name(x._value)
-    return x.dtype.name
+    # this function seems to only get called with x is an arraybox.
+    return ar.get_dtype_name(x._value)
 
 
 ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
