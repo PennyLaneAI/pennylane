@@ -902,6 +902,22 @@ class TestParamShift:
                 qml.gradients.param_shift(tape)
 
 
+# Remove the following and unskip the class below once broadcasted
+# tapes are fully supported with gradient transforms. See #4462 for details.
+class TestParamShiftRaisesWithBroadcasted:
+    """Test that an error is raised with broadcasted tapes."""
+
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the parameter-shift rule"
+        with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.param_shift(tape)
+
+
+# Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
+# See #4462 for details.
+@pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
 class TestParamShiftWithBroadcasted:
     """Tests for the `param_shift` transform on already broadcasted tapes.
     The tests for `param_shift` using broadcasting itself can be found

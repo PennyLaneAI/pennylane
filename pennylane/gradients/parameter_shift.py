@@ -33,6 +33,7 @@ from .general_shift_rules import (
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_multimeasure_not_broadcasted,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -1338,6 +1339,11 @@ def param_shift(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
+    transform_name = "parameter-shift rule"
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
+    assert_no_tape_batching(tape, transform_name)
+
     if not qml.active_return():
         return _param_shift_legacy(
             tape,
@@ -1348,10 +1354,6 @@ def param_shift(
             f0=f0,
             broadcast=broadcast,
         )
-
-    transform_name = "parameter-shift rule"
-    assert_no_state_returns(tape.measurements, transform_name)
-    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -1691,10 +1693,6 @@ def _param_shift_legacy(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    transform_name = "parameter-shift rule"
-    assert_no_state_returns(tape.measurements, transform_name)
-    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
-
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_legacy(tape)
 
