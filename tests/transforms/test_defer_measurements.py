@@ -141,7 +141,7 @@ class TestQNode:
 
         res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
 
-        spy.call_count == 2
+        assert spy.call_count == 2
         assert np.allclose(res1, res2)
 
         deferred_tape2 = qml.defer_measurements(qnode2.qtape)
