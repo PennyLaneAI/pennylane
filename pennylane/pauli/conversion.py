@@ -221,7 +221,7 @@ def pauli_decompose(
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
-        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
+        H (tensor_like[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
