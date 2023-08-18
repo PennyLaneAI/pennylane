@@ -67,7 +67,8 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qml.PSWAP(0.123, wires=[0, 1]),
-    qml.GlobalPhase(0.123, wires=0),
+    qml.GlobalPhase(0.123, wires=[0]),
+    qml.GlobalPhase(0.123),
 ]
 
 BROADCASTED_OPERATIONS = [
@@ -966,13 +967,15 @@ class TestMatrix:
 
         # test identity for theta=0
         assert np.allclose(qml.GlobalPhase.compute_matrix(0), np.identity(2), atol=tol, rtol=0)
-        assert np.allclose(qml.GlobalPhase(0, wires=0).matrix(), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.GlobalPhase(0).matrix(wire_order=[0]), np.identity(2), atol=tol, rtol=0
+        )
 
         # test arbitrary phase shift
         phi = 0.5432
         expected = np.array([[qml.math.exp(-1j * phi), 0], [0, qml.math.exp(-1j * phi)]])
         assert np.allclose(qml.GlobalPhase.compute_matrix(phi), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.GlobalPhase(phi, wires=0).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.GlobalPhase(phi).matrix(wire_order=[0]), expected, atol=tol, rtol=0)
 
     def test_rx(self, tol):
         """Test x rotation is correct"""
@@ -2240,13 +2243,13 @@ class TestEigvals:
         """Test GlobalPhase eigenvalues are correct"""
 
         # test identity for theta=0
-        op = qml.GlobalPhase(0.0, wires=[0])
+        op = qml.GlobalPhase(0.0)
         assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), np.ones(2))
         assert np.allclose(op.eigvals(), np.ones(2))
 
         # test arbitrary phase shift
         phi = 0.5432
-        op = qml.GlobalPhase(phi, wires=[0])
+        op = qml.GlobalPhase(phi)
         expected = np.array([np.exp(-1j * phi), np.exp(-1j * phi)])
         assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), expected)
         assert np.allclose(op.eigvals(), expected)
@@ -4320,7 +4323,7 @@ pow_parametric_ops = (
     qml.IsingYY(3.1652, wires=(0, 1)),
     qml.IsingXY(-1.234, wires=(0, 1)),
     qml.IsingZZ(1.789, wires=("a", "b")),
-    qml.GlobalPhase(0.123, wires=0),
+    qml.GlobalPhase(0.123),
     # broadcasted ops
     qml.RX(np.array([1.234, 4.129]), wires=0),
     qml.RY(np.array([2.345, 6.789]), wires=0),
@@ -4361,7 +4364,7 @@ class TestParametricPow:
         """Test that the matrix of an op first raised to a power is the same as the
         matrix raised to the power.  This test only can work for integer powers."""
         op_mat = qml.matrix(op)
-        pow_mat = qml.matrix(op.pow)(n)
+        pow_mat = qml.matrix(op.pow(n)[0])
 
         assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
 

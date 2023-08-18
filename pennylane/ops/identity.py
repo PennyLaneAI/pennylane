@@ -20,7 +20,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AnyWires, CVObservable, Operation
+from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
@@ -241,13 +241,15 @@ class GlobalPhase(Operation):
     """
 
     num_params = 1
-    num_wires = AnyWires
+    num_wires = AllWires
     """int: Number of wires that the operator acts on."""
 
     def _flatten(self):
         return self.data, (self.wires, tuple())
 
-    def __init__(self, phi, wires=tuple(), id=None):
+    def __init__(self, phi, wires=None, id=None):
+        if wires is None:
+            wires = []
         super().__init__(phi, wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
 
@@ -326,6 +328,10 @@ class GlobalPhase(Operation):
         []
         """
         return []
+
+    def matrix(self, wire_order=None):
+        n_wires = len(wire_order) if wire_order else len(self.wires)
+        return self.compute_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
         return GlobalPhase(-1 * self.data[0], self.wires)

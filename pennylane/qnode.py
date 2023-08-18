@@ -906,6 +906,7 @@ class QNode:
         for obj in self.tape.operations + self.tape.observables:
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
+                and obj.wires
                 and len(obj.wires) != self.device.num_wires
             ):
                 # check here only if enough wires
