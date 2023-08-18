@@ -28,11 +28,11 @@
 
 <h4>PySCF input states</h4>
 
-* Functions are available to obtain a state vector from `PySCF` solver objects.
+* Functions are available to obtain a state vector from PySCF solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
 
-  The `qml.qchem.import_state` function can be used to import a `PySCF` solver object and return the
+  The `qml.qchem.import_state` function can be used to import a PySCF solver object and return the
   corresponding state vector.
 
   ```pycon
@@ -54,33 +54,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* Transform programs are now integrated with the `QNode`.
-  [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
+<h4>Operators</h4>
 
-  ```
-  def null_postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
-      return results[0]
-
-  @qml.transforms.core.transform
-  def scale_shots(tape: qml.tape.QuantumTape, shot_scaling) -> (Tuple[qml.tape.QuantumTape], Callable):
-      new_shots = tape.shots.total_shots * shot_scaling
-      new_tape = qml.tape.QuantumScript(tape.operations, tape.measurements, shots=new_shots)
-      return (new_tape, ), null_postprocessing
-
-  dev = qml.devices.experimental.DefaultQubit2()
-
-  @partial(scale_shots, shot_scaling=2)
-  @qml.qnode(dev, interface=None)
-  def circuit():
-      return qml.sample(wires=0)
-  ```
-
-  ```
-  >>> circuit(shots=1)
-  array([False, False])
-  ```
-
-* A new `qml.Select` operation is available. It applies specific input operations depending on the
+* A new operation called `qml.Select` is available. It applies specific input operations depending on the
   state of the designated control qubits.
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
 
@@ -112,6 +88,50 @@
   Adjoint(RX(2.0, wires=[0]))
   ```
 
+* All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
+  trainable from untrainable components. These methods will be used in serialization and pytree registration.
+  Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
+  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+
+* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
+  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+
+* The default label for a `StatePrep` operator is now `|Ψ⟩`.
+  [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
+
+* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli`, or `MultiControlledX` operation instead of `Controlled(PauliX)`.
+  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
+
+<h4>Transforms</h4>
+
+* Transform programs are now integrated with the QNode.
+  [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
+
+  ```
+  def null_postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
+      return results[0]
+
+  @qml.transforms.core.transform
+  def scale_shots(tape: qml.tape.QuantumTape, shot_scaling) -> (Tuple[qml.tape.QuantumTape], Callable):
+      new_shots = tape.shots.total_shots * shot_scaling
+      new_tape = qml.tape.QuantumScript(tape.operations, tape.measurements, shots=new_shots)
+      return (new_tape, ), null_postprocessing
+
+  dev = qml.devices.experimental.DefaultQubit2()
+
+  @partial(scale_shots, shot_scaling=2)
+  @qml.qnode(dev, interface=None)
+  def circuit():
+      return qml.sample(wires=0)
+  ```
+
+  ```
+  >>> circuit(shots=1)
+  array([False, False])
+  ```
+
 * Transform Programs, `qml.transforms.core.TransformProgram`, can now be called on a batch of circuits
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
@@ -119,15 +139,25 @@
 * `TransformDispatcher` now allows registration of custom `QNode` transforms.
   [(#4466)](https://github.com/PennyLaneAI/pennylane/pull/4466)
 
+* QNode transforms in `qml.qinfo` now support custom wire labels.
+  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
+
+* `qml.transforms.adjoint_metric_tensor` now uses the simulation tools in `qml.devices.qubit` instead of
+  private methods of `qml.devices.DefaultQubit`.
+  [(#4456)](https://github.com/PennyLaneAI/pennylane/pull/4456)
+
+<h4>Pulses</h4>
+
 * A `HardwareHamiltonian` can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
-* All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
-  trainable from untrainable components. These methods will be used in serialization and pytree registration.
-  Custom operations may need an update to ensure compatibility with new PennyLane features.
-  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
-  [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
+* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+  [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
+  [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
+
+<h4>Other improvements</h4>
 
 * Auxiliary wires and device wires are now treated the same way in `transforms.metric_tensor`
   as in `gradients.hadamard_grad`. All valid wire input formats for `aux_wire` are supported.
@@ -141,10 +171,6 @@
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
-  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
-  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
-
 * All tests in CI and pre-commit hooks now enable linting.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
 
@@ -154,15 +180,9 @@
 * The `qchem` module has been upgraded to use the fermionic operators of the `fermi` module.
   [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
 
-* QNode transforms in `qml.qinfo` now support custom wire labels.
-  [#4331](https://github.com/PennyLaneAI/pennylane/pull/4331)
-
 * The `qchem` functions `primitive_norm` and `contracted_norm` have been modified to be compatible with
   higher versions of SciPy. The private function `_fac2` for computing double factorials has also been added.
   [#4321](https://github.com/PennyLaneAI/pennylane/pull/4321)
-
-* The default label for a `StatePrep` operator is now `|Ψ⟩`.
-  [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
 * The experimental device interface has been integrated with the QNode for JAX, JAX-JIT, TensorFlow and PyTorch.
   [(#4323)](https://github.com/PennyLaneAI/pennylane/pull/4323)
@@ -177,9 +197,6 @@
 * The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
   new `QuantumScript` objects with the provided parameters.
   [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
-
-* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli`, or `MultiControlledX` operation instead of `Controlled(PauliX)`.
-  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
 
 * New functions called `adjoint_jvp` and `adjoint_vjp` that compute the JVP and VJP of a tape using the adjoint method 
   have been added to `qml.devices.qubit.adjoint_jacobian` 
@@ -219,20 +236,11 @@
   with finite-difference differentiation and `float32` parameters. The machine learning boundary functions are now uncoupled from their legacy counterparts.
   [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
 
-* `qml.transforms.adjoint_metric_tensor` now uses the simulation tools in `qml.devices.qubit` instead of
-  private methods of `qml.devices.DefaultQubit`.
-  [(#4456)](https://github.com/PennyLaneAI/pennylane/pull/4456)
-
 * `Device.default_expand_fn()` has been updated to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
 * `expand_fn()` for `DefaultQubit2` has been updated to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
-
-* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
-  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
-  [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
-  [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
 * CI now runs tests with TensorFlow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
@@ -247,8 +255,6 @@
   issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
   [(#4425)](https://github.com/PennyLaneAI/pennylane/pull/4425)
-
-<h4>Other improvements</h4>
 
 <h3>Breaking changes 💔</h3>
 
