@@ -4199,7 +4199,7 @@ class TestCutCircuitTransform:
         grad_expected = jax.grad(circuit)(x)
 
         assert np.isclose(grad, grad_expected)
-        assert spy.call_count == 2
+        assert spy.call_count == 1
 
         # Run more times over a range of values
         for x in np.linspace(-1, 1, 10):
@@ -4217,7 +4217,7 @@ class TestCutCircuitTransform:
 
             assert np.isclose(grad, grad_expected)
 
-        assert spy.call_count == 4
+        assert spy.call_count == 2
 
     def test_device_wires(self, use_opt_einsum):
         """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
