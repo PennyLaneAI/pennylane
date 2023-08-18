@@ -224,7 +224,6 @@ class GlobalPhase(Operation):
     tensor([0.        +0.j        , 0.        +0.j        ,
             0.99244503-0.12269009j, 0.        +0.j        ], requires_grad=True)
 
-
     The operator can be applied with a control to create a relative phase between terms:
 
     .. code-block:: python3
