@@ -63,6 +63,7 @@ array([False, False])
   2: ─╰X─│──╰Y─├SWAP─┤  State
   3: ────╰X────╰SWAP─┤  State
   ```
+  
 
 * Functions are available to obtain a state vector from `PySCF` solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
