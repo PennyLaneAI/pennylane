@@ -1335,7 +1335,7 @@ def test_shape(shape, interface, create_array):
         (onp.array(0.5), "float64"),
         (onp.array(1.0, dtype="float32"), "float32"),
         (ArrayBox(1, "a", "b"), "int64"),
-        (np.array(0.5, dtype="complex64"), "complex64")
+        (np.array(0.5, dtype="complex64"), "complex64"),
         # skip jax as output is dependent on global configuration
         (tf.Variable(0.1, dtype="float32"), "float32"),
         (tf.Variable(0.1, dtype="float64"), "float64"),
