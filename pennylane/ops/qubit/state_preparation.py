@@ -18,14 +18,14 @@ with preparing a certain state on the device.
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
 from pennylane import math
-from pennylane.operation import AnyWires, Operation, StatePrep
+from pennylane.operation import AnyWires, Operation, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
 
-state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
+state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
 
-class BasisState(StatePrep):
+class BasisState(StatePrepBase):
     r"""BasisState(n, wires)
     Prepares a single computational basis state.
 
@@ -115,8 +115,8 @@ class BasisState(StatePrep):
         return math.convert_like(ket, prep_vals)
 
 
-class QubitStateVector(StatePrep):
-    r"""QubitStateVector(state, wires)
+class StatePrep(StatePrepBase):
+    r"""StatePrep(state, wires)
     Prepare subsystems using the given ket vector in the computational basis.
 
     **Details:**
@@ -127,7 +127,7 @@ class QubitStateVector(StatePrep):
 
     .. note::
 
-        If the ``QubitStateVector`` operation is not supported natively on the
+        If the ``StatePrep`` operation is not supported natively on the
         target device, PennyLane will attempt to decompose the operation
         using the method developed by Möttönen et al. (Quantum Info. Comput.,
         2005).
@@ -143,7 +143,7 @@ class QubitStateVector(StatePrep):
     >>> dev = qml.device('default.qubit', wires=2)
     >>> @qml.qnode(dev)
     ... def example_circuit():
-    ...     qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=range(2))
+    ...     qml.StatePrep(np.array([1, 0, 0, 0]), wires=range(2))
     ...     return qml.state()
     >>> print(example_circuit())
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
@@ -177,7 +177,7 @@ class QubitStateVector(StatePrep):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.QubitStateVector.decomposition`.
+        .. seealso:: :meth:`~.StatePrep.decomposition`.
 
         Args:
             state (array[complex]): a state vector of size 2**len(wires)
@@ -188,7 +188,7 @@ class QubitStateVector(StatePrep):
 
         **Example:**
 
-        >>> qml.QubitStateVector.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
+        >>> qml.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
         [MottonenStatePreparation(tensor([1, 0, 0, 0], requires_grad=True), wires=[0, 1])]
 
         """
@@ -204,7 +204,7 @@ class QubitStateVector(StatePrep):
 
         wire_order = Wires(wire_order)
         if not wire_order.contains_wires(self.wires):
-            raise WireError("Custom wire_order must contain all QubitStateVector wires")
+            raise WireError("Custom wire_order must contain all StatePrep wires")
 
         num_total_wires = len(wire_order)
         indices = tuple(
@@ -230,6 +230,11 @@ class QubitStateVector(StatePrep):
             ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
+
+
+# pylint: disable=missing-class-docstring
+class QubitStateVector(StatePrep):
+    pass  # QSV is still available
 
 
 class QubitDensityMatrix(Operation):

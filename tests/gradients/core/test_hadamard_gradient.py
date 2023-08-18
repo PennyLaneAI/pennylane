@@ -81,7 +81,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -106,7 +106,7 @@ class TestHadamardGrad:
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -131,7 +131,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -173,7 +173,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliX(0))
             qml.probs(wires=[1])
@@ -195,7 +195,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliZ(1))
 
@@ -216,7 +216,7 @@ class TestHadamardGrad:
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             qml.CRot(a, b, c, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 

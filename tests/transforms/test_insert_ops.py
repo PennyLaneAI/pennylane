@@ -36,7 +36,7 @@ class TestInsert:
 
     tape = QuantumScript.from_queue(q_tape)
     with qml.queuing.AnnotatedQueue() as q_tape_with_prep:
-        qml.QubitStateVector([1, 0], wires=0)
+        qml.StatePrep([1, 0], wires=0)
         qml.RX(0.9, wires=0)
         qml.RY(0.4, wires=1)
         qml.CNOT(wires=[0, 1])
@@ -251,7 +251,7 @@ class TestInsert:
         tape = insert(qml.AmplitudeDamping, 0.4, position="start")(self.tape_with_prep)
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.AmplitudeDamping(0.4, wires=0)
             qml.AmplitudeDamping(0.4, wires=1)
             qml.RX(0.9, wires=0)
@@ -279,7 +279,7 @@ class TestInsert:
         tape = insert(qml.PhaseDamping, 0.4, position="all")(self.tape_with_prep)
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.RX(0.9, wires=0)
             qml.PhaseDamping(0.4, wires=0)
             qml.RY(0.4, wires=1)
@@ -313,7 +313,7 @@ class TestInsert:
         )
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.RX(0.9, wires=0)
             qml.RY(0.4, wires=1)
             qml.CNOT(wires=[0, 1])
