@@ -223,7 +223,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
-        obs = expval_tape._measurements[i].obs
+        obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
 
     gradient_tapes = [expval_tape]
@@ -240,7 +240,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     for i in var_idx:
         # We need to calculate d<A^2>/dp; to do so, we replace the
         # observables A in the queue with A^2.
-        obs = expval_sq_tape._measurements[i].obs
+        obs = expval_sq_tape.measurements[i].obs
 
         # CV first-order observable
         # get the heisenberg representation

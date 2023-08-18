@@ -200,13 +200,20 @@ class TestSpsaGradient:
         with pytest.raises(ValueError, match=expected_message):
             qml.grad(circuit)(np.array(1.0))
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the SPSA gradient transform"
+        with pytest.raises(NotImplementedError, match=_match):
+            spsa_grad(tape)
+
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])

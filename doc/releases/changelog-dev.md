@@ -90,6 +90,11 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
+  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
+  should be used.
+  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+
 * Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
   This unlocks the ability to jit functions of `Operator`.
   [(#4458)](https://github.com/PennyLaneAI/pennylane/pull/4458/)
@@ -110,6 +115,9 @@ array([False, False])
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
 
+* `TransformDispatcher` now allows registration of custom `QNode` transforms.
+  [(#4466)](https://github.com/PennyLaneAI/pennylane/pull/4466)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
@@ -117,6 +125,7 @@ array([False, False])
 * All `Operator` objects now define `Operator._flatten` and `Operator._unflatten` methods that separate
   trainable from untrainable components. These methods will be used in serialization and pytree registration.
   Custom operations may need an update to ensure compatibility with new PennyLane features.
+  [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
 * Treat auxiliary wires and device wires in the same way in `transforms.metric_tensor`
@@ -131,9 +140,11 @@ array([False, False])
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
+* The calculation of `Sum`, `Prod`, `SProd`, `PauliWord`, and `PauliSentence` sparse matrices
+  are orders of magnitude faster.
+  [(#4475)](https://github.com/PennyLaneAI/pennylane/pull/4475)
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
-  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+  [(#4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
@@ -181,8 +192,10 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+* `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
@@ -230,7 +243,13 @@ array([False, False])
 * CI now runs tests with Tensorflow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
+* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
 <h3>Breaking changes 💔</h3>
+
+* Applying gradient transforms to broadcasted/batched tapes was deactivated until it is consistently
+  supported for QNodes as well.
+  [(#4480)](https://github.com/PennyLaneAI/pennylane/pull/4480)
 
 * Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
   with float32 parameters may no longer give accurate results.
@@ -282,6 +301,13 @@ array([False, False])
 
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
+  [(#4485)](https://github.com/PennyLaneAI/pennylane/pull/4485)
+
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Deprecations 👋</h3>
 
@@ -346,6 +372,9 @@ array([False, False])
   and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
 <h3>Bug fixes 🐛</h3>
+
+* `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
+  [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
 * `qml.Projector` is pickle-able again.
   [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
@@ -427,7 +456,8 @@ Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurečić,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
