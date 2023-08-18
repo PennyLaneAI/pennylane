@@ -226,7 +226,7 @@ def pauli_decompose(
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
-        pauli (bool): return a PauliSentence instance if ``True``.
+        pauli (bool): return a ``PauliSentence`` instance if ``True``.
         check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
 
     Returns:
@@ -299,11 +299,12 @@ def pauli_decompose(
         phase from each ``PauliY`` term occurring in the word.
 
     """
-    n = int(qml.math.log2(qml.math.shape(H)[0]))
+    shape = qml.math.shape(H)
+    n = int(qml.math.log2(shape[0]))
     N = 2**n
 
     if check_hermitian:
-        if H.shape != (N, N):
+        if shape != (N, N):
             raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
         if not qml.math.allclose(H, qml.math.conjugate(qml.math.transpose(H))):
