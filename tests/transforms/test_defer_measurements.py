@@ -125,10 +125,6 @@ class TestQNode:
 
         res1 = qnode1(np.pi / 4, 3 * np.pi / 4)
 
-        deferred_tape1 = qml.defer_measurements(qnode1.qtape)
-        assert len(deferred_tape1.wires) == 4
-        assert len(deferred_tape1.operations) == 6
-
         @qml.qnode(dev)
         def qnode2(phi, theta):
             qml.RX(phi, 0)
@@ -142,6 +138,11 @@ class TestQNode:
         res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
 
         assert spy.call_count == 2
+
+        deferred_tape1 = qml.defer_measurements(qnode1.qtape)
+        assert len(deferred_tape1.wires) == 4
+        assert len(deferred_tape1.operations) == 6
+
         assert np.allclose(res1, res2)
 
         deferred_tape2 = qml.defer_measurements(qnode2.qtape)
