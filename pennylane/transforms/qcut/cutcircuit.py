@@ -17,12 +17,13 @@ Function cut_circuit for cutting a quantum circuit into smaller circuit fragment
 
 
 from functools import partial
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union, Sequence
+import types
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -32,7 +33,25 @@ from .tapes import _qcut_expand_fn, expand_fragment_tape, graph_to_tape, tape_to
 from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
-@batch_transform
+def _cut_circuit_expand(
+    tape: QuantumTape,
+    use_opt_einsum: bool = False,
+    device_wires: Optional[Wires] = None,
+    max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
+) -> (Sequence[QuantumTape], Callable):
+    """Main entry point for expanding operations until reaching a depth that
+    includes :class:`~.WireCut` operations."""
+    # pylint: disable=unused-argument
+
+    def processing_fn(res):
+        return res[0]
+
+    return [_qcut_expand_fn(tape, max_depth, auto_cutter)], processing_fn
+
+
+@partial(transform, expand_transform=_cut_circuit_expand)
 def cut_circuit(
     tape: QuantumTape,
     auto_cutter: Union[bool, Callable] = False,
@@ -40,7 +59,7 @@ def cut_circuit(
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> Tuple[Tuple[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
     Cut up a quantum circuit into smaller circuit fragments.
 
@@ -387,28 +406,9 @@ def cut_circuit(
     )
 
 
-def _cut_circuit_expand(
-    tape: QuantumTape,
-    use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
-    max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
-    **kwargs,
-):
-    """Main entry point for expanding operations until reaching a depth that
-    includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument
-    return _qcut_expand_fn(tape, max_depth, auto_cutter)
-
-
-cut_circuit.expand_fn = _cut_circuit_expand
-
-
-@cut_circuit.custom_qnode_wrapper
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+@cut_circuit.custom_qnode_transform
+def _qnode_transform(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
-    # pylint: disable=function-redefined
-
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    return self.default_qnode_wrapper(qnode, targs, tkwargs)
+    return self.default_qnode_transform(qnode, targs, tkwargs)
