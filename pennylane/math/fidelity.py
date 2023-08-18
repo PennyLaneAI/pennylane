@@ -16,7 +16,7 @@ Contains the implementation of quantum fidelity.
 
 Note: care needs to be taken to make it fully differentiable
 """
-from functools import cache
+from functools import lru_cache
 
 import autograd
 import autoray as ar
@@ -281,7 +281,7 @@ ar.register_function("autograd", "compute_fidelity", _compute_fidelity_autograd)
 ################################# jax #####################################
 
 
-@cache
+@lru_cache(maxsize=None)
 def _register_jax_vjp():
     """
     Register the custom VJP for JAX
@@ -308,7 +308,7 @@ def _register_jax_vjp():
 ################################ torch ###################################
 
 
-@cache
+@lru_cache(maxsize=None)
 def _register_torch_vjp():
     """
     Register the custom VJP for torch
@@ -336,7 +336,7 @@ def _register_torch_vjp():
 ############################### tensorflow ################################
 
 
-@cache
+@lru_cache(maxsize=None)
 def _register_tf_vjp():
     """
     Register the custom VJP for tensorflow
