@@ -307,7 +307,7 @@ def pauli_decompose(
         if shape != (N, N):
             raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
-        if not qml.math.allclose(H, qml.math.conjugate(qml.math.transpose(H))):
+        if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
             raise ValueError("The matrix is not Hermitian")
 
     coeffs, obs = _generalized_pauli_decompose(

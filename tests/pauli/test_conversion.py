@@ -42,7 +42,8 @@ test_general_matrix = [
     ),
 ]
 
-test_diff_matrix = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
+test_diff_matrix1 = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
+test_diff_matrix2 = [[[-2, -2 + 1j], [-2 - 1j, 0]], [[2.5, -0.5], [-0.5, 2.5]]]
 
 
 class TestDecomposition:
@@ -313,46 +314,46 @@ class TestPhasedDecomposition:
 
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("matrix", test_diff_matrix)
-    def test_differentiability(self, matrix):
+    @pytest.mark.parametrize("data", [[test_diff_matrix1, False], [test_diff_matrix2, True]])
+    def test_differentiability(self, data):
         """Test differentiability for pauli_decompose"""
 
-        dev = qml.device("default.qubit", wires=1)
+        import jax
+        import torch
+        import tensorflow as tf
+
+        matrices, check_hermitian = data
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(A):
-            coeffs, _ = qml.pauli_decompose(A, check_hermitian=False).terms()
-            qml.RX(qml.math.real(coeffs[2]), 0)
+            coeffs, _ = qml.pauli_decompose(A, check_hermitian=check_hermitian).terms()
+            qml.RX(qml.math.real(coeffs[1]), 0)
             return qml.expval(qml.PauliZ(0))
 
-        # NumPy Interface
-        grad_numpy = qml.grad(circuit)(qml.numpy.array(matrix))
+        for matrix in matrices:
+            # NumPy Interface
+            grad_numpy = qml.grad(circuit)(qml.numpy.array(matrix))
 
-        # Jax Interface
-        import jax
+            # Jax Interface
+            grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
 
-        grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
+            # PyTorch Interface
+            A = torch.tensor(matrix, requires_grad=True)
+            result = circuit(A)
+            result.backward()
+            grad_torch = A.grad
 
-        # PyTorch Interface
-        import torch
+            # Tensorflow Interface
+            A = tf.Variable(qml.numpy.array(matrix))
+            with tf.GradientTape() as tape:
+                loss = circuit(A)
+            grad_tflow = tape.gradient(loss, A)
 
-        A = torch.tensor(matrix, requires_grad=True)
-        result = circuit(A)
-        result.backward()
-        grad_torch = A.grad
-
-        # Tensorflow Interface
-        import tensorflow as tf
-
-        A = tf.Variable(qml.numpy.array(matrix))
-        with tf.GradientTape() as tape:
-            loss = circuit(A)
-        grad_tflow = tape.gradient(loss, A)
-
-        # Comparisons - note: https://github.com/google/jax/issues/9110
-        assert qml.math.allclose(grad_numpy, grad_jax)
-        assert qml.math.allclose(grad_torch, grad_tflow)
-        assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
+            # Comparisons - note: https://github.com/google/jax/issues/9110
+            assert qml.math.allclose(grad_numpy, grad_jax)
+            assert qml.math.allclose(grad_torch, grad_tflow)
+            assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
 
 
 class TestPauliSentence:
