@@ -41,7 +41,7 @@ from .qchem_ops import *
 from .state_preparation import *
 from .special_unitary import SpecialUnitary
 from .hamiltonian import Hamiltonian
-from ..identity import Identity
+from ..identity import *
 from ..snapshot import Snapshot
 
 ops = {
@@ -111,6 +111,7 @@ ops = {
     "FermionicSWAP",
     "Barrier",
     "WireCut",
+    "GlobalPhase",
 }
 
 
