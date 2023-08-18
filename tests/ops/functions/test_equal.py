@@ -1236,6 +1236,26 @@ class TestMeasurementsEqual:
         o2 = qml.prod(z0, x1)
         assert qml.equal(qml.expval(o1), qml.expval(o2))
 
+    def test_mid_measure(self):
+        """Test that `MidMeasureMP`s are equal only if their wires
+        an id are equal and their `reset` attribute match."""
+        mp = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id")
+
+        mp1 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1, 0]), reset=True, id="test_id")
+        mp2 = qml.measurements.MidMeasureMP(
+            wires=qml.wires.Wires([0, 1]), reset=False, id="test_id"
+        )
+        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1, 0]), reset=True, id="foo")
+
+        assert not qml.equal(mp, mp1)
+        assert not qml.equal(mp, mp2)
+        assert not qml.equal(mp, mp3)
+
+        assert qml.equal(
+            mp,
+            qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"),
+        )
+
 
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""

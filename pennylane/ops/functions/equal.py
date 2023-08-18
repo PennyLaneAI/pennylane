@@ -21,6 +21,7 @@ from typing import Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
@@ -353,6 +354,19 @@ def _equal_measurements(
         return op1.eigvals() is None and op2.eigvals() is None
 
     return False
+
+
+@_equal.register
+# pylint: disable=unused-arguments
+def _equal_mid_measure(
+    op1: MidMeasureMP,
+    op2: MidMeasureMP,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    return op1.wires == op2.wires and op1.id == op2.id and op1.reset == op2.reset
 
 
 @_equal.register
