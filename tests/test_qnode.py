@@ -1068,6 +1068,18 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_no_defer_measurements_in_construction(self):
+        """Test that the defer_measurements transform is not applied during construction."""
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit():
+            qml.PauliX(0)
+            qml.measure(0)
+            return qml.expval(qml.PauliZ(1))
+
+        circuit.construct(tuple(), {})
+        assert isinstance(circuit.tape[1], qml.measurements.MidMeasureMP)
+
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
