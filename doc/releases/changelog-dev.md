@@ -239,6 +239,10 @@ array([False, False])
 
 <h3>Breaking changes 💔</h3>
 
+* Applying gradient transforms to broadcasted/batched tapes was deactivated until it is consistently
+  supported for QNodes as well.
+  [(#4480)](https://github.com/PennyLaneAI/pennylane/pull/4480)
+
 * Gradient transforms no longer implicitly cast `float32` parameters to `float64`. Finite diff
   with float32 parameters may no longer give accurate results.
   [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
@@ -289,6 +293,9 @@ array([False, False])
 
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
+  [(#4485)](https://github.com/PennyLaneAI/pennylane/pull/4485)
 
 * `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
   `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.

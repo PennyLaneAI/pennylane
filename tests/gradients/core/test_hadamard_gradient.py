@@ -67,6 +67,13 @@ def cost6(x):
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
+        with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.hadamard_grad(tape)
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):

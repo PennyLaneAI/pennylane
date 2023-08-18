@@ -461,9 +461,12 @@ class TestJVP:
         assert isinstance(res[1], np.ndarray)
         assert np.allclose(res[1], [0, 0])
 
+    # Unskip batch_dim!=None cases once #4462 is resolved
     def test_single_expectation_value(self, tol, batch_dim):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
+        if batch_dim is not None:
+            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -487,9 +490,12 @@ class TestJVP:
         exp = np.sum(np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]), axis=0)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
+    # Unskip batch_dim!=None cases once #4462 is resolved
     def test_multiple_expectation_values(self, tol, batch_dim):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
+        if batch_dim is not None:
+            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -518,9 +524,12 @@ class TestJVP:
             exp[1] = np.tensordot(np.ones(batch_dim), exp[1], axes=0)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
+    # Unskip batch_dim!=None cases once #4462 is resolved
     def test_prob_expval_single_param(self, tol, batch_dim):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs and a single parameter"""
+        if batch_dim is not None:
+            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
 
@@ -550,9 +559,12 @@ class TestJVP:
         expected_1 = np.array([-np.sin(x) / 2, np.sin(x) / 2]).T
         assert np.allclose(res[1], expected_1, atol=tol, rtol=0)
 
+    # Unskip batch_dim!=None cases once #4462 is resolved
     def test_prob_expval_multi_param(self, tol, batch_dim):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs and multiple parameters"""
+        if batch_dim is not None:
+            pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
@@ -640,8 +652,9 @@ def ansatz(x, y):
 class TestJVPGradients:
     """Gradient tests for the jvp function"""
 
+    # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.autograd
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_autograd(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using autograd."""
@@ -669,8 +682,9 @@ class TestJVPGradients:
         exp = qml.jacobian(expected_jvp)(params, tangent)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
+    # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.torch
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_torch(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using Torch."""
@@ -703,9 +717,10 @@ class TestJVPGradients:
         exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
+    # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_tf(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using Tensorflow."""
@@ -739,8 +754,9 @@ class TestJVPGradients:
         exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
+    # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.jax
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_jax(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using JAX."""
