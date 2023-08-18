@@ -186,7 +186,7 @@ array([False, False])
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
 
-* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
 <h3>Breaking changes 💔</h3>
 
