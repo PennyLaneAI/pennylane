@@ -251,8 +251,8 @@ class GlobalPhase(Operation):
     def __init__(self, phi, wires=None, id=None):
         if wires is not None:
             warn(
-                f"GlobalPhase recieved wires={wires}. Note that the operation will be applied "
-                f"to all wires regardless."
+                f"GlobalPhase received wires={wires}. Note that the operation will be applied "
+                "to all wires regardless."
             )
         super().__init__(phi, wires=[], id=id)
 
