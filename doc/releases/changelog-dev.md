@@ -235,6 +235,8 @@ array([False, False])
 * CI now runs tests with Tensorflow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
+* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
 <h3>Breaking changes 💔</h3>
 
 * Applying gradient transforms to broadcasted/batched tapes was deactivated until it is consistently
@@ -442,7 +444,8 @@ Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurečić,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
