@@ -314,15 +314,20 @@ class TestPhasedDecomposition:
 
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("data", [[test_diff_matrix1, False], [test_diff_matrix2, True]])
-    def test_differentiability(self, data):
+    @pytest.mark.parametrize(
+        "matrices, check_hermitian",
+        [
+            (test_diff_matrix1, False),
+            (test_diff_matrix2, True),
+        ],
+    )
+    def test_differentiability(self, matrices, check_hermitian):
         """Test differentiability for pauli_decompose"""
 
         import jax
         import torch
         import tensorflow as tf
 
-        matrices, check_hermitian = data
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
