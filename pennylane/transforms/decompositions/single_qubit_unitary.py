@@ -192,7 +192,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        operations.append(qml.GlobalPhase(-alphas, wire))
+        operations.append(qml.GlobalPhase(-alphas))
 
     return operations
 
@@ -256,7 +256,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
-        operations.append(qml.GlobalPhase(-gammas, wire))
+        operations.append(qml.GlobalPhase(-gammas))
 
     return operations
 
@@ -323,7 +323,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
-        operations.append(qml.GlobalPhase(-alphas, wire))
+        operations.append(qml.GlobalPhase(-alphas))
 
     return operations
 
