@@ -357,7 +357,7 @@ def _equal_measurements(
 
 
 @_equal.register
-# pylint: disable=unused-arguments
+# pylint: disable=unused-argument
 def _equal_mid_measure(
     op1: MidMeasureMP,
     op2: MidMeasureMP,
