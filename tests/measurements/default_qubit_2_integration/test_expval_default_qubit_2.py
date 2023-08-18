@@ -53,7 +53,7 @@ class TestExpval:
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the expval interface works"""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -84,7 +84,7 @@ class TestExpval:
     def test_not_an_observable(self, mocker):
         """Test that a warning is raised if the provided
         argument might not be hermitian."""
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -101,7 +101,7 @@ class TestExpval:
 
     def test_observable_return_type_is_expectation(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Expectation`"""
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -131,7 +131,7 @@ class TestExpval:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         res = qml.expval(obs)
         # pylint: disable=use-implicit-booleaness-not-comparison
@@ -146,7 +146,7 @@ class TestExpval:
         """Test that the shape is correct with the shot vector too."""
         res = qml.expval(obs)
         shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vector)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
@@ -154,7 +154,7 @@ class TestExpval:
     def test_projector_expval(self, state, shots, mocker):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""
-        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
         np.random.seed(42)
 
         @qml.qnode(dev)
@@ -178,7 +178,7 @@ class TestExpval:
             qml.s_prod(3, qml.PauliZ("h")), qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10))
         )
 
-        dev = qml.device("default.qubit.legacy", wires=["h", 8, 10])
+        dev = qml.device("default.qubit", wires=["h", 8, 10])
         spy = mocker.spy(qml.QubitDevice, "expval")
 
         @qml.qnode(dev)

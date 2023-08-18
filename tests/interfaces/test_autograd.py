@@ -1056,7 +1056,7 @@ class TestHigherOrderDerivatives:
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
