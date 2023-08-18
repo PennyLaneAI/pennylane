@@ -70,7 +70,7 @@ def test_simple_circuit_with_prep():
     @partial(qml.batch_input, argnum=1)
     @qml.qnode(dev)
     def circuit(inputs, weights):
-        qml.QubitStateVector(np.array([0, 0, 1, 0]), wires=[0, 1])
+        qml.StatePrep(np.array([0, 0, 1, 0]), wires=[0, 1])
         qml.RX(inputs, wires=0)
         qml.RY(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
@@ -202,14 +202,14 @@ def test_mottonenstate_preparation(mocker):
 
 
 def test_qubit_state_prep(mocker):
-    """Test that batching works for QubitStateVector"""
+    """Test that batching works for StatePrep"""
 
     dev = qml.device("default.qubit", wires=3)
 
     @partial(qml.batch_input, argnum=0)
     @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
-        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.StatePrep(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 1, 2])
 
@@ -230,7 +230,7 @@ def test_qubit_state_prep(mocker):
     # check the results against individually executed circuits (no batching)
     @qml.qnode(dev)
     def circuit2(data, weights):
-        qml.QubitStateVector(data, wires=[0, 1, 2])
+        qml.StatePrep(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 1, 2])
 
@@ -285,6 +285,7 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
+    # pylint:disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 

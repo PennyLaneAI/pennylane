@@ -24,6 +24,7 @@ from .gradient_transform import (
     _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -35,7 +36,6 @@ from .gradient_transform import (
 def _hadamard_grad(
     tape,
     argnum=None,
-    shots=None,
     aux_wire=None,
     device_wires=None,
 ):
@@ -46,9 +46,6 @@ def _hadamard_grad(
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
-            information about the shots.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
             a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
@@ -182,15 +179,15 @@ def _hadamard_grad(
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    shots = qml.measurements.Shots(shots)
+    assert_no_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 

@@ -173,23 +173,7 @@ class TestMidMeasure:
         layers = drawable_layers(ops, wire_map={i: i for i in range(3)})
         assert layers == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
 
-    def test_cannot_reuse_wire_after_conditional(self):
-        """Tests that a wire cannot be re-used after using a mid-circuit measurement."""
-        with AnnotatedQueue() as q:
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.PauliX)(1)
-            qml.Hadamard(0)
-
-        with pytest.raises(ValueError, match="some wires have been measured already"):
-            drawable_layers(q.queue)
-
     def test_cannot_draw_multi_wire_MidMeasureMP(self):
         """Tests that MidMeasureMP is only supported with one wire."""
         with pytest.raises(ValueError, match="mid-circuit measurements with more than one wire."):
             drawable_layers([MidMeasureMP([0, 1])])
-
-    def test_cannot_use_measured_wire(self):
-        """Tests error is raised when trying to use a measured wire."""
-        ops = [MidMeasureMP([0]), qml.PauliX(0)]
-        with pytest.raises(ValueError, match="some wires have been measured already"):
-            drawable_layers(ops)

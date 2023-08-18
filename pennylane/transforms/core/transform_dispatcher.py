@@ -15,6 +15,8 @@
 This module contains the transform function, the transform dispatcher and the transform container.
 """
 import copy
+import types
+
 import pennylane as qml
 
 
@@ -47,6 +49,8 @@ class TransformDispatcher:
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
+
+        self._qnode_transform = self.default_qnode_transform
 
     def __call__(self, *targs, **tkwargs):
         obj = None
@@ -91,6 +95,53 @@ class TransformDispatcher:
         """Return True is the transform does not need to be executed."""
         return self._is_informative
 
+    def custom_qnode_transform(self, fn):
+        """Register a custom QNode execution wrapper function
+        for the batch transform.
+
+        **Example**
+
+        .. code-block:: python
+
+            @transform
+            def my_transform(tape, *targs, **tkwargs):
+                ...
+                return tapes, processing_fn
+
+            @my_transform.custom_qnode_transform
+            def my_custom_qnode_wrapper(self, qnode, targs, tkwargs):
+                tkwargs = {**tkwargs, shots=100}
+                return self.default_qnode_transform(qnode, targs, tkwargs)
+
+        The custom QNode execution wrapper must have arguments
+        ``self`` (the batch transform object), ``qnode`` (the input QNode
+        to transform and execute), ``targs`` and ``tkwargs`` (the transform
+        arguments and keyword arguments respectively).
+
+        It should return a QNode that accepts the *same* arguments as the
+        input QNode with the transform applied.
+
+        The default :meth:`~.default_qnode_transform` method may be called
+        if only pre- or post-processing dependent on QNode arguments is required.
+        """
+        self._qnode_transform = types.MethodType(fn, self)
+
+    def default_qnode_transform(self, qnode, targs, tkwargs):
+        """
+        The default method that takes in a QNode and returns another QNode
+        with the transform applied.
+        """
+        qnode = copy.deepcopy(qnode)
+
+        if self.expand_transform:
+            qnode.add_transform(TransformContainer(self._expand_transform))
+        qnode.add_transform(
+            TransformContainer(
+                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+            )
+        )
+        return qnode
+
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
@@ -112,20 +163,6 @@ class TransformDispatcher:
             return tape._qfunc_output  # pylint:disable=protected-access
 
         return qfunc_transformed
-
-    def _qnode_transform(self, qnode, targs, tkwargs):
-        """Apply the transform on a QNode. It populates the transform program of a QNode"""
-        if qnode.transform_program.is_empty():
-            qnode = copy.deepcopy(qnode)
-
-        if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform))
-        qnode.add_transform(
-            TransformContainer(
-                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
-            )
-        )
-        return qnode
 
 
 class TransformContainer:

@@ -16,6 +16,9 @@ This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
+import inspect
+import logging
+
 import numpy as np
 import torch
 import torch.utils._pytree as pytree
@@ -24,8 +27,20 @@ import pennylane as qml
 from pennylane.measurements import CountsMP
 from pennylane.transforms import convert_to_numpy_parameters
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
 
 def _compute_vjp(dy, jacs, device=None):
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(dy=%s, jacs=%s, device=%s) called by=%s",
+            dy,
+            jacs,
+            repr(device),
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     vjps = []
 
     for d, jac in zip(dy, jacs):
@@ -74,6 +89,17 @@ class ExecuteTapesLegacy(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(ctx=%s, kwargs=%s, parameters=%s) called by=%s",
+                ctx,
+                kwargs,
+                parameters,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
 
@@ -120,6 +146,15 @@ class ExecuteTapesLegacy(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.info(
+                "Entry with args=(ctx=%s, dy=%s) called by=%s",
+                ctx,
+                dy,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
 
         if ctx.jacs:
             # Jacobians were computed on the forward pass (mode="forward")
@@ -152,7 +187,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
                     vjps = processing_fn(
-                        execute(
+                        _execute_legacy(
                             vjp_tapes,
                             ctx.device,
                             ctx.execute_fn,
@@ -283,6 +318,15 @@ def pytreeify(cls):
 
 def _compute_vjps(dys, jacs, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(dys=%s, jacs=%s, multi_measurements=%s) called by=%s",
+            dys,
+            jacs,
+            multi_measurements,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     vjps = []
 
     for i, multi in enumerate(multi_measurements):
@@ -329,6 +373,17 @@ class ExecuteTapes(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(ctx=%s, kwargs=%s, parameters=%s) called by=%s",
+                ctx,
+                kwargs,
+                parameters,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
 
@@ -339,8 +394,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-        res, ctx.jacs = ctx.execute_fn(unwrapped_tapes, **ctx.gradient_kwargs)
+        res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
         ctx.torch_device = None
@@ -361,6 +415,16 @@ class ExecuteTapes(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(ctx=%s, dy=%s) called by=%s",
+                ctx,
+                dy,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         multi_measurements = [len(tape.measurements) > 1 for tape in ctx.tapes]
 
         if ctx.jacs:
@@ -406,9 +470,8 @@ class ExecuteTapes(torch.autograd.Function):
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
-                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        unwrapped_tapes,
+                        ctx.tapes,
                         dy,
                         ctx.gradient_fn,
                         reduction="extend",
@@ -427,8 +490,7 @@ class ExecuteTapes(torch.autograd.Function):
                 #
                 # so we cannot support higher-order derivatives.
 
-                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
-                jacs = ctx.gradient_fn(unwrapped_tapes, **ctx.gradient_kwargs)
+                jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjps(dy, jacs, multi_measurements)
 
@@ -466,17 +528,23 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[torch.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # pylint: disable=unused-argument
-    if not qml.active_return():
-        return _execute_legacy(
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
             tapes,
-            device,
-            execute_fn,
-            gradient_fn,
+            repr(device),
+            execute_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
+
     # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:

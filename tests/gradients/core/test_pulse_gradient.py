@@ -751,6 +751,13 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="Expected a positive number of samples"):
             stoch_pulse_grad(tape, num_split_times=num_split_times)
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the stochastic pulse"
+        with pytest.raises(NotImplementedError, match=_match):
+            stoch_pulse_grad(tape)
+
     @pytest.mark.parametrize("num_meas", [0, 1, 2])
     def test_warning_no_trainable_params(self, num_meas):
         """Test that an empty gradient is returned when there are no trainable parameters."""
@@ -783,6 +790,7 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="stoch_pulse_grad does not support differentiating"):
             stoch_pulse_grad(tape)
 
+    @pytest.mark.skip(reason="This test fails because broadcasted tapes are not allowed at all.")
     def test_raises_use_broadcasting_with_broadcasted_tape(self):
         """Test that an error is raised if the option `use_broadcasting` is activated
         for a tape that already is broadcasted."""

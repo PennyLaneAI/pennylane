@@ -259,6 +259,7 @@ class TestWithClassicalFunction:
         )
 
         # Now with step_and_cost and trainable params
+        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
@@ -394,6 +395,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
             atol=1e-5,
         )
 
+        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
@@ -504,6 +506,7 @@ class TestWithQNodes:
         assert (np.isscalar(new_param_step) and np.isscalar(param)) or len(new_param_step) == len(
             param
         )
+        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,

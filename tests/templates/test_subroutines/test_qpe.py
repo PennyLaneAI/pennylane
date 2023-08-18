@@ -142,7 +142,7 @@ class TestDecomposition:
 
             with qml.queuing.AnnotatedQueue() as q:
                 # We want to prepare an eigenstate of RX, in this case |+>
-                qml.QubitStateVector(state, wires=target_wires)
+                qml.StatePrep(state, wires=target_wires)
 
                 qml.QuantumPhaseEstimation(
                     unitary, target_wires=target_wires, estimation_wires=estimation_wires
@@ -192,7 +192,7 @@ class TestDecomposition:
             tape = qml.tape.QuantumScript(
                 [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
                 [qml.probs(estimation_wires)],
-                prep=[qml.QubitStateVector(eig_vec, wires=target_wires)],
+                prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
@@ -234,7 +234,7 @@ class TestDecomposition:
             tape = qml.tape.QuantumScript(
                 [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
                 [qml.probs(estimation_wires)],
-                prep=[qml.QubitStateVector(eig_vec, wires=target_wires)],
+                prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)

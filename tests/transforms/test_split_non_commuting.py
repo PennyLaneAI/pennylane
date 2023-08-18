@@ -262,6 +262,7 @@ class TestIntegration:
         assert len(res) == 4
         assert all(isinstance(shot_res, tuple) for shot_res in res)
         assert all(len(shot_res) == 7 for shot_res in res)
+        # pylint:disable=not-an-iterable
         assert all(
             all(list(isinstance(r, np.ndarray) and r.shape == () for r in shot_res))
             for shot_res in res
