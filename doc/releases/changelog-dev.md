@@ -110,6 +110,9 @@ array([False, False])
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
 
+* `TransformDispatcher` now allows registration of custom `QNode` transforms.
+  [(#4466)](https://github.com/PennyLaneAI/pennylane/pull/4466)
+
 * `HardwareHamiltonian`s can now be summed with `int` or `float`.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
@@ -182,8 +185,9 @@ array([False, False])
 * When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
   [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
-* `qml.pauli_decompose` is now differentiable and works with any non-Hermitian and non-square matrices.
+* `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
@@ -230,6 +234,8 @@ array([False, False])
 
 * CI now runs tests with Tensorflow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
+
+* `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
 <h3>Breaking changes 💔</h3>
 
@@ -437,7 +443,8 @@ Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
 Edward Jiang,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurečić,
 Christina Lee,
 Vincent Michaud-Rioux,
 Romain Moyard,
