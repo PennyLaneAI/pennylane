@@ -147,7 +147,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         tapes = []
         for obs in obs_groupings:
             new_tape = tape.__class__(
-                tape._ops, (qml.expval(o) for o in obs), tape._prep, shots=tape.shots
+                tape.operations, (qml.expval(o) for o in obs), shots=tape.shots
             )
 
             new_tape = new_tape.expand(stop_at=lambda obj: True)
@@ -185,7 +185,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep, shots=tape.shots)
+        new_tape = tape.__class__(tape.operations, [qml.expval(o)], shots=tape.shots)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
@@ -339,12 +339,12 @@ def sum_expand(tape: QuantumTape, group=True):
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
         qscripts = [
-            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep, shots=tape.shots)
+            QuantumScript(ops=tape.operations, measurements=m_group, shots=tape.shots)
             for m_group in m_groups
         ]
     else:
         qscripts = [
-            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep, shots=tape.shots)
+            QuantumScript(ops=tape.operations, measurements=[m], shots=tape.shots)
             for m in measurements
         ]
 

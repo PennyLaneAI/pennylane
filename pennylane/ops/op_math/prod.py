@@ -331,7 +331,6 @@ class Prod(CompositeOp):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-        * `"_prep"`
         * `"_ops"`
         * `"_measurements"`
         * `None`

@@ -90,6 +90,11 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
+  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
+  should be used.
+  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+
 * Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
   This unlocks the ability to jit functions of `Operator`.
   [(#4458)](https://github.com/PennyLaneAI/pennylane/pull/4458/)
@@ -190,6 +195,7 @@ array([False, False])
 * `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
@@ -295,6 +301,9 @@ array([False, False])
 
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
+  [(#4485)](https://github.com/PennyLaneAI/pennylane/pull/4485)
 
 * `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
   `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.

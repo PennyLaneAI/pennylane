@@ -90,11 +90,9 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         return input.simplify()
 
     if isinstance(input, QuantumScript):
-        # pylint: disable=protected-access
         return input.__class__(
-            [op.simplify() for op in input._ops],
+            [op.simplify() for op in input.operations],
             [m.simplify() for m in input.measurements],
-            [op.simplify() for op in input._prep],
             shots=input.shots,
         )
 
