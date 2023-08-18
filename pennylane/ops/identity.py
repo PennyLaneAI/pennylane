@@ -16,7 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
-
+from warnings import warn
 from scipy import sparse
 
 import pennylane as qml
@@ -190,7 +190,9 @@ class GlobalPhase(Operation):
 
     Args:
         phi (TensorLike): the global phase
-        wires (Iterable[Any] or Any): Wire label(s) that the global phase acts on.
+        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -202,7 +204,7 @@ class GlobalPhase(Operation):
         def circuit(phi=None, return_state=False):
             qml.PauliX(0)
             if phi:
-                qml.GlobalPhase(phi, wires=[1])
+                qml.GlobalPhase(phi)
             if return_state:
                 return qml.state()
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
@@ -230,7 +232,7 @@ class GlobalPhase(Operation):
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
-            qml.ctrl(qml.GlobalPhase(0.123, wires=[1]), 0)
+            qml.ctrl(qml.GlobalPhase(0.123), 0)
             return qml.state()
 
         >>> circuit()
@@ -248,10 +250,12 @@ class GlobalPhase(Operation):
         return self.data, (self.wires, tuple())
 
     def __init__(self, phi, wires=None, id=None):
-        if wires is None:
-            wires = []
-        super().__init__(phi, wires=wires, id=id)
-        self._hyperparameters = {"n_wires": len(self.wires)}
+        if wires is not None:
+            warn(
+                f"GlobalPhase recieved wires={wires}. Note that the operation will be applied "
+                f"to all wires regardless."
+            )
+        super().__init__(phi, wires=[], id=id)
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
