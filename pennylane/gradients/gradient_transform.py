@@ -124,7 +124,7 @@ def assert_no_tape_batching(tape, transform_name):
     if tape.batch_size is not None:
         raise NotImplementedError(
             f"Computing the gradient of broadcasted tapes with the {transform_name} "
-            "gradient transform is currently not supported."
+            "gradient transform is currently not supported. See #4462 for details."
         )
 
 

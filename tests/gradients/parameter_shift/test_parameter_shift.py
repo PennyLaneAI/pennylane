@@ -903,7 +903,7 @@ class TestParamShift:
 
 
 # Remove the following and unskip the class below once broadcasted
-# tapes are fully supported with gradient transforms.
+# tapes are fully supported with gradient transforms. See #4462 for details.
 class TestParamShiftRaisesWithBroadcasted:
     """Test that an error is raised with broadcasted tapes."""
 
@@ -916,6 +916,7 @@ class TestParamShiftRaisesWithBroadcasted:
 
 
 # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
+# See #4462 for details.
 @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
 class TestParamShiftWithBroadcasted:
     """Tests for the `param_shift` transform on already broadcasted tapes.
