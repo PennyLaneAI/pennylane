@@ -193,11 +193,11 @@ class TestQubitSum:
 
         if expand:
             ops = [
-                qml.QubitStateVector(input_state, wires=[0, 1, 2]),
+                qml.StatePrep(input_state, wires=[0, 1, 2]),
                 *qml.QubitSum(wires=wires).expand(),
             ]
         else:
-            ops = [qml.QubitStateVector(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
+            ops = [qml.StatePrep(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
 
         tape = qml.tape.QuantumScript(ops, [qml.state()])
         result = dev.execute(tape)
@@ -214,7 +214,7 @@ class TestQubitSum:
 
         @qml.qnode(dev)
         def f(state):
-            qml.QubitStateVector(state, wires=range(3))
+            qml.StatePrep(state, wires=range(3))
             qml.adjoint(qml.QubitSum)(wires=range(3))
             return qml.probs(wires=range(3))
 

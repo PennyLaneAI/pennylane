@@ -361,7 +361,7 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             wires = list(range(2))
-            qml.QubitStateVector(x, wires=wires)
+            qml.StatePrep(x, wires=wires)
             return [qml.expval(qml.PauliX(wires=i)) for i in wires]
 
         res = circuit(state_vector)
@@ -378,7 +378,7 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             wires = list(range(2))
-            qml.QubitStateVector(x, wires=wires)
+            qml.StatePrep(x, wires=wires)
             return [qml.expval(qml.PauliX(wires=i)) for i in wires]
 
         res = circuit(state_vector)
@@ -395,7 +395,7 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(x):
-            qml.QubitStateVector(state_vector, wires=dev.wires)
+            qml.StatePrep(state_vector, wires=dev.wires)
             for w in dev.wires:
                 qml.RZ(x, wires=w, id="x")
             return qml.expval(qml.PauliZ(wires=0))
@@ -413,7 +413,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
-            qml.QubitStateVector(state_vector, wires=dev.wires)
+            qml.StatePrep(state_vector, wires=dev.wires)
             for w in dev.wires:
                 qml.RZ(x, wires=w, id="x")
             return qml.expval(qml.PauliZ(wires=0))
@@ -431,7 +431,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(x):
-            qml.QubitStateVector(state_vector, wires=dev.wires)
+            qml.StatePrep(state_vector, wires=dev.wires)
             for w in dev.wires:
                 qml.RZ(x, wires=w, id="x")
             return qml.expval(qml.PauliZ(wires=0))
@@ -816,7 +816,7 @@ class TestPassthruIntegration:
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b, c):
-            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             qml.CRot(a, b, c, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -963,7 +963,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w=None):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(1j * jnp.array([1, -1]) / jnp.sqrt(2), wires=w)
+            qml.StatePrep(1j * jnp.array([1, -1]) / jnp.sqrt(2), wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 

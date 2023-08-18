@@ -90,6 +90,7 @@ ops = {
     "IsingZZ",
     "IsingXY",
     "BasisState",
+    "StatePrep",
     "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
