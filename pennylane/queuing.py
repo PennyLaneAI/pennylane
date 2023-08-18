@@ -138,15 +138,17 @@ and measurements in the final circuit. This step eliminates any object that has 
 ...     base = qml.PauliX(0)
 ...     pow_op = base ** 1.5
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
->>> ops, measurements = qml.queuing.process_queue(q)
+>>> ops, measurements, prep = qml.queuing.process_queue(q)
 >>> ops
 [StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
+>>> prep
+[]
 
-These two lists can be used to construct a :class:`~.QuantumScript`:
+These lists can be used to construct a :class:`~.QuantumScript`:
 
->>> qml.tape.QuantumScript(ops, measurements)
+>>> qml.tape.QuantumScript(ops, measurements, prep)
 <QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
@@ -560,8 +562,8 @@ def process_queue(queue: AnnotatedQueue):
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)]:
-        The list of tape operations, and the list of tape measurements
+        tuple[list(.Operation), list(.MeasurementProcess), list(.Operation)]:
+        The list of tape operations, the list of tape measurements, and the list of preparation operations
     """
     lists = {"_ops": [], "_measurements": []}
     list_order = {"_ops": 1, "_measurements": 2}
@@ -578,4 +580,4 @@ def process_queue(queue: AnnotatedQueue):
                 )
             lists[obj._queue_category].append(obj)
 
-    return lists["_ops"], lists["_measurements"]
+    return lists["_ops"], lists["_measurements"], []

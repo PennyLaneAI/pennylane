@@ -171,7 +171,7 @@ class TestQSVT:
         with qml.queuing.AnnotatedQueue() as q:
             decomp = op.decomposition()
 
-        ops, _ = qml.queuing.process_queue(q)
+        ops, _, _ = qml.queuing.process_queue(q)
         assert all(qml.equal(op1, op2) for op1, op2 in zip(ops, decomp))
 
     @pytest.mark.parametrize(
