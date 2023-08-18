@@ -188,7 +188,7 @@ class TestApplyBroadcasted:
     # TODO[dwierichs]: add tests with qml.BaisState once `_apply_basis_state` supports broadcasting
     @pytest.mark.parametrize(
         "operation,expected_output,par",
-        [(qml.QubitStateVector, s, s) for s in [single_state, triple_state]],
+        [(qml.StatePrep, s, s) for s in [single_state, triple_state]],
     )
     def test_apply_operation_state_preparation_broadcasted(
         self, qubit_device_2_wires, tol, operation, expected_output, par
@@ -442,30 +442,26 @@ class TestApplyBroadcasted:
     def test_apply_errors_qubit_state_vector_broadcasted(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qubit_device_2_wires.apply(
-                [qml.QubitStateVector(np.array([[1, -1], [0, 2]]), wires=[0])]
-            )
+            qubit_device_2_wires.apply([qml.StatePrep(np.array([[1, -1], [0, 2]]), wires=[0])])
 
         # Also test that the sum-check is *not* performed along the broadcasting dimension
-        qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])]
-        )
+        qubit_device_2_wires.apply([qml.StatePrep(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             # Second dimension does not match 2**num_wires
             p = np.array([[1, 0, 1, 1, 0], [0, 1, 1, 0, 1]]) / np.sqrt(3)
-            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
+            qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             # Broadcasting dimension is not first dimension
             p = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1], [0, 1, 1]]) / np.sqrt(2)
-            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
+            qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         qubit_device_2_wires.reset()
-        vec = qml.QubitStateVector(np.array([[0, 1, 0, 0], [0, 0, 1, 0]]), wires=[0, 1])
+        vec = qml.StatePrep(np.array([[0, 1, 0, 0], [0, 0, 1, 0]]), wires=[0, 1])
         with pytest.raises(
             DeviceError,
-            match="Operation QubitStateVector cannot be used after other Operations have already been applied "
+            match="Operation StatePrep cannot be used after other Operations have already been applied "
             "on a default.qubit device.",
         ):
             qubit_device_2_wires.apply([qml.RZ(0.5, wires=[0]), vec])
@@ -531,7 +527,7 @@ class TestExpvalBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -550,7 +546,7 @@ class TestExpvalBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -586,7 +582,7 @@ class TestExpvalBroadcasted:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.expval(obs)
 
@@ -631,7 +627,7 @@ class TestVarBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -650,7 +646,7 @@ class TestVarBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -686,7 +682,7 @@ class TestVarBroadcasted:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.var(obs)
 
@@ -846,7 +842,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -869,7 +865,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -906,7 +902,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         @qml.qnode(qubit_device_2_wires)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0, 1])
+            qml.StatePrep(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)

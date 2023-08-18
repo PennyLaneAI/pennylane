@@ -315,12 +315,12 @@ class TestApply:
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
-    def test_qubit_state_vector(self, init_state, tol):
-        """Test qubit state vector application"""
+    def test_state_prep(self, init_state, tol):
+        """Test state prep application"""
         dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
-        dev.apply([qml.QubitStateVector(state, wires=[0])])
+        dev.apply([qml.StatePrep(state, wires=[0])])
 
         res = dev.state
         expected = state
@@ -352,23 +352,23 @@ class TestApply:
         assert np.all(res == state)
         spy.assert_called()
 
-    def test_invalid_qubit_state_vector_size(self):
+    def test_invalid_state_prep_size(self):
         """Test that an exception is raised if the state
         vector is the wrong size"""
         dev = DefaultQubitTF(wires=2)
         state = np.array([0, 1])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
-            dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
+            dev.apply([qml.StatePrep(state, wires=[0, 1])])
 
-    def test_invalid_qubit_state_vector_norm(self):
+    def test_invalid_state_prep_norm(self):
         """Test that an exception is raised if the state
         vector is not normalized"""
         dev = DefaultQubitTF(wires=2)
         state = np.array([0, 12])
 
         with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
-            dev.apply([qml.QubitStateVector(state, wires=[0])])
+            dev.apply([qml.StatePrep(state, wires=[0])])
 
     def test_invalid_state_prep(self):
         """Test that an exception is raised if a state preparation is not the
@@ -380,7 +380,7 @@ class TestApply:
             qml.DeviceError,
             match=r"cannot be used after other Operations have already been applied",
         ):
-            dev.apply([qml.PauliZ(0), qml.QubitStateVector(state, wires=[0])])
+            dev.apply([qml.PauliZ(0), qml.StatePrep(state, wires=[0])])
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, init_state, op, mat, tol):
@@ -388,7 +388,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(wires=0)]
         dev.apply(queue)
 
@@ -404,7 +404,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(theta, wires=0)]
         dev.apply(queue)
 
@@ -421,7 +421,7 @@ class TestApply:
         b = 1.3432
         c = -0.654
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -438,7 +438,7 @@ class TestApply:
         b = 1.3432
         c = -0.654
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -452,7 +452,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=2)
         state = init_state(2)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [op(wires=[0, 1])]
         dev.apply(queue)
 
@@ -467,7 +467,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=N)
         state = init_state(N)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -481,7 +481,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=3)
         state = init_state(3)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue = [qml.StatePrep(state, wires=[0, 1, 2])]
         queue += [op(wires=[0, 1, 2])]
         dev.apply(queue)
 
@@ -496,7 +496,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=2)
         state = init_state(2)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [op(theta, wires=[0, 1])]
         dev.apply(queue)
 
@@ -511,7 +511,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=4)
         state = init_state(4)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2, 3])]
+        queue = [qml.StatePrep(state, wires=[0, 1, 2, 3])]
         queue += [op(theta, wires=[0, 1, 2, 3])]
         dev.apply(queue)
 
@@ -624,7 +624,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=1)
         state = broadcasted_init_state(1, batch_size=batch_size)
 
-        dev.apply([qml.QubitStateVector(state, wires=[0])])
+        dev.apply([qml.StatePrep(state, wires=[0])])
 
         res = dev.state
         expected = state
@@ -667,7 +667,7 @@ class TestApplyBroadcasted:
         state = np.array([[0, 1], [1, 0], [1, 1], [0, 0]])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
-            dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
+            dev.apply([qml.StatePrep(state, wires=[0, 1])])
 
     def test_invalid_qubit_state_vector_norm_broadcasted(self):
         """Test that an exception is raised if the broadcasted state
@@ -676,7 +676,7 @@ class TestApplyBroadcasted:
         state = np.array([[1, 0], [0, 12], [1.3, 1]])
 
         with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
-            dev.apply([qml.QubitStateVector(state, wires=[0])])
+            dev.apply([qml.StatePrep(state, wires=[0])])
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
@@ -684,7 +684,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=1)
         state = broadcasted_init_state(1, 3)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(wires=0)]
         dev.apply(queue)
 
@@ -702,7 +702,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=1)
         state = broadcasted_init_state(1, 3)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(theta, wires=0)]
         dev.apply(queue)
 
@@ -718,7 +718,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(theta, wires=0)]
         dev.apply(queue)
 
@@ -737,7 +737,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=1)
         state = broadcasted_init_state(1, batch_size=len(theta))
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(theta, wires=0)]
         dev.apply(queue)
 
@@ -755,7 +755,7 @@ class TestApplyBroadcasted:
         b = 1.3432
         c = -0.654
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -772,7 +772,7 @@ class TestApplyBroadcasted:
         b = -0.654
         c = np.array([1.3432, 0.6324, 6.32])
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -790,7 +790,7 @@ class TestApplyBroadcasted:
         b = np.array([1.3432, 0.6324, 6.32])
         c = -0.654
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -808,7 +808,7 @@ class TestApplyBroadcasted:
         b = 1.3432
         c = -0.654
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -825,7 +825,7 @@ class TestApplyBroadcasted:
         b = -0.654
         c = np.array([1.3432, 0.6324, 6.32])
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -843,7 +843,7 @@ class TestApplyBroadcasted:
         b = np.array([1.3432, 0.6324, 6.32])
         c = -0.654
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -858,7 +858,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=2)
         state = broadcasted_init_state(2, 3)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [op(wires=[0, 1])]
         dev.apply(queue)
 
@@ -873,7 +873,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=N)
         state = broadcasted_init_state(N, 3)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -889,7 +889,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=N)
         state = init_state(N)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -905,7 +905,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=N)
         state = broadcasted_init_state(N, 3)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -919,7 +919,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=3)
         state = broadcasted_init_state(3, 2)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue = [qml.StatePrep(state, wires=[0, 1, 2])]
         queue += [op(wires=[0, 1, 2])]
         dev.apply(queue)
 
@@ -1555,7 +1555,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="tf")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0])
+            qml.StatePrep(state, wires=[0])
             op(params[0], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
@@ -1576,7 +1576,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="tf")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             op(params[0], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -1597,7 +1597,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="tf")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1, 2, 3])
+            qml.StatePrep(state, wires=[0, 1, 2, 3])
             op(params[0], wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
@@ -1619,7 +1619,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="tf")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             qml.CRot(params[0], params[1], params[2], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2017,7 +2017,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
+            qml.StatePrep(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 

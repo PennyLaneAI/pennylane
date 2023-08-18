@@ -32,7 +32,6 @@ class TestInitialization:
 
         qs = QuantumScript(_update=False)
         assert len(qs._ops) == 0
-        assert len(qs._prep) == 0
         assert len(qs._measurements) == 0
         assert len(qs._par_info) == 0
         assert len(qs._trainable_params) == 0
@@ -60,9 +59,9 @@ class TestInitialization:
     def test_provide_ops(self, ops):
         """Test provided ops are converted to lists."""
         qs = QuantumScript(ops)
-        assert len(qs._ops) == 1
-        assert isinstance(qs._ops, list)
-        assert qml.equal(qs._ops[0], qml.S(0))
+        assert len(qs.operations) == 1
+        assert isinstance(qs.operations, list)
+        assert qml.equal(qs.operations[0], qml.S(0))
 
     @pytest.mark.parametrize(
         "m",
@@ -80,19 +79,29 @@ class TestInitialization:
         assert qs._measurements[0].return_type is qml.measurements.State
 
     @pytest.mark.parametrize(
-        "prep",
-        (
-            [qml.BasisState([1, 1], wires=(0, 1))],
-            (qml.BasisState([1, 1], wires=(0, 1)),),
-            (qml.BasisState([1, 1], wires=(0, 1)) for _ in range(1)),
-        ),
+        "ops,num_preps",
+        [
+            ((qml.BasisState([1], 0),), 1),
+            ((qml.BasisState([1], 0), qml.PauliX(0)), 1),
+            ((qml.BasisState([1], 0), qml.PauliX(0), qml.BasisState([1], 1)), 1),
+            ((qml.BasisState([1], 0), qml.BasisState([1], 1), qml.PauliX(0)), 2),
+            ((qml.PauliX(0),), 0),
+            ((qml.PauliX(0), qml.BasisState([1], 0)), 0),
+        ],
     )
-    def test_provided_state_prep(self, prep):
-        """Test state prep are converted to lists"""
-        qs = QuantumScript(prep=prep)
-        assert len(qs._prep) == 1
-        assert isinstance(qs._prep, list)
-        assert qml.equal(qs._prep[0], qml.BasisState([1, 1], wires=(0, 1)))
+    def test_num_preps(self, ops, num_preps):
+        """Test the num_preps property."""
+        assert QuantumScript(ops).num_preps == num_preps
+
+    def test_prep_deprecation(self):
+        """Test that the prep keyword ~is deprecated and~ behaves as expected."""
+        prep = [qml.BasisState([1, 1], wires=(0, 1))]
+        ops = [qml.PauliX(0)]
+        # with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
+        qs = QuantumScript(ops=ops, prep=prep)
+        assert len(qs.operations) == len(qs._ops) == 2
+        assert qml.equal(qs.operations[0], prep[0])
+        assert qml.equal(qs.operations[1], ops[0])
 
 
 sample_measurements = [
@@ -201,25 +210,25 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
 
         op_0, op_id_0, p_id_0 = qs.get_operation(0)
-        assert op_0 == ops[0] and op_id_0 == 0 and p_id_0 == 0
+        assert qml.equal(op_0, ops[0]) and op_id_0 == 0 and p_id_0 == 0
 
         op_1, op_id_1, p_id_1 = qs.get_operation(1)
-        assert op_1 == ops[1] and op_id_1 == 1 and p_id_1 == 0
+        assert qml.equal(op_1, ops[1]) and op_id_1 == 1 and p_id_1 == 0
 
         op_2, op_id_2, p_id_2 = qs.get_operation(2)
-        assert op_2 == ops[1] and op_id_2 == 1 and p_id_2 == 1
+        assert qml.equal(op_2, ops[1]) and op_id_2 == 1 and p_id_2 == 1
 
         op_3, op_id_3, p_id_3 = qs.get_operation(3)
-        assert op_3 == ops[1] and op_id_3 == 1 and p_id_3 == 2
+        assert qml.equal(op_3, ops[1]) and op_id_3 == 1 and p_id_3 == 2
 
         op_4, op_id_4, p_id_4 = qs.get_operation(4)
-        assert op_4 == ops[3] and op_id_4 == 3 and p_id_4 == 0
+        assert qml.equal(op_4, ops[3]) and op_id_4 == 3 and p_id_4 == 0
 
         op_5, op_id_5, p_id_5 = qs.get_operation(5)
-        assert op_5 == ops[4] and op_id_5 == 4 and p_id_5 == 0
+        assert qml.equal(op_5, ops[4]) and op_id_5 == 4 and p_id_5 == 0
 
         op_6, op_id_6, p_id_6 = qs.get_operation(6)
-        assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
+        assert qml.equal(op_6, ops[4]) and op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
         assert obs_id_0 == 5 and p_id_0 == 0
@@ -566,23 +575,28 @@ class TestScriptCopying:
 
 def test_adjoint():
     """Tests taking the adjoint of a quantum script."""
-    ops = [qml.RX(1.2, wires=0), qml.S(0), qml.CNOT((0, 1)), qml.T(1)]
-    prep = [qml.BasisState([1, 1], wires=0)]
+    ops = [
+        qml.BasisState([1, 1], wires=0),
+        qml.RX(1.2, wires=0),
+        qml.S(0),
+        qml.CNOT((0, 1)),
+        qml.T(1),
+    ]
     m = [qml.expval(qml.PauliZ(0))]
-    qs = QuantumScript(ops, m, prep)
+    qs = QuantumScript(ops, m)
 
     with qml.queuing.AnnotatedQueue() as q:
         adj_qs = qs.adjoint()
 
     assert len(q.queue) == 0  # not queued
 
-    assert adj_qs._prep == qs._prep
-    assert adj_qs._measurements == qs._measurements
+    assert qml.equal(adj_qs.operations[0], qs.operations[0])
+    assert adj_qs.measurements == qs.measurements
     assert adj_qs.shots is qs.shots
 
     # assumes lazy=False
     expected_ops = [qml.adjoint(qml.T(1)), qml.CNOT((0, 1)), qml.adjoint(qml.S(0)), qml.RX(-1.2, 0)]
-    for op, expected in zip(adj_qs._ops, expected_ops):
+    for op, expected in zip(adj_qs.operations[1:], expected_ops):
         # update this one qml.equal works with adjoint
         assert isinstance(op, type(expected))
         assert op.wires == expected.wires

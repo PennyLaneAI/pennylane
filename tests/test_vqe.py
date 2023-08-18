@@ -208,9 +208,7 @@ def mock_device_fixture(monkeypatch):
         m.setattr(
             qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
         )
-        m.setattr(
-            qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "QubitStateVector"]
-        )
+        m.setattr(qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "StatePrep"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )

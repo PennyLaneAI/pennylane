@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 
 def test_samples_computational_basis():
     """Test that samples_computational_basis is always false for mid circuit measurements."""
-    m = qml.measurements.MidMeasureMP(Wires(0))
+    m = MidMeasureMP(Wires(0))
     assert not m.samples_computational_basis
 
 
@@ -44,19 +44,19 @@ class TestMeasure:
 
     def test_hash(self):
         """Test that the hash for `MidMeasureMP` is defined correctly."""
-        m1 = MidMeasureMP(Wires(0), "m1")
-        m2 = MidMeasureMP(Wires(0), "m2")
-        m3 = MidMeasureMP(Wires(1), "m1")
-        m4 = MidMeasureMP(Wires(0), "m1")
+        m1 = MidMeasureMP(Wires(0), id="m1")
+        m2 = MidMeasureMP(Wires(0), id="m2")
+        m3 = MidMeasureMP(Wires(1), id="m1")
+        m4 = MidMeasureMP(Wires(0), id="m1")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
         assert m1.hash == m4.hash
 
 
-mp1 = MidMeasureMP(Wires(0), "m0")
-mp2 = MidMeasureMP(Wires(1), "m1")
-mp3 = MidMeasureMP(Wires(2), "m2")
+mp1 = MidMeasureMP(Wires(0), id="m0")
+mp2 = MidMeasureMP(Wires(1), id="m1")
+mp3 = MidMeasureMP(Wires(2), id="m2")
 
 
 class TestMeasurementValueManipulation:

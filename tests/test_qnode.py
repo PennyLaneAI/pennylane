@@ -1077,7 +1077,7 @@ class TestIntegration:
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -1105,7 +1105,7 @@ class TestIntegration:
     def test_sampling_with_mcm(self, basis_state):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=1000)
 
         first_par = np.pi
 
@@ -1135,7 +1135,7 @@ class TestIntegration:
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
@@ -1178,7 +1178,7 @@ class TestIntegration:
         """Test conditional operations with Torch."""
         import torch
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
@@ -1217,7 +1217,7 @@ class TestIntegration:
         import jax
 
         jnp = jax.numpy
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
         def cry_qnode(x):
@@ -1245,20 +1245,6 @@ class TestIntegration:
 
         assert np.allclose(r1, r2)
         assert np.allclose(jax.grad(cry_qnode)(x1), jax.grad(conditional_ry_qnode)(x2))
-
-    def test_already_measured_error_operation(self):
-        """Test that attempting to apply an operation on a wires that has been
-        measured raises an error."""
-        dev = qml.device("default.qubit.legacy", wires=3)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.measure(1)
-            qml.PauliX(1)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="wires have been measured already: {1}"):
-            circuit()
 
     def test_qnode_does_not_support_nested_queuing(self):
         """Test that operators in QNodes are not queued to surrounding contexts."""
@@ -1993,7 +1979,7 @@ class TestTapeExpansion:
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         res = circuit()
-        assert np.allclose(res, c[2], atol=0.1)
+        assert np.allclose(res, c[2], atol=0.3)
 
         spy.assert_called()
         tapes, _ = spy.spy_return

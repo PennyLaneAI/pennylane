@@ -823,6 +823,13 @@ class TestPulseGeneratorEdgeCases:
         with pytest.raises(ValueError, match=_match):
             pulse_generator(tape)
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the pulse generator"
+        with pytest.raises(NotImplementedError, match=_match):
+            pulse_generator(tape)
+
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""

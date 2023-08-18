@@ -44,17 +44,20 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
     indices = []
     available_indices = list(range(len(observables)))
-    for partition in observable_groups:
+    for partition in observable_groups:  # pylint:disable=too-many-nested-blocks
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                    ind = observables.index(observable)
-                    indices_this_group.append(available_indices[ind])
-                    # delete this observable and its index, so it cannot be found again
-                    observables.pop(ind)
-                    available_indices.pop(ind)
+                    for ind, obs in enumerate(observables):
+                        if obs is not observable:
+                            continue
+                        indices_this_group.append(available_indices[ind])
+                        # delete this observable and its index, so it cannot be found again
+                        observables.pop(ind)
+                        available_indices.pop(ind)
+                        break
                     break
         indices.append(tuple(indices_this_group))
 

@@ -18,15 +18,15 @@ Contains the AmplitudeEmbedding template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, StatePrep
-from pennylane.ops import QubitStateVector
+from pennylane.operation import AnyWires, StatePrepBase
+from pennylane.ops import StatePrep
 from pennylane.wires import Wires
 
 # tolerance for normalization
 TOLERANCE = 1e-10
 
 
-class AmplitudeEmbedding(StatePrep):
+class AmplitudeEmbedding(StatePrepBase):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension
@@ -139,7 +139,7 @@ class AmplitudeEmbedding(StatePrep):
         return (1,)
 
     def state_vector(self, wire_order=None):
-        return QubitStateVector(self.data[0], wires=self.wires).state_vector(wire_order=wire_order)
+        return StatePrep(self.data[0], wires=self.wires).state_vector(wire_order=wire_order)
 
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
@@ -162,9 +162,9 @@ class AmplitudeEmbedding(StatePrep):
 
         >>> features = torch.tensor([1., 0., 0., 0.])
         >>> qml.AmplitudeEmbedding.compute_decomposition(features, wires=["a", "b"])
-        [QubitStateVector(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
+        [StatePrep(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
         """
-        return [QubitStateVector(features, wires=wires)]
+        return [StatePrep(features, wires=wires)]
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):

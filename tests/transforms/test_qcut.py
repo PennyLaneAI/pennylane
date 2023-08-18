@@ -3456,7 +3456,7 @@ class TestQCutProcessingFn:
 
         @qml.qnode(dev)
         def f(state, measurement):
-            qml.QubitStateVector(state, wires=range(n))
+            qml.StatePrep(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
             return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 
@@ -3505,7 +3505,7 @@ class TestQCutProcessingFn:
 
         @qml.qnode(dev)
         def f(state, measurement):
-            qml.QubitStateVector(state, wires=range(n))
+            qml.StatePrep(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
             return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 
@@ -3554,7 +3554,7 @@ class TestQCutProcessingFn:
 
         @qml.qnode(dev)
         def f(state, measurement):
-            qml.QubitStateVector(state, wires=range(n))
+            qml.StatePrep(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
             return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 
@@ -3603,7 +3603,7 @@ class TestQCutProcessingFn:
 
         @qml.qnode(dev)
         def f(state, measurement):
-            qml.QubitStateVector(state, wires=range(n))
+            qml.StatePrep(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
             return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 

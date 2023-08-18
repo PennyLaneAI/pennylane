@@ -18,14 +18,14 @@ with preparing a certain state on the qutrit device.
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
 from pennylane import math
-from pennylane.operation import AnyWires, StatePrep
+from pennylane.operation import AnyWires, StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"QutritBasisState"}
 
 
-class QutritBasisState(StatePrep):
+class QutritBasisState(StatePrepBase):
     r"""QutritBasisState(n, wires)
     Prepares a single computational basis state for a qutrit system.
 
