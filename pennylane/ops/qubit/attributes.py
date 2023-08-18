@@ -237,6 +237,7 @@ supports_broadcasting = Attribute(
         "OrbitalRotation",
         "FermionicSWAP",
         "QubitStateVector",
+        "StatePrep",
         "AmplitudeEmbedding",
         "AngleEmbedding",
         "IQPEmbedding",

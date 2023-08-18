@@ -134,7 +134,7 @@ Once the queue is constructed, the :func:`~.process_queue` function converts it 
 measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.QubitStateVector(np.array([1.0, 0]), wires=0)
+...     qml.StatePrep(np.array([1.0, 0]), wires=0)
 ...     base = qml.PauliX(0)
 ...     pow_op = base ** 1.5
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
@@ -144,7 +144,7 @@ measurements, and state prep present in the final circuit. This step eliminates 
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
 >>> prep
-[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0])]
+[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0])]
 
 These three lists can be used to construct a :class:`~.QuantumScript`:
 

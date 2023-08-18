@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops import QubitStateVector
+from pennylane.ops import StatePrep
 from pennylane.wires import Wires
 
 # tolerance for normalization
@@ -159,9 +159,9 @@ class AmplitudeEmbedding(Operation):
 
         >>> features = torch.tensor([1., 0., 0., 0.])
         >>> qml.AmplitudeEmbedding.compute_decomposition(features, wires=["a", "b"])
-        [QubitStateVector(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
+        [StatePrep(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
         """
-        return [QubitStateVector(features, wires=wires)]
+        return [StatePrep(features, wires=wires)]
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):

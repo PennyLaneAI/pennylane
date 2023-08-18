@@ -741,3 +741,16 @@ class TestMeasurements:
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
         assert np.array_equal(qml.matrix(qscript), np.eye(N))
+
+
+@pytest.mark.jax
+def test_jitting_matrix():
+    """Test that qml.matrix is jittable with jax."""
+    import jax
+
+    op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
+
+    jit_mat = jax.jit(qml.matrix)(op)
+    normal_mat = qml.matrix(op)
+
+    assert qml.math.allclose(normal_mat, jit_mat)
