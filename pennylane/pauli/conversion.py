@@ -226,7 +226,7 @@ def pauli_decompose(
             the tensor products of the decomposition if ``True``.
         wire_order (list[Union[int, str]]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
-        pauli (bool): return a ``PauliSentence`` instance if ``True``.
+        pauli (bool): return a :class:`~.PauliSentence` instance if ``True``.
         check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
 
     Returns:
