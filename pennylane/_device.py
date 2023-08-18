@@ -40,7 +40,7 @@ from pennylane.measurements import (
     Variance,
 )
 
-from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrep
+from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
 from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
@@ -66,13 +66,11 @@ def _local_tape_expand(tape, depth, stop_at):
     if depth == 0:
         return tape
 
-    new_prep = []
     new_ops = []
     new_measurements = []
 
     for queue, new_queue in [
-        (tape._prep, new_prep),
-        (tape._ops, new_ops),
+        (tape.operations, new_ops),
         (tape.measurements, new_measurements),
     ]:
         for obj in queue:
@@ -91,13 +89,12 @@ def _local_tape_expand(tape, depth, stop_at):
             # recursively expand out the newly created tape
             expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_prep.extend(expanded_tape._prep)
-            new_ops.extend(expanded_tape._ops)
-            new_measurements.extend(expanded_tape._measurements)
+            new_ops.extend(expanded_tape.operations)
+            new_measurements.extend(expanded_tape.measurements)
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -665,9 +662,9 @@ class Device(abc.ABC):
         if max_expansion == 0:
             return circuit
 
-        expand_state_prep = any(isinstance(op, StatePrep) for op in circuit.operations[1:])
+        expand_state_prep = any(isinstance(op, StatePrepBase) for op in circuit.operations[1:])
 
-        if expand_state_prep:  # expand mid-circuit StatePrep operations
+        if expand_state_prep:  # expand mid-circuit StatePrepBase operations
             circuit = expand_tape_state_prep(circuit)
 
         comp_basis_sampled_multi_measure = (

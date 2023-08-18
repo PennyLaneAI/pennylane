@@ -92,7 +92,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             return qml.mutual_info(wires0=[0, 2], wires1=[1, 3])
 
         res = circuit()
