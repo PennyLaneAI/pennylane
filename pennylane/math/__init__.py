@@ -95,13 +95,16 @@ from .utils import (
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
-get_dtype_name = ar.get_dtype_name
-get_dtype_name.__doc__ = (
-    "An interface independent way of getting the name of the datatype.\n"
-    ">>> x = tf.Variable(0.1)\n"
-    ">>> qml.math.get_dtype_name(tf.Variable(0.1))\n"
-    "'float32'"
-)
+
+
+def get_dtype_name(x) -> str:
+    """An interface independent way of getting the name of the datatype.
+
+    >>> x = tf.Variable(0.1)
+    >>> qml.math.get_dtype_name(tf.Variable(0.1))
+    'float32'
+    """
+    return ar.get_dtype_name(x)
 
 
 class NumpyMimic(ar.autoray.NumpyMimic):
