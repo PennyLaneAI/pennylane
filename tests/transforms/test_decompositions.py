@@ -101,11 +101,13 @@ class TestQubitUnitaryZYZDecomposition:
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
-        for i in range(4):
+        # Check initial 3 gates
+        for i in range(3):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
 
         # Check the global phase
+        assert isinstance(obtained_gates[3], expected_gates[3]), "Incorrect type of gate"
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
@@ -225,10 +227,12 @@ class TestQubitUnitaryXYXDecomposition:
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
-        for i in range(4):
+        # check first 3 gates
+        for i in range(3):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
         # Check the global phase
+        assert isinstance(obtained_gates[3], expected_gates[3]), "Incorrect type of gate"
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
@@ -371,11 +375,13 @@ class TestQubitUnitaryZXZDecomposition:
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
-        for i in range(4):
+        # Check first 3 gates
+        for i in range(3):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
 
         # Check the global phase
+        assert isinstance(obtained_gates[3], expected_gates[3]), "Incorrect type of gate"
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
@@ -512,11 +518,13 @@ class TestOneQubitUnitaryDecomposition:
 
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
-        for i in range(4):
+        # Check first 3 gates
+        for i in range(3):
             assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
 
         # Check the global phase
+        assert isinstance(obtained_gates[3], expected_gates[3]), "Incorrect type of gate"
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[3].parameters[:1]), expected_params[3]
         ), "Incorrect global phase"
