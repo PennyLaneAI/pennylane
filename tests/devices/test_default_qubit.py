@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
 # pylint: disable=too-many-arguments,too-few-public-methods
 # pylint: disable=protected-access,cell-var-from-loop
+import warnings
 import cmath
 
 import math
@@ -614,7 +615,7 @@ class TestApply:
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
-    @pytest.mark.parametrize("wire", [0, 1, 2])
+    @pytest.mark.parametrize("wire", [None, 0, 1, 2])
     @pytest.mark.parametrize(
         "input_state", ([1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1])
     )
@@ -625,7 +626,9 @@ class TestApply:
         qubit_device_3_wires._state = np.array(input_state, dtype=qubit_device_3_wires.C_DTYPE)
         phase = 0.234
 
-        qubit_device_3_wires.apply([qml.GlobalPhase(phase, wires=[wire])])
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action="ignore", message="GlobalPhase received wires")
+            qubit_device_3_wires.apply([qml.GlobalPhase(phase, wires=[wire])])
         expected_output = np.array(input_state) * np.exp(-1j * phase)
 
         assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
