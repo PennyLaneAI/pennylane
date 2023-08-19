@@ -245,9 +245,6 @@ class GlobalPhase(Operation):
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""
 
-    def _flatten(self):
-        return self.data, (self.wires, tuple())
-
     def __init__(self, phi, wires=None, id=None):
         if wires is not None:
             warn(
@@ -333,7 +330,7 @@ class GlobalPhase(Operation):
         return []
 
     def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
+        n_wires = len(wire_order) if wire_order else 1
         return self.compute_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
