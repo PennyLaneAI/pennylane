@@ -16,7 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
-from warnings import warn
+import numpy as np
 from scipy import sparse
 
 import pennylane as qml
@@ -246,12 +246,7 @@ class GlobalPhase(Operation):
     """int: Number of wires that the operator acts on."""
 
     def __init__(self, phi, wires=None, id=None):
-        if wires is not None:
-            warn(
-                f"GlobalPhase received wires={wires}. Note that the operation will be applied "
-                "to all wires regardless."
-            )
-        super().__init__(phi, wires=[], id=id)
+        super().__init__(phi, wires=wires or [], id=id)
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -330,7 +325,7 @@ class GlobalPhase(Operation):
         return []
 
     def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else 1
+        n_wires = len(wire_order) if wire_order else np.max([1, len(self.wires)])
         return self.compute_matrix(self.data[0], n_wires=n_wires)
 
     def adjoint(self):
