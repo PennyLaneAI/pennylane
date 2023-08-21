@@ -457,6 +457,7 @@ TODO
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Thomas Bromley,
 Isaac De Vlugt,
 Amintor Dusko,
 Stepan Fomichev,
