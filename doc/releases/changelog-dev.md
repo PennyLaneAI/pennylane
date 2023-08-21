@@ -181,7 +181,7 @@
   [(#4425)](https://github.com/PennyLaneAI/pennylane/pull/4425)
 
 * `qml.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
-  property. This property is merely used to set defaults for a workflow, and does not directly
+  property. This property is only used to set defaults for a workflow, and does not directly
   influence the number of shots used in executions or derivatives.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
