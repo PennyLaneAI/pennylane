@@ -6,35 +6,61 @@
 
 <h4>Encode matrices using a linear combination of unitaries ⛓️️</h4>
 
-* It is now possible to encode a matrix `A` into a quantum circuit by decomposing the matrix into
+* It is now possible to encode an operator `A` into a quantum circuit by decomposing it into
   a linear combination of unitaries and using the
   [StatePrep](https://docs.pennylane.ai/en/stable/code/api/pennylane.StatePrep.html) and
   [Select](https://docs.pennylane.ai/en/stable/code/api/pennylane.Select.html) operations to input
-  the coefficients and unitaries, respectively.
-  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  the coefficients and unitaries, respectively, into a quantum circuit.
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
   [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
-  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
-* A new operation called `qml.Select` is available. It applies specific input operations depending on the
-  state of the designated control qubits.
-  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+  Consider an operator `A` composed of a linear combination of Pauli terms:
 
   ```pycon
-  >>> dev = qml.device('default.qubit',wires=4)
-  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  >>>     qml.Select(ops,control_wires=[0,1])
-  >>>     return qml.state()
-  ...
-  >>> print(qml.draw(circuit,expansion_strategy='device')())
-  0: ─╭○─╭○─╭●─╭●────┤  State
-  1: ─├○─├●─├○─├●────┤  State
-  2: ─╰X─│──╰Y─├SWAP─┤  State
-  3: ────╰X────╰SWAP─┤  State
+  >>> A = qml.PauliX(2) + 2 * qml.PauliY(2) + 3 * qml.PauliZ(2)
+  ```
+
+  A decomposable block encoding circuit can be created:
+
+  ```python
+  def block_encode(A, control_wires):
+      probs = A.coeffs / np.sum(A.coeffs)
+      state = np.pad(np.sqrt(probs, dtype=complex), (0, 1))
+      unitaries = A.ops
+
+      qml.StatePrep(state, wires=control_wires)
+      qml.Select(unitaries, control_wires=control_wires)
+      qml.adjoint(qml.StatePrep)(state, wires=control_wires)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(block_encode, show_matrices=False)(A, control_wires=[0, 1]))
+  0: ─╭|Ψ⟩─╭●──────────╭|Ψ⟩†─┤  
+  1: ─╰|Ψ⟩─├●──────────╰|Ψ⟩†─┤  
+  2: ──────╰Select(M0)───────┤  
+  ```
+
+  This circuit can be used as a building block within a larger QNode to perform algorithms such as
+  the [quantum singular value transformation](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html).
+
+* Decomposing a Hermitian matrix into a linear combination of Pauli words is now faster and also
+  differentiable.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+
+  ```python
+  def find_coeffs(p):
+      mat = np.array([[3, p], [p, 3]])
+      A = qml.pauli_decompose(mat)
+      return A.coeffs
+  ```
+
+  ```pycon
+  >>> from jax import numpy as np
+  >>> jax.jacobian(find_coeffs)(np.array(2.))
+  Array([0., 1.], dtype=float32, weak_type=True)
   ```
 
 <h4>Reset and reuse qubits after mid-circuit measurements ♻️</h4>
