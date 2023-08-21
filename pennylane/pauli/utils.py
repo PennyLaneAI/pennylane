@@ -1366,15 +1366,11 @@ def simplify(h, cutoff=1.0e-12):
     for i, op in enumerate(h.ops):
         op = qml.operation.Tensor(op).prune()
         op = qml.pauli.pauli_word_to_string(op, wire_map=wiremap)
-        if not any(op is o_op for o_op in o):
+        if op not in o:
             c.append(h.coeffs[i])
             o.append(op)
         else:
-            for j, o_op in enumerate(o):
-                if o_op is op:
-                    break
-            # pylint: disable=undefined-loop-variable
-            c[j] += h.coeffs[i]
+            c[o.index(op)] += h.coeffs[i]
 
     coeffs, ops = [], []
     c = qml.math.convert_like(c, c[0])
