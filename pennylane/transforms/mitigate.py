@@ -521,7 +521,7 @@ def mitigate_with_zne(
     # if folding was a batch transform, ignore the processing function
     if isinstance(tapes[0], tuple) and isinstance(tapes[0][0], list) and callable(tapes[0][1]):
         tapes = [t[0] for t, _ in tapes]
-    
+
     prep_ops = tape.operations[: tape.num_preps]
     out_tapes = [QuantumScript(prep_ops + tape_.operations, tape.measurements) for tape_ in tapes]
 
