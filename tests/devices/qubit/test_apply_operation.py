@@ -14,7 +14,6 @@
 """
 Tests the apply_operation functions from devices/qubit
 """
-import warnings
 import pytest
 
 import numpy as np
@@ -235,9 +234,7 @@ class TestTwoQubitStateSpecialCases:
         phase = qml.math.asarray(-2.3, like=ml_framework)
         shift = qml.math.exp(-1j * qml.math.cast(phase, np.complex128))
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(action="ignore", message="GlobalPhase received wires")
-            new_state_with_wire = method(qml.GlobalPhase(phase, wire), initial_state)
+        new_state_with_wire = method(qml.GlobalPhase(phase, wire), initial_state)
         new_state_no_wire = method(qml.GlobalPhase(phase), initial_state)
 
         assert qml.math.allclose(shift * initial_state, new_state_with_wire)
