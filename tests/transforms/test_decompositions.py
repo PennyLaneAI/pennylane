@@ -118,7 +118,9 @@ class TestQubitUnitaryZYZDecomposition:
             atol=1e-7,
         ), "Incorrect ZYZ rotation angles"
 
-        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        obtained_mat = reduce(
+            np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        )
 
         if len(obtained_mat.shape) == 2:
             U = [U]
@@ -243,7 +245,9 @@ class TestQubitUnitaryXYXDecomposition:
             atol=1e-7,
         ), "Incorrect XYX rotation angles"
 
-        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        obtained_mat = reduce(
+            np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        )
 
         if len(obtained_mat.shape) == 2:
             U = [U]
@@ -392,7 +396,9 @@ class TestQubitUnitaryZXZDecomposition:
             atol=1e-7,
         ), "Incorrect ZXZ rotation angles"
 
-        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        obtained_mat = reduce(
+            np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        )
 
         if len(obtained_mat.shape) == 2:
             U = [U]
@@ -535,7 +541,9 @@ class TestOneQubitUnitaryDecomposition:
             atol=1e-7,
         ), "Incorrect rotation angles"
 
-        obtained_mat = reduce(np.matmul, [op.matrix() for op in reversed(obtained_gates)])
+        obtained_mat = reduce(
+            np.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        )
 
         if len(obtained_mat.shape) == 2:
             U = [U]
