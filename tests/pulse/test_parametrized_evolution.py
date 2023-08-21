@@ -202,6 +202,7 @@ class TestInitialization:
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, mxstep=10)
 
+        # pylint:disable = use-implicit-booleaness-not-comparison
         assert ev.parameters == []
         assert ev.num_params == 0
         assert ev.t is None
@@ -304,24 +305,69 @@ class TestInitialization:
         assert compare_to.hash != diff_ret_intmdt.hash
         assert compare_to.hash != diff_complementary.hash
 
-
     @pytest.mark.parametrize(
-        "params", [[0.2, [1, 2, 3]], [0.2, np.array([1, 2, 3])], [0.2, (1, 2, 3)]]
+        "params",
+        [
+            [0.2, [1, 2, 3], [4, 5, 6, 7]],
+            [0.2, np.array([1, 2, 3]), np.array([4, 5, 6, 7])],
+            [0.2, (1, 2, 3), (4, 5, 6, 7)],
+        ],
     )
     def test_label(self, params):
         """Test that the label displays correctly with and without decimal and base_label"""
-        H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + np.polyval * qml.PauliY(1)
+        H = (
+            qml.PauliX(1)
+            + qml.pulse.constant * qml.PauliY(0)
+            + np.polyval * qml.PauliY(1)
+            + np.polyval * qml.PauliY(1)
+        )
         op = qml.evolve(H)(params, 2)
+        cache = {"matrices": []}
 
         assert op.label() == "ParametrizedEvolution"
+        assert op.label(decimals=2) == "ParametrizedEvolution"
         assert (
-            op.label(decimals=2) == "ParametrizedEvolution\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+            op.label(decimals=2, cache=cache)
+            == "ParametrizedEvolution\n(p=[0.20,M0,M1], t=[0. 2.])"
         )
         assert op.label(base_label="my_label") == "my_label"
         assert (
-            op.label(base_label="my_label", decimals=2)
-            == "my_label\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+            op.label(base_label="my_label", decimals=2, cache=cache)
+            == "my_label\n(p=[0.20,M0,M1], t=[0. 2.])"
         )
+
+    def test_label_reuses_cached_matrices(self):
+        """Test that the matrix is reused if it already exists in the cache, instead
+        of being added to the cache a second time"""
+
+        H = (
+            qml.PauliX(1)
+            + qml.pulse.constant * qml.PauliY(0)
+            + np.polyval * qml.PauliY(1)
+            + np.polyval * qml.PauliY(2)
+        )
+        cache = {"matrices": []}
+
+        params1 = [3, np.array([0.23, 0.47, 5]), np.array([3.4, 6.8])]
+        params2 = [5.67, np.array([0.23, 0.47, 5]), np.array([[3.7, 6.2], [1.2, 4.6]])]
+        op1 = qml.evolve(H)(params1, 2)
+        op2 = qml.evolve(H)(params2, 2)
+
+        assert (
+            op1.label(decimals=2, cache=cache)
+            == "ParametrizedEvolution\n(p=[3.00,M0,M1], t=[0. 2.])"
+        )
+        assert len(cache["matrices"]) == 2
+        assert np.all(cache["matrices"][0] == params1[1])
+        assert np.all(cache["matrices"][1] == params1[2])
+
+        assert (
+            op2.label(decimals=2, cache=cache)
+            == "ParametrizedEvolution\n(p=[5.67,M0,M2], t=[0. 2.])"
+        )
+        assert len(cache["matrices"]) == 3
+        assert np.all(cache["matrices"][0] == params2[1])
+        assert np.all(cache["matrices"][2] == params2[2])
 
     def test_raises_wrong_number_of_params(self):
         """Test that an error is raised when instantiating (or calling) a
@@ -344,7 +390,6 @@ class TestInitialization:
         with pytest.raises(ValueError, match="The length of the params argument and the number"):
             # Calling
             op(params, 0.2)
-
 
 
 @pytest.mark.jax
