@@ -167,7 +167,9 @@ def _batch_transform(
                 "device batch transforms cannot be turned off with the new device interface.",
                 UserWarning,
             )
-        return device.preprocess(tapes, config)
+        device_transform_program, config = device.preprocess(tapes, config)
+        tapes, batch_fn = device_transform_program(tapes)
+        return tapes, batch_fn, config
     if device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
         return *qml.transforms.map_batch_transform(dev_batch_transform, tapes), config

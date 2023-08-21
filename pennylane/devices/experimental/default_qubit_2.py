@@ -208,26 +208,16 @@ class DefaultQubit2(Device):
         * Currently does not intrinsically support parameter broadcasting
 
         """
-        is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             circuits = [circuits]
-            is_single_circuit = True
 
         # prefer config over device value
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._validate_multiprocessing(max_workers, circuits)
 
-        batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
+        transform_program, config = preprocess(circuits, execution_config=execution_config)
 
-        if is_single_circuit:
-
-            def convert_batch_to_single_output(results: ResultBatch) -> Result:
-                """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
-                return post_processing_fn(results)[0]
-
-            return batch, convert_batch_to_single_output, config
-
-        return batch, post_processing_fn, config
+        return transform_program, config
 
     def execute(
         self,

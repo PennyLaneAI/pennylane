@@ -17,7 +17,7 @@ that they are supported for execution by a device."""
 # pylint: disable=protected-access
 from dataclasses import replace
 import os
-from typing import Generator, Callable, Tuple, Union
+from typing import Generator, Callable, Tuple, Union, Sequence
 import warnings
 from functools import partial
 
@@ -34,6 +34,7 @@ from pennylane.measurements import (
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
+from pennylane.transforms.core import transform, TransformContainer, TransformProgram
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
@@ -133,9 +134,10 @@ def validate_multiprocessing_workers(max_workers):
         )
 
 
+@transform
 def validate_and_expand_adjoint(
     circuit: qml.tape.QuantumTape,
-) -> Union[qml.tape.QuantumTape, DeviceError]:  # pylint: disable=protected-access
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Function for validating that the operations and observables present in the input circuit
     are valid for adjoint differentiation.
 
@@ -175,25 +177,34 @@ def validate_and_expand_adjoint(
     measurements = []
     for m in circuit.measurements:
         if not isinstance(m, ExpectationMP):
-            return DeviceError(
+            raise DeviceError(
                 "Adjoint differentiation method does not support "
                 f"measurement {m.__class__.__name__}."
             )
 
         if not m.obs.has_matrix:
-            return DeviceError(
+            raise DeviceError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
 
         measurements.append(m)
 
     new_ops = circuit.operations[: circuit.num_preps] + new_ops
-    return qml.tape.QuantumScript(new_ops, measurements, shots=circuit.shots)
+    tape = qml.tape.QuantumScript(new_ops, measurements, shots=circuit.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [tape], null_postprocessing
 
 
+@transform
 def validate_measurements(
-    circuit: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
-):
+    tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Check that the circuit contains a valid set of measurements. A valid
     set of measurements is defined as:
 
@@ -205,12 +216,19 @@ def validate_measurements(
     If the circuit has an invalid set of measurements, then an error is raised.
 
     Args:
-        circuit (.QuantumTape): the circuit to validate
+        tape (.QuantumTape): the circuit to validate
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
+
+    Returns:
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
-    if not circuit.shots:
-        for m in circuit.measurements:
+    if not tape.shots:
+        for m in tape.measurements:
             if not isinstance(m, StateMeasurement):
                 raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
     else:
@@ -221,14 +239,23 @@ def validate_measurements(
                 f"gradient methods; got {execution_config.gradient_method}"
             )
 
-        for m in circuit.measurements:
+        for m in tape.measurements:
             if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
                 raise DeviceError(
                     f"Circuits with finite shots must only contain SampleMeasurements, ClassicalShadowMP, or ShadowExpvalMP; got {m}"
                 )
 
+        def null_postprocessing(results):
+            """A postprocesing function returned by a transform that only converts the batch of results
+            into a result for a single ``QuantumTape``.
+            """
+            return results[0]
 
-def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
+        return [tape], null_postprocessing
+
+
+@transform
+def expand_fn(circuit: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Method for expanding or decomposing an input circuit.
 
     This method expands the tape if:
@@ -240,8 +267,11 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
         circuit (.QuantumTape): the circuit to expand.
 
     Returns:
-        .QuantumTape: The expanded/decomposed circuit, such that the device
-        will natively support all operations.
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
 
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
@@ -273,52 +303,13 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
         elif observable.name not in _observables:
             raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
 
-    return circuit
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
 
-
-def batch_transform(
-    circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
-) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
-    """Apply a differentiable batch transform for preprocessing a circuit
-    prior to execution.
-
-    By default, this method contains logic for generating multiple
-    circuits, one per term, of a circuit that terminates in ``expval(Sum)``.
-
-    .. warning::
-
-        This method will be tracked by autodifferentiation libraries,
-        such as Autograd, JAX, TensorFlow, and Torch. Please make sure
-        to use ``qml.math`` for autodiff-agnostic tensor processing
-        if required.
-
-    Args:
-        circuit (.QuantumTape): the circuit to preprocess
-        execution_config (.ExecutionConfig): execution configuration with configurable
-            options for the execution.
-
-    Returns:
-        tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
-    """
-    # Check whether the circuit was broadcasted or if the diff method is anything other than adjoint
-    if circuit.batch_size is None or execution_config.gradient_method != "adjoint":
-        # If the circuit wasn't broadcasted, or if built-in PennyLane broadcasting
-        # can be used, then no action required
-        circuits = [circuit]
-
-        def batch_fn(res: ResultBatch) -> Result:
-            """A post-processing function to convert the results of a batch of
-            executions into the result of a single executiion."""
-            return res[0]
-
-        return circuits, batch_fn
-
-    # Expand each of the broadcasted circuits
-    tapes, batch_fn = qml.transforms.broadcast_expand(circuit)
-
-    return tapes, batch_fn
+    return [circuit], null_postprocessing
 
 
 def _update_config(config: ExecutionConfig) -> ExecutionConfig:
@@ -359,20 +350,26 @@ def preprocess(
             options for the execution.
 
     Returns:
-        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-        a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
+        TransformProgram, ExecutionConfig: A transform program and a configuration with originally unset specifications filled in.
     """
-    for c in circuits:
-        validate_measurements(c, execution_config)
+    transform_program = TransformProgram()
 
-    circuits = tuple(expand_fn(c) for c in circuits)
+    # Validate measurement
+    valid_meas_transform = TransformContainer(validate_measurements, execution_config)
+    transform_program.push_back(valid_meas_transform)
+
+    # Circuit expand
+    expand_transform = TransformContainer(expand_fn)
+    transform_program.push_back(expand_transform)
+
+    # Adjoint expand
     if execution_config.gradient_method == "adjoint":
-        circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
-        for circuit_or_error in circuits:
-            if isinstance(circuit_or_error, DeviceError):
-                raise circuit_or_error  # it's an error
+        expand_adjoint_transform = TransformContainer(validate_and_expand_adjoint)
+        transform_program.push_back(expand_adjoint_transform)
 
-    transform = partial(batch_transform, execution_config=execution_config)
-    circuits, batch_fn = qml.transforms.map_batch_transform(transform, circuits)
+    ### Broadcast expand
+    if circuits[0].batch_size is not None or execution_config.gradient_method == "adjoint":
+        broadcast_expand_transform = TransformContainer(qml.transforms.broadcast_expand)
+        transform_program.push_back(broadcast_expand_transform)
 
-    return circuits, batch_fn, _update_config(execution_config)
+    return transform_program, _update_config(execution_config)
