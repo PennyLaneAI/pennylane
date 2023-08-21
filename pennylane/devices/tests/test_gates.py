@@ -111,7 +111,7 @@ ops = {
     "Adjoint(SISWAP)": qml.adjoint(qml.SISWAP(wires=[0, 1])),
     "OrbitalRotation": qml.OrbitalRotation(0, wires=[0, 1, 2, 3]),
     "FermionicSWAP": qml.FermionicSWAP(0, wires=[0, 1]),
-    "GlobalPhase": qml.GlobalPhase(0.123, wires=[0]),
+    "GlobalPhase": qml.GlobalPhase(0.123, wires=[0, 1, 2, 3]),
 }
 
 all_ops = ops.keys()
