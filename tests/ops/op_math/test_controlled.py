@@ -141,7 +141,7 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 0
-        assert op.parameters == []
+        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert op.data == ()
 
         assert op.num_wires == 4
@@ -311,7 +311,7 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
 
-    @pytest.mark.parametrize("value", ("_ops", "_prep", None))
+    @pytest.mark.parametrize("value", ("_ops", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
 
@@ -631,7 +631,7 @@ class TestQueuing:
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        assert q.queue[0] == op
+        assert qml.equal(q.queue[0], op)
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -983,6 +983,8 @@ class TestDifferentiation:
         """Test differentiation using JAX"""
 
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         jnp = jax.numpy
 
@@ -1750,6 +1752,8 @@ class TestCtrlTransformDifferentiation:
         """Test differentiation using JAX"""
 
         import jax
+
+        jax.config.update("jax_enable_x64", True)
 
         jnp = jax.numpy
 
