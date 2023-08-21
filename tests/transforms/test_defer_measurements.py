@@ -100,7 +100,8 @@ class TestQNode:
         assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
         spy.assert_called_once()
 
-        deferred_tape = qml.defer_measurements(qnode1.qtape)
+        deferred_tapes, _ = qml.defer_measurements(qnode1.qtape)
+        deferred_tape = deferred_tapes[0]
         assert isinstance(deferred_tape.operations[5], qml.ops.Controlled)
         assert qml.equal(deferred_tape.operations[5].base, qml.PauliZ(2))
         assert deferred_tape.operations[5].hyperparameters["control_wires"] == qml.wires.Wires(0)
@@ -139,13 +140,15 @@ class TestQNode:
 
         assert spy.call_count == 2
 
-        deferred_tape1 = qml.defer_measurements(qnode1.qtape)
+        deferred_tapes1, _ = qml.defer_measurements(qnode1.qtape)
+        deferred_tape1 = deferred_tapes1[0]
         assert len(deferred_tape1.wires) == 4
         assert len(deferred_tape1.operations) == 6
 
         assert np.allclose(res1, res2)
 
-        deferred_tape2 = qml.defer_measurements(qnode2.qtape)
+        deferred_tapes2, _ = qml.defer_measurements(qnode2.qtape)
+        deferred_tape2 = deferred_tapes2[0]
         assert len(deferred_tape2.wires) == 3
         assert len(deferred_tape2.operations) == 4
 
@@ -1094,7 +1097,8 @@ class TestQubitReset:
             qml.expval(qml.PauliZ(2)),
         ]
 
-        deferred_tape = qml.defer_measurements(qnode.qtape)
+        deferred_tapes, _ = qml.defer_measurements(qnode.qtape)
+        deferred_tape = deferred_tapes[0]
         assert len(deferred_tape.circuit) == len(expected_circuit)
         assert all(
             qml.equal(actual, expected)

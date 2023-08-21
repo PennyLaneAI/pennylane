@@ -135,6 +135,8 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
+    new_operations = []
+
     # Find wires that are reused after measurement
     measured_wires = set()
     reused_measurement_wires = set()
@@ -160,10 +162,11 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             # Only store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires:
                 control_wires[op.id] = cur_wire
-
-                qml.CNOT([op.wires[0], cur_wire])
+                with QueuingManager.stop_recording():
+                    new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
                 if op.reset:
-                    qml.CNOT([cur_wire, op.wires[0]])
+                    with QueuingManager.stop_recording():
+                        new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
 
                 cur_wire += 1
             else:
@@ -171,7 +174,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
-                new_operations.extend(_add_control_gate(op, measured_wires))
+                new_operations.extend(_add_control_gate(op, control_wires))
         else:
             new_operations.append(op)
 
@@ -189,8 +192,6 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         return results[0]
 
     return [new_tape], null_postprocessing
-
-    return tape._qfunc_output  # pylint: disable=protected-access
 
 
 def _add_control_gate(op, control_wires):
