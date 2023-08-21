@@ -25,6 +25,10 @@
   3: ────╰X────╰SWAP─┤  State
   ```
 
+* `qml.pauli_decompose` is now exponentially faster and differentiable.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+
 <h4>Reset and reuse qubits after mid-circuit measurements ♻️</h4>
 
 * `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
@@ -101,6 +105,12 @@
 
 * `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli`, or `MultiControlledX` operation instead of `Controlled(PauliX)`.
   [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
+
+* PennyLane no longer directly relies on `Operator.__eq__`.
+  [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
+
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
 <h4>Transforms</h4>
 
@@ -203,48 +213,39 @@
 * Readability improvements and stylistic changes have been made to `pennylane/interfaces/jax_jit_tuple.py`
   [(#4379)](https://github.com/PennyLaneAI/pennylane/pull/4379/)
 
-* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
-  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
+* CI now runs tests with TensorFlow 2.13.0
+  [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
-* `qml.pauli_decompose` is now exponentially faster and differentiable.
-  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
-  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+* `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
+  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
+
+
+
+
+<h4>Improvements to machine learning library interfaces</h4>
 
 * `qml.interfaces.set_shots` now accepts a `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
-* `qml.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
-  property. This property is merely used to set defaults for a workflow, and does not directly
-  influence the number of shots used in executions or derivatives.
-  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
-
-* PennyLane no longer directly relies on `Operator.__eq__`.
-  [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
-
-* If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
-  seeded from NumPy's global random number generator.
-  [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
-
-* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
-  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
-  
 * `pennylane/interfaces` has been refactored. The `execute_fn` passed to the machine learning framework boundaries 
   is now responsible for converting parameters to NumPy. The gradients module can now handle TensorFlow parameters,
   but gradient tapes now retain the original `dtype` instead of converting to `float64`.  This may cause instability 
   with finite-difference differentiation and `float32` parameters. The machine learning boundary functions are now uncoupled from their legacy counterparts.
   [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
 
+<h4>Next-generation device API</h4>
+
+* `qml.devices.experimental.Device` now accepts a shots keyword argument and has a `shots`
+  property. This property is merely used to set defaults for a workflow, and does not directly
+  influence the number of shots used in executions or derivatives.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
+
 * `Device.default_expand_fn()` has been updated to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
 * `expand_fn()` for `DefaultQubit2` has been updated to decompose `StatePrep` operations present in the middle of a circuit.
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
-
-* CI now runs tests with TensorFlow 2.13.0
-  [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
-
-* `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
-  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
 * `DefaultQubit2` now accepts a `max_workers` argument which controls multiprocessing.
   A `ProcessPoolExecutor` executes tapes asynchronously
@@ -253,6 +254,13 @@
   issue, say using JAX, TensorFlow, Torch, try setting `max_workers` to `None`.
   [(#4319)](https://github.com/PennyLaneAI/pennylane/pull/4319)
   [(#4425)](https://github.com/PennyLaneAI/pennylane/pull/4425)
+
+* The experimental `DefaultQubit2` device now supports computing VJPs and JVPs using the adjoint method.
+  [(#4374)](https://github.com/PennyLaneAI/pennylane/pull/4374)
+
+* If no seed is specified on initialization with `DefaultQubit2`, the local random number generator will be
+  seeded from NumPy's global random number generator.
+  [(#4394)](https://github.com/PennyLaneAI/pennylane/pull/4394)
 
 <h3>Breaking changes 💔</h3>
 
@@ -448,7 +456,6 @@
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
   [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
-
 
 <h3>Contributors ✍️</h3>
 
