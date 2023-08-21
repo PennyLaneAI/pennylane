@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.pytrees import register_pytree
 
 from .qscript import QuantumScript
 
@@ -472,3 +473,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     def __hash__(self):
         return QuantumScript.__hash__(self)
+
+
+register_pytree(QuantumTape, QuantumTape._flatten, QuantumTape._unflatten)
