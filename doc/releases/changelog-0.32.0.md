@@ -63,17 +63,43 @@
   Array([0., 1.], dtype=float32, weak_type=True)
   ```
 
-<h4>Reset and reuse qubits after mid-circuit measurements ♻️</h4>
+<h4>Reuse and reset qubits after mid-circuit measurements ♻️</h4>
 
-* `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
-  $|0\rangle$ computational basis state after measurement.
-  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+* PennyLane now allows you to define circuits that reuse a qubit wire after a mid-circuit
+  measurement has taken place. Optionally, the wire can also be reset to the `|0>` state.
+  [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402)
+  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
 
-* [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+  Post-measurement reset can be activated by setting `reset=True` when calling
+  [qml.measure](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
+  In this version of PennyLane, executing circuits with qubit reuse will result in the
+  [defer_measurements](https://docs.pennylane.ai/en/latest/code/api/pennylane.defer_measurements.html)
+  transform being applied. This transform replaces each reused wire with an additional qubit.
+  However, future releases of PennyLane will explore device-level support for qubit reuse without
+  consuming additional qubits.
 
+  Qubit reuse and reset is fully differentiable:
 
-  TODO: CODE EXAMPLE
+  ```python
+  dev = qml.device("default.qubit", wires=4)
 
+  @qml.qnode(dev)
+  def circuit(p):
+      qml.RX(p, wires=0)
+      m = qml.measure(0, reset=True)
+      qml.cond(m, qml.Hadamard)(1)
+
+      qml.RX(p, wires=0)
+      m = qml.measure(0)
+      qml.cond(m, qml.Hadamard)(1)
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> jax.grad(circuit)(0.4)
+  Array(-0.35867804, dtype=float32, weak_type=True)
+  ```
+  
 <h4>Monitor PennyLane's inner workings with Logging 📃</h4>
 
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
