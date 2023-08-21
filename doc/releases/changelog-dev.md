@@ -6,6 +6,18 @@
 
 <h4>Encode matrices using a linear combination of unitaries ⛓️️</h4>
 
+* It is now possible to encode a matrix `A` into a quantum circuit by decomposing the matrix into
+  a linear combination of unitaries and using the
+  [StatePrep](https://docs.pennylane.ai/en/stable/code/api/pennylane.StatePrep.html) and
+  [Select](https://docs.pennylane.ai/en/stable/code/api/pennylane.Select.html) operations to input
+  the coefficients and unitaries, respectively.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+  [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+  [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+
 * A new operation called `qml.Select` is available. It applies specific input operations depending on the
   state of the designated control qubits.
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
@@ -24,10 +36,6 @@
   2: ─╰X─│──╰Y─├SWAP─┤  State
   3: ────╰X────╰SWAP─┤  State
   ```
-
-* `qml.pauli_decompose` is now exponentially faster and differentiable.
-  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
-  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
 <h4>Reset and reuse qubits after mid-circuit measurements ♻️</h4>
 
@@ -234,6 +242,10 @@
 * The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
   [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+
+* `qml.pauli_decompose` is now exponentially faster and differentiable.
+  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
+  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
 * A function called `qml.math.fidelity_statevector` that computes the fidelity between two state vectors has been added.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
