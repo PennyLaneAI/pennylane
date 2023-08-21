@@ -168,7 +168,7 @@ class TestExpandFnValidation:
     def test_valid_tensor_observable(self):
         """Test that a valid tensor ovservable passes without error."""
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
-        assert expand_fn(tape) is tape
+        assert expand_fn(tape)[0][0] is tape
 
     def test_expand_fn_passes(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
