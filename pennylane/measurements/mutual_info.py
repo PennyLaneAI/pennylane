@@ -82,7 +82,7 @@ def mutual_info(wires0, wires1, log_base=None):
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-    return MutualInfoMP(wires=[wires0, wires1], log_base=log_base)
+    return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)
 
 
 class MutualInfoMP(StateMeasurement):
@@ -97,6 +97,10 @@ class MutualInfoMP(StateMeasurement):
         log_base (float): base for the logarithm
 
     """
+
+    def _flatten(self):
+        metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
+        return (None, None), metadata
 
     # pylint: disable=too-many-arguments
     def __init__(

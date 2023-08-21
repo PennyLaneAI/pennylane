@@ -232,6 +232,10 @@ class ClassicalShadowMP(MeasurementTransform):
         self.seed = seed
         super().__init__(wires=wires, id=id)
 
+    def _flatten(self):
+        metadata = (("wires", self.wires), ("seed", self.seed))
+        return (None, None), metadata
+
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
@@ -470,6 +474,17 @@ class ShadowExpvalMP(MeasurementTransform):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    def _flatten(self):
+        metadata = (
+            ("seed", self.seed),
+            ("k", self.k),
+        )
+        return (self.H,), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], **dict(metadata))
 
     def __init__(
         self,
