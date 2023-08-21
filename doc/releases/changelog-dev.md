@@ -4,11 +4,11 @@
 
 <h3>New features since last release</h3>
 
-<h4>QSVT block encoding</h4>
+<h4>Encode matrices using a linear combination of unitaries ⛓️️</h4>
 
+TODO
 
-
-<h4>Resetting Qubits</h4>
+<h4>Reset and reuse qubits after mid-circuit measurements ♻️</h4>
 
 * `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
   $|0\rangle$ computational basis state after measurement.
@@ -16,7 +16,7 @@
 
   TODO: CODE EXAMPLE
 
-<h4>Logging</h4>
+<h4>Monitor PennyLane's inner workings with Logging 📃</h4>
 
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
   [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
@@ -26,7 +26,7 @@
 * Provide users access to the logging configuration file path and improve the logging configuration structure.
   [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
 
-<h4>PySCF input states</h4>
+<h4>More input states for quantum chemistry calculations ⚛️</h4>
 
 * Functions are available to obtain a state vector from PySCF solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
