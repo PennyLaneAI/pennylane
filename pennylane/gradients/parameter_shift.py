@@ -33,6 +33,7 @@ from .general_shift_rules import (
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_multimeasure_not_broadcasted,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -852,7 +853,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
     # Convert all variance measurements on the tape into expectation values
     for i in var_indices:
-        obs = expval_tape._measurements[i].obs
+        obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
 
     # evaluate the analytic derivative of <A>
@@ -889,7 +890,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_observable(tape_with_obs_squared_expval._measurements[i].obs)
+            obs = _square_observable(tape_with_obs_squared_expval.measurements[i].obs)
             tape_with_obs_squared_expval._measurements[i] = qml.expval(op=obs)
 
         # Non-involutory observables are present; the partial derivative of <A^2>
@@ -950,7 +951,7 @@ def _var_param_shift_legacy(
 
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
-        obs = expval_tape._measurements[i].obs
+        obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
 
     # evaluate the analytic derivative of <A>
@@ -989,7 +990,7 @@ def _var_param_shift_legacy(
         for i in non_involutory:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_observable(expval_sq_tape._measurements[i].obs)
+            obs = _square_observable(expval_sq_tape.measurements[i].obs)
             expval_sq_tape._measurements[i] = qml.expval(op=obs)
 
         # Non-involutory observables are present; the partial derivative of <A^2>
@@ -1338,6 +1339,11 @@ def param_shift(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
+    transform_name = "parameter-shift rule"
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
+    assert_no_tape_batching(tape, transform_name)
+
     if not qml.active_return():
         return _param_shift_legacy(
             tape,
@@ -1348,10 +1354,6 @@ def param_shift(
             f0=f0,
             broadcast=broadcast,
         )
-
-    transform_name = "parameter-shift rule"
-    assert_no_state_returns(tape.measurements, transform_name)
-    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -1691,10 +1693,6 @@ def _param_shift_legacy(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    transform_name = "parameter-shift rule"
-    assert_no_state_returns(tape.measurements, transform_name)
-    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
-
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_legacy(tape)
 

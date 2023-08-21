@@ -223,7 +223,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
-        obs = expval_tape._measurements[i].obs
+        obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
 
     gradient_tapes = [expval_tape]
@@ -240,7 +240,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     for i in var_idx:
         # We need to calculate d<A^2>/dp; to do so, we replace the
         # observables A in the queue with A^2.
-        obs = expval_sq_tape._measurements[i].obs
+        obs = expval_sq_tape.measurements[i].obs
 
         # CV first-order observable
         # get the heisenberg representation
@@ -396,8 +396,11 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
         for obs in observable_descendents:
             # get the index of the descendent observable
-            idx = tape.observables.index(obs)
-            transformed_obs_idx.append(idx)
+            # pylint:disable=undefined-loop-variable
+            for obs_idx, tape_obs in enumerate(tape.observables):
+                if obs is tape_obs:
+                    break
+            transformed_obs_idx.append(obs_idx)
 
             transformed_obs = _transform_observable(obs, Z, dev_wires)
 
@@ -414,7 +417,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
             constants.append(constant)
 
-            g_tape._measurements[idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
+            g_tape._measurements[obs_idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
         g_tape._update_par_info()
 
         if not any(i is None for i in constants):

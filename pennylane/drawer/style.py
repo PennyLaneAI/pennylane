@@ -17,7 +17,8 @@ This module contains styles for using matplotlib graphics.
 To add a new style:
 * create a private function that modifies ``plt.rcParams``.
 * add an entry to the private dictionary ``_style_map``.
-* Add an entry to ``doc/code/qml.drawer.rst``
+* update the docstrings for ``use_style`` and ``draw_mpl``.
+* Add an entry to ``doc/code/qml_drawer.rst``
 * Add a test in ``tests/drawer/test_style.py``
 
 Use the decorator ``_needs_mpl`` on style functions to raise appropriate
@@ -28,6 +29,7 @@ errors if ``matplotlib`` is not installed.
 _has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
+    import matplotlib.font_manager as fm
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
@@ -132,6 +134,27 @@ def _sketch():
 
 
 @_needs_mpl
+def _pennylane():
+    """Apply the PennyLane style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    almost_black = "#151515"
+    plt.rcParams["figure.facecolor"] = "white"
+    plt.rcParams["savefig.facecolor"] = "white"
+    plt.rcParams["axes.facecolor"] = "#FFB5F1"
+    plt.rcParams["patch.facecolor"] = "#D5F0FD"
+    plt.rcParams["patch.edgecolor"] = almost_black
+    plt.rcParams["patch.linewidth"] = 2.0
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "black"
+    plt.rcParams["text.color"] = "black"
+    if "Quicksand" in fm.get_font_names():  # pragma: no cover
+        plt.rcParams["font.family"] = "Quicksand"
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["path.sketch"] = (1, 250, 1)
+
+
+@_needs_mpl
 def _sketch_dark():
     """Apply the sketch dark style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
@@ -154,6 +177,7 @@ _styles_map = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
     "sketch": _sketch,
+    "pennylane": _pennylane,
     "sketch_dark": _sketch_dark,
     "solarized_light": _solarized_light,
     "solarized_dark": _solarized_dark,
@@ -184,6 +208,7 @@ def use_style(style: str):
     * ``'black_white'``
     * ``'black_white_dark'``
     * ``'sketch'``
+    * ``'pennylane'``
     * ``'sketch_dark'``
     * ``'solarized_light'``
     * ``'solarized_dark'``
