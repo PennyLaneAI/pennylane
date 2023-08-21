@@ -329,6 +329,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.enable_return` and `qml.disable_return` have been deprecated. Please avoid calling
+  `disable_return`, as the old return system has been deprecated along with these switch functions.
+  [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
+
 * `qml.qchem.jordan_wigner` has been deprecated. Use `qml.jordan_wigner` instead.
   List input to define the fermionic operator has also been deprecated; the fermionic
   operators in the `qml.fermi` module should be used instead.
@@ -345,10 +349,6 @@
 * The method `tape.unwrap()` and corresponding `UnwrapTape` and `Unwrap` classes
   have been deprecated. Use `convert_to_numpy_parameters` instead.
   [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
-
-* `qml.enable_return` and `qml.disable_return` have been deprecated. Please avoid calling
-  `disable_return`, as the old return system has been deprecated along with these switch functions.
-  [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
 
 * The `mode` keyword argument in `QNode` has been deprecated, as it was only used in the
   old return system (which has also been deprecated). Please use `grad_on_execution` instead.
