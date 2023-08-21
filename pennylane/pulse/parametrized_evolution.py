@@ -559,10 +559,12 @@ class ParametrizedEvolution(Operation):
             if cache and isinstance(cache.get("matrices", None), list):
 
                 def _format_arraylike(x):
+                    for i, mat in enumerate(cache["matrices"]):
+                        if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                            return f"M{i}"
                     mat_num = len(cache["matrices"])
                     cache["matrices"].append(x)
-                    s = f"M{mat_num}"
-                    return s
+                    return f"M{mat_num}"
 
             else:
                 return op_label
