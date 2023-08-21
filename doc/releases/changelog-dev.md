@@ -6,7 +6,24 @@
 
 <h4>Encode matrices using a linear combination of unitaries ⛓️️</h4>
 
-TODO
+* A new operation called `qml.Select` is available. It applies specific input operations depending on the
+  state of the designated control qubits.
+  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
+
+  ```pycon
+  >>> dev = qml.device('default.qubit',wires=4)
+  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     return qml.state()
+  ...
+  >>> print(qml.draw(circuit,expansion_strategy='device')())
+  0: ─╭○─╭○─╭●─╭●────┤  State
+  1: ─├○─├●─├○─├●────┤  State
+  2: ─╰X─│──╰Y─├SWAP─┤  State
+  3: ────╰X────╰SWAP─┤  State
+  ```
 
 <h4>Reset and reuse qubits after mid-circuit measurements ♻️</h4>
 
@@ -55,25 +72,6 @@ TODO
 <h3>Improvements 🛠</h3>
 
 <h4>Operators</h4>
-
-* A new operation called `qml.Select` is available. It applies specific input operations depending on the
-  state of the designated control qubits.
-  [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
-
-  ```pycon
-  >>> dev = qml.device('default.qubit',wires=4)
-  >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  >>>     qml.Select(ops,control_wires=[0,1])
-  >>>     return qml.state()
-  ...
-  >>> print(qml.draw(circuit,expansion_strategy='device')())
-  0: ─╭○─╭○─╭●─╭●────┤  State
-  1: ─├○─├●─├○─├●────┤  State
-  2: ─╰X─│──╰Y─├SWAP─┤  State
-  3: ────╰X────╰SWAP─┤  State
-  ```
 
 * Any class inheriting from `Operator` is now automatically registered as a pytree with JAX.
   This unlocks the ability to jit functions of `Operator`.
