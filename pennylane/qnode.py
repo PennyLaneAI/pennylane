@@ -903,11 +903,15 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
+        num_wires = (
+            self.device.num_wires if isinstance(self.device, qml.Device) else len(self.tape.wires)
+        )
         for obj in self.tape.operations + self.tape.observables:
+            print(obj, num_wires, obj.wires)
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
                 and obj.wires
-                and len(obj.wires) != self.device.num_wires
+                and len(obj.wires) != num_wires
             ):
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")

@@ -245,7 +245,7 @@ class GlobalPhase(Operation):
     """int: Number of wires that the operator acts on."""
 
     def __init__(self, phi, wires=None, id=None):
-        super().__init__(phi, wires=wires or [], id=id)
+        super().__init__(phi, wires=[] if wires is None else wires, id=id)
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
