@@ -73,6 +73,12 @@
   restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
   calculations with single and double (SD) excitations.
 
+* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
+  [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
+
+* Input types and sources for external wavefunctions and operators for `qml.import_state` 
+  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+
 <h3>Improvements 🛠</h3>
 
 <h4>Making operators immutable and PyTrees</h4>
@@ -382,19 +388,13 @@
   some aspects of its use.
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
-* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
-  [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
-
-* Input types and sources for external wavefunctions and operators for `qml.import_state` 
-  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
-
 <h3>Bug fixes 🐛</h3>
-
-* `_copy_and_shift_params` no longer casts or converts integral types, it just relies on `+` and `*`'s casting rules in this case.
-  [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
 * `qml.Projector` is pickle-able again.
   [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
+
+* `_copy_and_shift_params` no longer casts or converts integral types, it just relies on `+` and `*`'s casting rules in this case.
+  [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
 * Sparse matrix calculations of `SProd`s containing a `Tensor` are now allowed. When using
   `Tensor.sparse_matrix()`, it is recommended to use the `wire_order` keyword argument over `wires`. 
