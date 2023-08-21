@@ -123,12 +123,11 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     if num_tapes is None:
         raise ValueError("The provided tape is not broadcasted.")
 
-    new_preps = _split_operations(tape._prep, num_tapes)
-    new_ops = _split_operations(tape._ops, num_tapes)
+    new_ops = _split_operations(tape.operations, num_tapes)
 
     output_tapes = []
-    for prep, ops in zip(new_preps, new_ops):
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, prep, shots=tape.shots)
+    for ops in new_ops:
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 

@@ -394,7 +394,7 @@ class TestDifferentiableZNE:
         """Test the output corresponds to the right number of operators according to Sec. II A 1) in  https://arxiv.org/abs/2005.10921"""
         x = 0.5
         circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
-        assert len(circuit._ops) == num_ops
+        assert len(circuit.operations) == num_ops
 
         folded, _ = qml.transforms.fold_global(circuit, lambda_)
 
@@ -403,7 +403,7 @@ class TestDifferentiableZNE:
         s = int(round(s * num_ops / 2))
 
         exp_total_new = num_ops * (2 * n + 1) + 2 * s
-        assert len(folded[0]._ops) == exp_total_new
+        assert len(folded[0].operations) == exp_total_new
 
     def test_global_fold_constant_result(self):
         """Ensuring that the folded circuits always yields the same results."""

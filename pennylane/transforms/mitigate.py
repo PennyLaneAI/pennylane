@@ -509,7 +509,7 @@ def mitigate_with_zne(
     extrapolate_kwargs = extrapolate_kwargs or {}
 
     tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
-    script_removed = QuantumScript(tape._ops)
+    script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
         [folding(script_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
@@ -521,8 +521,9 @@ def mitigate_with_zne(
     # if folding was a batch transform, ignore the processing function
     if isinstance(tapes[0], tuple) and isinstance(tapes[0][0], list) and callable(tapes[0][1]):
         tapes = [t[0] for t, _ in tapes]
-
-    out_tapes = [QuantumScript(tape_.operations, tape.measurements, tape._prep) for tape_ in tapes]
+    
+    prep_ops = tape.operations[: tape.num_preps]
+    out_tapes = [QuantumScript(prep_ops + tape_.operations, tape.measurements) for tape_ in tapes]
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
