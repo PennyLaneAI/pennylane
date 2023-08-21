@@ -283,19 +283,27 @@
   [(#4317)](https://github.com/PennyLaneAI/pennylane/pull/4317)
 
 * The `grouping_type` and `grouping_method` keyword arguments have been removed from `qchem.molecular_hamiltonian`.
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
 * `zyz_decomposition` and `xyx_decomposition` have been removed. Use `one_qubit_decomposition` instead.
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
 * `LieAlgebraOptimizer` has been removed. Use `RiemannianGradientOptimizer` instead.
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
 * `Operation.base_name` has been removed.
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
 * `QuantumScript.name` has been removed.
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
 * `qml.math.reduced_dm` has been removed. Use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
-* The ``qml.specs`` dictionary no longer supports direct key access to certain keys. Instead,
-  these quantities can be accessed as fields of the new ``Resources`` object saved under
+* The ``qml.specs`` dictionary no longer supports direct key access to certain keys. 
+  [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
+
+  Instead, these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:
 
   - `num_operations` is no longer supported, use `specs_dict["resources"].num_gates`
