@@ -194,14 +194,14 @@
 
 <h4>Improvements to machine learning library interfaces</h4>
 
-* `qml.interfaces.set_shots` now accepts a `Shots` object as well as `int`'s and tuples of `int`'s.
-  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
-
 * `pennylane/interfaces` has been refactored. The `execute_fn` passed to the machine learning framework boundaries 
   is now responsible for converting parameters to NumPy. The gradients module can now handle TensorFlow parameters,
   but gradient tapes now retain the original `dtype` instead of converting to `float64`.  This may cause instability 
   with finite-difference differentiation and `float32` parameters. The machine learning boundary functions are now uncoupled from their legacy counterparts.
   [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
+
+* `qml.interfaces.set_shots` now accepts a `Shots` object as well as `int`'s and tuples of `int`'s.
+  [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
 
 * Readability improvements and stylistic changes have been made to `pennylane/interfaces/jax_jit_tuple.py`
   [(#4379)](https://github.com/PennyLaneAI/pennylane/pull/4379/)
@@ -219,14 +219,24 @@
 
 <h4>Other improvements</h4>
 
-* All tests in CI and pre-commit hooks now enable linting.
-  [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
+* The `qchem` module has been upgraded to use the fermionic operators of the `fermi` module.
+  [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
+
+* `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
+  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
+* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
+  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
+  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * A function called `qml.math.fidelity_statevector` that computes the fidelity between two state vectors has been added.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
-* The `qchem` module has been upgraded to use the fermionic operators of the `fermi` module.
-  [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
+* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli`, or `MultiControlledX` operation instead of `Controlled(PauliX)`.
+  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
+
+* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
+  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
 * The `qchem` functions `primitive_norm` and `contracted_norm` have been modified to be compatible with
   higher versions of SciPy. The private function `_fac2` for computing double factorials has also been added.
@@ -239,21 +249,11 @@
 * CI now runs tests with TensorFlow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
-* `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
-  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
-
-* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
-  [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
-  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+* All tests in CI and pre-commit hooks now enable linting.
+  [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
 
 * The default label for a `StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
-
-* `qml.ctrl(qml.PauliX)` returns a `CNOT`, `Toffoli`, or `MultiControlledX` operation instead of `Controlled(PauliX)`.
-  [(#4339)](https://github.com/PennyLaneAI/pennylane/pull/4339)
-
-* When given a callable, `qml.ctrl` now does its custom pre-processing on all queued operators from the callable.
-  [(#4370)](https://github.com/PennyLaneAI/pennylane/pull/4370)
 
 * `Device.default_expand_fn()` has been updated to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
