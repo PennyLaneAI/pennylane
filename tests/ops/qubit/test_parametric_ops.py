@@ -2545,6 +2545,30 @@ class TestGrad:
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
+    def test_globalphase_autograd_grad(self, tol, dev_name, diff_method):
+        """Test the gradient with Autograd for a controlled GlobalPhase."""
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("GlobalPhase does not support adjoint diff")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.Hadamard(1)
+            qml.ctrl(qml.GlobalPhase(x), 1)
+            qml.Hadamard(1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = npp.array(2.1, requires_grad=True)
+
+        expected = [-0.8632093]
+
+        res = qml.grad(circuit)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxy_jax_grad(self, tol, dev_name, diff_method, phi):
@@ -2867,6 +2891,33 @@ class TestGrad:
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
+    def test_globalphase_tf_grad(self, tol, dev_name, diff_method):
+        """Test the gradient with Tensorflow for a controlled GlobalPhase."""
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("GlobalPhase does not support adjoint diff")
+        import tensorflow as tf
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.Hadamard(1)
+            qml.ctrl(qml.GlobalPhase(x), 1)
+            qml.Hadamard(1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = tf.Variable(2.1, dtype=tf.complex128)
+
+        expected = [-0.8632093]
+
+        with tf.GradientTape() as tape:
+            result = circuit(phi)
+        res = tape.gradient(result, phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
     def test_qnode_with_rx_and_state_jacobian_jax(self, par, tol):
@@ -2994,6 +3045,64 @@ class TestGrad:
 
         computed_grad = jax.grad(circ, argnums=0)(phi)
         assert np.isclose(computed_grad, expected_grad)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
+    def test_globalphase_jax_grad(self, tol, dev_name, diff_method):
+        """Test the gradient with JAX for a controlled GlobalPhase."""
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("GlobalPhase does not support adjoint diff")
+
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.Hadamard(1)
+            qml.ctrl(qml.GlobalPhase(x), 1)
+            qml.Hadamard(1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = jnp.array(2.1)
+
+        expected = [-0.8632093]
+
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
+    def test_globalphase_torch_grad(self, tol, dev_name, diff_method):
+        """Test the gradient with Torch for a controlled GlobalPhase."""
+
+        if diff_method in {"adjoint"}:
+            # GlobalPhase does not have a generator defined
+            pytest.skip("GlobalPhase does not support adjoint")
+
+        import torch
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.Hadamard(1)
+            qml.ctrl(qml.GlobalPhase(x), 1)
+            qml.Hadamard(1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = torch.tensor(2.1, requires_grad=True)
+
+        expected = [-0.8632093]
+
+        result = circuit(phi)
+        result.backward()
+        res = phi.grad
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestGenerator:
