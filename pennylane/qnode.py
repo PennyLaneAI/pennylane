@@ -907,7 +907,6 @@ class QNode:
             self.device.num_wires if isinstance(self.device, qml.Device) else len(self.tape.wires)
         )
         for obj in self.tape.operations + self.tape.observables:
-            print(obj, num_wires, obj.wires)
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
                 and obj.wires
