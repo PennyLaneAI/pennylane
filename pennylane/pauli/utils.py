@@ -1370,10 +1370,11 @@ def simplify(h, cutoff=1.0e-12):
             c.append(h.coeffs[i])
             o.append(op)
         else:
-            for i, o_op in o:
+            for j, o_op in enumerate(o):
                 if o_op is op:
                     break
-            c[i] += h.coeffs[i]
+            # pylint: disable=undefined-loop-variable
+            c[j] += h.coeffs[i]
 
     coeffs, ops = [], []
     c = qml.math.convert_like(c, c[0])
