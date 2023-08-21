@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.32.0-dev (development release)
+# Release 0.32.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -42,6 +42,9 @@
 * `qml.measure` now includes a boolean keyword argument `reset` to reset a wire to the
   $|0\rangle$ computational basis state after measurement.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402/)
+
+* [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+
 
   TODO: CODE EXAMPLE
 
@@ -239,13 +242,16 @@
 * `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
   [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
-* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
+* The calculation of `Sum`, `Prod`, `SProd`, `PauliWord`, and `PauliSentence` sparse matrices
+  are orders of magnitude faster.
+  [(#4475)](https://github.com/PennyLaneAI/pennylane/pull/4475)
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
-  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+  [(#4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * A function called `qml.math.fidelity_statevector` that computes the fidelity between two state vectors has been added.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
@@ -275,6 +281,11 @@
 
 * `Device.default_expand_fn()` has been updated to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+
+* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
+  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
+  should be used.
+  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
 
 <h3>Breaking changes 💔</h3>
 
@@ -345,6 +356,9 @@
 * The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
+* The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
+  [(#4485)](https://github.com/PennyLaneAI/pennylane/pull/4485)
+
 <h3>Deprecations 👋</h3>
 
 * `qml.enable_return` and `qml.disable_return` have been deprecated. Please avoid calling
@@ -380,6 +394,7 @@
   warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
+  [(#4489)](https://github.com/PennyLaneAI/pennylane/pull/4489)
 
 * The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
@@ -405,7 +420,7 @@
 * `qml.Projector` is pickle-able again.
   [(#4452)](https://github.com/PennyLaneAI/pennylane/pull/4452)
 
-* `_copy_and_shift_params` no longer casts or converts integral types, it just relies on `+` and `*`'s casting rules in this case.
+* `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
   [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
 
 * Sparse matrix calculations of `SProd`s containing a `Tensor` are now allowed. When using
@@ -472,6 +487,9 @@
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
   [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
+
+* `qml.math.get_dtype_name` now works with autograd array boxes.
+  [(#4494)](https://github.com/PennyLaneAI/pennylane/pull/4494)
 
 <h3>Contributors ✍️</h3>
 
