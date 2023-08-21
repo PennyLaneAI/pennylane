@@ -151,6 +151,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         else:
             reused_measurement_wires = reused_measurement_wires.union(
                 measured_wires.intersection(op.wires.toset())
+            )
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
@@ -163,10 +164,10 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             if op.wires[0] in reused_measurement_wires:
                 control_wires[op.id] = cur_wire
                 with QueuingManager.stop_recording():
-                    new_operations.extend(qml.CNOT([op.wires[0], cur_wire]))
+                    new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
                 if op.reset:
                     with QueuingManager.stop_recording():
-                        new_operations.extend(qml.CNOT([cur_wire, op.wires[0]]))
+                        new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
 
                 cur_wire += 1
             else:
@@ -174,7 +175,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
-                new_operations.extend(_add_control_gate(op, measured_wires))
+                new_operations.extend(_add_control_gate(op, control_wires))
         else:
             new_operations.append(op)
 
@@ -192,8 +193,6 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         return results[0]
 
     return [new_tape], null_postprocessing
-
-    return tape._qfunc_output  # pylint: disable=protected-access
 
 
 def _add_control_gate(op, control_wires):

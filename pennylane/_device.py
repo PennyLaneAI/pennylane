@@ -750,11 +750,12 @@ class Device(abc.ABC):
         use_grouping = getattr(self, "use_grouping", True)
 
         if any(isinstance(m, MidMeasureMP) for m in circuit.operations):
-            circuit = (
+            circuits, _ = (
                 qml.defer_measurements(circuit)
                 if not self.capabilities().get("supports_mid_measure", False)
                 else circuit
             )
+            circuit = circuits[0]
 
         hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
         expval_sum_in_obs = any(

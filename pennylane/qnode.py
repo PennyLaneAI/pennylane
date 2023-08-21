@@ -918,7 +918,7 @@ class QNode:
                     "SparseHamiltonian observable must be used with the parameter-shift "
                     "differentiation method"
                 )
-           
+
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
