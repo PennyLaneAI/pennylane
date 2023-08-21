@@ -1245,7 +1245,7 @@ class TestMeasurementsEqual:
         mp2 = qml.measurements.MidMeasureMP(
             wires=qml.wires.Wires([0, 1]), reset=False, id="test_id"
         )
-        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([1, 0]), reset=True, id="foo")
+        mp3 = qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="foo")
 
         assert not qml.equal(mp, mp1)
         assert not qml.equal(mp, mp2)
