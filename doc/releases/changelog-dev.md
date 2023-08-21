@@ -90,6 +90,11 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
+* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
+  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
+  should be used.
+  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+
 * Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
   This unlocks the ability to jit functions of `Operator`.
   [(#4458)](https://github.com/PennyLaneAI/pennylane/pull/4458/)
@@ -135,9 +140,11 @@ array([False, False])
   Instead, operators that need to be mutated are copied with new parameters.
   [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
-* The calculation of `PauliWord` and `PauliSentence` sparse matrices are orders of magnitude faster.
+* The calculation of `Sum`, `Prod`, `SProd`, `PauliWord`, and `PauliSentence` sparse matrices
+  are orders of magnitude faster.
+  [(#4475)](https://github.com/PennyLaneAI/pennylane/pull/4475)
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
-  [($4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
+  [(#4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
 
 * Enable linting of all tests in CI and the pre-commit hook.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
@@ -188,6 +195,7 @@ array([False, False])
 * `qml.pauli_decompose` is now exponentially faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * `qml.interfaces.set_shots` accepts `Shots` object as well as `int`'s and tuples of `int`'s.
   [(#4388)](https://github.com/PennyLaneAI/pennylane/pull/4388)
@@ -336,6 +344,7 @@ array([False, False])
   warnings to reflect upcoming changes to operator and measurement process equality and hashing.
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
+  [(#4489)](https://github.com/PennyLaneAI/pennylane/pull/4489)
 
 * The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
@@ -363,6 +372,9 @@ array([False, False])
   and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.math.get_dtype_name` now works with autograd array boxes.
+  [(#4494)](https://github.com/PennyLaneAI/pennylane/pull/4494)
 
 * `_copy_and_shift_params` does not cast or convert integral types, just relying on `+` and `*`'s casting rules in this case.
   [(#4477)](https://github.com/PennyLaneAI/pennylane/pull/4477)
