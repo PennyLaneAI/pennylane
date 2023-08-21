@@ -150,7 +150,7 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.is_hermitian == is_herm
 
-    @pytest.mark.parametrize("queue_cat", ("_ops", "_prep", None))
+    @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
         """Test that a symbolic operator inherits the queue_category from its base."""
 

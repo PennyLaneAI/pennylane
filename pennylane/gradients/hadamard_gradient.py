@@ -24,6 +24,7 @@ from .gradient_transform import (
     _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -178,6 +179,7 @@ def _hadamard_grad(
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    assert_no_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -280,7 +282,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
             _rotations, _measurements = qml.tape.tape.rotations_and_diagonal_measurements(new_tape)
             # pylint: disable=protected-access
-            new_tape._ops = new_tape._ops + _rotations
+            new_tape._ops = new_tape.operations + _rotations
             new_tape._measurements = _measurements
             new_tape._update()
 

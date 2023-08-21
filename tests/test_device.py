@@ -445,7 +445,7 @@ class TestInternalFunctions:
         expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
 
         for op, expected_op in zip(
-            expanded_tape._ops,  # pylint: disable=protected-access
+            expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
         ):
             assert qml.equal(op, expected_op)
@@ -509,6 +509,34 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
             dev.check_validity(tape.operations, tape.observables)
 
+    def test_batch_transform_defers_measurement(self, mock_device_with_paulis_and_methods, mocker):
+        """Test that batch_transform transforms a tape with mid-circuit measurements using
+        defer_measurements."""
+        dev = mock_device_with_paulis_and_methods(wires=3)
+        spy = mocker.spy(qml, "defer_measurements")
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliX(0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RX)(0.123, 1)
+            qml.expval(qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        new_tapes, _ = dev.batch_transform(tape)
+        spy.assert_called_once()
+
+        new_tape = new_tapes[0]
+        expected_circuit = [
+            qml.PauliX(0),
+            qml.ops.Controlled(qml.RX(0.123, 1), 0),
+            qml.expval(qml.PauliZ(1)),
+        ]
+
+        assert len(new_tape.circuit) == len(expected_circuit)
+        for o, e in zip(new_tape.circuit, expected_circuit):
+            assert qml.equal(o, e)
+
     @pytest.mark.parametrize(
         "wires, subset, expected_subset",
         [
@@ -542,7 +570,7 @@ class TestInternalFunctions:
         zip(
             [
                 qml.BasisState([0, 0], wires=[0, 1]),
-                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
             ],
             [
                 [],
@@ -555,8 +583,8 @@ class TestInternalFunctions:
             ],
         ),
     )
-    def test_default_expand_with_stateprep(self, op, decomp):
-        """Test the default expand function with StatePrep operations
+    def test_default_expand_with_initial_state(self, op, decomp):
+        """Test the default expand function with StatePrepBase operations
         integrates well."""
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
