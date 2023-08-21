@@ -206,7 +206,8 @@ class TestExpandFnTransformations:
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
 
-        expanded_tape = expand_fn(tape)
+        expanded_tapes, fn = expand_fn(tape)
+        expanded_tape = expanded_tapes[0]
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
@@ -227,7 +228,8 @@ class TestExpandFnTransformations:
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = QuantumScript(ops=ops, measurements=measurements)
 
-        expanded_tape = expand_fn(tape)
+        expanded_tapes, fn = expand_fn(tape)
+        expanded_tape = expanded_tapes[0]
         expected = [
             qml.Hadamard(0),
             qml.CNOT([0, 2]),
@@ -243,7 +245,8 @@ class TestExpandFnTransformations:
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
-        expanded_tape = expand_fn(tape)
+        expanded_tapes, fn = expand_fn(tape)
+        expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             assert qml.equal(op, exp)
@@ -252,7 +255,9 @@ class TestExpandFnTransformations:
         """Test that expand function can decompose operations even when non commuting measurements exist in the circuit."""
 
         qs = QuantumScript([NoMatOp("a")], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))])
-        new_qs = expand_fn(qs)
+        new_qs, _ = expand_fn(qs)
+        new_qs = new_qs[0]
+        print(new_qs.circuit)
         assert new_qs.measurements == qs.measurements
 
     @pytest.mark.parametrize(
@@ -270,7 +275,8 @@ class TestExpandFnTransformations:
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
 
-        expanded_tape = expand_fn(tape)
+        expanded_tapes, fn = expand_fn(tape)
+        expanded_tape = expanded_tapes[0]
         expected = [
             prep_op,
             qml.Hadamard(0),

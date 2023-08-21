@@ -78,7 +78,7 @@ def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
 
 
 def _operator_decomposition_gen(
-        op: qml.operation.Operator, acceptance_function: Callable[[qml.operation.Operator], bool]
+    op: qml.operation.Operator, acceptance_function: Callable[[qml.operation.Operator], bool]
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted by DefaultQubit2."""
     if acceptance_function(op):
@@ -137,7 +137,7 @@ def validate_multiprocessing_workers(max_workers):
 
 @transform
 def validate_and_expand_adjoint(
-        tape: qml.tape.QuantumTape,
+    tape: qml.tape.QuantumTape,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Function for validating that the operations and observables present in the input circuit
     are valid for adjoint differentiation.
@@ -153,7 +153,7 @@ def validate_and_expand_adjoint(
     try:
         new_ops = [
             final_op
-            for op in tape.operations[tape.num_preps:]
+            for op in tape.operations[tape.num_preps :]
             for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
         ]
     except RecursionError as e:
@@ -204,7 +204,7 @@ def validate_and_expand_adjoint(
 
 @transform
 def validate_measurements(
-        tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+    tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Check that the circuit contains a valid set of measurements. A valid
     set of measurements is defined as:
@@ -285,7 +285,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
 
             new_ops = [
                 final_op
-                for op in tape.operations[bool(prep_op):]
+                for op in tape.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
@@ -293,9 +293,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
                 "Reached recursion limit trying to decompose operations. "
                 "Operator decomposition may have entered an infinite loop."
             ) from e
-        tape = qml.tape.QuantumScript(
-            prep_op + new_ops, tape.measurements, shots=circuit.shots
-        )
+        tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
     for observable in tape.observables:
         if isinstance(observable, Tensor):
@@ -314,7 +312,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
 
 
 def batch_transform(
-        circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
+    circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
 ) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
@@ -382,8 +380,8 @@ def _update_config(config: ExecutionConfig) -> ExecutionConfig:
 
 
 def preprocess(
-        circuits: Tuple[qml.tape.QuantumScript],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    circuits: Tuple[qml.tape.QuantumScript],
+    execution_config: ExecutionConfig = DefaultExecutionConfig,
 ) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
