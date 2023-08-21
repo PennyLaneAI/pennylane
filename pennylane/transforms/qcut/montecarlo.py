@@ -492,21 +492,14 @@ def cut_circuit_mc(
 
 
 class CustomQNode(qml.QNode):
-    def __init__(self, qnode):
-        self._qnode = qnode
-
-    def __getattr__(self, attr):
-        return getattr(self._qnode, attr)
-
-    def __setattr__(self, attr, val):
-        if attr == "_qnode":
-            super().__setattr__(attr, val)
-
-        return setattr(self._qnode, attr, val)
+    """
+    A subclass with a custom __call__ method. The custom QNode transform returns an instance
+    of this class.
+    """
 
     def __call__(self, *args, **kwargs):
         shots = kwargs.pop("shots", False)
-        shots = shots or self._qnode.device.shots
+        shots = shots or self.device.shots
 
         if shots is None:
             raise ValueError(
@@ -516,12 +509,12 @@ class CustomQNode(qml.QNode):
 
         # find the qcut transform inside the transform program and set the shots argument
         qcut_tc = [
-            tc for tc in self._qnode.transform_program if tc.transform.__name__ == "cut_circuit_mc"
+            tc for tc in self.transform_program if tc.transform.__name__ == "cut_circuit_mc"
         ][-1]
         qcut_tc._kwargs["shots"] = shots
 
         kwargs["shots"] = 1
-        return self._qnode(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
 
 @cut_circuit_mc.custom_qnode_transform
@@ -548,7 +541,7 @@ def _qnode_transform_mc(self, qnode, targs, tkwargs):
     execute_kwargs["cache"] = False
 
     new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
-    new_qnode = CustomQNode(new_qnode)
+    new_qnode.__class__ = CustomQNode
     new_qnode.execute_kwargs = execute_kwargs
 
     return new_qnode

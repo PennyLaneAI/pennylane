@@ -15,10 +15,8 @@
 Function cut_circuit for cutting a quantum circuit into smaller circuit fragments.
 """
 
-
 from functools import partial
-from typing import Callable, Optional, Tuple, Union, Sequence
-import types
+from typing import Callable, Optional, Union, Sequence
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
