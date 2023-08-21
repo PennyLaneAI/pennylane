@@ -96,13 +96,13 @@
   [(#4483)](https://github.com/PennyLaneAI/pennylane/pull/4483)
   [(#4314)](https://github.com/PennyLaneAI/pennylane/pull/4314)
 
-* The `qml.gradients` module no longer mutates operators in-place for any gradient transforms.
-  Instead, operators that need to be mutated are copied with new parameters.
-  [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
-
 * The `QuantumScript` class now has a `bind_new_parameters` method that allows creation of
   new `QuantumScript` objects with the provided parameters.
   [(#4345)](https://github.com/PennyLaneAI/pennylane/pull/4345)
+
+* The `qml.gradients` module no longer mutates operators in-place for any gradient transforms.
+  Instead, operators that need to be mutated are copied with new parameters.
+  [(#4220)](https://github.com/PennyLaneAI/pennylane/pull/4220)
 
 * PennyLane no longer directly relies on `Operator.__eq__`.
   [(#4398)](https://github.com/PennyLaneAI/pennylane/pull/4398)
@@ -116,7 +116,7 @@
 * Transform programs are now integrated with the QNode.
   [(#4404)](https://github.com/PennyLaneAI/pennylane/pull/4404)
 
-  ```
+  ```python
   def null_postprocessing(results: qml.typing.ResultBatch) -> qml.typing.Result:
       return results[0]
 
@@ -134,7 +134,7 @@
       return qml.sample(wires=0)
   ```
 
-  ```
+  ```pycon
   >>> circuit(shots=1)
   array([False, False])
   ```
