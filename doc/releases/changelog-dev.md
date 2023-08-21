@@ -268,19 +268,26 @@
   with `float32` parameters may no longer give accurate results.
   [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
 
+* The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context instead.
+  [(#4317)](https://github.com/PennyLaneAI/pennylane/pull/4317)
+
+* `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
+  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
+
+* The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
+  [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
+
+* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` is still accessible.
+  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
+
 * Support for Python 3.8 has been dropped.
   [(#4453)](https://github.com/PennyLaneAI/pennylane/pull/4453)
 
 * `MeasurementValue`'s signature has been updated to accept a list of `MidMeasureMP`'s rather than a list of
   their IDs.
   [(#4446)](https://github.com/PennyLaneAI/pennylane/pull/4446)
-
-* `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
-  [(#4355)](https://github.com/PennyLaneAI/pennylane/pull/4355)
-
-* The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
-  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context instead.
-  [(#4317)](https://github.com/PennyLaneAI/pennylane/pull/4317)
 
 * The `grouping_type` and `grouping_method` keyword arguments have been removed from `qchem.molecular_hamiltonian`.
   [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
@@ -319,13 +326,6 @@
 
 * The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
-
-* The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
-  [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
-
-* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
-  `qml.operation.StatePrep` and `qml.QubitStateVector` will still be accessible for the time being.
-  [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 <h3>Deprecations 👋</h3>
 
