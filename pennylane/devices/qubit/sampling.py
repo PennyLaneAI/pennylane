@@ -23,6 +23,7 @@ from pennylane.measurements import (
     ExpectationMP,
     ClassicalShadowMP,
     ShadowExpvalMP,
+    CountsMP,
 )
 from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
@@ -194,7 +195,8 @@ def _measure_with_samples_diagonalizing_gates(
     def _process_single_shot(samples):
         processed = []
         for mp in mps:
-            if not isinstance(res := mp.process_samples(samples, wires), dict):
+            res = mp.process_samples(samples, wires)
+            if not isinstance(mp, CountsMP):
                 res = qml.math.squeeze(res)
 
             processed.append(res)

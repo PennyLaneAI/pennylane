@@ -50,10 +50,10 @@ def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Devi
 
     shape = tape.shape(device)
     if len(tape.measurements) == 1:
-        tape_dtype = _numeric_type_to_dtype(tape.numeric_type)
+        tape_dtype = _numeric_type_to_dtype(tape.numeric_type, device)
         return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
-    tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
+    tape_dtype = tuple(_numeric_type_to_dtype(elem, device) for elem in tape.numeric_type)
     return tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype))
 
 

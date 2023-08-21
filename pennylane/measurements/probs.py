@@ -279,11 +279,12 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         #     return prob
 
         # determine which subsystems are to be summed over
-        inactive_wires = Wires.unique_wires([wire_order, self.wires])
+        self_wires = self.wires or qml.wires.Wires(wire_order)
+        inactive_wires = Wires.unique_wires([wire_order, self_wires])
 
         # translate to wire labels used by device
         wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
+        mapped_wires = [wire_map[w] for w in self_wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire

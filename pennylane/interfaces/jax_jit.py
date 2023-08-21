@@ -98,11 +98,17 @@ def execute_legacy(
     )
 
 
-def _numeric_type_to_dtype(numeric_type):
+def _numeric_type_to_dtype(numeric_type, device):
     """Auxiliary function for converting from Python numeric types to JAX
     dtypes based on the precision defined for the interface."""
 
     single_precision = dtype is jnp.float32
+    if numeric_type is bool:
+        if isinstance(device, qml.Device):
+            numeric_type = int
+        else:
+            return jnp.bool_
+
     if numeric_type is int:
         return jnp.int32 if single_precision else jnp.int64
 
@@ -125,7 +131,7 @@ def _extract_shape_dtype_structs(tapes, device):
     for t in tapes:
         shape = t.shape(device)
 
-        tape_dtype = _numeric_type_to_dtype(t.numeric_type)
+        tape_dtype = _numeric_type_to_dtype(t.numeric_type, device)
         shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
         shape_dtypes.append(shape_and_dtype)
@@ -290,7 +296,7 @@ def _execute_with_fwd_legacy(
         jacobian_shape = []
         for t, p in zip(tapes, params):
             shape = t.shape(device) + (len(p),)
-            _dtype = _numeric_type_to_dtype(t.numeric_type)
+            _dtype = _numeric_type_to_dtype(t.numeric_type, device)
             shape = [shape] if isinstance(shape, int) else shape
             o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
             jacobian_shape.append(o)
