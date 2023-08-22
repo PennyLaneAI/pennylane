@@ -542,32 +542,22 @@ class ParametrizedEvolution(Operation):
             return op_label
 
         params = self.parameters
-        array_like_params = [p for p in params if qml.math.shape(p)]
+        arraylike_params = [p for p in params if qml.math.shape(p)]
+        has_cache = cache and isinstance(cache.get("matrices", None), list)
+
+        if arraylike_params and not has_cache:
+            return op_label
 
         def _format_number(x):
-            try:
-                return format(qml.math.toarray(x), f".{decimals}f")
-            except ValueError:
-                # If the parameter can't be displayed as a float
-                return format(x)
+            return format(qml.math.toarray(x), f".{decimals}f")
 
         def _format_arraylike(x):
-            s = "[" + ",".join(_format_number(i) for i in x) + "]"
-            return s
-
-        if array_like_params:
-            if cache and isinstance(cache.get("matrices", None), list):
-
-                def _format_arraylike(x):
-                    for i, mat in enumerate(cache["matrices"]):
-                        if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
-                            return f"M{i}"
-                    mat_num = len(cache["matrices"])
-                    cache["matrices"].append(x)
-                    return f"M{mat_num}"
-
-            else:
-                return op_label
+            for i, mat in enumerate(cache["matrices"]):
+                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                    return f"M{i}"
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(x)
+            return f"M{mat_num}"
 
         param_strings = [_format_arraylike(p) if p.shape else _format_number(p) for p in params]
 
