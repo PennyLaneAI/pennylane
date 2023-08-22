@@ -96,14 +96,14 @@
 
   Quantum chemistry calculations rely on an initial state that is typically selected to be the
   trivial Hartree-Fock state. For molecules with a complicated electronic structure, using initial
-  states obtained from affordable post-Hartree-Fock methods helps to improve the efficiency of the
-  quantum simulations. These calculations can be done with external quantum chemistry libraries such
-  as PySCF. 
+  states obtained from affordable post-Hartree-Fock calculations helps to improve the efficiency of
+  the quantum simulations. These calculations can be done with external quantum chemistry libraries
+  such as `PySCF`.
 
-  It is now possible to import a PySCF solver object in PennyLane and extract the corresponding wave
-  function in the form of a state vector that can be directly used in a circuit. The user needs to
-  run the classical quantum chemistry calculations first and then use the `qml.import_state`
-  function to import the solver object and return a state vector.  
+  It is now possible to import a `PySCF` solver object in PennyLane and extract the corresponding
+  wave function in the form of a state vector that can be directly used in a circuit. The user needs
+  to run the classical quantum chemistry calculations first and then use the `qml.import_state`
+  function to import the solver object and return a state vector.
 
   ```pycon
   >>> from pyscf import gto, scf, ci
