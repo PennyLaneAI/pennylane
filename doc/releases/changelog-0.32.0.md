@@ -73,18 +73,31 @@
 
   ```python
   import pennylane as qml
+  qml.logging.enable_logging()  # enables logging
 
-  qml.logging.enable_logging() # enables logging
   dev = qml.device("default.qubit", wires=2)
 
-  print(dev)
+  @qml.qnode(dev)
+  def f(x):
+      qml.RX(x, wires=0)
+      return qml.state()
+
+  f(0.5)
   ``` 
 
   Executing `my_code.py` with logging enabled will detail every step in PennyLane's
   pipeline that gets used to run your code.
 
+  ```commandline
+  $ python my_code.py
+  [1967-02-13 15:18:38,591][DEBUG][<PID 8881:MainProcess>] - pennylane.qnode.__init__()::"Creating QNode(func=<function f at 0x7faf2a6fbaf0>, device=<DefaultQubit device (wires=2, shots=None) at 0x7faf2a689b50>, interface=auto, diff_method=best, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best, mode=None, cache=True, cachesize=10000, max_diff=1, gradient_kwargs={}"
+  ...
+  ```
+
   Additional logging configuration settings can be specified by modifying the contents of the logging 
-  configuration file, which can be located by running `qml.logging.config_path()`.
+  configuration file, which can be located by running `qml.logging.config_path()`. Follow our
+  [logging docs page](https://docs.pennylane.ai/en/latest/introduction/logging.html) for more
+  details!
 
 <h4>More input states for quantum chemistry calculations ⚛️</h4>
 
@@ -176,7 +189,9 @@
   Array(-0.35867804, dtype=float32, weak_type=True)
   ```
   
-  Stay tuned for more mid-circuit measurement support in the next few releases!
+  You can read more about mid-circuit measurements
+  [here](https://docs.pennylane.ai/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations),
+  and stay tuned for more mid-circuit measurement features in the next few releases!
 
 <h3>Improvements 🛠</h3>
 
