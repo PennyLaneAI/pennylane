@@ -324,11 +324,11 @@ class TestInitialization:
         op = qml.evolve(H)(params, 2)
         cache = {"matrices": []}
 
-        assert op.label() == "ParametrizedEvolution"
-        assert op.label(decimals=2) == "ParametrizedEvolution"
+        assert op.label() == "Parametrized\nEvolution"
+        assert op.label(decimals=2) == "Parametrized\nEvolution"
         assert (
             op.label(decimals=2, cache=cache)
-            == "ParametrizedEvolution\n(p=[0.20,M0,M1], t=[0. 2.])"
+            == "Parametrized\nEvolution\n(p=[0.20,M0,M1], t=[0. 2.])"
         )
         assert op.label(base_label="my_label") == "my_label"
         assert (
@@ -347,9 +347,9 @@ class TestInitialization:
         op = qml.evolve(H)
         cache = {"matrices": []}
 
-        assert op.label() == "ParametrizedEvolution"
-        assert op.label(decimals=2) == "ParametrizedEvolution"
-        assert op.label(decimals=2, cache=cache) == "ParametrizedEvolution"
+        assert op.label() == "Parametrized\nEvolution"
+        assert op.label(decimals=2) == "Parametrized\nEvolution"
+        assert op.label(decimals=2, cache=cache) == "Parametrized\nEvolution"
         assert op.label(base_label="my_label") == "my_label"
         assert op.label(base_label="my_label", decimals=2, cache=cache)
 
@@ -372,7 +372,7 @@ class TestInitialization:
 
         assert (
             op1.label(decimals=2, cache=cache)
-            == "ParametrizedEvolution\n(p=[3.00,M0,M1], t=[0. 2.])"
+            == "Parametrized\nEvolution\n(p=[3.00,M0,M1], t=[0. 2.])"
         )
         assert len(cache["matrices"]) == 2
         assert np.all(cache["matrices"][0] == params1[1])
@@ -380,7 +380,7 @@ class TestInitialization:
 
         assert (
             op2.label(decimals=2, cache=cache)
-            == "ParametrizedEvolution\n(p=[5.67,M0,M2], t=[0. 2.])"
+            == "Parametrized\nEvolution\n(p=[5.67,M0,M2], t=[0. 2.])"
         )
         assert len(cache["matrices"]) == 3
         assert np.all(cache["matrices"][0] == params2[1])

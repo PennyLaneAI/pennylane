@@ -523,17 +523,20 @@ class ParametrizedEvolution(Operation):
         >>> H = qml.PauliX(1) + qml.pulse.constant * qml.PauliY(0) + jnp.polyval * qml.PauliY(1)
         >>> params = [0.2, [1, 2, 3]]
         >>> op = qml.evolve(H)(params, t=2)
+        >>> cache = {'matrices': []}
 
         >>> op.label()
-        "ParametrizedEvolution"
-        >>> op.label(decimals=2)
-        "ParametrizedEvolution\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+        "Parametrized\nEvolution"
+        >>> op.label(decimals=2, cache=cache)
+        "Parametrized\nEvolution\n(p=[0.20,M0], t=[0. 2.])"
         >>> op.label(base_label="my_label")
         "my_label"
-        >>> op.label(decimals=2, base_label="my_label")
-        "my_label\n(p=[0.20,[1.00,2.00,3.00]], t=[0. 2.])"
+        >>> op.label(decimals=2, base_label="my_label", cache=cache)
+        "my_label\n(p=[0.20,M0], t=[0. 2.])"
+
+        Array-like parameters are stored in ``cache['matrices']``.
         """
-        op_label = base_label or self.__class__.__name__
+        op_label = base_label or "Parametrized\nEvolution"
 
         if self.num_params == 0:
             return op_label
