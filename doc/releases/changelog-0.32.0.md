@@ -22,7 +22,7 @@
   >>> A = qml.PauliX(2) + 2 * qml.PauliY(2) + 3 * qml.PauliZ(2)
   ```
 
-  A decomposable block encoding circuit can be created:
+  A decomposable block-encoding circuit can be created:
 
   ```python
   def block_encode(A, control_wires):
@@ -63,7 +63,7 @@
   Array([0., 1.], dtype=float32, weak_type=True)
   ```
   
-<h4>Monitor PennyLane's inner workings with Logging 📃</h4>
+<h4>Monitor PennyLane's inner workings with logging 📃</h4>
 
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
   [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
@@ -349,9 +349,9 @@
 * `Device.default_expand_fn()` has been updated to decompose `StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
-* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
-  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
-  should be used.
+* The application of the `qml.defer_measurements` transform has been moved from 
+  `QNode.construct` to `qml.Device.batch_transform` to allow more fine-grain 
+  control over when `defer_measurements` should be used.
   [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
 
 <h3>Breaking changes 💔</h3>
