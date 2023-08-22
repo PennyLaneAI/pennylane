@@ -14,7 +14,8 @@
 """
 Contains the implementation of quantum fidelity.
 
-Note: care needs to be taken to make it fully differentiable
+Note: care needs to be taken to make it fully differentiable. An explanation can
+be found in pennylane/math/fidelity_gradient.md
 """
 from functools import lru_cache
 
