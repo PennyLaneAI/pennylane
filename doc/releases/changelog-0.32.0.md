@@ -196,6 +196,38 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>A new PennyLane drawing style</h4>
+
+* Circuit drawings and plots can now be created following a PennyLane style.
+  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
+  The `qml.draw_mpl` function accepts a `style='pennylane'` argument to create PennyLane themed
+  circuit diagrams:
+
+  ```python
+  def circuit(x, z):
+      qml.QFT(wires=(0,1,2,3))
+      qml.IsingXX(1.234, wires=(0,2))
+      qml.Toffoli(wires=(0,1,2))
+      qml.CSWAP(wires=(0,2,3))
+      qml.RX(x, wires=0)
+      qml.CRZ(z, wires=(3,0))
+      return qml.expval(qml.PauliZ(0))
+
+  qml.draw_mpl(circuit, style="pennylane")(1, 1)
+  ```
+  
+  PennyLane-styled plots can also be drawn by passing `"pennylane.drawer.plot"` to Matplotlib's
+  `plt.style.use` function:
+
+  ```python
+  import matplotlib.pyplot as plt
+
+  plt.style.use("pennylane.drawer.plot")
+  for i in range(3):
+      plt.plot(np.random.rand(10))
+  ```
+
 <h4>Making operators immutable and PyTrees</h4>
 
 * Any class inheriting from `Operator` is now automatically registered as a pytree with JAX.
@@ -344,9 +376,6 @@
 
 * The `qchem` module has been upgraded to use the fermionic operators of the `fermi` module.
   [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
-
-* `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
-  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
 
 * The calculation of `Sum`, `Prod`, `SProd`, `PauliWord`, and `PauliSentence` sparse matrices
   are orders of magnitude faster.
