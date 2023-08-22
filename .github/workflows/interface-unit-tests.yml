@@ -283,9 +283,9 @@ jobs:
     strategy:
       matrix:
         config:
-          - device: default.qubit
+          - device: default.qubit.legacy
             shots: None
-          - device: default.qubit
+          - device: default.qubit.legacy
             shots: 10000
           # - device: default.qubit.tf
           #   shots: None
