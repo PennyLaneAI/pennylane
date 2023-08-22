@@ -156,8 +156,7 @@ class Select(Operation):
         """
         states = list(itertools.product([0, 1], repeat=len(control)))
         decomp_ops = [
-            qml.ctrl(op, control, control_values=states[index])
-            for index, op in enumerate(ops)
+            qml.ctrl(op, control, control_values=states[index]) for index, op in enumerate(ops)
         ]
         return decomp_ops
 
