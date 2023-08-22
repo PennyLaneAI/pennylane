@@ -101,8 +101,9 @@
   as PySCF. 
 
   It is now possible to import a PySCF solver object in PennyLane and extract the corresponding wave
-  function in the form of a state vector that can be directly used in a circuit. The user needs to
-  run the classical quantum chemistry calculations first and then use the `qml.import_state`
+  function in the form of a state vector that can be directly used in a circuit. First, perform your
+  classical quantum chemistry calculations and then use the
+  [qml.import_state](https://docs.pennylane.ai/en/stable/code/api/pennylane.import_state.html)
   function to import the solver object and return a state vector.  
 
   ```pycon
