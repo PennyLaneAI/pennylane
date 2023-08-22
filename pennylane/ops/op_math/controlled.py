@@ -140,6 +140,31 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     return wrapper
 
+def ctrl_evolution(op, control):
+    """Create a method that applies a controlled version of the provided op.
+
+    Args:
+        op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
+        control (Wires): The control wire(s).
+        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    Returns:
+        (function or :class:`~.operation.Operator`): If an Operator is provided, returns a Controlled version of the Operator.
+        If a function is provided, returns a function with the same call signature that creates a controlled version of the
+        provided function.
+
+    .. seealso:: :class:`~.Controlled`.
+
+    """
+
+    ops = []
+    for ind, c in enumerate(control):
+        ops.append(qml.ctrl(qml.pow(op, z = len(control) - ind - 1), control = c))
+
+    return ops
+
+
+
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
