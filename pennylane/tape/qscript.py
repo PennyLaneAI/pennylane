@@ -764,6 +764,29 @@ class QuantumScript:
 
         Returns:
             .tape.QuantumScript: New tape with updated parameters
+
+        **Example**
+
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+
+        A new tape can be created by passing new parameters along with the indices
+        to be updated. To modify all parameters in the above qscript:
+
+        >>> new_qscript = qscript.bind_new_parameters([0.1, 0.2, 0.3], [0, 1, 2])
+        >>> new_qscript.get_parameters()
+        [0.1, 0.2, 0.3]
+
+        The original ``qscript`` remains unchanged:
+
+        >>> qscript.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        A subset of parameters can be modified as well, defined by the parameter indices:
+        >>> newer_qscript = new_qscript.bind_new_parameters([-0.1, 0.5], [0, 2])
+        >>> newer_qscript.get_parameters()
+        [-0.1, 0.2, 0.5]
         """
         # pylint: disable=no-member
 
