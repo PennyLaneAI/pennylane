@@ -49,6 +49,7 @@
   now faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
   ```python
   def find_coeffs(p):
@@ -352,11 +353,6 @@
   [(#4475)](https://github.com/PennyLaneAI/pennylane/pull/4475)
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
   [(#4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
-
-* `qml.pauli_decompose` is now exponentially faster and differentiable.
-  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
-  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
-  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * A function called `qml.math.fidelity_statevector` that computes the fidelity between two state vectors has been added.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
