@@ -149,20 +149,6 @@ class TestNewDeviceIntegration:
         assert len(results) == 1
         assert qml.math.allclose(results[0], -1)
 
-    def test_error_if_return_types_not_enabled(self):
-        """Check that an error is raised if return types is not enabled."""
-        qml.disable_return()
-
-        dev = DefaultQubit2()
-
-        qs = qml.tape.QuantumScript([], [qml.state()])
-        with pytest.raises(
-            ValueError, match="New device interface only works with return types enabled"
-        ):
-            qml.execute([qs], dev)
-
-        qml.enable_return()
-
 
 @pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
 def test_caching(gradient_fn):

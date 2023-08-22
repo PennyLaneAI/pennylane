@@ -163,12 +163,6 @@ class QNode:
             Only applies if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
-        mode (str): Deprecated kwarg indicating whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``). Only applies
-            if the device is queried for the gradient; gradient transform
-            functions available in ``qml.gradients`` are only supported on the backward
-            pass. This argument does nothing with the new return system, and users should
-            instead set ``grad_on_execution`` to indicate their desired behaviour.
         cache (bool or dict or Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
             If ``True``, a cache with corresponding ``cachesize`` is created for each batch
@@ -399,7 +393,6 @@ class QNode:
         expansion_strategy="gradient",
         max_expansion=10,
         grad_on_execution="best",
-        mode=None,
         cache=True,
         cachesize=10000,
         max_diff=1,
@@ -407,7 +400,7 @@ class QNode:
     ):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, mode=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
+                """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 func
                 if not (logger.isEnabledFor(qml.logging.TRACE) and callable(func))
                 else "\n" + inspect.getsource(func),
@@ -417,7 +410,6 @@ class QNode:
                 expansion_strategy,
                 max_expansion,
                 grad_on_execution,
-                mode,
                 cache,
                 cachesize,
                 max_diff,
