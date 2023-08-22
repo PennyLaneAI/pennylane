@@ -43,7 +43,7 @@ class TestQFT:
         out_states = []
         for state in np.eye(2**n_qubits):
             dev.reset()
-            ops = [qml.QubitStateVector(state, wires=range(n_qubits))] + decomp
+            ops = [qml.StatePrep(state, wires=range(n_qubits))] + decomp
             dev.apply(ops)
             out_states.append(dev.state)
 

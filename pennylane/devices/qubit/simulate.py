@@ -44,7 +44,7 @@ def get_final_state(circuit, debugger=None):
         circuit = qml.map_wires(circuit, wire_map)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrep):
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
     state = create_initial_state(circuit.wires, prep)
@@ -96,26 +96,16 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
 
     # finite-shot case
 
-    if len(circuit.measurements) == 1:
-        return measure_with_samples(
-            circuit.measurements[0],
-            state,
-            shots=circuit.shots,
-            is_state_batched=is_state_batched,
-            rng=rng,
-        )
-
     rng = default_rng(rng)
-    results = tuple(
-        measure_with_samples(
-            mp, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
-        )
-        for mp in circuit.measurements
+    results = measure_with_samples(
+        circuit.measurements, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
     )
 
-    if circuit.shots.has_partitioned_shots:
-        # shot vector case: move the shot vector axis before the measurement axis
-        results = tuple(zip(*results))
+    if len(circuit.measurements) == 1:
+        if circuit.shots.has_partitioned_shots:
+            return tuple(res[0] for res in results)
+
+        return results[0]
 
     return results
 

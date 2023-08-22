@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
+from pennylane.operation import Operation, Operator, StatePrepBase, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -1147,6 +1147,14 @@ class TestOperatorIntegration:
         neg_op = -qml.PauliX(0)
         assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
 
+    def test_sub_obs_from_op(self):
+        """Test that __sub__ returns an SProd to be consistent with other Operator dunders."""
+        op = qml.S(0) - qml.PauliX(1)
+        assert isinstance(op, Sum)
+        assert isinstance(op[1], SProd)
+        assert qml.equal(op[0], qml.S(0))
+        assert qml.equal(op[1], SProd(-1, qml.PauliX(1)))
+
     def test_mul_with_scalar(self):
         """Test the __mul__ dunder method with a scalar value."""
         sprod_op = 4 * qml.RX(1, 0)
@@ -1981,8 +1989,8 @@ add_zero_obs = [
     qml.Identity(1),
     cv.NumberOperator(wires=[1]),
     cv.TensorN(wires=[1]),
-    cv.X(wires=[1]),
-    cv.P(wires=[1]),
+    cv.QuadX(wires=[1]),
+    cv.QuadP(wires=[1]),
     # cv.QuadOperator(1.234, wires=0),
     # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
     cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
@@ -2377,10 +2385,10 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
-class TestStatePrep:
-    """Test the StatePrep interface."""
+class TestStatePrepBase:
+    """Test the StatePrepBase interface."""
 
-    class DefaultPrep(StatePrep):
+    class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
         # pylint:disable=unused-argument,too-few-public-methods
@@ -2388,15 +2396,15 @@ class TestStatePrep:
             return self.parameters[0]
 
     # pylint:disable=unused-argument,too-few-public-methods
-    def test_basic_stateprep(self):
-        """Tests a basic implementation of the StatePrep interface."""
+    def test_basic_initial_state(self):
+        """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrep):
+        class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
 
             # pylint:disable=abstract-class-instantiated
@@ -2404,8 +2412,8 @@ class TestStatePrep:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
 
-    def test_StatePrep_label(self):
-        """Tests that StatePrep classes by default have a psi ket label"""
+    def test_StatePrepBase_label(self):
+        """Tests that StatePrepBase classes by default have a psi ket label"""
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
@@ -2489,6 +2497,7 @@ pairs_of_ops = [
     (qml.S(0), qml.PauliX(0)),
     (qml.PauliX(0), qml.S(0)),
     (qml.PauliX(0), qml.PauliY(0)),
+    (qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliY(1))),
 ]
 
 
@@ -2521,6 +2530,11 @@ class TestNewOpMath:
             assert isinstance(op[1], SProd)
             assert op[1].scalar == -1
             assert qml.equal(op[1].base, op1)
+
+        def test_sub_with_unknown_not_supported(self):
+            """Test subtracting an unexpected type from an Operator."""
+            with pytest.raises(TypeError, match="unsupported operand type"):
+                _ = qml.S(0) - "foo"
 
         def test_op_with_scalar(self):
             """Tests adding/subtracting ops with scalars."""
@@ -2678,3 +2692,42 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
+
+
+@pytest.mark.jax
+def test_custom_operator_is_jax_pytree():
+    """Test that a custom operator is registered as a jax pytree."""
+
+    import jax
+
+    class CustomOperator(qml.operation.Operator):
+        pass
+
+    op = CustomOperator(1.2, wires=0)
+    data, structure = jax.tree_util.tree_flatten(op)
+    assert data == [1.2]
+
+    new_op = jax.tree_util.tree_unflatten(structure, [2.3])
+    assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+
+
+# pylint: disable=unused-import
+def test_get_attr():
+    """Test that importing attributes of operation work as expected"""
+
+    attr_name = "non_existent_attr"
+    with pytest.raises(
+        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+    ):
+        _ = qml.operation.non_existent_attr  # error is raised if non-existent attribute accessed
+
+    with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
+        from pennylane.operation import (
+            non_existent_attr,
+        )  # error is raised if non-existent attribute imported
+
+    from pennylane.operation import StatePrep
+
+    assert (
+        StatePrep is qml.operation.StatePrepBase
+    )  # StatePrep imported from operation.py is an alias for StatePrepBase

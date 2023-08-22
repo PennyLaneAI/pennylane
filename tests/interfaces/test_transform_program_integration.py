@@ -31,6 +31,7 @@ device_suite = (
 )
 
 
+@pytest.mark.all_interfaces
 class TestTransformProgram:
     """Non differentiability tests for the transform program keyword argument."""
 

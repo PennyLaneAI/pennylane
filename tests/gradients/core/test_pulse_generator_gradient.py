@@ -823,6 +823,13 @@ class TestPulseGeneratorEdgeCases:
         with pytest.raises(ValueError, match=_match):
             pulse_generator(tape)
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the pulse generator"
+        with pytest.raises(NotImplementedError, match=_match):
+            pulse_generator(tape)
+
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -976,13 +983,13 @@ class TestPulseGeneratorTape:
         x = jnp.array([0.4, 0.2, 0.1])
         t = [0.2, 0.3]
         op = qml.evolve(H)([x], t=t)
-        tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
+        tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))], shots=shots)
 
         val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t)
         assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
-        _tapes, fn = pulse_generator(tape, shots=shots)
+        _tapes, fn = pulse_generator(tape)
         assert len(_tapes) == 2
 
         grad = fn(qml.execute(_tapes, dev))
@@ -1020,8 +1027,10 @@ class TestPulseGeneratorTape:
 
         circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
-        circuit.tape.trainable_params = [0, 1]
-        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1], shots=shots)
+        tape_with_shots = circuit.tape.copy()
+        tape_with_shots.trainable_params = [0, 1]
+        tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
+        _tapes, fn = pulse_generator(tape_with_shots, argnum=[0, 1])
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))
@@ -1101,8 +1110,10 @@ class TestPulseGeneratorTape:
 
         circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
-        circuit.tape.trainable_params = [0, 1, 2]
-        _tapes, fn = pulse_generator(circuit.tape, argnum=[0, 1, 2], shots=shots)
+        tape_with_shots = circuit.tape.copy()
+        tape_with_shots.trainable_params = [0, 1, 2]
+        tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
+        _tapes, fn = pulse_generator(tape_with_shots, argnum=[0, 1, 2])
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev_shots))

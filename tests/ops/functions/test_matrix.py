@@ -14,7 +14,7 @@
 """
 Unit tests for the get_unitary_matrix transform
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,too-many-function-args
 from functools import reduce
 
 import pytest
@@ -732,7 +732,7 @@ class TestMeasurements:
         "measurements,N",
         [
             ([qml.expval(qml.PauliX(0))], 2),
-            ([qml.probs(qml.PauliX(0)), qml.probs(qml.PauliZ(1))], 4),
+            ([qml.probs(op=qml.PauliX(0)), qml.probs(op=qml.PauliZ(1))], 4),
             ([qml.probs(wires=[0, 1])], 4),
             ([qml.counts(wires=[0, 1, 2])], 8),
         ],
@@ -741,3 +741,16 @@ class TestMeasurements:
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
         assert np.array_equal(qml.matrix(qscript), np.eye(N))
+
+
+@pytest.mark.jax
+def test_jitting_matrix():
+    """Test that qml.matrix is jittable with jax."""
+    import jax
+
+    op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
+
+    jit_mat = jax.jit(qml.matrix)(op)
+    normal_mat = qml.matrix(op)
+
+    assert qml.math.allclose(normal_mat, jit_mat)

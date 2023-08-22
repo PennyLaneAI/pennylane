@@ -28,7 +28,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
     "op",
     [
         qml.BasisState(np.array([0, 1]), wires=0),
-        qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
+        qml.StatePrep(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
 )
@@ -70,26 +70,26 @@ class TestDecomposition:
         assert isinstance(ops1[0], qml.BasisStatePreparation)
         assert isinstance(ops2[0], qml.BasisStatePreparation)
 
-    def test_QubitStateVector_decomposition(self):
-        """Test the decomposition for QubitStateVector."""
+    def test_StatePrep_decomposition(self):
+        """Test the decomposition for StatePrep."""
 
         U = np.array([1, 0, 0, 0])
         wires = (0, 1)
 
-        ops1 = qml.QubitStateVector.compute_decomposition(U, wires)
-        ops2 = qml.QubitStateVector(U, wires=wires).decomposition()
+        ops1 = qml.StatePrep.compute_decomposition(U, wires)
+        ops2 = qml.StatePrep(U, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
 
-    def test_QubitStateVector_broadcasting(self):
-        """Test broadcasting for QubitStateVector."""
+    def test_StatePrep_broadcasting(self):
+        """Test broadcasting for StatePrep."""
 
         U = np.eye(4)[:3]
         wires = (0, 1)
 
-        op = qml.QubitStateVector(U, wires=wires)
+        op = qml.StatePrep(U, wires=wires)
         assert op.batch_size == 3
 
 
@@ -109,9 +109,9 @@ class TestStateVector:
             (4, [3, 2, 0, 1], (0, 0, 0, 1)),
         ],
     )
-    def test_QubitStateVector_state_vector(self, num_wires, wire_order, one_position):
-        """Tests that QubitStateVector state_vector returns kets as expected."""
-        qsv_op = qml.QubitStateVector([0, 0, 1, 0], wires=[1, 2])  # |10>
+    def test_StatePrep_state_vector(self, num_wires, wire_order, one_position):
+        """Tests that StatePrep state_vector returns kets as expected."""
+        qsv_op = qml.StatePrep([0, 0, 1, 0], wires=[1, 2])  # |10>
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
@@ -130,28 +130,26 @@ class TestStateVector:
             (4, [3, 2, 0, 1], [(0, 0, 0, 0, 1), (1, 0, 1, 0, 0)]),
         ],
     )
-    def test_QubitStateVector_state_vector_broadcasted(self, num_wires, wire_order, one_positions):
-        """Tests that QubitStateVector state_vector returns kets with broadcasting as expected."""
-        qsv_op = qml.QubitStateVector([[0, 0, 1, 0], [0, 1, 0, 0]], wires=[1, 2])  # |10>, |01>
+    def test_StatePrep_state_vector_broadcasted(self, num_wires, wire_order, one_positions):
+        """Tests that StatePrep state_vector returns kets with broadcasting as expected."""
+        qsv_op = qml.StatePrep([[0, 0, 1, 0], [0, 1, 0, 0]], wires=[1, 2])  # |10>, |01>
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_positions[0]] == 1 == ket[one_positions[1]]
         ket[one_positions[0]] = ket[one_positions[1]] = 0
         # everything else should be zero, as we assert below
         assert np.allclose(np.zeros((2,) * (num_wires + 1)), ket)
 
-    def test_QubitStateVector_reordering(self):
+    def test_StatePrep_reordering(self):
         """Tests that wires get re-ordered as expected."""
-        qsv_op = qml.QubitStateVector(np.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
+        qsv_op = qml.StatePrep(np.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
         expected = np.zeros((2, 2, 2, 2), dtype=np.complex128)
         expected[0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
         assert np.array_equal(ket, expected)
 
-    def test_QubitStateVector_reordering_broadcasted(self):
+    def test_StatePrep_reordering_broadcasted(self):
         """Tests that wires get re-ordered as expected with broadcasting."""
-        qsv_op = qml.QubitStateVector(
-            np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1]
-        )
+        qsv_op = qml.StatePrep(np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
         expected = np.zeros((2,) * 5, dtype=np.complex128)
         expected[0, 0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
@@ -160,38 +158,38 @@ class TestStateVector:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
-    def test_QubitStateVector_state_vector_preserves_parameter_type(self, interface):
+    def test_StatePrep_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
-        qsv_op = qml.QubitStateVector(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
+        qsv_op = qml.StatePrep(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
         assert qml.math.get_interface(qsv_op.state_vector()) == interface
         assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
-    def test_QubitStateVector_state_vector_preserves_parameter_type_broadcasted(self, interface):
+    def test_StatePrep_state_vector_preserves_parameter_type_broadcasted(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
-        qsv_op = qml.QubitStateVector(
+        qsv_op = qml.StatePrep(
             qml.math.array([[0, 0, 0, 1], [1, 0, 0, 0]], like=interface), wires=[1, 2]
         )
         assert qml.math.get_interface(qsv_op.state_vector()) == interface
         assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
-    def test_QubitStateVector_state_vector_bad_wire_order(self):
+    def test_StatePrep_state_vector_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""
-        qsv_op = qml.QubitStateVector([0, 0, 0, 1], wires=[0, 1])
-        with pytest.raises(WireError, match="wire_order must contain all QubitStateVector wires"):
+        qsv_op = qml.StatePrep([0, 0, 0, 1], wires=[0, 1])
+        with pytest.raises(WireError, match="wire_order must contain all StatePrep wires"):
             qsv_op.state_vector(wire_order=[1, 2])
 
     @pytest.mark.parametrize("vec", [[0] * 4, [1] * 4])
-    def test_QubitStateVector_state_norm_not_one_fails(self, vec):
+    def test_StatePrep_state_norm_not_one_fails(self, vec):
         """Tests that the state-vector provided must have norm equal to 1."""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            _ = qml.QubitStateVector(vec, wires=[0, 1])
+            _ = qml.StatePrep(vec, wires=[0, 1])
 
-    def test_QubitStateVector_wrong_param_size_fails(self):
+    def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""
         with pytest.raises(ValueError, match="State vector must have shape"):
-            _ = qml.QubitStateVector([0, 1], wires=[0, 1])
+            _ = qml.StatePrep([0, 1], wires=[0, 1])
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",

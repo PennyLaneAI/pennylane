@@ -263,6 +263,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
     :figure: _static/templates/subroutines/qsvt.png
 
+.. gallery-item::
+    :description: :doc:`Select<../code/api/pennylane.Select>`
+    :figure: _static/templates/subroutines/select.png
+
 .. raw:: html
 
         <div style='clear:both'></div>

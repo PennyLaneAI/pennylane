@@ -46,7 +46,7 @@ def test_convert_arrays_to_numpy(framework, shots):
 
     ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1)), qml.RZ(numpy_data, 0)]
     m = [qml.state(), qml.expval(qml.Hermitian(M, 0))]
-    prep = [qml.QubitStateVector(state, 0)]
+    prep = [qml.StatePrep(state, 0)]
 
     qs = qml.tape.QuantumScript(ops, m, prep, shots=shots)
     new_qs = convert_to_numpy_parameters(qs)

@@ -32,7 +32,7 @@ requirements = [
     "cachetools",
     "pennylane-lightning>=0.31",
     "requests",
-    "typing_extensions"
+    "typing_extensions",
 ]
 
 info = {
@@ -65,7 +65,7 @@ info = {
     "provides": ["pennylane"],
     "install_requires": requirements,
     "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
-    "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
+    "package_data": {"pennylane": ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]},
     "include_package_data": True,
 }
 
@@ -81,7 +81,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
