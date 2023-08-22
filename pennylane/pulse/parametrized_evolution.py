@@ -545,10 +545,9 @@ class ParametrizedEvolution(Operation):
             return op_label
 
         params = self.parameters
-        arraylike_params = [p for p in params if qml.math.shape(p)]
         has_cache = cache and isinstance(cache.get("matrices", None), list)
 
-        if arraylike_params and not has_cache:
+        if any(qml.math.ndim(p) for p in params) and not has_cache:
             return op_label
 
         def _format_number(x):
