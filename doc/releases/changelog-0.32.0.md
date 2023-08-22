@@ -140,7 +140,8 @@
 <h4>Reuse and reset qubits after mid-circuit measurements ♻️</h4>
 
 * PennyLane now allows you to define circuits that reuse a qubit after a mid-circuit
-  measurement has taken place. Optionally, the wire can also be reset to the `|0>` state.
+  measurement has taken place. Optionally, the wire can also be reset to the :math:`|0\rangle`
+  state.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402)
   [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
 
@@ -315,7 +316,9 @@
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
-* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560).
+  In particular, the functional form has been changed from
+  :math:`\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y`.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
