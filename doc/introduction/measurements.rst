@@ -309,6 +309,26 @@ Note that we can also specify an outcome when defining a conditional operation:
 >>> qnode_conditional_op_on_zero(*pars)
 tensor([0.88660045, 0.11339955], requires_grad=True)
 
+Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
+reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of :func:`~.pennylane.measure`
+to ``True``.
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def func():
+        qml.PauliX(1)
+        m_0 = qml.measure(1, reset=True)
+        qml.PauliX(1)
+        return qml.probs(wires=[1])
+
+Executing this QNode:
+
+>>> func()
+tensor([0., 1.], requires_grad=True)
+
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a
 differentiable and device-independent way. Performing true mid-circuit
