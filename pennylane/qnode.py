@@ -917,16 +917,6 @@ class QNode:
                     "differentiation method"
                 )
 
-        # Apply the deferred measurement principle if the device doesn't
-        # support mid-circuit measurements natively
-        # TODO:
-        # 1. Change once mid-circuit measurements are not considered as tape
-        # operations
-        # 2. Move this expansion to Device (e.g., default_expand_fn or
-        # batch_transform method)
-        if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
-            self._tape = qml.defer_measurements(self._tape)
-
         if self.expansion_strategy == "device" and not isinstance(
             self.device, qml.devices.experimental.Device
         ):

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the TensorBox functional API in pennylane.fn.fn
+"""Unit tests for pennylane.math.single_dispatch
 """
 # pylint: disable=import-outside-toplevel
 import itertools
@@ -1325,6 +1325,29 @@ def test_shape(shape, interface, create_array):
 
     t = create_array(shape)
     assert fn.shape(t) == shape
+
+
+@pytest.mark.parametrize(
+    "x, expected",
+    (
+        (1.0, "float64"),
+        (1, "int64"),
+        (onp.array(0.5), "float64"),
+        (onp.array(1.0, dtype="float32"), "float32"),
+        (ArrayBox(1, "a", "b"), "int64"),
+        (np.array(0.5), "float64"),
+        (np.array(0.5, dtype="complex64"), "complex64"),
+        # skip jax as output is dependent on global configuration
+        (tf.Variable(0.1, dtype="float32"), "float32"),
+        (tf.Variable(0.1, dtype="float64"), "float64"),
+        (torch.tensor(0.1, dtype=torch.float32), "float32"),
+        (torch.tensor(0.5, dtype=torch.float64), "float64"),
+        (torch.tensor(0.1, dtype=torch.complex128), "complex128"),
+    ),
+)
+def test_get_dtype_name(x, expected):
+    """Test that get_dtype_name returns the a string for the datatype."""
+    assert fn.get_dtype_name(x) == expected
 
 
 @pytest.mark.parametrize("t", test_data)
