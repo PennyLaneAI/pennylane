@@ -78,7 +78,7 @@ Decompositions
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
-from .controlled import Controlled, ControlledOp, ctrl
+from .controlled import Controlled, ControlledOp, ctrl, ctrl_evolution
 from .controlled_ops import ControlledQubitUnitary, CY, CZ
 from .evolution import Evolution
 from .exp import Exp, exp
