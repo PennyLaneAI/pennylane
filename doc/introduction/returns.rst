@@ -115,11 +115,20 @@ select the option below that describes your situation.
           x = np.array(0.5, requires_grad=True)
           qml.jacobian(circuit)(x)
 
-      Follow the instructions :ref:`here <return-autograd-tf-gotcha>` to fix this issue, which
-      arises because NumPy and TensorFlow do not support differentiating tuples.
-      Alternatively, consider porting your code to use the :ref:`JAX <jax_interf>` or
+
+      Use stacking to fix this issue (see below), which arises because NumPy and TensorFlow do not support
+      differentiating tuples. Alternatively, consider porting your code to use the :ref:`JAX <jax_interf>` or
       :ref:`Torch <torch_interf>` interface, which could unlock additional features and performance
       benefits!
+
+    .. code-block:: python
+
+            with tf.GradientTape() as tape:
+                res = circuit(a, b)
+                res = tf.stack(res)
+
+            x = np.array(0.5, requires_grad=True)
+            qml.jacobian(circuit)(x)
 
     * You are returning differently-shaped quantities together, such as
       :func:`expval() <pennylane.expval>` and :func:`probs() <pennylane.probs>`. For example, the

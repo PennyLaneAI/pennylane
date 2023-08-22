@@ -396,14 +396,9 @@ class TorchLayer(Module):
         if has_batch_dim:
             batch_dims = inputs.shape[:-1]
             inputs = torch.reshape(inputs, (-1, inputs.shape[-1]))
-            # If the input has a batch dimension and we want to execute each data point separately,
-            # unstack the input along its first dimension, execute the QNode on each of the yielded
-            # tensors, and then stack the outputs back into the correct shape
-            reconstructor = [self._evaluate_qnode(x) for x in torch.unbind(inputs)]
-            results = torch.stack(reconstructor)
-        else:
-            # calculate the forward pass as usual
-            results = self._evaluate_qnode(inputs)
+
+        # calculate the forward pass as usual
+        results = self._evaluate_qnode(inputs)
 
         # reshape to the correct number of batch dims
         if has_batch_dim:

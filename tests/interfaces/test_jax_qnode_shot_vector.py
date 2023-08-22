@@ -802,7 +802,7 @@ class TestReturnShotVectorsDevice:
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
 
-            @qnode(dev, interface="jax", diff_method="adjoint", mode="backward")
+            @qnode(dev, interface="jax", diff_method="adjoint", grad_on_execution=False)
             def circuit(a):
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
