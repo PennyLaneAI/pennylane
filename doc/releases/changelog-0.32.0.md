@@ -49,6 +49,7 @@
   now faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
+  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
   ```python
   def find_coeffs(p):
@@ -73,18 +74,31 @@
 
   ```python
   import pennylane as qml
+  qml.logging.enable_logging()  # enables logging
 
-  qml.logging.enable_logging() # enables logging
   dev = qml.device("default.qubit", wires=2)
 
-  print(dev)
+  @qml.qnode(dev)
+  def f(x):
+      qml.RX(x, wires=0)
+      return qml.state()
+
+  f(0.5)
   ``` 
 
   Executing `my_code.py` with logging enabled will detail every step in PennyLane's
   pipeline that gets used to run your code.
 
+  ```commandline
+  $ python my_code.py
+  [1967-02-13 15:18:38,591][DEBUG][<PID 8881:MainProcess>] - pennylane.qnode.__init__()::"Creating QNode(func=<function f at 0x7faf2a6fbaf0>, device=<DefaultQubit device (wires=2, shots=None) at 0x7faf2a689b50>, interface=auto, diff_method=best, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best, mode=None, cache=True, cachesize=10000, max_diff=1, gradient_kwargs={}"
+  ...
+  ```
+
   Additional logging configuration settings can be specified by modifying the contents of the logging 
-  configuration file, which can be located by running `qml.logging.config_path()`.
+  configuration file, which can be located by running `qml.logging.config_path()`. Follow our
+  [logging docs page](https://docs.pennylane.ai/en/latest/introduction/logging.html) for more
+  details!
 
 <h4>More input states for quantum chemistry calculations ⚛️</h4>
 
@@ -103,6 +117,12 @@
   It is now possible to import a `PySCF` solver object in PennyLane and extract the corresponding
   wave function in the form of a state vector that can be directly used in a circuit. The user needs
   to run the classical quantum chemistry calculations first and then use the `qml.import_state`
+  function to import the solver object and return a state vector.
+
+  It is now possible to import a `PySCF` solver object in PennyLane and extract the corresponding
+  wave function in the form of a state vector that can be directly used in a circuit. First, perform
+  your classical quantum chemistry calculations and then use the
+  [qml.import_state](https://docs.pennylane.ai/en/stable/code/api/pennylane.import_state.html)
   function to import the solver object and return a state vector.
 
   ```pycon
@@ -140,7 +160,8 @@
 <h4>Reuse and reset qubits after mid-circuit measurements ♻️</h4>
 
 * PennyLane now allows you to define circuits that reuse a qubit after a mid-circuit
-  measurement has taken place. Optionally, the wire can also be reset to the `|0>` state.
+  measurement has taken place. Optionally, the wire can also be reset to the :math:`|0\rangle`
+  state.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402)
   [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
 
@@ -174,9 +195,43 @@
   Array(-0.35867804, dtype=float32, weak_type=True)
   ```
   
-  Stay tuned for more mid-circuit measurement support in the next few releases!
+  You can read more about mid-circuit measurements
+  [here](https://docs.pennylane.ai/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations),
+  and stay tuned for more mid-circuit measurement features in the next few releases!
 
 <h3>Improvements 🛠</h3>
+
+<h4>A new PennyLane drawing style</h4>
+
+* Circuit drawings and plots can now be created following a PennyLane style.
+  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
+  The `qml.draw_mpl` function accepts a `style='pennylane'` argument to create PennyLane themed
+  circuit diagrams:
+
+  ```python
+  def circuit(x, z):
+      qml.QFT(wires=(0,1,2,3))
+      qml.IsingXX(1.234, wires=(0,2))
+      qml.Toffoli(wires=(0,1,2))
+      qml.CSWAP(wires=(0,2,3))
+      qml.RX(x, wires=0)
+      qml.CRZ(z, wires=(3,0))
+      return qml.expval(qml.PauliZ(0))
+
+  qml.draw_mpl(circuit, style="pennylane")(1, 1)
+  ```
+  
+  PennyLane-styled plots can also be drawn by passing `"pennylane.drawer.plot"` to Matplotlib's
+  `plt.style.use` function:
+
+  ```python
+  import matplotlib.pyplot as plt
+
+  plt.style.use("pennylane.drawer.plot")
+  for i in range(3):
+      plt.plot(np.random.rand(10))
+  ```
 
 <h4>Making operators immutable and PyTrees</h4>
 
@@ -315,7 +370,9 @@
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
-* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560). In particular, the functional form has been changed from $\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y$.
+* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560).
+  In particular, the functional form has been changed from
+  :math:`\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y`.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
@@ -325,19 +382,11 @@
 * The `qchem` module has been upgraded to use the fermionic operators of the `fermi` module.
   [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
 
-* `draw_mpl` now accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `qml.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. 
-  [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
-
 * The calculation of `Sum`, `Prod`, `SProd`, `PauliWord`, and `PauliSentence` sparse matrices
   are orders of magnitude faster.
   [(#4475)](https://github.com/PennyLaneAI/pennylane/pull/4475)
   [(#4272)](https://github.com/PennyLaneAI/pennylane/pull/4272)
   [(#4411)](https://github.com/PennyLaneAI/pennylane/pull/4411)
-
-* `qml.pauli_decompose` is now exponentially faster and differentiable.
-  [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
-  [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
-  [(#4493)](https://github.com/PennyLaneAI/pennylane/pull/4493)
 
 * A function called `qml.math.fidelity_statevector` that computes the fidelity between two state vectors has been added.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
