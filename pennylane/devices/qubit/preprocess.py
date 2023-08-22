@@ -190,7 +190,7 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
-    new_ops = tape.operations[: circuit.num_preps] + new_ops
+    new_ops = tape.operations[: tape.num_preps] + new_ops
     new_tape = qml.tape.QuantumScript(new_ops, measurements, shots=tape.shots)
 
     def null_postprocessing(results):
@@ -232,6 +232,7 @@ def validate_measurements(
         for m in tape.measurements:
             if not isinstance(m, StateMeasurement):
                 raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
+
     else:
         # check if an analytic diff method is used with finite shots
         if execution_config.gradient_method in ["adjoint", "backprop"]:
@@ -246,13 +247,13 @@ def validate_measurements(
                     f"Circuits with finite shots must only contain SampleMeasurements, ClassicalShadowMP, or ShadowExpvalMP; got {m}"
                 )
 
-        def null_postprocessing(results):
-            """A postprocesing function returned by a transform that only converts the batch of results
-            into a result for a single ``QuantumTape``.
-            """
-            return results[0]
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
 
-        return [tape], null_postprocessing
+    return [tape], null_postprocessing
 
 
 @transform
@@ -399,21 +400,27 @@ def preprocess(
     transform_program = TransformProgram()
 
     # Validate measurement
-    valid_meas_transform = TransformContainer(validate_measurements, execution_config)
+    valid_meas_transform = TransformContainer(
+        transform=validate_measurements.transform, args=[execution_config]
+    )
     transform_program.push_back(valid_meas_transform)
 
     # Circuit expand
-    expand_transform = TransformContainer(expand_fn)
+    expand_transform = TransformContainer(transform=expand_fn.transform)
     transform_program.push_back(expand_transform)
 
     # Adjoint expand
     if execution_config.gradient_method == "adjoint":
-        expand_adjoint_transform = TransformContainer(validate_and_expand_adjoint)
+        expand_adjoint_transform = TransformContainer(
+            transform=validate_and_expand_adjoint.transform
+        )
         transform_program.push_back(expand_adjoint_transform)
 
     ### Broadcast expand
-    if circuits[0].batch_size is not None or execution_config.gradient_method == "adjoint":
-        broadcast_expand_transform = TransformContainer(qml.transforms.broadcast_expand)
+    if circuits[0].batch_size is not None and execution_config.gradient_method == "adjoint":
+        broadcast_expand_transform = TransformContainer(
+            transform=qml.transforms.broadcast_expand.transform
+        )
         transform_program.push_back(broadcast_expand_transform)
 
     return transform_program, _update_config(execution_config)
