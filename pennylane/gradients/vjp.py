@@ -371,6 +371,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
                     multi_dy = dy[0]
                     res = qml.math.convert_like(res, multi_dy)
                     return qml.math.cast_like(res, multi_dy)
+                return qml.math.cast_like(res, dy)
 
             return [], func
     except (AttributeError, TypeError, NotImplementedError):

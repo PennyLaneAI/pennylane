@@ -647,11 +647,6 @@ class TestValidation:
 
         assert len(record) == 0
 
-    def test_giving_mode_kwarg_raises_warning(self):
-        """Test that providing a value for mode raises a warning."""
-        with pytest.warns(UserWarning, match="The `mode` keyword argument is deprecated"):
-            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
-
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
@@ -1825,7 +1820,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize(
         "diff_method,mode",
-        [("parameter-shift", "backward"), ("adjoint", "forward"), ("adjoint", "backward")],
+        [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
     )
     def test_device_expansion(self, diff_method, mode, mocker):
         """Test expansion of an unsupported operation on the device"""
@@ -1840,7 +1835,7 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, diff_method=diff_method, mode=mode)
+        @qnode(dev, diff_method=diff_method, grad_on_execution=mode)
         def circuit(x):
             UnsupportedOp(x, wires=0)
             return qml.expval(qml.PauliZ(0))
