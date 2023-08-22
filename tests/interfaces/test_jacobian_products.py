@@ -52,7 +52,7 @@ class TestBasics:
 
         assert isinstance(jpc, JacobianProductCalculator)
         assert jpc._inner_execute is inner_execute_numpy
-        assert jpc._gradient_transform == qml.gradients.hadamard_grad
+        assert jpc._gradient_transform is qml.gradients.hadamard_grad
         assert jpc._gradient_kwargs == {"aux_wire": "aux"}
 
         expected_repr = (
@@ -68,7 +68,7 @@ class TestJacobianProductResults:
     """Test first order results for the matrix of jpc options."""
 
     def test_execute_jvp_basic(self, jpc):
-        """Test execute and compute_jvp for a simple single input single output."""
+        """Test execute_and_compute_jvp for a simple single input single output."""
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         tangents = ((0.5,),)
@@ -92,7 +92,7 @@ class TestJacobianProductResults:
         assert qml.math.allclose(jac, -np.sin(x))
 
     def test_execute_jvp_multi_params_multi_out(self, jpc):
-        """Test execute jvp with multiple parameters and multiple outputs"""
+        """Test execute_and_compute_jvp with multiple parameters and multiple outputs"""
         x = 0.62
         y = 2.64
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
@@ -129,7 +129,7 @@ class TestJacobianProductResults:
         assert qml.math.allclose(jvp[1][1], -0.6 * np.sin(phi))
 
     def test_vjp_multi_params_multi_out(self, jpc):
-        """Test vjp with multiple parameters and multiple outputs."""
+        """Test compute_vjp with multiple parameters and multiple outputs."""
 
         x = 0.62
         y = 2.64
@@ -163,7 +163,7 @@ class TestJacobianProductResults:
         assert qml.math.allclose(vjps[1], -0.8 * np.sin(phi))
 
     def test_jac_multi_params_multi_out(self, jpc):
-        """Test jacobian with multiple parameters and multiple measurements."""
+        """Test compute_jacobian with multiple parameters and multiple measurements."""
 
         x = 0.62
         y = 2.64
@@ -202,7 +202,7 @@ class TestJacobianProductResults:
 class TestTransformsDifferentiability:
     """Tests that the transforms are differentiable if the inner execution is differentiable.
 
-    Note that testing is only done for the method it must be compatible with.
+    Note that testing is only done for the required method for each ml framework.
     """
 
     @pytest.mark.jax

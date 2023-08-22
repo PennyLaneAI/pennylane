@@ -26,7 +26,7 @@ Batch = Tuple[QuantumScript]
 
 
 class JacobianProductCalculator(abc.ABC):
-    """Provides methods for calculating the jvp and vjps for tapes and tangents/ cotangents."""
+    """Provides methods for calculating the JVP/VJP between the Jacobians of tapes and tangents/cotangents."""
 
     @abc.abstractmethod
     def execute_and_compute_jvp(
@@ -37,7 +37,7 @@ class JacobianProductCalculator(abc.ABC):
         This method is required to compute JVPs in the JAX interface.
 
         Args:
-            tapes: The batch of tapes to take the derivatives of
+            tapes (tuple[`~.QuantumScript`]): The batch of tapes to take the derivatives of
             tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape
 
         Returns:
@@ -67,11 +67,11 @@ class JacobianProductCalculator(abc.ABC):
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
         """Compute the vjp for a given batch of tapes.
 
-        This method is used by autograd, torch, and tensorflow.
+        This method is used by autograd, torch, and tensorflow to compute VJPs
 
         Args:
-            tapes: the batch of tapes to the the derivatives of
-            dy: the derivatives of the results of an execution
+            tapes (tuple[`~.QuantumScript`]): the batch of tapes to the the derivatives of
+            dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution
 
         Returns:
             TensorLike
@@ -95,7 +95,7 @@ class JacobianProductCalculator(abc.ABC):
     def compute_jacobian(self, tapes: Batch) -> Tuple:
         """Compute the full jacobian for a batch of tapes.
 
-        This method is required for jax-jit.
+        This method is required to compute Jacobians in the ``jax-jit`` interface
 
         Args:
             tapes: the batch of tapes to take the jacobian of
@@ -110,11 +110,11 @@ class JacobianProductCalculator(abc.ABC):
 
 
 class TransformJacobianProducts(JacobianProductCalculator):
-    """Compute vjp, jvps, and jacobians via a gradient transform.
+    """Compute VJPs, JVPs and Jacobians via a :class:`~.gradient_transform`.
 
     Args:
         inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
-            turns the batch of circuits into results.
+            executes the batch of circuits and returns their results.
         gradient_transform (pennylane.gradients.gradient_transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
 
