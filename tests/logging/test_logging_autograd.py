@@ -27,6 +27,7 @@ _grad_log_map = {
 }
 
 
+@pytest.mark.slow
 @pytest.mark.logging
 class TestLogging:
     """Tests for logging integration"""

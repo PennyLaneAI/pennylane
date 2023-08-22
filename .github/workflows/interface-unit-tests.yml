@@ -312,6 +312,22 @@ jobs:
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
 
 
+  logging-tests:
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_name: logging-tests
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: logging-coverage
+      python_version: 3.9
+      install_jax: false
+      install_tensorflow: false
+      install_pytorch: false
+      install_pennylane_lightning_master: false
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: logging
+      additional_pip_packages: tomli
+
+
   upload-to-codecov:
     runs-on: ubuntu-latest
 
