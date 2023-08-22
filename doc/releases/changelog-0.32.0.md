@@ -45,8 +45,8 @@
   This circuit can be used as a building block within a larger QNode to perform algorithms such as
   the [quantum singular value transformation](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html).
 
-* Decomposing a Hermitian matrix into a linear combination of Pauli words is now faster and also
-  differentiable.
+* Decomposing a Hermitian matrix into a linear combination of Pauli words via `qml.pauli_decompose` is 
+  now faster and differentiable.
   [(#4395)](https://github.com/PennyLaneAI/pennylane/pull/4395)
   [(#4479)](https://github.com/PennyLaneAI/pennylane/pull/4479)
 
@@ -66,16 +66,29 @@
 <h4>Monitor PennyLane's inner workings with Logging 📃</h4>
 
 * Python-native logging can now be enabled with `qml.logging.enable_logging()`.
+  [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
   [(#4383)](https://github.com/PennyLaneAI/pennylane/pull/4383)
 
-  TODO: CODE EXAMPLE
+  Consider the following code that is contained in `my_code.py`:
 
-* Provide users access to the logging configuration file path and improve the logging configuration structure.
-  [(#4377)](https://github.com/PennyLaneAI/pennylane/pull/4377)
+  ```python
+  import pennylane as qml
+
+  qml.logging.enable_logging() # enables logging
+  dev = qml.device("default.qubit", wires=2)
+
+  print(dev)
+  ``` 
+
+  Executing `my_code.py` with logging enabled will detail every step in PennyLane's
+  pipeline that gets used to run your code.
+
+  Additional logging configuration settings can be specified by modifying the contents of the logging 
+  configuration file, which can be located by running `qml.logging.config_path()`.
 
 <h4>More input states for quantum chemistry calculations ⚛️</h4>
 
-* Functions are available to obtain a state vector from PySCF solver objects.
+* New functions are available to obtain a state vector from PySCF solver objects.
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
 
@@ -107,7 +120,7 @@
 
 <h4>Reuse and reset qubits after mid-circuit measurements ♻️</h4>
 
-* PennyLane now allows you to define circuits that reuse a qubit wire after a mid-circuit
+* PennyLane now allows you to define circuits that reuse a qubit after a mid-circuit
   measurement has taken place. Optionally, the wire can also be reset to the `|0>` state.
   [(#4402)](https://github.com/PennyLaneAI/pennylane/pull/4402)
   [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
@@ -116,11 +129,11 @@
   [qml.measure](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
   In this version of PennyLane, executing circuits with qubit reuse will result in the
   [defer_measurements](https://docs.pennylane.ai/en/latest/code/api/pennylane.defer_measurements.html)
-  transform being applied. This transform replaces each reused wire with an additional qubit.
+  transform being applied. This transform replaces each reused wire with an *additional* qubit.
   However, future releases of PennyLane will explore device-level support for qubit reuse without
   consuming additional qubits.
 
-  Qubit reuse and reset is fully differentiable:
+  Qubit reuse and reset is also fully differentiable:
 
   ```python
   dev = qml.device("default.qubit", wires=4)
@@ -128,7 +141,7 @@
   @qml.qnode(dev)
   def circuit(p):
       qml.RX(p, wires=0)
-      m = qml.measure(0, reset=True)
+      m = qml.measure(0, reset=True) 
       qml.cond(m, qml.Hadamard)(1)
 
       qml.RX(p, wires=0)
@@ -214,7 +227,7 @@
   and return a new batch of circuits and a single post processing function.
   [(#4364)](https://github.com/PennyLaneAI/pennylane/pull/4364)
 
-* `TransformDispatcher` now allows registration of custom `QNode` transforms.
+* `TransformDispatcher` now allows registration of custom QNode transforms.
   [(#4466)](https://github.com/PennyLaneAI/pennylane/pull/4466)
 
 * QNode transforms in `qml.qinfo` now support custom wire labels.
@@ -279,7 +292,7 @@
 
 <h4>Pulses</h4>
 
-* A `HardwareHamiltonian` can now be summed with `int` or `float`.
+* A `HardwareHamiltonian` can now be summed with `int` or `float` objects.
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
@@ -361,8 +374,8 @@
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
 
-* `StatePrep` is renamed to `StatePrepBase` and `QubitStateVector` is renamed to `StatePrep`.
-  `qml.operation.StatePrep` and `qml.QubitStateVector` is still accessible.
+* `StatePrep` has been renamed to `StatePrepBase` and `QubitStateVector` has been renamed to `StatePrep`.
+  `qml.operation.StatePrep` and `qml.QubitStateVector` are still accessible.
   [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
 * Support for Python 3.8 has been dropped.
@@ -436,7 +449,7 @@
   have been deprecated. Use `convert_to_numpy_parameters` instead.
   [(#4344)](https://github.com/PennyLaneAI/pennylane/pull/4344)
 
-* The `mode` keyword argument in `QNode` has been deprecated, as it was only used in the
+* The `mode` keyword argument in QNode has been deprecated, as it was only used in the
   old return system (which has also been deprecated). Please use `grad_on_execution` instead.
   [(#4316)](https://github.com/PennyLaneAI/pennylane/pull/4316)
 
