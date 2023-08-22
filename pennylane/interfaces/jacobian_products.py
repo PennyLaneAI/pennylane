@@ -38,10 +38,12 @@ class JacobianProductCalculator(abc.ABC):
 
         Args:
             tapes (tuple[`~.QuantumScript`]): The batch of tapes to take the derivatives of
-            tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape
+            tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
+                The ``i``th tangent corresponds to the ``i``th tape, and the ``j``th entry into a
+                tangent entry corresponds to the ``j``th trainable parameter of the tape.
 
         Returns:
-            ResultBatch, TensorLike
+            ResultBatch, TensorLike: the results of the execution and the jacobian vector product
 
         **Examples:**
 
@@ -52,14 +54,14 @@ class JacobianProductCalculator(abc.ABC):
         >>> tangents1 = (2.0, )
         >>> tangents = (tangents0, tangents1)
         >>> results, jvps = jp_method.execute_and_compute_jvp(batch, tangents)
-        >>> results
-        (0.9950041652780258, 0.9800665778412417)
-        >>> np.cos(0.1), np.cos(0.2)
-        (0.9950041652780258, 0.9800665778412416)
+        >>> expected_results = (np.cos(0.1), np.cos(0.2))
+        >>> qml.math.allclose(results, expected_results)
+        True
         >>> jvps
         (array(-0.14975012), array(-0.39733866))
-        >>> 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
-        (-0.14975012497024223, -0.39733866159012243)
+        >>> expected_jvps = 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
+        >>> qml.math.allclose(jvps, expected_jvps)
+        True
 
         """
 
@@ -74,7 +76,7 @@ class JacobianProductCalculator(abc.ABC):
             dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution
 
         Returns:
-            TensorLike
+            TensorLike: the vector jacobian product.
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
@@ -82,12 +84,15 @@ class JacobianProductCalculator(abc.ABC):
         >>> dy0 = (0.5, )
         >>> dy1 = (2.0, 3.0)
         >>> dys = (dy0, dy1)
-        >>> jp_method.compute_vjp(batch, dys)
+        >>> vjps = jp_method.compute_vjp(batch, dys)
+        >>> vjps
         (array([-0.04991671]), array([2.54286107]))
-        >>> 0.5 * -np.sin(0.1)
-        -0.04991670832341408
-        >>> 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
-        2.5428610719336024
+        >>> expected_vjp0 = 0.5 * -np.sin(0.1)
+        >>> qml.math.allclose(vjps[0], expected_vjp0)
+        True
+        >>> expected_jvp1 = 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
+        >>> qml.math.allclose(vjps[1], expected_vjp1)
+        True
 
         """
 
