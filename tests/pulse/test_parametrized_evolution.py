@@ -336,6 +336,23 @@ class TestInitialization:
             == "my_label\n(p=[0.20,M0,M1], t=[0. 2.])"
         )
 
+    def test_label_no_params(self):
+        """Test that the label displays correctly with and without decimal and base_label"""
+        H = (
+            qml.PauliX(1)
+            + qml.pulse.constant * qml.PauliY(0)
+            + np.polyval * qml.PauliY(1)
+            + np.polyval * qml.PauliY(1)
+        )
+        op = qml.evolve(H)
+        cache = {"matrices": []}
+
+        assert op.label() == "ParametrizedEvolution"
+        assert op.label(decimals=2) == "ParametrizedEvolution"
+        assert op.label(decimals=2, cache=cache) == "ParametrizedEvolution"
+        assert op.label(base_label="my_label") == "my_label"
+        assert op.label(base_label="my_label", decimals=2, cache=cache)
+
     def test_label_reuses_cached_matrices(self):
         """Test that the matrix is reused if it already exists in the cache, instead
         of being added to the cache a second time"""
