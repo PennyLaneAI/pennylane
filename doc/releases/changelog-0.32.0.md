@@ -371,6 +371,9 @@ array([False, False])
 * Input types and sources for external wavefunctions and operators for `qml.import_state` 
   and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
+* Changed `qml.import_state` to no longer import at PennyLane level: it is now to be imported 
+  as `qml.qchem.import_state`. [(#4505)](https://github.com/PennyLaneAI/pennylane/pull/4505)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.math.get_dtype_name` now works with autograd array boxes.
