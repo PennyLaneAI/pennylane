@@ -88,12 +88,22 @@
 
 <h4>More input states for quantum chemistry calculations ⚛️</h4>
 
-* New functions are available to obtain a state vector from PySCF solver objects.
+* Input states obtained from advanced quantum chemistry calculations can be used in a circuit. 
   [(#4427)](https://github.com/PennyLaneAI/pennylane/pull/4427)
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
+  [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
+  [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
-  The `qml.qchem.import_state` function can be used to import a PySCF solver object and return the
-  corresponding state vector.
+  Quantum chemistry calculations rely on an initial state that is typically selected to be the
+  trivial Hartree-Fock state. For molecules with a complicated electronic structure, using initial
+  states obtained from affordable post-Hartree-Fock methods helps to improve the efficiency of the
+  quantum simulations. These calculations can be done with external quantum chemistry libraries such
+  as PySCF. 
+
+  It is now possible to import a PySCF solver object in PennyLane and extract the corresponding wave
+  function in the form of a state vector that can be directly used in a circuit. The user needs to
+  run the classical quantum chemistry calculations first and then use the `qml.import_state`
+  function to import the solver object and return a state vector.  
 
   ```pycon
   >>> from pyscf import gto, scf, ci
@@ -108,15 +118,24 @@
    -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
   ```
 
-  The currently supported objects are RCISD, UCISD, RCCSD, and UCCSD which correspond to 
-  restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
+  The state vector can be implemented in a circuit using `qml.StatePrep`.
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=4)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.StatePrep(wf_cisd, wires=range(4))
+  ...     return qml.state()
+  >>> print(circuit())
+  [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
+    1.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+    2.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j
+   -0.99429698+0.j  0.        +0.j  0.        +0.j  0.        +0.j]
+  ```
+
+  The currently supported post-Hartree-Fock methods are RCISD, UCISD, RCCSD, and UCCSD which 
+  denote restricted (R) and unrestricted (U) configuration interaction (CI) and coupled cluster (CC) 
   calculations with single and double (SD) excitations.
-
-* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
-  [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
-
-* Input types and sources for external wavefunctions and operators for `qml.import_state` 
-  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
 <h4>Reuse and reset qubits after mid-circuit measurements ♻️</h4>
 
