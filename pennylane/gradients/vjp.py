@@ -366,13 +366,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
             def func(_, num=None):  # pylint: disable=unused-argument
                 res = qml.math.convert_like(np.zeros([num_params]), dy)
-                if qml.active_return():
-                    multi = len(tape.measurements) > 1
-                    if multi:
-                        multi_dy = dy[0]
-                        res = qml.math.convert_like(res, multi_dy)
-                        return qml.math.cast_like(res, multi_dy)
-                return qml.math.cast_like(res, dy)
+                multi = len(tape.measurements) > 1
+                if multi:
+                    multi_dy = dy[0]
+                    res = qml.math.convert_like(res, multi_dy)
+                    return qml.math.cast_like(res, multi_dy)
 
             return [], func
     except (AttributeError, TypeError, NotImplementedError):
@@ -384,17 +382,14 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
 
-        if qml.active_return():
-            multi = len(tape.measurements) > 1
-            comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
+        multi = len(tape.measurements) > 1
+        comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
 
-            if not tape.shots.has_partitioned_shots:
-                return comp_vjp_fn(dy, jac, num=num)
+        if not tape.shots.has_partitioned_shots:
+            return comp_vjp_fn(dy, jac, num=num)
 
-            vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
-            return qml.math.sum(qml.math.stack(vjp_), 0)
-
-        return compute_vjp(dy, jac, num=num)
+        vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
+        return qml.math.sum(qml.math.stack(vjp_), 0)
 
     return gradient_tapes, processing_fn
 

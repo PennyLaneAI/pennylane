@@ -459,21 +459,6 @@ class QNode:
                     f"gradient kwargs."
                 )
 
-        if mode is None:
-            mode = "best"
-        elif qml.active_return():
-            warnings.warn(
-                "The `mode` keyword argument is deprecated and does nothing with the new return system. "
-                "Please use `grad_on_execution` instead.",
-                UserWarning,
-            )
-        else:
-            warnings.warn(
-                "The `mode` keyword argument is deprecated, along with the old return system. In "
-                "the new return system, you should set the `grad_on_execution` boolean instead.",
-                UserWarning,
-            )
-
         # input arguments
         self.func = func
         self.device = device
@@ -484,7 +469,6 @@ class QNode:
 
         # execution keyword arguments
         self.execute_kwargs = {
-            "mode": mode,
             "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
@@ -972,111 +956,44 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        if qml.active_return():
-            if "mode" in self.execute_kwargs:
-                self.execute_kwargs.pop("mode")
-
-            # pylint: disable=unexpected-keyword-arg
-            res = qml.execute(
-                (self._tape,),
-                device=self.device,
-                gradient_fn=self.gradient_fn,
-                interface=self.interface,
-                transform_program=self.transform_program,
-                gradient_kwargs=self.gradient_kwargs,
-                override_shots=override_shots,
-                **self.execute_kwargs,
-            )
-
-            res = res[0]
-
-            # convert result to the interface in case the qfunc has no parameters
-
-            if len(self.tape.get_parameters(trainable_only=False)) == 0:
-                res = _convert_to_interface(res, self.interface)
-
-            if old_interface == "auto":
-                self.interface = "auto"
-
-            # Special case of single Measurement in a list
-            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
-                return [res]
-
-            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-                has_partitioned_shots = (
-                    self.tape.shots.has_partitioned_shots
-                    if isinstance(self.device, qml.devices.experimental.Device)
-                    else self.device._shot_vector
-                )
-                if has_partitioned_shots:
-                    res = [type(self.tape._qfunc_output)(r) for r in res]
-                    res = tuple(res)
-                else:
-                    res = type(self.tape._qfunc_output)(res)
-
-            if override_shots is not False:
-                # restore the initialization gradient function
-                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
-
-            self._update_original_device()
-
-            return res
-        if "mode" in self.execute_kwargs:
-            mode = self.execute_kwargs.pop("mode")
-            if mode == "forward":
-                grad_on_execution = True
-            elif mode == "backward":
-                grad_on_execution = False
-            else:
-                grad_on_execution = "best"
-            self.execute_kwargs["grad_on_execution"] = grad_on_execution
         # pylint: disable=unexpected-keyword-arg
-
         res = qml.execute(
             (self._tape,),
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
-            transform_program=self._transform_program,
+            transform_program=self.transform_program,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,
         )
 
+        res = res[0]
+
+        # convert result to the interface in case the qfunc has no parameters
+
+        if len(self.tape.get_parameters(trainable_only=False)) == 0:
+            res = _convert_to_interface(res, self.interface)
+
         if old_interface == "auto":
             self.interface = "auto"
 
-        if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
-            # If a device batch transform was applied, we need to 'unpack'
-            # the returned tuple/list to a float.
-            #
-            # Note that we use autograd.isinstance, because on the backwards pass
-            # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
-            # autograd.isinstance is a 'safer' isinstance check that supports
-            # autograd backwards passes.
-            #
-            # TODO: find a more explicit way of determining that a batch transform
-            # was applied.
+        # Special case of single Measurement in a list
+        if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+            return [res]
 
-            res = res[0]
-
-        if not isinstance(self._qfunc_output, Sequence) and isinstance(
-            self._qfunc_output, CountsMP
-        ):
-            if self.device._has_partitioned_shots():
-                return tuple(res)
-
-            # return a dictionary with counts not as a single-element array
-            return res[0]
-
-        if isinstance(self._qfunc_output, Sequence) and any(
-            isinstance(m, CountsMP) for m in self._qfunc_output
-        ):
-            # If Counts was returned with other measurements, then apply the
-            # data structure used in the qfunc
-            qfunc_output_type = type(self._qfunc_output)
-            return qfunc_output_type(res)
+        # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+        if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+            has_partitioned_shots = (
+                self.tape.shots.has_partitioned_shots
+                if isinstance(self.device, qml.devices.experimental.Device)
+                else self.device._shot_vector
+            )
+            if has_partitioned_shots:
+                res = [type(self.tape._qfunc_output)(r) for r in res]
+                res = tuple(res)
+            else:
+                res = type(self.tape._qfunc_output)(res)
 
         if override_shots is not False:
             # restore the initialization gradient function
@@ -1084,18 +1001,7 @@ class QNode:
 
         self._update_original_device()
 
-        if isinstance(self._qfunc_output, Sequence) or (
-            self.tape.is_sampled and self.device._has_partitioned_shots()
-        ):
-            return res
-
-        if isinstance(self._qfunc_output, ClassicalShadowMP):
-            # if classical shadows is returned, then don't squeeze the
-            # last axis corresponding to the number of qubits
-            return qml.math.squeeze(res, axis=0)
-
-        # Squeeze arraylike outputs
-        return qml.math.squeeze(res)
+        return res
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)

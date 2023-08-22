@@ -246,14 +246,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             jacs = []
             for i in argnums:
-                if qml.active_return() and s > 1:
+                if s > 1:
 
                     def cost(*args, **kwargs):
                         # pylint: disable=cell-var-from-loop
                         return qml.math.stack(h(*args, **kwargs))
-
-                else:
-                    cost = h
 
                 j = qml.jacobian(cost, argnum=i)(*args, **kwargs)
 
@@ -349,13 +346,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         try:
             device.shots = [(1, int(self.max_shots))]
 
-            if qml.active_return():
-
-                def cost(*args, **kwargs):
-                    return qml.math.stack(qnode(*args, **kwargs))
-
-            else:
-                cost = qnode
+            def cost(*args, **kwargs):
+                return qml.math.stack(qnode(*args, **kwargs))
 
             grads = [qml.jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
         finally:

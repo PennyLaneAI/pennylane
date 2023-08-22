@@ -396,8 +396,6 @@ class TorchLayer(Module):
         if has_batch_dim:
             batch_dims = inputs.shape[:-1]
             inputs = torch.reshape(inputs, (-1, inputs.shape[-1]))
-
-        if not qml.active_return() and has_batch_dim:
             # If the input has a batch dimension and we want to execute each data point separately,
             # unstack the input along its first dimension, execute the QNode on each of the yielded
             # tensors, and then stack the outputs back into the correct shape

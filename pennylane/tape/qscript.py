@@ -937,61 +937,6 @@ class QuantumScript:
             shape = tuple(shape)
         return shape
 
-    def _shape_legacy(self, device):
-        """Produces the output shape of the quantum script by inspecting its measurements
-        and the device used for execution.
-
-        .. note::
-
-            The computed shape is not stored because the output shape may be dependent on the device
-                used for execution.
-
-        Args:
-            device (pennylane.Device): the device that will be used for the script execution
-
-        Raises:
-            ValueError: raised for unsupported cases for example when the script contains
-                heterogeneous measurements
-
-        Returns:
-            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the quantum script result
-
-        **Example:**
-
-        .. code-block:: pycon
-
-            >>> dev = qml.device('default.qubit', wires=2)
-            >>> qs = QuantumScript(measurements=[qml.state()])
-            >>> qs.shape(dev)
-            (1, 4)
-        """
-        output_shape = tuple()
-        shots = (
-            Shots(device._raw_shot_sequence)
-            if device.shot_vector is not None
-            else Shots(device.shots)
-        )
-
-        if len(self.measurements) == 1:
-            output_shape = self._single_measurement_shape(self.measurements[0], device, shots)
-        else:
-            num_measurements = len({type(meas) for meas in self.measurements})
-            if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(
-                    self.measurements, device, shots
-                )
-            else:
-                raise ValueError(
-                    "Getting the output shape of a quantum script that contains multiple types of "
-                    "measurements is unsupported."
-                )
-
-        if len(shots.shot_vector) <= 1 and self.batch_size is not None:
-            # insert the batch dimension
-            output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
-
-        return output_shape
-
     def shape(self, device):
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
@@ -1020,8 +965,6 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        if not qml.active_return():
-            return self._shape_legacy(device)
 
         if isinstance(device, qml.devices.experimental.Device):
             # MP.shape (called below) takes 2 arguments: `device` and `shots`.
@@ -1058,38 +1001,6 @@ class QuantumScript:
         return shapes
 
     @property
-    def _numeric_type_legacy(self):
-        """Returns the expected numeric type of the script result by inspecting
-        its measurements.
-
-        Raises:
-            ValueError: raised for unsupported cases for
-                example when the script contains heterogeneous measurements
-
-        Returns:
-            type: the numeric type corresponding to the result type of the
-            script
-
-        **Example:**
-
-        >>> qscript = QuantumScript(measurements=[qml.state()])
-        >>> qscript.numeric_type
-        complex
-        """
-        measurement_types = {type(meas) for meas in self.measurements}
-        if len(measurement_types) > 1:
-            raise ValueError(
-                "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
-            )
-
-        # Note: if one of the sample measurements contains outputs that
-        # are real, then the entire result will be real
-        if measurement_types.pop() is SampleMP:
-            return next((float for mp in self.measurements if mp.numeric_type is float), int)
-
-        return self.measurements[0].numeric_type
-
-    @property
     def numeric_type(self):
         """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
@@ -1107,8 +1018,6 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
-        if not qml.active_return():
-            return self._numeric_type_legacy
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types

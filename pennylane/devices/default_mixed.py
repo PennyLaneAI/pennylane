@@ -172,21 +172,7 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
-        if not qml.active_return():
-            # check if the array is ragged
-            first_shape = qnp.shape(array[0])
-            is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
-
-            if not is_ragged:
-                res = qnp.stack(array)
-                if dtype is not None:
-                    res = qnp.cast(res, dtype=dtype)
-
-            if is_ragged or res.dtype is np.dtype("O"):
-                return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
-        else:
-            res = qnp.cast(array, dtype=dtype)
-
+        res = qnp.cast(array, dtype=dtype)
         return res
 
     def __init__(
@@ -696,60 +682,6 @@ class DefaultMixed(QubitDevice):
                 wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
-
-    def _execute_legacy(self, circuit, **kwargs):
-        """Execute a queue of quantum operations on the device and then
-        measure the given observables.
-
-        Applies a readout error to the measurement outcomes of any observable if
-        readout_prob is non-zero. This is done by finding the list of measured wires on which
-        BitFlip channels are applied in the :meth:`apply`.
-
-        For plugin developers: instead of overwriting this, consider
-        implementing a suitable subset of
-
-        * :meth:`apply`
-
-        * :meth:`~.generate_samples`
-
-        * :meth:`~.probability`
-
-        Additional keyword arguments may be passed to this method
-        that can be utilised by :meth:`apply`. An example would be passing
-        the ``QNode`` hash that can be used later for parametric compilation.
-
-        Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
-
-        Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
-
-        Returns:
-            array[float]: measured value(s)
-        """
-        if self.readout_err:
-            wires_list = []
-            for m in circuit.measurements:
-                if isinstance(m, StateMP):
-                    # State: This returns pre-rotated state, so no readout error.
-                    # Assumed to only be allowed if it's the only measurement.
-                    self.measured_wires = []
-                    return super()._execute_legacy(circuit, **kwargs)
-                if isinstance(m, (SampleMP, CountsMP)) and m.wires in (
-                    qml.wires.Wires([]),
-                    self.wires,
-                ):
-                    # Sample, Counts: Readout error applied to all device wires when wires
-                    # not specified or all wires specified.
-                    self.measured_wires = self.wires
-                    return super()._execute_legacy(circuit, **kwargs)
-                if isinstance(m, (VnEntropyMP, MutualInfoMP)):
-                    # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
-                    # error need not be applied on the corresponding device wires.
-                    continue
-                wires_list.append(m.wires)
-            self.measured_wires = qml.wires.Wires.all_wires(wires_list)
-        return super()._execute_legacy(circuit, **kwargs)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
