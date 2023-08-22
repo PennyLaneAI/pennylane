@@ -203,7 +203,7 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
     # eigendecomposition of sqrt(sigma) * rho * sqrt(sigma)
     evs0, u0 = qml.math.linalg.eigh(sqrt_dm1 @ dm0 @ sqrt_dm1)
     evs0 = qml.math.real(evs0)
-    evs0 = qml.math.where(evs0 > 0.0, evs0, 1e-15)
+    evs0 = qml.math.where(evs0 > 1e-15, evs0, 1e-15)
     evs0 = qml.math.cast_like(evs0, sqrt_dm1)
 
     if len(qml.math.shape(dm0)) == 2 and len(qml.math.shape(dm1)) == 2:
