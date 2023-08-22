@@ -732,7 +732,7 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
     Args:
         operator_matrix (tensor_like):  operator matrix with shape ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)``.
         state_vector (tensor_like): state vector with shape ``(2**N)`` or ``(batch_dim, 2**N)``.
-        check_state (bool): If True, the function will check the validity of the state vector 
+        check_state (bool): If True, the function will check the validity of the state vector
             via its shape and the norm
         c_dtype (str): Complex floating point precision type.
 
@@ -764,17 +764,15 @@ def expectation_value(operator_matrix, state_vector, check_state=False, c_dtype=
     if qml.math.shape(operator_matrix)[-1] != qml.math.shape(state_vector)[-1]:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    batched0 = len(qml.math.shape(state_vector)) > 1
-    batched1 = len(qml.math.shape(operator_matrix)) > 2
     # The overlap <psi|A|psi>
-    overlap = qml.math.einsum(
-        f"...j,...ji,...i->...",
+    expval = qml.math.einsum(
+        "...j,...ji,...i->...",
         qml.math.conj(state_vector),
         operator_matrix,
         state_vector,
         optimize="greedy",
     )
-    return overlap
+    return expval
 
 
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
