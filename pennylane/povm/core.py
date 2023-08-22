@@ -43,6 +43,9 @@ class POVM:
     def __len__(self):
         return len(self.obs)
 
+    def label(self, *args, **kwargs):
+        return "POVM"
+
     @property
     def data(self):
         d = tuple(ob.data for ob in self.obs)
@@ -59,6 +62,7 @@ class POVM:
 
 @transform
 def povm_dilate(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+
     ops = tape.operations.copy()
 
     # more POVMs are technically possible, but keep this prototype simple
@@ -71,7 +75,7 @@ def povm_dilate(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], 
 
     # TODO: figure out how to dilate using operator arithmetic
 
-    sqrt_ops = qml.math.stack([qml.matrix(qml.pow(op, 0.5)) for op in povm])
+    sqrt_ops = qml.math.stack([qml.matrix(qml.pow(op, 0.5), wire_order=tape.wires) for op in povm])
     dim = 2 ** len(tape.wires)
 
     extra_dims = 2 ** int(np.ceil(np.log2(len(povm))))
@@ -90,23 +94,22 @@ def povm_dilate(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], 
 
     U = 2 * v @ qml.math.conj(v.T) - qml.math.eye(extra_dims * dim)
 
-    new_wires = list(range(-int(np.log2(extra_dims)), 0))
+    # new_wires = list(range(-int(np.log2(extra_dims)), 0))
+    new_wires = list(range(len(tape.wires), len(tape.wires) + int(np.log2(extra_dims))))
     ops.append(qml.QubitUnitary(U, new_wires + tape.wires))
 
     if is_prob:
-        mp = qml.probs(wires=new_wires + tape.wires)
+        mp = qml.probs(wires=new_wires)
         new_tape = qml.tape.QuantumScript(ops, [mp], shots=tape.shots)
 
         def processing_fn(res):
-            res = qml.math.reshape(res[0], (extra_dims, dim))
-            return qml.math.sum(res, 1)[:len(povm)]
+            return res[0]
 
     else:
-        mp = qml.sample(wires=new_wires + tape.wires)
+        mp = qml.sample(wires=new_wires)
         new_tape = qml.tape.QuantumScript(ops, [mp], shots=tape.shots)
 
         def processing_fn(res):
-            res = res[0][:, :len(new_wires)]
-            return qml.math.dot(res, 1 << qml.math.arange(len(new_wires) - 1, -1, -1))
+            return qml.math.dot(res[0], 1 << qml.math.arange(len(new_wires) - 1, -1, -1))
 
     return [new_tape], processing_fn

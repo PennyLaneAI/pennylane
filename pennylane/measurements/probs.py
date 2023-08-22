@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 
 
-def probs(wires=None, op=None) -> "ProbabilityMP":
+def probs(op=None, wires=None) -> "ProbabilityMP":
     r"""Probability of each computational basis state.
 
     This measurement function accepts either a wire specification or
