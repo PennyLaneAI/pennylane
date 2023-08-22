@@ -34,7 +34,7 @@ class JacobianProductCalculator(abc.ABC):
     ) -> Tuple[ResultBatch, Tuple]:
         """Calculate both the results for a batch of tapes and the jvp.
 
-        This method is required for the jax interface.
+        This method is required to compute JVPs in the JAX interface.
 
         Args:
             tapes: The batch of tapes to take the derivatives of
