@@ -180,7 +180,7 @@ class DefaultQubit2(Device):
             if circuit is None:
                 return True
 
-            return isinstance(validate_and_expand_adjoint(circuit), QuantumScript)
+            return isinstance(validate_and_expand_adjoint(circuit)[0][0], QuantumScript)
 
         return False
 
@@ -194,12 +194,13 @@ class DefaultQubit2(Device):
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the parameters needed to fully describe
-                the execution. Includes such information as shots.
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+                parameters needed to fully describe the execution. Includes such information as shots.
 
         Returns:
-            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
+            TransformProgram, ExecutionConfig: A tranform program that when called returns QuantumTapes that the device
+            can natively execute, a postprocessing function to be called after execution, and a configuration with
+            unset specifications filled in.
 
         This device:
 

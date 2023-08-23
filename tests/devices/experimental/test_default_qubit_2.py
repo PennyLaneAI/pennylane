@@ -198,7 +198,7 @@ class TestPreprocessing:
             gradient_method="best", use_device_gradient=None, grad_on_execution=None
         )
         circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        _, _, new_config = dev.preprocess(circuit, config)
+        _, new_config = dev.preprocess(circuit, config)
 
         assert new_config.gradient_method == "backprop"
         assert new_config.use_device_gradient
@@ -212,7 +212,7 @@ class TestPreprocessing:
             gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )
         circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        _, _, new_config = dev.preprocess(circuit, config)
+        _, new_config = dev.preprocess(circuit, config)
 
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
@@ -224,7 +224,7 @@ class TestPreprocessing:
 
         config = ExecutionConfig(device_options={"max_workers": max_workers})
         circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        _, _, new_config = dev.preprocess(circuit, config)
+        _, new_config = dev.preprocess(circuit, config)
 
         assert new_config.device_options["max_workers"] == max_workers
 
@@ -1029,7 +1029,8 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit2(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, self.ec)
         assert isinstance(actual_grad, np.ndarray)
@@ -1046,7 +1047,8 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit2(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives([qs], self.ec)
         assert isinstance(actual_grad, tuple)
@@ -1082,7 +1084,8 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
+        program, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
+        circuits, _ = program([single_meas, multi_meas])
         actual_grad = dev.compute_derivatives(circuits, self.ec)
 
         assert new_ec.use_device_gradient
@@ -1099,7 +1102,9 @@ class TestAdjointDifferentiation:
         tangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp(qs, tangent, self.ec)
@@ -1119,7 +1124,9 @@ class TestAdjointDifferentiation:
         tangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
@@ -1170,8 +1177,9 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
         tangents = [(0.456,), (0.789,)]
-
-        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
+        circuits = [single_meas, multi_meas]
+        program, new_ec = dev.preprocess(circuits, self.ec)
+        circuits, _ = program(circuits)
         actual_grad = dev.compute_jvp(circuits, tangents, self.ec)
         expected_grad = (
             -qml.math.sin(x) * tangents[0][0],
@@ -1192,7 +1200,8 @@ class TestAdjointDifferentiation:
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
@@ -1212,7 +1221,8 @@ class TestAdjointDifferentiation:
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
@@ -1262,8 +1272,10 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
         cotangents = [(0.456,), (0.789, 0.123)]
+        circuits = [single_meas, multi_meas]
+        program, new_ec = dev.preprocess(circuits, self.ec)
+        circuits, _ = program(circuits)
 
-        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
         actual_grad = dev.compute_vjp(circuits, cotangents, self.ec)
         expected_grad = (
             -qml.math.sin(x) * cotangents[0][0],
@@ -1836,9 +1848,9 @@ def test_broadcasted_parameter(max_workers):
 
     config = ExecutionConfig()
     config.gradient_method = "adjoint"
-    batch, post_processing_fn, config = dev.preprocess(qs, config)
-
+    program, config = dev.preprocess(qs, config)
+    batch, pre_processing_fn = program([qs])
     assert len(batch) == 2
     results = dev.execute(batch, config)
-    processed_results = post_processing_fn(results)
+    processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
