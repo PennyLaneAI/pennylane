@@ -221,7 +221,7 @@
   qml.draw_mpl(circuit, style="pennylane")(1, 1)
   ```
   
-  <img src="https://docs.pennylane.ai/en/stable/_images/pennylane_style.png" width=50%/>
+  <img src="https://docs.pennylane.ai/en/latest/_images/pennylane_style.png" width=50%/>
   
   PennyLane-styled plots can also be drawn by passing `"pennylane.drawer.plot"` to Matplotlib's
   `plt.style.use` function:
