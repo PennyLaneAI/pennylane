@@ -139,6 +139,7 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expectation_value",
     "eye",
     "fidelity",
     "fidelity_statevector",
