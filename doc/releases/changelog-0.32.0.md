@@ -43,7 +43,7 @@
   ```
 
   This circuit can be used as a building block within a larger QNode to perform algorithms such as
-  the [quantum singular value transformation](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html).
+  the [quantum singular value transformation](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) and [Hamiltonian simulation](https://codebook.xanadu.ai/H.6).
 
 * Decomposing a Hermitian matrix into a linear combination of Pauli words via `qml.pauli_decompose` is 
   now faster and differentiable.
