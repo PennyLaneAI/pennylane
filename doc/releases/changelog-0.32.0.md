@@ -92,7 +92,7 @@ array([False, False])
 
 * Updated `QNode.construct` to only apply the `qml.defer_measurements` transform if the device
   does not natively support mid-circuit measurements.
-  [(#)]()
+  [(#4516)](https://github.com/PennyLaneAI/pennylane/pull/4516)
 
 * Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
   This unlocks the ability to jit functions of `Operator`.
