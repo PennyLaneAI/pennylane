@@ -16,9 +16,6 @@ This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
-import inspect
-import logging
-
 import numpy as np
 import torch
 import torch.utils._pytree as pytree
@@ -27,20 +24,8 @@ import pennylane as qml
 from pennylane.measurements import CountsMP
 from pennylane.transforms import convert_to_numpy_parameters
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
-
 
 def _compute_vjp(dy, jacs, device=None):
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(dy=%s, jacs=%s, device=%s) called by=%s",
-            dy,
-            jacs,
-            repr(device),
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
     vjps = []
 
     for d, jac in zip(dy, jacs):
@@ -89,17 +74,6 @@ class ExecuteTapesLegacy(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "Entry with args=(ctx=%s, kwargs=%s, parameters=%s) called by=%s",
-                ctx,
-                kwargs,
-                parameters,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
-
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
 
@@ -146,16 +120,6 @@ class ExecuteTapesLegacy(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.info(
-                "Entry with args=(ctx=%s, dy=%s) called by=%s",
-                ctx,
-                dy,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
-
         if ctx.jacs:
             # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
@@ -318,15 +282,6 @@ def pytreeify(cls):
 
 def _compute_vjps(dys, jacs, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(dys=%s, jacs=%s, multi_measurements=%s) called by=%s",
-            dys,
-            jacs,
-            multi_measurements,
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
     vjps = []
 
     for i, multi in enumerate(multi_measurements):
@@ -373,17 +328,6 @@ class ExecuteTapes(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "Entry with args=(ctx=%s, kwargs=%s, parameters=%s) called by=%s",
-                ctx,
-                kwargs,
-                parameters,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
-
         ctx.tapes = kwargs["tapes"]
         ctx.device = kwargs["device"]
 
@@ -415,16 +359,6 @@ class ExecuteTapes(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "Entry with args=(ctx=%s, dy=%s) called by=%s",
-                ctx,
-                dy,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
-
         multi_measurements = [len(tape.measurements) > 1 for tape in ctx.tapes]
 
         if ctx.jacs:

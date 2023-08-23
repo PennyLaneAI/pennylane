@@ -15,8 +15,6 @@
 reference plugin.
 """
 import warnings
-import inspect
-import logging
 import semantic_version
 
 try:
@@ -32,9 +30,6 @@ except ImportError as e:  # pragma: no cover
 import numpy as np
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from . import DefaultQubit
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 
 
 class DefaultQubitTorch(DefaultQubit):
@@ -208,16 +203,6 @@ class DefaultQubitTorch(DefaultQubit):
         return par_torch_device
 
     def execute(self, circuit, **kwargs):
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "Entry with args=(circuit=%s, kwargs=%s) called by=%s",
-                circuit,
-                kwargs,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
-
         ops_and_obs = circuit.operations + circuit.observables
 
         par_torch_device = self._get_parameter_torch_device(ops_and_obs)

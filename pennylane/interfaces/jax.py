@@ -17,7 +17,6 @@ to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
 import inspect
-import logging
 
 import jax
 import jax.numpy as jnp
@@ -28,9 +27,6 @@ from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -399,22 +395,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
-            tapes,
-            repr(device),
-            execute_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
-            else "\n" + inspect.getsource(execute_fn) + "\n",
-            gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
-            else "\n" + inspect.getsource(gradient_fn) + "\n",
-            gradient_kwargs,
-            _n,
-            max_diff,
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
 
     # Set the trainable parameters
     if _n == 1:

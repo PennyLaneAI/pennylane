@@ -16,9 +16,6 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import logging
-import inspect
-
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -26,10 +23,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import CountsMP
 from pennylane.transforms import convert_to_numpy_parameters
-
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 
 
 def _execute_legacy(
@@ -401,25 +394,6 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(ans=%s, parameters=%s, tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
-            ans,
-            parameters,
-            tapes,
-            repr(device),
-            execute_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
-            else "\n" + inspect.getsource(execute_fn) + "\n",
-            gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
-            else "\n" + inspect.getsource(gradient_fn) + "\n",
-            gradient_kwargs,
-            _n,
-            max_diff,
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
     cached_jac = {}
 
     def _get_jac_with_caching():
@@ -441,15 +415,6 @@ def vjp(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
-
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "Entry with args=(dy=%s) called by=%s",
-                dy,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
 
         # multi measurement
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
@@ -534,16 +499,6 @@ def vjp(
 
 def _compute_vjps_autograd(jacs, dy, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(jacs=%s, dy=%s, multi_measurements=%s, shots=%s) called by=%s",
-            jacs,
-            dy,
-            multi_measurements,
-            has_partitioned_shots,
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
     vjps = []
     for i, multi in enumerate(multi_measurements):
         dy_ = dy[i] if has_partitioned_shots else (dy[i],)
