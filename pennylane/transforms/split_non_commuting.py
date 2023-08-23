@@ -17,8 +17,6 @@ Contains the tape transform that splits non-commuting terms
 # pylint: disable=protected-access
 from functools import reduce
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, SampleMP
 

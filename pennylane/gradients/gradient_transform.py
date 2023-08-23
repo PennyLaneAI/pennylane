@@ -16,7 +16,6 @@ including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 from functools import partial
 import warnings
-import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable

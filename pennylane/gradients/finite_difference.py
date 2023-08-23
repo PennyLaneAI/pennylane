@@ -17,7 +17,6 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 import functools
-from collections.abc import Sequence
 from warnings import warn
 
 import numpy as np

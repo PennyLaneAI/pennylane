@@ -20,7 +20,6 @@ This module contains the :class:`QubitDevice` abstract base class.
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import abc
-import contextlib
 import itertools
 import warnings
 from collections import defaultdict
@@ -38,28 +37,18 @@ from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts,
     ClassicalShadowMP,
-    Counts,
     CountsMP,
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
-    MutualInfo,
     MutualInfoMP,
-    Probability,
     ProbabilityMP,
-    Sample,
     SampleMeasurement,
     SampleMP,
-    Shadow,
-    ShadowExpval,
     ShadowExpvalMP,
-    State,
     StateMeasurement,
     StateMP,
-    Variance,
     VarianceMP,
-    VnEntropy,
     VnEntropyMP,
     Shots,
 )

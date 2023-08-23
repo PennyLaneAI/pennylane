@@ -22,12 +22,10 @@ from collections.abc import Sequence
 from typing import Union
 import logging
 
-import autograd
-
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP, Shots
+from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumTape, make_qscript
 
 logger = logging.getLogger(__name__)

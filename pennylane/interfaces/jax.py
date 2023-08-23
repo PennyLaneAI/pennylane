@@ -23,8 +23,6 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64

@@ -19,13 +19,11 @@ to a PennyLane Device class.
 import inspect
 import logging
 
-import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager import context
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.measurements import CountsMP, Shots
+from pennylane.measurements import Shots
 from pennylane.transforms import convert_to_numpy_parameters
 
 logger = logging.getLogger(__name__)

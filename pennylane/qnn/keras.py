@@ -17,8 +17,6 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
-import pennylane as qml
-
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
