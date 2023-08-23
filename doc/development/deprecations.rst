@@ -141,7 +141,7 @@ Completed deprecation cycles
   - Removed in v0.33
 
 * The ``mode`` keyword argument in ``QNode`` has been removed, as it was only used in the old return
-  system (which is also deprecated). Please use ``grad_on_execution`` instead.
+  system (which has also been removed). Please use ``grad_on_execution`` instead.
 
   - Deprecated in v0.32
   - Removed in v0.33
