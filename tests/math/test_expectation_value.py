@@ -17,9 +17,6 @@
 import numpy as onp
 import pytest
 
-import torch
-import jax.numpy as jnp
-import tensorflow as tf
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -29,6 +26,10 @@ pytestmark = pytest.mark.all_interfaces
 
 class TestExpectationValueMath:
     """Tests for Expectation value of a operator for a state vector."""
+
+    import torch
+    import jax.numpy as jnp
+    import tensorflow as tf
 
     ops_vs_vecstates = [
         ([[1, 0], [0, 0]], [1, 0], 1),
