@@ -365,14 +365,12 @@ array([False, False])
   some aspects of its use.
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
-* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
+* The `qml.qchem.import_state` function is now accounted for in `doc/introduction/chemistry.rst`, 
+  and input types and sources for external wavefunctions and operators for `qml.qchem.import_state` and 
+  `qml.import_operator` are specified.
   [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
-
-* Input types and sources for external wavefunctions and operators for `qml.import_state` 
-  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
-
-* Changed `qml.import_state` to no longer import at PennyLane level: it is now to be imported 
-  as `qml.qchem.import_state`. [(#4505)](https://github.com/PennyLaneAI/pennylane/pull/4505)
+  [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+  [(#4505)](https://github.com/PennyLaneAI/pennylane/pull/4505)
 
 <h3>Bug fixes 🐛</h3>
 
