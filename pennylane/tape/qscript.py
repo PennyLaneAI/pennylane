@@ -784,6 +784,7 @@ class QuantumScript:
         [0.432, 0.543, 0.133]
 
         A subset of parameters can be modified as well, defined by the parameter indices:
+
         >>> newer_qscript = new_qscript.bind_new_parameters([-0.1, 0.5], [0, 2])
         >>> newer_qscript.get_parameters()
         [-0.1, 0.2, 0.5]
