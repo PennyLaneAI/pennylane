@@ -752,7 +752,7 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
         interface = get_jax_interface_name(tapes)
 
     if interface == "jax-jit":
-        from .jax_jit_tuple import execute as _execute
+        from .jax_jit import execute as _execute
     else:
         from .jax import execute as _execute
     return _execute
