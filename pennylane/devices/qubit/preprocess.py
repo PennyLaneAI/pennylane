@@ -19,7 +19,6 @@ from dataclasses import replace
 import os
 from typing import Generator, Callable, Tuple, Union, Sequence
 import warnings
-from functools import partial
 
 import pennylane as qml
 
