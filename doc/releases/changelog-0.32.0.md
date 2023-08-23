@@ -351,6 +351,7 @@ array([False, False])
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
   [(#4489)](https://github.com/PennyLaneAI/pennylane/pull/4489)
+  [(#4498)](https://github.com/PennyLaneAI/pennylane/pull/4498)
 
 * The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
