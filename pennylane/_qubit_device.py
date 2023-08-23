@@ -55,7 +55,7 @@ from pennylane.measurements import (
 from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.resource import Resources
 from pennylane.operation import operation_derivative, Operation
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 logger = logging.getLogger(__name__)
@@ -559,7 +559,9 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
+    def statistics(
+        self, circuit: QuantumTape, shot_range=None, bin_size=None
+    ):  # pylint: disable=too-many-statements
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
