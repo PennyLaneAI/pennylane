@@ -43,12 +43,12 @@ $$\frac{\partial\Lambda_{k\ell}}{\partial \sigma_ {mn}}=\sqrt{\rho}_ {nq}U_{q\el
 
 Then equation (1) gives
 
-$$F(\rho,\sigma)=\text{Tr}\left(\sqrt{\sqrt{\rho}\\,\sigma\\,\sqrt{\rho}}\right)^2=\left(\sum_{k=1}^n\sqrt{\Lambda_{kk}}\right)^2$$
+$$F(\rho,\sigma)=\text{Tr}\left(\sqrt{\sqrt{\rho}\\,\sigma\\,\sqrt{\rho}}\right)^2=\left(\sum_{k=1}^d\sqrt{\Lambda_{kk}}\right)^2$$
 
 and the gradient is easily seen to be
 
 $$\begin{align*}
-\frac{\partial F}{\partial\sigma_{mn}}&=2\left(\sum_{k=1}^n\sqrt{\Lambda_{kk}}\right)\sum_{k=1}^n\sqrt{\rho}_ {nq}U_{qk}\frac{1}{2\sqrt{\Lambda_{kk}}}U^\dagger_{kp}\sqrt{\rho}_{pm}\\
+\frac{\partial F}{\partial\sigma_{mn}}&=2\left(\sum_{k=1}^n\sqrt{\Lambda_{kk}}\right)\sum_{k=1}^d\sqrt{\rho}_ {nq}U_{qk}\frac{1}{2\sqrt{\Lambda_{kk}}}U^\dagger_{kp}\sqrt{\rho}_{pm}\\
 \end{align*}$$
 
 Converting back to matrix notation, this is

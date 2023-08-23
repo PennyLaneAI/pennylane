@@ -186,7 +186,7 @@ def _compute_fidelity_vanilla(density_matrix0, density_matrix1):
     # extract eigenvalues
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)
     evs = qml.math.real(evs)
-    evs = qml.math.where(evs > 0.0, evs, 1e-15)
+    evs = qml.math.where(evs > 0.0, evs, 0)
 
     trace = (qml.math.sum(qml.math.sqrt(evs), -1)) ** 2
 
