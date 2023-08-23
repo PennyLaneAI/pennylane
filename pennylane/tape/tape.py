@@ -239,7 +239,7 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     Args:
         tape (QuantumScript): The tape to expand.
-        skip_first (Bool): If ``True``, will not expand a ``StatePrepBase`` operation if
+        skip_first (bool): If ``True``, will not expand a ``StatePrepBase`` operation if
             it is the first operation in the tape.
 
     Returns:
