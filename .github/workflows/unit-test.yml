@@ -96,6 +96,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Gather workflow telemetry data
+        uses: runforesight/workflow-telemetry-action@v1.8.0
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
