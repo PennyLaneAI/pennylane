@@ -212,7 +212,6 @@
   ```python
   def circuit(x, z):
       qml.QFT(wires=(0,1,2,3))
-      qml.IsingXX(1.234, wires=(0,2))
       qml.Toffoli(wires=(0,1,2))
       qml.CSWAP(wires=(0,2,3))
       qml.RX(x, wires=0)
@@ -221,6 +220,8 @@
 
   qml.draw_mpl(circuit, style="pennylane")(1, 1)
   ```
+  
+  <img src="https://docs.pennylane.ai/en/stable/_images/pennylane_style.png" width=50%/>
   
   PennyLane-styled plots can also be drawn by passing `"pennylane.drawer.plot"` to Matplotlib's
   `plt.style.use` function:
