@@ -25,8 +25,6 @@ import pennylane as qml
 from pennylane.interfaces.jax import _compute_jvps
 from pennylane.transforms import convert_to_numpy_parameters
 
-from .jax import set_parameters_on_copy_and_unwrap
-
 dtype = jnp.float64
 Zero = jax.custom_derivatives.SymbolicZero
 
@@ -50,6 +48,11 @@ def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.bind_new_parameters(a, list(range(len(a))))
     return convert_to_numpy_parameters(tc) if unwrap else tc
+
+
+def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
+    """Copy a set of tapes with operations and set parameters"""
+    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
 def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):

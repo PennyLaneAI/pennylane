@@ -14,8 +14,6 @@
 """
 Unit tests for the new return types.
 """
-import warnings
-
 import numpy as np
 import pytest
 

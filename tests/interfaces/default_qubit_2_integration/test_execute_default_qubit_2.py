@@ -125,10 +125,6 @@ class TestBatchTransformHelper:
         assert new_config.grad_on_execution
         assert new_config.use_device_gradient
 
-
-class TestNewDeviceIntegration:
-    """Localized tests for specific warnings, errors, and edge behaviour."""
-
     def test_warning_if_not_device_batch_transform(self):
         """Test that a warning is raised if the users requests to not run device batch transform."""
 
