@@ -257,8 +257,9 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
         )
 
         qnode.construct(args, kwargs)
-        batch, _, _ = qml.devices.qubit.preprocess((qnode.tape,))
-        mt = _adjoint_metric_tensor_tape(batch[0])
+        program, _ = qml.devices.qubit.preprocess((qnode.tape,))
+        tapes, _ = program((qnode.tape,))
+        mt = _adjoint_metric_tensor_tape(tapes[0])
 
         if old_interface == "auto":
             qnode.interface = "auto"

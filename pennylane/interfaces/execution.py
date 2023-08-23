@@ -630,15 +630,14 @@ def execute(
     #### Executing the configured setup #####
 
     tapes, program_post_processing = transform_program(tapes)
-    tapes, batch_fn, config = _batch_transform(
+    tapes, program_pre_processing, config = _batch_transform(
         tapes, device, config, override_shots, device_batch_transform
     )
 
     # Exiting early if we do not need to deal with an interface boundary
     if no_interface_boundary_required:
         results = inner_execute(tapes)
-        results = batch_fn(results)
-        return program_post_processing(results)
+        return program_post_processing(program_pre_processing(results))
 
     _grad_on_execution = False
 
@@ -761,8 +760,7 @@ def execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
     )
 
-    results = batch_fn(results)
-    return program_post_processing(results)
+    return program_post_processing(program_pre_processing(results))
 
 
 def _execute_legacy(

@@ -30,7 +30,8 @@ class TestAdjointJacobian:
         )
         qs.trainable_params = {0, 1}
 
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         calculated_val = adjoint_jacobian(qs_valid)
 
@@ -51,7 +52,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {1}
 
         calculated_val = adjoint_jacobian(qs_valid)
@@ -78,7 +81,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {1, 2, 3}
 
         calculated_val = adjoint_jacobian(qs_valid)
@@ -114,7 +119,10 @@ class TestAdjointJacobian:
 
         qs = QuantumScript(ops, measurements)
         qs.trainable_params = set(range(1, 1 + op.num_params))
-        qs_valid = validate_and_expand_adjoint(qs)
+
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = set(range(1, 1 + op.num_params))
 
         tapes, fn = qml.gradients.finite_diff(qs)
@@ -135,7 +143,8 @@ class TestAdjointJacobian:
             [qml.RX(params[0], wires=0), qml.RX(params[1], wires=1), qml.RX(params[2], wires=2)],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         # circuit jacobians
         jacobian = adjoint_jacobian(qs_valid)
@@ -168,7 +177,8 @@ class TestAdjointJacobian:
             [MyOp(p, w) for p, w in zip(params, [0, 1, 2])],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         # circuit jacobians
         jacobian = adjoint_jacobian(qs_valid)
@@ -188,7 +198,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {1, 2, 3}
 
         grad_D = adjoint_jacobian(qs_valid)
@@ -217,7 +229,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {2, 3, 4}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {2, 3, 4}
 
         grad_D = adjoint_jacobian(qs_valid)
@@ -245,7 +259,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {0, 1, 2}
 
         res = adjoint_jacobian(qs_valid)
@@ -274,7 +290,8 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         res = adjoint_jacobian(qs_valid)
 

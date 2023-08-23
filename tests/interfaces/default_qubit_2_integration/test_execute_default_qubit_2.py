@@ -72,7 +72,7 @@ class TestBatchTransformHelper:
 
         assert len(new_batch) == 2
 
-        assert post_procesing_fn((1, 1)) == [1, 1]
+        assert post_procesing_fn((1, 1)) == (1, 1)
 
     def test_split_and_expand_performed(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -181,8 +181,8 @@ def test_caching(gradient_fn):
     assert len(cache) == 1
     assert cache[qs.hash] == -1.0
 
-    assert results == [-1.0, -1.0]
-    assert results2 == [-1.0, -1.0]
+    assert results == (-1.0, -1.0)
+    assert results2 == (-1.0, -1.0)
 
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1
