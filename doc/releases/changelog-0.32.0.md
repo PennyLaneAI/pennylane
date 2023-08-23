@@ -240,10 +240,16 @@ array([False, False])
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
+* The label for `ParametrizedEvolution` can display parameters with the requested format as set by the 
+  kwarg `decimals`. Array-like parameters are displayed in the same format as matrices and stored in the 
+  cache.
+  [(#4151)](https://github.com/PennyLaneAI/pennylane/pull/4151)
+
 * CI now runs tests with Tensorflow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
 * `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
 
 <h3>Breaking changes 💔</h3>
 
