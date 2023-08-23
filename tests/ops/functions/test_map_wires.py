@@ -224,3 +224,4 @@ class TestMapWiresCallables:
 
         grad = jax.grad(circuit)(x)
         assert qml.math.allclose(grad, jax.numpy.cos(x))
+        jax.clear_caches()

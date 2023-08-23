@@ -310,6 +310,7 @@ class TestMaxEntropy:
             gradient = max_entropy_grad(params, wires, base, check_state)
 
         assert qml.math.allclose(gradient, 0.0)
+        jax.clear_caches()
 
 
 class TestEntropyBroadcasting:

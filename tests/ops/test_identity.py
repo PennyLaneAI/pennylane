@@ -43,6 +43,7 @@ class TestIdentity:
         adj_op = jax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
 
         assert qml.equal(op, adj_op)
+        jax.clear_caches()
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""

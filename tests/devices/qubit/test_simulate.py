@@ -134,6 +134,7 @@ class TestBasicCircuit:
         g = jax.jacobian(f)(phi)
         assert qml.math.allclose(g[0], -np.cos(phi))
         assert qml.math.allclose(g[1], -np.sin(phi))
+        jax.clear_caches()
 
     @pytest.mark.torch
     def test_torch_results_and_backprop(self):
@@ -771,6 +772,7 @@ class TestOperatorArithmetic:
         g = jax.jacobian(f)(phi)
         assert qml.math.allclose(g[0], -np.cos(phi))
         assert qml.math.allclose(g[1], -3 * np.sin(phi))
+        jax.clear_caches()
 
     @pytest.mark.torch
     def test_torch_op_arithmetic(self):
@@ -992,6 +994,7 @@ class TestQInfoMeasurements:
         assert qml.math.allclose(grads[4], expected_grads[4])
         # mutual info
         assert qml.math.allclose(grads[5], expected_grads[5])
+        jax.clear_caches()
 
     @pytest.mark.torch
     def test_qinfo_torch(self):

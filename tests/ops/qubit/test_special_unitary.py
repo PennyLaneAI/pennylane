@@ -128,6 +128,7 @@ class TestGetOneParameterGenerators:
         Omegas = fn(theta, n, "jax")
         assert Omegas.shape == (d, 2**n, 2**n)
         assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
@@ -261,6 +262,7 @@ class TestGetOneParameterGeneratorsDiffability:
         )
         dOmegas = jax.jacobian(fn, holomorphic=True)(theta, n, "jax")
         assert dOmegas.shape == (d, 2**n, 2**n, d)
+        jax.clear_caches()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n", [1, 2])
@@ -708,6 +710,7 @@ class TestSpecialUnitary:
         jac = jax.jacobian(circuit)(theta)
         expected_jac = jax.jacobian(comparison)(theta)
         assert np.allclose(jac, expected_jac)
+        jax.clear_caches()
 
     @pytest.mark.tf
     @pytest.mark.slow

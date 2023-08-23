@@ -1372,6 +1372,7 @@ class TestPulseGeneratorIntegration:
         exp_grad = -2 * jnp.sin(2 * p) * T
         jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
+        jax.clear_caches()
 
     @pytest.mark.slow
     def test_advanced_qnode(self):

@@ -535,6 +535,7 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
         jax.grad(qnode_noisy)(theta)
+        jax.clear_caches()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
@@ -675,6 +676,7 @@ class TestDifferentiableZNE:
         grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        jax.clear_caches()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])

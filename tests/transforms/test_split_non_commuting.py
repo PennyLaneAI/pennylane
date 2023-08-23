@@ -368,6 +368,7 @@ class TestAutodiffSplitNonCommuting:
         grad = jax.jacobian(circuit)(params)
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
+        jax.clear_caches()
 
     @pytest.mark.torch
     def test_split_with_torch(self):

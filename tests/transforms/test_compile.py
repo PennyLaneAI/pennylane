@@ -540,3 +540,4 @@ class TestCompileInterfaces:
             jax.grad(jitted_compiled_qnode)(x),
             atol=1e-7,
         )
+        jax.clear_caches()

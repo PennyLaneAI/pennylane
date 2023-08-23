@@ -432,3 +432,4 @@ class TestMergeRotationsInterfaces:
         res = qfunc()
 
         assert qml.math.allclose(res, [1.0])
+        jax.clear_caches()

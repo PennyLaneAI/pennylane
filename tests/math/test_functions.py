@@ -1010,6 +1010,7 @@ def test_numpy_jax_jit():
 
     with pytest.raises(ValueError, match="not supported when using the JAX JIT"):
         cost(jnp.array(0.1))
+    jax.clear_caches()
 
 
 def test_numpy_torch():
@@ -1115,6 +1116,7 @@ class TestRequiresGrad:
 
         jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(t, s)
         assert res == [True, True]
+        jax.clear_caches()
 
     def test_autograd(self):
         """Autograd arrays will simply return their requires_grad attribute"""
@@ -2862,6 +2864,7 @@ class TestSetIndex:
 
         assert qml.math.allclose(array2, jnp.array([[1, 2], [7, 4]]))
         assert isinstance(array2, jnp.ndarray)
+        jax.clear_caches()
 
     @pytest.mark.parametrize(
         "array", [jnp.array([1, 2, 3, 4]), onp.array([1, 2, 3, 4]), np.array([1, 2, 3, 4])]
@@ -2881,3 +2884,4 @@ class TestSetIndex:
 
         assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
         assert isinstance(array2, jnp.ndarray)
+        jax.clear_caches()

@@ -82,6 +82,7 @@ class TestQNode:
         grad = jax.jit(jax.grad(circuit))(a)
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
+        jax.clear_caches()
 
     def test_changing_trainability(
         self, dev_name, diff_method, grad_on_execution, interface, mocker, tol
@@ -139,6 +140,7 @@ class TestQNode:
         b = np.array(0.8, requires_grad=True)
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
+        jax.clear_caches()
 
     def test_classical_processing(self, dev_name, diff_method, grad_on_execution, interface):
         """Test classical processing within the quantum tape"""
@@ -257,6 +259,7 @@ class TestQNode:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_jacobian_options(self, dev_name, diff_method, grad_on_execution, interface, mocker):
         """Test setting jacobian options"""
@@ -291,6 +294,7 @@ class TestQNode:
         for args in spy.call_args_list:
             assert args[1]["approx_order"] == 2
             assert args[1]["h"] == 1e-8
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize(
@@ -375,6 +379,7 @@ class TestVectorValuedQNode:
 
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
+        jax.clear_caches()
 
     def test_jacobian_no_evaluate(
         self, dev_name, diff_method, grad_on_execution, interface, mocker, tol
@@ -450,6 +455,7 @@ class TestVectorValuedQNode:
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
                 assert np.allclose(r, e, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_diff_single_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
@@ -503,6 +509,7 @@ class TestVectorValuedQNode:
 
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_diff_multi_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
@@ -589,6 +596,7 @@ class TestVectorValuedQNode:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (4,)
         assert np.allclose(jac[1][1], expected_1[1], atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_diff_expval_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
@@ -665,6 +673,7 @@ class TestVectorValuedQNode:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (2,)
         assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_diff_expval_probs_sub_argnums(
         self, dev_name, diff_method, grad_on_execution, interface, tol
@@ -723,6 +732,7 @@ class TestVectorValuedQNode:
         assert isinstance(jac[1][0], jax.numpy.ndarray)
         assert jac[1][0].shape == (2,)
         assert np.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_diff_var_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
@@ -797,6 +807,7 @@ class TestVectorValuedQNode:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (2,)
         assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
@@ -815,6 +826,7 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert jax.numpy.allclose(circuit(jax.numpy.array(0.0)), 1)
+        jax.clear_caches()
 
     def test_changing_shots(self, interface, mocker, tol):
         """Test that changing shots works on execution"""
@@ -932,6 +944,7 @@ class TestQubitIntegration:
         assert res[0].shape == (10,)
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
+        jax.clear_caches()
 
     def test_counts(self, dev_name, diff_method, grad_on_execution, interface):
         """Test counts works as expected"""
@@ -965,6 +978,7 @@ class TestQubitIntegration:
             assert len(res[0]) == 2
             assert isinstance(res[1], dict)
             assert len(res[1]) == 2
+            jax.clear_caches()
 
     def test_chained_qnodes(self, dev_name, diff_method, grad_on_execution, interface):
         """Test that the gradient of chained QNodes works without error"""
@@ -1012,6 +1026,7 @@ class TestQubitIntegration:
         res = grad_fn(weights)
 
         assert len(res) == 2
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize(
@@ -1071,6 +1086,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(g2, expected_g2, atol=10e-2, rtol=0)
         else:
             assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_hessian(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test hessian calculation of a scalar-valued QNode"""
@@ -1129,6 +1145,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_hessian_vector_valued(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test hessian calculation of a vector-valued QNode"""
@@ -1196,6 +1213,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_hessian_vector_valued_postprocessing(
         self, dev_name, diff_method, interface, grad_on_execution, tol
@@ -1268,6 +1286,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_hessian_vector_valued_separate_args(
         self, dev_name, diff_method, grad_on_execution, interface, mocker, tol
@@ -1427,6 +1446,7 @@ class TestQubitIntegrationHigherOrder:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
 
 # TODO: Add CV test when return types and custom diff are compatible
@@ -2865,6 +2885,7 @@ class TestReturnHessian:
 
         assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (2, 2, 2)
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize("hessian", hessian_fn)
@@ -2896,6 +2917,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     ]
     shots_tol = 0.1
     assert np.allclose(hess, expected_hess, atol=shots_tol, rtol=0)
+    jax.clear_caches()
 
 
 @pytest.mark.parametrize("jit_inside", [True, False])
@@ -2956,6 +2978,7 @@ class TestSubsetArgnums:
         else:
             assert np.allclose(jac[0], expected[0], atol=tol)
             assert np.allclose(jac[1], expected[1], atol=tol)
+        jax.clear_caches()
 
     def test_multi_measurements(
         self,
@@ -3006,3 +3029,4 @@ class TestSubsetArgnums:
         else:
             assert np.allclose(jac[0], expected[0], atol=tol)
             assert np.allclose(jac[1], expected[1], atol=tol)
+        jax.clear_caches()

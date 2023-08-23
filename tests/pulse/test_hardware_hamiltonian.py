@@ -663,6 +663,7 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert res == res_jit
+        jax.clear_caches()
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
@@ -708,6 +709,7 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert res == res_jit
+        jax.clear_caches()
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
@@ -748,3 +750,4 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert res == res_jit
+        jax.clear_caches()

@@ -527,6 +527,7 @@ class TestVJPGradients:
         res = jax.jacobian(cost_fn, argnums=0)(params)
         exp = qml.jacobian(expected)(params_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
+        jax.clear_caches()
 
 
 class TestBatchVJP:

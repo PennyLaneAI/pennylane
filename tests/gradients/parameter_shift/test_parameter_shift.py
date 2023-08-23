@@ -4284,6 +4284,7 @@ class TestQnodeJaxJit:
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_single_param_2(self, interface):
@@ -4326,6 +4327,7 @@ class TestQnodeJaxJit:
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_probs_single_param_2(self, interface):
@@ -4346,6 +4348,7 @@ class TestQnodeJaxJit:
         res_expected = jax.jacobian(circuit)(x)
 
         assert np.allclose(res, res_expected)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_measurement_single_param(self, interface):
@@ -4367,6 +4370,7 @@ class TestQnodeJaxJit:
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
+        jax.clear_caches()
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_measurement_expval_probs_single_param(self, interface):
@@ -4410,6 +4414,7 @@ class TestQnodeJaxJit:
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
+        jax.clear_caches()
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_probs_multiple_params(self, interface):
@@ -4432,6 +4437,7 @@ class TestQnodeJaxJit:
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
+        jax.clear_caches()
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_multiple_measurement_multi_params(self, interface, tol):
@@ -4525,6 +4531,7 @@ class TestQnodeJaxJit:
 
         assert np.allclose(res[0], res_expected[0], atol=tol)
         assert np.allclose(res[1], res_expected[1], atol=tol)
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])

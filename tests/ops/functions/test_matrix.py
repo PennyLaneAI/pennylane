@@ -754,3 +754,4 @@ def test_jitting_matrix():
     normal_mat = qml.matrix(op)
 
     assert qml.math.allclose(normal_mat, jit_mat)
+    jax.clear_caches()

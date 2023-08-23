@@ -529,6 +529,7 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert qml.math.isclose(res, res_jit)
+        jax.clear_caches()
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(
@@ -580,6 +581,7 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert qml.math.isclose(res, res_jit)
+        jax.clear_caches()
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
@@ -621,3 +623,4 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert qml.math.isclose(res, res_jit)
+        jax.clear_caches()

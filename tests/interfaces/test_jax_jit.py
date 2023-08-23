@@ -138,6 +138,7 @@ class TestJaxExecuteUnitTests:
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
         spy.assert_called()
+        jax.clear_caches()
 
     def test_no_gradients_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
@@ -170,6 +171,7 @@ class TestJaxExecuteUnitTests:
 
         jax.grad(cost)(a)
         spy_gradients.assert_called()
+        jax.clear_caches()
 
 
 class TestCaching:
@@ -202,6 +204,7 @@ class TestCaching:
         assert cache.maxsize == 2
         assert cache.currsize == 2
         assert len(cache) == 2
+        jax.clear_caches()
 
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
@@ -430,6 +433,7 @@ class TestJaxExecuteIntegration:
 
         assert expected.shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -475,6 +479,7 @@ class TestJaxExecuteIntegration:
         jac = jac_fn(a, b)
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_grad_with_backward_mode(self, execute_kwargs):
         """Test jax grad for adjoint diff method in backward mode"""
@@ -520,6 +525,7 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
         res = jax.jit(jax.grad(cost, argnums=(0, 1, 2)), static_argnums=3)(a, b, c, device=dev)
         assert len(res) == 3
+        jax.clear_caches()
 
     def test_classical_processing_multiple_tapes(self, execute_kwargs):
         """Test classical processing within the quantum tape for multiple
@@ -549,6 +555,7 @@ class TestJaxExecuteIntegration:
 
         res = jax.jit(jax.grad(cost_fn))(params)
         assert res.shape == (2,)
+        jax.clear_caches()
 
     def test_multiple_tapes_output(self, execute_kwargs):
         """Test the output types for the execution of multiple quantum tapes"""
@@ -578,6 +585,7 @@ class TestJaxExecuteIntegration:
         assert isinstance(res, list)
         assert all(isinstance(r, jax.numpy.ndarray) for r in res)
         assert all(r.shape == () for r in res)
+        jax.clear_caches()
 
     def test_matrix_parameter(self, execute_kwargs, tol):
         """Test that the jax interface works correctly
@@ -647,6 +655,7 @@ class TestJaxExecuteIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent of trainable
@@ -668,6 +677,7 @@ class TestJaxExecuteIntegration:
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
         assert res.shape == (3,)
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs_integration)
@@ -711,6 +721,7 @@ class TestVectorValuedJIT:
                 assert r.shape == shape
         else:
             assert res.shape == shape
+        jax.clear_caches()
 
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent of trainable
@@ -732,6 +743,7 @@ class TestVectorValuedJIT:
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
         assert res.shape == (3,)
+        jax.clear_caches()
 
     ret_and_output_dim = [
         ([qml.probs(wires=0)], (2,), jax.numpy.ndarray),
@@ -783,6 +795,7 @@ class TestVectorValuedJIT:
                 assert r.shape == out_dim
         else:
             assert res.shape == out_dim
+        jax.clear_caches()
 
     def test_qnode_sample(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
@@ -811,6 +824,7 @@ class TestVectorValuedJIT:
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
         assert res.shape == (dev.shots,)
+        jax.clear_caches()
 
     def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
@@ -892,3 +906,4 @@ def test_diff_method_None_jit():
         return qml.execute([tape], dev, gradient_fn=None)
 
     assert jax.numpy.allclose(wrapper(jax.numpy.array(0.0))[0], 1.0)
+    jax.clear_caches()

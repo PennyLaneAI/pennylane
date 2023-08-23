@@ -407,6 +407,7 @@ class TestCasting:
         inputs = inputs / jnp.linalg.norm(inputs)
         res = circuit(inputs)
         assert np.allclose(res, expected, atol=1e-6, rtol=0)
+        jax.clear_caches()
 
     @pytest.mark.tf
     def test_tensorflow(self, inputs, expected):

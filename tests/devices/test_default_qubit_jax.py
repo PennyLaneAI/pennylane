@@ -135,6 +135,7 @@ class TestQNodeIntegration:
         p = jnp.array([0.543, 0.21, 1.5])
         expected = -jnp.sin(p)
         assert jnp.allclose(circuit(p), expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_qubit_circuit_broadcasted(self, tol):
         """Test that the device provides the correct
@@ -306,6 +307,7 @@ class TestQNodeIntegration:
         result = circuit()
         assert jnp.allclose(qml.math.hstack(result[0]), expected[0], atol=tol)
         assert jnp.allclose(qml.math.hstack(result[1]), expected[1], atol=tol)
+        jax.clear_caches()
 
     @pytest.mark.skip("Shot lists are not supported with broadcasting yet")
     def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
@@ -323,6 +325,7 @@ class TestQNodeIntegration:
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
+        jax.clear_caches()
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
@@ -348,6 +351,7 @@ class TestQNodeIntegration:
         # Test with broadcasting
         d = circuit(jnp.zeros(5), jax.random.PRNGKey(9))
         assert qml.math.shape(d) == (5, 1000)
+        jax.clear_caches()
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -366,6 +370,7 @@ class TestQNodeIntegration:
 
         res = circuit(state_vector)
         assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
+        jax.clear_caches()
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -402,6 +407,7 @@ class TestQNodeIntegration:
 
         res = circuit(0.1)
         assert jnp.allclose(jnp.array(res), 1, atol=tol, rtol=0)
+        jax.clear_caches()
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -542,6 +548,7 @@ class TestQNodeIntegration:
         res = circuit()
         spy.assert_called_once()
         assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
     def test_parametrized_evolution_matrix(self, phi, mocker):
@@ -567,6 +574,7 @@ class TestQNodeIntegration:
         spy.assert_not_called()
         spy2.assert_called_once()
         assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+        jax.clear_caches()
 
     def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
@@ -595,6 +603,7 @@ class TestQNodeIntegration:
         spy.assert_called_once()
         spy2.assert_not_called()
         assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+        jax.clear_caches()
 
     def test_parametrized_evolution_matrix_complementary(self, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
@@ -622,6 +631,7 @@ class TestQNodeIntegration:
         spy.assert_not_called()
         spy2.assert_called_once()
         assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+        jax.clear_caches()
 
 
 @pytest.mark.jax
@@ -861,6 +871,7 @@ class TestPassthruIntegration:
         grad = jax.jit(jax.grad(cost, argnums=(0, 1)))(a, b)
         expected = [jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)]
         assert jnp.allclose(jnp.array(grad), jnp.array(expected), atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_prob_differentiability_broadcasted(self, tol):
         """Test that the broadcasted device probability can be differentiated"""

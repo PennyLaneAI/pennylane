@@ -105,6 +105,7 @@ class TestDecomposition:
         output_state = [0 if x == 1.0 else 1 for x in circuit(basis_state)]
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+        jax.clear_caches()
 
     @pytest.mark.tf
     @pytest.mark.parametrize(

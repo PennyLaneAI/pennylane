@@ -95,6 +95,7 @@ class TestPWC:
         f = qml.pulse.pwc(10)
         assert jax.jit(f)([1.2, 2.3], 2) != 0
         assert jax.jit(f)([1.2, 2.3], 13) == 0
+        jax.clear_caches()
 
 
 @pytest.mark.jax

@@ -250,6 +250,7 @@ class TestDetach:
         func = jax.jit(fn.detach, static_argnums=1) if use_jit else fn.detach
         jac = jax.jacobian(func)(x)
         assert jax.numpy.isclose(jac, 0.0)
+        jax.clear_caches()
 
     def test_torch(self):
         """Test that detach works with Torch."""

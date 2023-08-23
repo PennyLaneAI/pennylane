@@ -292,6 +292,7 @@ class TestVonNeumannEntropy:
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_entropy)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -316,6 +317,7 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+        jax.clear_caches()
 
     def test_qnode_entropy_wires_full_range_not_state(self):
         """Test entropy needs a QNode returning state."""
@@ -487,6 +489,7 @@ class TestRelativeEntropy:
         expected = first_term + second_term
 
         assert np.allclose(actual, expected)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", grad_params)

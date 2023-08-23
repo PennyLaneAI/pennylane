@@ -75,6 +75,7 @@ class TestProbsToUnitary:
         assert jnp.allclose(np.sqrt(p), unitary[:, 0])
         assert jnp.allclose(unitary @ unitary.T, np.eye(len(unitary)), atol=1e-7)
         assert jnp.allclose(unitary.T @ unitary, np.eye(len(unitary)), atol=1e-7)
+        jax.clear_caches()
 
 
 class TestFuncToUnitary:
@@ -130,6 +131,7 @@ class TestFuncToUnitary:
 
         assert np.allclose(r @ r.T, np.eye(2 * M), atol=1e-7)
         assert np.allclose(r.T @ r, np.eye(2 * M), atol=1e-7)
+        jax.clear_caches()
 
     def test_example_with_pl(self):
         """Test for a fixed example if the returned unitary behaves as expected
@@ -434,6 +436,7 @@ class TestQuantumMonteCarlo:
             assert err1 >= err2
 
         assert jnp.allclose(estimates[-1], exact, rtol=1e-3)
+        jax.clear_caches()
 
     def test_expected_value_custom_wires(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value

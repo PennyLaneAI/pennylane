@@ -163,3 +163,4 @@ class TestJAX:
         # Otherwise, w will be abstract
         grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)
         assert np.allclose(grad[0], 2 * x)
+        jax.clear_caches()

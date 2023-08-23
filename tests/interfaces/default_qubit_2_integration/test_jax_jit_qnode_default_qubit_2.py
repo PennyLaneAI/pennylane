@@ -77,6 +77,7 @@ class TestQNode:
         grad = jax.jit(jax.grad(circuit))(a)
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
+        jax.clear_caches()
 
     def test_changing_trainability(
         self, dev, diff_method, grad_on_execution, interface, mocker, tol
@@ -132,6 +133,7 @@ class TestQNode:
         b = np.array(0.8, requires_grad=True)
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
+        jax.clear_caches()
 
     def test_classical_processing(self, dev, diff_method, grad_on_execution, interface):
         """Test classical processing within the quantum tape"""
@@ -227,6 +229,7 @@ class TestQNode:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_jacobian_options(self, dev, diff_method, grad_on_execution, interface, mocker):
         """Test setting jacobian options"""
@@ -259,6 +262,7 @@ class TestQNode:
         for args in spy.call_args_list:
             assert args[1]["approx_order"] == 2
             assert args[1]["h"] == 1e-8
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize(
@@ -335,6 +339,7 @@ class TestVectorValuedQNode:
 
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
+        jax.clear_caches()
 
     def test_jacobian_no_evaluate(
         self, dev, diff_method, grad_on_execution, interface, mocker, tol
@@ -404,6 +409,7 @@ class TestVectorValuedQNode:
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
                 assert np.allclose(r, e, atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_diff_single_probs(self, dev, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
@@ -842,6 +848,7 @@ class TestQubitIntegration:
         assert res[0].shape == (10,)
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
+        jax.clear_caches()
 
     def test_counts(self, dev, diff_method, grad_on_execution, interface):
         """Test counts works as expected"""
@@ -1731,6 +1738,7 @@ class TestJIT:
 
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
+        jax.clear_caches()
 
     def test_matrix_parameter(self, dev, diff_method, grad_on_execution, jacobian, tol, interface):
         """Test that the JAX-JIT interface works correctly with a matrix
@@ -1833,6 +1841,7 @@ class TestReturn:
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
+        jax.clear_caches()
 
     def test_jacobian_single_measurement_param_probs(
         self, dev, diff_method, grad_on_execution, jacobian, shots, interface
@@ -1953,6 +1962,7 @@ class TestReturn:
         assert jac[1][0].shape == ()
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
+        jax.clear_caches()
 
     def test_jacobian_expval_expval_multiple_params_array(
         self, dev, diff_method, grad_on_execution, jacobian, shots, interface
@@ -1981,6 +1991,7 @@ class TestReturn:
 
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
+        jax.clear_caches()
 
     def test_jacobian_var_var_multiple_params(
         self, dev, diff_method, grad_on_execution, jacobian, shots, interface
@@ -2127,6 +2138,7 @@ class TestReturn:
         assert jac[1][0].shape == (4,)
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (4,)
+        jax.clear_caches()
 
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, jacobian, shots, interface
@@ -2286,6 +2298,7 @@ class TestReturnHessian:
         assert isinstance(hess[1][1], jax.numpy.ndarray)
         assert hess[1][0].shape == ()
         assert hess[1][1].shape == ()
+        jax.clear_caches()
 
     def test_hessian_var_multiple_param_array(
         self, dev, diff_method, hessian, grad_on_execution, interface
@@ -2358,6 +2371,7 @@ class TestReturnHessian:
             assert isinstance(h, tuple)
             for h_comp in h:
                 assert h_comp.shape == (2,)
+        jax.clear_caches()
 
     def test_hessian_probs_expval_multiple_param_array(
         self, dev, diff_method, hessian, grad_on_execution, interface
@@ -2436,6 +2450,7 @@ class TestReturnHessian:
             assert isinstance(h, tuple)
             for h_comp in h:
                 assert h_comp.shape == (2,)
+        jax.clear_caches()
 
     def test_hessian_probs_var_multiple_param_array(
         self, dev, diff_method, hessian, grad_on_execution, interface
@@ -2600,3 +2615,4 @@ class TestSubsetArgnums:
         else:
             assert np.allclose(jac[0], expected[0], atol=tol)
             assert np.allclose(jac[1], expected[1], atol=tol)
+        jax.clear_caches()

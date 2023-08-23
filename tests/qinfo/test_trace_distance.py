@@ -371,6 +371,7 @@ class TestTraceDistanceQnode:
 
         td_grad = td_grad(None, jax.numpy.array(param))
         assert qml.math.allclose(td_grad, expected_td)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
@@ -401,6 +402,7 @@ class TestTraceDistanceQnode:
         expected = expected_grad_trace_distance_rx_pauliz(param)
         expected_td = [-expected, expected]
         assert qml.math.allclose(td_grad, expected_td, rtol=1e-04, atol=1e-03)
+        jax.clear_caches()
 
     interfaces = ["auto", "autograd"]
 

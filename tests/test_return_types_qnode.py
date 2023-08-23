@@ -3067,6 +3067,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         for elem in res:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (3,)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
@@ -3206,6 +3207,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         for elem in res:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (2, 3)
+        jax.clear_caches()
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
@@ -3364,3 +3366,4 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (4, 3)
             elif i == 2:
                 assert elem.shape == (3,)
+        jax.clear_caches()

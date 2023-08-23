@@ -227,6 +227,7 @@ class TestIntegration:
         ) - 2 * jnp.sin(params / 2) ** 2 * jnp.log(jnp.sin(params / 2) ** 2 + 1e-10)
 
         assert np.allclose(actual, expected)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
@@ -261,6 +262,7 @@ class TestIntegration:
         expected = jax.jit(qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1]))(params)
 
         assert np.allclose(actual, expected)
+        jax.clear_caches()
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
@@ -358,6 +360,7 @@ class TestIntegration:
 
         actual = jax.jit(jax.grad(circuit))(param)
         assert np.allclose(actual, expected, atol=tol)
+        jax.clear_caches()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))

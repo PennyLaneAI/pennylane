@@ -235,6 +235,7 @@ class TestQubitUnitary:
 
         out = jax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
+        jax.clear_caches()
 
     @pytest.mark.parametrize(
         "U,expected_gates,expected_params",
@@ -682,6 +683,7 @@ class TestDiagonalQubitUnitary:
         jac = jax.jacobian(circuit)(x)
         expected = jnp.diag(-jnp.sin(x))
         assert np.allclose(jac, expected)
+        jax.clear_caches()
 
     @pytest.mark.tf
     @pytest.mark.slow  # test takes 12 seconds due to tf.function

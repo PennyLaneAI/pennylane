@@ -405,6 +405,7 @@ class TestDiffSingle:
         res = jax.grad(cost, argnums=1)(input, x)
         expected = -np.sin(0.1) * sum(np.sin(input))
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        jax.clear_caches()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
@@ -675,6 +676,7 @@ class TestDiffMulti:
         assert len(grad) == 2
         for g, exp in zip(grad, expected):
             assert qml.math.allclose(g, exp, atol=tol, rtol=0)
+        jax.clear_caches()
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])

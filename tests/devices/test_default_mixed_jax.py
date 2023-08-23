@@ -698,6 +698,7 @@ class TestPassthruIntegration:
 
         assert np.allclose(jnp.diag(res_a), expected_a, atol=tol, rtol=0)
         assert np.allclose(jnp.diag(res_b), expected_b, atol=tol, rtol=0)
+        jax.clear_caches()
 
 
 class TestHighLevelIntegration:

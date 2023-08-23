@@ -326,3 +326,4 @@ class TestSingleQubitFusionInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
+        jax.clear_caches()

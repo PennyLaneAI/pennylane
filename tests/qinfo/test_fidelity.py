@@ -516,6 +516,7 @@ class TestFidelityQnode:
         )
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid, rtol=1e-03, atol=1e-04)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
@@ -567,6 +568,7 @@ class TestFidelityQnode:
         )((jax.numpy.array(param)))
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
@@ -618,6 +620,7 @@ class TestFidelityQnode:
         )(None, (jax.numpy.array(param)))
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
+        jax.clear_caches()
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
@@ -820,6 +823,7 @@ class TestFidelityQnode:
         )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0), rtol=1e-03, atol=1e-04)
+        jax.clear_caches()
 
 
 @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])

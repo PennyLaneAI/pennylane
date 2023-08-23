@@ -865,6 +865,7 @@ class TestTapeConstruction:
             qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
         ):
             jitted_qnode2(0.123)
+        jax.clear_caches()
 
 
 def test_decorator(tol):

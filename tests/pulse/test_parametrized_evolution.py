@@ -420,6 +420,7 @@ class TestIntegration:
         res = circuit(time)
         duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
         assert qml.math.isclose(res, qml.math.cos(4 * duration))
+        jax.clear_caches()
 
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
@@ -460,6 +461,7 @@ class TestIntegration:
         assert qml.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
+        jax.clear_caches()
 
     @pytest.mark.slow
     def test_time_dependent_hamiltonian(self):
@@ -507,6 +509,7 @@ class TestIntegration:
         assert qml.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
+        jax.clear_caches()
 
     def test_two_commuting_parametrized_hamiltonians(self):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
@@ -556,6 +559,7 @@ class TestIntegration:
             jax.grad(circuit2)(params2),
             atol=5e-4,
         )
+        jax.clear_caches()
 
     def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
@@ -604,6 +608,7 @@ class TestIntegration:
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
+        jax.clear_caches()
 
     def test_jitted_unitary_differentiation_dense(self):
         """Test that the unitary can be differentiated with and without jitting using dense matrices"""
@@ -622,3 +627,4 @@ class TestIntegration:
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
+        jax.clear_caches()
