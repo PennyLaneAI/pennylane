@@ -125,25 +125,26 @@ class TestBatchTransformHelper:
         assert new_config.grad_on_execution
         assert new_config.use_device_gradient
 
-    def test_warning_if_not_device_batch_transform(self):
-        """Test that a warning is raised if the users requests to not run device batch transform."""
 
-        # pylint: disable=too-few-public-methods
-        class CustomOp(qml.operation.Operator):
-            """Dummy operator."""
+def test_warning_if_not_device_batch_transform():
+    """Test that a warning is raised if the users requests to not run device batch transform."""
 
-            def decomposition(self):
-                return [qml.PauliX(self.wires[0])]
+    # pylint: disable=too-few-public-methods
+    class CustomOp(qml.operation.Operator):
+        """Dummy operator."""
 
-        dev = DefaultQubit2()
+        def decomposition(self):
+            return [qml.PauliX(self.wires[0])]
 
-        qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
+    dev = DefaultQubit2()
 
-        with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            results = qml.execute([qs], dev, device_batch_transform=False)
+    qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-        assert len(results) == 1
-        assert qml.math.allclose(results[0], -1)
+    with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+        results = qml.execute([qs], dev, device_batch_transform=False)
+
+    assert len(results) == 1
+    assert qml.math.allclose(results[0], -1)
 
 
 @pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
