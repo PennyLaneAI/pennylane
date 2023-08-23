@@ -7,10 +7,10 @@
 <h4>Encode matrices using a linear combination of unitaries ⛓️️</h4>
 
 * It is now possible to encode an operator `A` into a quantum circuit by decomposing it into
-  a linear combination of unitaries and using the
-  [StatePrep](https://docs.pennylane.ai/en/stable/code/api/pennylane.StatePrep.html) and
-  [Select](https://docs.pennylane.ai/en/stable/code/api/pennylane.Select.html) operations to input
-  the coefficients and unitaries, respectively, into a quantum circuit.
+  a linear combination of unitaries using PREP 
+  ([StatePrep](https://docs.pennylane.ai/en/stable/code/api/pennylane.StatePrep.html)) and
+  SELECT ([Select](https://docs.pennylane.ai/en/stable/code/api/pennylane.Select.html)) 
+  routines.
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
