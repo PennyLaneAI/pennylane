@@ -206,7 +206,7 @@ class TestExpandFnTransformations:
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
 
-        expanded_tapes, fn = expand_fn(tape)
+        expanded_tapes, _ = expand_fn(tape)
         expanded_tape = expanded_tapes[0]
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
@@ -228,7 +228,7 @@ class TestExpandFnTransformations:
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = QuantumScript(ops=ops, measurements=measurements)
 
-        expanded_tapes, fn = expand_fn(tape)
+        expanded_tapes, _ = expand_fn(tape)
         expanded_tape = expanded_tapes[0]
         expected = [
             qml.Hadamard(0),
@@ -245,7 +245,7 @@ class TestExpandFnTransformations:
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
-        expanded_tapes, fn = expand_fn(tape)
+        expanded_tapes, _ = expand_fn(tape)
         expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
@@ -275,7 +275,7 @@ class TestExpandFnTransformations:
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
 
-        expanded_tapes, fn = expand_fn(tape)
+        expanded_tapes, _ = expand_fn(tape)
         expanded_tape = expanded_tapes[0]
         expected = [
             prep_op,
