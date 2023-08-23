@@ -252,6 +252,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                         # pylint: disable=cell-var-from-loop
                         return qml.math.stack(h(*args, **kwargs))
 
+                else:
+                    cost = h
+
                 j = qml.jacobian(cost, argnum=i)(*args, **kwargs)
 
                 if s == 1:
