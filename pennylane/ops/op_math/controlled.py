@@ -141,6 +141,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     return wrapper
 
 def ctrl_evolution(op, control):
+
     """Create a method that applies a controlled version of the provided op.
 
     Args:
@@ -157,11 +158,46 @@ def ctrl_evolution(op, control):
 
     """
 
+    control = [control] if isinstance(control, (int, bool)) else control
     ops = []
-    for ind, c in enumerate(control):
-        ops.append(qml.ctrl(qml.pow(op, z = len(control) - ind - 1), control = c))
 
-    return ops
+    if isinstance(op, qml.Operation):
+        for ind, c in enumerate(control):
+                ops.append(qml.ctrl(qml.pow(op, z = 2 ** (len(control) - ind - 1)), control = c))
+        return ops
+
+    if not callable(op):
+        raise ValueError(
+            f"The object {op} of type {type(op)} is not an Operator or callable. "
+            "This error might occur if you apply ctrl to a list "
+            "of operations instead of a function or Operator."
+        )
+
+    #TODO: Ajustar esto al operador que queremos
+    @wraps(op)
+    def wrapper(*args, **kwargs):
+        qscript = qml.tape.make_qscript(op)(*args, **kwargs)
+
+        # flip control_values == 0 wires here, so we don't have to do it for each individual op.
+        flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
+        op_control_values = None if flip_control_on_zero else control_values
+        if flip_control_on_zero:
+            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+
+        _ = [
+            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+            for op in qscript.operations
+        ]
+
+        if flip_control_on_zero:
+            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+
+        if qml.QueuingManager.recording():
+            _ = [qml.apply(m) for m in qscript.measurements]
+
+        return qscript.measurements
+
+    return wrapper
 
 
 

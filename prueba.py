@@ -1,10 +1,12 @@
 import pennylane as qml
+import matplotlib.pyplot as plt
 
-dev = qml.device("default.qubit", wires = 2)
+dev = qml.device("default.qubit", wires = 3)
 
 @qml.qnode(dev)
 def circuit():
-    qml.ctrl_evolution(qml.PauliX(0), control = 1)
+    qml.ops.ctrl_evolution(qml.PauliX, control = [1, 2])(wires = 0)
     return qml.state()
 
-print(circuit())
+qml.draw_mpl(circuit)()
+plt.show()
