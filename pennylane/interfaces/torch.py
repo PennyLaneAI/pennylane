@@ -29,29 +29,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjp(dy, jacs, device=None):
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(dy=%s, jacs=%s, device=%s) called by=%s",
-            dy,
-            jacs,
-            repr(device),
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
-    vjps = []
-
-    for d, jac in zip(dy, jacs):
-        if isinstance(jac, np.ndarray):
-            jac = torch.from_numpy(jac)
-
-        jac = torch.as_tensor(jac, device=device)
-        vjp = qml.gradients.compute_vjp(d, jac)
-        vjps.extend(vjp)
-
-    return vjps
-
-
 def pytreeify(cls):
     """Pytrees refer to a tree-like structure built out of container-like Python objects. The pytreeify class is used
     to bypass some PyTorch limitation of `autograd.Function`. The forward pass can only return tuple of tensors but
