@@ -25,6 +25,8 @@ import itertools
 import warnings
 from collections import defaultdict
 from typing import Union, List
+import inspect
+import logging
 
 import numpy as np
 
@@ -66,6 +68,9 @@ from pennylane.resource import Resources
 from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _sample_to_str(sample):
@@ -312,6 +317,17 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(circuit=%s, kwargs=%s) called by=%s",
+                circuit,
+                kwargs,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         if not qml.active_return():
             return self._execute_legacy(circuit, **kwargs)
 
@@ -592,6 +608,15 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         if not qml.active_return():
             return self._batch_execute_legacy(circuits=circuits)
 
