@@ -410,7 +410,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     def cost(coeffs, t):
         tape = create_tape(coeffs, t)
 
-        if diff_method is qml.gradients.param_shift:
+        if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
 
         return qml.execute([tape], dev, diff_method)[0]

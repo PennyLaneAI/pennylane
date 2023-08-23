@@ -49,9 +49,7 @@ def test_behaviour():
         qml.expval(qml.PauliZ(1))
 
     tape2 = qml.tape.QuantumScript.from_queue(q2)
-    dev.reset()
     res_expected1 = qml.math.squeeze(dev.execute(tape1))
-    dev.reset()
     res_expected2 = qml.math.squeeze(dev.execute(tape2))
 
     assert res_expected1 == res1

@@ -589,7 +589,7 @@ class TestInternalFunctions:
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
         new_tape = dev.default_expand_fn(tape)
 

@@ -286,7 +286,7 @@ class TestSample:
         "obs,exp",
         [
             # Single observables
-            (None, int),  # comp basis samples
+            (None, bool),  # comp basis samples
             (qml.PauliX(0), int),
             (qml.PauliY(0), int),
             (qml.PauliZ(0), int),
