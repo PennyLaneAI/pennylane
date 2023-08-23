@@ -72,7 +72,6 @@ Utility functions
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
-    compute_vjp
     compute_vjp_single
     compute_vjp_multi
     batch_vjp
