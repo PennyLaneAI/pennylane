@@ -454,6 +454,9 @@ array([False, False])
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
   [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
 
+* The backprop gradient of `qml.math.fidelity` is now correct.
+  [(#4380)](https://github.com/PennyLaneAI/pennylane/pull/4380)
+
 
 <h3>Contributors ✍️</h3>
 
