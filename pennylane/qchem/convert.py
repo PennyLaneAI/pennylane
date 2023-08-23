@@ -414,7 +414,7 @@ def _excited_configurations(electrons, orbitals, excitation):
     r"""Generate excited configurations from a Hartree-Fock reference state.
 
     This function generates excited configurations in the form of integers representing a binary
-    string, e.g., :math:`|1 1 0 1 0 0 \rangle is represented by ``int('110100', 2) = 52``.
+    string, e.g., :math:`|1 1 0 1 0 0 \rangle` is represented by :math:`int('110100', 2) = 52`.
 
     The excited configurations are generated from a Hartree-Fock (HF) reference state. The HF state
     is assumed to have the form :math:`|1 1 ...1 0 ... 0 0 \rangle` where the number of :math:`1`
