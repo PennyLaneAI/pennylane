@@ -27,13 +27,11 @@ import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
-    ExpectationMP,
     MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
     StateMP,
-    VarianceMP,
     Shots,
 )
 from pennylane.typing import TensorLike
