@@ -107,6 +107,8 @@
   [(#4433)](https://github.com/PennyLaneAI/pennylane/pull/4433)
   [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
   [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+  [(#4505)](https://github.com/PennyLaneAI/pennylane/pull/4505)
+
 
   Quantum chemistry calculations rely on an initial state that is typically selected to be the
   trivial Hartree-Fock state. For molecules with a complicated electronic structure, using initial
@@ -418,6 +420,11 @@
   control over when `defer_measurements` should be used.
   [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
 
+* The label for `ParametrizedEvolution` can display parameters with the requested format as set by the 
+  kwarg `decimals`. Array-like parameters are displayed in the same format as matrices and stored in the 
+  cache.
+  [(#4151)](https://github.com/PennyLaneAI/pennylane/pull/4151)
+
 <h3>Breaking changes 💔</h3>
 
 * Applying gradient transforms to broadcasted/batched tapes has been deactivated until it is consistently
@@ -526,6 +533,7 @@
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
   [(#4489)](https://github.com/PennyLaneAI/pennylane/pull/4489)
+  [(#4498)](https://github.com/PennyLaneAI/pennylane/pull/4498)
 
 * The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
@@ -545,6 +553,9 @@
 * The documentation for `qml.devices.experimental.Device` has been improved to clarify
   some aspects of its use.
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
+
+* Input types and sources for operators in `qml.import_operator` are specified.
+  [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -622,6 +633,9 @@
 * `qml.math.get_dtype_name` now works with autograd array boxes.
   [(#4494)](https://github.com/PennyLaneAI/pennylane/pull/4494)
 
+* The backprop gradient of `qml.math.fidelity` is now correct.
+  [(#4380)](https://github.com/PennyLaneAI/pennylane/pull/4380)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -645,4 +659,4 @@ Borja Requena,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
-Frederik Wilde
+Frederik Wilde.
