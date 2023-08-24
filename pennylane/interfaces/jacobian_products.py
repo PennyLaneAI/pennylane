@@ -79,11 +79,13 @@ class JacobianProductCalculator(abc.ABC):
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
         """Compute the vjp for a given batch of tapes.
 
-        This method is used by autograd, torch, and tensorflow to compute VJPs
+        This method is used by autograd, torch, and tensorflow to compute VJPs.
 
         Args:
-            tapes (tuple[`~.QuantumScript`]): the batch of tapes to the the derivatives of
-            dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution
+            tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of
+            dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution.
+                The ``i``th entry (cotangent) corresponds to the ``i``th tape, and the ``j``th entry of the ``i``th
+                cotangent corresponds to the ``j``th return value of the ``i``th tape.
 
         Returns:
             TensorLike: the vector jacobian product.
@@ -115,12 +117,12 @@ class JacobianProductCalculator(abc.ABC):
 
     @abc.abstractmethod
     def compute_jacobian(self, tapes: Batch) -> Tuple:
-        """Compute the full jacobian for a batch of tapes.
+        """Compute the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``jax-jit`` interface
 
         Args:
-            tapes: the batch of tapes to take the jacobian of
+            tapes: the batch of tapes to take the Jacobian of
 
         **Examples:**
 
