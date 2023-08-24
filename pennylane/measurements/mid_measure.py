@@ -74,7 +74,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):
     >>> func()
     tensor([1., 0.], requires_grad=True)
 
-    Mid circuit measurements can be manipulated using the following dunder methods:
+    Mid circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
     ``>=``, ``<``, ``>`` with other mid-circuit measurements or scalars.
 
