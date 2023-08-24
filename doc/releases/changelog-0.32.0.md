@@ -59,6 +59,7 @@
   ```
 
   ```pycon
+  >>> import jax
   >>> from jax import numpy as np
   >>> jax.jacobian(find_coeffs)(np.array(2.))
   Array([0., 1.], dtype=float32, weak_type=True)
