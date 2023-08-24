@@ -17,7 +17,6 @@ of a qubit-based quantum tape.
 """
 import itertools as it
 import warnings
-from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
