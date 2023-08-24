@@ -16,6 +16,8 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
 import abc
 from functools import partial
+import inspect
+import logging
 from typing import Tuple, Callable, Optional
 
 import pennylane as qml
@@ -23,6 +25,9 @@ from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch, TensorLike
 
 Batch = Tuple[QuantumScript]
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class JacobianProductCalculator(abc.ABC):
@@ -63,6 +68,9 @@ class JacobianProductCalculator(abc.ABC):
         >>> qml.math.allclose(jvps, expected_jvps)
         True
 
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
+
         """
 
     @abc.abstractmethod
@@ -94,6 +102,9 @@ class JacobianProductCalculator(abc.ABC):
         >>> qml.math.allclose(vjps[1], expected_vjp1)
         True
 
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
+
         """
 
     @abc.abstractmethod
@@ -110,6 +121,9 @@ class JacobianProductCalculator(abc.ABC):
         >>> batch = (tape0, tape1)
         >>> jp_method.compute_jacobian(batch)
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
 
         """
 
@@ -139,11 +153,22 @@ class TransformJacobianProducts(JacobianProductCalculator):
         gradient_transform: "qml.gradients.gradient_transform",
         gradient_kwargs: Optional[dict] = None,
     ):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "TransformJacobianProduct being created with (%s, %s, %s)",
+                inner_execute
+                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(inner_execute))
+                else "\n" + inspect.getsource(inner_execute),
+                gradient_transform,
+                gradient_kwargs,
+            )
         self._inner_execute = inner_execute
         self._gradient_transform = gradient_transform
         self._gradient_kwargs = gradient_kwargs or {}
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
         num_result_tapes = len(tapes)
 
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
@@ -160,6 +185,8 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(results), tuple(jvps)
 
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
@@ -168,6 +195,8 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(processing_fn(vjp_results))
 
     def compute_jacobian(self, tapes: Batch):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("compute_jacobian called with %s", tapes)
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
             partial_gradient_fn, tapes
