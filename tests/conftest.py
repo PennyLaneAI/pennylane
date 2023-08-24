@@ -228,9 +228,6 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-        if "legacy" in rel_path.parts:
-            mark = getattr(pytest.mark, "legacy")
-            item.add_marker(mark)
         if "finite_diff" in rel_path.parts:
             mark = getattr(pytest.mark, "finite-diff")
             item.add_marker(mark)
@@ -256,7 +253,6 @@ def pytest_collection_modifyitems(items, config):
                     "qchem",
                     "qcut",
                     "all_interfaces",
-                    "legacy",
                     "finite-diff",
                     "param-shift",
                 ]

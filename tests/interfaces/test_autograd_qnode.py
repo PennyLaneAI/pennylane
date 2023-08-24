@@ -2169,7 +2169,6 @@ class TestReturn:
             return anp.hstack(qml.grad(circuit)(x, y))
 
         hess = qml.jacobian(cost)(par_0, par_1)
-        print(hess)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2

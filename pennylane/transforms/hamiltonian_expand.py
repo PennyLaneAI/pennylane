@@ -154,17 +154,14 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
             tapes.append(new_tape)
 
         def processing_fn(res_groupings):
-            if qml.active_return():
-                # pylint: disable=no-member
-                res_groupings = [
-                    qml.math.stack(r)
-                    if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
-                    else r
-                    for r in res_groupings
-                ]
-                res_groupings = [
-                    qml.math.reshape(r, (1,)) if r.shape == () else r for r in res_groupings
-                ]
+            # pylint: disable=no-member
+            res_groupings = [
+                qml.math.stack(r) if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox)) else r
+                for r in res_groupings
+            ]
+            res_groupings = [
+                qml.math.reshape(r, (1,)) if r.shape == () else r for r in res_groupings
+            ]
             dot_products = []
             for c_group, r_group in zip(coeff_groupings, res_groupings):
                 if tape.batch_size:
@@ -352,8 +349,6 @@ def sum_expand(tape: QuantumTape, group=True):
         results = []  # [(m_idx, result)]
         for qscript_res, qscript_idxs in zip(expanded_results, idxs_coeffs):
             if isinstance(qscript_idxs[0], tuple):  # qscript_res contains only one result
-                if not qml.active_return():  # old return types
-                    qscript_res = qscript_res[0]
                 for idx, coeff in qscript_idxs:
                     results.append((idx, qscript_res if coeff is None else coeff * qscript_res))
                 continue

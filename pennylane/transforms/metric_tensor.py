@@ -808,9 +808,8 @@ def _metric_tensor_hadamard(
         # Get full block-diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
 
-        if qml.active_return():
-            # the off diag tapes only have a single expval measurement
-            off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
+        # the off diag tapes only have a single expval measurement
+        off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
 
         # Prepare the mask to match the used interface
         mask = qml.math.convert_like(mask, diag_mt)

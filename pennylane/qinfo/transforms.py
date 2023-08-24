@@ -362,11 +362,8 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
     if post_processing_fn is None:
 
         def post_processing_fn(res):
-            if qml.active_return():
-                # only a single probs measurement, so no stacking needed
-                return res[0]
-
-            return qml.math.squeeze(qml.math.stack(res))
+            # only a single probs measurement, so no stacking needed
+            return res[0]
 
     return [qscript], post_processing_fn
 
