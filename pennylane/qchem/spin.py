@@ -234,11 +234,19 @@ def spinz(orbitals):
     sz_orb = np.where(r % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    sz_coeff = np.array([])
-    sz_op = []
+    sentence = FermiSentence({})
 
     for i in table:
-        sz_coeff = np.concatenate((sz_coeff, np.array([i[2]])))
-        sz_op.append([int(i[0]), int(i[1])])
+        sentence.update(
+            {
+                FermiWord(
+                    {
+                        (0, int(i[0])): "+",
+                        (1, int(i[1])): "-",
+                    }
+                ): i[2]
+            }
+        )
+    sentence.simplify()
 
-    return qubit_observable((sz_coeff, sz_op))
+    return qubit_observable(sentence)
