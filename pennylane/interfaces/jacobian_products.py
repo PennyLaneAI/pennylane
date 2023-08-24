@@ -52,13 +52,15 @@ class JacobianProductCalculator(abc.ABC):
 
         **Examples:**
 
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> batch = (tape0, tape1)
         >>> tangents0 = (1.5, )
         >>> tangents1 = (2.0, )
         >>> tangents = (tangents0, tangents1)
-        >>> results, jvps = jp_method.execute_and_compute_jvp(batch, tangents)
+        >>> results, jvps = jpc.execute_and_compute_jvp(batch, tangents)
         >>> expected_results = (np.cos(0.1), np.cos(0.2))
         >>> qml.math.allclose(results, expected_results)
         True
@@ -86,13 +88,17 @@ class JacobianProductCalculator(abc.ABC):
         Returns:
             TensorLike: the vector jacobian product.
 
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
         >>> batch = (tape0, tape1)
         >>> dy0 = (0.5, )
         >>> dy1 = (2.0, 3.0)
         >>> dys = (dy0, dy1)
-        >>> vjps = jp_method.compute_vjp(batch, dys)
+        >>> vjps = jpc.compute_vjp(batch, dys)
         >>> vjps
         (array([-0.04991671]), array([2.54286107]))
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
@@ -116,10 +122,14 @@ class JacobianProductCalculator(abc.ABC):
         Args:
             tapes: the batch of tapes to take the jacobian of
 
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
         >>> batch = (tape0, tape1)
-        >>> jp_method.compute_jacobian(batch)
+        >>> jpc.compute_jacobian(batch)
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
@@ -140,7 +150,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
     >>> kwargs = {"broadcast": True}
-    >>> jp_method = TransformJacobianProducts(inner_execute, gradient_transform, kwargs)
+    >>> jpc = TransformJacobianProducts(inner_execute, gradient_transform, kwargs)
 
     """
 
