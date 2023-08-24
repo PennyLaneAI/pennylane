@@ -750,8 +750,8 @@ class QuantumScript:
     def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
         """Create a new tape with updated parameters.
 
-        This function takes a :class:`~.tape.QuantumScript` as input, and returns
-        a new ``QuantumScript`` containing the new parameters at the provided indices,
+        This function takes a list of new parameters as input, and returns
+        a new :class:`~.tape.QuantumScript` containing the new parameters at the provided indices,
         with the parameters at all other indices remaining the same.
 
         Args:

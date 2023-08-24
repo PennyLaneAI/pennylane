@@ -41,6 +41,11 @@ class QutritBasisState(StatePrepBase):
         target device, PennyLane will attempt to decompose the operation
         into :class:`~.TShift` operations.
 
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
+
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
             array of integers from the set :math:`\{0, 1, 2\}`, i.e.,
