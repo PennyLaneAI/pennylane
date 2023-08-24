@@ -1131,11 +1131,11 @@ class TestIntegration:
         def circuit(x):
             qml.RX(x, wires=0)
             m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=0)
+            qml.cond(m, qml.PauliX)(wires=1)
             return qml.expval(qml.PauliZ(wires=1))
 
         res = qml.draw(circuit)("x")
-        expected = "0: ──RX(x)─╭●─╭X─┤     \n1: ────────│──│──┤  <Z>\n2: ────────╰X─╰●─┤     "
+        expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
 
         assert res == expected
 
