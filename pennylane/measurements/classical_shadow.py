@@ -446,8 +446,6 @@ class ClassicalShadowMP(MeasurementTransform):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        if not qml.active_return():
-            return (1, 2, shots.total_shots, len(self.wires))
         return (2, shots.total_shots, len(self.wires))
 
     def __copy__(self):
@@ -524,8 +522,6 @@ class ShadowExpvalMP(MeasurementTransform):
         return ShadowExpval
 
     def shape(self, device, shots):  # pylint: disable=unused-argument
-        if not qml.active_return():
-            return (1,)
         return ()
 
     @property
