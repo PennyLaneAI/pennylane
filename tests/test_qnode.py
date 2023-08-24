@@ -1122,6 +1122,23 @@ class TestIntegration:
         assert np.allclose(r1, r2)
         spy.assert_called_once()
 
+    def test_drawing_has_deferred_measurements(self):
+        """Test that `qml.draw` with qnodes uses defer_measurements
+        to draw circuits with mid-circuit measurements."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(wires=0)
+            return qml.expval(qml.PauliZ(wires=1))
+
+        res = qml.draw(circuit)("x")
+        expected = "0: ──RX(x)─╭●─╭X─┤     \n1: ────────│──│──┤  <Z>\n2: ────────╰X─╰●─┤     "
+
+        assert res == expected
+
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
