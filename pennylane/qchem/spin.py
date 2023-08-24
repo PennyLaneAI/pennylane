@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the spin observables.
 """
 from pennylane import numpy as np
+from pennylane.fermi import FermiSentence, FermiWord
 
 from .observable_hf import qubit_observable
 
@@ -171,14 +172,24 @@ def spin2(electrons, orbitals):
 
     table = _spin2_matrix_elements(sz)
 
-    s2_coeff = np.array([3 / 4 * electrons])
-    s2_op = [[]]
+    sentence = FermiSentence({FermiWord({}): 3 / 4 * electrons})
 
     for i in table:
-        s2_coeff = np.concatenate((s2_coeff, np.array([i[4]])))
-        s2_op.append([int(i[0]), int(i[1]), int(i[2]), int(i[3])])
+        sentence.update(
+            {
+                FermiWord(
+                    {
+                        (0, int(i[0])): "+",
+                        (1, int(i[1])): "+",
+                        (2, int(i[2])): "-",
+                        (3, int(i[3])): "-",
+                    }
+                ): i[4]
+            }
+        )
+    sentence.simplify()
 
-    return qubit_observable((s2_coeff, s2_op))
+    return qubit_observable(sentence)
 
 
 def spinz(orbitals):
