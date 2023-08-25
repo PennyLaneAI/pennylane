@@ -1008,6 +1008,7 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
 
     return dict_fcimatr
 
+
 def _dmrg_state(wf, reordering=None, tol=1e-15):
     r"""
     Construct a wavefunction from the dmrg wavefunction Block2 ``dtrie`` object.
@@ -1062,34 +1063,34 @@ def _dmrg_state(wf, reordering=None, tol=1e-15):
     dets, coeffs = wf
 
     def sitevec_to_fock(det):
-        '''
+        """
         Do the conversion from the DMRG site vector representation
         for Slater dets to that of Fock number occupation basis.
 
         SF: with additional args, this could be taken out of this function.
-        '''
+        """
 
         # if reorder used, un-do
         if reordering is not None:
             idx = np.argsort(reordering)
             det = det[idx]
 
-        stra = ''
-        strb = ''
+        stra = ""
+        strb = ""
         for elem in det:
             if elem == 0:
-                stra += '0'
-                strb += '0'
-                continue 
+                stra += "0"
+                strb += "0"
+                continue
             elif elem == 1:
-                stra += '1'
-                strb += '0'
+                stra += "1"
+                strb += "0"
             elif elem == 2:
-                stra += '0'
-                strb += '1'
+                stra += "0"
+                strb += "1"
             elif elem == 3:
-                stra += '1'
-                strb += '1'
+                stra += "1"
+                strb += "1"
 
         # flip order and interpret as binary reps of integers
         inta = int(stra[::-1], 2)
@@ -1109,21 +1110,21 @@ def _dmrg_state(wf, reordering=None, tol=1e-15):
         lstb = np.array(list(map(int, bin(strb)[2:])))[::-1]
 
         # pad the relevant list
-        maxlen = max( [len(lsta), len(lstb)] )
-        lsta = np.pad(lsta, (0, maxlen - len(lsta)) )
-        lstb = np.pad(lstb, (0, maxlen - len(lstb)) )
+        maxlen = max([len(lsta), len(lstb)])
+        lsta = np.pad(lsta, (0, maxlen - len(lsta)))
+        lstb = np.pad(lstb, (0, maxlen - len(lstb)))
 
         which_occ = np.where(lsta == 1)[0]
         if len(which_occ) == 0:
-            parity = 1.
+            parity = 1.0
         else:
-            parity = (-1)**np.sum([np.sum(lstb[:int(ind)]) for ind in which_occ])
-        dat.append( parity * coeffs[ii] )
+            parity = (-1) ** np.sum([np.sum(lstb[: int(ind)]) for ind in which_occ])
+        dat.append(parity * coeffs[ii])
 
     ## create the FCI matrix as a dict
-    dict_fcimatr = dict( zip(list(zip(row, col)), dat) )
+    dict_fcimatr = dict(zip(list(zip(row, col)), dat))
 
-    # filter based on tolerance cutoff 
-    dict_fcimatr = {key:value for key, value in dict_fcimatr.items() if abs(value) > tol}
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
     return dict_fcimatr
