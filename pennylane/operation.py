@@ -1407,7 +1407,6 @@ class Operator(abc.ABC):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-            * `"_prep"`
             * `"_ops"`
             * `"_measurements"`
             * `None`
@@ -1861,7 +1860,6 @@ class Observable(Operator):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-            * `"_prep"`
             * `"_ops"`
             * `"_measurements"`
             * None
@@ -2446,6 +2444,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
+
         >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1
@@ -2831,7 +2830,6 @@ class StatePrepBase(Operation):
     """An interface for state-prep operations."""
 
     grad_method = None
-    _queue_category = "_prep"
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod

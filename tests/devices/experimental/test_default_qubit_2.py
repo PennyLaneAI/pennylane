@@ -1382,6 +1382,22 @@ class TestPreprocessingIntegration:
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
 
+    def test_preprocess_defer_measurements_integration(self, mocker):
+        """Test that a QNode with mid-circuit measurements is transformed
+        using defer_measurements."""
+        dev = DefaultQubit2()
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            qml.measure(0)
+            return qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(qml, "defer_measurements")
+        _ = circuit()
+
+        spy.assert_called_once()
+
 
 class TestRandomSeed:
     """Test that the device behaves correctly when provided with a random seed"""

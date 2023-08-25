@@ -41,6 +41,11 @@ class BasisState(StatePrepBase):
         target device, PennyLane will attempt to decompose the operation
         into :class:`~.PauliX` operations.
 
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
+
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
             array of integers from the set :math:`\{0, 1\}`, i.e.,
@@ -131,6 +136,11 @@ class StatePrep(StatePrepBase):
         target device, PennyLane will attempt to decompose the operation
         using the method developed by Möttönen et al. (Quantum Info. Comput.,
         2005).
+
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
@@ -292,6 +302,3 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
-
-    # This is a temporary attribute to fix the operator queuing behaviour
-    _queue_category = "_prep"

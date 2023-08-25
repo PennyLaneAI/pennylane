@@ -27,6 +27,7 @@ import pennylane as qml
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .gradient_transform import (
     _all_zero_grad,
+    assert_no_tape_batching,
     gradient_transform,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -130,10 +131,10 @@ def spsa_grad(
 
         sampler_rng (Union[np.random.Generator, int, None]): Either a NumPy pseudo-random number
             generator or an integer, which will be used as the PRNG seed. Default is None, which
-            creates a NumPy PRNG without a seed. Note that calling ``spsa_gradient`` multiple times
+            creates a NumPy PRNG without a seed. Note that calling ``spsa_grad`` multiple times
             with a seed (i.e., an integer) will result in the same directions being sampled in each
             call. In this case it is advisable to create a NumPy PRNG and pass it to
-            ``spsa_gradient`` in each call.
+            ``spsa_grad`` in each call.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -253,6 +254,8 @@ def spsa_grad(
         Note that the stochastic approximation and the fluctuations from the shot noise
         of the device accumulate, leading to a very coarse-grained estimate for the gradient.
     """
+    transform_name = "SPSA"
+    assert_no_tape_batching(tape, transform_name)
     if not qml.active_return():
         return _spsa_grad_legacy(
             tape,
