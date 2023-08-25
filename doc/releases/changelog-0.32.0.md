@@ -379,6 +379,7 @@
 
 * The `qchem` module has been upgraded to use the fermionic operators of the `fermi` module.
   [#4336](https://github.com/PennyLaneAI/pennylane/pull/4336)
+  [#4521](https://github.com/PennyLaneAI/pennylane/pull/4521)
 
 * The calculation of `Sum`, `Prod`, `SProd`, `PauliWord`, and `PauliSentence` sparse matrices
   are orders of magnitude faster.
