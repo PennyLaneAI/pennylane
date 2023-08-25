@@ -26,7 +26,7 @@ These download the desired datasets or load them from local storage if previousl
 
 To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
-of available datasets, please see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+of available datasets, please see the `datasets website <https://pennylane.ai/datasets>`_.
 The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)

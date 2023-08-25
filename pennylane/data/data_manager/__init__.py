@@ -125,7 +125,7 @@ def load(  # pylint: disable=too-many-arguments
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
     :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see
-    the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+    the `datasets website <https://pennylane.ai/datasets>`_.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -246,7 +246,7 @@ def list_datasets() -> dict:
     **Example:**
 
     Note that the results of calling this function may differ from this example as more datasets
-    are added. For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+    are added. For updates on available data see the `datasets website <https://pennylane.ai/datasets>`_.
 
     >>> available_data = qml.data.list_datasets()
     >>> available_data.keys()
