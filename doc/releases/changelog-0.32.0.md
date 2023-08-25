@@ -43,7 +43,7 @@
   ```
 
   This circuit can be used as a building block within a larger QNode to perform algorithms such as
-  the [quantum singular value transformation](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) and [Hamiltonian simulation](https://codebook.xanadu.ai/H.6).
+  [QSVT](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) and [Hamiltonian simulation](https://codebook.xanadu.ai/H.6).
 
 * Decomposing a Hermitian matrix into a linear combination of Pauli words via `qml.pauli_decompose` is 
   now faster and differentiable.
@@ -90,7 +90,6 @@
   Executing `my_code.py` with logging enabled will detail every step in PennyLane's
   pipeline that gets used to run your code.
 
-  ```commandline
   $ python my_code.py
   [1967-02-13 15:18:38,591][DEBUG][<PID 8881:MainProcess>] - pennylane.qnode.__init__()::"Creating QNode(func=<function f at 0x7faf2a6fbaf0>, device=<DefaultQubit device (wires=2, shots=None) at 0x7faf2a689b50>, interface=auto, diff_method=best, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best, mode=None, cache=True, cachesize=10000, max_diff=1, gradient_kwargs={}"
   ...
@@ -194,7 +193,7 @@
   ```
   
   You can read more about mid-circuit measurements
-  [here](https://docs.pennylane.ai/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations),
+  [in the documentation](https://docs.pennylane.ai/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations),
   and stay tuned for more mid-circuit measurement features in the next few releases!
 
 <h3>Improvements 🛠</h3>
