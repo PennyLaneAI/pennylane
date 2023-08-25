@@ -54,7 +54,7 @@ array([False, False])
   >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
   >>> @qml.qnode(dev)
   >>> def circuit():
-  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     qml.Select(ops, control=[0,1])
   >>>     return qml.state()
   ...
   >>> print(qml.draw(circuit,expansion_strategy='device')())
