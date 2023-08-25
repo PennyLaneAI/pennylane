@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Introducing the ability to import wavefunctions from MPS DMRG classical calculations using `qml_import_state`,
+  in particular those obtained with the Block2 library.
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
