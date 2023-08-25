@@ -188,17 +188,14 @@ class AdaptiveOptimizer:
         qnode = copy.copy(circuit)
 
         if drain_pool:
-            repeated_gates = [
+            operator_pool = [
                 gate
                 for gate in operator_pool
-                for operation in circuit.tape.operations
-                if (gate.name == operation.name and gate.wires == operation.wires)
+                if all(
+                    gate.name != operation.name or gate.wires != operation.wires
+                    for operation in circuit.tape.operations
+                )
             ]
-            for gate in repeated_gates:
-                for i, op in enumerate(operator_pool):
-                    if op is gate:
-                        operator_pool.pop(i)
-                        break
 
         params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode.func = self._circuit
