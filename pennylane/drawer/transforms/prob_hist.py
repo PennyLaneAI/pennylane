@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module provides the circuit drawing functionality used to display circuits visually.
 
-.. currentmodule:: pennylane.drawer
-.. autosummary::
-    :toctree: api
+import numpy as np
 
-"""
+from .core import VisualizationBase
 
-from .draw import draw, draw_mpl
-from .tape_text import tape_text
-from .tape_mpl import tape_mpl
-from .mpldrawer import MPLDrawer
-from .style import available_styles, use_style
-from .transforms import *
+
+class ProbHistogram(VisualizationBase):
+    def _initialize(self, fig, axs):
+        axs.set_ylim([0, 1])
+        dims = 2 ** len(self.tape.wires)
+        return axs.bar(np.arange(dims), np.zeros(dims), color="b").patches
+
+    def _update(self, artists, probs):
+        for rect, prob in zip(artists, probs):
+            rect.set_height(prob)

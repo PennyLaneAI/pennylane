@@ -249,7 +249,7 @@ class MPLDrawer:
     _cond_shift = 0.03
     """The shift value from the centre axis for classical double-lines."""
 
-    def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
+    def __init__(self, n_layers, n_wires, wire_options=None, figsize=None, fig_and_ax=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -264,14 +264,22 @@ class MPLDrawer:
         if figsize is None:
             figsize = (self.n_layers + 3, self.n_wires + 1)
 
-        self._fig = plt.figure(figsize=figsize)
-        self._ax = self._fig.add_axes(
-            [0, 0, 1, 1],
-            xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires),
-            xticks=[],
-            yticks=[],
-        )
+        if fig_and_ax is None:
+            self._fig = plt.figure(figsize=figsize)
+            self._ax = self._fig.add_axes(
+                [0, 0, 1, 1],
+                xlim=(-2, self.n_layers + 1),
+                ylim=(-1, self.n_wires),
+                xticks=[],
+                yticks=[],
+            )
+        else:
+            self._fig, self._ax = fig_and_ax
+            self._ax.set_xlim(-2, self.n_layers + 1)
+            self._ax.set_ylim(-1, self.n_wires)
+            self._ax.set_xticks([])
+            self._ax.set_yticks([])
+
         self._ax.axis("off")
 
         self._ax.invert_yaxis()

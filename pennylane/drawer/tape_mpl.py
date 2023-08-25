@@ -122,7 +122,10 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+    fig_and_ax = kwargs.get("fig_and_ax", None)
+    drawer = MPLDrawer(
+        n_layers=n_layers, n_wires=n_wires, wire_options=wire_options, fig_and_ax=fig_and_ax
+    )
 
     if n_wires == 0:
         return drawer.fig, drawer.ax
