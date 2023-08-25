@@ -24,7 +24,7 @@ def get_circuit(n_qubits, output_dim, interface):
     """Fixture for getting a sample quantum circuit with a controllable qubit number and output
     dimension. Returns both the circuit and the shape of the weights."""
 
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qml.device("default.qubit.legacy", wires=n_qubits)
     weight_shapes = {
         "w1": (3, n_qubits, 3),
         "w2": (1,),
@@ -60,7 +60,7 @@ def get_circuit_dm(n_qubits, output_dim, interface):
     dimension for density matrix return type. Returns both the circuit and the shape of the weights.
     """
 
-    dev = qml.device("default.qubit", wires=n_qubits)
+    dev = qml.device("default.qubit.legacy", wires=n_qubits)
     weight_shapes = {
         "w1": (3, n_qubits, 3),
         "w2": (1,),

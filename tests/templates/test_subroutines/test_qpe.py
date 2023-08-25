@@ -99,9 +99,10 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+            tapes, _, _ = dev.preprocess(tape)
+            assert len(tapes) == 1
 
-            res = dev.execute(tape).flatten()
+            res = dev.execute(tapes)[0].flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
             # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
@@ -150,8 +151,9 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = dev.execute(tape).flatten()
+            tapes, _, _ = dev.preprocess(tape)
+            assert len(tapes) == 1
+            res = dev.execute(tapes)[0].flatten()
 
             if phase < 0:
                 estimate = np.argmax(res) / 2 ** (wires - 2) - 1
@@ -195,8 +197,9 @@ class TestDecomposition:
                 prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = dev.execute(tape).flatten()
+            tapes, _, _ = dev.preprocess(tape)
+            res = dev.execute(tapes)[0].flatten()
+            assert len(tapes) == 1
 
             estimate = np.argmax(res) / 2 ** (wires - 2)
             estimates.append(estimate)
@@ -237,8 +240,9 @@ class TestDecomposition:
                 prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
-            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = dev.execute(tape).flatten()
+            tapes, _, _ = dev.preprocess(tape)
+            assert len(tapes) == 1
+            res = dev.execute(tapes)[0].flatten()
 
             estimate = np.argmax(res) / 2 ** (wires - 2)
             estimates.append(estimate)

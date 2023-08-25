@@ -530,7 +530,7 @@ class TestParameterShiftLogic:
         # (first order, so 2 executions)
         assert len(tapes) == 2
 
-        res = fn(dev.execute(tapes))
+        res = fn(dev.batch_execute(tapes))
         assert np.allclose(res, [0, 2])
 
         tape.trainable_params = {0, 2}
@@ -540,7 +540,7 @@ class TestParameterShiftLogic:
         # (second order, so 0 executions)
         assert len(tapes) == 0
 
-        res = fn(dev.execute(tapes))
+        res = fn(dev.batch_execute(tapes))
         assert np.allclose(res, [0, 2])
 
     def test_all_independent(self):
@@ -557,7 +557,7 @@ class TestParameterShiftLogic:
         tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         assert len(tapes) == 0
 
-        grad = fn(dev.execute(tapes))
+        grad = fn(dev.batch_execute(tapes))
         assert np.allclose(grad, [0, 0])
 
 
@@ -587,11 +587,11 @@ class TestExpectationQuantumGradients:
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
         tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
         expected = -hbar * alpha * np.sin(theta)
@@ -616,11 +616,11 @@ class TestExpectationQuantumGradients:
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
         expected = -hbar * alpha * np.sin(theta)
@@ -644,11 +644,11 @@ class TestExpectationQuantumGradients:
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
         expected = [hbar * np.cos(phi), -hbar * r * np.sin(phi)]
@@ -690,11 +690,11 @@ class TestExpectationQuantumGradients:
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
         expected = -np.exp(-r) * hbar * alpha
@@ -719,7 +719,7 @@ class TestExpectationQuantumGradients:
         spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad = fn(dev.execute(tapes))
+        grad = fn(dev.batch_execute(tapes))
         assert tape._par_info[0]["grad_method"] == "F"
 
         spy.assert_not_called()
@@ -743,7 +743,7 @@ class TestExpectationQuantumGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
         # check against the known analytic formula
@@ -806,10 +806,10 @@ class TestExpectationQuantumGradients:
         tape.trainable_params = set(range(2, 2 + op.num_params))
 
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(dev.execute(tapes))
+        grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
 
         # check that every parameter is analytic
         for i in range(op.num_params):
@@ -819,7 +819,7 @@ class TestExpectationQuantumGradients:
 
         if obs.ev_order == 1:
             tapes, fn = param_shift_cv(tape, dev)
-            grad_A = fn(dev.execute(tapes))
+            grad_A = fn(dev.batch_execute(tapes))
             assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("t", [0, 1])
@@ -882,13 +882,13 @@ class TestExpectationQuantumGradients:
         dev = qml.device("default.gaussian", wires=2)
 
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(dev.execute(tapes))
+        grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "A"
@@ -923,10 +923,10 @@ class TestVarianceQuantumGradients:
 
         # circuit jacobians
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(dev.execute(tapes))
+        grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
 
         expected = np.array(
             [
@@ -960,7 +960,7 @@ class TestVarianceQuantumGradients:
 
         # circuit jacobians
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(dev.execute(tapes))
+        grad_F = fn(dev.batch_execute(tapes))
 
         expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(grad_F, expected, atol=tol, rtol=0)
@@ -1063,13 +1063,13 @@ class TestVarianceQuantumGradients:
 
         # jacobians must match
         tapes, fn = qml.gradients.finite_diff(tape)
-        grad_F = fn(dev.execute(tapes))
+        grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev)
-        grad_A = fn(dev.execute(tapes))
+        grad_A = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
-        grad_A2 = fn(dev.execute(tapes))
+        grad_A2 = fn(dev.batch_execute(tapes))
 
         assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
@@ -1094,7 +1094,7 @@ class TestVarianceQuantumGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         tapes, fn = param_shift_cv(tape, dev)
-        grad = fn(dev.execute(tapes))
+        grad = fn(dev.batch_execute(tapes))
         expected = np.array(
             [
                 2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
@@ -1118,7 +1118,7 @@ class TestVarianceQuantumGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tapes, fn = param_shift_cv(tape, dev)
-        grad = fn(dev.execute(tapes))
+        grad = fn(dev.batch_execute(tapes))
         expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 

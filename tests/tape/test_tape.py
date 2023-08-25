@@ -2438,7 +2438,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, dtype)
-        assert circuit.qtape.numeric_type is int
+        assert circuit.qtape.numeric_type is dtype
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces

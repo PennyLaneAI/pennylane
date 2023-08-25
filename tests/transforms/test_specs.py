@@ -92,7 +92,7 @@ class TestSpecsTransform:
 
         assert info["num_observables"] == 2
         assert info["num_diagonalizing_gates"] == 1
-        assert info["num_device_wires"] == 4
+        assert info["num_device_wires"] == 3
         assert info["diff_method"] == diff_method
         assert info["num_trainable_params"] == 4
         assert info["device_name"] == dev.name

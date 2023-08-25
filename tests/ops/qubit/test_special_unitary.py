@@ -806,7 +806,7 @@ class TestSpecialUnitaryIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -843,7 +843,7 @@ class TestSpecialUnitaryIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -875,7 +875,7 @@ class TestSpecialUnitaryIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 

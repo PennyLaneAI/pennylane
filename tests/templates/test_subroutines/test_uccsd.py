@@ -150,8 +150,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
         weights = [0.1, 0.2]
-        dev = qml.device("default.qubit", wires=4)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e"])
+        dev = qml.device("default.qubit.legacy", wires=4)
+        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k", "e"])
 
         @qml.qnode(dev)
         def circuit():
@@ -213,7 +213,7 @@ class TestInputs:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
-                "BasisState parameter and wires",
+                "Basis states must be of length 4",
             ),
             (
                 np.array([-2.8, 1.6]),
