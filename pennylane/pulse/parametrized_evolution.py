@@ -452,6 +452,11 @@ class ParametrizedEvolution(Operation):
         # subtract an additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
 
+    def map_wires(self, wire_map):
+        mapped_op = super().map_wires(wire_map)
+        mapped_op.H = self.H.map_wires(wire_map)
+        return mapped_op
+
     @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
