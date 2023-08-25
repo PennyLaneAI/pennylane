@@ -274,7 +274,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: Union[qml.devices.experimental.Device, qml.Device],
+        device: Union["qml.devices.experimental.Device", "qml.Device"],
         execution_config,
         gradient_kwargs: dict,
     ):

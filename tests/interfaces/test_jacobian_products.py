@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.interfaces.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
-    DeviceJacobians
+    DeviceJacobians,
 )
 
 dev = qml.devices.experimental.DefaultQubit2()
@@ -39,12 +39,11 @@ param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.p
 hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
-device_jacs = ExperimentalDeviceDerivatives(dev, adjoint_config)
-legacy_jacs = LegacyDeviceDerivatives(dev_old, {"method": "adjoint_jacobian"})
-device_jps = DeviceJacobianProducts(dev, execution_config=adjoint_config)
+device_jacs = DeviceJacobians(dev, adjoint_config, {})
+legacy_jacs = DeviceJacobians(dev_old, adjoint_config, {"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
-jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_jacs, device_jps]
+jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_jacs]
 
 
 # pylint: disable=too-few-public-methods
