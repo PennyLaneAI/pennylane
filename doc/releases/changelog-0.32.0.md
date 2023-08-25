@@ -8,8 +8,8 @@
 
 * It is now possible to encode an operator `A` into a quantum circuit by decomposing it into
   a linear combination of unitaries using PREP 
-  ([StatePrep](https://docs.pennylane.ai/en/stable/code/api/pennylane.StatePrep.html)) and
-  SELECT ([Select](https://docs.pennylane.ai/en/stable/code/api/pennylane.Select.html)) 
+  ([qml.StatePrep](https://docs.pennylane.ai/en/stable/code/api/pennylane.StatePrep.html)) and
+  SELECT ([qml.Select](https://docs.pennylane.ai/en/stable/code/api/pennylane.Select.html)) 
   routines.
   [(#4431)](https://github.com/PennyLaneAI/pennylane/pull/4431)
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
@@ -90,6 +90,7 @@
   Executing `my_code.py` with logging enabled will detail every step in PennyLane's
   pipeline that gets used to run your code.
 
+  ```commandline
   $ python my_code.py
   [1967-02-13 15:18:38,591][DEBUG][<PID 8881:MainProcess>] - pennylane.qnode.__init__()::"Creating QNode(func=<function f at 0x7faf2a6fbaf0>, device=<DefaultQubit device (wires=2, shots=None) at 0x7faf2a689b50>, interface=auto, diff_method=best, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best, mode=None, cache=True, cachesize=10000, max_diff=1, gradient_kwargs={}"
   ...
@@ -114,9 +115,9 @@
   trivial Hartree-Fock state. For molecules with a complicated electronic structure, using initial
   states obtained from affordable post-Hartree-Fock calculations helps to improve the efficiency of
   the quantum simulations. These calculations can be done with external quantum chemistry libraries
-  such as `PySCF`.
+  such as PySCF.
 
-  It is now possible to import a `PySCF` solver object in PennyLane and extract the corresponding
+  It is now possible to import a PySCF solver object in PennyLane and extract the corresponding
   wave function in the form of a state vector that can be directly used in a circuit. First, perform
   your classical quantum chemistry calculations and then use the
   [qml.qchem.import_state](https://docs.pennylane.ai/en/stable/code/api/pennylane.qchem.import_state.html)
@@ -231,6 +232,10 @@
       plt.plot(np.random.rand(10))
   ```
 
+  If the font 
+  [Quicksand Bold](https://fonts.google.com/specimen/Quicksand) isn't available, 
+  an available default font is used instead. 
+
 <h4>Making operators immutable and PyTrees</h4>
 
 * Any class inheriting from `Operator` is now automatically registered as a pytree with JAX.
@@ -309,8 +314,8 @@
   private methods of `qml.devices.DefaultQubit`.
   [(#4456)](https://github.com/PennyLaneAI/pennylane/pull/4456)
 
-* Auxiliary wires and device wires are now treated the same way in `transforms.metric_tensor`
-  as in `gradients.hadamard_grad`. All valid wire input formats for `aux_wire` are supported.
+* Auxiliary wires and device wires are now treated the same way in `qml.transforms.metric_tensor`
+  as in `qml.gradients.hadamard_grad`. All valid wire input formats for `aux_wire` are supported.
   [(#4328)](https://github.com/PennyLaneAI/pennylane/pull/4328)
 
 <h4>Next-generation device API</h4>
@@ -368,7 +373,7 @@
   A sequence of `HardwareHamiltonian`s can now be summed via the builtin `sum`.
   [(#4343)](https://github.com/PennyLaneAI/pennylane/pull/4343)
 
-* `transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560).
+* `qml.pulse.transmon_drive` has been updated in accordance with [1904.06560](https://arxiv.org/abs/1904.06560).
   In particular, the functional form has been changed from
   :math:`\Omega(t)(\cos(\omega_d t + \phi) X - \sin(\omega_d t + \phi) Y)$ to $\Omega(t) \sin(\omega_d t + \phi) Y`.
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
@@ -410,10 +415,10 @@
 * All tests in CI and pre-commit hooks now enable linting.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
 
-* The default label for a `StatePrep` operator is now `|Ψ⟩`.
+* The default label for a `qml.StatePrep` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
-* `Device.default_expand_fn()` has been updated to decompose `StatePrep` operations present in the middle of a provided circuit.
+* `Device.default_expand_fn()` has been updated to decompose `qml.StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
 * The application of the `qml.defer_measurements` transform has been moved from 
@@ -446,7 +451,7 @@
 * The gradients module no longer needs shot information passed to it explicitly, as the shots are on the tapes.
   [(#4448)](https://github.com/PennyLaneAI/pennylane/pull/4448)
 
-* `StatePrep` has been renamed to `StatePrepBase` and `QubitStateVector` has been renamed to `StatePrep`.
+* `qml.StatePrep` has been renamed to `qml.StatePrepBase` and `qml.QubitStateVector` has been renamed to `qml.StatePrep`.
   `qml.operation.StatePrep` and `qml.QubitStateVector` are still accessible.
   [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
 
@@ -475,11 +480,11 @@
 * `qml.math.reduced_dm` has been removed. Use `qml.math.reduce_dm` or `qml.math.reduce_statevector` instead.
   [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
-* The ``qml.specs`` dictionary no longer supports direct key access to certain keys. 
+* The `qml.specs` dictionary no longer supports direct key access to certain keys. 
   [(#4301)](https://github.com/PennyLaneAI/pennylane/pull/4301)
 
-  Instead, these quantities can be accessed as fields of the new ``Resources`` object saved under
-  ``specs_dict["resources"]``:
+  Instead, these quantities can be accessed as fields of the new `Resources` object saved under
+  `specs_dict["resources"]`:
 
   - `num_operations` is no longer supported, use `specs_dict["resources"].num_gates`
   - `num_used_wires` is no longer supported, use `specs_dict["resources"].num_wires`
@@ -492,7 +497,7 @@
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
 
-* The Pauli-X-term in `transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
+* The Pauli-X-term in `qml.pulse.transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 * The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
