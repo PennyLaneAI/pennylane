@@ -44,7 +44,6 @@ class TestMergeAmplitudeEmbedding:
         dev = qml.device("default.qubit", wires=2)
         assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
 
-    @pytest.mark.xfail(reason="fails earlier because the operator inherits from StatePrep")
     def test_repeated_qubit(self):
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
 
