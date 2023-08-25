@@ -379,6 +379,8 @@
   [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
+  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
+
 
 <h4>Other improvements</h4>
 
@@ -496,9 +498,6 @@
   `qml.math.relative_entropy`, and `qml.math.max_entropy` no longer support state vectors as
   input.
   [(#4322)](https://github.com/PennyLaneAI/pennylane/pull/4322)
-
-* The Pauli-X-term in `qml.pulse.transmon_drive` has been removed in accordance with [1904.06560](https://arxiv.org/abs/1904.06560)
-  [(#4418)](https://github.com/PennyLaneAI/pennylane/pull/4418/)
 
 * The private `QuantumScript._prep` list has been removed, and prep operations now go into the `_ops` list.
   [(#4485)](https://github.com/PennyLaneAI/pennylane/pull/4485)
