@@ -281,7 +281,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. note:: Currently only supports ``d=2`` with qudit support planned in the future.
         For ``d>2``, we have :math:`Y \mapsto i (\sigma^- - \sigma^+)`
-        with lowering and raising operators  :math:`\sigma_^{\mp}`.
+        with lowering and raising operators  :math:`\sigma^{\mp}`.
 
     .. note:: Due to convention in the respective fields, we omit the factor :math:`\frac{1}{2}` present in the related constructor :func:`~.rydberg_drive`
 
@@ -313,8 +313,12 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
-        def amp(A, t): return A * jnp.exp(-t**2)
-        def phase(phi0, t): return phi0
+        def amp(A, t):
+            return A * jnp.exp(-t**2)
+
+        def phase(phi0, t):
+            return phi0
+
         freq = 0
 
         H = qml.pulse.transmon_drive(amp, phase, freq, 0)
