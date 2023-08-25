@@ -98,7 +98,7 @@ class TestQSVT:
     )
     def test_output(self, U_A, lst_projectors, wires, operations):
         """Test that qml.QSVT produces the intended measurements."""
-        dev = qml.device("default.qubit.legacy", wires=len(wires))
+        dev = qml.device("default.qubit", wires=len(wires))
 
         @qml.qnode(dev)
         def circuit():
@@ -289,7 +289,7 @@ class TestQSVT:
     def test_QSVT_grad(self, A, phis):
         """Test that qml.grad results are the same as finite difference results"""
 
-        @qml.qnode(qml.device("default.qubit.legacy", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit(A, phis):
             qml.QSVT(
                 qml.BlockEncode(A, wires=[0, 1]),
@@ -361,7 +361,7 @@ class Testqsvt:
     )
     def test_output(self, A, phis, wires, true_mat):
         """Test that qml.qsvt produces the correct output."""
-        dev = qml.device("default.qubit.legacy", wires=len(wires))
+        dev = qml.device("default.qubit", wires=len(wires))
 
         @qml.qnode(dev)
         def circuit():
@@ -399,7 +399,7 @@ class Testqsvt:
     )
     def test_output_wx(self, A, phis, wires, result):
         """Test that qml.qsvt produces the correct output."""
-        dev = qml.device("default.qubit.legacy", wires=len(wires))
+        dev = qml.device("default.qubit", wires=len(wires))
 
         @qml.qnode(dev)
         def circuit():
@@ -499,7 +499,7 @@ class Testqsvt:
     def test_qsvt_grad(self):
         """Test that qml.grad results are the same as finite difference results"""
 
-        @qml.qnode(qml.device("default.qubit.legacy", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit(A, phis):
             qml.qsvt(
                 A,

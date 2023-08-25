@@ -113,8 +113,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.qubit.legacy", wires=3)
-        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k"])
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -141,7 +141,7 @@ class TestInputs:
     def test_exception_wrong_number_of_features(self, features):
         """Verifies that an exception is raised if 'features' has the wrong trailing dimension."""
 
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit(f=None):
@@ -155,7 +155,7 @@ class TestInputs:
     def test_exception_wrong_ndim(self, shape):
         """Verifies that an exception is raised if 'features' has the wrong number of dimensions."""
 
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit(f=None):
@@ -207,7 +207,7 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol, features):
         """Tests common iterables as inputs."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         res = circuit(features)
@@ -230,7 +230,7 @@ class TestInterfaces:
 
         features = pnp.array(features, requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -257,7 +257,7 @@ class TestInterfaces:
 
         features = jnp.array(features)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -283,7 +283,7 @@ class TestInterfaces:
 
         features = tf.Variable(features)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -311,7 +311,7 @@ class TestInterfaces:
 
         features = torch.tensor(features, requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)

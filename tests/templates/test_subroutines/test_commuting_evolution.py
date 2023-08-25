@@ -47,8 +47,8 @@ def test_adjoint():
     """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
 
     n_wires = 2
-    dev1 = qml.device("default.qubit.legacy", wires=n_wires)
-    dev2 = qml.device("default.qubit.legacy", wires=n_wires)
+    dev1 = qml.device("default.qubit", wires=n_wires)
+    dev2 = qml.device("default.qubit", wires=n_wires)
 
     obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
     coeffs = [1, -1]
@@ -110,7 +110,7 @@ def test_matrix():
 
 def test_forward_execution():
     """Compare the foward execution to an exactly known result."""
-    dev = qml.device("default.qubit.legacy", wires=2)
+    dev = qml.device("default.qubit", wires=2)
 
     H = qml.PauliX(0) @ qml.PauliY(1) - 1.0 * qml.PauliY(0) @ qml.PauliX(1)
     freq = (2, 4)
@@ -147,7 +147,7 @@ class TestGradients:
         finite difference result for a two term shift rule case."""
 
         n_wires = 1
-        dev = qml.device("default.qubit.legacy", wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         hamiltonian = qml.Hamiltonian([1], [qml.PauliX(0)])
         frequencies = (2,)
@@ -172,7 +172,7 @@ class TestGradients:
         finite difference result for a four term shift rule case."""
 
         n_wires = 2
-        dev = qml.device("default.qubit.legacy", wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         coeffs = [1, -1]
         obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
@@ -197,7 +197,7 @@ class TestGradients:
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
 
         n_wires = 2
-        dev = qml.device("default.qubit.legacy", wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
         obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
         diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
         frequencies = (2, 4)

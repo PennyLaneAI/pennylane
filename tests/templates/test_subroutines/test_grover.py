@@ -152,7 +152,7 @@ def test_grover_diffusion_matrix_results():
         qml.Toffoli(wires=wires)
         qml.Hadamard(wires[-1])
 
-    dev = qml.device("default.qubit.legacy", wires=wires)
+    dev = qml.device("default.qubit", wires=wires)
 
     @qml.qnode(dev)
     def GroverSearch(num_iterations=1):
@@ -205,7 +205,7 @@ def test_findstate(n_wires):
     """Asserts can find state marked by oracle, with operation full matrix and decomposition."""
     wires = list(range(n_wires))
 
-    dev = qml.device("default.qubit.legacy", wires=wires)
+    dev = qml.device("default.qubit", wires=wires)
 
     @qml.qnode(dev)
     def circ():

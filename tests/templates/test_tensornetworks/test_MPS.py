@@ -334,7 +334,7 @@ class TestTemplateOutputs:
         self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
     ):
         """Verifies that the output of the circuits is correct."""
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
         block = getattr(self, block)
         expected_circuit = getattr(self, expected_circuit)
 

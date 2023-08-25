@@ -236,8 +236,8 @@ class TestDecomposition:
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
-        dev = qml.device("default.qubit.legacy", wires=5)
-        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k", "t", "s"])
+        dev = qml.device("default.qubit", wires=5)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k", "t", "s"])
 
         @qml.qnode(dev)
         def circuit():
@@ -270,7 +270,7 @@ class TestInputs:
     def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
         """Test exception if ``weight`` or
         ``pphh`` parameter has illegal shapes, types or values."""
-        dev = qml.device("default.qubit.legacy", wires=10)
+        dev = qml.device("default.qubit", wires=10)
 
         def circuit(weight):
             qml.FermionicDoubleExcitation(weight=weight, wires1=wires1, wires2=wires2)
@@ -302,7 +302,7 @@ class TestInterfaces:
 
         weight = pnp.array(0.5, requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
 
@@ -323,7 +323,7 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         weight = jnp.array(0.5)
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
 
@@ -340,7 +340,7 @@ class TestInterfaces:
         import tensorflow as tf
 
         weight = tf.Variable(0.5)
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
 
@@ -360,7 +360,7 @@ class TestInterfaces:
 
         weight = torch.tensor(0.5, requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
 

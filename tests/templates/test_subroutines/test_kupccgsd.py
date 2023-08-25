@@ -125,8 +125,8 @@ class TestDecomposition:
 
         weights = np.random.random(size=(1, 6))
 
-        dev = qml.device("default.qubit.legacy", wires=4)
-        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k", "e"])
+        dev = qml.device("default.qubit", wires=4)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e"])
 
         @qml.qnode(dev)
         def circuit():
@@ -247,7 +247,7 @@ class TestDecomposition:
         shape = qml.kUpCCGSD.shape(k=k, n_wires=num_qubits, delta_sz=0)
         weight = np.pi / 2 * qml.math.ones(shape)
 
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         init_state = qml.math.array([1 if x < num_qubits // 2 else 0 for x in wires])
 
@@ -446,7 +446,7 @@ class TestInputs:
         """Test that k-UpCCGSD throws an exception if the parameters have illegal
         shapes, types or values."""
 
-        dev = qml.device("default.qubit.legacy", wires=len(wires))
+        dev = qml.device("default.qubit", wires=len(wires))
 
         @qml.qnode(dev)
         def circuit():
@@ -539,7 +539,7 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol):
         """Test common iterables as inputs."""
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -561,7 +561,7 @@ class TestInterfaces:
 
         weights = qml.numpy.random.random(size=(1, 6), requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -587,7 +587,7 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 6)))
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -612,7 +612,7 @@ class TestInterfaces:
 
         weights = tf.Variable(np.random.random(size=(1, 6)))
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -639,7 +639,7 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=(1, 6)), requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -665,7 +665,7 @@ class TestGradient:
     def test_ps_rule_gradient(self, tol):
         """Test parameter-shift rule gradient."""
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         backprop_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="backprop"))
         ps_rule_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="parameter-shift"))

@@ -213,7 +213,7 @@ class TestInputs:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
-                "BasisState parameter and wires",
+                "Basis states must be of length 4",
             ),
             (
                 np.array([-2.8, 1.6]),
@@ -243,7 +243,7 @@ class TestInputs:
         shapes, types or values."""
         N = 4
         wires = range(4)
-        dev = qml.device("default.qubit.legacy", wires=N)
+        dev = qml.device("default.qubit", wires=N)
 
         def circuit(
             weights=weights, wires=wires, s_wires=s_wires, d_wires=d_wires, init_state=init_state
@@ -308,7 +308,7 @@ class TestInterfaces:
 
         weights = list(range(2))
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -323,7 +323,7 @@ class TestInterfaces:
 
         weights = pnp.array(np.random.random(size=(2,)), requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -349,7 +349,7 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(2,)))
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -373,7 +373,7 @@ class TestInterfaces:
         import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(2,)))
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -400,7 +400,7 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=(2,)), requires_grad=True)
 
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)

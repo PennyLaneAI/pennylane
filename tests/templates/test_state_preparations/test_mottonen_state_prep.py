@@ -244,7 +244,7 @@ class TestDecomposition:
 
         n_CNOT = 2**n_wires - 2
 
-        dev = qml.device("default.qubit.legacy", wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(state_vector):
@@ -262,8 +262,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         state = np.array([1 / 2, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 0])
 
-        dev = qml.device("default.qubit.legacy", wires=3)
-        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k"])
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -348,7 +348,7 @@ class TestGradient:
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
         checks that the gradient is calculated without an error."""
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(state_vector):
@@ -378,7 +378,7 @@ class TestCasting:
         from jax import numpy as jnp
 
         inputs = jnp.array(inputs)
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(inputs):
@@ -396,7 +396,7 @@ class TestCasting:
         from jax import numpy as jnp
 
         inputs = jnp.array(inputs)
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
         @qml.qnode(dev)
@@ -414,7 +414,7 @@ class TestCasting:
         import tensorflow as tf
 
         inputs = tf.Variable(inputs)
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(inputs):
@@ -431,7 +431,7 @@ class TestCasting:
         import torch
 
         inputs = torch.tensor(inputs, requires_grad=True)
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(inputs):

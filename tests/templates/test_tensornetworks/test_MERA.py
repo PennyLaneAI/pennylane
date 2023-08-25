@@ -341,7 +341,7 @@ class TestTemplateInputs:
     )
     def test_block_params(self, block, n_params_block, wires, n_block_wires, template_weights):
         """Verify that the template works with arbitrary block parameters"""
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -417,7 +417,7 @@ class TestDifferentiability:
         self, block, n_params_block, wires, n_block_wires, template_weights
     ):
         """Test that the template is differentiable for different inputs."""
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
         def circuit(template_weights):
@@ -466,7 +466,7 @@ class TestTemplateOutputs:
         self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
     ):
         """Verifies that the output of the circuits is correct."""
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
         def circuit_template():

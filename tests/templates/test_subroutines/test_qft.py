@@ -38,14 +38,13 @@ class TestQFT:
         op = qml.QFT(wires=range(n_qubits))
         decomp = op.decomposition()
 
-        dev = qml.device("default.qubit.legacy", wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
 
         out_states = []
         for state in np.eye(2**n_qubits):
-            dev.reset()
             ops = [qml.StatePrep(state, wires=range(n_qubits))] + decomp
-            dev.apply(ops)
-            out_states.append(dev.state)
+            qs = qml.tape.QuantumScript(ops, [qml.state()])
+            out_states.append(dev.execute(qs))
 
         reconstructed_unitary = np.array(out_states).T
         expected_unitary = qml.QFT(wires=range(n_qubits)).matrix()
@@ -57,7 +56,7 @@ class TestQFT:
         """Test if using the qml.adjoint transform the resulting operation is
         the inverse of QFT."""
 
-        dev = qml.device("default.qubit.legacy", wires=n_qubits)
+        dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def circ(n_qubits):
