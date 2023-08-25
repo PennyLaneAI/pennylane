@@ -423,6 +423,10 @@
 * `Device.default_expand_fn()` has been updated to decompose `qml.StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
 
+* `QNode.construct` has been updated to only apply the `qml.defer_measurements` transform if the device
+  does not natively support mid-circuit measurements.
+  [(#4516)](https://github.com/PennyLaneAI/pennylane/pull/4516)
+
 * The application of the `qml.defer_measurements` transform has been moved from 
   `QNode.construct` to `qml.Device.batch_transform` to allow more fine-grain 
   control over when `defer_measurements` should be used.
