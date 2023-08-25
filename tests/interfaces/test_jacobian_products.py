@@ -44,8 +44,8 @@ jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
 class TestBasics:
     """Test initialization and repr for jacobian product calculator classes."""
 
-    def test_transform_derivatives_basics(self):
-        """Test the initialization of properties for a transform derivatives class."""
+    def test_transform_jacobian_product_basics(self):
+        """Test the initialization and basic properties of a TransformJacobianProduct class."""
         jpc = TransformJacobianProducts(
             inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
         )

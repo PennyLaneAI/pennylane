@@ -24,7 +24,7 @@ from pennylane.gradients.gradient_transform import (
 
 
 def test_repr():
-    """Test the repr method of a the gradient transforms."""
+    """Test the repr method of gradient transforms."""
     assert repr(qml.gradients.param_shift) == "<gradient_transform: param_shift>"
     assert repr(qml.gradients.spsa_grad) == "<gradient_transform: spsa_grad>"
     assert repr(qml.gradients.finite_diff) == "<gradient_transform: finite_diff>"
