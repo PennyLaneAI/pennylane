@@ -49,7 +49,7 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
-class TestStatePrep:
+class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -191,7 +191,7 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep)
         res = simulate(qs)
@@ -256,7 +256,7 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
@@ -513,6 +513,39 @@ class TestSampleMeasurements:
         )
 
         assert result[2].shape == (10000, 2)
+
+    def test_shots_reuse(self, mocker):
+        """Test that samples are reused when two measurements commute"""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
+        mps = [
+            qml.expval(qml.PauliX(0)),
+            qml.expval(qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliX(1)),
+            qml.var(qml.PauliY(0)),
+            qml.probs(wires=[0]),
+            qml.probs(wires=[0, 1]),
+            qml.sample(wires=[0, 1]),
+            qml.expval(
+                qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1)])
+            ),
+            qml.expval(qml.sum(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(1))),
+            qml.expval(qml.s_prod(2.0, qml.PauliX(0))),
+            qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1))),
+        ]
+
+        qs = qml.tape.QuantumScript(ops, mps, shots=100)
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "sample_state")
+        result = simulate(qs)
+
+        assert isinstance(result, tuple)
+        assert len(result) == len(mps)
+
+        # check that samples are reused when possible
+        # 3 groups for expval and var, 1 group for probs and sample, 2 groups each for
+        # Hamiltonian and Sum, and 1 group each for SProd and Prod
+        assert spy.call_count == 10
 
     shots_data = [
         [10000, 10000],

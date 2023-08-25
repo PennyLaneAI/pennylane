@@ -29,7 +29,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():
@@ -95,13 +95,13 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, _, obs = make_tape
 
-        # test that the internal tape._measurements list is created properly
-        assert isinstance(tape._measurements[0], MeasurementProcess)
-        assert tape._measurements[0].return_type == qml.measurements.Expectation
-        assert tape._measurements[0].obs == obs[0]
+        # test that the internal tape.measurements list is created properly
+        assert isinstance(tape.measurements[0], MeasurementProcess)
+        assert tape.measurements[0].return_type == qml.measurements.Expectation
+        assert qml.equal(tape.measurements[0].obs, obs[0])
 
-        assert isinstance(tape._measurements[1], MeasurementProcess)
-        assert tape._measurements[1].return_type == qml.measurements.Probability
+        assert isinstance(tape.measurements[1], MeasurementProcess)
+        assert tape.measurements[1].return_type == qml.measurements.Probability
 
         # test the public observables property
         assert len(tape.observables) == 2
@@ -227,9 +227,7 @@ class TestConstruction:
         assert tape.output_dim == 5
         assert tape.batch_size is None
 
-        assert a not in tape.operations
-        assert b not in tape.operations
-
+        assert not any(qml.equal(a, op) or qml.equal(b, op) for op in tape.operations)
         assert tape.wires == qml.wires.Wires([0, "a"])
 
     def test_state_preparation(self):
@@ -237,21 +235,23 @@ class TestConstruction:
         params = [np.array([1, 0, 1, 0]) / np.sqrt(2), 1]
 
         with QuantumTape() as tape:
-            A = qml.QubitStateVector(params[0], wires=[0, 1])
+            A = qml.StatePrep(params[0], wires=[0, 1])
             B = qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(wires=1))
 
-        assert tape.operations == [A, B]
-        assert tape._prep == [A]
+        assert tape.operations == tape._ops == [A, B]
         assert tape.get_parameters() == params
 
-    def test_state_preparation_error(self):
-        """Test that an exception is raised if a state preparation comes
+    def test_state_preparation_queued_after_operation(self):
+        """Test that no exception is raised if a state preparation comes
         after a quantum operation"""
-        with pytest.raises(ValueError, match="must occur prior to ops"):
-            with QuantumTape():
-                qml.PauliX(wires=0)
-                qml.BasisState(np.array([0, 1]), wires=[0, 1])
+        with QuantumTape() as tape:
+            qml.PauliX(wires=0)
+            qml.BasisState(np.array([0, 1]), wires=[0, 1])
+
+        assert len(tape.operations) == 2
+        assert qml.equal(tape.operations[0], qml.PauliX(wires=0))
+        assert qml.equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
@@ -813,7 +813,7 @@ class TestParameters:
         params = [a, 0.32, 0.76, 1.0]
 
         with QuantumTape() as tape:
-            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
+            op_ = qml.StatePrep(params[0], wires=[0, 1])
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)
@@ -1051,7 +1051,7 @@ class TestParametersOld:
         params = [a, 0.32, 0.76, 1.0]
 
         with QuantumTape() as tape:
-            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
+            op_ = qml.StatePrep(params[0], wires=[0, 1])
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)
@@ -1244,6 +1244,49 @@ class TestExpand:
 
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
+
+    @pytest.mark.parametrize("skip_first", (True, False))
+    @pytest.mark.parametrize(
+        "op, decomp",
+        zip(
+            [
+                qml.BasisState([1, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
+            ],
+            [
+                qml.BasisStatePreparation([1, 0], wires=[0, 1]),
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
+            ],
+        ),
+    )
+    def test_expansion_state_prep(self, skip_first, op, decomp):
+        """Test that StatePrepBase operations are expanded correctly without
+        expanding other operations in the tape.
+        """
+        ops = [
+            qml.PauliZ(wires=0),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisState([0], wires=1),
+            qml.StatePrep([0, 1], wires=0),
+        ]
+        tape = QuantumTape(ops=ops, measurements=[], prep=[op])
+        new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
+
+        true_decomposition = []
+        if skip_first:
+            true_decomposition.append(op)
+        else:
+            true_decomposition.append(decomp)
+        true_decomposition += [
+            qml.PauliZ(wires=0),
+            qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisStatePreparation([0], wires=[1]),
+            qml.MottonenStatePreparation([0, 1], wires=[0]),
+        ]
+
+        assert len(new_tape.operations) == len(true_decomposition)
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(tape_op, true_op)
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):

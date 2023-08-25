@@ -47,7 +47,7 @@ Jacobian Product Calculation
     :toctree: api
 
     ~interfaces.jacobian_products.JacobianProductCalculator
-    ~interfaces.jacobian_products.TransformDerivatives
+    ~interfaces.jacobian_products.TransformJacobianProducts
     ~interfaces.jacobian_products.DeviceJacobians
 
 """

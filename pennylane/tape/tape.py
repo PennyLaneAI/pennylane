@@ -20,7 +20,7 @@ from threading import RLock
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
@@ -80,7 +80,7 @@ def _validate_computational_basis_sampling(measurements):
 def rotations_and_diagonal_measurements(tape):
     """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
     if not tape._obs_sharing_wires:
-        return [], tape._measurements
+        return [], tape.measurements
 
     with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
         try:
@@ -97,7 +97,7 @@ def rotations_and_diagonal_measurements(tape):
 
             raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
 
-        measurements = copy.copy(tape._measurements)
+        measurements = copy.copy(tape.measurements)
 
         for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
             new_m = tape.measurements[i].__class__(obs=o)
@@ -167,7 +167,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         def stop_at(obj):  # pylint: disable=unused-argument
             return False
 
-    new_prep = []
     new_ops = []
     new_measurements = []
 
@@ -180,8 +179,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for queue, new_queue in [
-        (tape._prep, new_prep),
-        (tape._ops + diagonalizing_gates, new_ops),
+        (tape.operations + diagonalizing_gates, new_ops),
         (diagonal_measurements, new_measurements),
     ]:
         for obj in queue:
@@ -218,13 +216,54 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_prep.extend(expanded_tape._prep)
-            new_ops.extend(expanded_tape._ops)
-            new_measurements.extend(expanded_tape._measurements)
+            new_ops.extend(expanded_tape.operations)
+            new_measurements.extend(expanded_tape.measurements)
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+
+    # Update circuit info
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
+    new_tape._batch_size = tape.batch_size
+    new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
+    return new_tape
+
+
+def expand_tape_state_prep(tape, skip_first=True):
+    """Expand all instances of StatePrepBase operations in the tape.
+
+    Args:
+        tape (QuantumScript): The tape to expand.
+        skip_first (Bool): If ``True``, will not expand a StatePrepBase operation if
+            it is the first operation in the tape.
+
+    Returns:
+        QuantumTape: The expanded version of ``tape``.
+
+    **Example**
+    ...
+    """
+    first_op = tape.operations[0]
+    new_ops = (
+        [first_op]
+        if isinstance(first_op, StatePrepBase) and skip_first
+        else first_op.decomposition()
+    )
+
+    for op in tape.operations[1:]:
+        if isinstance(op, StatePrepBase):
+            new_ops.extend(op.decomposition())
+        else:
+            new_ops.append(op)
+
+    # preserves inheritance structure
+    # if tape is a QuantumTape, returned object will be a quantum tape
+    new_tape = tape.__class__(new_ops, tape.measurements, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -244,7 +283,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
+        prep (Iterable[Operator]): Arguments to specify state preparations to
+            perform at the start of the circuit. These should go at the beginning of ``ops``
+            instead.
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
@@ -255,12 +296,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     **Example**
 
-    Tapes can be constructed by directly providing operations, measurements, and state preparations:
+    Tapes can be constructed by directly providing operations and measurements:
 
-    >>> ops = [qml.S(0), qml.T(1)]
+    >>> ops = [qml.BasisState([1,0], wires=0), qml.S(0), qml.T(1)]
     >>> measurements = [qml.state()]
-    >>> prep = [qml.BasisState([1,0], wires=0)]
-    >>> tape = qml.tape.QuantumTape(ops, measurements, prep=prep)
+    >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tape.circuit
     [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
 
@@ -409,13 +449,12 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         operations and measurement processes.
 
         Sets:
-            _prep (list[~.Operation]): Preparation operations
             _ops (list[~.Operation]): Main tape operations
             _measurements (list[~.MeasurementProcess]): Tape measurements
 
         Also calls `_update()` which sets many attributes.
         """
-        self._ops, self._measurements, self._prep = process_queue(self)
+        self._ops, self._measurements, _ = process_queue(self)
         self._update()
 
     def __getitem__(self, key):

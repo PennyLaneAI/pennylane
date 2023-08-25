@@ -26,7 +26,6 @@ from pennylane.measurements import (
     VarianceMP,
     VnEntropyMP,
     ProbabilityMP,
-    Shots,
 )
 
 SUPPORTED_GRADIENT_KWARGS = [
@@ -49,6 +48,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "order",
     "reduction",
     "sampler",
+    "sampler_rng",
     "sampler_seed",
     "shifts",
     "shots",
@@ -111,6 +111,20 @@ def assert_no_variance(measurements, transform_name):
         raise ValueError(
             f"Computing the gradient of variances with the {transform_name} "
             "gradient transform is not supported."
+        )
+
+
+def assert_no_tape_batching(tape, transform_name):
+    """Check whether a tape is broadcasted and raise an error if this is the case.
+
+    Args:
+        tape (`~.QuantumScript`): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the tape
+    """
+    if tape.batch_size is not None:
+        raise NotImplementedError(
+            f"Computing the gradient of broadcasted tapes with the {transform_name} "
+            "gradient transform is currently not supported. See #4462 for details."
         )
 
 
@@ -251,7 +265,7 @@ def choose_grad_methods(diff_methods, argnum):
     return {idx: diff_methods[idx] for idx in argnum}
 
 
-def _all_zero_grad(tape, shots=Shots(None)):
+def _all_zero_grad(tape):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
@@ -266,10 +280,10 @@ def _all_zero_grad(tape, shots=Shots(None)):
 
         list_zeros.append(sub_list_zeros)
 
-    if shots.has_partitioned_shots:
+    if tape.shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(list_zeros[0] for _ in range(shots.num_copies))
-        return [], lambda _: tuple(tuple(list_zeros) for _ in range(shots.num_copies))
+            return [], lambda _: tuple(list_zeros[0] for _ in range(tape.shots.num_copies))
+        return [], lambda _: tuple(tuple(list_zeros) for _ in range(tape.shots.num_copies))
 
     if len(tape.measurements) == 1:
         return [], lambda _: list_zeros[0]
@@ -284,16 +298,16 @@ _no_trainable_grad_warning = (
 )
 
 
-def _no_trainable_grad(tape, shots=Shots(None)):
+def _no_trainable_grad(tape):
     """Auxiliary function that returns correctly formatted gradients when there
     are no trainable parameters."""
     warnings.warn(_no_trainable_grad_warning)
-    if shots.has_partitioned_shots:
+    if tape.shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(shots.num_copies))
+            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(tape.shots.num_copies))
         return [], lambda _: tuple(
             tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-            for _ in range(shots.num_copies)
+            for _ in range(tape.shots.num_copies)
         )
 
     if len(tape.measurements) == 1:
@@ -632,7 +646,7 @@ class gradient_transform(qml.batch_transform):
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
-                has_partitioned_shots = Shots(tkwargs.get("shots", None)).has_partitioned_shots
+                has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
                 return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
 
             return _contract_qjac_with_cjac_legacy(qjac, cjac)

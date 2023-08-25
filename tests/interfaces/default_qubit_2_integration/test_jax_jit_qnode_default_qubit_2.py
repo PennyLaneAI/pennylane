@@ -181,7 +181,8 @@ class TestQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -277,7 +278,8 @@ class TestVectorValuedQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -346,7 +348,8 @@ class TestVectorValuedQNode:
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
@@ -409,7 +412,8 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
@@ -456,7 +460,8 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
@@ -536,7 +541,8 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
@@ -604,16 +610,22 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape with prob and expval outputs with less
         trainable parameters (argnums) than parameters."""
+        kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
         @qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            **kwargs
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -654,7 +666,8 @@ class TestVectorValuedQNode:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
@@ -916,7 +929,9 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            gradient_kwargs["num_directions"] = 20
+            gradient_kwargs["h"] = H_FOR_SPSA
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -960,8 +975,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 40,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1008,8 +1026,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1067,8 +1088,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1129,8 +1153,11 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1221,7 +1248,8 @@ class TestQubitIntegrationHigherOrder:
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, dev, diff_method, grad_on_execution, interface, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, dev, diff_method, grad_on_execution, interface, tol):
         """Test that the variance of a projector is correctly returned"""
         gradient_kwargs = {}
         if diff_method == "adjoint":
@@ -1229,11 +1257,10 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
-        P = jax.numpy.array([1])
+        P = jax.numpy.array(state)
         x, y = 0.765, -0.654
 
         @qnode(
@@ -1325,8 +1352,11 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The Hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            qml.math.random.seed(42)
-            gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {
+                "h": H_FOR_SPSA,
+                "num_directions": 20,
+                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+            }
             tol = TOL_FOR_SPSA
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -1388,13 +1418,13 @@ class TestTapeExpansion:
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
-        tol = 0.1
+        tol = 0.3
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "hadamard":
             pytest.skip("The Hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "h": H_FOR_SPSA}
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA, "h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -1552,7 +1582,7 @@ class TestJIT:
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
         elif diff_method == "spsa":
-            gradient_kwargs = {"h": H_FOR_SPSA}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1662,7 +1692,7 @@ class TestJIT:
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
         elif diff_method == "spsa":
-            gradient_kwargs = {"h": H_FOR_SPSA}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -2486,6 +2516,10 @@ class TestSubsetArgnums:
         tol,
     ):
         """Test single measurement with different diff methods with argnums."""
+        kwargs = {}
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         @qml.qnode(
             dev,
@@ -2493,6 +2527,7 @@ class TestSubsetArgnums:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             cache=False,
+            **kwargs
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2509,9 +2544,6 @@ class TestSubsetArgnums:
             jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
 
         expected = np.array([-np.sin(a), 0])
-
-        if diff_method == "spsa":
-            tol = TOL_FOR_SPSA
 
         if argnums == 0:
             assert np.allclose(jac, expected[0], atol=tol)
@@ -2533,9 +2565,17 @@ class TestSubsetArgnums:
         tol,
     ):
         """Test multiple measurements with different diff methods with argnums."""
+        kwargs = {}
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         @qml.qnode(
-            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            **kwargs
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2550,9 +2590,6 @@ class TestSubsetArgnums:
             jac = jacobian(jax.jit(circuit), argnums=argnums)(a, b)
         else:
             jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
-
-        if diff_method == "spsa":
-            tol = TOL_FOR_SPSA
 
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
 

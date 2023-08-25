@@ -22,7 +22,6 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
-from pennylane.measurements import Shots
 
 from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
@@ -30,6 +29,7 @@ from .gradient_transform import (
     _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -279,7 +279,7 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     )
 
 
-def _expval_pulse_generator(tape, argnum, shots, atol):
+def _expval_pulse_generator(tape, argnum, atol):
     """Compute the pulse generator parameter-shift rule for a quantum circuit that returns expectation
     values of observables.
 
@@ -289,10 +289,6 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
-            returned by this transform. Note that this argument does not *influence* the shots
-            used for execution, but *informs* the transform about the shots to ensure a compatible
-            return value formatting.
         atol (float): absolute tolerance used to determine vanishing contributions.
 
     Returns:
@@ -352,8 +348,8 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
-    partitioned_shots = shots.has_partitioned_shots
-    tape_specs = (single_measure, num_params, num_measurements, shots)
+    partitioned_shots = tape.shots.has_partitioned_shots
+    tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
         """Post-process the results of the parameter-shifted tapes for
@@ -401,7 +397,7 @@ def _expval_pulse_generator(tape, argnum, shots, atol):
     return gradient_tapes, processing_fn
 
 
-def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
+def _pulse_generator(tape, argnum=None, atol=1e-7):
     r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -431,10 +427,6 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
-            returned by this transform. Note that this argument does not *influence* the shots
-            used for execution, but *informs* the transform about the shots to ensure a compatible
-            return value formatting.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
@@ -690,21 +682,21 @@ def _pulse_generator(tape, argnum=None, shots=None, atol=1e-7):
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
-    shots = Shots(shots)
+    assert_no_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_generator)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    return _expval_pulse_generator(tape, argnum, shots, atol)
+    return _expval_pulse_generator(tape, argnum, atol)
 
 
 def expand_invalid_trainable_pulse_generator(x, *args, **kwargs):

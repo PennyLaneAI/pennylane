@@ -605,7 +605,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -617,7 +617,7 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = tf.Variable([theta, phi, lam], trainable=True)
+        params = tf.Variable([theta, phi, lam], trainable=True, dtype=tf.float64)
 
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2

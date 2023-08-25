@@ -65,6 +65,7 @@ ops = {
     "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),
     "CPhaseShift10": qml.CPhaseShift10(0, wires=[0, 1]),
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
+    "StatePrep": qml.StatePrep(np.array([1.0, 0.0]), wires=[0]),
     "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
@@ -391,8 +392,8 @@ class TestGatesQubit:
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    def test_qubit_state_vector(self, device, init_state, tol, skip_if):
-        """Test QubitStateVector initialisation."""
+    def test_state_prep(self, device, init_state, tol, skip_if):
+        """Test StatePrep initialisation."""
         n_wires = 1
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
@@ -401,7 +402,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             return qml.probs(range(n_wires))
 
         res = circuit()
@@ -420,7 +421,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             op(wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
@@ -441,7 +442,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             op(gamma, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
@@ -463,7 +464,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             qml.Rot(a, b, c, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
@@ -485,7 +486,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             op(wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
@@ -506,7 +507,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             op(param, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
@@ -530,7 +531,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             qml.QubitUnitary(mat, wires=list(range(n_wires)))
             return qml.probs(wires=range(n_wires))
 
@@ -554,7 +555,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             qml.SpecialUnitary(theta_, wires=list(range(n_wires)))
             return qml.probs(wires=range(n_wires))
 
@@ -579,7 +580,7 @@ class TestGatesQubit:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.StatePrep(rnd_state, wires=range(n_wires))
             op(wires=[0, 1, 2])
             return qml.probs(wires=range(n_wires))
 

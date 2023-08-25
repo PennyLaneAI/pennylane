@@ -27,6 +27,7 @@ from .gradient_transform import (
     _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -282,7 +283,7 @@ def _parshift_and_integrate(
 
 # pylint: disable=too-many-arguments
 def _stoch_pulse_grad(
-    tape, argnum=None, num_split_times=1, sampler_seed=None, shots=None, use_broadcasting=False
+    tape, argnum=None, num_split_times=1, sampler_seed=None, use_broadcasting=False
 ):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
@@ -335,10 +336,6 @@ def _stoch_pulse_grad(
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
-            returned by this transform. Note that this argument does not *influence* the shots
-            used for execution, but informs the transform about the shots to ensure a compatible
-            return value structure.
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
             splitting times. If ``False`` (the default), one set of modified tapes per
             splitting time is created, if ``True`` only a single set of broadcasted, modified
@@ -611,6 +608,7 @@ def _stoch_pulse_grad(
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    assert_no_tape_batching(tape, transform_name)
 
     if num_split_times < 1:
         raise ValueError(
@@ -618,9 +616,8 @@ def _stoch_pulse_grad(
             f"parameter-shift gradient, got {num_split_times}."
         )
 
-    shots = qml.measurements.Shots(shots)
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad(tape, shots)
+        return _no_trainable_grad(tape)
 
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
@@ -628,7 +625,7 @@ def _stoch_pulse_grad(
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad(tape, shots)
+        return _all_zero_grad(tape)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -637,7 +634,7 @@ def _stoch_pulse_grad(
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)
 
-    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
+    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
 def _generate_tapes_and_cjacs(
@@ -784,7 +781,7 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
 
 
 # pylint: disable=too-many-arguments
-def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting):
+def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
@@ -822,8 +819,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
     num_params = len(tape.trainable_params)
-    has_partitioned_shots = shots.has_partitioned_shots
-    tape_specs = (single_measure, num_params, num_measurements, shots)
+    has_partitioned_shots = tape.shots.has_partitioned_shots
+    tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
         start = 0

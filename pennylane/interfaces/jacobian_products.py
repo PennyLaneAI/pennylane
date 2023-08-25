@@ -84,6 +84,8 @@ class JacobianProductCalculator(abc.ABC):
 
         **Examples:**
 
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> batch = (tape0, tape1)
@@ -198,13 +200,12 @@ class TransformJacobianProducts(JacobianProductCalculator):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s)",
-                "\n" + inspect.getsource(inner_execute)
-                if logger.isEnabledFor(qml.logging.TRACE)
-                else inner_execute,
+                inner_execute
+                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(inner_execute))
+                else "\n" + inspect.getsource(inner_execute),
                 gradient_transform,
                 gradient_kwargs,
             )
-
         self._inner_execute = inner_execute
         self._gradient_transform = gradient_transform
         self._gradient_kwargs = gradient_kwargs or {}

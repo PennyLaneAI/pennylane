@@ -255,7 +255,7 @@ def compute_vjp(dy, jac, num=None):
     return qml.math.tensordot(jac, dy_row, [[0], [0]])
 
 
-def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
+def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a tape.
 
@@ -358,8 +358,6 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
         # is simply none.
         return [], lambda _, num=None: None
 
-    shots = tape.shots if shots is None else qml.measurements.Shots(shots)
-
     try:
         if _all_close_to_zero(dy):
             # If the dy vector is zero, then the
@@ -380,7 +378,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
     except (AttributeError, TypeError, NotImplementedError):
         pass
 
-    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
@@ -390,7 +388,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
             multi = len(tape.measurements) > 1
             comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
 
-            if not shots.has_partitioned_shots:
+            if not tape.shots.has_partitioned_shots:
                 return comp_vjp_fn(dy, jac, num=num)
 
             vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
@@ -402,7 +400,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
 
 
 # pylint: disable=too-many-arguments
-def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_kwargs=None):
+def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.
 
@@ -520,7 +518,7 @@ def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_
 
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
-        g_tapes, fn = vjp(tape, dy, gradient_fn, shots=shots, gradient_kwargs=gradient_kwargs)
+        g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs=gradient_kwargs)
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)

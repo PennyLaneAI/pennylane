@@ -21,11 +21,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.interfaces.jacobian_products import (
-    DeviceJacobianProducts,
-    ExperimentalDeviceDerivatives,
     JacobianProductCalculator,
-    LegacyDeviceDerivatives,
-    TransformDerivatives,
+    TransformJacobianProducts,
+    DeviceJacobians
 )
 
 dev = qml.devices.experimental.DefaultQubit2()
@@ -34,12 +32,11 @@ adjoint_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoi
 
 
 def inner_execute_numpy(tapes):
-    tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
     return dev.execute(tapes)
 
 
-param_shift_jpc = TransformDerivatives(inner_execute_numpy, qml.gradients.param_shift)
-hadamard_grad_jpc = TransformDerivatives(
+param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.param_shift)
+hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
 device_jacs = ExperimentalDeviceDerivatives(dev, adjoint_config)
@@ -54,19 +51,19 @@ jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_jacs, devi
 class TestBasics:
     """Test initialization and repr for jacobian product calculator classes."""
 
-    def test_transform_derivatives_basics(self):
-        """Test the initialization of properties for a transform derivatives class."""
-        jpc = TransformDerivatives(
+    def test_transform_jacobian_product_basics(self):
+        """Test the initialization and basic properties of a TransformJacobianProduct class."""
+        jpc = TransformJacobianProducts(
             inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
         )
 
         assert isinstance(jpc, JacobianProductCalculator)
         assert jpc._inner_execute is inner_execute_numpy
-        assert jpc._gradient_transform == qml.gradients.hadamard_grad
+        assert jpc._gradient_transform is qml.gradients.hadamard_grad
         assert jpc._gradient_kwargs == {"aux_wire": "aux"}
 
         expected_repr = (
-            f"TransformDerivatives({repr(inner_execute_numpy)}, "
+            f"TransformJacobianProducts({repr(inner_execute_numpy)}, "
             "gradient_transform=<gradient_transform: _hadamard_grad>, "
             "gradient_kwargs={'aux_wire': 'aux'})"
         )
@@ -78,7 +75,7 @@ class TestJacobianProductResults:
     """Test first order results for the matrix of jpc options."""
 
     def test_execute_jvp_basic(self, jpc):
-        """Test execute and compute_jvp for a simple single input single output."""
+        """Test execute_and_compute_jvp for a simple single input single output."""
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         tangents = ((0.5,),)
@@ -105,7 +102,7 @@ class TestJacobianProductResults:
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)
 class TestProbsOut:
     def test_execute_jvp_multi_params_multi_out(self, jpc):
-        """Test execute jvp with multiple parameters and multiple outputs"""
+        """Test execute_and_compute_jvp with multiple parameters and multiple outputs"""
         x = 0.62
         y = 2.64
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
@@ -142,7 +139,7 @@ class TestProbsOut:
         assert qml.math.allclose(jvp[1][1], -0.6 * np.sin(phi))
 
     def test_vjp_multi_params_multi_out(self, jpc):
-        """Test vjp with multiple parameters and multiple outputs."""
+        """Test compute_vjp with multiple parameters and multiple outputs."""
 
         x = 0.62
         y = 2.64
@@ -176,7 +173,7 @@ class TestProbsOut:
         assert qml.math.allclose(vjps[1], -0.8 * np.sin(phi))
 
     def test_jac_multi_params_multi_out(self, jpc):
-        """Test jacobian with multiple parameters and multiple measurements."""
+        """Test compute_jacobian with multiple parameters and multiple measurements."""
 
         x = 0.62
         y = 2.64
@@ -210,3 +207,106 @@ class TestProbsOut:
         assert qml.math.allclose(jac[1][0], 0)
         # second tape, second measurement, only parameter
         assert qml.math.allclose(jac[1][1], -np.sin(phi))
+
+
+class TestTransformsDifferentiability:
+    """Tests that the transforms are differentiable if the inner execution is differentiable.
+
+    Note that testing is only done for the required method for each ml framework.
+    """
+
+    @pytest.mark.jax
+    def test_execute_jvp_jax(self):
+        """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
+        import jax
+
+        jpc = param_shift_jpc
+
+        def f(x, tangents):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            return jpc.execute_and_compute_jvp((tape,), tangents)[1]
+
+        x = jax.numpy.array(0.1)
+        tangents = ((jax.numpy.array(0.5),),)
+
+        res = f(x, tangents=tangents)
+        assert qml.math.allclose(res, -tangents[0][0] * np.sin(x))
+
+        jit_res = jax.jit(f)(x, tangents=tangents)
+        assert qml.math.allclose(jit_res, -tangents[0][0] * np.sin(x))
+
+        grad = jax.grad(f)(x, tangents=tangents)
+        assert qml.math.allclose(grad, -tangents[0][0] * np.cos(x))
+
+        tangent_grad = jax.grad(f, argnums=1)(x, tangents)
+        assert qml.math.allclose(tangent_grad[0][0], -np.sin(x))
+
+    @pytest.mark.autograd
+    def test_vjp_autograd(self):
+        """Test that the derivative of compute_vjp can be taken with autograd."""
+
+        jpc = param_shift_jpc
+
+        def f(x, dy):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            vjp = jpc.compute_vjp((tape,), (dy,))
+            return vjp[0]
+
+        x = qml.numpy.array(0.1)
+        dy = qml.numpy.array(2.0)
+
+        res = f(x, dy)
+        assert qml.math.allclose(res, -dy * np.sin(x))
+
+        dx, ddy = qml.grad(f)(x, dy)
+        assert qml.math.allclose(dx, -dy * np.cos(x))
+        assert qml.math.allclose(ddy, -np.sin(x))
+
+    @pytest.mark.torch
+    def test_vjp_torch(self):
+        """Test that the derivative of compute_vjp can be taken with torch."""
+
+        import torch
+
+        jpc = param_shift_jpc
+
+        def f(x, dy):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            vjp = jpc.compute_vjp((tape,), (dy,))
+            return vjp[0]
+
+        x = torch.tensor(0.1, requires_grad=True)
+        dy = torch.tensor(2.0, requires_grad=True)
+
+        res = f(x, dy)
+        assert qml.math.allclose(res, -2.0 * np.sin(0.1))
+
+        res.backward()
+        assert qml.math.allclose(x.grad, -2.0 * np.cos(0.1))
+        assert qml.math.allclose(dy.grad, -np.sin(0.1))
+
+    @pytest.mark.tf
+    def test_vjp_tf(self):
+        """Test that the derivatives of compute_vjp can be taken with tensorflow."""
+
+        import tensorflow as tf
+
+        jpc = param_shift_jpc
+
+        def f(x, dy):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+            vjp = jpc.compute_vjp((tape,), (dy,))
+            return vjp[0]
+
+        x = tf.Variable(0.6, dtype=tf.float64)
+        dy = tf.Variable(1.5, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = f(x, dy)
+
+        assert qml.math.allclose(res, -1.5 * np.sin(0.6))
+
+        dx, ddy = tape.gradient(res, (x, dy))
+
+        assert qml.math.allclose(dx, -1.5 * np.cos(0.6))
+        assert qml.math.allclose(ddy, -np.sin(0.6))

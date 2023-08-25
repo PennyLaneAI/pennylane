@@ -244,7 +244,11 @@ class SProd(ScalarSymbolicOp):
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
         """
-        return self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
+        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
+        mat.eliminate_zeros()
+        return mat
 
     @property
     def has_matrix(self):

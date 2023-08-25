@@ -97,11 +97,6 @@ def drawable_layers(ops, wire_map=None):
     # loop over operations
     for op in ops:
         is_mid_measure = is_conditional = False
-        if set(measured_wires.values()).intersection({wire_map[w] for w in op.wires}):
-            raise ValueError(
-                f"Cannot apply operations on {op.wires} as some wires have been measured already."
-            )
-
         if isinstance(op, MidMeasureMP):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
@@ -120,7 +115,7 @@ def drawable_layers(ops, wire_map=None):
             mapped_wires = {wire_map[wire] for wire in op.wires}
             if op.__class__.__name__ == "Conditional":
                 is_conditional = True
-                mapped_wires.update(measured_wires[m_id] for m_id in op.meas_val.measurement_ids)
+                mapped_wires.update(measured_wires[m.id] for m in op.meas_val.measurements)
             # get all integers from the minimum to the maximum
             min_wire = min(mapped_wires)
             max_wire = max(mapped_wires)
@@ -129,10 +124,10 @@ def drawable_layers(ops, wire_map=None):
         op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
 
         if is_conditional:
-            m_layers = [measured_layers[m_id] for m_id in op.meas_val.measurement_ids]
+            m_layers = [measured_layers[m.id] for m in op.meas_val.measurements]
             max_control_layer = max(m_layers)
 
-            for m_id, m_layer in zip(op.meas_val.measurement_ids, m_layers):
+            for m, m_layer in zip(op.meas_val.measurements, m_layers):
                 # TODO: remove from measurement caches for qubit reuse
                 # Note that along with this, wire lines will need to be re-drawn if being reused
                 #
@@ -142,7 +137,7 @@ def drawable_layers(ops, wire_map=None):
                 # measurements for a conditional should all be in the same layer
                 if m_layer < max_control_layer:
                     for i, o in enumerate(ops_in_layer[m_layer]):
-                        if m_id == o.id:
+                        if m.id == o.id:
                             ops_in_layer[max_control_layer].append(o)  # add to cond. op. layer
                             ops_in_layer[m_layer].pop(i)  # remove from original layer
                             # no need to remove from previous occupied_wires_per_layer
