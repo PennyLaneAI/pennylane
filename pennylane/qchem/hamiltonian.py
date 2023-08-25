@@ -182,10 +182,10 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
 
         if not fs:
             warnings.warn(
-                "This function will return a fermionic operator by default in the next release. For"
-                " details, see the Fermionic Operators tutorial:"
-                " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
-                " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
+                "This function will return a fermionic operator by default in the next release. For "
+                "details, see the Fermionic Operators tutorial: "
+                "https://pennylane.ai/qml/demos/tutorial_fermionic_operators. "
+                "Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
             )
         return fermionic_observable(core_constant, one, two, cutoff, fs)
 
@@ -215,11 +215,11 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=True):
     >>> args = [alpha]
     >>> h = diff_hamiltonian(mol)(*args)
     >>> h.coeffs
-    tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
+    array([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
             -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
              0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
-             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
+             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j])
     """
 
     def _molecular_hamiltonian(*args):
