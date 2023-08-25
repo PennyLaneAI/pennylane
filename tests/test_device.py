@@ -946,7 +946,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qubit", wires=0)
+                qml.device("default.qubit.legacy", wires=0)
 
     @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_refresh_entrypoints(self, monkeypatch):

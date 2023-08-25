@@ -534,7 +534,7 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit', interface='auto', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best'>"
         )
 
         qn = QNode(func, dev, interface="autograd")

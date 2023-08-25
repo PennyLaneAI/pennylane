@@ -15,7 +15,7 @@
 match the supported configurations in the code.
 
 A configuration is specified by:
-    1. The quantum device, e.g. "default.qubit"
+    1. The quantum device, e.g. "default.qubit.legacy"
     2. The interface, e.g. "jax"
     3. The differentiation method, e.g. "parameter-shift"
     4. The return value of the QNode, e.g. qml.expval() or qml.probs()
@@ -47,7 +47,7 @@ F = pytest.importorskip("torch.autograd.functional")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-devices = ["default.qubit"]
+devices = ["default.qubit.legacy"]
 interfaces = [None, "autograd", "jax", "tf", "torch"]
 diff_interfaces = ["autograd", "jax", "tf", "torch"]
 shots_list = [None, 100]
@@ -113,7 +113,7 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
     """
     device_wires, wire_labels, single_meas_wire, multi_meas_wire = wire_specs
 
-    dev = qml.device("default.qubit", wires=device_wires, shots=shots)
+    dev = qml.device("default.qubit.legacy", wires=device_wires, shots=shots)
 
     # pylint: disable=too-many-return-statements
     @qml.qnode(dev, interface=interface, diff_method=diff_method)
@@ -264,9 +264,9 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_device(self, interface, return_type, shots, wire_specs):
-        """Test diff_method=device raises an error for all interfaces for default.qubit"""
+        """Test diff_method=device raises an error for all interfaces for default.qubit.legacy"""
         msg = (
-            "The default.qubit device does not provide a native "
+            "The default.qubit.legacy device does not provide a native "
             "method for computing the jacobian."
         )
 
@@ -278,7 +278,7 @@ class TestSupportedConfs:
     def test_none_backprop(self, return_type, wire_specs):
         """Test interface=None and diff_method=backprop raises an error"""
         msg = (
-            "Device default.qubit only supports diff_method='backprop' when "
+            "Device default.qubit.legacy only supports diff_method='backprop' when "
             "using the ['tf', 'torch', 'autograd', 'jax'] interfaces."
         )
         msg = re.escape(msg)

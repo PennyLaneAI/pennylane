@@ -329,7 +329,9 @@ def test_gradient_expvalD():
 
     mol = qchem.Molecule(symbols, geometry, charge=1, alpha=alpha)
     args = [mol.alpha]
-    dev = qml.device("default.qubit", wires=6)
+    # TODO: `d_qubit[0]` has coeff dtype complex, but is actually a real-valued Hamiltonian
+    # default.qubit.legacy casts Hamiltonian expectations to real, but default.qubit does not
+    dev = qml.device("default.qubit.legacy", wires=6)
 
     def dipole(mol):
         @qml.qnode(dev)
