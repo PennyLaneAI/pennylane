@@ -16,15 +16,19 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
+import inspect
+import logging
+
 import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -72,303 +76,6 @@ def get_jax_interface_name(tapes):
     return "jax"
 
 
-def execute_legacy(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
-):
-    """Execute a batch of tapes with JAX parameters on a device.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.Device): Device to use to execute the batch of tapes.
-            If the device does not provide a ``batch_execute`` method,
-            by default the tapes will be executed in serial.
-        execute_fn (callable): The execution function used to execute the tapes
-            during the forward pass. This function must return a tuple ``(results, jacobians)``.
-            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
-            compute the gradients during the backwards pass.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
-            determining the gradients of tapes
-        gradient_fn (callable): the gradient function to use to compute quantum gradients
-        _n (int): a positive integer used to track nesting of derivatives, for example
-            if the nth-order derivative is requested.
-        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
-            the maximum order of derivatives to support. Increasing this value allows
-            for higher order derivatives to be extracted, at the cost of additional
-            (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
-
-    Returns:
-        list[list[float]]: A nested list of tape results. Each element in
-        the returned list corresponds in order to the provided tapes.
-    """
-    # pylint: disable=unused-argument
-    if max_diff > 1:
-        raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
-
-    _validate_tapes(tapes)
-
-    if _n == 1:
-        for tape in tapes:
-            # set the trainable parameters
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
-
-    parameters = tuple(list(t.get_parameters()) for t in tapes)
-
-    if gradient_fn is None:
-        return _execute_fwd_legacy(
-            parameters,
-            tapes=tapes,
-            device=device,
-            execute_fn=execute_fn,
-            gradient_kwargs=gradient_kwargs,
-            _n=_n,
-        )
-
-    return _execute_legacy(
-        parameters,
-        tapes=tapes,
-        device=device,
-        execute_fn=execute_fn,
-        gradient_fn=gradient_fn,
-        gradient_kwargs=gradient_kwargs,
-        _n=_n,
-    )
-
-
-def _validate_tapes(tapes):
-    """Validates that the input tapes are compatible with JAX support.
-
-    Note: the goal of this validation is to filter out cases where ragged
-    outputs for QNodes may arise. Such QNodes involve creating arrays from
-    ragged nested sequences that can not be handled by JAX.
-
-    Raises:
-        InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
-    """
-    for t in tapes:
-        measurement_types = [type(m) for m in t.measurements]
-        set_of_measurement_types = set(measurement_types)
-        probs_or_sample_measure = (
-            SampleMP in measurement_types or ProbabilityMP in measurement_types
-        )
-        if probs_or_sample_measure and len(set_of_measurement_types) > 1:
-            raise InterfaceUnsupportedError(
-                "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
-            )
-
-        if ProbabilityMP in measurement_types:
-            set_len_wires = {len(m.wires) for m in t.measurements}
-            if len(set_len_wires) > 1:
-                raise InterfaceUnsupportedError(
-                    "Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
-                )
-
-
-def _execute_legacy(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
-    _n=1,
-):  # pylint: disable=dangerous-default-value,unused-argument
-    """The main interface execution function where jacobians of the execute
-    function are computed by the registered backward function."""
-
-    def array_if_not_counts(tape, r):
-        """Auxiliary function to convert the result of a tape to an array,
-        unless the tape had Counts measurements that are represented with
-        dictionaries. JAX NumPy arrays don't support dictionaries."""
-        if any(isinstance(m, CountsMP) for m in tape.measurements):
-            if tape.batch_size is not None:
-                raise InterfaceUnsupportedError(
-                    "Broadcasted circuits with counts return types are only supported with "
-                    "the new return system. Use qml.enable_return() to turn it on."
-                )
-            return r
-        return jnp.array(r)
-
-    @jax.custom_vjp
-    def wrapped_exec(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-        res, _ = execute_fn(new_tapes, **gradient_kwargs)
-
-        if len(tapes) > 1:
-            res = [array_if_not_counts(tape, r) for tape, r in zip(tapes, res)]
-        else:
-            res = array_if_not_counts(tapes[0], res)
-
-        return res
-
-    def wrapped_exec_fwd(params):
-        return wrapped_exec(params), params
-
-    def wrapped_exec_bwd(params, g):
-        if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                new_tapes,
-                g,
-                gradient_fn,
-                reduction="append",
-                gradient_kwargs=gradient_kwargs,
-            )
-
-            partial_res = execute_fn(vjp_tapes)[0]
-
-            for t in tapes:
-                multi_probs = (
-                    any(isinstance(m, ProbabilityMP) for m in t.measurements)
-                    and len(t.measurements) > 1
-                )
-
-            if multi_probs:
-                # For multiple probability measurements, adjust the
-                # rows/columns in the result to match other interfaces
-                new_partial_res = []
-                for r in partial_res:
-                    if r.ndim > 1:
-                        new_partial_res.append(r.swapaxes(0, 1))
-                    else:
-                        new_partial_res.append(r)
-                partial_res = new_partial_res
-
-            res = processing_fn(partial_res)
-            vjps = jnp.concatenate(res)
-
-            param_idx = 0
-            res = []
-
-            # Group the vjps based on the parameters of the tapes
-            for p in params:
-                param_vjp = vjps[param_idx : param_idx + len(p)]
-                res.append(param_vjp)
-                param_idx += len(p)
-
-            # Unstack partial results into ndim=0 arrays to allow
-            # differentiability with JAX
-            # E.g.,
-            # [Array([-0.9553365], dtype=float32), Array([0., 0.],
-            # dtype=float32)]
-            # is mapped to
-            # [[Array(-0.9553365, dtype=float32)], [Array(0.,
-            # dtype=float32), Array(0., dtype=float32)]].
-            need_unstacking = any(r.ndim != 0 for r in res)
-            if need_unstacking:
-                res = [qml.math.unstack(x) for x in res]
-
-            return (tuple(res),)
-
-        # Gradient function is a device method.
-        unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
-        jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
-
-        vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
-        res = [[jnp.array(p) for p in v] for v in vjps]
-        return (tuple(res),)
-
-    wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
-    return wrapped_exec(params)
-
-
-def _raise_vector_valued_fwd(tapes):
-    """Raises an error for vector-valued tapes in forward mode due to incorrect
-    results being produced.
-
-    There is an issue when jax.jacobian is being used, either due to issues
-    with tensor updating (TypeError: Updates tensor must be of rank 0; got 1)
-    or because jax.vmap introduces a redundant dimensionality in the result by
-    duplicating entries.
-
-    Example to the latter:
-
-    1. Output when using jax.jacobian:
-    Array([[-0.09983342,  0.01983384],\n
-                 [-0.09983342, 0.01983384]], dtype=float64),
-    Array([[ 0.        , -0.97517033],\n
-                 [ 0.        , -0.97517033]], dtype=float64)),
-
-    2. Expected output:
-    Array([[-0.09983342, 0.01983384],\n
-                [ 0.        , -0.97517033]]
-
-    The output produced by this function matches 1.
-    """
-    scalar_outputs = all(t.output_dim == 1 for t in tapes)
-    if not scalar_outputs:
-        raise InterfaceUnsupportedError(
-            "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
-        )
-
-
-def _execute_fwd_legacy(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_kwargs=None,
-    _n=1,
-):  # pylint: disable=dangerous-default-value,unused-argument
-    """The auxiliary execute function for cases when the user requested
-    jacobians to be computed in forward mode or when no gradient function was
-    provided."""
-
-    @jax.custom_vjp
-    def wrapped_exec(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-        res, jacs = execute_fn(new_tapes, **gradient_kwargs)
-
-        if len(tapes) > 1:
-            res, jacs = [jnp.array(r) for r in res], [jnp.array(j) for j in jacs]
-        else:
-            res, jacs = jnp.array(res), jnp.array(jacs)
-        return res, jacs
-
-    def wrapped_exec_fwd(params):
-        res, jacs = wrapped_exec(params)
-        return res, tuple([jacs, params])
-
-    def wrapped_exec_bwd(params, g):
-        # Use the jacobian that was computed on the forward pass
-        jacs, params = params
-
-        _raise_vector_valued_fwd(tapes)
-
-        # Adjust the structure of how the jacobian is returned to match the
-        # non-forward mode cases
-        # E.g.,
-        # [Array([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
-        # is mapped to
-        # [[Array(0.06695931, dtype=float32), Array(0.01383095,
-        # dtype=float32), Array(-0.46500877, dtype=float32)]]
-        res_jacs = []
-        for j in jacs:
-            this_j = []
-            for i in range(j.shape[1]):
-                arr = (
-                    j[0, i] if j.shape[0] == 1 else jnp.array([j[k, i] for k in range(j.shape[0])])
-                )
-                this_j.append(arr)
-            res_jacs.append(this_j)
-        return tuple([tuple(res_jacs)])
-
-    wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
-    res = wrapped_exec(params)
-
-    tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
-
-    # When there are no tracers (not differentiating), we have the result of
-    # the forward pass and the jacobian, but only need the result of the
-    # forward pass
-    if len(res) == 2 and not tracing:
-        res = res[0]
-
-    return res
-
-
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with JAX parameters on a device.
 
@@ -393,6 +100,23 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
+            tapes,
+            repr(device),
+            execute_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            else "\n" + inspect.getsource(execute_fn) + "\n",
+            gradient_fn
+            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            else "\n" + inspect.getsource(gradient_fn) + "\n",
+            gradient_kwargs,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     # Set the trainable parameters
     if _n == 1:
         for tape in tapes:
@@ -440,12 +164,8 @@ def _execute_bwd(
     # pylint: disable=unused-variable
     # Copy a given tape with operations and set parameters
 
-    if isinstance(device, qml.devices.experimental.Device):
-        # cant test until we integrate device with shot vector
-        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        jvp_shots = None
-    else:
-        has_partitioned_shots = jvp_shots = device.shot_vector
+    # assumes all tapes have the same shot vector
+    has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
     @jax.custom_jvp
     def execute_wrapper(params):
@@ -458,12 +178,11 @@ def _execute_bwd(
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             at_max_diff = _n == max_diff
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             _args = (
                 new_tapes,
                 tangents[0],
                 gradient_fn,
-                jvp_shots,
             )
             _kwargs = {
                 "reduction": "append",
@@ -491,7 +210,7 @@ def _execute_bwd(
             # Execution: execute the function first
             res = execute_wrapper(primals[0])
             # Backward: Gradient function is a device method.
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0])
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             jacs = gradient_fn(new_tapes, **gradient_kwargs)
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
@@ -516,7 +235,7 @@ def _execute_fwd(
     # pylint: disable=unused-variable
     @jax.custom_jvp
     def execute_wrapper(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
         res, jacs = execute_fn(new_tapes, **gradient_kwargs)
         res = _to_jax(res)
 

@@ -48,6 +48,7 @@ Jacobian Product Calculation
 
     ~interfaces.jacobian_products.JacobianProductCalculator
     ~interfaces.jacobian_products.TransformDerivatives
+    ~interfaces.jacobian_products.DeviceJacobians
 
 """
 from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES
