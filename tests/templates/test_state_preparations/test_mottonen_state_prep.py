@@ -254,7 +254,7 @@ class TestDecomposition:
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
         spy = mocker.spy(circuit.device, "execute")
         circuit(state_vector)
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         assert tape.specs["resources"].gate_types["CNOT"] == n_CNOT
 
@@ -268,17 +268,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.MottonenStatePreparation(state, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.MottonenStatePreparation(state, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:

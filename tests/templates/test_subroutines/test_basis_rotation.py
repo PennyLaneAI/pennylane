@@ -101,7 +101,7 @@ class TestDecomposition:
                 wires=range(2),
                 unitary_matrix=weights,
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -110,12 +110,13 @@ class TestDecomposition:
                 wires=["z", "a"],
                 unitary_matrix=weights,
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
