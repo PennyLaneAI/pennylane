@@ -1007,3 +1007,124 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
     return dict_fcimatr
+
+
+def _shci_state(shci_solver, tol=1e-15):
+    r"""
+    Construct a wavefunction from Dice's ``SHCI`` Solver object.
+
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string ``0011`` which is split to ``01`` and ``01`` for
+    the alpha and beta electrons. The integer corresponding to ``01`` is ``1`` and the dictionary
+    representation of the Hartree-Fock state will be ``{(1, 1): 1.0}``. The dictionary
+    representation of a state with ``0.99`` contribution from the Hartree-Fock state and ``0.01``
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    ``{(1, 1): 0.99, (2, 2): 0.01}``.
+
+    The determinants and coefficients are stored under SHCI.outputfile, and are output when the SHCI
+    method is executed.
+
+    Args:
+        shci_solver (CASCI object from PySCF): the solver object from SHCI that plugs into PySCF's CASCI class
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
+    Returns:
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
+    **Example**
+    >>> from pyscf import gto, scf
+    >>> from pyblock2 import DMRGDriver
+    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
+    >>> myhf = scf.RHF(mol).run()
+    >>> myshci = mcscf.CASCI(mf, ncas, nelecas)
+    >>> initialStates = getinitialStateSHCI(mf, (nelecas_a, nelecas_b))
+    >>> myshci.fcisolver = shci.SHCI(mf.mol)
+    >>> myshci.internal_rotation = False
+    >>> myshci.fcisolver.initialStates = initialStates
+    >>> myshci.fcisolver.outputFile = output_file
+    >>> e_shci = np.atleast_1d(myshci.kernel(verbose=5))
+    >>> wf_shci = _shci_state(myshci, tol=1e-1)
+    >>> print(wf_shci)
+    (shci wavefunction printed here)
+    """
+
+    coefs, dets = get_dets_coefs_output(shci_solver.fcisolver.outputFile)
+
+    xa = []
+    xb = []
+    dat = []
+
+    for coef, det in zip(coefs, dets):
+        if abs(coef) > tol:
+            bin_a, bin_b = convert_bin_ab(det)
+
+            xa.append(int(bin_a, 2))
+            xb.append(int(bin_b, 2))
+            dat.append(coef)
+
+    ## create the FCI matrix as a dict
+    dict_fcimatr = dict(zip(list(zip(xa, xb)), dat))
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
+
+
+def get_dets_coefs_output(output_file):
+    """
+    Get CI coef of SHCI from output file and parse them.
+    """
+    coefs = []
+    dets = []
+
+    with open(output_file) as fp:
+        line = fp.readline()
+        cnt = 1
+        while line:
+            search = line.strip()[:5]
+            while search == "State":
+                line = fp.readline()
+                cnt += 1
+                try:
+                    num = int(line.strip()[0])
+                    data = line.strip().split("  ")
+                    coefs.append(float(data[3]))
+                    data_dets = ""
+                    for i in np.arange(4, len(data)):
+                        data_dets += data[i]
+                    dets.append((data_dets).split())
+                except:
+                    search = line.strip()[:5]
+            line = fp.readline()
+            cnt += 1
+
+    return coefs, dets
+
+
+def convert_bin_ab(list_string):
+    """
+    Change of notation for Slater determinants
+    """
+    bin_a = ""
+    bin_b = ""
+    for el in list_string:
+        if el == "2":
+            bin_a += "1"
+            bin_b += "1"
+        elif el == "a":
+            bin_a += "1"
+            bin_b += "0"
+        elif el == "b":
+            bin_a += "0"
+            bin_b += "1"
+        elif el == "0":
+            bin_a += "0"
+            bin_b += "0"
+
+    return bin_a[::-1], bin_b[::-1]

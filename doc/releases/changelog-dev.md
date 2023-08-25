@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Introducing the ability to import wavefunctions from SHCI classical calculations using `qml.qchem.import_state`,
+  in particular those obtained with the Dice library.
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
