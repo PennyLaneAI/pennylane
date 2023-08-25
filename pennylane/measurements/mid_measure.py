@@ -155,10 +155,6 @@ class MidMeasureMP(MeasurementProcess):
         return hash(fingerprint)
 
 
-class MeasurementValueError(ValueError):
-    """Error raised when an unknown measurement value is being used."""
-
-
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
 
