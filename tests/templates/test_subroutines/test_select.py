@@ -297,6 +297,25 @@ class TestInterfaces:
 
         assert qml.math.allclose(grads, grads2)
 
+    @pytest.mark.autograd
+    def test_autograd_parameter_shift(self):
+        """Tests the autograd interface using the parameter-shift method."""
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit_default = qml.QNode(manual_rx_circuit, dev, diff_method="parameter-shift")
+        circuit_select = qml.QNode(select_rx_circuit, dev, diff_method="parameter-shift")
+
+        input_default = [0.5, 0.2]
+        input_grad = pnp.array(input_default, requires_grad=True)
+
+        grad_fn = qml.grad(circuit_default)
+        grads = grad_fn(input_grad)
+
+        grad_fn2 = qml.grad(circuit_select)
+        grads2 = grad_fn2(input_grad)
+
+        assert qml.math.allclose(grads, grads2)
+
     @pytest.mark.tf
     def test_tf(self):
         """Tests the tf interface."""
