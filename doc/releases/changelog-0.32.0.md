@@ -29,17 +29,17 @@
       probs = A.coeffs / np.sum(A.coeffs)
       state = np.pad(np.sqrt(probs, dtype=complex), (0, 1))
       unitaries = A.ops
-
+  
       qml.StatePrep(state, wires=control_wires)
-      qml.Select(unitaries, control_wires=control_wires)
+      qml.Select(unitaries, control=control_wires)
       qml.adjoint(qml.StatePrep)(state, wires=control_wires)
   ```
 
   ```pycon
   >>> print(qml.draw(block_encode, show_matrices=False)(A, control_wires=[0, 1]))
-  0: ─╭|Ψ⟩─╭●──────────╭|Ψ⟩†─┤  
-  1: ─╰|Ψ⟩─├●──────────╰|Ψ⟩†─┤  
-  2: ──────╰Select(M0)───────┤  
+  0: ─╭|Ψ⟩─╭Select(M0)─╭|Ψ⟩†─┤  
+  1: ─╰|Ψ⟩─├Select(M0)─╰|Ψ⟩†─┤  
+  2: ──────╰Select(M0)───────┤ 
   ```
 
   This circuit can be used as a building block within a larger QNode to perform algorithms such as
