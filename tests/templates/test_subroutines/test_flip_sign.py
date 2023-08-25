@@ -66,7 +66,7 @@ class TestFlipSign:
             n_wires = 1 if n_wires == 0 else n_wires
             n_wires = list(range(n_wires))
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():

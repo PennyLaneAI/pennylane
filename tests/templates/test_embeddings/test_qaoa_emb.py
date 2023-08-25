@@ -133,7 +133,7 @@ class TestDecomposition:
 
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -173,7 +173,7 @@ class TestDecomposition:
         """Checks the output if the features and entangler weights are nonzero,
         which makes the circuit only depend on the ZZ gate."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -194,7 +194,7 @@ class TestDecomposition:
     def test_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
         """Checks the state is correct if there are more qubits than features."""
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -209,8 +209,8 @@ class TestDecomposition:
         weights = np.random.random(size=(1, 6))
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -263,7 +263,7 @@ class TestInputs:
         features = [0, 0, 0, 0]
         n_wires = 1
         weights = np.zeros(shape=(1, 2 * n_wires))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -279,7 +279,7 @@ class TestInputs:
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
         features = np.zeros(shape=shape)
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -300,7 +300,7 @@ class TestInputs:
     def test_exception_wrong_weight_shape(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
         features = np.zeros(shape=(n_wires,))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -320,7 +320,7 @@ class TestInputs:
     def test_exception_wrong_weight_ndim(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
         features = np.zeros(shape=(n_wires,))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -383,7 +383,7 @@ class TestInterfaces:
         weights = np.random.random(size=(1, 3))
         weights = pnp.array(weights, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -411,7 +411,7 @@ class TestInterfaces:
         features = jnp.array(np.random.random(size=(2,)))
         weights = jnp.array(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -438,7 +438,7 @@ class TestInterfaces:
         features = tf.Variable(np.random.random(size=(2,)))
         weights = tf.Variable(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -467,7 +467,7 @@ class TestInterfaces:
         features = torch.tensor(np.random.random(size=(2,)), requires_grad=True)
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)

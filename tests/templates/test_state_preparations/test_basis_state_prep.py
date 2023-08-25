@@ -138,8 +138,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         basis_state = [0, 1, 0]
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -189,7 +189,7 @@ class TestInputs:
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit(basis_state):

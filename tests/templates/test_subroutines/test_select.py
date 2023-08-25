@@ -72,7 +72,7 @@ class TestSelect:
     )
     def test_operation_result(self, ops, control_wires, expected_gates, n_wires):
         """Test the correctness of the Select template output."""
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit1():
@@ -281,7 +281,7 @@ class TestInterfaces:
     @pytest.mark.autograd
     def test_autograd(self):
         """Tests the autograd interface."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit_default = qml.QNode(manual_rx_circuit, dev)
         circuit_select = qml.QNode(select_rx_circuit, dev)
@@ -302,7 +302,7 @@ class TestInterfaces:
         """Tests the tf interface."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit_default = qml.QNode(manual_rx_circuit, dev)
         circuit_tf = qml.QNode(select_rx_circuit, dev)
@@ -330,7 +330,7 @@ class TestInterfaces:
         """Tests the torch interface."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         circuit_default = qml.QNode(manual_rx_circuit, dev)
         circuit_torch = qml.QNode(select_rx_circuit, dev)
@@ -360,7 +360,7 @@ class TestInterfaces:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         input_default = [0.5, 0.2]
         input_jax = jnp.array(input_default)

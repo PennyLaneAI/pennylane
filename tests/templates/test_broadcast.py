@@ -227,7 +227,7 @@ class TestBuiltinPatterns:
     def test_prepares_correct_state(self, pattern, n_wires, parameters, unitary, target):
         """Tests the state produced by different unitaries."""
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -244,7 +244,7 @@ class TestBuiltinPatterns:
         """Tests that error thrown when 'parameters' does not contain one set
         of parameters for each wire."""
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -258,7 +258,7 @@ class TestBuiltinPatterns:
         """Tests that the special error is thrown when 'parameters' does not contain one sequence
         of parameters for a two-wire ring pattern."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit(pars):
@@ -310,7 +310,7 @@ class TestCustomPattern:
     def test_reproduce_builtin_patterns(self, custom_pattern, pattern):
         """Tests that the custom pattern can reproduce the built in patterns."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         # qnode using custom pattern
         @qml.qnode(dev)
@@ -338,7 +338,7 @@ class TestCustomPattern:
     def test_correct_output(self, custom_pattern, expected):
         """Tests the output for simple cases."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev)
         def circuit():
@@ -351,7 +351,7 @@ class TestCustomPattern:
 
 def test_unknown_pattern():
     """Test that an unknown pattern raises an error"""
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit.legacy", wires=2)
 
     @qml.qnode(dev)
     def circuit(pars):

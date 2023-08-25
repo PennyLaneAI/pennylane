@@ -141,7 +141,7 @@ class TestFuncToUnitary:
 
         r = func_to_unitary(func, M)
 
-        dev = qml.device("default.qubit", wires=(wires + 1))
+        dev = qml.device("default.qubit.legacy", wires=(wires + 1))
 
         @qml.qnode(dev)
         def apply_r(input_state):
@@ -361,7 +361,7 @@ class TestQuantumMonteCarlo:
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qml.device("default.qubit.legacy", wires=(n + m + 1))
 
             @qml.qnode(dev)
             def circuit():
@@ -411,7 +411,7 @@ class TestQuantumMonteCarlo:
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qml.device("default.qubit.legacy", wires=(n + m + 1))
 
             @jax.jit
             @qml.qnode(dev, interface="jax")
@@ -455,7 +455,7 @@ class TestQuantumMonteCarlo:
         target_wires = [0, "a", -1.1, -10, "bbb", 1000]
         estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
 
-        dev = qml.device("default.qubit", wires=target_wires + estimation_wires)
+        dev = qml.device("default.qubit.legacy", wires=target_wires + estimation_wires)
 
         @qml.qnode(dev)
         def circuit():

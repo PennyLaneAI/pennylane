@@ -144,7 +144,7 @@ class TestDecomposition:
         """Tests that the output from the ApproxTimeEvolution template is correct"""
 
         n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -160,8 +160,8 @@ class TestDecomposition:
             [1, 1, 1], [qml.PauliX("z"), qml.PauliX("a"), qml.PauliX("k")]
         )
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -186,7 +186,7 @@ class TestInputs:
         """Tests if the correct error is thrown when hamiltonian is not a pennylane.Hamiltonian object"""
 
         n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         hamiltonian = np.array([[1, 1], [1, 1]])
 
@@ -212,7 +212,7 @@ class TestInputs:
         """Tests if the correct errors are thrown when the user attempts to input a matrix with non-Pauli terms"""
 
         n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qml.device("default.qubit.legacy", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -271,7 +271,7 @@ class TestInterfaces:
 
         time = 0.5
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -286,7 +286,7 @@ class TestInterfaces:
 
         time = pnp.array(0.5, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -312,7 +312,7 @@ class TestInterfaces:
 
         time = jnp.array(0.5)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -337,7 +337,7 @@ class TestInterfaces:
 
         time = tf.Variable(0.5)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -364,7 +364,7 @@ class TestInterfaces:
 
         time = torch.tensor(0.5, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -388,7 +388,7 @@ class TestInterfaces:
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",
-    [["default.qubit.autograd", "backprop"], ["default.qubit", qml.gradients.param_shift]],
+    [["default.qubit.autograd", "backprop"], ["default.qubit.legacy", qml.gradients.param_shift]],
 )
 def test_trainable_hamiltonian(dev_name, diff_method):
     """Test that the ApproxTimeEvolution template
@@ -410,7 +410,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     def cost(coeffs, t):
         tape = create_tape(coeffs, t)
 
-        if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
+        if diff_method is qml.gradients.param_shift:
             tape = dev.expand_fn(tape)
 
         return qml.execute([tape], dev, diff_method)[0]

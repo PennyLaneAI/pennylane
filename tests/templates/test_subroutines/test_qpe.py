@@ -84,7 +84,7 @@ class TestDecomposition:
         wire_range = range(2, 10)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qml.device("default.qubit.legacy", wires=wires)
             m = qml.RX(phase, wires=0).matrix()
             target_wires = [0]
             estimation_wires = range(1, wires)
@@ -99,10 +99,9 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, _, _ = dev.preprocess(tape)
-            assert len(tapes) == 1
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
 
-            res = dev.execute(tapes)[0].flatten()
+            res = dev.execute(tape).flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
             # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
@@ -136,7 +135,7 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qml.device("default.qubit.legacy", wires=wires)
 
             target_wires = [0, 1]
             estimation_wires = range(2, wires)
@@ -151,9 +150,8 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, _, _ = dev.preprocess(tape)
-            assert len(tapes) == 1
-            res = dev.execute(tapes)[0].flatten()
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+            res = dev.execute(tape).flatten()
 
             if phase < 0:
                 estimate = np.argmax(res) / 2 ** (wires - 2) - 1
@@ -186,7 +184,7 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qml.device("default.qubit.legacy", wires=wires)
 
             estimation_wires = range(1, wires - 1)
             target_wires = [0]
@@ -197,9 +195,8 @@ class TestDecomposition:
                 prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
-            tapes, _, _ = dev.preprocess(tape)
-            res = dev.execute(tapes)[0].flatten()
-            assert len(tapes) == 1
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+            res = dev.execute(tape).flatten()
 
             estimate = np.argmax(res) / 2 ** (wires - 2)
             estimates.append(estimate)
@@ -228,7 +225,7 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qml.device("default.qubit.legacy", wires=wires)
 
             # Offset the index of target wires to test the wire maÏp
             estimation_wires = range(2, wires)
@@ -240,9 +237,8 @@ class TestDecomposition:
                 prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
-            tapes, _, _ = dev.preprocess(tape)
-            assert len(tapes) == 1
-            res = dev.execute(tapes)[0].flatten()
+            tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
+            res = dev.execute(tape).flatten()
 
             estimate = np.argmax(res) / 2 ** (wires - 2)
             estimates.append(estimate)
@@ -304,7 +300,7 @@ class TestDecomposition:
 
     def test_adjoint(self):
         """Test that the QPE adjoint works."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev)
         def qpe_circuit():

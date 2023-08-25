@@ -91,8 +91,8 @@ class TestDecomposition:
             ]
         )
 
-        dev = qml.device("default.qubit", wires=2)
-        dev2 = qml.device("default.qubit", wires=["z", "a"])
+        dev = qml.device("default.qubit.legacy", wires=2)
+        dev2 = qml.device("default.qubit.legacy", wires=["z", "a"])
 
         @qml.qnode(dev)
         def circuit():
@@ -236,7 +236,7 @@ class TestDecomposition:
         """Test that the BasisRotation template works correctly asserting the prepared state."""
 
         wires = range(len(unitary_matrix))
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -289,7 +289,7 @@ class TestInputs:
         """Test that BasisRotation template throws an exception if the parameters have illegal
         shapes, types or values."""
 
-        dev = qml.device("default.qubit", wires=len(wires))
+        dev = qml.device("default.qubit.legacy", wires=len(wires))
 
         @qml.qnode(dev)
         def circuit():
@@ -372,7 +372,7 @@ class TestInterfaces:
             ]
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -414,7 +414,7 @@ class TestInterfaces:
             ]
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -502,7 +502,7 @@ class TestInterfaces:
             requires_grad=False,
         )
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)

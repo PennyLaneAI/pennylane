@@ -90,7 +90,7 @@ class TestDecomposition:
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -109,7 +109,7 @@ class TestDecomposition:
 
         features = [np.pi / 2, np.pi / 2, 0, np.pi / 2]
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit.legacy", wires=5)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -124,8 +124,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
@@ -151,7 +151,7 @@ class TestInputs:
         rotation gates than features."""
 
         features = [0, 0, 1, 0]
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -165,7 +165,7 @@ class TestInputs:
         """Verifies that exception is raised if the
         rotation strategy is unknown."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         @qml.qnode(dev)
         def circuit(x=None):
@@ -206,7 +206,7 @@ class TestInterfaces:
 
         features = [1.0, 1.0, 1.0]
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -225,7 +225,7 @@ class TestInterfaces:
 
         features = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -251,7 +251,7 @@ class TestInterfaces:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -276,7 +276,7 @@ class TestInterfaces:
 
         features = tf.Variable([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
@@ -303,7 +303,7 @@ class TestInterfaces:
 
         features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
