@@ -893,14 +893,11 @@ class DefaultGaussian(Device):
 
     # pylint: disable=arguments-differ
     def execute(self, operations, observables):
-        if qml.active_return():
-            if len(observables) > 1:
-                raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+        if len(observables) > 1:
+            raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
         return super().execute(operations, observables)
 
     def batch_execute(self, circuits):
-        if not qml.active_return():
-            return super().batch_execute(circuits)
         results = super().batch_execute(circuits)
         results = [qml.math.squeeze(res) for res in results]
         return results

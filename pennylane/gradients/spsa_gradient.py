@@ -17,7 +17,6 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 from functools import partial
-from collections.abc import Sequence
 import warnings
 
 import numpy as np
@@ -32,7 +31,6 @@ from .gradient_transform import (
     choose_grad_methods,
     gradient_analysis_and_validation,
     _no_trainable_grad,
-    _no_trainable_grad_legacy,
 )
 from .general_shift_rules import generate_multishifted_tapes
 
@@ -131,10 +129,10 @@ def spsa_grad(
 
         sampler_rng (Union[np.random.Generator, int, None]): Either a NumPy pseudo-random number
             generator or an integer, which will be used as the PRNG seed. Default is None, which
-            creates a NumPy PRNG without a seed. Note that calling ``spsa_gradient`` multiple times
+            creates a NumPy PRNG without a seed. Note that calling ``spsa_grad`` multiple times
             with a seed (i.e., an integer) will result in the same directions being sampled in each
             call. In this case it is advisable to create a NumPy PRNG and pass it to
-            ``spsa_gradient`` in each call.
+            ``spsa_grad`` in each call.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -256,20 +254,6 @@ def spsa_grad(
     """
     transform_name = "SPSA"
     assert_no_tape_batching(tape, transform_name)
-    if not qml.active_return():
-        return _spsa_grad_legacy(
-            tape,
-            argnum=argnum,
-            h=h,
-            approx_order=approx_order,
-            n=n,
-            strategy=strategy,
-            f0=f0,
-            validate_params=validate_params,
-            num_directions=num_directions,
-            sampler=sampler,
-            sampler_rng=sampler_rng,
-        )
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -380,266 +364,5 @@ def spsa_grad(
     processing_fn = partial(
         _processing_fn, shots=tape.shots, single_shot_batch_fn=_single_shot_batch_result
     )
-
-    return gradient_tapes, processing_fn
-
-
-# pylint: disable=unused-argument
-@gradient_transform
-def _spsa_grad_legacy(
-    tape,
-    argnum=None,
-    h=1e-5,
-    approx_order=2,
-    n=1,
-    strategy="center",
-    f0=None,
-    validate_params=True,
-    num_directions=1,
-    sampler=_rademacher_sampler,
-    sampler_rng=None,
-    sampler_seed=None,
-):
-    r"""Transform a QNode to compute the SPSA gradient of all gate
-    parameters with respect to its inputs. This estimator shifts all parameters
-    simultaneously and approximates the gradient based on these shifts and a
-    finite-difference method.
-
-    Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
-        h (float or tensor_like[float]): Step size for the finite-difference method
-            underlying the SPSA. Can be a tensor-like object
-            with as many entries as differentiated *gate* parameters
-        approx_order (int): The approximation order of the finite-difference method underlying
-            the SPSA gradient.
-        n (int): compute the :math:`n`-th derivative
-        strategy (str): The strategy of the underlying finite difference method. Must be one of
-            ``"forward"``, ``"center"``, or ``"backward"``.
-            For the ``"forward"`` strategy, the finite-difference shifts occur at the points
-            :math:`x_0, x_0+h, x_0+2h,\dots`, where :math:`h` is the stepsize ``h``.
-            The ``"backwards"`` strategy is similar, but in
-            reverse: :math:`x_0, x_0-h, x_0-2h, \dots`. Finally, the
-            ``"center"`` strategy results in shifts symmetric around the
-            unshifted point: :math:`\dots, x_0-2h, x_0-h, x_0, x_0+h, x_0+2h,\dots`.
-        f0 (tensor_like[float] or None): Output of the evaluated input tape in ``tape``. If
-            provided, and the gradient recipe contains an unshifted term, this value is used,
-            saving a quantum evaluation.
-        validate_params (bool): Whether to validate the tape parameters or not. If ``True``,
-            the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
-            to determine if the trainable parameters support the finite-difference method,
-            inferring that they support SPSA as well.
-            If ``False``, the SPSA gradient method will be applied to all parameters without
-            checking.
-        num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
-            the gradient is computed for each vector using the underlying finite-difference
-            method, and afterwards all estimates are averaged.
-        sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
-            The sampler should take the following arguments:
-
-            - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
-              that will be perturbed, i.e. have non-zero entries in the output vector.
-
-            - An ``int`` that indicates the total number of trainable tape parameters. The
-              size of the output vector has to match this input.
-
-            - An ``int`` indicating the iteration counter during the gradient estimation.
-              A valid sampling method can, but does not have to, take this counter into
-              account. In any case, ``sampler`` has to accept this third argument.
-
-            - The required keyword argument ``rng``, expected to be a NumPy pseudo-random
-              number generator, which should be used to sample directions randomly.
-
-        sampler_rng (Union[np.random.Generator, int, None]): Either a NumPy pseudo-random number
-            generator or an integer which will be used as the PRNG seed. Default is None, which
-            creates a NumPy PRNG without a seed. Note that calling ``spsa_gradient`` multiple times
-            with a seed (i.e., an integer) will result in the same directions being sampled in each
-            call. In this case it is advisable to create a NumPy PRNG and pass it to
-            ``spsa_gradient`` each time.
-
-    Returns:
-        function or tuple[list[QuantumTape], function]:
-
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
-
-    **Example**
-
-    This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
-    objects:
-
-    >>> @qml.qnode(dev)
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.gradients.spsa_grad(circuit)(params)
-    tensor([[-0.19280803, -0.19280803,  0.19280803],
-            [ 0.34786926,  0.34786926, -0.34786926]], requires_grad=True)
-
-    Note that the SPSA gradient is a statistical estimator that uses a given number of
-    function evaluations that does not depend on the number of parameters. While this
-    bounds the cost of the estimation, it also implies that the returned values are not
-    exact (even with ``shots=None``) and that they will fluctuate.
-    See the usage details below for more information.
-
-    .. details::
-        :title: Usage Details
-
-        The number of directions in which the derivative is computed to estimate the gradient
-        can be controlled with the keyword argument ``num_directions``. For the QNode above,
-        a more precise gradient estimation from ``num_directions=20`` directions yields
-
-        >>> qml.gradients.spsa_grad(circuit, num_directions=20)(params)
-        tensor([[-0.32969058, -0.18924389, -0.28716881],
-                [ 0.59483632,  0.34143874,  0.51811744]], requires_grad=True)
-
-        We may compare this to the exact value obtained from parameter-shift rules:
-
-        >>> qml.gradients.param_shift(circuit)(params)
-        tensor([[-0.3875172 , -0.18884787, -0.38355704],
-                [ 0.69916862,  0.34072424,  0.69202359]], requires_grad=True)
-
-        As we can see, the SPSA output is a rather coarse approximation to the true
-        gradient. This means we used more circuit evaluations (namely 20) to
-        obtain a rough approximation than for the more precise parameter-shift
-        result (which only cost us six evaluations).
-        For few parameters, this will usually be the case, so that SPSA is not
-        very useful for few-parameter gradients. However, for circuits with
-        considerably more parameters, the parameter-shift gradient will require
-        many more evaluations, while the number of directions we need for a proper
-        approximation of the gradient will not grow as much. This makes SPSA
-        useful for such circuits.
-
-        This quantum gradient transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
-        device evaluation. Instead, the processed tapes, and post-processing
-        function, which together define the gradient are directly returned:
-
-        >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
-        >>> gradient_tapes
-        [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]
-
-        This can be useful if the underlying circuits representing the gradient
-        computation need to be analyzed. Here we see that for ``num_directions=1``,
-        the default, we obtain two tapes.
-
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
-
-        >>> dev = qml.device("default.qubit", wires=2)
-        >>> fn(qml.execute(gradient_tapes, dev, None))
-        array([[-0.95992212, -0.95992212, -0.95992212],
-               [ 1.73191645,  1.73191645,  1.73191645]])
-    """
-
-    if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_legacy(tape)
-
-    if validate_params:
-        diff_methods = gradient_analysis_and_validation(
-            tape, "numeric", grad_fn=spsa_grad, overwrite=False
-        )
-    else:
-        diff_methods = ["F" for i in tape.trainable_params]
-
-    num_trainable_params = len(tape.trainable_params)
-    if all(g == "0" for g in diff_methods):
-        return [], lambda _: np.zeros([tape.output_dim, num_trainable_params])
-
-    gradient_tapes = []
-    extract_r0 = False
-
-    coeffs, shifts = finite_diff_coeffs(n=n, approx_order=approx_order, strategy=strategy)
-
-    if 0 in shifts:
-        # Finite difference formula includes a term with zero shift.
-
-        if f0 is None:
-            # Ensure that the unshifted tape is appended to the gradient tapes
-            gradient_tapes.append(tape)
-            extract_r0 = True
-
-        # Skip the unshifted tape
-        shifts = shifts[1:]
-
-    if sampler_seed is not None:
-        msg = (
-            "The sampler_seed argument is deprecated. Use the sampler_rng argument "
-            "instead to pass a random number generator or a seed."
-        )
-        if sampler_rng is None:
-            warnings.warn(msg, UserWarning)
-            sampler_rng = sampler_seed
-        else:
-            raise ValueError(
-                "Both sampler_rng and sampler_seed were specified. Only specify one.\n" + msg
-            )
-
-    sampler_rng = np.random.default_rng(sampler_rng)
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    indices = [i for i in range(num_trainable_params) if (i in method_map and method_map[i] != "0")]
-
-    tapes_per_grad = len(shifts)
-    all_coeffs = []
-    for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
-        inv_direction = qml.math.divide(
-            1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
-        )
-        # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
-        _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
-        all_coeffs.append(qml.math.tensordot(coeffs * (h ** (-n)), inv_direction, axes=0))
-        g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
-        gradient_tapes.extend(g_tapes)
-
-    def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
-
-        r0, results = (results[0], results[1:]) if extract_r0 else (f0, results)
-
-        grads = 0
-        for rep, _coeffs in enumerate(all_coeffs):
-            res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
-            if r0 is not None:
-                res.insert(0, r0)
-            res = qml.math.stack(res)
-            grads = (
-                qml.math.tensordot(res, qml.math.convert_like(_coeffs, res), axes=[[0], [0]])
-                + grads
-            )
-
-        grads = grads * (1 / num_directions)
-
-        # The following is for backwards compatibility; currently,
-        # the device stacks multiple measurement arrays, even if not the same
-        # size, resulting in a ragged array. (-> new return type system)
-        if (
-            hasattr(grads, "dtype")
-            and grads.dtype is np.dtype("object")
-            and qml.math.ndim(grads[0]) > 0
-        ):
-            grads = qml.math.moveaxis(
-                qml.math.array([qml.math.hstack(gs) for gs in zip(*grads)]), 0, -1
-            )
-
-        return grads
 
     return gradient_tapes, processing_fn
